@@ -507,7 +507,7 @@ export function generateTechnicalExplanation(
         frames.push({
           function_name: match[1] || '<anonymous>',
           file_path: filePath,
-          line_number: parseInt(match[3]) || 0,
+          line_number: parseInt(match[3] ?? '0') || 0,
           column_number: match[4] ? parseInt(match[4]) : undefined,
           is_application_code: isAppCode,
           analysis: isAppCode ? `This is application code that may need investigation` : undefined,
@@ -876,7 +876,13 @@ export function generateExecutiveSummary(
     },
   };
 
-  const impact = impactMap[patternType || 'network'] || impactMap['network'];
+  const impact = impactMap[patternType || 'network'] ?? impactMap['network'] ?? {
+    summary: 'Test failures detected that may impact user experience.',
+    severity: 'moderate' as const,
+    users: 'Some users may be affected',
+    revenue: 'Potential impact on transactions',
+    reputation: 'May affect user trust',
+  };
 
   // Generate affected features
   const featureMap: Record<string, AffectedFeature[]> = {
@@ -976,7 +982,7 @@ export function generateExecutiveSummary(
   };
 
   return {
-    headline: headlines[overallStatus],
+    headline: headlines[overallStatus] ?? 'Test Results Summary',
     status_emoji: statusEmoji,
     overall_status: overallStatus,
     business_impact: {
@@ -986,9 +992,9 @@ export function generateExecutiveSummary(
       revenue_risk: impact.revenue,
       reputation_risk: impact.reputation,
     },
-    affected_features: featureMap[patternType || 'network'] || featureMap['network'],
+    affected_features: featureMap[patternType || 'network'] ?? featureMap['network'] ?? [],
     fix_effort: {
-      estimated_time: timeEstimates[complexity],
+      estimated_time: timeEstimates[complexity] ?? '1-2 hours',
       team_resources: complexity === 'complex' ? '2-3 developers' : complexity === 'moderate' ? '1-2 developers' : '1 developer',
       complexity,
       priority_recommendation: overallStatus === 'critical' ? 'immediate' : overallStatus === 'warning' ? 'high' : 'medium',
@@ -996,14 +1002,14 @@ export function generateExecutiveSummary(
     risk_assessment: {
       current_risk_level: riskLevel,
       trend: failureCount > 3 ? 'increasing' : 'stable',
-      key_risks: keyRisks[patternType || 'network'] || keyRisks['network'],
-      mitigation_steps: mitigationSteps[patternType || 'network'] || mitigationSteps['network'],
+      key_risks: keyRisks[patternType || 'network'] ?? keyRisks['network'] ?? [],
+      mitigation_steps: mitigationSteps[patternType || 'network'] ?? mitigationSteps['network'] ?? [],
     },
     key_metrics: {
       total_failures: failureCount,
       pass_rate: `${passRate}%`,
       affected_tests: failureCount,
-      time_to_fix_estimate: timeEstimates[complexity],
+      time_to_fix_estimate: timeEstimates[complexity] ?? '1-2 hours',
     },
     recommendations: [
       {
