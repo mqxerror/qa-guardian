@@ -1,4 +1,7 @@
 // DAST In-memory Data Stores and Constants
+//
+// Updated for Feature #2088: PostgreSQL migration
+// Now uses repository functions with in-memory fallback
 
 import {
   DASTConfig,
@@ -9,13 +12,51 @@ import {
   GraphQLScan,
 } from './types';
 
-// In-memory stores
-export const dastConfigs: Map<string, DASTConfig> = new Map();
-export const dastScans: Map<string, DASTScanResult[]> = new Map();  // projectId -> scans
-export const dastFalsePositives: Map<string, DASTFalsePositive[]> = new Map();  // projectId -> false positives
-export const openApiSpecs: Map<string, OpenAPISpec> = new Map();  // specId -> spec
-export const dastSchedules: Map<string, DASTSchedule> = new Map();  // scheduleId -> schedule
-export const graphqlScans: Map<string, GraphQLScan> = new Map();  // scanId -> scan
+// Import repository functions
+import * as dastRepo from '../../services/repositories/dast';
+
+// Re-export repository functions for database access
+export const getDastConfig = dastRepo.getDastConfig;
+export const saveDastConfig = dastRepo.saveDastConfig;
+export const deleteDastConfig = dastRepo.deleteDastConfig;
+
+export const createDastScan = dastRepo.createDastScan;
+export const getDastScan = dastRepo.getDastScan;
+export const updateDastScan = dastRepo.updateDastScan;
+export const getDastScansByProject = dastRepo.getDastScansByProject;
+export const deleteDastScan = dastRepo.deleteDastScan;
+
+export const addDastFalsePositive = dastRepo.addDastFalsePositive;
+export const getDastFalsePositives = dastRepo.getDastFalsePositives;
+export const deleteDastFalsePositive = dastRepo.deleteDastFalsePositive;
+export const checkFalsePositive = dastRepo.checkFalsePositive;
+
+export const saveOpenApiSpec = dastRepo.saveOpenApiSpec;
+export const getOpenApiSpec = dastRepo.getOpenApiSpec;
+export const getOpenApiSpecsByProject = dastRepo.getOpenApiSpecsByProject;
+export const deleteOpenApiSpec = dastRepo.deleteOpenApiSpec;
+
+export const createDastSchedule = dastRepo.createDastSchedule;
+export const getDastSchedule = dastRepo.getDastSchedule;
+export const getDastSchedulesByProject = dastRepo.getDastSchedulesByProject;
+export const updateDastSchedule = dastRepo.updateDastSchedule;
+export const deleteDastSchedule = dastRepo.deleteDastSchedule;
+export const getEnabledDastSchedules = dastRepo.getEnabledDastSchedules;
+
+export const createGraphqlScan = dastRepo.createGraphqlScan;
+export const getGraphqlScan = dastRepo.getGraphqlScan;
+export const updateGraphqlScan = dastRepo.updateGraphqlScan;
+export const deleteGraphqlScan = dastRepo.deleteGraphqlScan;
+export const listGraphqlScans = dastRepo.listGraphqlScans;
+
+// Backward compatible Map exports (from repository memory stores)
+// These are kept for backward compatibility with existing code that uses Map operations
+export const dastConfigs: Map<string, DASTConfig> = dastRepo.getMemoryDastConfigs();
+export const dastScans: Map<string, DASTScanResult[]> = dastRepo.getMemoryDastScans();
+export const dastFalsePositives: Map<string, DASTFalsePositive[]> = dastRepo.getMemoryDastFalsePositives();
+export const openApiSpecs: Map<string, OpenAPISpec> = dastRepo.getMemoryOpenApiSpecs();
+export const dastSchedules: Map<string, DASTSchedule> = dastRepo.getMemoryDastSchedules();
+export const graphqlScans: Map<string, GraphQLScan> = dastRepo.getMemoryGraphqlScans();
 
 // Default DAST config
 export const DEFAULT_DAST_CONFIG: DASTConfig = {

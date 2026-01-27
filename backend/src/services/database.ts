@@ -772,6 +772,106 @@ async function initializeSchema(): Promise<void> {
       UNIQUE(user_id, organization_id)
     );
 
+    -- DAST (Dynamic Application Security Testing) tables (Feature #2088)
+    CREATE TABLE IF NOT EXISTS dast_configs (
+      project_id UUID PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE,
+      enabled BOOLEAN DEFAULT FALSE,
+      target_url TEXT,
+      scan_profile VARCHAR(50) DEFAULT 'baseline',
+      auth_config JSONB,
+      context_config JSONB,
+      alert_threshold VARCHAR(20) DEFAULT 'LOW',
+      auto_scan BOOLEAN DEFAULT FALSE,
+      last_scan_at TIMESTAMP WITH TIME ZONE,
+      last_scan_status VARCHAR(50),
+      openapi_spec_id UUID,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS dast_scans (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      target_url TEXT NOT NULL,
+      scan_profile VARCHAR(50) NOT NULL,
+      status VARCHAR(50) NOT NULL DEFAULT 'pending',
+      started_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      completed_at TIMESTAMP WITH TIME ZONE,
+      alerts JSONB DEFAULT '[]',
+      summary JSONB NOT NULL,
+      statistics JSONB,
+      error TEXT,
+      endpoints_tested JSONB,
+      scope_config JSONB,
+      progress JSONB,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS dast_false_positives (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      plugin_id VARCHAR(255) NOT NULL,
+      url TEXT NOT NULL,
+      param TEXT,
+      reason TEXT NOT NULL,
+      marked_by VARCHAR(255) NOT NULL,
+      marked_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS openapi_specs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      version VARCHAR(100),
+      content TEXT NOT NULL,
+      endpoints JSONB DEFAULT '[]',
+      uploaded_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      uploaded_by VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS dast_schedules (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      frequency VARCHAR(50) NOT NULL,
+      cron_expression VARCHAR(100) NOT NULL,
+      timezone VARCHAR(100) NOT NULL,
+      enabled BOOLEAN DEFAULT TRUE,
+      scan_profile VARCHAR(50) NOT NULL,
+      target_url TEXT NOT NULL,
+      notify_on_failure BOOLEAN DEFAULT FALSE,
+      notify_on_high_severity BOOLEAN DEFAULT FALSE,
+      email_recipients JSONB DEFAULT '[]',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      created_by VARCHAR(255) NOT NULL,
+      next_run_at TIMESTAMP WITH TIME ZONE,
+      last_run_at TIMESTAMP WITH TIME ZONE,
+      last_run_id UUID,
+      run_count INTEGER DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS graphql_scans (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      config JSONB NOT NULL,
+      status VARCHAR(50) NOT NULL DEFAULT 'introspecting',
+      started_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      completed_at TIMESTAMP WITH TIME ZONE,
+      schema JSONB,
+      operations_tested JSONB DEFAULT '[]',
+      findings JSONB DEFAULT '[]',
+      summary JSONB NOT NULL,
+      progress JSONB,
+      error TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
     -- Create indexes for performance
     CREATE INDEX IF NOT EXISTS idx_users_organization ON users(organization_id);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -854,6 +954,20 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_pr_dependency_scans_status ON pr_dependency_scans(status);
     CREATE INDEX IF NOT EXISTS idx_user_github_tokens_user ON user_github_tokens(user_id);
     CREATE INDEX IF NOT EXISTS idx_user_github_tokens_organization ON user_github_tokens(organization_id);
+
+    -- DAST indexes (Feature #2088)
+    CREATE INDEX IF NOT EXISTS idx_dast_scans_project ON dast_scans(project_id);
+    CREATE INDEX IF NOT EXISTS idx_dast_scans_status ON dast_scans(status);
+    CREATE INDEX IF NOT EXISTS idx_dast_scans_started ON dast_scans(started_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_dast_false_positives_project ON dast_false_positives(project_id);
+    CREATE INDEX IF NOT EXISTS idx_dast_false_positives_plugin ON dast_false_positives(plugin_id);
+    CREATE INDEX IF NOT EXISTS idx_openapi_specs_project ON openapi_specs(project_id);
+    CREATE INDEX IF NOT EXISTS idx_dast_schedules_project ON dast_schedules(project_id);
+    CREATE INDEX IF NOT EXISTS idx_dast_schedules_organization ON dast_schedules(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_dast_schedules_enabled ON dast_schedules(enabled);
+    CREATE INDEX IF NOT EXISTS idx_dast_schedules_next_run ON dast_schedules(next_run_at);
+    CREATE INDEX IF NOT EXISTS idx_graphql_scans_status ON graphql_scans(status);
+    CREATE INDEX IF NOT EXISTS idx_graphql_scans_started ON graphql_scans(started_at DESC);
   `;
 
   try {
