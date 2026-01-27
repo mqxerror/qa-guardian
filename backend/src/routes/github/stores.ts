@@ -3,6 +3,9 @@
  *
  * In-memory data stores for GitHub integration data.
  * Extracted from github.ts (Feature #1375)
+ *
+ * Updated for Feature #2087: PostgreSQL migration
+ * Now uses repository functions with in-memory fallback
  */
 
 import {
@@ -15,16 +18,45 @@ import {
   DemoPullRequest,
 } from './types';
 
-// In-memory stores
-export const githubConnections: Map<string, GitHubConnection> = new Map(); // projectId -> connection
-export const prStatusChecks: Map<string, PRStatusCheck[]> = new Map(); // projectId -> status checks
-export const prComments: Map<string, PRComment[]> = new Map(); // projectId -> PR comments
-export const prDependencyScans: Map<string, PRDependencyScanResult[]> = new Map(); // projectId -> dependency scan results
+// Import repository functions
+import * as githubRepo from '../../services/repositories/github';
 
-// Simulated GitHub OAuth tokens (in production, use encrypted storage)
-export const userGithubTokens: Map<string, string> = new Map(); // userId -> token
+// Re-export repository functions for database access
+export const createGithubConnection = githubRepo.createGithubConnection;
+export const getGithubConnection = githubRepo.getGithubConnection;
+export const getGithubConnectionByRepo = githubRepo.getGithubConnectionByRepo;
+export const updateGithubConnection = githubRepo.updateGithubConnection;
+export const deleteGithubConnection = githubRepo.deleteGithubConnection;
+export const listGithubConnections = githubRepo.listGithubConnections;
 
-// Simulated open PRs for demo repos
+export const addPRStatusCheck = githubRepo.addPRStatusCheck;
+export const updatePRStatusCheck = githubRepo.updatePRStatusCheck;
+export const getPRStatusChecks = githubRepo.getPRStatusChecks;
+export const getPRStatusChecksByPR = githubRepo.getPRStatusChecksByPR;
+export const getPRStatusCheckBySha = githubRepo.getPRStatusCheckBySha;
+
+export const addPRComment = githubRepo.addPRComment;
+export const getPRComments = githubRepo.getPRComments;
+export const getPRCommentsByPR = githubRepo.getPRCommentsByPR;
+
+export const addPRDependencyScan = githubRepo.addPRDependencyScan;
+export const updatePRDependencyScan = githubRepo.updatePRDependencyScan;
+export const getPRDependencyScans = githubRepo.getPRDependencyScans;
+export const getPRDependencyScansByPR = githubRepo.getPRDependencyScansByPR;
+
+export const setUserGithubToken = githubRepo.setUserGithubToken;
+export const getUserGithubToken = githubRepo.getUserGithubToken;
+export const deleteUserGithubToken = githubRepo.deleteUserGithubToken;
+
+// Backward compatible Map exports (from repository memory stores)
+// These are kept for backward compatibility with existing code that uses Map operations
+export const githubConnections: Map<string, GitHubConnection> = githubRepo.getMemoryGithubConnections();
+export const prStatusChecks: Map<string, PRStatusCheck[]> = githubRepo.getMemoryPRStatusChecks();
+export const prComments: Map<string, PRComment[]> = githubRepo.getMemoryPRComments();
+export const prDependencyScans: Map<string, PRDependencyScanResult[]> = githubRepo.getMemoryPRDependencyScans();
+export const userGithubTokens: Map<string, string> = githubRepo.getMemoryUserGithubTokens();
+
+// Simulated open PRs for demo repos (static data, kept in-memory)
 export const demoPullRequests: Record<string, DemoPullRequest[]> = {
   'my-org/frontend-app': [
     { number: 123, title: 'Add user profile page', head_sha: 'abc123def', branch: 'feature/user-profile' },
@@ -40,7 +72,7 @@ export const demoPullRequests: Record<string, DemoPullRequest[]> = {
   ],
 };
 
-// Simulated list of repositories for demo purposes
+// Simulated list of repositories for demo purposes (static data, kept in-memory)
 export const demoRepositories: DemoRepository[] = [
   { owner: 'my-org', name: 'frontend-app', full_name: 'my-org/frontend-app', default_branch: 'main', private: false, branches: ['main', 'develop', 'feature/auth', 'release/v2'] },
   { owner: 'my-org', name: 'backend-api', full_name: 'my-org/backend-api', default_branch: 'main', private: false, branches: ['main', 'develop', 'staging'] },

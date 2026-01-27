@@ -668,6 +668,110 @@ async function initializeSchema(): Promise<void> {
       last_status VARCHAR(20)
     );
 
+    -- GitHub Integration tables (Feature #2087)
+    CREATE TABLE IF NOT EXISTS github_connections (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      installation_id VARCHAR(255),
+      access_token TEXT,
+      refresh_token TEXT,
+      token_expires_at TIMESTAMP WITH TIME ZONE,
+      scope VARCHAR(255),
+      owner VARCHAR(255) NOT NULL,
+      repo VARCHAR(255) NOT NULL,
+      default_branch VARCHAR(100) DEFAULT 'main',
+      webhook_secret TEXT,
+      webhook_url TEXT,
+      enabled BOOLEAN DEFAULT TRUE,
+      last_sync_at TIMESTAMP WITH TIME ZONE,
+      sync_status VARCHAR(50) DEFAULT 'pending',
+      sync_error TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      created_by VARCHAR(255),
+      UNIQUE(organization_id, owner, repo)
+    );
+
+    CREATE TABLE IF NOT EXISTS pr_status_checks (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      connection_id UUID NOT NULL REFERENCES github_connections(id) ON DELETE CASCADE,
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      pr_number INTEGER NOT NULL,
+      pr_title TEXT,
+      pr_url TEXT,
+      head_sha VARCHAR(40) NOT NULL,
+      base_branch VARCHAR(255),
+      head_branch VARCHAR(255),
+      status VARCHAR(50) NOT NULL DEFAULT 'pending',
+      conclusion VARCHAR(50),
+      check_run_id VARCHAR(255),
+      details_url TEXT,
+      test_run_id UUID,
+      tests_total INTEGER DEFAULT 0,
+      tests_passed INTEGER DEFAULT 0,
+      tests_failed INTEGER DEFAULT 0,
+      tests_skipped INTEGER DEFAULT 0,
+      started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      completed_at TIMESTAMP WITH TIME ZONE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS pr_comments (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      connection_id UUID NOT NULL REFERENCES github_connections(id) ON DELETE CASCADE,
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      pr_number INTEGER NOT NULL,
+      comment_id VARCHAR(255),
+      comment_type VARCHAR(50) NOT NULL DEFAULT 'general',
+      body TEXT NOT NULL,
+      path TEXT,
+      line INTEGER,
+      side VARCHAR(10),
+      commit_id VARCHAR(40),
+      in_reply_to_id VARCHAR(255),
+      posted_at TIMESTAMP WITH TIME ZONE,
+      posted_by VARCHAR(255),
+      is_bot BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS pr_dependency_scans (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      connection_id UUID NOT NULL REFERENCES github_connections(id) ON DELETE CASCADE,
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      pr_number INTEGER NOT NULL,
+      head_sha VARCHAR(40) NOT NULL,
+      status VARCHAR(50) NOT NULL DEFAULT 'pending',
+      vulnerabilities_found INTEGER DEFAULT 0,
+      critical_count INTEGER DEFAULT 0,
+      high_count INTEGER DEFAULT 0,
+      medium_count INTEGER DEFAULT 0,
+      low_count INTEGER DEFAULT 0,
+      vulnerabilities JSONB DEFAULT '[]',
+      scan_started_at TIMESTAMP WITH TIME ZONE,
+      scan_completed_at TIMESTAMP WITH TIME ZONE,
+      scan_error TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS user_github_tokens (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT,
+      token_expires_at TIMESTAMP WITH TIME ZONE,
+      scope VARCHAR(255),
+      github_username VARCHAR(255),
+      github_user_id VARCHAR(255),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(user_id, organization_id)
+    );
+
     -- Create indexes for performance
     CREATE INDEX IF NOT EXISTS idx_users_organization ON users(organization_id);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -731,6 +835,25 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_status_pages_organization ON status_pages(organization_id);
     CREATE INDEX IF NOT EXISTS idx_status_pages_slug ON status_pages(slug);
     CREATE INDEX IF NOT EXISTS idx_deleted_check_history_org ON deleted_check_history(organization_id);
+
+    -- GitHub Integration indexes (Feature #2087)
+    CREATE INDEX IF NOT EXISTS idx_github_connections_organization ON github_connections(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_github_connections_repo ON github_connections(owner, repo);
+    CREATE INDEX IF NOT EXISTS idx_github_connections_enabled ON github_connections(enabled);
+    CREATE INDEX IF NOT EXISTS idx_pr_status_checks_connection ON pr_status_checks(connection_id);
+    CREATE INDEX IF NOT EXISTS idx_pr_status_checks_organization ON pr_status_checks(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_pr_status_checks_pr ON pr_status_checks(connection_id, pr_number);
+    CREATE INDEX IF NOT EXISTS idx_pr_status_checks_sha ON pr_status_checks(head_sha);
+    CREATE INDEX IF NOT EXISTS idx_pr_status_checks_status ON pr_status_checks(status);
+    CREATE INDEX IF NOT EXISTS idx_pr_comments_connection ON pr_comments(connection_id);
+    CREATE INDEX IF NOT EXISTS idx_pr_comments_organization ON pr_comments(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_pr_comments_pr ON pr_comments(connection_id, pr_number);
+    CREATE INDEX IF NOT EXISTS idx_pr_dependency_scans_connection ON pr_dependency_scans(connection_id);
+    CREATE INDEX IF NOT EXISTS idx_pr_dependency_scans_organization ON pr_dependency_scans(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_pr_dependency_scans_pr ON pr_dependency_scans(connection_id, pr_number);
+    CREATE INDEX IF NOT EXISTS idx_pr_dependency_scans_status ON pr_dependency_scans(status);
+    CREATE INDEX IF NOT EXISTS idx_user_github_tokens_user ON user_github_tokens(user_id);
+    CREATE INDEX IF NOT EXISTS idx_user_github_tokens_organization ON user_github_tokens(organization_id);
   `;
 
   try {
