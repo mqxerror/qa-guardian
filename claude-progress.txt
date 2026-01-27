@@ -27802,3 +27802,45 @@ Application is stable at 100% feature completion. All core functionality verifie
 - Professional, polished appearance
 
 No new features to implement. Application is production-ready.
+
+
+=== Session 2026-01-27 (Bug Fix Session #146) ===
+Progress: 1818/1820 (99.9%)
+
+### Feature #2075: Fix Visual Test Form Duplicate Fields in CustomTestWizard - PASSED ✅
+
+**Category:** UI Bug
+
+**Problem:**
+The Visual Regression test configuration form in the Custom Test Wizard displayed duplicate fields (Test Name, Target URL, Description) when creating a visual test. This occurred because:
+1. ManualSetupStep.tsx rendered common fields (lines 401-439) for ALL test types
+2. VisualConfig component also rendered name/URL/description fields (lines 299-337)
+3. Users saw each field twice, causing confusion and breaking the form UX
+
+**Solution Applied:**
+Modified ManualSetupStep.tsx to skip rendering common fields when testType === 'visual':
+1. Wrapped Test Name, Target URL, and Description fields in conditional: `{formState.testType \!== 'visual' && (...)}`
+2. Wrapped Advanced Settings section in same conditional since VisualConfig has its own
+3. This allows VisualConfig to handle all visual test fields without duplication
+
+**Verification:**
+- ✅ Visual test form now shows only ONE set of fields (from VisualConfig)
+- ✅ Only ONE Advanced Settings button visible for visual tests
+- ✅ E2E and other test types still show all fields correctly
+- ✅ Form submission works (Continue button enables when fields are valid)
+- ✅ Zero JavaScript errors in console
+
+**Screenshots Captured:**
+- bug-duplicate-fields-visual-test.png - Before fix (showing duplicates)
+- bug-duplicate-fields-scrolled2.png - Before fix (showing both sets of fields)
+- fix-verified-visual-test-no-duplicates.png - After fix (clean form)
+- fix-verified-visual-test-bottom.png - After fix (only one Advanced Settings)
+- fix-verified-e2e-test-with-all-fields.png - E2E still works correctly
+
+**Commit:** 968d323
+
+**Stats:**
+- Passing: 1818
+- Total: 1820
+- Percentage: 99.9%
+
