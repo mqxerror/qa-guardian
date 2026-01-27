@@ -66,7 +66,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { reportId } = request.params;
-    const report = getReport(reportId);
+    const report = await getReport(reportId);
 
     if (!report) {
       return reply.status(404).send({
@@ -91,7 +91,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { project_id } = request.query;
-    const reports = listReports(project_id);
+    const reports = await listReports(project_id);
 
     return reply.send({
       reports,
@@ -112,7 +112,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { reportId } = request.params;
-    const deleted = deleteReport(reportId);
+    const deleted = await deleteReport(reportId);
 
     if (!deleted) {
       return reply.status(404).send({

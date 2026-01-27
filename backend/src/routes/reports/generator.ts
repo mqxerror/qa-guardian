@@ -387,7 +387,7 @@ export async function generateReport(
   };
 
   // Store the report
-  storeReport(report);
+  await storeReport(report);
 
   return report;
 }

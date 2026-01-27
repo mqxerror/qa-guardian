@@ -1107,6 +1107,31 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_ai_generated_tests_created ON ai_generated_tests(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_ai_generated_tests_version_chain ON ai_generated_tests(user_id, LOWER(TRIM(description)));
     CREATE INDEX IF NOT EXISTS idx_ai_generated_tests_parent ON ai_generated_tests(parent_version_id);
+
+    -- Reports table (Feature #2091)
+    CREATE TABLE IF NOT EXISTS reports (
+      id VARCHAR(100) PRIMARY KEY,
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+      project_name VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      created_by VARCHAR(255) NOT NULL,
+      title VARCHAR(500) NOT NULL,
+      description TEXT,
+      period JSONB NOT NULL DEFAULT '{}',
+      executive_summary JSONB NOT NULL DEFAULT '{}',
+      sections JSONB NOT NULL DEFAULT '{}',
+      generated_by VARCHAR(50) NOT NULL DEFAULT 'api',
+      format VARCHAR(20) NOT NULL DEFAULT 'html',
+      view_url TEXT NOT NULL
+    );
+
+    -- Reports indexes (Feature #2091)
+    CREATE INDEX IF NOT EXISTS idx_reports_organization ON reports(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_reports_project ON reports(project_id);
+    CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_reports_format ON reports(format);
   `;
 
   try {
