@@ -58,6 +58,7 @@ export interface BaselineMetadata {
   sourceRunId?: string; // Run ID from which the baseline was approved
   // Feature #266: Additional baseline metadata
   createdAt?: string; // ISO timestamp when baseline was first created
+  updatedAt?: string; // ISO timestamp when baseline was last updated
   viewport?: {
     width: number;
     height: number;
