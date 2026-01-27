@@ -268,20 +268,28 @@ export interface SelectorOverride {
  * Feature #1065
  */
 export interface HealedSelectorEntry {
+  run_id?: string;
   test_id: string;
   step_id: string;
   original_selector: string;
   healed_selector: string;
-  strategy: string;
-  confidence: number;
+  strategy?: string;
+  healing_strategy?: string;
+  confidence?: number;
+  healing_confidence?: number;
   healed_at: string; // ISO timestamp
-  was_successful: boolean;
+  was_successful?: boolean;
+  // Feature #1067: Acceptance tracking
+  was_accepted?: boolean;
+  accepted_by?: string;
+  accepted_at?: string;
   // Feature #1068: Rejection tracking
   was_rejected?: boolean;
   rejection_reason?: string;
   rejected_by?: string;
   rejected_at?: string;
   suggested_alternative?: string;
+  suggested_selector?: string;
 }
 
 // ============================================================================

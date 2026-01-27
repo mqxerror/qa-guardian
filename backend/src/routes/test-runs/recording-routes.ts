@@ -126,7 +126,7 @@ export async function recordingRoutes(app: FastifyInstance) {
       const session: RecordingSession = {
         id: sessionId,
         organization_id: orgId,
-        user_id: user.userId,
+        user_id: user.id,
         suite_id,
         target_url,
         status: 'recording',

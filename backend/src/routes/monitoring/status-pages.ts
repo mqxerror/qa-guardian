@@ -209,7 +209,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
-      const userId = (request.user as JwtPayload).userId;
+      const userId = (request.user as JwtPayload).id;
       const body = request.body as {
         name: string;
         description?: string;
@@ -303,7 +303,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
-      const userId = (request.user as JwtPayload).userId;
+      const userId = (request.user as JwtPayload).id;
       const { pageId } = request.params as { pageId: string };
       const body = request.body as Partial<StatusPage>;
 
@@ -365,7 +365,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
-      const userId = (request.user as JwtPayload).userId;
+      const userId = (request.user as JwtPayload).id;
       const { pageId } = request.params as { pageId: string };
 
       const statusPage = statusPages.get(pageId);
@@ -480,7 +480,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
-      const userId = (request.user as JwtPayload).userId;
+      const userId = (request.user as JwtPayload).id;
       const { pageId } = request.params as { pageId: string };
       const body = request.body as {
         title: string;
@@ -583,7 +583,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
-      const userId = (request.user as JwtPayload).userId;
+      const userId = (request.user as JwtPayload).id;
       const { pageId, incidentId } = request.params as { pageId: string; incidentId: string };
       const body = request.body as {
         status: 'investigating' | 'identified' | 'monitoring' | 'resolved';
@@ -660,7 +660,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
-      const userId = (request.user as JwtPayload).userId;
+      const userId = (request.user as JwtPayload).id;
       const { pageId, incidentId } = request.params as { pageId: string; incidentId: string };
 
       const statusPage = statusPages.get(pageId);

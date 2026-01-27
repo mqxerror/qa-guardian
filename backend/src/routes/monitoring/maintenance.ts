@@ -84,7 +84,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const { name, start_time, end_time, reason } = request.body;
       const orgId = getOrganizationId(request);
-      const userId = (request.user as JwtPayload | ApiKeyPayload).userId || 'api-key';
+      const userId = (request.user as JwtPayload | ApiKeyPayload).id || 'api-key';
       const check = uptimeChecks.get(checkId);
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({ error: 'Not Found', message: 'Uptime check not found' });
@@ -209,7 +209,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const { name, start_time, end_time, reason, check_ids, all_checks, tags } = request.body;
       const orgId = getOrganizationId(request);
-      const userId = (request.user as JwtPayload | ApiKeyPayload).userId || 'api-key';
+      const userId = (request.user as JwtPayload | ApiKeyPayload).id || 'api-key';
 
       // Validate required fields
       if (!name || !start_time || !end_time) {

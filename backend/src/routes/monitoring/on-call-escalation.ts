@@ -59,7 +59,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
-      const userId = (request.user as JwtPayload).userId;
+      const userId = (request.user as JwtPayload).id;
       const body = request.body as {
         name: string;
         description?: string;
@@ -152,7 +152,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
-      const userId = (request.user as JwtPayload).userId;
+      const userId = (request.user as JwtPayload).id;
       const { scheduleId } = request.params as { scheduleId: string };
       const body = request.body as Partial<{
         name: string;
@@ -227,7 +227,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
-      const userId = (request.user as JwtPayload).userId;
+      const userId = (request.user as JwtPayload).id;
       const { scheduleId } = request.params as { scheduleId: string };
 
       const schedule = onCallSchedules.get(scheduleId);
@@ -283,7 +283,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
-      const userId = (request.user as JwtPayload).userId;
+      const userId = (request.user as JwtPayload).id;
       const { scheduleId } = request.params as { scheduleId: string };
 
       const schedule = onCallSchedules.get(scheduleId);
@@ -420,7 +420,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
         repeat_interval_minutes: repeat_interval_minutes || 30,
         is_default: is_default || false,
         is_active: true,
-        created_by: 'userId' in user ? user.userId : (user as ApiKeyPayload).user_id,
+        created_by: user.id,
         created_at: new Date(),
         updated_at: new Date(),
       };
@@ -540,7 +540,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
       escalationPolicies.set(policyId, policy);
 
       // Log audit entry
-      const userId = 'userId' in user ? user.userId : (user as ApiKeyPayload).user_id;
+      const userId = user.id;
       await logAuditEntry(
         request,
         orgId,
@@ -569,7 +569,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
-      const userId = (request.user as JwtPayload).userId;
+      const userId = (request.user as JwtPayload).id;
       const { policyId } = request.params as { policyId: string };
 
       const policy = escalationPolicies.get(policyId);

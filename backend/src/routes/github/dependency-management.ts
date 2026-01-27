@@ -220,7 +220,7 @@ export async function dependencyManagementRoutes(app: FastifyInstance): Promise<
         severity_override: severity_override as DependencyListEntry['severity_override'],
         expires_at: expires_at ? new Date(expires_at) : undefined,
         created_at: new Date(),
-        created_by: user.email || user.user_id,
+        created_by: user.email || user.id,
         updated_at: new Date(),
       };
 
@@ -266,7 +266,7 @@ export async function dependencyManagementRoutes(app: FastifyInstance): Promise<
         reason,
         expires_at: expires_at ? new Date(expires_at) : undefined,
         created_at: new Date(),
-        created_by: user.email || user.user_id,
+        created_by: user.email || user.id,
         updated_at: new Date(),
       };
 

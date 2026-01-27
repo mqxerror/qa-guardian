@@ -159,7 +159,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     step.selector = new_selector;
     step.manual_override = true;
     step.manual_override_at = new Date().toISOString();
-    step.manual_override_by = user.userId;
+    step.manual_override_by = user.id;
 
     // Store the override for future reference
     const overrideKey = `${testId}-${stepId}`;
@@ -168,7 +168,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
       step_id: stepId,
       original_selector: originalSelector,
       new_selector,
-      override_by: user.userId,
+      override_by: user.id,
       override_by_email: user.email,
       override_at: new Date().toISOString(),
       notes,
@@ -201,7 +201,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
       new_selector,
       manual_override: true,
       manual_override_at: step.manual_override_at,
-      manual_override_by: user.userId,
+      manual_override_by: user.id,
       test_definition_updated: testUpdated,
       message: `Selector successfully updated${testUpdated ? ' and applied to test definition' : ''}`,
     };
@@ -255,7 +255,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     if (historyEntry) {
       historyEntry.was_accepted = true;
       historyEntry.accepted_at = new Date().toISOString();
-      historyEntry.accepted_by = user.userId;
+      historyEntry.accepted_by = user.id;
     }
 
     // If apply_to_test is true, update the test definition with the healed selector
@@ -285,7 +285,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
       healing_confidence: step.healing_confidence,
       accepted: true,
       accepted_at: historyEntry?.accepted_at || new Date().toISOString(),
-      accepted_by: user.userId,
+      accepted_by: user.id,
       test_definition_updated: testUpdated,
       message: `Healed selector accepted${testUpdated ? ' and applied to test definition' : ''}`,
     };
@@ -339,7 +339,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     if (historyEntry) {
       historyEntry.was_rejected = true;
       historyEntry.rejected_at = new Date().toISOString();
-      historyEntry.rejected_by = user.userId;
+      historyEntry.rejected_by = user.id;
       historyEntry.rejection_reason = reason;
       historyEntry.suggested_selector = suggest_selector;
     } else {
@@ -356,7 +356,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
         was_accepted: false,
         was_rejected: true,
         rejected_at: new Date().toISOString(),
-        rejected_by: user.userId,
+        rejected_by: user.id,
         rejection_reason: reason,
         suggested_selector: suggest_selector,
       });
@@ -384,7 +384,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
       healing_confidence: step.healing_confidence,
       rejected: true,
       rejected_at: new Date().toISOString(),
-      rejected_by: user.userId,
+      rejected_by: user.id,
       rejection_reason: reason,
       suggested_selector: suggest_selector,
       needs_manual_attention: true,

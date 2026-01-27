@@ -751,7 +751,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     alert.status = status;
 
     if (status === 'acknowledged') {
-      alert.acknowledged_by = user.email || user.user_id;
+      alert.acknowledged_by = user.email || user.id;
       alert.acknowledged_at = new Date();
     } else if (status === 'dismissed' && dismissed_reason) {
       alert.dismissed_reason = dismissed_reason;
@@ -845,9 +845,9 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
         notify_on_violation: body.notify_on_violation ?? true,
         notify_channels: body.notify_channels || ['in_app'],
         created_at: new Date(),
-        created_by: user.email || user.user_id,
+        created_by: user.email || user.id,
         updated_at: new Date(),
-        updated_by: user.email || user.user_id,
+        updated_by: user.email || user.id,
       };
 
       const orgPolicies = dependencyPolicies.get(orgId) || [];
@@ -915,7 +915,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       if (updates.notify_channels !== undefined) policy.notify_channels = updates.notify_channels;
 
       policy.updated_at = new Date();
-      policy.updated_by = user.email || user.user_id;
+      policy.updated_by = user.email || user.id;
 
       orgPolicies[policyIndex] = policy;
       dependencyPolicies.set(orgId, orgPolicies);
@@ -1189,7 +1189,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       }
 
       violation.status = 'overridden';
-      violation.overridden_by = user.email || user.user_id;
+      violation.overridden_by = user.email || user.id;
       violation.overridden_at = new Date();
       violation.override_reason = reason;
 
