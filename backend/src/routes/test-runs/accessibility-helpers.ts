@@ -276,14 +276,16 @@ export function generateSimulatedViolations(
   // Add random axe-core violations
   for (let i = 0; i < baseCount; i++) {
     const violationType = AXE_VIOLATION_TYPES[Math.floor(Math.random() * AXE_VIOLATION_TYPES.length)];
+    if (!violationType) continue;
     // Skip if violation is best-practice and not included
-    if (violationType.wcagTags.includes('best-practice') && !config.includeBestPractices) continue;
+    if (violationType.wcagTags?.includes('best-practice') && !config.includeBestPractices) continue;
     // Skip if already added
     if (violations.find(v => v.id === violationType.id)) continue;
 
     violations.push({
       ...violationType,
-      helpUrl: `https://dequeuniversity.com/rules/axe/4.4/${violationType.id}`,
+      id: violationType.id ?? 'unknown',
+      helpUrl: `https://dequeuniversity.com/rules/axe/4.4/${violationType.id ?? 'unknown'}`,
       nodes: [
         {
           html: `<div class="example-element">Example element</div>`,
@@ -299,10 +301,12 @@ export function generateSimulatedViolations(
     const pa11yViolationCount = Math.floor(Math.random() * 3);
     for (let i = 0; i < pa11yViolationCount; i++) {
       const violationType = PA11Y_VIOLATION_TYPES[Math.floor(Math.random() * PA11Y_VIOLATION_TYPES.length)];
+      if (!violationType) continue;
       if (violations.find(v => v.id === violationType.id)) continue;
 
       violations.push({
         ...violationType,
+        id: violationType.id ?? 'unknown',
         helpUrl: `https://squizlabs.github.io/HTML_CodeSniffer/Standards/WCAG2/`,
         nodes: [
           {
@@ -320,6 +324,7 @@ export function generateSimulatedViolations(
     for (const shadowRoot of config.shadowDomInfo.openShadowRoots) {
       if (Math.random() > 0.5) {
         const violationType = SHADOW_DOM_VIOLATION_TYPES[Math.floor(Math.random() * SHADOW_DOM_VIOLATION_TYPES.length)];
+        if (!violationType) continue;
         const existingViolation = violations.find(v => v.id === violationType.id);
 
         if (existingViolation) {
@@ -332,7 +337,7 @@ export function generateSimulatedViolations(
         } else {
           violations.push({
             ...violationType,
-            helpUrl: `https://dequeuniversity.com/rules/axe/4.4/${violationType.id.replace('shadow-dom-', '')}`,
+            helpUrl: `https://dequeuniversity.com/rules/axe/4.4/${(violationType.id ?? 'unknown').replace('shadow-dom-', '')}`,
             nodes: [
               {
                 html: `<div class="shadow-element">Shadow DOM content</div>`,
@@ -354,12 +359,15 @@ export function generateSimulatedViolations(
     const iframeViolationCount = Math.floor(Math.random() * 2);
     for (let i = 0; i < iframeViolationCount; i++) {
       const violationType = IFRAME_VIOLATION_TYPES[Math.floor(Math.random() * IFRAME_VIOLATION_TYPES.length)];
+      if (!violationType) continue;
       if (violations.find(v => v.id === violationType.id)) continue;
 
       const iframe = config.iframeInfo.crossOriginIframes[Math.floor(Math.random() * config.iframeInfo.crossOriginIframes.length)];
+      if (!iframe) continue;
       violations.push({
         ...violationType,
-        helpUrl: `https://dequeuniversity.com/rules/axe/4.4/${violationType.id}`,
+        id: violationType.id ?? 'unknown',
+        helpUrl: `https://dequeuniversity.com/rules/axe/4.4/${violationType.id ?? 'unknown'}`,
         nodes: [
           {
             html: `<iframe src="${iframe.src}" title="${iframe.title || 'Untitled'}"></iframe>`,
