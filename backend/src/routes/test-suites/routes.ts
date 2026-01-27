@@ -245,7 +245,8 @@ export async function coreRoutes(app: FastifyInstance) {
       const lastRun = testRunsForTest[0];
 
       // Calculate last result from the most recent run
-      let lastResult: 'passed' | 'failed' | 'error' | 'running' | null = null;
+      // Feature #2051: Expand type to include all TestRunStatus values
+      let lastResult: 'pending' | 'running' | 'paused' | 'passed' | 'failed' | 'warning' | 'error' | 'cancelled' | 'cancelling' | null = null;
       if (lastRun) {
         lastResult = lastRun.status;
       }
@@ -421,9 +422,9 @@ export async function coreRoutes(app: FastifyInstance) {
     let finalSteps = steps;
     if (test_type === 'e2e' && (!steps || steps.length === 0) && target_url) {
       finalSteps = [
-        { action: 'navigate', value: target_url },
-        { action: 'wait', value: '2000' },  // Wait 2 seconds for page to load
-        { action: 'screenshot', value: 'initial_page' }
+        { id: '1', action: 'navigate', value: target_url, order: 0 },
+        { id: '2', action: 'wait', value: '2000', order: 1 },  // Wait 2 seconds for page to load
+        { id: '3', action: 'screenshot', value: 'initial_page', order: 2 }
       ];
     }
 

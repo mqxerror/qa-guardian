@@ -553,8 +553,11 @@ export class AITestGenerationService {
     );
 
     // Add healing-specific context to the result
+    const result = analysisResult && typeof analysisResult === 'object' && !Array.isArray(analysisResult)
+      ? analysisResult as Record<string, unknown>
+      : {};
     return {
-      ...analysisResult,
+      ...result,
       healing_context: {
         original_selector: request.original_selector,
         selector_type: request.selector_type,

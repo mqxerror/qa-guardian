@@ -15,12 +15,16 @@ function parseCronField(field: string, min: number, max: number): number[] {
     if (segment === '*') {
       for (let i = min; i <= max; i++) values.push(i);
     } else if (segment.includes('/')) {
-      const [base, step] = segment.split('/');
+      const parts = segment.split('/');
+      const base = parts[0] ?? '*';
+      const step = parts[1] ?? '1';
       const stepNum = parseInt(step, 10);
       const start = base === '*' ? min : parseInt(base, 10);
       for (let i = start; i <= max; i += stepNum) values.push(i);
     } else if (segment.includes('-')) {
-      const [start, end] = segment.split('-').map(n => parseInt(n, 10));
+      const rangeParts = segment.split('-').map(n => parseInt(n, 10));
+      const start = rangeParts[0] ?? min;
+      const end = rangeParts[1] ?? max;
       for (let i = start; i <= end; i++) values.push(i);
     } else {
       values.push(parseInt(segment, 10));
@@ -39,7 +43,11 @@ function parseCronField(field: string, min: number, max: number): number[] {
 export function calculateNextCronRun(cron: string, _timezone: string): Date {
   const now = new Date();
   const parts = cron.split(/\s+/);
-  const [minutePart, hourPart, dayPart, monthPart, weekdayPart] = parts;
+  const minutePart = parts[0] ?? '*';
+  const hourPart = parts[1] ?? '*';
+  const dayPart = parts[2] ?? '*';
+  const monthPart = parts[3] ?? '*';
+  const weekdayPart = parts[4] ?? '*';
 
   const minutes = parseCronField(minutePart, 0, 59);
   const hours = parseCronField(hourPart, 0, 23);

@@ -106,7 +106,12 @@ export function parseApiVersion(
  * @returns The version info object
  */
 export function getVersionInfo(version: string): APIVersionInfo {
-  return API_VERSIONS[version] || API_VERSIONS[DEFAULT_API_VERSION];
+  return API_VERSIONS[version] ?? API_VERSIONS[DEFAULT_API_VERSION] ?? {
+    version: DEFAULT_API_VERSION,
+    status: 'stable' as const,
+    released: new Date().toISOString().split('T')[0]!,
+    features: []
+  };
 }
 
 /**

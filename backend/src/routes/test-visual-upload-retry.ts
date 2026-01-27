@@ -8,7 +8,7 @@
  * - Manual retry option is available if all retries fail
  */
 
-import fetch from 'node-fetch';
+// Use native fetch (Node 18+) instead of node-fetch to avoid type declaration issues
 
 const API_URL = 'http://localhost:3001';
 
