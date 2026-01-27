@@ -3,6 +3,9 @@ import crypto from 'crypto';
 import { tokenBlacklist } from '../routes/auth';
 import { apiKeys } from '../routes/api-keys';
 
+// Internal service token for service-to-service communication (MCP -> Backend)
+const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
+
 export interface JwtPayload {
   id: string;
   email: string;
@@ -15,6 +18,29 @@ export interface ApiKeyPayload {
   organization_id: string;
   scopes: string[];
   type: 'api_key';
+}
+
+export interface InternalServicePayload {
+  id: string;
+  organization_id: string;
+  scopes: string[];
+  type: 'internal_service';
+}
+
+// Helper to validate internal service token
+function validateInternalServiceToken(token: string): InternalServicePayload | null {
+  if (!INTERNAL_SERVICE_TOKEN) {
+    return null;
+  }
+  if (token === INTERNAL_SERVICE_TOKEN) {
+    return {
+      id: 'internal-service',
+      organization_id: 'system',
+      scopes: ['admin', 'mcp', 'read', 'write', 'execute'],
+      type: 'internal_service',
+    };
+  }
+  return null;
 }
 
 // Helper to validate API key
@@ -48,6 +74,18 @@ function validateApiKey(apiKey: string): ApiKeyPayload | null {
 export async function authenticate(request: FastifyRequest, reply: FastifyReply) {
   const authHeader = request.headers.authorization;
   const apiKeyHeader = request.headers['x-api-key'] as string | undefined;
+  const internalServiceHeader = request.headers['x-internal-service-token'] as string | undefined;
+
+  // Check internal service token first (for MCP -> Backend calls)
+  if (internalServiceHeader) {
+    const internalPayload = validateInternalServiceToken(internalServiceHeader);
+    if (internalPayload) {
+      // @ts-ignore - extending user for internal service
+      request.user = internalPayload;
+      return;
+    }
+    // Don't reveal that internal service auth failed - fall through to normal auth
+  }
 
   // Try API key authentication first
   if (apiKeyHeader) {
@@ -88,7 +126,12 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
 // Middleware factory for role-based access control
 export function requireRoles(allowedRoles: JwtPayload['role'][]) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    const user = request.user as JwtPayload | ApiKeyPayload;
+    const user = request.user as JwtPayload | ApiKeyPayload | InternalServicePayload;
+
+    // Internal service has admin access to everything
+    if ('type' in user && user.type === 'internal_service') {
+      return;
+    }
 
     // API keys don't have roles, they use scopes
     if ('type' in user && user.type === 'api_key') {
@@ -114,7 +157,12 @@ export function requireRoles(allowedRoles: JwtPayload['role'][]) {
 // Middleware factory for API key scope-based access control
 export function requireScopes(requiredScopes: string[]) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    const user = request.user as JwtPayload | ApiKeyPayload;
+    const user = request.user as JwtPayload | ApiKeyPayload | InternalServicePayload;
+
+    // Internal service has full admin access
+    if ('type' in user && user.type === 'internal_service') {
+      return;
+    }
 
     // JWT users (regular session) can do anything their role allows
     if (!('type' in user) || user.type !== 'api_key') {

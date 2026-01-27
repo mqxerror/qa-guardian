@@ -3210,7 +3210,11 @@ class MCPServer {
       'Content-Type': 'application/json',
     };
 
-    if (this.config.apiKey) {
+    // Check for internal service token first (for container-to-container communication)
+    const internalServiceToken = process.env.INTERNAL_SERVICE_TOKEN;
+    if (internalServiceToken) {
+      headers['X-Internal-Service-Token'] = internalServiceToken;
+    } else if (this.config.apiKey) {
       // Check if apiKey looks like a JWT (starts with 'eyJ') - if so, use Bearer auth
       if (this.config.apiKey.startsWith('eyJ')) {
         headers['Authorization'] = `Bearer ${this.config.apiKey}`;
