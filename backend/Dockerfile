@@ -1,85 +1,63 @@
 # QA Guardian Backend - Production Dockerfile
-# Multi-stage build for optimized production image
+# Uses tsx for direct TypeScript execution (skips build step)
 
-# ==============================================================================
-# Stage 1: Dependencies
-# ==============================================================================
-FROM node:20-alpine AS deps
+FROM node:20-slim
+
+# Install system dependencies for Playwright and runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    ca-certificates \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgbm1 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    xdg-utils \
+    curl \
+    dumb-init \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
-# Install build dependencies for native modules (bcrypt, etc.)
-RUN apk add --no-cache python3 make g++
 
 # Copy package files
 COPY package*.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production
-
-# ==============================================================================
-# Stage 2: Builder
-# ==============================================================================
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-# Copy package files and install all dependencies (including dev)
-COPY package*.json ./
+# Install all dependencies
 RUN npm ci
+
+# Install Playwright browsers
+RUN npx playwright install chromium
 
 # Copy source code
 COPY . .
 
-# Build TypeScript
-RUN npm run build
-
-# ==============================================================================
-# Stage 3: Production Runtime
-# ==============================================================================
-FROM node:20-alpine AS production
-
-# Install security updates and runtime dependencies
-RUN apk update && apk upgrade && apk add --no-cache \
-    dumb-init \
-    curl \
-    && rm -rf /var/cache/apk/*
-
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001 -G nodejs
-
-WORKDIR /app
-
-# Copy production dependencies from deps stage
-COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
-
-# Copy built application from builder stage
-COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
-
-# Copy migrations and startup scripts
-COPY --chown=nodejs:nodejs migrations ./migrations
-
 # Create directories for runtime data
-RUN mkdir -p /app/uploads /app/logs /app/data && \
-    chown -R nodejs:nodejs /app
-
-# Switch to non-root user
-USER nodejs
+RUN mkdir -p /app/uploads /app/logs /app/data /app/screenshots /app/traces /app/videos /app/baselines
 
 # Set production environment
 ENV NODE_ENV=production
+ENV PORT=3001
 
 # Expose port
 EXPOSE 3001
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:3001/health || exit 1
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the application
-CMD ["node", "dist/index.js"]
+# Start the application using tsx (no build needed)
+CMD ["npx", "tsx", "src/index.ts"]
