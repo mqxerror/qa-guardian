@@ -4,7 +4,56 @@
 - **Progress: 1809/1809 features passing (100%)**
 - **Last Updated**: 2026-01-27
 - **Current Phase**: Production-ready, all features passing
-- **Recent Progress**: Regression testing session #151 - Verified MCP Chat, incident management, accessibility reporting
+- **Recent Progress**: Regression testing session #152 - Verified AI Service Module, Alert Suppression, MCP Chat Artifacts
+
+=== Session 2026-01-27 (Regression Testing Session #152) ===
+Progress: 1809/1809 (100%) ✅
+
+### System Status
+- Backend server: Running (localhost:3001)
+- Frontend server: Running (Vite on port 5173)
+- All 1809 features passing (100%)
+- Zero JavaScript errors in console
+
+### Regression Features Verified
+
+1. ✅ **Feature #1449 (Create AI Service Module)**
+   - Verified backend/src/services/ai-service.ts exists
+   - Anthropic client initialized with API key from config ✅
+   - sendMessage() method with streaming support (sendMessageStream()) ✅
+   - Rate limiting (RateLimiter class) and retry logic (exponential backoff) ✅
+   - Token counting and cost tracking (trackUsage, estimateTokens, estimateCost) ✅
+   - Singleton instance exported (aiService) ✅
+   - Full provider abstraction for Kie.ai/Anthropic switching ✅
+
+2. ✅ **Feature #198 (Alert suppression on retry success)**
+   - Verified in backend/src/routes/test-runs/alerts.ts
+   - suppress_on_retry_success option in AlertChannel interface (line 28) ✅
+   - passed_on_retry property tracks which tests recovered on retry ✅
+   - Suppression logic: if ALL failures recovered on retry, alert suppressed ✅
+   - If some tests still fail, alert sent with appropriate count ✅
+   - Console logging for suppression events ✅
+
+3. ✅ **Feature #1652 (MCP Chat - Get Test Artifacts Tool Test)**
+   - Navigated to MCP Hub > AI Chat tab
+   - Logged in as admin@example.com
+   - Typed: "Show me test artifacts from the last run"
+   - AI responded via claude-sonnet-4-20250514 (30.5s response time)
+   - Tools executed: list_recent_runs ✅, get_test_artifacts (x2) ✅
+   - Response included artifact details:
+     - Screenshot: 1.3 MB PNG, 1280x720
+     - Video recording: 324 KB WebM
+     - Playwright trace: 3.5 MB zip
+   - AI provided recommendations and quick action links
+   - Screenshot: regression-feature-1652-artifacts.png
+
+### Console Status
+- Zero JavaScript errors
+- Expected React Router future flag warnings (non-blocking)
+
+**Conclusion:** All 1809 features remain passing. Application is stable and production-ready.
+This marks 152 regression testing sessions with consistent 100% pass rate!
+
 
 === Session 2026-01-27 (Regression Testing Session #151) ===
 Progress: 1809/1809 (100%) ✅
