@@ -1,24 +1,21 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../middleware/auth';
 
-// Audit log entry interface
-export interface AuditLogEntry {
-  id: string;
-  organization_id: string;
-  user_id: string;
-  user_email: string;
-  action: string;
-  resource_type: string;
-  resource_id: string;
-  resource_name?: string;
-  details?: Record<string, unknown>;
-  ip_address: string;
-  user_agent: string;
-  created_at: Date;
-}
+// Import repository functions and types (Feature #2093)
+import {
+  AuditLogEntry,
+  getMemoryAuditLogs,
+  createAuditLog,
+  listAuditLogs as listAuditLogsRepo,
+  getUniqueActions,
+  getUniqueResourceTypes,
+} from '../services/repositories/audit-logs';
 
-// In-memory audit log store
-export const auditLogs: Map<string, AuditLogEntry> = new Map();
+// Re-export interface for backward compatibility
+export { AuditLogEntry };
+
+// In-memory audit log store (now backed by repository - Feature #2093)
+export const auditLogs: Map<string, AuditLogEntry> = getMemoryAuditLogs();
 
 // Helper to extract IP address from request
 function getClientIp(request: FastifyRequest): string {
@@ -37,14 +34,14 @@ function getUserAgent(request: FastifyRequest): string {
 }
 
 // Function to log an audit entry - call this from other routes
-export function logAuditEntry(
+export async function logAuditEntry(
   request: FastifyRequest,
   action: string,
   resourceType: string,
   resourceId: string,
   resourceName?: string,
   details?: Record<string, unknown>
-): void {
+): Promise<void> {
   const user = request.user as JwtPayload | ApiKeyPayload;
   const orgId = getOrganizationId(request);
 
@@ -63,7 +60,8 @@ export function logAuditEntry(
     created_at: new Date(),
   };
 
-  auditLogs.set(entry.id, entry);
+  // Store via repository (async)
+  await createAuditLog(entry);
 
   console.log(`[AUDIT] ${entry.user_email} ${action} ${resourceType} ${resourceId} (${resourceName || 'unnamed'}) from ${entry.ip_address}`);
 }
@@ -88,28 +86,16 @@ export async function auditLogRoutes(app: FastifyInstance) {
         });
       }
 
-      // Filter logs for this organization
-      let logs = Array.from(auditLogs.values())
-        .filter(log => log.organization_id === orgId);
-
-      // Apply filters
-      if (action) {
-        logs = logs.filter(log => log.action === action);
-      }
-      if (resource_type) {
-        logs = logs.filter(log => log.resource_type === resource_type);
-      }
-
-      // Sort by created_at descending (newest first)
-      logs.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
-
-      // Get total count before pagination
-      const total = logs.length;
-
-      // Apply pagination
+      // Use repository to list logs with filters and pagination
       const limitNum = parseInt(limit, 10);
       const offsetNum = parseInt(offset, 10);
-      logs = logs.slice(offsetNum, offsetNum + limitNum);
+
+      const { logs, total } = await listAuditLogsRepo(orgId, {
+        action,
+        resourceType: resource_type,
+        limit: limitNum,
+        offset: offsetNum,
+      });
 
       return {
         logs: logs.map(log => ({
@@ -149,14 +135,8 @@ export async function auditLogRoutes(app: FastifyInstance) {
         });
       }
 
-      const actions = new Set<string>();
-      for (const log of auditLogs.values()) {
-        if (log.organization_id === orgId) {
-          actions.add(log.action);
-        }
-      }
-
-      return { actions: Array.from(actions).sort() };
+      const actions = await getUniqueActions(orgId);
+      return { actions };
     }
   );
 
@@ -177,14 +157,8 @@ export async function auditLogRoutes(app: FastifyInstance) {
         });
       }
 
-      const resourceTypes = new Set<string>();
-      for (const log of auditLogs.values()) {
-        if (log.organization_id === orgId) {
-          resourceTypes.add(log.resource_type);
-        }
-      }
-
-      return { resource_types: Array.from(resourceTypes).sort() };
+      const resourceTypes = await getUniqueResourceTypes(orgId);
+      return { resource_types: resourceTypes };
     }
   );
 }
