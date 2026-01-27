@@ -541,10 +541,10 @@ export function extractRegion(
     for (let x = 0; x < regionWidth; x++) {
       const srcIdx = ((startY + y) * imageWidth + (startX + x)) * 4;
       const dstIdx = (y * regionWidth + x) * 4;
-      region[dstIdx] = data[srcIdx];         // R
-      region[dstIdx + 1] = data[srcIdx + 1]; // G
-      region[dstIdx + 2] = data[srcIdx + 2]; // B
-      region[dstIdx + 3] = data[srcIdx + 3]; // A
+      region[dstIdx] = data[srcIdx] ?? 0;         // R
+      region[dstIdx + 1] = data[srcIdx + 1] ?? 0; // G
+      region[dstIdx + 2] = data[srcIdx + 2] ?? 0; // B
+      region[dstIdx + 3] = data[srcIdx + 3] ?? 255; // A (default to opaque)
     }
   }
 
