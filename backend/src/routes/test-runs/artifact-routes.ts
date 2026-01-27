@@ -109,7 +109,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const rangeHeader = request.headers.range;
     if (rangeHeader) {
       const parts = rangeHeader.replace(/bytes=/, '').split('-');
-      const start = parseInt(parts[0], 10);
+      const start = parseInt(parts[0] ?? '0', 10);
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
       const chunkSize = end - start + 1;
       const fileStream = fs.createReadStream(videoPath, { start, end });
@@ -173,7 +173,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const rangeHeader = request.headers.range;
     if (rangeHeader) {
       const rangeParts = rangeHeader.replace(/bytes=/, '').split('-');
-      const start = parseInt(rangeParts[0], 10);
+      const start = parseInt(rangeParts[0] ?? '0', 10);
       const end = rangeParts[1] ? parseInt(rangeParts[1], 10) : fileSize - 1;
       const chunkSize = end - start + 1;
       const fileStream = fs.createReadStream(videoPath, { start, end });
@@ -526,8 +526,9 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
       }
 
       // Add step screenshots if available
-      if (result.step_results && Array.isArray(result.step_results)) {
-        result.step_results.forEach((step: any, index: number) => {
+      const resultAny = result as any;
+      if (resultAny.step_results && Array.isArray(resultAny.step_results)) {
+        resultAny.step_results.forEach((step: any, index: number) => {
           if (step.screenshot || step.screenshot_path || step.screenshot_base64) {
             const stepScreenshot: ScreenshotInfo = {
               id: `${runId}-${result.test_id}-step-${index}`,
@@ -848,12 +849,12 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
         duration_formatted: `${Math.floor(testDuration / 60000)}:${String(Math.floor((testDuration % 60000) / 1000)).padStart(2, '0')}`,
       },
       test_info: {
-        browser: result.browser || run.browser || 'chromium',
-        viewport: result.viewport_width && result.viewport_height
-          ? { width: result.viewport_width, height: result.viewport_height }
+        browser: (result as any).browser || run.browser || 'chromium',
+        viewport: (result as any).viewport_width && (result as any).viewport_height
+          ? { width: (result as any).viewport_width, height: (result as any).viewport_height }
           : null,
-        started_at: result.started_at?.toISOString ? result.started_at.toISOString() : result.started_at,
-        completed_at: result.completed_at?.toISOString ? result.completed_at.toISOString() : result.completed_at,
+        started_at: (result as any).started_at?.toISOString ? (result as any).started_at.toISOString() : (result as any).started_at,
+        completed_at: (result as any).completed_at?.toISOString ? (result as any).completed_at.toISOString() : (result as any).completed_at,
       },
       playback_notes: format === 'mp4'
         ? 'MP4 format requested. If not available, WebM format will be returned.'
@@ -919,12 +920,12 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
         file_exists: traceExists,
       },
       test_info: {
-        browser: result.browser || run.browser || 'chromium',
-        viewport: result.viewport_width && result.viewport_height
-          ? { width: result.viewport_width, height: result.viewport_height }
+        browser: (result as any).browser || run.browser || 'chromium',
+        viewport: (result as any).viewport_width && (result as any).viewport_height
+          ? { width: (result as any).viewport_width, height: (result as any).viewport_height }
           : null,
-        started_at: result.started_at?.toISOString ? result.started_at.toISOString() : result.started_at,
-        completed_at: result.completed_at?.toISOString ? result.completed_at.toISOString() : result.completed_at,
+        started_at: (result as any).started_at?.toISOString ? (result as any).started_at.toISOString() : (result as any).started_at,
+        completed_at: (result as any).completed_at?.toISOString ? (result as any).completed_at.toISOString() : (result as any).completed_at,
         duration_ms: result.duration_ms,
       },
       viewer_instructions: 'To view the trace, download it and open with: npx playwright show-trace <trace.zip>',
