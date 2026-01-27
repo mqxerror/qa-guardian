@@ -40,7 +40,8 @@ export interface WebhookTestRun {
   branch?: string;
   browser_version?: string;
   // Feature #2053: Added 'warning' status for accessibility tests
-  status: 'pending' | 'running' | 'paused' | 'passed' | 'failed' | 'warning' | 'error' | 'cancelled' | 'cancelling';
+  // Added 'visual_approved' and 'visual_rejected' for visual regression workflow
+  status: 'pending' | 'running' | 'paused' | 'passed' | 'failed' | 'warning' | 'error' | 'cancelled' | 'cancelling' | 'visual_approved' | 'visual_rejected';
   started_at?: Date;
   completed_at?: Date;
   duration_ms?: number;
