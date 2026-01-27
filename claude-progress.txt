@@ -28067,3 +28067,95 @@ Screenshot: feature-2082-test-run-passed.png
 Commit: f7628e7
 
 Stats: Feature #2082 marked passing
+
+
+### Feature #2086: Migrate Monitoring Module to PostgreSQL - PASSED
+
+Category: Infrastructure
+
+Objective: Replace 35+ in-memory Map stores in monitoring module with PostgreSQL database calls.
+
+Implementation:
+1. Created comprehensive repository file (backend/src/services/repositories/monitoring.ts, ~1500 lines):
+   - UptimeCheck CRUD operations
+   - CheckResult storage and retrieval
+   - Incident tracking (open/close/acknowledge)
+   - MaintenanceWindow management
+   - TransactionCheck with step results
+   - PerformanceCheck with Lighthouse metrics
+   - WebhookCheck with event tracking
+   - DnsCheck with DNS record results
+   - TcpCheck with connection results
+   - StatusPage management
+   - MonitoringSettings per organization
+   - DeletedCheckHistory for audit trail
+
+2. Updated database.ts with 15+ tables:
+   - uptime_checks, check_results, uptime_check_state
+   - check_incidents, maintenance_windows
+   - transaction_checks, transaction_results
+   - performance_checks, performance_results
+   - webhook_checks, webhook_events
+   - dns_checks, dns_results
+   - tcp_checks, tcp_results
+   - status_pages, monitoring_settings
+   - deleted_check_history
+   - 20+ indexes for performance
+
+3. Updated stores.ts:
+   - Re-exports all repository functions
+   - Maps backed by repository memory stores
+   - checkIntervals stays in-memory (NodeJS.Timeout)
+
+Verification:
+- Created uptime check "Example.com" for https://example.com
+- Check executed successfully: status UP, 495ms response time
+- All monitoring UI features working
+
+Screenshot: feature-2086-uptime-check-created.png
+
+Commit: 58796eb
+
+Stats: Feature #2086 marked passing
+
+
+### Feature #2087: Migrate GitHub Integration Module to PostgreSQL - PASSED
+
+Category: Infrastructure
+
+Objective: Replace in-memory Map stores in github module with PostgreSQL database calls.
+Stores migrated: githubConnections, prStatusChecks, prComments, prDependencyScans, userGithubTokens
+
+Implementation:
+1. Created repository file (backend/src/services/repositories/github.ts, ~600 lines):
+   - GitHub connection CRUD with repo info
+   - PR status check tracking with test run integration
+   - PR comment storage
+   - PR dependency scan results with JSONB vulnerabilities
+   - User GitHub token management
+
+2. Added database schema to database.ts:
+   - github_connections table (OAuth tokens, repo info, sync status)
+   - pr_status_checks table (CI/CD integration)
+   - pr_comments table (PR feedback tracking)
+   - pr_dependency_scans table (vulnerability results)
+   - user_github_tokens table (user OAuth)
+   - 15+ indexes for GitHub queries
+
+3. Updated stores.ts:
+   - Re-exports all repository functions
+   - Backward-compatible Map exports from repository memory stores
+   - Demo data (demoPullRequests, demoRepositories, demoTestFiles) stays static
+
+Verification:
+- Connected GitHub account (github-user)
+- Linked repository my-org/frontend-app
+- Discovered 4 test files (auth.spec.ts, dashboard.spec.ts, profile.spec.ts, checkout.test.ts)
+- PR features (status checks, comments, dependency scanning) all available
+
+Screenshot: feature-2087-github-integration.png
+
+Commit: 65f596c
+
+Stats: Feature #2087 marked passing
+
