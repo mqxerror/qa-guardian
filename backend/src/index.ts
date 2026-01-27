@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import Fastify from 'fastify';
+import { initializeDatabase, isDatabaseConnected, healthCheck as dbHealthCheck, closeDatabase } from './services/database';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import swagger from '@fastify/swagger';
@@ -232,10 +233,14 @@ app.get('/health', async () => {
   const fs = require('fs');
   const path = require('path');
 
+  // Check database health
+  const dbCheck = await dbHealthCheck();
+
   const checks = {
     server: true,
     socketio: io !== null,
     filesystem: true,
+    database: dbCheck.status === 'ok',
   };
 
   // Check filesystem (screenshots/traces/videos directories)
@@ -251,12 +256,19 @@ app.get('/health', async () => {
     checks.filesystem = false;
   }
 
-  const allHealthy = Object.values(checks).every(Boolean);
+  // Database is optional - don't require it for health status
+  const criticalChecks = { server: checks.server, socketio: checks.socketio, filesystem: checks.filesystem };
+  const allCriticalHealthy = Object.values(criticalChecks).every(Boolean);
 
   return {
-    status: allHealthy ? 'ok' : 'degraded',
+    status: allCriticalHealthy ? 'ok' : 'degraded',
     timestamp: new Date().toISOString(),
     checks,
+    database: {
+      connected: isDatabaseConnected(),
+      latency: dbCheck.latency,
+      error: dbCheck.error,
+    },
     version: '1.0.0',
     uptime: process.uptime(),
   };
@@ -274,6 +286,14 @@ app.get('/api/v1', async () => {
 // Start server - Feature #1542 AI best practices route added
 async function start() {
   try {
+    // Initialize database connection (optional - will fall back to in-memory if not available)
+    const dbConnected = await initializeDatabase();
+    if (dbConnected) {
+      console.log('[Startup] PostgreSQL database connected - data will persist');
+    } else {
+      console.log('[Startup] Using in-memory storage - data will NOT persist across restarts');
+    }
+
     await registerPlugins();
 
     const port = parseInt(process.env.PORT || '3001', 10);
@@ -345,6 +365,10 @@ async function start() {
       ? `Configured (${hasKie ? 'Kie.ai' : ''}${hasKie && hasAnthropic ? ' + ' : ''}${hasAnthropic ? 'Anthropic' : ''})`
       : 'Not configured - add KIE_API_KEY or ANTHROPIC_API_KEY to .env';
 
+    const dbStatus = isDatabaseConnected()
+      ? 'Connected (PostgreSQL)'
+      : 'In-memory (data will not persist!)';
+
     console.log(`
 ====================================
   QA Guardian API Server
@@ -360,6 +384,7 @@ async function start() {
   MCP Chat:          /api/v1/mcp/chat
   MCP Status:        /api/v1/mcp/status
 
+  Database:          ${dbStatus}
   AI Provider:       ${mcpStatus}
   Environment:       ${process.env.NODE_ENV || 'development'}
   CORS Origins:      ${process.env.FRONTEND_URL || 'localhost:5173'}, qa.pixelcraftedmedia.com
@@ -372,5 +397,20 @@ async function start() {
 }
 
 start();
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('[Shutdown] SIGTERM received, closing connections...');
+  await closeDatabase();
+  await app.close();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('[Shutdown] SIGINT received, closing connections...');
+  await closeDatabase();
+  await app.close();
+  process.exit(0);
+});
 
 export default app;
