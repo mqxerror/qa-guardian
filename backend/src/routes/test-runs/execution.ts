@@ -372,32 +372,83 @@ export interface HealedSelectorEntry {
 }
 
 // ============================================================================
-// In-Memory Stores
+// In-Memory Stores + Database Repository Functions
+// Feature #2082: Migrate to PostgreSQL with in-memory fallback
 // ============================================================================
+
+// Import repository functions for database persistence
+import {
+  createTestRun as dbCreateTestRun,
+  getTestRun as dbGetTestRun,
+  updateTestRun as dbUpdateTestRun,
+  deleteTestRun as dbDeleteTestRun,
+  listTestRunsBySuite as dbListTestRunsBySuite,
+  listTestRunsByProject as dbListTestRunsByProject,
+  listTestRunsByOrg as dbListTestRunsByOrg,
+  getRecentTestRuns as dbGetRecentTestRuns,
+  upsertSelectorOverride as dbUpsertSelectorOverride,
+  getSelectorOverride as dbGetSelectorOverride,
+  deleteSelectorOverride as dbDeleteSelectorOverride,
+  listSelectorOverrides as dbListSelectorOverrides,
+  upsertHealedSelectorEntry as dbUpsertHealedSelectorEntry,
+  getHealedSelectorEntry as dbGetHealedSelectorEntry,
+  listHealedSelectorHistory as dbListHealedSelectorHistory,
+  getMemoryTestRuns,
+  getMemorySelectorOverrides,
+  getMemoryHealedSelectorHistory,
+} from '../../services/repositories/test-runs';
 
 /**
  * Store for all test runs
  * Key: runId
+ * NOTE: This Map is kept for backward compatibility and fast synchronous access during test execution.
+ * Use the db* functions above for persistent storage operations.
  */
-export const testRuns: Map<string, TestRun> = new Map();
+export const testRuns: Map<string, TestRun> = getMemoryTestRuns();
 
 /**
  * Track running browsers for cancellation and pause
  * Key: runId
+ * NOTE: This MUST stay in-memory - it contains Browser instances which cannot be serialized to database
  */
 export const runningBrowsers: Map<string, BrowserState> = new Map();
 
 /**
  * Store for manual selector overrides
  * Key format: `${testId}-${stepId}`
+ * NOTE: This Map is kept for backward compatibility. Use db* functions for persistent operations.
  */
-export const selectorOverrides: Map<string, SelectorOverride> = new Map();
+export const selectorOverrides: Map<string, SelectorOverride> = getMemorySelectorOverrides();
 
 /**
  * Store for healed selector history
  * Key format: `${testId}-${stepId}`
+ * NOTE: This Map is kept for backward compatibility. Use db* functions for persistent operations.
  */
-export const healedSelectorHistory: Map<string, HealedSelectorEntry> = new Map();
+export const healedSelectorHistory: Map<string, HealedSelectorEntry> = getMemoryHealedSelectorHistory();
+
+// ============================================================================
+// Export Database Repository Functions
+// Feature #2082: Async database functions for persistent storage
+// ============================================================================
+
+export {
+  dbCreateTestRun as createTestRun,
+  dbGetTestRun as getTestRun,
+  dbUpdateTestRun as updateTestRun,
+  dbDeleteTestRun as deleteTestRun,
+  dbListTestRunsBySuite as listTestRunsBySuite,
+  dbListTestRunsByProject as listTestRunsByProject,
+  dbListTestRunsByOrg as listTestRunsByOrg,
+  dbGetRecentTestRuns as getRecentTestRuns,
+  dbUpsertSelectorOverride as upsertSelectorOverride,
+  dbGetSelectorOverride as getSelectorOverride,
+  dbDeleteSelectorOverride as deleteSelectorOverride,
+  dbListSelectorOverrides as listSelectorOverrides,
+  dbUpsertHealedSelectorEntry as upsertHealedSelectorEntry,
+  dbGetHealedSelectorEntry as getHealedSelectorEntry,
+  dbListHealedSelectorHistory as listHealedSelectorHistory,
+};
 
 // ============================================================================
 // Viewport Presets

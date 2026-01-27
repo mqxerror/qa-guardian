@@ -151,22 +151,76 @@ async function initializeSchema(): Promise<void> {
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
 
-    -- Test Runs table
+    -- Test Runs table (Feature #2082: Extended for full TestRun interface)
     CREATE TABLE IF NOT EXISTS test_runs (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       test_id UUID REFERENCES tests(id) ON DELETE CASCADE,
       suite_id UUID REFERENCES test_suites(id) ON DELETE CASCADE,
+      suite_name VARCHAR(255),
       project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+      project_name VARCHAR(255),
+      schedule_id UUID,
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
       status VARCHAR(50) NOT NULL DEFAULT 'pending',
-      results JSONB DEFAULT '{}',
+      results JSONB DEFAULT '[]',
       metrics JSONB DEFAULT '{}',
       error_message TEXT,
       duration_ms INTEGER,
       browser VARCHAR(50),
+      branch VARCHAR(255) DEFAULT 'main',
+      test_type VARCHAR(50),
       viewport JSONB,
       started_at TIMESTAMP WITH TIME ZONE,
       completed_at TIMESTAMP WITH TIME ZONE,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      accessibility_results JSONB,
+      run_env_vars JSONB,
+      priority INTEGER DEFAULT 100,
+      triggered_by VARCHAR(50),
+      user_id UUID,
+      pr_number INTEGER
+    );
+
+    -- Selector Overrides table (Feature #2082: Manual selector overrides)
+    CREATE TABLE IF NOT EXISTS selector_overrides (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      test_id VARCHAR(255) NOT NULL,
+      step_id VARCHAR(255) NOT NULL,
+      original_selector TEXT NOT NULL,
+      new_selector TEXT NOT NULL,
+      override_by VARCHAR(255),
+      override_by_email VARCHAR(255),
+      override_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      notes TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(test_id, step_id)
+    );
+
+    -- Healed Selector History table (Feature #2082: AI selector healing history)
+    CREATE TABLE IF NOT EXISTS healed_selector_history (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      run_id VARCHAR(255),
+      test_id VARCHAR(255) NOT NULL,
+      step_id VARCHAR(255) NOT NULL,
+      original_selector TEXT NOT NULL,
+      healed_selector TEXT NOT NULL,
+      strategy VARCHAR(100),
+      healing_strategy VARCHAR(100),
+      confidence DECIMAL(5,4),
+      healing_confidence DECIMAL(5,4),
+      healed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      was_successful BOOLEAN,
+      was_accepted BOOLEAN,
+      accepted_by VARCHAR(255),
+      accepted_at TIMESTAMP WITH TIME ZONE,
+      was_rejected BOOLEAN,
+      rejection_reason TEXT,
+      rejected_by VARCHAR(255),
+      rejected_at TIMESTAMP WITH TIME ZONE,
+      suggested_alternative TEXT,
+      suggested_selector TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(test_id, step_id)
     );
 
     -- API Keys table
@@ -284,6 +338,9 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_test_runs_project ON test_runs(project_id);
     CREATE INDEX IF NOT EXISTS idx_test_runs_status ON test_runs(status);
     CREATE INDEX IF NOT EXISTS idx_test_runs_created ON test_runs(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_test_runs_organization ON test_runs(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_selector_overrides_test ON selector_overrides(test_id);
+    CREATE INDEX IF NOT EXISTS idx_healed_selector_history_test ON healed_selector_history(test_id);
     CREATE INDEX IF NOT EXISTS idx_api_keys_organization ON api_keys(organization_id);
     CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(key_prefix);
     CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
