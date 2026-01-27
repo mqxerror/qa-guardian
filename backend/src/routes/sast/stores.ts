@@ -3,6 +3,9 @@
  *
  * In-memory data stores for SAST integration data.
  * Extracted from sast.ts (Feature #1376)
+ *
+ * Updated for Feature #2089: PostgreSQL migration
+ * Now uses repository functions with in-memory fallback
  */
 
 import {
@@ -16,15 +19,44 @@ import {
 } from './types';
 import { generateSimpleId } from '../../utils';
 
-// In-memory stores
-export const sastConfigs: Map<string, SASTConfig> = new Map();
-export const sastScans: Map<string, SASTScanResult[]> = new Map();  // projectId -> scans
-export const falsePositives: Map<string, FalsePositive[]> = new Map();  // projectId -> false positives
-export const sastPRChecks: Map<string, SASTPRCheck[]> = new Map();  // projectId -> PR checks
-export const sastPRComments: Map<string, SASTPRComment[]> = new Map();  // projectId -> PR comments
+// Import repository functions
+import * as sastRepo from '../../services/repositories/sast';
 
-// Feature #1558: Secret patterns store (projectId -> patterns)
-export const secretPatterns: Map<string, SecretPattern[]> = new Map();
+// Re-export repository functions for database access
+export const getSASTConfig = sastRepo.getSASTConfig;
+export const updateSASTConfig = sastRepo.updateSASTConfig;
+export const deleteSASTConfig = sastRepo.deleteSASTConfig;
+
+export const createSastScan = sastRepo.createSastScan;
+export const getSastScan = sastRepo.getSastScan;
+export const updateSastScan = sastRepo.updateSastScan;
+export const getSastScansByProject = sastRepo.getSastScansByProject;
+export const deleteSastScan = sastRepo.deleteSastScan;
+
+export const getFalsePositives = sastRepo.getFalsePositives;
+export const addFalsePositive = sastRepo.addFalsePositive;
+export const removeFalsePositive = sastRepo.removeFalsePositive;
+
+export const createSastPRCheck = sastRepo.createSastPRCheck;
+export const getSastPRChecks = sastRepo.getSastPRChecks;
+export const updateSastPRCheck = sastRepo.updateSastPRCheck;
+
+export const createSastPRComment = sastRepo.createSastPRComment;
+export const getSastPRComments = sastRepo.getSastPRComments;
+
+export const getSecretPatterns = sastRepo.getSecretPatterns;
+export const addSecretPattern = sastRepo.addSecretPattern;
+export const updateSecretPattern = sastRepo.updateSecretPattern;
+export const removeSecretPattern = sastRepo.removeSecretPattern;
+
+// Backward compatible Map exports (from repository memory stores)
+// These are kept for backward compatibility with existing code that uses Map operations
+export const sastConfigs: Map<string, SASTConfig> = sastRepo.getMemorySastConfigs();
+export const sastScans: Map<string, SASTScanResult[]> = sastRepo.getMemorySastScans();
+export const falsePositives: Map<string, FalsePositive[]> = sastRepo.getMemoryFalsePositives();
+export const sastPRChecks: Map<string, SASTPRCheck[]> = sastRepo.getMemorySastPRChecks();
+export const sastPRComments: Map<string, SASTPRComment[]> = sastRepo.getMemorySastPRComments();
+export const secretPatterns: Map<string, SecretPattern[]> = sastRepo.getMemorySecretPatterns();
 
 // Default SAST config
 export const DEFAULT_SAST_CONFIG: SASTConfig = {
@@ -44,109 +76,11 @@ export const SEMGREP_RULESETS: Record<string, string> = {
 };
 
 /**
- * Get SAST config for a project
- */
-export function getSASTConfig(projectId: string): SASTConfig {
-  return sastConfigs.get(projectId) || { ...DEFAULT_SAST_CONFIG };
-}
-
-/**
- * Update SAST config for a project
- */
-export function updateSASTConfig(projectId: string, config: Partial<SASTConfig>): SASTConfig {
-  const current = getSASTConfig(projectId);
-  const updated: SASTConfig = { ...current, ...config };
-  sastConfigs.set(projectId, updated);
-  return updated;
-}
-
-/**
  * Generate unique ID
  * Feature #1360: Uses shared utility to reduce duplication
  */
 export function generateId(): string {
   return generateSimpleId();
-}
-
-/**
- * Get false positives for a project
- */
-export function getFalsePositives(projectId: string): FalsePositive[] {
-  return falsePositives.get(projectId) || [];
-}
-
-/**
- * Add a false positive
- */
-export function addFalsePositive(projectId: string, fp: FalsePositive): FalsePositive {
-  const projectFPs = falsePositives.get(projectId) || [];
-  projectFPs.push(fp);
-  falsePositives.set(projectId, projectFPs);
-  return fp;
-}
-
-/**
- * Remove a false positive
- */
-export function removeFalsePositive(projectId: string, fpId: string): boolean {
-  const projectFPs = falsePositives.get(projectId) || [];
-  const index = projectFPs.findIndex(fp => fp.id === fpId);
-  if (index === -1) return false;
-  projectFPs.splice(index, 1);
-  falsePositives.set(projectId, projectFPs);
-  return true;
-}
-
-// ============================================================
-// Feature #1558: Secret Pattern Management
-// ============================================================
-
-/**
- * Get secret patterns for a project
- */
-export function getSecretPatterns(projectId: string): SecretPattern[] {
-  return secretPatterns.get(projectId) || [];
-}
-
-/**
- * Add a secret pattern for a project
- */
-export function addSecretPattern(projectId: string, pattern: SecretPattern): SecretPattern {
-  const patterns = secretPatterns.get(projectId) || [];
-  patterns.push(pattern);
-  secretPatterns.set(projectId, patterns);
-  return pattern;
-}
-
-/**
- * Update a secret pattern
- */
-export function updateSecretPattern(projectId: string, patternId: string, updates: Partial<SecretPattern>): SecretPattern | null {
-  const patterns = secretPatterns.get(projectId) || [];
-  const index = patterns.findIndex(p => p.id === patternId);
-  if (index === -1) return null;
-
-  const existingPattern = patterns[index]!;
-  const updatedPattern: SecretPattern = {
-    ...existingPattern,
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  };
-  patterns[index] = updatedPattern;
-  secretPatterns.set(projectId, patterns);
-  return updatedPattern;
-}
-
-/**
- * Remove a secret pattern
- */
-export function removeSecretPattern(projectId: string, patternId: string): boolean {
-  const patterns = secretPatterns.get(projectId) || [];
-  const index = patterns.findIndex(p => p.id === patternId);
-  if (index === -1) return false;
-  patterns.splice(index, 1);
-  secretPatterns.set(projectId, patterns);
-  return true;
 }
 
 /**

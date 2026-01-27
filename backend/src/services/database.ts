@@ -872,6 +872,98 @@ async function initializeSchema(): Promise<void> {
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
 
+    -- SAST (Static Application Security Testing) tables (Feature #2089)
+    CREATE TABLE IF NOT EXISTS sast_configs (
+      project_id UUID PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE,
+      enabled BOOLEAN DEFAULT FALSE,
+      ruleset VARCHAR(50) DEFAULT 'default',
+      custom_rules JSONB DEFAULT '[]',
+      custom_rules_yaml JSONB DEFAULT '[]',
+      exclude_paths JSONB DEFAULT '[]',
+      severity_threshold VARCHAR(20) DEFAULT 'MEDIUM',
+      auto_scan BOOLEAN DEFAULT FALSE,
+      last_scan_at TIMESTAMP WITH TIME ZONE,
+      last_scan_status VARCHAR(50),
+      pr_checks_enabled BOOLEAN DEFAULT FALSE,
+      pr_comments_enabled BOOLEAN DEFAULT FALSE,
+      block_pr_on_critical BOOLEAN DEFAULT FALSE,
+      block_pr_on_high BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS sast_scans (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      repository_url TEXT,
+      branch VARCHAR(255),
+      commit_sha VARCHAR(40),
+      status VARCHAR(50) NOT NULL DEFAULT 'pending',
+      started_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      completed_at TIMESTAMP WITH TIME ZONE,
+      findings JSONB DEFAULT '[]',
+      summary JSONB NOT NULL,
+      error TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS sast_false_positives (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      rule_id VARCHAR(255) NOT NULL,
+      file_path TEXT NOT NULL,
+      line INTEGER NOT NULL,
+      snippet TEXT,
+      reason TEXT NOT NULL,
+      marked_by VARCHAR(255) NOT NULL,
+      marked_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS sast_pr_checks (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      pr_number INTEGER NOT NULL,
+      pr_title TEXT,
+      head_sha VARCHAR(40) NOT NULL,
+      status VARCHAR(50) NOT NULL DEFAULT 'pending',
+      conclusion VARCHAR(50),
+      context VARCHAR(255) NOT NULL,
+      description TEXT,
+      target_url TEXT,
+      scan_id UUID,
+      findings JSONB,
+      blocked BOOLEAN DEFAULT FALSE,
+      block_reason TEXT,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS sast_pr_comments (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      pr_number INTEGER NOT NULL,
+      scan_id UUID NOT NULL,
+      body TEXT NOT NULL,
+      findings JSONB NOT NULL,
+      blocked BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS secret_patterns (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      pattern TEXT NOT NULL,
+      severity VARCHAR(20) NOT NULL,
+      category VARCHAR(100) NOT NULL,
+      enabled BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
     -- Create indexes for performance
     CREATE INDEX IF NOT EXISTS idx_users_organization ON users(organization_id);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -968,6 +1060,20 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_dast_schedules_next_run ON dast_schedules(next_run_at);
     CREATE INDEX IF NOT EXISTS idx_graphql_scans_status ON graphql_scans(status);
     CREATE INDEX IF NOT EXISTS idx_graphql_scans_started ON graphql_scans(started_at DESC);
+
+    -- SAST indexes (Feature #2089)
+    CREATE INDEX IF NOT EXISTS idx_sast_scans_project ON sast_scans(project_id);
+    CREATE INDEX IF NOT EXISTS idx_sast_scans_status ON sast_scans(status);
+    CREATE INDEX IF NOT EXISTS idx_sast_scans_started ON sast_scans(started_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_sast_false_positives_project ON sast_false_positives(project_id);
+    CREATE INDEX IF NOT EXISTS idx_sast_false_positives_rule ON sast_false_positives(rule_id);
+    CREATE INDEX IF NOT EXISTS idx_sast_pr_checks_project ON sast_pr_checks(project_id);
+    CREATE INDEX IF NOT EXISTS idx_sast_pr_checks_pr ON sast_pr_checks(project_id, pr_number);
+    CREATE INDEX IF NOT EXISTS idx_sast_pr_checks_status ON sast_pr_checks(status);
+    CREATE INDEX IF NOT EXISTS idx_sast_pr_comments_project ON sast_pr_comments(project_id);
+    CREATE INDEX IF NOT EXISTS idx_sast_pr_comments_pr ON sast_pr_comments(project_id, pr_number);
+    CREATE INDEX IF NOT EXISTS idx_secret_patterns_project ON secret_patterns(project_id);
+    CREATE INDEX IF NOT EXISTS idx_secret_patterns_enabled ON secret_patterns(enabled);
   `;
 
   try {
