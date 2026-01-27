@@ -73,7 +73,7 @@ async function testAIIntegration() {
   // Test MCP handler
   console.log('\n5. Testing MCP handler (generate_test)...');
   try {
-    const { handlers } = await import('../mcp/handlers/ai-generation');
+    const { handlers } = await import('../mcp/handlers/ai-generation.js');
     const handler = handlers.generate_test;
 
     if (!handler) {
