@@ -251,6 +251,24 @@ async function initializeSchema(): Promise<void> {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
 
+    -- Token Blacklist table (Feature #2083: Invalidated JWT tokens)
+    CREATE TABLE IF NOT EXISTS token_blacklist (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      token_hash VARCHAR(255) UNIQUE NOT NULL,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Reset Tokens table (Feature #2083: Password reset tokens)
+    CREATE TABLE IF NOT EXISTS reset_tokens (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      token_hash VARCHAR(255) UNIQUE NOT NULL,
+      user_email VARCHAR(255) NOT NULL,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      used_at TIMESTAMP WITH TIME ZONE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
     -- Visual Baselines table
     CREATE TABLE IF NOT EXISTS visual_baselines (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -345,6 +363,9 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(key_prefix);
     CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token_hash);
+    CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires ON token_blacklist(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_reset_tokens_email ON reset_tokens(user_email);
+    CREATE INDEX IF NOT EXISTS idx_reset_tokens_expires ON reset_tokens(expires_at);
     CREATE INDEX IF NOT EXISTS idx_visual_baselines_test ON visual_baselines(test_id);
     CREATE INDEX IF NOT EXISTS idx_flaky_tests_test ON flaky_tests(test_id);
     CREATE INDEX IF NOT EXISTS idx_flaky_tests_project ON flaky_tests(project_id);

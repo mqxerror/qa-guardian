@@ -2,39 +2,40 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { getUserOrganization, organizations, organizationMembers } from './organizations';
 
-// In-memory user store for development
-// This will be replaced with PostgreSQL in production
-interface User {
-  id: string;
-  email: string;
-  password_hash: string;
-  name: string;
-  avatar_url?: string;
-  role: 'owner' | 'admin' | 'developer' | 'viewer';
-  email_verified: boolean;
-  created_at: Date;
-}
+// Feature #2083: Import repository functions for database persistence
+import {
+  User,
+  Session,
+  ResetToken,
+  getUserByEmail as dbGetUserByEmail,
+  createUser as dbCreateUser,
+  updateUser as dbUpdateUser,
+  userExists as dbUserExists,
+  getUserCount as dbGetUserCount,
+  blacklistToken as dbBlacklistToken,
+  isTokenBlacklisted as dbIsTokenBlacklisted,
+  createSession as dbCreateSession,
+  getUserSessions as dbGetUserSessions,
+  deleteSession as dbDeleteSession,
+  deleteOtherSessions as dbDeleteOtherSessions,
+  createResetToken as dbCreateResetToken,
+  getResetToken as dbGetResetToken,
+  markResetTokenUsed as dbMarkResetTokenUsed,
+  seedTestUsers,
+  getMemoryUsers,
+  getMemoryTokenBlacklist,
+  getMemoryUserSessions,
+  getMemoryResetTokens,
+} from '../services/repositories/auth';
 
-// In-memory users store (will be replaced with DB)
-export const users: Map<string, User> = new Map();
+// Re-export types for backward compatibility
+export type { User, Session, ResetToken };
 
-// Token blacklist for invalidated tokens (will be replaced with Redis in production)
-export const tokenBlacklist: Set<string> = new Set();
-
-// Session management - track active sessions per user
-export interface Session {
-  id: string;
-  user_id: string;
-  token: string;
-  device: string;
-  browser: string;
-  ip_address: string;
-  last_active: Date;
-  created_at: Date;
-}
-
-// Map of user_id -> sessions array
-export const userSessions: Map<string, Session[]> = new Map();
+// Feature #2083: These Maps are now backed by the repository's memory stores
+// They provide backward compatibility for synchronous code
+export const users: Map<string, User> = getMemoryUsers();
+export const tokenBlacklist: Set<string> = getMemoryTokenBlacklist();
+export const userSessions: Map<string, Session[]> = getMemoryUserSessions();
 
 // Helper function to parse user agent into device/browser info
 function parseUserAgent(userAgent: string | undefined): { device: string; browser: string } {
@@ -99,73 +100,18 @@ function createSession(userId: string, token: string, request: FastifyRequest): 
   return session;
 }
 
-// Password reset tokens store (in production, use Redis with expiration)
-interface ResetToken {
-  email: string;
-  token: string;
-  createdAt: Date;
-  used: boolean;
-}
-export const resetTokens: Map<string, ResetToken> = new Map();
+// Feature #2083: resetTokens Map backed by repository memory store
+export const resetTokens: Map<string, ResetToken> = getMemoryResetTokens();
 
 // Seed some test users for development
-async function seedTestUsers() {
-  const testUsers = [
-    {
-      id: '1',
-      email: 'owner@example.com',
-      password: 'Owner123!',
-      name: 'Test Owner',
-      role: 'owner' as const,
-    },
-    {
-      id: '2',
-      email: 'admin@example.com',
-      password: 'Admin123!',
-      name: 'Test Admin',
-      role: 'admin' as const,
-    },
-    {
-      id: '3',
-      email: 'developer@example.com',
-      password: 'Developer123!',
-      name: 'Test Developer',
-      role: 'developer' as const,
-    },
-    {
-      id: '4',
-      email: 'viewer@example.com',
-      password: 'Viewer123!',
-      name: 'Test Viewer',
-      role: 'viewer' as const,
-    },
-    {
-      id: '5',
-      email: 'otherowner@example.com',
-      password: 'Other123!',
-      name: 'Other Org Owner',
-      role: 'owner' as const,
-    },
-  ];
-
-  for (const user of testUsers) {
-    if (!users.has(user.email)) {
-      const password_hash = await bcrypt.hash(user.password, 10);
-      users.set(user.email, {
-        id: user.id,
-        email: user.email,
-        password_hash,
-        name: user.name,
-        role: user.role,
-        email_verified: true,
-        created_at: new Date(),
-      });
-    }
-  }
+// Feature #2083: Now uses async repository function
+// Feature #2083: Initialize test users using repository
+async function initTestUsers() {
+  await seedTestUsers();
 }
 
 // Initialize test users
-seedTestUsers();
+initTestUsers();
 
 interface LoginBody {
   email: string;
