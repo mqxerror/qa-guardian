@@ -1132,6 +1132,33 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_reports_project ON reports(project_id);
     CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_reports_format ON reports(format);
+
+    -- Schedules table (Feature #2092)
+    CREATE TABLE IF NOT EXISTS schedules (
+      id VARCHAR(100) PRIMARY KEY,
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      suite_id VARCHAR(100) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      cron_expression VARCHAR(100),
+      run_at TIMESTAMP WITH TIME ZONE,
+      timezone VARCHAR(100) NOT NULL DEFAULT 'UTC',
+      enabled BOOLEAN NOT NULL DEFAULT true,
+      browsers JSONB NOT NULL DEFAULT '["chromium"]',
+      notify_on_failure BOOLEAN NOT NULL DEFAULT true,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      created_by VARCHAR(255) NOT NULL,
+      next_run_at TIMESTAMP WITH TIME ZONE,
+      last_run_id VARCHAR(100),
+      run_count INTEGER NOT NULL DEFAULT 0
+    );
+
+    -- Schedules indexes (Feature #2092)
+    CREATE INDEX IF NOT EXISTS idx_schedules_organization ON schedules(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_schedules_suite ON schedules(suite_id);
+    CREATE INDEX IF NOT EXISTS idx_schedules_enabled ON schedules(enabled);
+    CREATE INDEX IF NOT EXISTS idx_schedules_next_run ON schedules(next_run_at) WHERE enabled = true;
   `;
 
   try {

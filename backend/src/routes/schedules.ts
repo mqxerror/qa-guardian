@@ -3,26 +3,16 @@ import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth'
 import { testSuites } from './test-suites';
 import { testRuns, sendScheduleTriggeredWebhook } from './test-runs';
 
-// In-memory schedule store for development
-interface Schedule {
-  id: string;
-  organization_id: string;
-  suite_id: string;
-  name: string;
-  description?: string;
-  cron_expression?: string; // For recurring schedules
-  run_at?: Date; // For one-time schedules
-  timezone: string;
-  enabled: boolean;
-  browsers: ('chromium' | 'firefox' | 'webkit')[];
-  notify_on_failure: boolean;
-  created_at: Date;
-  updated_at: Date;
-  created_by: string;
-  next_run_at?: Date; // Calculated next run time
-  last_run_id?: string; // ID of the most recent run triggered by this schedule
-  run_count: number; // Total number of times this schedule has run
-}
+// Import repository functions and types (Feature #2092)
+import {
+  Schedule,
+  getMemorySchedules,
+  createSchedule as createScheduleRepo,
+  getSchedule as getScheduleRepo,
+  updateSchedule as updateScheduleRepo,
+  deleteSchedule as deleteScheduleRepo,
+  listSchedules as listSchedulesRepo,
+} from '../services/repositories/schedules';
 
 // Calculate next run time from cron expression (simplified implementation)
 function calculateNextRun(cronExpression: string, timezone: string): Date | undefined {
@@ -64,8 +54,8 @@ function calculateNextRun(cronExpression: string, timezone: string): Date | unde
   return next;
 }
 
-// In-memory stores
-export const schedules: Map<string, Schedule> = new Map();
+// In-memory stores (now backed by repository - Feature #2092)
+export const schedules: Map<string, Schedule> = getMemorySchedules();
 
 interface CreateScheduleBody {
   suite_id: string;
@@ -89,8 +79,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
     preHandler: [authenticate],
   }, async (request) => {
     const orgId = getOrganizationId(request);
-    const scheduleList = Array.from(schedules.values())
-      .filter(s => s.organization_id === orgId);
+    const scheduleList = await listSchedulesRepo(orgId);
     return { schedules: scheduleList };
   });
 
@@ -101,7 +90,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
     const { id } = request.params;
     const orgId = getOrganizationId(request);
 
-    const schedule = schedules.get(id);
+    const schedule = await getScheduleRepo(id);
     if (!schedule || schedule.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -201,7 +190,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
       run_count: 0,
     };
 
-    schedules.set(id, schedule);
+    await createScheduleRepo(schedule);
 
     return reply.status(201).send({ schedule });
   });
@@ -223,7 +212,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
       });
     }
 
-    const schedule = schedules.get(id);
+    const schedule = await getScheduleRepo(id);
     if (!schedule || schedule.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -231,31 +220,37 @@ export async function scheduleRoutes(app: FastifyInstance) {
       });
     }
 
-    if (updates.name) schedule.name = updates.name;
-    if (updates.description !== undefined) schedule.description = updates.description;
-    if (updates.cron_expression !== undefined) schedule.cron_expression = updates.cron_expression;
-    if (updates.run_at !== undefined) schedule.run_at = updates.run_at ? new Date(updates.run_at) : undefined;
-    if (updates.timezone) schedule.timezone = updates.timezone;
-    if (updates.enabled !== undefined) schedule.enabled = updates.enabled;
-    if (updates.browsers) schedule.browsers = updates.browsers;
-    if (updates.notify_on_failure !== undefined) schedule.notify_on_failure = updates.notify_on_failure;
-    schedule.updated_at = new Date();
+    // Build the updates object for the repository
+    const repoUpdates: Partial<Schedule> = {};
+    if (updates.name) repoUpdates.name = updates.name;
+    if (updates.description !== undefined) repoUpdates.description = updates.description;
+    if (updates.cron_expression !== undefined) repoUpdates.cron_expression = updates.cron_expression;
+    if (updates.run_at !== undefined) repoUpdates.run_at = updates.run_at ? new Date(updates.run_at) : undefined;
+    if (updates.timezone) repoUpdates.timezone = updates.timezone;
+    if (updates.enabled !== undefined) repoUpdates.enabled = updates.enabled;
+    if (updates.browsers) repoUpdates.browsers = updates.browsers;
+    if (updates.notify_on_failure !== undefined) repoUpdates.notify_on_failure = updates.notify_on_failure;
 
     // Recalculate next_run_at based on enabled status
-    if (schedule.enabled) {
-      if (schedule.cron_expression) {
-        schedule.next_run_at = calculateNextRun(schedule.cron_expression, schedule.timezone);
-      } else if (schedule.run_at && schedule.run_at > new Date()) {
-        schedule.next_run_at = schedule.run_at;
+    const newEnabled = updates.enabled !== undefined ? updates.enabled : schedule.enabled;
+    const newCronExpression = updates.cron_expression !== undefined ? updates.cron_expression : schedule.cron_expression;
+    const newRunAt = updates.run_at !== undefined ? (updates.run_at ? new Date(updates.run_at) : undefined) : schedule.run_at;
+    const newTimezone = updates.timezone || schedule.timezone;
+
+    if (newEnabled) {
+      if (newCronExpression) {
+        repoUpdates.next_run_at = calculateNextRun(newCronExpression, newTimezone);
+      } else if (newRunAt && newRunAt > new Date()) {
+        repoUpdates.next_run_at = newRunAt;
       }
     } else {
       // Clear next_run_at when disabled
-      schedule.next_run_at = undefined;
+      repoUpdates.next_run_at = undefined;
     }
 
-    schedules.set(id, schedule);
+    const updatedSchedule = await updateScheduleRepo(id, repoUpdates);
 
-    return { schedule };
+    return { schedule: updatedSchedule };
   });
 
   // Delete schedule
@@ -274,7 +269,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
       });
     }
 
-    const schedule = schedules.get(id);
+    const schedule = await getScheduleRepo(id);
     if (!schedule || schedule.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -282,7 +277,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
       });
     }
 
-    schedules.delete(id);
+    await deleteScheduleRepo(id);
 
     return { message: 'Schedule deleted successfully' };
   });
@@ -294,7 +289,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
     const { id } = request.params;
     const orgId = getOrganizationId(request);
 
-    const schedule = schedules.get(id);
+    const schedule = await getScheduleRepo(id);
     if (!schedule || schedule.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -339,7 +334,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
       });
     }
 
-    const schedule = schedules.get(id);
+    const schedule = await getScheduleRepo(id);
     if (!schedule || schedule.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -361,11 +356,11 @@ export async function scheduleRoutes(app: FastifyInstance) {
 
     testRuns.set(runId, run as any);
 
-    // Update schedule metadata
-    schedule.last_run_id = runId;
-    schedule.run_count = (schedule.run_count || 0) + 1;
-    schedule.updated_at = new Date();
-    schedules.set(id, schedule);
+    // Update schedule metadata via repository
+    await updateScheduleRepo(id, {
+      last_run_id: runId,
+      run_count: (schedule.run_count || 0) + 1,
+    });
 
     // Import and start the test execution
     const { runTestsForRun } = await import('./test-runs');
