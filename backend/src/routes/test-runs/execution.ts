@@ -34,7 +34,9 @@ export type TestRunStatus =
   | 'warning'
   | 'error'
   | 'cancelled'
-  | 'cancelling';
+  | 'cancelling'
+  | 'visual_approved'
+  | 'visual_rejected';
 
 /**
  * Type of test being executed

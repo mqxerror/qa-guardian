@@ -386,8 +386,15 @@ export async function visualBatchRoutes(app: FastifyInstance) {
           createdAt: existingMetadata?.createdAt || approvedAt,
           createdByUserId: existingMetadata?.createdByUserId || user?.id || 'unknown',
           createdByUserEmail: existingMetadata?.createdByUserEmail || user?.email || 'unknown',
-          viewport: viewportId,
-          browser: targetRun.browser || 'chromium',
+          viewport: {
+            width: (test as any).viewport_width || 1280,
+            height: (test as any).viewport_height || 720,
+            preset: (test as any).viewport_preset,
+          },
+          browser: {
+            name: (typeof targetRun.browser === 'string' ? targetRun.browser : (targetRun.browser as any)?.name) || 'chromium',
+            version: typeof targetRun.browser === 'object' ? (targetRun.browser as any)?.version : undefined,
+          },
           // Feature #605: Increment version for optimistic locking
           version: (existingMetadata?.version || 0) + 1,
         };
