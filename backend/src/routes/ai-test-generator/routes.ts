@@ -75,7 +75,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       }
 
       // Determine version number
-      const latestVersion = getLatestVersion(userId, description);
+      const latestVersion = await getLatestVersion(userId, description);
       const newVersion = version || latestVersion + 1;
 
       const now = new Date();
@@ -106,7 +106,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       };
 
       // Save to store
-      indexTest(test);
+      await indexTest(test);
 
       return reply.status(201).send({
         success: true,
@@ -143,11 +143,11 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       // Get tests based on filters
       let tests: AIGeneratedTest[];
       if (project_id) {
-        tests = getTestsByProjectId(project_id);
+        tests = await getTestsByProjectId(project_id);
         // Filter by user
         tests = tests.filter(t => t.user_id === userId);
       } else {
-        tests = getTestsByUser(userId);
+        tests = await getTestsByUser(userId);
       }
 
       // Feature #1500: Apply approval status filter
@@ -238,7 +238,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       // Get user from auth context (mock for development)
       const userId = (request as any).user?.id || 'demo-user';
 
-      const versions = getVersionChain(userId, description);
+      const versions = await getVersionChain(userId, description);
       const latestVersion = versions.length > 0 ? Math.max(...versions.map(v => v.version)) : 0;
 
       const response: VersionChain = {
@@ -304,9 +304,11 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
    */
   fastify.get('/review-queue', async (request, reply) => {
     try {
-      const pendingTests = getTestsByApprovalStatus('pending');
-      const approvedTests = getTestsByApprovalStatus('approved').slice(0, 10);
-      const rejectedTests = getTestsByApprovalStatus('rejected').slice(0, 10);
+      const pendingTests = await getTestsByApprovalStatus('pending');
+      const allApprovedTests = await getTestsByApprovalStatus('approved');
+      const allRejectedTests = await getTestsByApprovalStatus('rejected');
+      const approvedTests = allApprovedTests.slice(0, 10);
+      const rejectedTests = allRejectedTests.slice(0, 10);
 
       // Combine and sort recently reviewed by review date
       const recentlyReviewed = [...approvedTests, ...rejectedTests]
@@ -379,7 +381,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       aiGeneratedTests.set(testId, test);
 
       // Update the approval status index
-      updateApprovalStatusIndex(testId, oldStatus, newStatus);
+      await updateApprovalStatusIndex(testId, oldStatus, newStatus);
 
       return reply.send({
         success: true,
@@ -401,9 +403,12 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
    */
   fastify.get('/approval-stats', async (request, reply) => {
     try {
-      const pending = getTestsByApprovalStatus('pending').length;
-      const approved = getTestsByApprovalStatus('approved').length;
-      const rejected = getTestsByApprovalStatus('rejected').length;
+      const pendingTests = await getTestsByApprovalStatus('pending');
+      const approvedTests = await getTestsByApprovalStatus('approved');
+      const rejectedTests = await getTestsByApprovalStatus('rejected');
+      const pending = pendingTests.length;
+      const approved = approvedTests.length;
+      const rejected = rejectedTests.length;
       const total = pending + approved + rejected;
 
       return reply.send({

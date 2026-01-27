@@ -1074,6 +1074,39 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_sast_pr_comments_pr ON sast_pr_comments(project_id, pr_number);
     CREATE INDEX IF NOT EXISTS idx_secret_patterns_project ON secret_patterns(project_id);
     CREATE INDEX IF NOT EXISTS idx_secret_patterns_enabled ON secret_patterns(enabled);
+
+    -- AI Generated Tests table (Feature #2090)
+    CREATE TABLE IF NOT EXISTS ai_generated_tests (
+      id VARCHAR(100) PRIMARY KEY,
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+      description TEXT NOT NULL,
+      generated_code TEXT NOT NULL,
+      test_name VARCHAR(255) NOT NULL,
+      language VARCHAR(20) NOT NULL DEFAULT 'typescript',
+      confidence_score DECIMAL(5,4) NOT NULL,
+      confidence_level VARCHAR(20) NOT NULL,
+      version INTEGER NOT NULL DEFAULT 1,
+      parent_version_id VARCHAR(100),
+      feedback TEXT,
+      ai_metadata JSONB NOT NULL DEFAULT '{}',
+      options JSONB NOT NULL DEFAULT '{}',
+      suggested_variations JSONB DEFAULT '[]',
+      improvement_suggestions JSONB DEFAULT '[]',
+      approval JSONB NOT NULL DEFAULT '{"status": "pending"}',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- AI Generated Tests indexes (Feature #2090)
+    CREATE INDEX IF NOT EXISTS idx_ai_generated_tests_user ON ai_generated_tests(user_id);
+    CREATE INDEX IF NOT EXISTS idx_ai_generated_tests_organization ON ai_generated_tests(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_ai_generated_tests_project ON ai_generated_tests(project_id);
+    CREATE INDEX IF NOT EXISTS idx_ai_generated_tests_approval_status ON ai_generated_tests((approval->>'status'));
+    CREATE INDEX IF NOT EXISTS idx_ai_generated_tests_created ON ai_generated_tests(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_ai_generated_tests_version_chain ON ai_generated_tests(user_id, LOWER(TRIM(description)));
+    CREATE INDEX IF NOT EXISTS idx_ai_generated_tests_parent ON ai_generated_tests(parent_version_id);
   `;
 
   try {
