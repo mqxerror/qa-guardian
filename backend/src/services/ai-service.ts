@@ -9,6 +9,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import type { TextBlockParam } from '@anthropic-ai/sdk/resources/messages.js';
 import type {
   IAIProvider,
   AIMessage,
@@ -20,6 +21,7 @@ import type {
   HealthMetrics,
   ProviderStatus,
   ProviderConfig,
+  AIMessageContent,
 } from './providers/types.js';
 
 // Re-export types for backward compatibility
@@ -49,6 +51,40 @@ const LATENCY_THRESHOLDS = {
 
 // Maximum number of latency samples to keep
 const MAX_LATENCY_SAMPLES = 100;
+
+/**
+ * Convert AIMessageContent to Anthropic-compatible system content format.
+ * Anthropic's system parameter only accepts string or TextBlockParam[] (no images).
+ *
+ * @param content - The AIMessageContent (string or array of text/image blocks)
+ * @returns string | TextBlockParam[] compatible with Anthropic API
+ */
+function convertToAnthropicSystemContent(content: AIMessageContent): string | TextBlockParam[] {
+  // If it's a string, return as-is
+  if (typeof content === 'string') {
+    return content;
+  }
+
+  // If it's an array, filter to text blocks only and convert to TextBlockParam format
+  const textBlocks: TextBlockParam[] = content
+    .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
+    .map(block => ({
+      type: 'text' as const,
+      text: block.text,
+    }));
+
+  // If no text blocks found, return empty string
+  if (textBlocks.length === 0) {
+    return '';
+  }
+
+  // If only one text block, return as string for simplicity
+  if (textBlocks.length === 1 && textBlocks[0]) {
+    return textBlocks[0].text;
+  }
+
+  return textBlocks;
+}
 
 /** Represents a latency sample with success/failure status */
 interface LatencySample {
@@ -236,7 +272,7 @@ class AIService implements IAIProvider {
         if (options.systemPrompt) {
           requestParams.system = options.systemPrompt;
         } else if (systemMessage) {
-          requestParams.system = systemMessage.content;
+          requestParams.system = convertToAnthropicSystemContent(systemMessage.content);
         }
 
         const response = await this.client.messages.create(requestParams);
@@ -322,7 +358,7 @@ class AIService implements IAIProvider {
       if (options.systemPrompt) {
         requestParams.system = options.systemPrompt;
       } else if (systemMessage) {
-        requestParams.system = systemMessage.content;
+        requestParams.system = convertToAnthropicSystemContent(systemMessage.content);
       }
 
       const stream = await this.client.messages.create(requestParams);
