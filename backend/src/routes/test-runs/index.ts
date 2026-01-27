@@ -278,12 +278,8 @@ export {
   RelatedCommit,
   CommitDetails,
 
-  // Types - Root Cause Analysis
-  RootCause,
-  RootCauseAnalysisResult,
-
-  // Types - Evidence
-  EvidenceArtifacts,
+  // Note: RootCause, RootCauseAnalysisResult, EvidenceArtifacts are already exported from ./ai-analysis above
+  // to avoid duplicate identifier errors
 
   // Types - Suggested Actions
   SuggestedAction,
@@ -311,7 +307,7 @@ export {
 
   // Functions - Parsing
   parseStackTrace,
-  extractSelector,
+  // Note: extractSelector is already exported from ./ai-analysis above
 
   // Functions - Simulation
   generateSimulatedConsoleLogs,

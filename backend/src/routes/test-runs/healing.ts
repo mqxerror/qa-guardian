@@ -318,6 +318,9 @@ export function applyHealedSelector(
   }
 
   const step = test.steps[record.stepIndex];
+  if (!step) {
+    return { success: false, error: 'Step not found at index' };
+  }
 
   // Store old selector in history
   const historyKey = `${record.testId}-${record.stepIndex}`;
