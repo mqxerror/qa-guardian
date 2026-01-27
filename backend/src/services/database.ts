@@ -223,7 +223,7 @@ async function initializeSchema(): Promise<void> {
       UNIQUE(test_id, step_id)
     );
 
-    -- API Keys table
+    -- API Keys table (Feature #2084: Extended for full ApiKey interface)
     CREATE TABLE IF NOT EXISTS api_keys (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
@@ -231,11 +231,15 @@ async function initializeSchema(): Promise<void> {
       key_hash VARCHAR(255) NOT NULL,
       key_prefix VARCHAR(20) NOT NULL,
       scopes TEXT[] DEFAULT '{}',
-      rate_limit INTEGER DEFAULT 1000,
+      rate_limit INTEGER DEFAULT 100,
+      rate_limit_window INTEGER DEFAULT 60,
+      burst_limit INTEGER DEFAULT 20,
+      burst_window INTEGER DEFAULT 10,
       last_used_at TIMESTAMP WITH TIME ZONE,
       expires_at TIMESTAMP WITH TIME ZONE,
-      revoked_at TIMESTAMP WITH TIME ZONE,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      created_by UUID,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      revoked_at TIMESTAMP WITH TIME ZONE
     );
 
     -- Sessions table (for user authentication)
@@ -343,6 +347,54 @@ async function initializeSchema(): Promise<void> {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
 
+    -- MCP Connections table (Feature #2084: Active MCP connections)
+    CREATE TABLE IF NOT EXISTS mcp_connections (
+      id VARCHAR(100) PRIMARY KEY,
+      api_key_id UUID REFERENCES api_keys(id) ON DELETE CASCADE,
+      api_key_name VARCHAR(255) NOT NULL,
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      connected_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      last_activity_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      client_info JSONB,
+      ip_address VARCHAR(45)
+    );
+
+    -- MCP Tool Calls table (Feature #2084: Tool call history with retention)
+    CREATE TABLE IF NOT EXISTS mcp_tool_calls (
+      id VARCHAR(100) PRIMARY KEY,
+      connection_id VARCHAR(100) REFERENCES mcp_connections(id) ON DELETE SET NULL,
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      api_key_id UUID REFERENCES api_keys(id) ON DELETE SET NULL,
+      tool_name VARCHAR(255) NOT NULL,
+      timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      duration_ms INTEGER,
+      success BOOLEAN DEFAULT TRUE,
+      error TEXT
+    );
+
+    -- MCP Audit Logs table (Feature #2084: Detailed MCP audit trail)
+    CREATE TABLE IF NOT EXISTS mcp_audit_logs (
+      id VARCHAR(100) PRIMARY KEY,
+      timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      api_key_id UUID REFERENCES api_keys(id) ON DELETE SET NULL,
+      api_key_name VARCHAR(255) NOT NULL,
+      connection_id VARCHAR(100),
+      client_name VARCHAR(255),
+      client_version VARCHAR(100),
+      method VARCHAR(100) NOT NULL,
+      tool_name VARCHAR(255),
+      resource_uri TEXT,
+      request_params JSONB,
+      response_type VARCHAR(20) NOT NULL,
+      response_error_code INTEGER,
+      response_error_message TEXT,
+      response_data_preview TEXT,
+      duration_ms INTEGER,
+      ip_address VARCHAR(45),
+      user_agent TEXT
+    );
+
     -- Create indexes for performance
     CREATE INDEX IF NOT EXISTS idx_users_organization ON users(organization_id);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -373,6 +425,14 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_webhooks_organization ON webhooks(organization_id);
     CREATE INDEX IF NOT EXISTS idx_audit_logs_organization ON audit_logs(organization_id);
     CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_mcp_connections_organization ON mcp_connections(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_mcp_connections_api_key ON mcp_connections(api_key_id);
+    CREATE INDEX IF NOT EXISTS idx_mcp_connections_activity ON mcp_connections(last_activity_at);
+    CREATE INDEX IF NOT EXISTS idx_mcp_tool_calls_organization ON mcp_tool_calls(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_mcp_tool_calls_timestamp ON mcp_tool_calls(timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_mcp_audit_logs_organization ON mcp_audit_logs(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_mcp_audit_logs_timestamp ON mcp_audit_logs(timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_mcp_audit_logs_api_key ON mcp_audit_logs(api_key_id);
   `;
 
   try {
