@@ -4,7 +4,63 @@
 - **Progress: 1809/1810 features passing (99.9%)**
 - **Last Updated**: 2026-01-27
 - **Current Phase**: Production-ready with 1 external configuration task pending
-- **Recent Progress**: Regression testing session #147 - Verified core features and MCP integration working
+- **Recent Progress**: Regression testing session #148 - Verified CSV export, form defaults, and Lighthouse test creation
+
+=== Session 2026-01-27 (Regression Testing Session #148) ===
+Progress: 1809/1810 (99.9%)
+
+### System Status
+- Backend server: Running (localhost:3001, health: ok)
+- Frontend server: Running (Vite on port 5173)
+- All 1809 features passing, 1 pending (external config)
+- Zero JavaScript errors in console
+
+### Pending Feature
+**Feature #2064: Add AI API keys to production environment for MCP tools**
+- Requires Dokploy admin access to configure KIE_API_KEY and/or ANTHROPIC_API_KEY
+- Cannot be done by coding agent (external configuration task)
+- Skipped - awaiting user configuration
+
+### Regression Features Verified
+
+1. ✅ **Feature #149 (Export dashboard data to CSV)**
+   - Navigated to Analytics page
+   - Clicked "Export CSV" button
+   - File downloaded: analytics-export-2026-01-27.csv
+   - Success toast: "Analytics exported to CSV"
+   - Screenshot: regression-feature-149-csv-export.png
+
+2. ✅ **Feature #91 (New form shows correct defaults)**
+   - Created test project "REGRESSION_TEST_PROJECT"
+   - Opened Create Test Suite form
+   - Verified defaults:
+     - Browser: "Chromium (Chrome/Edge)" ✅
+     - Timeout: 30 seconds ✅
+     - Retry Count: 0 ✅
+     - Viewport: Desktop (1280×720) ✅
+   - Screenshot: regression-feature-91-form-defaults.png
+
+3. ✅ **Feature #510 (Lighthouse test saves with valid configuration)**
+   - Created "Performance Test Suite"
+   - Used Quick Test with URL: https://example.com
+   - Selected only "⚡ Performance" test type
+   - Clicked "Generate 1 Test"
+   - Test created: "Performance - example.com"
+   - Shows in list with ⚡ icon and "draft" status
+   - Success toast: "Test created successfully!"
+   - Screenshot: regression-feature-510-lighthouse-test-created.png
+
+### Cleanup
+- Deleted test project "REGRESSION_TEST_PROJECT" and all associated data
+- Projects page shows "No projects yet" confirming clean state
+
+### Console Status
+- Zero JavaScript errors
+- Expected React Router future flag warnings (non-blocking)
+
+### Conclusion
+All 3 regression tests passed successfully. Application is stable at 99.9% completion.
+The only pending feature (#2064) is an external configuration task requiring Dokploy admin access.
 
 === Session 2026-01-27 (Regression Testing Session #147) ===
 Progress: 1809/1810 (99.9%)
