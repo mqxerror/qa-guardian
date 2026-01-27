@@ -269,7 +269,7 @@ function extractSelector(errorMessage: string): string | null {
   for (const pattern of patterns) {
     const match = errorMessage.match(pattern);
     if (match) {
-      return match[1];
+      return match[1] ?? null;
     }
   }
   return null;
