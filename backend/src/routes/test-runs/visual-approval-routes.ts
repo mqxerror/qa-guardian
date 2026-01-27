@@ -502,9 +502,10 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
       viewportId,
       approvedBy: user?.email || 'unknown',
       approvedByUserId: user?.id || 'unknown',
+      approvedAt: now,
       sourceRunId: sourceMetadata?.sourceRunId,
       branch: targetBranch,
-    });
+    }, sourceBaseline);
 
     console.log(`[Visual] Baseline merged from branch '${sourceBranch}' to '${targetBranch}' for test ${testId} by ${user?.email || 'unknown'} (version ${historyEntry.version})`);
 
