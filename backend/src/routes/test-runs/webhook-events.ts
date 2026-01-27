@@ -39,7 +39,8 @@ export interface WebhookTestRun {
   browser: string;
   branch?: string;
   browser_version?: string;
-  status: 'pending' | 'running' | 'paused' | 'passed' | 'failed' | 'error' | 'cancelled' | 'cancelling';
+  // Feature #2053: Added 'warning' status for accessibility tests
+  status: 'pending' | 'running' | 'paused' | 'passed' | 'failed' | 'warning' | 'error' | 'cancelled' | 'cancelling';
   started_at?: Date;
   completed_at?: Date;
   duration_ms?: number;
@@ -51,7 +52,8 @@ export interface WebhookTestRun {
 export interface WebhookTestRunResult {
   test_id: string;
   test_name?: string;
-  status: 'passed' | 'failed' | 'error' | 'skipped' | 'running';
+  // Feature #2053: Added 'warning' status for accessibility tests
+  status: 'passed' | 'failed' | 'error' | 'skipped' | 'running' | 'warning';
   error?: string;
   duration_ms?: number;
   visual_comparison?: {

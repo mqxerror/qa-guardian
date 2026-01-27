@@ -458,7 +458,8 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
       size_bytes?: number;
       viewport?: { width: number; height: number };
       is_failure_screenshot: boolean;
-      test_status: 'passed' | 'failed' | 'error' | 'skipped';
+      // Feature #2053: Added 'warning' status for accessibility tests
+      test_status: 'passed' | 'failed' | 'error' | 'skipped' | 'warning';
       created_at?: string;
     }
 

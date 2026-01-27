@@ -162,7 +162,8 @@ export interface TestRunResult {
   test_id: string;
   test_name: string;
   test_type?: 'e2e' | 'visual_regression' | 'lighthouse' | 'load' | 'accessibility'; // Feature #1991: Test type for PDF breakdown
-  status: 'passed' | 'failed' | 'error' | 'skipped';
+  // Feature #2053: Added 'warning' status for accessibility tests with violations below failure threshold
+  status: 'passed' | 'failed' | 'error' | 'skipped' | 'warning';
   duration_ms: number;
   steps: StepResult[];
   error?: string;

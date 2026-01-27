@@ -224,7 +224,8 @@ async function executeTest(
 ): Promise<TestRunResult> {
   const startTime = Date.now();
   const stepResults: StepResult[] = [];
-  let testStatus: 'passed' | 'failed' | 'error' = 'passed';
+  // Feature #2053: Added 'warning' status for accessibility tests with violations that don't exceed failure thresholds
+  let testStatus: 'passed' | 'failed' | 'error' | 'warning' = 'passed';
   let testError: string | undefined;
   let screenshot_base64: string | undefined;
   let trace_file: string | undefined;
