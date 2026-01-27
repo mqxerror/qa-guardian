@@ -408,6 +408,266 @@ async function initializeSchema(): Promise<void> {
       user_agent TEXT
     );
 
+    -- ========================================
+    -- MONITORING TABLES (Feature #2086)
+    -- ========================================
+
+    -- Uptime checks table
+    CREATE TABLE IF NOT EXISTS uptime_checks (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      url TEXT NOT NULL,
+      method VARCHAR(10) NOT NULL DEFAULT 'GET',
+      interval_seconds INTEGER NOT NULL DEFAULT 60,
+      timeout_ms INTEGER NOT NULL DEFAULT 10000,
+      expected_status INTEGER NOT NULL DEFAULT 200,
+      headers JSONB DEFAULT '{}',
+      body TEXT,
+      locations JSONB DEFAULT '["us-east"]',
+      assertions JSONB DEFAULT '[]',
+      ssl_expiry_warning_days INTEGER DEFAULT 30,
+      consecutive_failures_threshold INTEGER DEFAULT 1,
+      tags JSONB DEFAULT '[]',
+      group_name VARCHAR(255),
+      enabled BOOLEAN DEFAULT TRUE,
+      paused_at TIMESTAMP WITH TIME ZONE,
+      paused_by VARCHAR(255),
+      pause_reason TEXT,
+      pause_expires_at TIMESTAMP WITH TIME ZONE,
+      created_by VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Check results table (time-series data)
+    CREATE TABLE IF NOT EXISTS check_results (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      check_id UUID NOT NULL,
+      location VARCHAR(50) NOT NULL,
+      status VARCHAR(20) NOT NULL,
+      response_time_ms INTEGER NOT NULL,
+      status_code INTEGER,
+      error TEXT,
+      assertion_results JSONB,
+      assertions_passed INTEGER,
+      assertions_failed INTEGER,
+      ssl_info JSONB,
+      checked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Uptime check state table (for consecutive failures tracking)
+    CREATE TABLE IF NOT EXISTS uptime_check_state (
+      check_id UUID PRIMARY KEY,
+      consecutive_failures INTEGER DEFAULT 0,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Check incidents table
+    CREATE TABLE IF NOT EXISTS check_incidents (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      check_id UUID NOT NULL,
+      status VARCHAR(20) NOT NULL,
+      started_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      ended_at TIMESTAMP WITH TIME ZONE,
+      duration_seconds INTEGER,
+      error TEXT,
+      affected_locations JSONB DEFAULT '[]'
+    );
+
+    -- Maintenance windows table
+    CREATE TABLE IF NOT EXISTS maintenance_windows (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      check_id UUID NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+      end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+      reason TEXT,
+      created_by VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Transaction checks table
+    CREATE TABLE IF NOT EXISTS transaction_checks (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      steps JSONB NOT NULL DEFAULT '[]',
+      interval_seconds INTEGER NOT NULL DEFAULT 300,
+      enabled BOOLEAN DEFAULT TRUE,
+      created_by VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Transaction results table
+    CREATE TABLE IF NOT EXISTS transaction_results (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      transaction_id UUID NOT NULL,
+      status VARCHAR(20) NOT NULL,
+      total_time_ms INTEGER NOT NULL,
+      step_results JSONB DEFAULT '[]',
+      checked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Performance checks table
+    CREATE TABLE IF NOT EXISTS performance_checks (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      url TEXT NOT NULL,
+      interval_seconds INTEGER NOT NULL DEFAULT 300,
+      device VARCHAR(20) NOT NULL DEFAULT 'desktop',
+      enabled BOOLEAN DEFAULT TRUE,
+      created_by VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Performance results table
+    CREATE TABLE IF NOT EXISTS performance_results (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      check_id UUID NOT NULL,
+      status VARCHAR(20) NOT NULL,
+      metrics JSONB NOT NULL,
+      lighthouse_score INTEGER,
+      checked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Webhook checks table
+    CREATE TABLE IF NOT EXISTS webhook_checks (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      webhook_url TEXT NOT NULL,
+      webhook_secret VARCHAR(255),
+      expected_interval_seconds INTEGER NOT NULL DEFAULT 300,
+      expected_payload JSONB,
+      enabled BOOLEAN DEFAULT TRUE,
+      created_by VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Webhook events table
+    CREATE TABLE IF NOT EXISTS webhook_events (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      check_id UUID NOT NULL,
+      received_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      source_ip VARCHAR(45),
+      headers JSONB DEFAULT '{}',
+      payload JSONB,
+      payload_valid BOOLEAN DEFAULT TRUE,
+      validation_errors JSONB DEFAULT '[]',
+      signature_valid BOOLEAN
+    );
+
+    -- DNS checks table
+    CREATE TABLE IF NOT EXISTS dns_checks (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      domain VARCHAR(255) NOT NULL,
+      record_type VARCHAR(10) NOT NULL DEFAULT 'A',
+      expected_values JSONB DEFAULT '[]',
+      nameservers JSONB DEFAULT '[]',
+      interval_seconds INTEGER NOT NULL DEFAULT 300,
+      timeout_ms INTEGER NOT NULL DEFAULT 5000,
+      enabled BOOLEAN DEFAULT TRUE,
+      created_by VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- DNS results table
+    CREATE TABLE IF NOT EXISTS dns_results (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      check_id UUID NOT NULL,
+      status VARCHAR(20) NOT NULL,
+      resolved_values JSONB DEFAULT '[]',
+      expected_values JSONB DEFAULT '[]',
+      response_time_ms INTEGER NOT NULL,
+      nameserver_used VARCHAR(255),
+      error TEXT,
+      ttl INTEGER,
+      all_expected_found BOOLEAN DEFAULT TRUE,
+      unexpected_values JSONB DEFAULT '[]',
+      checked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- TCP checks table
+    CREATE TABLE IF NOT EXISTS tcp_checks (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      host VARCHAR(255) NOT NULL,
+      port INTEGER NOT NULL,
+      timeout_ms INTEGER NOT NULL DEFAULT 5000,
+      interval_seconds INTEGER NOT NULL DEFAULT 60,
+      enabled BOOLEAN DEFAULT TRUE,
+      created_by VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- TCP results table
+    CREATE TABLE IF NOT EXISTS tcp_results (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      check_id UUID NOT NULL,
+      status VARCHAR(20) NOT NULL,
+      port_open BOOLEAN NOT NULL,
+      response_time_ms INTEGER NOT NULL,
+      error TEXT,
+      checked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Status pages table
+    CREATE TABLE IF NOT EXISTS status_pages (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      slug VARCHAR(255) UNIQUE NOT NULL,
+      description TEXT,
+      logo_url TEXT,
+      favicon_url TEXT,
+      primary_color VARCHAR(20),
+      show_history_days INTEGER DEFAULT 7,
+      checks JSONB DEFAULT '[]',
+      custom_domain VARCHAR(255),
+      is_public BOOLEAN DEFAULT TRUE,
+      show_uptime_percentage BOOLEAN DEFAULT TRUE,
+      show_response_time BOOLEAN DEFAULT TRUE,
+      show_incidents BOOLEAN DEFAULT TRUE,
+      created_by VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Monitoring settings table
+    CREATE TABLE IF NOT EXISTS monitoring_settings (
+      organization_id UUID PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
+      retention_days INTEGER NOT NULL DEFAULT 30,
+      auto_cleanup_enabled BOOLEAN DEFAULT TRUE,
+      last_cleanup_at TIMESTAMP WITH TIME ZONE,
+      updated_by VARCHAR(255),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Deleted check history table (audit)
+    CREATE TABLE IF NOT EXISTS deleted_check_history (
+      check_id UUID PRIMARY KEY,
+      check_name VARCHAR(255) NOT NULL,
+      check_type VARCHAR(50) NOT NULL,
+      organization_id UUID NOT NULL,
+      deleted_by VARCHAR(255) NOT NULL,
+      deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      check_config JSONB,
+      historical_results_count INTEGER DEFAULT 0,
+      last_status VARCHAR(20)
+    );
+
     -- Create indexes for performance
     CREATE INDEX IF NOT EXISTS idx_users_organization ON users(organization_id);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -448,6 +708,29 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_mcp_audit_logs_organization ON mcp_audit_logs(organization_id);
     CREATE INDEX IF NOT EXISTS idx_mcp_audit_logs_timestamp ON mcp_audit_logs(timestamp DESC);
     CREATE INDEX IF NOT EXISTS idx_mcp_audit_logs_api_key ON mcp_audit_logs(api_key_id);
+
+    -- Monitoring indexes (Feature #2086)
+    CREATE INDEX IF NOT EXISTS idx_uptime_checks_organization ON uptime_checks(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_uptime_checks_enabled ON uptime_checks(enabled);
+    CREATE INDEX IF NOT EXISTS idx_check_results_check ON check_results(check_id);
+    CREATE INDEX IF NOT EXISTS idx_check_results_checked_at ON check_results(checked_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_check_incidents_check ON check_incidents(check_id);
+    CREATE INDEX IF NOT EXISTS idx_check_incidents_started ON check_incidents(started_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_maintenance_windows_check ON maintenance_windows(check_id);
+    CREATE INDEX IF NOT EXISTS idx_transaction_checks_organization ON transaction_checks(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_transaction_results_transaction ON transaction_results(transaction_id);
+    CREATE INDEX IF NOT EXISTS idx_performance_checks_organization ON performance_checks(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_performance_results_check ON performance_results(check_id);
+    CREATE INDEX IF NOT EXISTS idx_webhook_checks_organization ON webhook_checks(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_webhook_events_check ON webhook_events(check_id);
+    CREATE INDEX IF NOT EXISTS idx_webhook_events_received ON webhook_events(received_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_dns_checks_organization ON dns_checks(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_dns_results_check ON dns_results(check_id);
+    CREATE INDEX IF NOT EXISTS idx_tcp_checks_organization ON tcp_checks(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_tcp_results_check ON tcp_results(check_id);
+    CREATE INDEX IF NOT EXISTS idx_status_pages_organization ON status_pages(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_status_pages_slug ON status_pages(slug);
+    CREATE INDEX IF NOT EXISTS idx_deleted_check_history_org ON deleted_check_history(organization_id);
   `;
 
   try {
