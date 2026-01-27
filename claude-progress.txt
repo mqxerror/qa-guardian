@@ -28159,3 +28159,92 @@ Commit: 65f596c
 
 Stats: Feature #2087 marked passing
 
+
+
+### Feature #2088: Migrate DAST Module to PostgreSQL - PASSED
+
+Category: Infrastructure
+
+Objective: Replace in-memory Map stores in dast module with PostgreSQL database calls.
+Stores migrated: dastConfigs, dastScans, dastFalsePositives, openApiSpecs, dastSchedules, graphqlScans
+
+Implementation:
+1. Created repository file (backend/src/services/repositories/dast.ts, ~700 lines):
+   - DAST config CRUD per project
+   - DAST scan results with JSONB alerts/summary
+   - False positive tracking
+   - OpenAPI spec storage
+   - DAST schedule management
+   - GraphQL scan tracking
+
+2. Added database schema to database.ts:
+   - dast_configs table (per project)
+   - dast_scans table (scan results with JSONB)
+   - dast_false_positives table
+   - openapi_specs table
+   - dast_schedules table
+   - graphql_scans table
+   - 12 indexes for query performance
+
+3. Updated stores.ts:
+   - Re-exports repository functions
+   - Backward-compatible Map exports
+   - Static constants (DEFAULT_DAST_CONFIG, ZAP_SCAN_PROFILES, SCHEDULE_FREQUENCIES) preserved
+
+Verification:
+- DAST scan comparison page loaded
+- Selected two scans, compared them
+- Showed: Overall Status "Improved", 1 new, 3 fixed, 2 unchanged findings
+- Risk level changes visible (-1 medium, -1 low)
+- New SQL Injection finding shown with details
+
+Screenshot: feature-2088-dast-comparison.png
+
+Commit: 542f64d
+
+Stats: Feature #2088 marked passing
+
+
+### Feature #2089: Migrate SAST Module to PostgreSQL - PASSED
+
+Category: Infrastructure
+
+Objective: Replace in-memory Map stores in sast module with PostgreSQL database calls.
+Stores migrated: sastConfigs, sastScans, falsePositives, sastPRChecks, sastPRComments, secretPatterns
+
+Implementation:
+1. Created repository file (backend/src/services/repositories/sast.ts, ~600 lines):
+   - SAST config CRUD per project
+   - SAST scan results with JSONB findings
+   - False positive tracking
+   - PR checks (status, findings, blocked)
+   - PR comments storage
+   - Custom secret patterns (Feature #1558)
+
+2. Added database schema to database.ts:
+   - sast_configs table (per project)
+   - sast_scans table (scan results)
+   - sast_false_positives table
+   - sast_pr_checks table
+   - sast_pr_comments table
+   - secret_patterns table (Feature #1558)
+   - 12 indexes for query performance
+
+3. Updated stores.ts:
+   - Re-exports repository functions
+   - Backward-compatible Map exports
+   - Static constants preserved (DEFAULT_SAST_CONFIG, SEMGREP_RULESETS, SECRET_PATTERN_TEMPLATES)
+
+Verification:
+- Security Dashboard loaded successfully
+- Findings tab shows severity filters (Critical, High, Medium, Low)
+- Secrets tab shows scan options (Scan .env, Scan CI Configs, Scan All)
+- Secret type filter shows AWS keys, GitHub PAT, etc.
+- No errors in console
+
+Screenshot: feature-2089-sast-secrets-tab.png
+
+Commit: ff27eb5
+
+Stats: Feature #2089 marked passing
+
