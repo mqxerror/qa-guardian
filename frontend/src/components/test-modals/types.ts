@@ -7,7 +7,7 @@ export type TestType = 'e2e' | 'visual_regression' | 'lighthouse' | 'load' | 'ac
 
 export type AIGenMode = 'text' | 'screenshot' | 'user-story' | 'gherkin' | 'wizard' | 'openapi';
 
-export type ViewportPreset = 'mobile' | 'tablet' | 'desktop' | 'custom';
+export type ViewportPreset = 'mobile' | 'tablet' | 'laptop' | 'desktop' | 'custom';
 
 export type CaptureMode = 'full_page' | 'viewport' | 'element';
 

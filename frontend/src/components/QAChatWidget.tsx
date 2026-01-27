@@ -9,7 +9,7 @@ interface ChatMessage {
   content: string;
   timestamp: Date;
   data?: {
-    type: 'test_results' | 'explanation' | 'action_result' | 'text';
+    type: 'test_results' | 'explanation' | 'action_result' | 'text' | 'debug_analysis' | 'suggestions' | 'screenshot_analysis';
     tests?: Array<{
       id: string;
       name: string;
@@ -29,6 +29,61 @@ interface ChatMessage {
       type: 'fix_applied' | 'test_triggered' | 'test_running' | 'test_completed';
       details: string;
       success?: boolean;
+    };
+    debug?: {
+      test_name?: string;
+      total_steps?: number;
+      failed_step?: number;
+      steps: Array<{
+        number: number;
+        action: string;
+        status: 'passed' | 'failed' | 'pending' | 'skipped';
+        duration: number;
+        error?: string;
+        screenshot?: boolean;
+      }>;
+      failure_details?: {
+        step: number;
+        reason: string;
+        error?: string;
+        stack_trace?: string;
+      };
+    };
+    suggestions?: Array<{
+      priority: 'high' | 'medium' | 'low';
+      title: string;
+      description: string;
+      confidence: number;
+      code?: string;
+    }>;
+    analysis?: {
+      page_type: {
+        identified: string;
+        category: string;
+        confidence: number;
+      };
+      elements_detected: Array<{
+        type: string;
+        count?: number;
+        description?: string;
+        label?: string;
+        role?: string;
+        selector?: string;
+      }>;
+      errors_detected: Array<{
+        severity: 'error' | 'warning';
+        message: string;
+        location: string;
+      }>;
+      visual_state: {
+        has_overlay: boolean;
+        theme: string;
+        responsive_view: string;
+        has_loading_spinner?: boolean;
+        has_modal?: boolean;
+      };
+      semantic_description: string;
+      suggested_test_assertions?: string[];
     };
   };
 }
@@ -707,9 +762,9 @@ function QAChatWidget() {
                   )}
 
                   {/* Debug Analysis Display (Feature #1248) */}
-                  {message.data?.type === 'debug_analysis' && (message.data as any).debug && (
+                  {message.data?.type === 'debug_analysis' && message.data.debug && (
                     <div className="mt-2 space-y-2">
-                      {(message.data as any).debug.steps.map((step: any) => (
+                      {message.data.debug.steps.map((step) => (
                         <div key={step.number} className={`rounded-md p-2 text-xs ${
                           step.status === 'passed' ? 'bg-green-500/10 border border-green-500/20' :
                           step.status === 'failed' ? 'bg-red-500/10 border border-red-500/20' :
@@ -737,19 +792,19 @@ function QAChatWidget() {
                           )}
                         </div>
                       ))}
-                      {(message.data as any).debug.failure_details && (
+                      {message.data.debug.failure_details && (
                         <div className="rounded-md bg-red-500/10 border border-red-500/20 p-2 mt-2">
-                          <p className="text-xs font-medium text-red-600">💥 Step {(message.data as any).debug.failure_details.step} failed because:</p>
-                          <p className="text-xs text-red-500 mt-1">{(message.data as any).debug.failure_details.reason}</p>
+                          <p className="text-xs font-medium text-red-600">💥 Step {message.data.debug.failure_details.step} failed because:</p>
+                          <p className="text-xs text-red-500 mt-1">{message.data.debug.failure_details.reason}</p>
                         </div>
                       )}
                     </div>
                   )}
 
                   {/* Fix Suggestions Display (Feature #1248) */}
-                  {message.data?.type === 'suggestions' && (message.data as any).suggestions && (
+                  {message.data?.type === 'suggestions' && message.data.suggestions && (
                     <div className="mt-2 space-y-2">
-                      {(message.data as any).suggestions.map((suggestion: any, idx: number) => (
+                      {message.data.suggestions.map((suggestion, idx) => (
                         <div key={idx} className={`rounded-md p-2 text-xs border ${
                           suggestion.priority === 'high' ? 'bg-orange-500/10 border-orange-500/20' :
                           suggestion.priority === 'medium' ? 'bg-blue-500/10 border-blue-500/20' :
@@ -776,7 +831,7 @@ function QAChatWidget() {
                   )}
 
                   {/* Semantic Screenshot Analysis Display (Feature #1250) */}
-                  {message.data?.type === 'screenshot_analysis' && (message.data as any).analysis && (
+                  {message.data?.type === 'screenshot_analysis' && message.data.analysis && (
                     <div className="mt-2 space-y-2">
                       {/* Page Type Identification */}
                       <div className="rounded-md bg-purple-500/10 border border-purple-500/20 p-2">
@@ -784,18 +839,18 @@ function QAChatWidget() {
                           <span className="text-purple-400">🖼️</span>
                           <span className="text-xs font-medium text-foreground">Page Identified</span>
                           <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] bg-purple-500 text-white">
-                            {(message.data as any).analysis.page_type.confidence}% confidence
+                            {message.data.analysis.page_type.confidence}% confidence
                           </span>
                         </div>
-                        <p className="text-sm font-bold text-purple-300">{(message.data as any).analysis.page_type.identified}</p>
-                        <p className="text-[10px] text-muted-foreground">Category: {(message.data as any).analysis.page_type.category}</p>
+                        <p className="text-sm font-bold text-purple-300">{message.data.analysis.page_type.identified}</p>
+                        <p className="text-[10px] text-muted-foreground">Category: {message.data.analysis.page_type.category}</p>
                       </div>
 
                       {/* Elements Detected */}
                       <div className="rounded-md bg-blue-500/10 border border-blue-500/20 p-2">
                         <p className="text-xs font-medium text-foreground mb-1">🔍 Elements Detected</p>
                         <div className="space-y-1">
-                          {(message.data as any).analysis.elements_detected.slice(0, 6).map((el: any, idx: number) => (
+                          {message.data.analysis.elements_detected.slice(0, 6).map((el, idx) => (
                             <div key={idx} className="flex items-center gap-2 text-[10px]">
                               <span className={`w-2 h-2 rounded-full ${
                                 el.type === 'input' ? 'bg-cyan-400' :
@@ -815,11 +870,11 @@ function QAChatWidget() {
                       </div>
 
                       {/* Errors Detected */}
-                      {(message.data as any).analysis.errors_detected.length > 0 && (
+                      {message.data.analysis.errors_detected.length > 0 && (
                         <div className="rounded-md bg-red-500/10 border border-red-500/20 p-2">
                           <p className="text-xs font-medium text-red-400 mb-1">⚠️ Errors Detected</p>
                           <div className="space-y-1">
-                            {(message.data as any).analysis.errors_detected.map((err: any, idx: number) => (
+                            {message.data.analysis.errors_detected.map((err, idx) => (
                               <div key={idx} className="text-[10px]">
                                 <div className="flex items-center gap-1">
                                   <span className={`px-1 py-0.5 rounded text-[8px] uppercase ${
@@ -839,15 +894,15 @@ function QAChatWidget() {
                         <p className="text-xs font-medium text-foreground mb-1">👁️ Visual State</p>
                         <div className="flex flex-wrap gap-2 text-[10px]">
                           <span className="px-1.5 py-0.5 rounded bg-background border border-border">
-                            Theme: {(message.data as any).analysis.visual_state.theme}
+                            Theme: {message.data.analysis.visual_state.theme}
                           </span>
                           <span className="px-1.5 py-0.5 rounded bg-background border border-border">
-                            View: {(message.data as any).analysis.visual_state.responsive_view}
+                            View: {message.data.analysis.visual_state.responsive_view}
                           </span>
-                          {(message.data as any).analysis.visual_state.has_loading_spinner && (
+                          {message.data.analysis.visual_state.has_loading_spinner && (
                             <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">Loading</span>
                           )}
-                          {(message.data as any).analysis.visual_state.has_modal && (
+                          {message.data.analysis.visual_state.has_modal && (
                             <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">Modal Open</span>
                           )}
                         </div>
@@ -857,7 +912,7 @@ function QAChatWidget() {
                       <div className="rounded-md bg-green-500/10 border border-green-500/20 p-2">
                         <p className="text-xs font-medium text-green-400 mb-1">📝 Semantic Description</p>
                         <div className="text-[11px] text-foreground whitespace-pre-wrap">
-                          {(message.data as any).analysis.semantic_description.split('\n').map((line: string, i: number) => (
+                          {message.data.analysis.semantic_description.split('\n').map((line: string, i: number) => (
                             <p key={i} className={i > 0 ? 'mt-1' : ''}>
                               {line.split('**').map((part, j) =>
                                 j % 2 === 1 ? <strong key={j}>{part}</strong> : part
@@ -868,11 +923,11 @@ function QAChatWidget() {
                       </div>
 
                       {/* Suggested Test Assertions */}
-                      {(message.data as any).analysis.suggested_test_assertions && (
+                      {message.data.analysis.suggested_test_assertions && (
                         <div className="rounded-md bg-cyan-500/10 border border-cyan-500/20 p-2">
                           <p className="text-xs font-medium text-cyan-400 mb-1">✅ Suggested Test Assertions</p>
                           <ul className="space-y-0.5">
-                            {(message.data as any).analysis.suggested_test_assertions.map((assertion: string, idx: number) => (
+                            {message.data.analysis.suggested_test_assertions.map((assertion: string, idx: number) => (
                               <li key={idx} className="text-[10px] text-muted-foreground flex items-start gap-1">
                                 <span className="text-cyan-400">•</span>
                                 {assertion}

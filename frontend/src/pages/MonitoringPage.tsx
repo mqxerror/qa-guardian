@@ -3044,7 +3044,7 @@ function MonitoringPage() {
 
       // Build description from alerts
       const description = `Auto-created from alert group.\n\nGrouped alerts:\n${
-        group.alerts.slice(0, 5).map(a => `- ${a.check_name}: ${a.error || 'Failed'}`).join('\n')
+        group.alerts.slice(0, 5).map(a => `- ${a.check_name}: ${a.error_message || 'Failed'}`).join('\n')
       }${group.alerts.length > 5 ? `\n... and ${group.alerts.length - 5} more` : ''}`;
 
       const payload = {
@@ -8941,7 +8941,7 @@ function MonitoringPage() {
                                         ...dest.config,
                                         severity_mapping: {
                                           ...dest.config.severity_mapping,
-                                          critical: e.target.value
+                                          critical: e.target.value as 'critical' | 'error' | 'warning' | 'info'
                                         }
                                       }
                                     })}
@@ -8962,7 +8962,7 @@ function MonitoringPage() {
                                         ...dest.config,
                                         severity_mapping: {
                                           ...dest.config.severity_mapping,
-                                          high: e.target.value
+                                          high: e.target.value as 'critical' | 'error' | 'warning' | 'info'
                                         }
                                       }
                                     })}
@@ -8983,7 +8983,7 @@ function MonitoringPage() {
                                         ...dest.config,
                                         severity_mapping: {
                                           ...dest.config.severity_mapping,
-                                          medium: e.target.value
+                                          medium: e.target.value as 'critical' | 'error' | 'warning' | 'info'
                                         }
                                       }
                                     })}
@@ -9004,7 +9004,7 @@ function MonitoringPage() {
                                         ...dest.config,
                                         severity_mapping: {
                                           ...dest.config.severity_mapping,
-                                          low: e.target.value
+                                          low: e.target.value as 'critical' | 'error' | 'warning' | 'info'
                                         }
                                       }
                                     })}

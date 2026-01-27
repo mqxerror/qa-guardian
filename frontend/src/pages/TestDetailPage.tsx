@@ -22,6 +22,7 @@ interface TestSuite {
   updated_at: string;
   test_count?: number;
   browser?: string;
+  default_browser?: 'chromium' | 'firefox' | 'webkit';
   viewport_width?: number;
   viewport_height?: number;
   timeout?: number;
@@ -89,6 +90,12 @@ interface TestType {
   healing_active?: boolean;
   healing_status?: 'idle' | 'healing' | 'healed';
   healing_count?: number;
+  // Playwright code properties
+  playwright_code?: string;
+  use_custom_code?: boolean;
+  // Viewport properties
+  viewports?: Array<{ name: string; width: number; height: number }>;
+  viewport_preset?: 'mobile' | 'tablet' | 'laptop' | 'desktop' | 'custom';
 }
 
 interface TestRunType {
@@ -4219,6 +4226,7 @@ export default function () {
                           );
                         }
                         // Legacy format: string preset name
+                        const vpString = vp as string;
                         const presets: Record<string, { width: number; height: number; label: string }> = {
                           'desktop': { width: 1920, height: 1080, label: 'Desktop' },
                           'laptop': { width: 1366, height: 768, label: 'Laptop' },
@@ -4227,10 +4235,10 @@ export default function () {
                           'mobile': { width: 375, height: 667, label: 'Mobile' },
                           'mobile_large': { width: 414, height: 896, label: 'Mobile Large' },
                         };
-                        const preset = presets[vp];
+                        const preset = presets[vpString];
                         return (
-                          <span key={vp} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                            📐 {preset?.label || vp} ({preset?.width || '?'}×{preset?.height || '?'})
+                          <span key={vpString} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                            📐 {preset?.label || vpString} ({preset?.width || '?'}×{preset?.height || '?'})
                           </span>
                         );
                       })}

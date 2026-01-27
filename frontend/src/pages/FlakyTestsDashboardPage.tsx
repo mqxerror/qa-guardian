@@ -496,14 +496,7 @@ export function FlakyTestsDashboardPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        toast.success(
-          <div>
-            <div className="font-semibold">Test Released from Quarantine</div>
-            <div className="text-sm">&quot;{data.test_name}&quot; is now running normally</div>
-            <div className="text-xs text-gray-500 mt-1">Monitoring will continue for potential re-quarantine</div>
-          </div>,
-          { duration: 5000 }
-        );
+        toast.success(`Test "${data.test_name}" released from quarantine and is now running normally`, 5000);
         // Update local state
         setFlakyTests(prev => prev.map(t =>
           t.test_id === testToRelease.test_id

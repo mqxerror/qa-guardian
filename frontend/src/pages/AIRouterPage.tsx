@@ -1899,34 +1899,42 @@ function AIRouterPage() {
 
   // Feature #1333: Model selection helper functions
   const getModelInfo = (model: AIModelType) => {
-    const modelInfo: Record<AIModelType, { name: string; icon: string; description: string; tier: string; costBadge: string }> = {
+    const modelInfo: Record<AIModelType, { name: string; icon: string; description: string; tier: string; costBadge: string; cost: number; latency: string }> = {
       'claude-opus-4.5-thinking': {
         name: 'Opus 4.5 Thinking',
         icon: '🧠',
         description: 'Most capable, extended reasoning',
         tier: 'Premium',
-        costBadge: '$$$'
+        costBadge: '$$$',
+        cost: 0.015,
+        latency: '3000'
       },
       'claude-opus-4.5': {
         name: 'Opus 4.5',
         icon: '🎯',
         description: 'High capability, complex tasks',
         tier: 'Premium',
-        costBadge: '$$$'
+        costBadge: '$$$',
+        cost: 0.015,
+        latency: '2000'
       },
       'claude-sonnet-4': {
         name: 'Sonnet 4',
         icon: '⚡',
         description: 'Balanced speed & quality',
         tier: 'Standard',
-        costBadge: '$$'
+        costBadge: '$$',
+        cost: 0.003,
+        latency: '800'
       },
       'claude-haiku-3.5': {
         name: 'Haiku 3.5',
         icon: '🚀',
         description: 'Fast, cost-effective',
         tier: 'Economy',
-        costBadge: '$'
+        costBadge: '$',
+        cost: 0.00025,
+        latency: '200'
       },
     };
     return modelInfo[model];

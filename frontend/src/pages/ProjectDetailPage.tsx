@@ -8,6 +8,32 @@ import { useTimezoneStore } from "../stores/timezoneStore";
 import { useTestDefaultsStore } from "../stores/testDefaultsStore";
 import { toast } from "../stores/toastStore";
 
+// TestSuite interface
+interface TestSuite {
+  id: string;
+  name: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+  test_count?: number;
+  browser?: string;
+  viewport_width?: number;
+  viewport_height?: number;
+  timeout?: number;
+  retry_count?: number;
+}
+
+// Helper function for error messages
+function getErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error) {
+    return err.message;
+  }
+  if (typeof err === 'string') {
+    return err;
+  }
+  return fallback;
+}
+
 
 function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -1549,30 +1575,14 @@ function ProjectDetailPage() {
 
           if (status === 'passed') {
             completed = true;
-            toast.success(
-              <div
-                className="cursor-pointer"
-                onClick={() => navigate(`/tests/${testId}`)}
-              >
-                <span className="font-semibold">Site Healthy ✅</span>
-                <br />
-                <span className="text-xs opacity-75">Click to view details</span>
-              </div>,
-              { duration: 5000 }
-            );
+            toast.success('Site Healthy ✅ - Click test details to view results', 5000);
+            // Navigate to test details after a short delay
+            setTimeout(() => navigate(`/tests/${testId}`), 1000);
           } else if (status === 'failed' || status === 'error') {
             completed = true;
-            toast.error(
-              <div
-                className="cursor-pointer"
-                onClick={() => navigate(`/tests/${testId}`)}
-              >
-                <span className="font-semibold">Issues Found ⚠️</span>
-                <br />
-                <span className="text-xs opacity-75">Click to view details</span>
-              </div>,
-              { duration: 8000 }
-            );
+            toast.error('Issues Found ⚠️ - Click test details to view results', 8000);
+            // Navigate to test details after a short delay
+            setTimeout(() => navigate(`/tests/${testId}`), 1000);
           }
         }
       }

@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { TestFormData, DEFAULT_FORM_DATA, AICopilotSuggestion, TestType, VIEWPORT_PRESETS } from './types';
+import { TestFormData, DEFAULT_FORM_DATA, AICopilotSuggestion, TestType, VIEWPORT_PRESETS, ViewportPreset } from './types';
 
 // API base URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://qa.pixelcraftedmedia.com';
@@ -363,7 +363,7 @@ function mapTestTypeToFormType(apiType: string | undefined): TestType | undefine
  */
 function getViewportPreset(
   viewport: { width: number; height: number } | undefined
-): string | undefined {
+): ViewportPreset | undefined {
   if (!viewport) return undefined;
   if (viewport.width === 375) return 'mobile';
   if (viewport.width === 768) return 'tablet';

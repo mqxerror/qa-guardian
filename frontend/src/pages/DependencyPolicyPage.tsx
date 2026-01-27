@@ -87,10 +87,25 @@ export function DependencyPolicyPage() {
 
   // Create policy modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newPolicy, setNewPolicy] = useState({
+  const [newPolicy, setNewPolicy] = useState<{
+    name: string;
+    description: string;
+    max_allowed_severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE';
+    fail_on_critical: boolean;
+    fail_on_high: boolean;
+    fail_on_medium: boolean;
+    fail_on_low: boolean;
+    block_builds: boolean;
+    block_deployments: boolean;
+    block_pr_merge: boolean;
+    grace_period_days: number;
+    exception_patterns: string;
+    notify_on_violation: boolean;
+    notify_channels: ('slack' | 'email' | 'in_app')[];
+  }>({
     name: '',
     description: '',
-    max_allowed_severity: 'MEDIUM' as const,
+    max_allowed_severity: 'MEDIUM',
     fail_on_critical: true,
     fail_on_high: true,
     fail_on_medium: false,
@@ -101,7 +116,7 @@ export function DependencyPolicyPage() {
     grace_period_days: 0,
     exception_patterns: '',
     notify_on_violation: true,
-    notify_channels: ['in_app'] as ('slack' | 'email' | 'in_app')[],
+    notify_channels: ['in_app'],
   });
   const [isCreatingPolicy, setIsCreatingPolicy] = useState(false);
 

@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import { useSidebarStore } from '../stores/sidebarStore';
+import { useSidebarStore, SidebarSection } from '../stores/sidebarStore';
 import { useNotificationStore, InAppNotification } from '../stores/notificationStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
 
@@ -1001,7 +1001,7 @@ export function Sidebar() {
 
   // Feature #1364: Check if section is collapsed
   // Feature #1549: Ensure safe array access with fallback
-  const isSectionCollapsed = (section: string) => {
+  const isSectionCollapsed = (section: SidebarSection) => {
     const sections = Array.isArray(collapsedSections) ? collapsedSections : [];
     return sections.includes(section);
   };
@@ -1009,7 +1009,7 @@ export function Sidebar() {
   // Feature #1505: Keyboard shortcuts for sidebar navigation
   // G+T: Testing, G+S: Security, G+A: AI & MCP, G+D: Dashboard
   const [showShortcutHints, setShowShortcutHints] = useState(false);
-  const shortcutTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const shortcutTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let waitingForSecondKey = false;
