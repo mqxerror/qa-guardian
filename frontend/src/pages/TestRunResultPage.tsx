@@ -2768,7 +2768,7 @@ export default function TestRunResultPage() {
     if (result.load_test) {
       return {
         label: 'RPS',
-        value: result.load_test.summary.requests_per_second,
+        value: result.load_test?.summary?.requests_per_second ?? 'N/A',
         type: 'load',
       };
     }
@@ -5969,40 +5969,61 @@ Format your response with clear sections using **bold headers** and code blocks 
                         {step.load_test && (
                           <div className="mt-4 pt-4 border-t border-border">
                             <h4 className="font-medium text-foreground mb-3">Load Test Results</h4>
-                            <div className="grid grid-cols-4 gap-3">
-                              <div className="p-3 bg-muted rounded-lg text-center">
-                                <div className="text-xl font-bold text-foreground">
-                                  {step.load_test.requests_per_second.toFixed(1)}
+                            {/* Feature #2078: Check if metrics exist - show failure state if missing */}
+                            {(step.load_test.requests_per_second === undefined &&
+                              step.load_test.avg_response_time === undefined &&
+                              step.load_test.summary?.requests_per_second === undefined) ? (
+                              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                <div className="flex items-center gap-2 text-red-700 dark:text-red-300 mb-2">
+                                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                  </svg>
+                                  <span className="font-medium">Load Test Failed</span>
                                 </div>
-                                <div className="text-xs text-muted-foreground">Req/sec</div>
+                                <p className="text-sm text-red-600 dark:text-red-400">
+                                  The load test did not complete successfully. This may be because the target server couldn't handle the load,
+                                  connection issues occurred, or the test was interrupted. No metrics are available.
+                                </p>
                               </div>
-                              <div className="p-3 bg-muted rounded-lg text-center">
-                                <div className="text-xl font-bold text-foreground">
-                                  {step.load_test.avg_response_time}ms
+                            ) : (
+                              <div className="grid grid-cols-4 gap-3">
+                                <div className="p-3 bg-muted rounded-lg text-center">
+                                  <div className="text-xl font-bold text-foreground">
+                                    {step.load_test.requests_per_second?.toFixed?.(1) ?? step.load_test.summary?.requests_per_second ?? 'N/A'}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">Req/sec</div>
                                 </div>
-                                <div className="text-xs text-muted-foreground">Avg Response</div>
-                              </div>
-                              <div className="p-3 bg-muted rounded-lg text-center">
-                                <div className="text-xl font-bold text-foreground">
-                                  {step.load_test.p95_response_time}ms
+                                <div className="p-3 bg-muted rounded-lg text-center">
+                                  <div className="text-xl font-bold text-foreground">
+                                    {step.load_test.avg_response_time ?? step.load_test.response_times?.avg ?? 'N/A'}
+                                    {(step.load_test.avg_response_time !== undefined || step.load_test.response_times?.avg !== undefined) && 'ms'}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">Avg Response</div>
                                 </div>
-                                <div className="text-xs text-muted-foreground">p95 Response</div>
-                              </div>
-                              <div className={`p-3 rounded-lg text-center ${
-                                step.load_test.error_rate > 5 ? 'bg-red-100 dark:bg-red-900/30' :
-                                step.load_test.error_rate > 1 ? 'bg-yellow-100 dark:bg-yellow-900/30' :
-                                'bg-green-100 dark:bg-green-900/30'
-                              }`}>
-                                <div className={`text-xl font-bold ${
-                                  step.load_test.error_rate > 5 ? 'text-red-600' :
-                                  step.load_test.error_rate > 1 ? 'text-yellow-600' :
-                                  'text-green-600'
+                                <div className="p-3 bg-muted rounded-lg text-center">
+                                  <div className="text-xl font-bold text-foreground">
+                                    {step.load_test.p95_response_time ?? step.load_test.response_times?.p95 ?? 'N/A'}
+                                    {(step.load_test.p95_response_time !== undefined || step.load_test.response_times?.p95 !== undefined) && 'ms'}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">p95 Response</div>
+                                </div>
+                                <div className={`p-3 rounded-lg text-center ${
+                                  (step.load_test.error_rate ?? 0) > 5 ? 'bg-red-100 dark:bg-red-900/30' :
+                                  (step.load_test.error_rate ?? 0) > 1 ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                                  'bg-green-100 dark:bg-green-900/30'
                                 }`}>
-                                  {step.load_test.error_rate.toFixed(1)}%
+                                  <div className={`text-xl font-bold ${
+                                    (step.load_test.error_rate ?? 0) > 5 ? 'text-red-600' :
+                                    (step.load_test.error_rate ?? 0) > 1 ? 'text-yellow-600' :
+                                    'text-green-600'
+                                  }`}>
+                                    {step.load_test.error_rate?.toFixed?.(1) ?? 'N/A'}
+                                    {step.load_test.error_rate !== undefined && '%'}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">Error Rate</div>
                                 </div>
-                                <div className="text-xs text-muted-foreground">Error Rate</div>
                               </div>
-                            </div>
+                            )}
                           </div>
                         )}
 
@@ -8213,6 +8234,101 @@ Format your response with clear sections using **bold headers** and code blocks 
                 {loadTestResults.map((result, idx) => {
                   const loadTest = result.load_test;
                   if (!loadTest) return null;
+
+                  // Feature #2078: Check if essential metrics exist - show failure state if all missing
+                  const hasEssentialMetrics = loadTest.summary?.requests_per_second !== undefined ||
+                                              loadTest.summary?.total_requests !== undefined ||
+                                              loadTest.response_times?.avg !== undefined ||
+                                              loadTest.response_times?.p95 !== undefined;
+
+                  // If no essential metrics, show a test failed state
+                  if (!hasEssentialMetrics) {
+                    return (
+                      <div key={idx} className="bg-card border border-red-300 dark:border-red-800 rounded-xl overflow-hidden shadow-lg">
+                        <div className="border-b-4 border-red-500">
+                          <div className="p-5 bg-gradient-to-r from-red-50 to-red-100/50 dark:from-red-900/30 dark:to-red-900/10">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium rounded-full flex items-center gap-1.5">
+                                  <span>⚡</span> K6 Load Test
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(loadTest.started_at || Date.now()).toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
+                                ❌ TEST FAILED
+                              </div>
+                            </div>
+                            <h4 className="text-xl font-semibold text-foreground mb-1">{result.test_name}</h4>
+                            {loadTest.target_url && (
+                              <div className="text-sm text-muted-foreground font-mono mb-4">
+                                🌐 {loadTest.target_url}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="p-6">
+                          <div className="flex items-start gap-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <svg className="w-8 h-8 text-red-500 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <div>
+                              <h5 className="font-semibold text-red-700 dark:text-red-300 mb-2">Load Test Could Not Complete</h5>
+                              <p className="text-sm text-red-600 dark:text-red-400 mb-3">
+                                The load test failed to collect metrics. This typically happens when:
+                              </p>
+                              <ul className="text-sm text-red-600 dark:text-red-400 list-disc list-inside space-y-1">
+                                <li>The target server couldn't handle the load (e.g., 20k+ visitors/minute)</li>
+                                <li>Connection timeouts occurred before metrics could be collected</li>
+                                <li>The target URL was unreachable or returned errors</li>
+                                <li>The K6 test script encountered an error</li>
+                                <li>The test was interrupted or cancelled</li>
+                              </ul>
+                              <div className="mt-4 flex items-center gap-3">
+                                <button
+                                  onClick={() => {/* Re-run logic */}}
+                                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                  </svg>
+                                  Re-run Test
+                                </button>
+                                <span className="text-xs text-muted-foreground">Try with reduced virtual users or shorter duration</span>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Show any partial data that might exist */}
+                          {(loadTest.virtual_users?.configured || loadTest.duration?.configured || loadTest.environment) && (
+                            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                              <h6 className="text-sm font-medium text-foreground mb-2">Test Configuration</h6>
+                              <div className="grid grid-cols-3 gap-4 text-sm">
+                                {loadTest.virtual_users?.configured && (
+                                  <div>
+                                    <span className="text-muted-foreground">Virtual Users:</span>{' '}
+                                    <span className="font-medium">{loadTest.virtual_users.configured}</span>
+                                  </div>
+                                )}
+                                {(loadTest.duration?.configured || loadTest.configuration?.duration) && (
+                                  <div>
+                                    <span className="text-muted-foreground">Duration:</span>{' '}
+                                    <span className="font-medium">{loadTest.duration?.configured || loadTest.configuration?.duration}s</span>
+                                  </div>
+                                )}
+                                {loadTest.environment && (
+                                  <div>
+                                    <span className="text-muted-foreground">Environment:</span>{' '}
+                                    <span className="font-medium">{loadTest.environment}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
 
                   const timeSeries = generateK6TimeSeries(loadTest);
                   const histogram = generateResponseTimeHistogram(loadTest);
