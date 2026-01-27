@@ -1,10 +1,73 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 23/36 features passing (63.9%)**
+- **Progress: 29/36 features passing (80.6%)**
 - **Last Updated**: 2026-01-27
 - **Current Phase**: Database migration - PostgreSQL persistence
-- **Recent Progress**: Session #147 - Database migration features #2079 and #2080 completed
+- **Recent Progress**: Session #149 - Database migration feature #2086 (Monitoring module) completed
+
+=== Session 2026-01-27 (Infrastructure Session #149) ===
+Progress: 29/36 (80.6%)
+
+### Feature #2086: Migrate Monitoring Module to PostgreSQL - PASSED ✅
+
+**Category:** Infrastructure
+
+**Summary:**
+Migrated the extensive monitoring module from in-memory Map stores to PostgreSQL persistence
+with automatic in-memory fallback when database is unavailable.
+
+**Scope:**
+The monitoring module had 35+ Map stores for:
+- Uptime checks and results
+- Transaction checks and results
+- Performance checks and results
+- Maintenance windows
+- Incidents (active and historical)
+- Webhook checks and events
+- DNS checks and results
+- TCP checks and results
+- Status pages, subscriptions, incidents
+- On-call schedules and escalation policies
+- Alert grouping, routing, rate limiting
+- Alert correlations and runbooks
+- Managed incidents
+
+**Implementation:**
+1. Created `backend/src/services/repositories/monitoring.ts` (~1500 lines):
+   - 35+ async CRUD functions for all monitoring entities
+   - In-memory Map fallback stores (same as before)
+   - `isDatabaseConnected()` check for transparent fallback
+   - Parser functions for converting DB rows to TypeScript types
+
+2. Updated `backend/src/services/database.ts`:
+   - Added 15+ new tables for monitoring data:
+     - uptime_checks, check_results, uptime_check_state
+     - check_incidents, maintenance_windows
+     - transaction_checks, transaction_results
+     - performance_checks, performance_results
+     - webhook_checks, webhook_events
+     - dns_checks, dns_results
+     - tcp_checks, tcp_results
+     - status_pages, monitoring_settings
+     - deleted_check_history
+   - Added 20+ indexes for optimal query performance
+
+3. Updated `backend/src/routes/monitoring/stores.ts`:
+   - Exports async database functions for new code
+   - Exports Map references (from repository) for backward compatibility
+   - Note: checkIntervals Map stays in-memory (NodeJS.Timeout cannot be serialized)
+
+**Verification:**
+- Backend compiled and started successfully
+- Created uptime check "Example.com" via UI
+- Check executed successfully: status UP, 495ms response time
+- UI showed 1 check in Uptime Checks tab
+- Screenshot captured: feature-2086-uptime-check-created.png
+
+**Commit:** 58796eb
+
+---
 
 === Session 2026-01-27 (Infrastructure Session #147) ===
 Progress: 23/36 (63.9%)
@@ -27942,3 +28005,65 @@ Modified ManualSetupStep.tsx to skip rendering common fields when testType === '
 - Total: 1820
 - Percentage: 99.9%
 
+
+
+=== Session 2026-01-27 (Session #148 - Database Migration Continues) ===
+
+### Feature #2081: Migrate Test Suites Module to PostgreSQL - PASSED
+
+Category: Infrastructure
+
+Objective: Replace in-memory Map stores in test-suites module with PostgreSQL database calls.
+
+Implementation:
+1. Created repository file (backend/src/services/repositories/test-suites.ts) with CRUD operations
+2. Updated stores.ts to export both Map stores and async database functions
+3. Updated routes.ts - all handlers now use async database functions
+
+Database Tables: test_suites, tests
+
+Verification: Created project, suite, test via UI - all CRUD working
+
+Commit: ce49322
+
+Stats: Feature #2081 marked passing
+
+
+### Feature #2082: Migrate Test Runs Module to PostgreSQL - PASSED
+
+Category: Infrastructure
+
+Objective: Replace in-memory Map stores in test-runs module with PostgreSQL database calls.
+Stores migrated: testRuns, selectorOverrides, healedSelectorHistory
+
+Implementation:
+1. Created repository file (backend/src/services/repositories/test-runs.ts) with:
+   - CRUD operations for test_runs table
+   - CRUD operations for selector_overrides table
+   - CRUD operations for healed_selector_history table
+   - Memory fallback stores for non-database mode
+
+2. Updated database.ts schema:
+   - Extended test_runs table with full TestRun interface fields
+   - Added selector_overrides table
+   - Added healed_selector_history table
+   - Added indexes for new tables
+
+3. Updated execution.ts:
+   - Import and export repository functions
+   - Map stores now backed by repository memory stores
+   - runningBrowsers stays in-memory (Browser instances)
+
+Verification:
+- Created project TEST_RUN_MIGRATION_2082
+- Created suite TEST_RUN_SUITE_2082
+- Created E2E test and ran it
+- Test passed in 3.1s
+- Run history showed 1 passed test
+- All CRUD operations working
+
+Screenshot: feature-2082-test-run-passed.png
+
+Commit: f7628e7
+
+Stats: Feature #2082 marked passing
