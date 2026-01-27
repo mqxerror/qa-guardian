@@ -26,6 +26,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xdg-utils \
     curl \
     dumb-init \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install k6 for load testing
+RUN curl -fsSL https://dl.k6.io/key.gpg | gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" > /etc/apt/sources.list.d/k6.list \
+    && apt-get update && apt-get install -y k6 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
