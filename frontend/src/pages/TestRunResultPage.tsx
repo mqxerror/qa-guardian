@@ -1585,7 +1585,7 @@ export default function TestRunResultPage() {
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(60, 60, 60);
     const summaryText = overallStatus === 'PASSED'
-      ? `The system successfully handled ${(loadTestData.summary?.total_requests || 0).toLocaleString()} requests from ${loadTestData.configuration?.target_vus || loadTestData.summary?.max_vus || 0} concurrent users with a ${successRate.toFixed(1)}% success rate and ${loadTestData.response_times?.p95 || 0}ms P95 latency.`
+      ? `The system successfully handled ${(loadTestData.summary?.total_requests || 0).toLocaleString()} requests from ${loadTestData.virtual_users?.configured || loadTestData.configuration?.target_vus || loadTestData.summary?.max_vus || 0} concurrent users with a ${successRate.toFixed(1)}% success rate and ${loadTestData.response_times?.p95 || 0}ms P95 latency.`
       : overallStatus === 'WARNING'
       ? `The system processed ${(loadTestData.summary?.total_requests || 0).toLocaleString()} requests but showed signs of stress with ${errorRate.toFixed(1)}% errors. Consider optimizing before production deployment.`
       : `Performance issues detected: ${thresholdsFailed} threshold(s) failed, ${errorRate.toFixed(1)}% error rate. Investigation required.`;
@@ -1604,7 +1604,7 @@ export default function TestRunResultPage() {
     addMetricRow('Requests/sec', `${loadTestData.summary?.requests_per_second || 0}`);
     addMetricRow('Success Rate', `${loadTestData.summary?.success_rate || '0%'}`, successRate >= 99 ? 'good' : successRate >= 95 ? 'warning' : 'bad');
     addMetricRow('Error Rate', `${errorRate.toFixed(2)}%`, errorRate < 1 ? 'good' : errorRate < 5 ? 'warning' : 'bad');
-    addMetricRow('Virtual Users', `${loadTestData.configuration?.target_vus || loadTestData.summary?.max_vus || 0}`);
+    addMetricRow('Virtual Users', `${loadTestData.virtual_users?.configured || loadTestData.configuration?.target_vus || loadTestData.summary?.max_vus || 0}`);
     addMetricRow('Duration', `${loadTestData.configuration?.duration || loadTestData.summary?.duration_formatted || 'N/A'}`);
     addMetricRow('Data Transferred', `${loadTestData.summary?.data_transferred_formatted || '0 B'}`);
 
@@ -8447,9 +8447,9 @@ Format your response with clear sections using **bold headers** and code blocks 
                               </h4>
                               <p className="text-sm text-muted-foreground">
                                 {overallStatus === 'passed'
-                                  ? `System successfully handled ${loadTest.configuration?.target_vus || loadTest.summary?.max_vus || 0} virtual users with ${successRateNum.toFixed(1)}% success rate`
+                                  ? `System successfully handled ${loadTest.virtual_users?.configured || loadTest.configuration?.target_vus || loadTest.summary?.max_vus || 0} virtual users with ${successRateNum.toFixed(1)}% success rate`
                                   : overallStatus === 'warning'
-                                  ? `System showed degradation under ${loadTest.configuration?.target_vus || loadTest.summary?.max_vus || 0} VUs - ${errorRate.toFixed(1)}% error rate detected`
+                                  ? `System showed degradation under ${loadTest.virtual_users?.configured || loadTest.configuration?.target_vus || loadTest.summary?.max_vus || 0} VUs - ${errorRate.toFixed(1)}% error rate detected`
                                   : `System failed to handle load - ${thresholdsFailed} threshold${thresholdsFailed !== 1 ? 's' : ''} breached with ${errorRate.toFixed(1)}% errors`
                                 }
                               </p>
@@ -8522,11 +8522,11 @@ Format your response with clear sections using **bold headers** and code blocks 
                           {/* VUs Card */}
                           <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 text-center">
                             <div className="text-3xl font-bold text-blue-600">
-                              {loadTest.configuration?.target_vus || loadTest.summary?.max_vus || 0}
+                              {loadTest.virtual_users?.configured || loadTest.configuration?.target_vus || loadTest.summary?.max_vus || 0}
                             </div>
                             <div className="text-sm text-muted-foreground font-medium">Virtual Users</div>
                             <div className="text-xs text-muted-foreground mt-1">
-                              Duration: {loadTest.configuration?.duration || loadTest.summary?.duration_formatted || 'N/A'}
+                              Duration: {loadTest.duration?.configured || loadTest.configuration?.duration || loadTest.summary?.duration_formatted || 'N/A'}s
                             </div>
                           </div>
                         </div>
@@ -8562,7 +8562,7 @@ Format your response with clear sections using **bold headers** and code blocks 
                           <p className="text-sm text-muted-foreground italic">
                             📊 <strong>Summary:</strong>{' '}
                             {overallStatus === 'passed'
-                              ? `The system handled ${(loadTest.summary?.total_requests || 0).toLocaleString()} requests from ${loadTest.configuration?.target_vus || loadTest.summary?.max_vus || 0} concurrent users with a ${successRateNum.toFixed(1)}% success rate and ${loadTest.response_times?.p95 || 0}ms P95 latency. All thresholds passed.`
+                              ? `The system handled ${(loadTest.summary?.total_requests || 0).toLocaleString()} requests from ${loadTest.virtual_users?.configured || loadTest.configuration?.target_vus || loadTest.summary?.max_vus || 0} concurrent users with a ${successRateNum.toFixed(1)}% success rate and ${loadTest.response_times?.p95 || 0}ms P95 latency. All thresholds passed.`
                               : overallStatus === 'warning'
                               ? `The system processed ${(loadTest.summary?.total_requests || 0).toLocaleString()} requests but showed signs of stress with ${errorRate.toFixed(1)}% errors. Consider optimizing before production deployment.`
                               : `Performance issues detected: ${thresholdsFailed} threshold${thresholdsFailed !== 1 ? 's' : ''} failed, ${errorRate.toFixed(1)}% error rate. Investigate bottlenecks before increasing load.`
