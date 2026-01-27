@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <style>
+      .title { font: bold 24px sans-serif; fill: #1a1a2e; }
+      .subtitle { font: 14px sans-serif; fill: #666; }
+      .phase-title { font: bold 16px sans-serif; fill: #333; }
+      .step-title { font: bold 12px sans-serif; fill: #fff; }
+      .step-desc { font: 10px sans-serif; fill: #fff; opacity: 0.9; }
+      .label { font: 11px sans-serif; fill: #333; }
+      .note { font: 10px sans-serif; fill: #666; font-style: italic; }
+      .arrow { stroke: #64748b; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .success-arrow { stroke: #22c55e; stroke-width: 2; fill: none; marker-end: url(#arrowhead-green); }
+      .fail-arrow { stroke: #ef4444; stroke-width: 2; fill: none; marker-end: url(#arrowhead-red); }
+      .dashed-arrow { stroke: #64748b; stroke-width: 2; stroke-dasharray: 5,3; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e"/>
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444"/>
+    </marker>
+    <linearGradient id="triggerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#dc2626"/>
+    </linearGradient>
+    <linearGradient id="queueGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="emailGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+    <linearGradient id="slackGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4ade80"/>
+      <stop offset="100%" style="stop-color:#22c55e"/>
+    </linearGradient>
+    <linearGradient id="webhookGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="deliveryGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4"/>
+      <stop offset="100%" style="stop-color:#0891b2"/>
+    </linearGradient>
+    <linearGradient id="suppressGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#db2777"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="900" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <text x="600" y="40" text-anchor="middle" class="title">Alerting System</text>
+  <text x="600" y="62" text-anchor="middle" class="subtitle">Alert channels, notification delivery, and digest management</text>
+
+  <!-- ===== SECTION 1: ALERT TRIGGER CONDITIONS ===== -->
+  <g transform="translate(30, 95)">
+    <rect width="350" height="260" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+    <text x="175" y="25" text-anchor="middle" class="phase-title" fill="#ef4444">1. Alert Trigger Conditions</text>
+
+    <!-- Test Failure -->
+    <rect x="20" y="50" width="150" height="55" rx="6" fill="url(#triggerGrad)"/>
+    <text x="95" y="75" text-anchor="middle" class="step-title">Test Failure</text>
+    <text x="95" y="92" text-anchor="middle" class="step-desc">Any test status = failed</text>
+
+    <!-- Threshold -->
+    <rect x="180" y="50" width="150" height="55" rx="6" fill="url(#triggerGrad)"/>
+    <text x="255" y="75" text-anchor="middle" class="step-title">Threshold</text>
+    <text x="255" y="92" text-anchor="middle" class="step-desc">Failure % &gt; configured</text>
+
+    <!-- All Failures -->
+    <rect x="20" y="115" width="150" height="55" rx="6" fill="url(#triggerGrad)"/>
+    <text x="95" y="140" text-anchor="middle" class="step-title">All Failures</text>
+    <text x="95" y="157" text-anchor="middle" class="step-desc">Only when all tests fail</text>
+
+    <!-- Performance Degradation -->
+    <rect x="180" y="115" width="150" height="55" rx="6" fill="url(#triggerGrad)"/>
+    <text x="255" y="140" text-anchor="middle" class="step-title">Performance</text>
+    <text x="255" y="157" text-anchor="middle" class="step-desc">Duration &gt; threshold</text>
+
+    <!-- Condition logic -->
+    <rect x="20" y="185" width="310" height="60" rx="4" fill="#fee2e2"/>
+    <text x="175" y="205" text-anchor="middle" class="label">Configurable Conditions:</text>
+    <text x="175" y="222" text-anchor="middle" class="note">any_failure | all_failures | failure_threshold (%) | flaky_detection</text>
+    <text x="175" y="237" text-anchor="middle" class="note">Each project can have multiple alert channels with different triggers</text>
+  </g>
+
+  <!-- ===== SECTION 2: ALERT CHANNELS ===== -->
+  <g transform="translate(410, 95)">
+    <rect width="370" height="260" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="185" y="25" text-anchor="middle" class="phase-title" fill="#3b82f6">2. Alert Channels</text>
+
+    <!-- Email -->
+    <rect x="20" y="50" width="100" height="80" rx="6" fill="url(#emailGrad)"/>
+    <text x="70" y="80" text-anchor="middle" class="step-title">Email</text>
+    <text x="70" y="97" text-anchor="middle" class="step-desc">SMTP delivery</text>
+    <text x="70" y="112" text-anchor="middle" class="step-desc">HTML templates</text>
+
+    <!-- Slack -->
+    <rect x="135" y="50" width="100" height="80" rx="6" fill="url(#slackGrad)"/>
+    <text x="185" y="80" text-anchor="middle" class="step-title">Slack</text>
+    <text x="185" y="97" text-anchor="middle" class="step-desc">OAuth connection</text>
+    <text x="185" y="112" text-anchor="middle" class="step-desc">Channel selection</text>
+
+    <!-- Webhook -->
+    <rect x="250" y="50" width="100" height="80" rx="6" fill="url(#webhookGrad)"/>
+    <text x="300" y="80" text-anchor="middle" class="step-title">Webhook</text>
+    <text x="300" y="97" text-anchor="middle" class="step-desc">Custom URL</text>
+    <text x="300" y="112" text-anchor="middle" class="step-desc">JSON payload</text>
+
+    <!-- Channel config -->
+    <rect x="20" y="145" width="330" height="100" rx="4" fill="#dbeafe"/>
+    <text x="185" y="165" text-anchor="middle" class="label">Channel Configuration (JSONB):</text>
+    <text x="185" y="185" text-anchor="middle" class="note">Email: recipients[], subject_template, body_template</text>
+    <text x="185" y="200" text-anchor="middle" class="note">Slack: channel_id, webhook_url, message_template, mention_on_fail</text>
+    <text x="185" y="215" text-anchor="middle" class="note">Webhook: url, headers, payload_template, signature_secret</text>
+    <text x="185" y="230" text-anchor="middle" class="note">All: enabled, trigger_conditions, suppression_rules</text>
+  </g>
+
+  <!-- ===== SECTION 3: ALERT QUEUE ===== -->
+  <g transform="translate(810, 95)">
+    <rect width="360" height="260" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+    <text x="180" y="25" text-anchor="middle" class="phase-title" fill="#f59e0b">3. Alert Queue &amp; Processing</text>
+
+    <!-- BullMQ -->
+    <rect x="20" y="50" width="150" height="70" rx="6" fill="url(#queueGrad)"/>
+    <text x="95" y="80" text-anchor="middle" class="step-title">BullMQ Queue</text>
+    <text x="95" y="97" text-anchor="middle" class="step-desc">Redis-backed</text>
+    <text x="95" y="112" text-anchor="middle" class="step-desc">Async processing</text>
+
+    <!-- Worker -->
+    <rect x="190" y="50" width="150" height="70" rx="6" fill="url(#queueGrad)"/>
+    <text x="265" y="80" text-anchor="middle" class="step-title">Alert Worker</text>
+    <text x="265" y="97" text-anchor="middle" class="step-desc">Parallel delivery</text>
+    <text x="265" y="112" text-anchor="middle" class="step-desc">Retry on failure</text>
+
+    <!-- Queue details -->
+    <rect x="20" y="135" width="320" height="110" rx="4" fill="#fef3c7"/>
+    <text x="180" y="155" text-anchor="middle" class="label">Queue Features:</text>
+    <text x="180" y="173" text-anchor="middle" class="note">Priority: high (critical), normal, low (info)</text>
+    <text x="180" y="188" text-anchor="middle" class="note">Retry: 3 attempts with exponential backoff</text>
+    <text x="180" y="203" text-anchor="middle" class="note">Deduplication: prevent duplicate alerts within window</text>
+    <text x="180" y="218" text-anchor="middle" class="note">Rate limiting: max alerts per channel per time window</text>
+    <text x="180" y="233" text-anchor="middle" class="note">Dead letter queue: failed deliveries for manual review</text>
+  </g>
+
+  <!-- ===== SECTION 4: DELIVERY TRACKING ===== -->
+  <g transform="translate(30, 380)">
+    <rect width="450" height="220" rx="8" fill="#ecfeff" stroke="#06b6d4" stroke-width="2"/>
+    <text x="225" y="25" text-anchor="middle" class="phase-title" fill="#06b6d4">4. Delivery Tracking</text>
+
+    <!-- Status boxes -->
+    <rect x="20" y="50" width="95" height="60" rx="6" fill="url(#deliveryGrad)"/>
+    <text x="67" y="78" text-anchor="middle" class="step-title">Pending</text>
+    <text x="67" y="95" text-anchor="middle" class="step-desc">In queue</text>
+
+    <rect x="125" y="50" width="95" height="60" rx="6" fill="url(#deliveryGrad)"/>
+    <text x="172" y="78" text-anchor="middle" class="step-title">Sending</text>
+    <text x="172" y="95" text-anchor="middle" class="step-desc">In progress</text>
+
+    <rect x="230" y="50" width="95" height="60" rx="6" fill="#22c55e"/>
+    <text x="277" y="78" text-anchor="middle" class="step-title">Delivered</text>
+    <text x="277" y="95" text-anchor="middle" class="step-desc">Success</text>
+
+    <rect x="335" y="50" width="95" height="60" rx="6" fill="#ef4444"/>
+    <text x="382" y="78" text-anchor="middle" class="step-title">Failed</text>
+    <text x="382" y="95" text-anchor="middle" class="step-desc">Error logged</text>
+
+    <!-- Arrows between status -->
+    <path d="M115 80 L125 80" class="arrow"/>
+    <path d="M220 80 L230 80" class="success-arrow"/>
+    <path d="M220 95 L335 95" class="fail-arrow"/>
+
+    <!-- History table -->
+    <rect x="20" y="125" width="410" height="80" rx="4" fill="#cffafe"/>
+    <text x="225" y="145" text-anchor="middle" class="label">alert_history Table:</text>
+    <text x="225" y="163" text-anchor="middle" class="note">id | alert_channel_id | test_run_id | sent_at | status | response_code</text>
+    <text x="225" y="178" text-anchor="middle" class="note">error_message | retry_count | delivered_at | metadata (JSONB)</text>
+    <text x="225" y="193" text-anchor="middle" class="note">Tracks: Email opens, Slack reactions, Webhook responses (2xx/4xx/5xx)</text>
+  </g>
+
+  <!-- ===== SECTION 5: SUPPRESSION LOGIC ===== -->
+  <g transform="translate(510, 380)">
+    <rect width="320" height="220" rx="8" fill="#fdf2f8" stroke="#ec4899" stroke-width="2"/>
+    <text x="160" y="25" text-anchor="middle" class="phase-title" fill="#ec4899">5. Alert Suppression</text>
+
+    <!-- Retry success -->
+    <rect x="20" y="50" width="130" height="65" rx="6" fill="url(#suppressGrad)"/>
+    <text x="85" y="75" text-anchor="middle" class="step-title">Retry Success</text>
+    <text x="85" y="92" text-anchor="middle" class="step-desc">Don't alert if retry</text>
+    <text x="85" y="105" text-anchor="middle" class="step-desc">passes within window</text>
+
+    <!-- Cooldown -->
+    <rect x="170" y="50" width="130" height="65" rx="6" fill="url(#suppressGrad)"/>
+    <text x="235" y="75" text-anchor="middle" class="step-title">Cooldown Period</text>
+    <text x="235" y="92" text-anchor="middle" class="step-desc">Prevent alert storms</text>
+    <text x="235" y="105" text-anchor="middle" class="step-desc">Configurable window</text>
+
+    <!-- Suppression rules -->
+    <rect x="20" y="130" width="280" height="75" rx="4" fill="#fce7f3"/>
+    <text x="160" y="150" text-anchor="middle" class="label">Suppression Rules:</text>
+    <text x="160" y="168" text-anchor="middle" class="note">suppress_on_retry_success: true/false</text>
+    <text x="160" y="183" text-anchor="middle" class="note">cooldown_minutes: 30 (min between same alert)</text>
+    <text x="160" y="198" text-anchor="middle" class="note">max_alerts_per_hour: 10 (rate limit per channel)</text>
+  </g>
+
+  <!-- ===== SECTION 6: DIGEST LOGIC ===== -->
+  <g transform="translate(860, 380)">
+    <rect width="310" height="220" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+    <text x="155" y="25" text-anchor="middle" class="phase-title" fill="#22c55e">6. Alert Digest (Batching)</text>
+
+    <!-- Collect -->
+    <rect x="20" y="50" width="125" height="60" rx="6" fill="#22c55e"/>
+    <text x="82" y="78" text-anchor="middle" class="step-title">Collect</text>
+    <text x="82" y="93" text-anchor="middle" class="step-desc">Group alerts</text>
+
+    <!-- Aggregate -->
+    <rect x="165" y="50" width="125" height="60" rx="6" fill="#22c55e"/>
+    <text x="227" y="78" text-anchor="middle" class="step-title">Summarize</text>
+    <text x="227" y="93" text-anchor="middle" class="step-desc">Single notification</text>
+
+    <!-- Arrow -->
+    <path d="M145 80 L165 80" class="success-arrow"/>
+
+    <!-- Digest config -->
+    <rect x="20" y="125" width="270" height="80" rx="4" fill="#dcfce7"/>
+    <text x="155" y="145" text-anchor="middle" class="label">Digest Configuration:</text>
+    <text x="155" y="163" text-anchor="middle" class="note">digest_enabled: true/false</text>
+    <text x="155" y="178" text-anchor="middle" class="note">digest_interval_minutes: 15/30/60</text>
+    <text x="155" y="193" text-anchor="middle" class="note">Output: "5 tests failed in last 30 minutes" summary</text>
+  </g>
+
+  <!-- ===== FLOW DIAGRAM ===== -->
+  <g transform="translate(30, 630)">
+    <rect width="1140" height="140" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+    <text x="570" y="25" text-anchor="middle" class="phase-title">Alert Processing Flow</text>
+
+    <!-- Test Run Complete -->
+    <rect x="30" y="45" width="100" height="50" rx="6" fill="url(#triggerGrad)"/>
+    <text x="80" y="72" text-anchor="middle" class="step-title">Test Run</text>
+    <text x="80" y="87" text-anchor="middle" class="step-desc">Complete</text>
+
+    <!-- Check Conditions -->
+    <g transform="translate(170, 45)">
+      <polygon points="50,0 100,25 50,50 0,25" fill="url(#queueGrad)"/>
+      <text x="50" y="22" text-anchor="middle" class="step-title">Check</text>
+      <text x="50" y="35" text-anchor="middle" class="step-desc">Triggers?</text>
+    </g>
+
+    <!-- Suppression Check -->
+    <g transform="translate(310, 45)">
+      <polygon points="50,0 100,25 50,50 0,25" fill="url(#suppressGrad)"/>
+      <text x="50" y="22" text-anchor="middle" class="step-title">Check</text>
+      <text x="50" y="35" text-anchor="middle" class="step-desc">Suppress?</text>
+    </g>
+
+    <!-- Queue Alert -->
+    <rect x="450" y="45" width="100" height="50" rx="6" fill="url(#queueGrad)"/>
+    <text x="500" y="72" text-anchor="middle" class="step-title">Queue</text>
+    <text x="500" y="87" text-anchor="middle" class="step-desc">Alert Job</text>
+
+    <!-- Digest Check -->
+    <g transform="translate(590, 45)">
+      <polygon points="50,0 100,25 50,50 0,25" fill="#22c55e"/>
+      <text x="50" y="22" text-anchor="middle" class="step-title">Digest</text>
+      <text x="50" y="35" text-anchor="middle" class="step-desc">Mode?</text>
+    </g>
+
+    <!-- Send -->
+    <rect x="730" y="45" width="100" height="50" rx="6" fill="url(#deliveryGrad)"/>
+    <text x="780" y="72" text-anchor="middle" class="step-title">Deliver</text>
+    <text x="780" y="87" text-anchor="middle" class="step-desc">to Channel</text>
+
+    <!-- Log -->
+    <rect x="870" y="45" width="100" height="50" rx="6" fill="url(#deliveryGrad)"/>
+    <text x="920" y="72" text-anchor="middle" class="step-title">Log</text>
+    <text x="920" y="87" text-anchor="middle" class="step-desc">History</text>
+
+    <!-- Done -->
+    <rect x="1010" y="45" width="100" height="50" rx="6" fill="#22c55e"/>
+    <text x="1060" y="75" text-anchor="middle" class="step-title">Done</text>
+
+    <!-- Flow arrows -->
+    <path d="M130 70 L170 70" class="arrow"/>
+    <path d="M270 70 L310 70" class="arrow"/>
+    <text x="290" y="63" class="note">Yes</text>
+    <path d="M410 70 L450 70" class="arrow"/>
+    <text x="430" y="63" class="note">No</text>
+    <path d="M550 70 L590 70" class="arrow"/>
+    <path d="M690 70 L730 70" class="arrow"/>
+    <text x="710" y="63" class="note">Send Now</text>
+    <path d="M830 70 L870 70" class="arrow"/>
+    <path d="M970 70 L1010 70" class="success-arrow"/>
+
+    <!-- Skip paths -->
+    <path d="M220 95 L220 120 L1060 120 L1060 95" class="dashed-arrow" style="marker-end: none"/>
+    <text x="640" y="115" class="note">No trigger matched → skip alert</text>
+
+    <path d="M360 95 L360 130 L920 130 L920 95" class="dashed-arrow" style="marker-end: none"/>
+    <text x="640" y="135" class="note">Suppressed → log skip, no delivery</text>
+  </g>
+
+  <!-- ===== LEGEND ===== -->
+  <g transform="translate(30, 790)">
+    <rect width="1140" height="50" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1"/>
+    <text x="50" y="20" class="phase-title">Legend:</text>
+
+    <rect x="120" y="10" width="20" height="15" fill="url(#triggerGrad)" rx="2"/>
+    <text x="145" y="22" class="label">Trigger</text>
+
+    <rect x="210" y="10" width="20" height="15" fill="url(#emailGrad)" rx="2"/>
+    <text x="235" y="22" class="label">Email</text>
+
+    <rect x="290" y="10" width="20" height="15" fill="url(#slackGrad)" rx="2"/>
+    <text x="315" y="22" class="label">Slack</text>
+
+    <rect x="370" y="10" width="20" height="15" fill="url(#webhookGrad)" rx="2"/>
+    <text x="395" y="22" class="label">Webhook</text>
+
+    <rect x="470" y="10" width="20" height="15" fill="url(#queueGrad)" rx="2"/>
+    <text x="495" y="22" class="label">Queue</text>
+
+    <rect x="560" y="10" width="20" height="15" fill="url(#deliveryGrad)" rx="2"/>
+    <text x="585" y="22" class="label">Delivery</text>
+
+    <rect x="660" y="10" width="20" height="15" fill="url(#suppressGrad)" rx="2"/>
+    <text x="685" y="22" class="label">Suppression</text>
+
+    <text x="800" y="22" class="note">Database: alert_channels, alert_history tables</text>
+    <text x="1000" y="22" class="note">Queue: BullMQ/Redis</text>
+
+    <text x="800" y="40" class="note">API: POST/GET/PATCH/DELETE /api/v1/projects/:id/alerts</text>
+  </g>
+
+  <!-- ===== TECHNICAL NOTES ===== -->
+  <g transform="translate(30, 855)">
+    <rect width="1140" height="30" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="1"/>
+    <text x="570" y="20" text-anchor="middle" class="note">
+      Webhook security: HMAC signature verification | Slack: OAuth 2.0 integration with bot token | Email: SMTP with TLS | All channels support test delivery via POST /api/v1/alerts/:id/test
+    </text>
+  </g>
+
+  <!-- Version info -->
+  <text x="1150" y="895" text-anchor="end" class="subtitle">QA Guardian v1.0 - Alerting System</text>
+</svg>

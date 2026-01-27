@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 850" width="1200" height="850">
+  <defs>
+    <style>
+      .title { font: bold 24px sans-serif; fill: #1a1a2e; }
+      .subtitle { font: 14px sans-serif; fill: #666; }
+      .section-title { font: bold 16px sans-serif; fill: #333; }
+      .step-title { font: bold 12px sans-serif; fill: #fff; }
+      .step-desc { font: 10px sans-serif; fill: #fff; opacity: 0.9; }
+      .label { font: 11px sans-serif; fill: #333; }
+      .note { font: 10px sans-serif; fill: #666; font-style: italic; }
+      .code { font: 10px monospace; fill: #333; }
+      .arrow { stroke: #64748b; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .success-arrow { stroke: #22c55e; stroke-width: 2; fill: none; marker-end: url(#arrowhead-green); }
+      .fail-arrow { stroke: #ef4444; stroke-width: 2; fill: none; marker-end: url(#arrowhead-red); }
+      .dashed-arrow { stroke: #64748b; stroke-width: 2; stroke-dasharray: 5,3; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e"/>
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444"/>
+    </marker>
+    <linearGradient id="githubGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#333"/>
+      <stop offset="100%" style="stop-color:#1a1a1a"/>
+    </linearGradient>
+    <linearGradient id="webhookGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="qaGuardianGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+    <linearGradient id="workerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="ciGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="passGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#16a34a"/>
+    </linearGradient>
+    <linearGradient id="failGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#dc2626"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="850" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <text x="600" y="40" text-anchor="middle" class="title">CI/CD Integration</text>
+  <text x="600" y="62" text-anchor="middle" class="subtitle">GitHub Actions, webhook triggers, and automated test execution</text>
+
+  <!-- ===== SECTION 1: GITHUB TRIGGER SOURCES ===== -->
+  <g transform="translate(30, 95)">
+    <rect width="220" height="280" rx="8" fill="#f3f4f6" stroke="#333" stroke-width="2"/>
+    <text x="110" y="25" text-anchor="middle" class="section-title" fill="#333">1. GitHub Events</text>
+
+    <!-- Push Event -->
+    <rect x="20" y="50" width="180" height="50" rx="6" fill="url(#githubGrad)"/>
+    <text x="110" y="75" text-anchor="middle" class="step-title">Push to Branch</text>
+    <text x="110" y="90" text-anchor="middle" class="step-desc">main, develop, feature/*</text>
+
+    <!-- PR Event -->
+    <rect x="20" y="110" width="180" height="50" rx="6" fill="url(#githubGrad)"/>
+    <text x="110" y="135" text-anchor="middle" class="step-title">Pull Request</text>
+    <text x="110" y="150" text-anchor="middle" class="step-desc">opened, synchronize, reopened</text>
+
+    <!-- PR Comment -->
+    <rect x="20" y="170" width="180" height="50" rx="6" fill="url(#githubGrad)"/>
+    <text x="110" y="195" text-anchor="middle" class="step-title">PR Comment</text>
+    <text x="110" y="210" text-anchor="middle" class="step-desc">/test, /run-tests commands</text>
+
+    <!-- Webhook config -->
+    <rect x="20" y="235" width="180" height="30" rx="4" fill="#e5e7eb"/>
+    <text x="110" y="255" text-anchor="middle" class="note">Signature verified (SHA256)</text>
+  </g>
+
+  <!-- ===== SECTION 2: WEBHOOK HANDLER ===== -->
+  <g transform="translate(280, 95)">
+    <rect width="220" height="280" rx="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="110" y="25" text-anchor="middle" class="section-title" fill="#8b5cf6">2. Webhook Handler</text>
+
+    <!-- Receive -->
+    <rect x="20" y="50" width="180" height="50" rx="6" fill="url(#webhookGrad)"/>
+    <text x="110" y="75" text-anchor="middle" class="step-title">Receive Event</text>
+    <text x="110" y="90" text-anchor="middle" class="step-desc">POST /api/v1/webhooks/github</text>
+
+    <!-- Validate -->
+    <rect x="20" y="110" width="180" height="50" rx="6" fill="url(#webhookGrad)"/>
+    <text x="110" y="135" text-anchor="middle" class="step-title">Validate Signature</text>
+    <text x="110" y="150" text-anchor="middle" class="step-desc">X-Hub-Signature-256 header</text>
+
+    <!-- Parse -->
+    <rect x="20" y="170" width="180" height="50" rx="6" fill="url(#webhookGrad)"/>
+    <text x="110" y="195" text-anchor="middle" class="step-title">Parse Payload</text>
+    <text x="110" y="210" text-anchor="middle" class="step-desc">Extract commit SHA, branch, PR</text>
+
+    <!-- Queue info -->
+    <rect x="20" y="235" width="180" height="30" rx="4" fill="#ede9fe"/>
+    <text x="110" y="255" text-anchor="middle" class="note">Trigger test run job</text>
+  </g>
+
+  <!-- ===== SECTION 3: QA GUARDIAN ===== -->
+  <g transform="translate(530, 95)">
+    <rect width="250" height="280" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="125" y="25" text-anchor="middle" class="section-title" fill="#3b82f6">3. QA Guardian</text>
+
+    <!-- Create Run -->
+    <rect x="20" y="50" width="210" height="50" rx="6" fill="url(#qaGuardianGrad)"/>
+    <text x="125" y="75" text-anchor="middle" class="step-title">Create Test Run</text>
+    <text x="125" y="90" text-anchor="middle" class="step-desc">Link to PR/commit context</text>
+
+    <!-- Select Tests -->
+    <rect x="20" y="110" width="210" height="50" rx="6" fill="url(#qaGuardianGrad)"/>
+    <text x="125" y="135" text-anchor="middle" class="step-title">Select Test Suites</text>
+    <text x="125" y="150" text-anchor="middle" class="step-desc">Based on changed files or config</text>
+
+    <!-- Set Status -->
+    <rect x="20" y="170" width="210" height="50" rx="6" fill="url(#qaGuardianGrad)"/>
+    <text x="125" y="195" text-anchor="middle" class="step-title">Set GitHub Status</text>
+    <text x="125" y="210" text-anchor="middle" class="step-desc">"pending" on commit/PR</text>
+
+    <!-- Status info -->
+    <rect x="20" y="235" width="210" height="30" rx="4" fill="#dbeafe"/>
+    <text x="125" y="255" text-anchor="middle" class="note">context: "QA Guardian / E2E Tests"</text>
+  </g>
+
+  <!-- ===== SECTION 4: PARALLEL EXECUTION ===== -->
+  <g transform="translate(810, 95)">
+    <rect width="360" height="280" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+    <text x="180" y="25" text-anchor="middle" class="section-title" fill="#10b981">4. Parallel Test Execution</text>
+
+    <!-- Workers -->
+    <rect x="20" y="50" width="100" height="65" rx="6" fill="url(#workerGrad)"/>
+    <text x="70" y="78" text-anchor="middle" class="step-title">Worker 1</text>
+    <text x="70" y="95" text-anchor="middle" class="step-desc">Chrome</text>
+    <text x="70" y="107" text-anchor="middle" class="step-desc">Suite A</text>
+
+    <rect x="130" y="50" width="100" height="65" rx="6" fill="url(#workerGrad)"/>
+    <text x="180" y="78" text-anchor="middle" class="step-title">Worker 2</text>
+    <text x="180" y="95" text-anchor="middle" class="step-desc">Firefox</text>
+    <text x="180" y="107" text-anchor="middle" class="step-desc">Suite A</text>
+
+    <rect x="240" y="50" width="100" height="65" rx="6" fill="url(#workerGrad)"/>
+    <text x="290" y="78" text-anchor="middle" class="step-title">Worker N</text>
+    <text x="290" y="95" text-anchor="middle" class="step-desc">WebKit</text>
+    <text x="290" y="107" text-anchor="middle" class="step-desc">Suite B</text>
+
+    <!-- Test types -->
+    <rect x="20" y="125" width="150" height="40" rx="6" fill="url(#workerGrad)"/>
+    <text x="95" y="145" text-anchor="middle" class="step-title">E2E Tests</text>
+    <text x="95" y="158" text-anchor="middle" class="step-desc">Playwright</text>
+
+    <rect x="180" y="125" width="160" height="40" rx="6" fill="url(#workerGrad)"/>
+    <text x="260" y="145" text-anchor="middle" class="step-title">Visual Regression</text>
+    <text x="260" y="158" text-anchor="middle" class="step-desc">Screenshot compare</text>
+
+    <!-- CI parallel -->
+    <rect x="20" y="175" width="320" height="45" rx="4" fill="#d1fae5"/>
+    <text x="180" y="193" text-anchor="middle" class="label">Concurrent execution across browsers</text>
+    <text x="180" y="208" text-anchor="middle" class="note">Matrix: browsers x test suites x viewports</text>
+
+    <!-- Results aggregation -->
+    <rect x="20" y="230" width="320" height="35" rx="4" fill="#d1fae5"/>
+    <text x="180" y="252" text-anchor="middle" class="note">Results aggregated: pass/fail counts, duration, artifacts</text>
+  </g>
+
+  <!-- ===== SECTION 5: PR STATUS CHECK ===== -->
+  <g transform="translate(30, 410)">
+    <rect width="550" height="210" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+    <text x="275" y="25" text-anchor="middle" class="section-title" fill="#f59e0b">5. PR Status Check Flow</text>
+
+    <!-- Status timeline -->
+    <rect x="20" y="50" width="120" height="55" rx="6" fill="url(#ciGrad)"/>
+    <text x="80" y="75" text-anchor="middle" class="step-title">Pending</text>
+    <text x="80" y="92" text-anchor="middle" class="step-desc">Tests queued</text>
+
+    <rect x="160" y="50" width="120" height="55" rx="6" fill="url(#ciGrad)"/>
+    <text x="220" y="75" text-anchor="middle" class="step-title">Running</text>
+    <text x="220" y="92" text-anchor="middle" class="step-desc">In progress</text>
+
+    <rect x="300" y="50" width="110" height="55" rx="6" fill="url(#passGrad)"/>
+    <text x="355" y="75" text-anchor="middle" class="step-title">Success</text>
+    <text x="355" y="92" text-anchor="middle" class="step-desc">All tests pass</text>
+
+    <rect x="420" y="50" width="110" height="55" rx="6" fill="url(#failGrad)"/>
+    <text x="475" y="75" text-anchor="middle" class="step-title">Failure</text>
+    <text x="475" y="92" text-anchor="middle" class="step-desc">Tests failed</text>
+
+    <!-- Arrows -->
+    <path d="M140 77 L160 77" class="arrow"/>
+    <path d="M280 77 L300 77" class="success-arrow"/>
+    <path d="M280 90 L420 90" class="fail-arrow"/>
+
+    <!-- PR integration -->
+    <rect x="20" y="120" width="510" height="75" rx="4" fill="#fef3c7"/>
+    <text x="275" y="140" text-anchor="middle" class="label">GitHub Commit Status API</text>
+    <text x="275" y="158" text-anchor="middle" class="note">POST /repos/:owner/:repo/statuses/:sha</text>
+    <text x="275" y="175" text-anchor="middle" class="note">{ "state": "success|failure|pending", "target_url": "https://qa-guardian/runs/123", "context": "QA Guardian" }</text>
+  </g>
+
+  <!-- ===== SECTION 6: RESULT REPORTING ===== -->
+  <g transform="translate(610, 410)">
+    <rect width="560" height="210" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+    <text x="280" y="25" text-anchor="middle" class="section-title" fill="#22c55e">6. Result Reporting to GitHub</text>
+
+    <!-- Check Run -->
+    <rect x="20" y="50" width="160" height="60" rx="6" fill="url(#passGrad)"/>
+    <text x="100" y="78" text-anchor="middle" class="step-title">Check Run Update</text>
+    <text x="100" y="95" text-anchor="middle" class="step-desc">Detailed annotations</text>
+
+    <!-- PR Comment -->
+    <rect x="200" y="50" width="160" height="60" rx="6" fill="url(#passGrad)"/>
+    <text x="280" y="78" text-anchor="middle" class="step-title">PR Comment</text>
+    <text x="280" y="95" text-anchor="middle" class="step-desc">Test summary table</text>
+
+    <!-- Artifacts Link -->
+    <rect x="380" y="50" width="160" height="60" rx="6" fill="url(#passGrad)"/>
+    <text x="460" y="78" text-anchor="middle" class="step-title">Artifacts Link</text>
+    <text x="460" y="95" text-anchor="middle" class="step-desc">Screenshots, traces</text>
+
+    <!-- Report content -->
+    <rect x="20" y="125" width="520" height="70" rx="4" fill="#dcfce7"/>
+    <text x="280" y="145" text-anchor="middle" class="label">PR Comment Content:</text>
+    <text x="280" y="163" text-anchor="middle" class="note">| Suite | Browser | Status | Duration | Link |</text>
+    <text x="280" y="180" text-anchor="middle" class="note">Failed tests expanded with error messages + screenshot links</text>
+  </g>
+
+  <!-- ===== FLOW ARROWS (Main) ===== -->
+  <path d="M250 235 L280 235" class="arrow"/>
+  <path d="M500 235 L530 235" class="arrow"/>
+  <path d="M780 235 L810 235" class="arrow"/>
+
+  <!-- Results back to GitHub -->
+  <path d="M990 375 L990 410" class="arrow"/>
+  <path d="M990 620 L990 660 L580 660 L580 620" class="dashed-arrow"/>
+
+  <!-- ===== LEGEND ===== -->
+  <g transform="translate(30, 650)">
+    <rect width="1140" height="80" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1"/>
+    <text x="570" y="25" text-anchor="middle" class="section-title">CI/CD Flow Summary</text>
+
+    <!-- Legend items -->
+    <rect x="50" y="45" width="20" height="15" fill="url(#githubGrad)" rx="2"/>
+    <text x="75" y="57" class="label">GitHub</text>
+
+    <rect x="150" y="45" width="20" height="15" fill="url(#webhookGrad)" rx="2"/>
+    <text x="175" y="57" class="label">Webhook</text>
+
+    <rect x="260" y="45" width="20" height="15" fill="url(#qaGuardianGrad)" rx="2"/>
+    <text x="285" y="57" class="label">QA Guardian</text>
+
+    <rect x="390" y="45" width="20" height="15" fill="url(#workerGrad)" rx="2"/>
+    <text x="415" y="57" class="label">Workers</text>
+
+    <rect x="500" y="45" width="20" height="15" fill="url(#ciGrad)" rx="2"/>
+    <text x="525" y="57" class="label">CI Status</text>
+
+    <rect x="600" y="45" width="20" height="15" fill="url(#passGrad)" rx="2"/>
+    <text x="625" y="57" class="label">Pass</text>
+
+    <rect x="680" y="45" width="20" height="15" fill="url(#failGrad)" rx="2"/>
+    <text x="705" y="57" class="label">Fail</text>
+
+    <text x="800" y="57" class="note">Typical latency: webhook → results: 30s - 5min (depends on test count)</text>
+  </g>
+
+  <!-- ===== TECHNICAL NOTES ===== -->
+  <g transform="translate(30, 750)">
+    <rect width="1140" height="70" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1"/>
+    <text x="30" y="25" class="label">GitHub APIs Used:</text>
+    <text x="200" y="25" class="note">Commit Status API (pending/success/failure)</text>
+    <text x="500" y="25" class="note">Check Runs API (detailed annotations)</text>
+    <text x="780" y="25" class="note">Issues/Comments API (PR summaries)</text>
+    <text x="30" y="50" class="label">Configuration:</text>
+    <text x="150" y="50" class="note">Webhook URL: /api/v1/webhooks/github | Events: push, pull_request, issue_comment | Secret: shared HMAC key</text>
+  </g>
+
+  <!-- Version info -->
+  <text x="1150" y="840" text-anchor="end" class="subtitle">QA Guardian v1.0 - CI/CD Integration</text>
+</svg>

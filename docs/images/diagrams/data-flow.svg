@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <style>
+      .title { font: bold 24px sans-serif; fill: #1a1a2e; }
+      .subtitle { font: 14px sans-serif; fill: #666; }
+      .section-title { font: bold 16px sans-serif; fill: #333; }
+      .step-title { font: bold 12px sans-serif; fill: #fff; }
+      .step-desc { font: 10px sans-serif; fill: #fff; opacity: 0.9; }
+      .label { font: 11px sans-serif; fill: #333; }
+      .flow-label { font: 10px sans-serif; fill: #666; }
+      .arrow { stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .data-arrow { stroke: #3b82f6; }
+      .ws-arrow { stroke: #10b981; stroke-dasharray: 5,3; }
+      .storage-arrow { stroke: #8b5cf6; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+    <marker id="arrowhead-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#10b981"/>
+    </marker>
+    <marker id="arrowhead-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6"/>
+    </marker>
+    <!-- Gradients -->
+    <linearGradient id="userGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#64748b"/>
+      <stop offset="100%" style="stop-color:#475569"/>
+    </linearGradient>
+    <linearGradient id="apiGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+    <linearGradient id="queueGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="runnerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="storageGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="wsGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#db2777"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="900" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <text x="600" y="40" text-anchor="middle" class="title">QA Guardian Data Flow</text>
+  <text x="600" y="62" text-anchor="middle" class="subtitle">How data moves through the system</text>
+
+  <!-- ===== FLOW 1: Test Creation ===== -->
+  <g transform="translate(30, 90)">
+    <rect width="360" height="250" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+    <text x="180" y="25" text-anchor="middle" class="section-title">1. Test Creation Flow</text>
+
+    <!-- User -->
+    <rect x="20" y="50" width="80" height="50" rx="6" fill="url(#userGrad)"/>
+    <text x="60" y="75" text-anchor="middle" class="step-title">User</text>
+    <text x="60" y="90" text-anchor="middle" class="step-desc">Creates test</text>
+
+    <!-- Frontend -->
+    <rect x="140" y="50" width="80" height="50" rx="6" fill="url(#apiGrad)"/>
+    <text x="180" y="75" text-anchor="middle" class="step-title">Frontend</text>
+    <text x="180" y="90" text-anchor="middle" class="step-desc">Form UI</text>
+
+    <!-- API -->
+    <rect x="260" y="50" width="80" height="50" rx="6" fill="url(#apiGrad)"/>
+    <text x="300" y="75" text-anchor="middle" class="step-title">API</text>
+    <text x="300" y="90" text-anchor="middle" class="step-desc">POST /tests</text>
+
+    <!-- Database -->
+    <rect x="140" y="130" width="80" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="180" y="155" text-anchor="middle" class="step-title">PostgreSQL</text>
+    <text x="180" y="170" text-anchor="middle" class="step-desc">Store test</text>
+
+    <!-- Response -->
+    <rect x="260" y="130" width="80" height="50" rx="6" fill="url(#apiGrad)"/>
+    <text x="300" y="155" text-anchor="middle" class="step-title">Response</text>
+    <text x="300" y="170" text-anchor="middle" class="step-desc">Test ID</text>
+
+    <!-- Arrows -->
+    <path d="M100 75 L140 75" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <path d="M220 75 L260 75" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <path d="M300 100 L300 115 L180 115 L180 130" class="arrow storage-arrow" marker-end="url(#arrowhead-purple)"/>
+    <path d="M220 155 L260 155" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+
+    <!-- Labels -->
+    <text x="120" y="68" class="flow-label">form data</text>
+    <text x="240" y="68" class="flow-label">REST</text>
+    <text x="240" y="148" class="flow-label">test_id</text>
+
+    <!-- Data box -->
+    <rect x="20" y="195" width="320" height="40" rx="4" fill="#e2e8f0"/>
+    <text x="180" y="218" text-anchor="middle" class="label">Data: name, steps, selectors, assertions, config</text>
+  </g>
+
+  <!-- ===== FLOW 2: Test Execution ===== -->
+  <g transform="translate(420, 90)">
+    <rect width="360" height="250" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+    <text x="180" y="25" text-anchor="middle" class="section-title">2. Test Execution Flow</text>
+
+    <!-- Trigger -->
+    <rect x="20" y="50" width="70" height="50" rx="6" fill="url(#apiGrad)"/>
+    <text x="55" y="75" text-anchor="middle" class="step-title">Trigger</text>
+    <text x="55" y="90" text-anchor="middle" class="step-desc">Run test</text>
+
+    <!-- BullMQ -->
+    <rect x="110" y="50" width="70" height="50" rx="6" fill="url(#queueGrad)"/>
+    <text x="145" y="75" text-anchor="middle" class="step-title">BullMQ</text>
+    <text x="145" y="90" text-anchor="middle" class="step-desc">Job queue</text>
+
+    <!-- Worker -->
+    <rect x="200" y="50" width="70" height="50" rx="6" fill="url(#runnerGrad)"/>
+    <text x="235" y="75" text-anchor="middle" class="step-title">Worker</text>
+    <text x="235" y="90" text-anchor="middle" class="step-desc">Docker</text>
+
+    <!-- Test Runner -->
+    <rect x="290" y="50" width="60" height="50" rx="6" fill="url(#runnerGrad)"/>
+    <text x="320" y="75" text-anchor="middle" class="step-title">Runner</text>
+    <text x="320" y="90" text-anchor="middle" class="step-desc">Playwright</text>
+
+    <!-- Redis -->
+    <rect x="20" y="130" width="70" height="50" rx="6" fill="url(#queueGrad)"/>
+    <text x="55" y="155" text-anchor="middle" class="step-title">Redis</text>
+    <text x="55" y="170" text-anchor="middle" class="step-desc">Job state</text>
+
+    <!-- Browser -->
+    <rect x="200" y="130" width="70" height="50" rx="6" fill="url(#userGrad)"/>
+    <text x="235" y="155" text-anchor="middle" class="step-title">Browser</text>
+    <text x="235" y="170" text-anchor="middle" class="step-desc">Chromium</text>
+
+    <!-- Target -->
+    <rect x="290" y="130" width="60" height="50" rx="6" fill="url(#userGrad)"/>
+    <text x="320" y="155" text-anchor="middle" class="step-title">Target</text>
+    <text x="320" y="170" text-anchor="middle" class="step-desc">App URL</text>
+
+    <!-- Arrows -->
+    <path d="M90 75 L110 75" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <path d="M180 75 L200 75" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <path d="M270 75 L290 75" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <path d="M145 100 L145 115 L55 115 L55 130" class="arrow storage-arrow" marker-end="url(#arrowhead-purple)"/>
+    <path d="M235 100 L235 130" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <path d="M270 155 L290 155" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+
+    <!-- Data box -->
+    <rect x="20" y="195" width="320" height="40" rx="4" fill="#d1fae5"/>
+    <text x="180" y="218" text-anchor="middle" class="label">Data: test config, browser context, target URL</text>
+  </g>
+
+  <!-- ===== FLOW 3: Results Storage ===== -->
+  <g transform="translate(810, 90)">
+    <rect width="360" height="250" rx="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="180" y="25" text-anchor="middle" class="section-title">3. Results Storage Flow</text>
+
+    <!-- Runner -->
+    <rect x="20" y="50" width="70" height="50" rx="6" fill="url(#runnerGrad)"/>
+    <text x="55" y="75" text-anchor="middle" class="step-title">Runner</text>
+    <text x="55" y="90" text-anchor="middle" class="step-desc">Results</text>
+
+    <!-- MinIO -->
+    <rect x="145" y="50" width="70" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="180" y="75" text-anchor="middle" class="step-title">MinIO</text>
+    <text x="180" y="90" text-anchor="middle" class="step-desc">Artifacts</text>
+
+    <!-- PostgreSQL -->
+    <rect x="270" y="50" width="70" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="305" y="75" text-anchor="middle" class="step-title">PostgreSQL</text>
+    <text x="305" y="90" text-anchor="middle" class="step-desc">Metadata</text>
+
+    <!-- Artifacts -->
+    <rect x="20" y="130" width="195" height="50" rx="6" fill="#ddd6fe"/>
+    <text x="117" y="155" text-anchor="middle" class="label">Screenshots, Traces, Videos</text>
+    <text x="117" y="170" text-anchor="middle" class="flow-label">Binary artifacts stored in S3</text>
+
+    <!-- Metadata -->
+    <rect x="230" y="130" width="110" height="50" rx="6" fill="#ddd6fe"/>
+    <text x="285" y="155" text-anchor="middle" class="label">Run Results</text>
+    <text x="285" y="170" text-anchor="middle" class="flow-label">Status, timing, errors</text>
+
+    <!-- Arrows -->
+    <path d="M90 75 L145 75" class="arrow storage-arrow" marker-end="url(#arrowhead-purple)"/>
+    <path d="M90 90 L90 115 L305 115 L305 50" class="arrow storage-arrow" marker-end="url(#arrowhead-purple)"/>
+    <path d="M180 100 L180 130" class="arrow storage-arrow" marker-end="url(#arrowhead-purple)"/>
+    <path d="M305 100 L305 130" class="arrow storage-arrow" marker-end="url(#arrowhead-purple)"/>
+
+    <!-- Labels -->
+    <text x="117" y="68" class="flow-label">artifacts</text>
+    <text x="220" y="108" class="flow-label">metadata</text>
+
+    <!-- Data box -->
+    <rect x="20" y="195" width="320" height="40" rx="4" fill="#ede9fe"/>
+    <text x="180" y="218" text-anchor="middle" class="label">Data: pass/fail, duration, screenshots, traces, logs</text>
+  </g>
+
+  <!-- ===== FLOW 4: Real-time Updates ===== -->
+  <g transform="translate(30, 370)">
+    <rect width="550" height="220" rx="8" fill="#fdf2f8" stroke="#ec4899" stroke-width="2"/>
+    <text x="275" y="25" text-anchor="middle" class="section-title">4. Real-time WebSocket Updates Flow</text>
+
+    <!-- Worker -->
+    <rect x="20" y="55" width="80" height="50" rx="6" fill="url(#runnerGrad)"/>
+    <text x="60" y="80" text-anchor="middle" class="step-title">Worker</text>
+    <text x="60" y="95" text-anchor="middle" class="step-desc">Progress</text>
+
+    <!-- Redis PubSub -->
+    <rect x="140" y="55" width="80" height="50" rx="6" fill="url(#queueGrad)"/>
+    <text x="180" y="80" text-anchor="middle" class="step-title">Redis</text>
+    <text x="180" y="95" text-anchor="middle" class="step-desc">Pub/Sub</text>
+
+    <!-- Socket.IO Server -->
+    <rect x="260" y="55" width="80" height="50" rx="6" fill="url(#wsGrad)"/>
+    <text x="300" y="80" text-anchor="middle" class="step-title">Socket.IO</text>
+    <text x="300" y="95" text-anchor="middle" class="step-desc">Server</text>
+
+    <!-- Socket.IO Client -->
+    <rect x="380" y="55" width="80" height="50" rx="6" fill="url(#wsGrad)"/>
+    <text x="420" y="80" text-anchor="middle" class="step-title">Socket.IO</text>
+    <text x="420" y="95" text-anchor="middle" class="step-desc">Client</text>
+
+    <!-- UI -->
+    <rect x="480" y="55" width="50" height="50" rx="6" fill="url(#apiGrad)"/>
+    <text x="505" y="80" text-anchor="middle" class="step-title">UI</text>
+    <text x="505" y="95" text-anchor="middle" class="step-desc">Update</text>
+
+    <!-- Arrows -->
+    <path d="M100 80 L140 80" class="arrow ws-arrow" marker-end="url(#arrowhead-green)"/>
+    <path d="M220 80 L260 80" class="arrow ws-arrow" marker-end="url(#arrowhead-green)"/>
+    <path d="M340 80 L380 80" class="arrow ws-arrow" marker-end="url(#arrowhead-green)"/>
+    <path d="M460 80 L480 80" class="arrow ws-arrow" marker-end="url(#arrowhead-green)"/>
+
+    <!-- Labels -->
+    <text x="120" y="73" class="flow-label">publish</text>
+    <text x="240" y="73" class="flow-label">subscribe</text>
+    <text x="360" y="73" class="flow-label">emit</text>
+    <text x="470" y="73" class="flow-label">render</text>
+
+    <!-- Event types -->
+    <rect x="20" y="125" width="510" height="75" rx="4" fill="#fce7f3"/>
+    <text x="275" y="148" text-anchor="middle" class="section-title" fill="#ec4899">WebSocket Events</text>
+    <text x="80" y="175" text-anchor="middle" class="label">test:started</text>
+    <text x="180" y="175" text-anchor="middle" class="label">step:progress</text>
+    <text x="280" y="175" text-anchor="middle" class="label">test:completed</text>
+    <text x="380" y="175" text-anchor="middle" class="label">test:failed</text>
+    <text x="470" y="175" text-anchor="middle" class="label">suite:done</text>
+  </g>
+
+  <!-- ===== FLOW 5: Results Retrieval ===== -->
+  <g transform="translate(610, 370)">
+    <rect width="560" height="220" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="280" y="25" text-anchor="middle" class="section-title">5. Results Retrieval Flow</text>
+
+    <!-- User -->
+    <rect x="20" y="55" width="70" height="50" rx="6" fill="url(#userGrad)"/>
+    <text x="55" y="80" text-anchor="middle" class="step-title">User</text>
+    <text x="55" y="95" text-anchor="middle" class="step-desc">Request</text>
+
+    <!-- Frontend -->
+    <rect x="120" y="55" width="70" height="50" rx="6" fill="url(#apiGrad)"/>
+    <text x="155" y="80" text-anchor="middle" class="step-title">Frontend</text>
+    <text x="155" y="95" text-anchor="middle" class="step-desc">TanStack</text>
+
+    <!-- API -->
+    <rect x="220" y="55" width="70" height="50" rx="6" fill="url(#apiGrad)"/>
+    <text x="255" y="80" text-anchor="middle" class="step-title">API</text>
+    <text x="255" y="95" text-anchor="middle" class="step-desc">GET /runs</text>
+
+    <!-- PostgreSQL -->
+    <rect x="320" y="55" width="70" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="355" y="80" text-anchor="middle" class="step-title">PostgreSQL</text>
+    <text x="355" y="95" text-anchor="middle" class="step-desc">Query</text>
+
+    <!-- MinIO -->
+    <rect x="420" y="55" width="70" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="455" y="80" text-anchor="middle" class="step-title">MinIO</text>
+    <text x="455" y="95" text-anchor="middle" class="step-desc">Presigned</text>
+
+    <!-- Response -->
+    <rect x="500" y="55" width="45" height="50" rx="6" fill="url(#apiGrad)"/>
+    <text x="522" y="80" text-anchor="middle" class="step-title">JSON</text>
+    <text x="522" y="95" text-anchor="middle" class="step-desc">+URLs</text>
+
+    <!-- Arrows -->
+    <path d="M90 80 L120 80" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <path d="M190 80 L220 80" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <path d="M290 80 L320 80" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <path d="M390 80 L420 80" class="arrow storage-arrow" marker-end="url(#arrowhead-purple)"/>
+    <path d="M490 80 L500 80" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+
+    <!-- Return path -->
+    <path d="M522 105 L522 125 L55 125 L55 105" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+
+    <!-- Labels -->
+    <text x="155" y="140" class="flow-label">response with presigned URLs</text>
+
+    <!-- Data box -->
+    <rect x="20" y="155" width="520" height="45" rx="4" fill="#dbeafe"/>
+    <text x="280" y="180" text-anchor="middle" class="label">Response: { status, duration, steps[], screenshots: [presigned_url], trace_url }</text>
+  </g>
+
+  <!-- ===== MCP Flow ===== -->
+  <g transform="translate(30, 620)">
+    <rect width="1140" height="130" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="570" y="25" text-anchor="middle" class="section-title">6. MCP (AI Agent) Integration Flow</text>
+
+    <!-- Claude Code -->
+    <rect x="20" y="50" width="100" height="55" rx="6" fill="url(#queueGrad)"/>
+    <text x="70" y="75" text-anchor="middle" class="step-title">Claude Code</text>
+    <text x="70" y="90" text-anchor="middle" class="step-desc">AI Agent</text>
+
+    <!-- MCP Protocol -->
+    <rect x="160" y="50" width="100" height="55" rx="6" fill="url(#queueGrad)"/>
+    <text x="210" y="75" text-anchor="middle" class="step-title">MCP Protocol</text>
+    <text x="210" y="90" text-anchor="middle" class="step-desc">stdio/SSE</text>
+
+    <!-- MCP Server -->
+    <rect x="300" y="50" width="100" height="55" rx="6" fill="url(#apiGrad)"/>
+    <text x="350" y="75" text-anchor="middle" class="step-title">MCP Server</text>
+    <text x="350" y="90" text-anchor="middle" class="step-desc">Tool Handler</text>
+
+    <!-- Tools -->
+    <rect x="440" y="50" width="130" height="55" rx="6" fill="url(#runnerGrad)"/>
+    <text x="505" y="75" text-anchor="middle" class="step-title">MCP Tools</text>
+    <text x="505" y="90" text-anchor="middle" class="step-desc">trigger-test-run</text>
+
+    <!-- Internal API -->
+    <rect x="610" y="50" width="100" height="55" rx="6" fill="url(#apiGrad)"/>
+    <text x="660" y="75" text-anchor="middle" class="step-title">Internal API</text>
+    <text x="660" y="90" text-anchor="middle" class="step-desc">Same as REST</text>
+
+    <!-- Result -->
+    <rect x="750" y="50" width="100" height="55" rx="6" fill="url(#storageGrad)"/>
+    <text x="800" y="75" text-anchor="middle" class="step-title">Result</text>
+    <text x="800" y="90" text-anchor="middle" class="step-desc">JSON Response</text>
+
+    <!-- Back to Claude -->
+    <rect x="890" y="50" width="100" height="55" rx="6" fill="url(#queueGrad)"/>
+    <text x="940" y="75" text-anchor="middle" class="step-title">Claude Code</text>
+    <text x="940" y="90" text-anchor="middle" class="step-desc">Process result</text>
+
+    <!-- Response box -->
+    <rect x="1010" y="50" width="110" height="55" rx="6" fill="#fef3c7" stroke="#f59e0b"/>
+    <text x="1065" y="70" text-anchor="middle" class="label">Available Tools:</text>
+    <text x="1065" y="85" text-anchor="middle" class="flow-label">trigger-test-run</text>
+    <text x="1065" y="98" text-anchor="middle" class="flow-label">get-run-status</text>
+
+    <!-- Arrows -->
+    <path d="M120 77 L160 77" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <path d="M260 77 L300 77" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <path d="M400 77 L440 77" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <path d="M570 77 L610 77" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <path d="M710 77 L750 77" class="arrow storage-arrow" marker-end="url(#arrowhead-purple)"/>
+    <path d="M850 77 L890 77" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(30, 770)">
+    <text x="0" y="0" class="section-title">Legend:</text>
+    <line x1="0" y1="20" x2="40" y2="20" class="arrow data-arrow" marker-end="url(#arrowhead-blue)"/>
+    <text x="50" y="25" class="label">REST/HTTP Data Flow</text>
+
+    <line x1="200" y1="20" x2="240" y2="20" class="arrow ws-arrow" marker-end="url(#arrowhead-green)"/>
+    <text x="250" y="25" class="label">WebSocket Events</text>
+
+    <line x1="420" y1="20" x2="460" y2="20" class="arrow storage-arrow" marker-end="url(#arrowhead-purple)"/>
+    <text x="470" y="25" class="label">Storage Operations</text>
+
+    <rect x="620" y="10" width="20" height="15" fill="url(#apiGrad)"/>
+    <text x="645" y="22" class="label">API/Frontend</text>
+
+    <rect x="740" y="10" width="20" height="15" fill="url(#runnerGrad)"/>
+    <text x="765" y="22" class="label">Workers/Runners</text>
+
+    <rect x="880" y="10" width="20" height="15" fill="url(#storageGrad)"/>
+    <text x="905" y="22" class="label">Storage</text>
+
+    <rect x="980" y="10" width="20" height="15" fill="url(#queueGrad)"/>
+    <text x="1005" y="22" class="label">Queue/MCP</text>
+  </g>
+
+  <!-- Version info -->
+  <text x="1150" y="880" text-anchor="end" class="subtitle">QA Guardian v1.0 - Data Flow Diagram</text>
+</svg>

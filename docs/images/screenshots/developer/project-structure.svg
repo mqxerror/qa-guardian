@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+  <title>QA Guardian Project Structure</title>
+  <desc>Visual representation of the project directory structure</desc>
+
+  <!-- Background -->
+  <rect width="600" height="600" fill="#1e1e1e"/>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="600" height="30" fill="#2d2d2d"/>
+  <text x="15" y="20" fill="#858585" font-family="SF Mono, Monaco, Consolas, monospace" font-size="12">QA-Dam3oun</text>
+
+  <!-- Folder icons and structure -->
+  <g transform="translate(20, 50)" font-family="SF Mono, Monaco, Consolas, monospace" font-size="13">
+    <!-- Root -->
+    <text x="0" y="0" fill="#c5a543">qa-dam3oun/</text>
+
+    <!-- Backend -->
+    <text x="20" y="25" fill="#6ab0f3">backend/</text>
+    <text x="40" y="50" fill="#6ab0f3">src/</text>
+    <text x="60" y="75" fill="#98c379">index.ts</text>
+    <text x="60" y="100" fill="#6ab0f3">routes/</text>
+    <text x="80" y="125" fill="#98c379">auth.ts</text>
+    <text x="80" y="150" fill="#98c379">projects.ts</text>
+    <text x="80" y="175" fill="#98c379">tests.ts</text>
+    <text x="60" y="200" fill="#6ab0f3">services/</text>
+    <text x="80" y="225" fill="#98c379">playwright.ts</text>
+    <text x="80" y="250" fill="#98c379">lighthouse.ts</text>
+    <text x="80" y="275" fill="#98c379">k6.ts</text>
+    <text x="60" y="300" fill="#6ab0f3">db/</text>
+    <text x="80" y="325" fill="#98c379">schema.ts</text>
+    <text x="40" y="350" fill="#e06c75">package.json</text>
+    <text x="40" y="375" fill="#e5c07b">tsconfig.json</text>
+
+    <!-- Frontend -->
+    <text x="20" y="400" fill="#6ab0f3">frontend/</text>
+    <text x="40" y="425" fill="#6ab0f3">src/</text>
+    <text x="60" y="450" fill="#6ab0f3">components/</text>
+    <text x="60" y="475" fill="#6ab0f3">pages/</text>
+    <text x="60" y="500" fill="#6ab0f3">stores/</text>
+    <text x="60" y="525" fill="#98c379">App.tsx</text>
+    <text x="40" y="550" fill="#e06c75">package.json</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(380, 50)" font-family="SF Mono, Monaco, Consolas, monospace" font-size="11">
+    <rect x="0" y="0" width="200" height="100" rx="4" fill="#2d2d2d"/>
+    <text x="10" y="20" fill="#858585">Legend:</text>
+    <rect x="10" y="30" width="10" height="10" fill="#6ab0f3"/>
+    <text x="25" y="40" fill="#cccccc">Directory</text>
+    <rect x="10" y="50" width="10" height="10" fill="#98c379"/>
+    <text x="25" y="60" fill="#cccccc">TypeScript file</text>
+    <rect x="10" y="70" width="10" height="10" fill="#e06c75"/>
+    <text x="25" y="80" fill="#cccccc">JSON config</text>
+  </g>
+</svg>

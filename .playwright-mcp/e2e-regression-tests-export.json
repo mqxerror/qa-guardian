@@ -1,0 +1,51 @@
+{
+  "suite": {
+    "name": "E2E Regression Tests",
+    "description": "Core regression tests for the application",
+    "browser": "chromium",
+    "viewport_width": 1280,
+    "viewport_height": 720,
+    "timeout": 30,
+    "retry_count": 0
+  },
+  "tests": [
+    {
+      "name": "Example.com Homepage Test",
+      "description": "Verify example.com loads correctly",
+      "steps": [
+        {
+          "id": "1768340907332",
+          "action": "navigate",
+          "value": "https://example.com",
+          "order": 0
+        },
+        {
+          "id": "1768343364991",
+          "action": "wait",
+          "value": "500",
+          "order": 1
+        },
+        {
+          "id": "1768340927165",
+          "action": "assert_text",
+          "value": "Example Domain",
+          "order": 2
+        },
+        {
+          "id": "1768340941807",
+          "action": "screenshot",
+          "order": 3
+        },
+        {
+          "id": "1768343384237",
+          "action": "assert_text",
+          "value": "More information",
+          "order": 4
+        }
+      ],
+      "status": "draft"
+    }
+  ],
+  "exported_at": "2026-01-13T22:52:22.220Z",
+  "version": "1.0"
+}

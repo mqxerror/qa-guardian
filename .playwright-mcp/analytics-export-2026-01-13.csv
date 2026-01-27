@@ -1,0 +1,29 @@
+=== ANALYTICS SUMMARY ===
+Metric,Value
+Overall Pass Rate,33%
+Total Runs,3
+Total Passed,1
+Total Failed,2
+Date Range,2026-01-06 to 2026-01-13
+
+=== PASS RATE TRENDS ===
+Date,Pass Rate,Total Runs,Passed,Failed
+2026-01-07,N/A%,undefined,0,0
+2026-01-08,N/A%,undefined,0,0
+2026-01-09,N/A%,undefined,0,0
+2026-01-10,N/A%,undefined,0,0
+2026-01-11,N/A%,undefined,0,0
+2026-01-12,N/A%,undefined,0,0
+2026-01-13,33%,undefined,1,2
+
+=== MOST FAILING TESTS ===
+Test Name,Suite,Project,Failures,Total Runs,Failure Rate,Last Failure
+"EXPORT_TEST_1_Login","EXPORT_TEST_SUITE_147","EXPORT_TEST_PROJECT_147",2,3,67%,2026-01-13T16:51:40.519Z
+
+=== BROWSER STATISTICS ===
+Browser,Total Runs,Passed,Failed,Error,Pass Rate
+Chrome,3,1,2,0,33%
+
+=== PROJECT COMPARISON ===
+Project,Slug,Suites,Tests,Total Runs,Pass Rate,Passed,Failed
+"EXPORT_TEST_PROJECT_147",exporttestproject147,1,5,3,33%,1,2

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shadow DOM Test Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 { color: #333; }
+    .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+    .section h2 { margin-top: 0; }
+    code { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Shadow DOM Accessibility Test Page</h1>
+  <p>This page contains Web Components with both open and closed Shadow DOM for testing axe-core scanning.</p>
+
+  <div class="section">
+    <h2>Open Shadow DOM Component</h2>
+    <p>This custom element uses <code>mode: 'open'</code> - axe-core CAN scan its contents.</p>
+    <open-shadow-button></open-shadow-button>
+  </div>
+
+  <div class="section">
+    <h2>Another Open Shadow DOM Component</h2>
+    <p>A card component with open Shadow DOM containing multiple elements.</p>
+    <shadow-card title="Accessible Card" description="This card's Shadow DOM can be scanned for accessibility issues."></shadow-card>
+  </div>
+
+  <div class="section">
+    <h2>Closed Shadow DOM Component</h2>
+    <p>This custom element uses <code>mode: 'closed'</code> - axe-core CANNOT scan its contents.</p>
+    <closed-shadow-widget></closed-shadow-widget>
+  </div>
+
+  <div class="section">
+    <h2>Standard DOM Element (for comparison)</h2>
+    <button type="button" style="padding: 10px 20px; font-size: 16px;">Regular Button</button>
+    <p>This button is in the regular DOM and is always scannable.</p>
+  </div>
+
+  <script>
+    // Open Shadow DOM Component - Button with intentional a11y issues
+    class OpenShadowButton extends HTMLElement {
+      constructor() {
+        super();
+        // Open shadow DOM - can be accessed via element.shadowRoot
+        const shadow = this.attachShadow({ mode: 'open' });
+        shadow.innerHTML = `
+          <style>
+            .btn {
+              background: #0066cc;
+              color: #666; /* Intentional low contrast issue */
+              border: none;
+              padding: 12px 24px;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 16px;
+            }
+            .btn:hover { background: #0052a3; }
+            .hidden-text { position: absolute; left: -9999px; }
+          </style>
+          <button class="btn" type="button">
+            <span class="hidden-text">Click me</span>
+            Shadow Button
+          </button>
+          <div style="margin-top: 10px;">
+            <img src="/nonexistent.png" style="width: 50px; height: 50px;"> <!-- Missing alt text -->
+          </div>
+        `;
+      }
+    }
+    customElements.define('open-shadow-button', OpenShadowButton);
+
+    // Open Shadow DOM Card Component
+    class ShadowCard extends HTMLElement {
+      constructor() {
+        super();
+        const shadow = this.attachShadow({ mode: 'open' });
+        const title = this.getAttribute('title') || 'Card Title';
+        const description = this.getAttribute('description') || 'Card description';
+
+        shadow.innerHTML = `
+          <style>
+            .card {
+              border: 1px solid #e0e0e0;
+              border-radius: 8px;
+              padding: 16px;
+              max-width: 300px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .card-title {
+              font-size: 18px;
+              font-weight: bold;
+              margin: 0 0 8px 0;
+              color: #333;
+            }
+            .card-description {
+              color: #ccc; /* Intentional low contrast */
+              margin: 0 0 12px 0;
+            }
+            .card-link {
+              color: #0066cc;
+              text-decoration: none;
+            }
+            .card-link:focus {
+              /* Missing visible focus indicator - a11y issue */
+              outline: none;
+            }
+          </style>
+          <div class="card" role="article">
+            <h3 class="card-title">${title}</h3>
+            <p class="card-description">${description}</p>
+            <a href="#" class="card-link">Learn more</a>
+          </div>
+        `;
+      }
+    }
+    customElements.define('shadow-card', ShadowCard);
+
+    // Closed Shadow DOM Component - Cannot be scanned by axe-core
+    class ClosedShadowWidget extends HTMLElement {
+      #shadow; // Private shadow root
+
+      constructor() {
+        super();
+        // Closed shadow DOM - cannot be accessed via element.shadowRoot
+        this.#shadow = this.attachShadow({ mode: 'closed' });
+        this.#shadow.innerHTML = `
+          <style>
+            .widget {
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              padding: 20px;
+              border-radius: 8px;
+              text-align: center;
+            }
+            .widget-title { margin: 0 0 10px 0; }
+            .widget-btn {
+              background: white;
+              color: #667eea;
+              border: none;
+              padding: 8px 16px;
+              border-radius: 4px;
+              cursor: pointer;
+            }
+          </style>
+          <div class="widget">
+            <h4 class="widget-title">Closed Shadow Widget</h4>
+            <p>Content inside closed Shadow DOM</p>
+            <button class="widget-btn" type="button">Widget Action</button>
+          </div>
+        `;
+      }
+    }
+    customElements.define('closed-shadow-widget', ClosedShadowWidget);
+  </script>
+</body>
+</html>

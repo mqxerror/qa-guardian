@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 950" width="1200" height="950">
+  <defs>
+    <style>
+      .title { font: bold 24px sans-serif; fill: #1a1a2e; }
+      .subtitle { font: 14px sans-serif; fill: #666; }
+      .phase-title { font: bold 16px sans-serif; fill: #333; }
+      .step-title { font: bold 12px sans-serif; fill: #fff; }
+      .step-desc { font: 10px sans-serif; fill: #fff; opacity: 0.9; }
+      .label { font: 11px sans-serif; fill: #333; }
+      .note { font: 10px sans-serif; fill: #666; font-style: italic; }
+      .arrow { stroke: #64748b; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .success-arrow { stroke: #22c55e; stroke-width: 2; fill: none; marker-end: url(#arrowhead-green); }
+      .fail-arrow { stroke: #ef4444; stroke-width: 2; fill: none; marker-end: url(#arrowhead-red); }
+      .dashed-arrow { stroke: #64748b; stroke-width: 2; stroke-dasharray: 5,3; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e"/>
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444"/>
+    </marker>
+    <linearGradient id="userGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="frontendGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+    <linearGradient id="backendGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="oauthGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="jwtGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#db2777"/>
+    </linearGradient>
+    <linearGradient id="apiKeyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4"/>
+      <stop offset="100%" style="stop-color:#0891b2"/>
+    </linearGradient>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#dc2626"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="950" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <text x="600" y="40" text-anchor="middle" class="title">Authentication Flow</text>
+  <text x="600" y="62" text-anchor="middle" class="subtitle">JWT authentication, Google OAuth, and API key management</text>
+
+  <!-- ===== SECTION 1: EMAIL/PASSWORD LOGIN ===== -->
+  <g transform="translate(30, 90)">
+    <rect width="550" height="240" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="275" y="25" text-anchor="middle" class="phase-title" fill="#3b82f6">1. Email/Password Login Flow</text>
+
+    <!-- User -->
+    <rect x="20" y="50" width="100" height="70" rx="6" fill="url(#userGrad)"/>
+    <text x="70" y="85" text-anchor="middle" class="step-title">User</text>
+    <text x="70" y="100" text-anchor="middle" class="step-desc">Browser/App</text>
+
+    <!-- Frontend -->
+    <rect x="160" y="50" width="120" height="70" rx="6" fill="url(#frontendGrad)"/>
+    <text x="220" y="85" text-anchor="middle" class="step-title">Frontend</text>
+    <text x="220" y="100" text-anchor="middle" class="step-desc">React App</text>
+
+    <!-- Backend -->
+    <rect x="320" y="50" width="120" height="70" rx="6" fill="url(#backendGrad)"/>
+    <text x="380" y="85" text-anchor="middle" class="step-title">Backend API</text>
+    <text x="380" y="100" text-anchor="middle" class="step-desc">/api/v1/auth/login</text>
+
+    <!-- JWT Token -->
+    <rect x="460" y="50" width="70" height="70" rx="6" fill="url(#jwtGrad)"/>
+    <text x="495" y="85" text-anchor="middle" class="step-title">JWT</text>
+    <text x="495" y="100" text-anchor="middle" class="step-desc">Token</text>
+
+    <!-- Flow arrows -->
+    <path d="M120 85 L160 85" class="arrow"/>
+    <text x="140" y="78" text-anchor="middle" class="note">1. Credentials</text>
+
+    <path d="M280 85 L320 85" class="arrow"/>
+    <text x="300" y="78" text-anchor="middle" class="note">2. POST</text>
+
+    <path d="M440 85 L460 85" class="success-arrow"/>
+    <text x="450" y="78" text-anchor="middle" class="note">3.</text>
+
+    <!-- Steps description -->
+    <rect x="20" y="140" width="510" height="85" rx="4" fill="#dbeafe"/>
+    <text x="30" y="160" class="label">Steps:</text>
+    <text x="30" y="178" class="note">1. User submits email + password (min 8 chars, 1 upper, 1 lower, 1 number)</text>
+    <text x="30" y="194" class="note">2. Backend validates credentials with bcrypt hash comparison</text>
+    <text x="30" y="210" class="note">3. On success: JWT token (7 day expiry) + session created | On fail: 401 Unauthorized</text>
+  </g>
+
+  <!-- ===== SECTION 2: GOOGLE OAUTH FLOW ===== -->
+  <g transform="translate(610, 90)">
+    <rect width="560" height="240" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+    <text x="280" y="25" text-anchor="middle" class="phase-title" fill="#f59e0b">2. Google OAuth SSO Flow</text>
+
+    <!-- User -->
+    <rect x="20" y="50" width="80" height="60" rx="6" fill="url(#userGrad)"/>
+    <text x="60" y="82" text-anchor="middle" class="step-title">User</text>
+
+    <!-- Frontend -->
+    <rect x="120" y="50" width="90" height="60" rx="6" fill="url(#frontendGrad)"/>
+    <text x="165" y="82" text-anchor="middle" class="step-title">Frontend</text>
+
+    <!-- Google -->
+    <rect x="230" y="50" width="100" height="60" rx="6" fill="url(#oauthGrad)"/>
+    <text x="280" y="75" text-anchor="middle" class="step-title">Google OAuth</text>
+    <text x="280" y="90" text-anchor="middle" class="step-desc">Consent Screen</text>
+
+    <!-- Backend -->
+    <rect x="350" y="50" width="90" height="60" rx="6" fill="url(#backendGrad)"/>
+    <text x="395" y="82" text-anchor="middle" class="step-title">Backend</text>
+
+    <!-- JWT -->
+    <rect x="460" y="50" width="80" height="60" rx="6" fill="url(#jwtGrad)"/>
+    <text x="500" y="75" text-anchor="middle" class="step-title">JWT</text>
+    <text x="500" y="90" text-anchor="middle" class="step-desc">Token</text>
+
+    <!-- Flow arrows -->
+    <path d="M100 80 L120 80" class="arrow"/>
+    <path d="M210 80 L230 80" class="arrow"/>
+    <path d="M330 80 L350 80" class="arrow"/>
+    <path d="M440 80 L460 80" class="success-arrow"/>
+
+    <!-- Steps description -->
+    <rect x="20" y="125" width="520" height="100" rx="4" fill="#fef3c7"/>
+    <text x="30" y="145" class="label">OAuth 2.0 Flow:</text>
+    <text x="30" y="163" class="note">1. User clicks "Continue with Google" button</text>
+    <text x="30" y="179" class="note">2. Redirect to Google consent screen (client_id, redirect_uri, scope: email profile)</text>
+    <text x="30" y="195" class="note">3. User authorizes → Google redirects back with authorization code</text>
+    <text x="30" y="211" class="note">4. Backend exchanges code for Google tokens → validates user → issues JWT</text>
+  </g>
+
+  <!-- ===== SECTION 3: JWT TOKEN MANAGEMENT ===== -->
+  <g transform="translate(30, 355)">
+    <rect width="560" height="230" rx="8" fill="#fdf2f8" stroke="#ec4899" stroke-width="2"/>
+    <text x="280" y="25" text-anchor="middle" class="phase-title" fill="#ec4899">3. JWT Token Generation &amp; Refresh</text>
+
+    <!-- Token Structure -->
+    <g transform="translate(20, 50)">
+      <rect width="180" height="110" rx="6" fill="#fce7f3"/>
+      <text x="90" y="25" text-anchor="middle" class="label">JWT Payload</text>
+      <text x="15" y="48" class="note">id: "user123"</text>
+      <text x="15" y="64" class="note">email: "user@example.com"</text>
+      <text x="15" y="80" class="note">role: "developer"</text>
+      <text x="15" y="96" class="note">organization_id: "org456"</text>
+    </g>
+
+    <!-- Token Lifecycle -->
+    <g transform="translate(220, 50)">
+      <rect width="160" height="110" rx="6" fill="url(#jwtGrad)"/>
+      <text x="80" y="30" text-anchor="middle" class="step-title">Token Lifecycle</text>
+      <text x="80" y="55" text-anchor="middle" class="step-desc">Default: 7 days expiry</text>
+      <text x="80" y="75" text-anchor="middle" class="step-desc">Configurable timeout</text>
+      <text x="80" y="95" text-anchor="middle" class="step-desc">Auto-refresh on activity</text>
+    </g>
+
+    <!-- Session Management -->
+    <g transform="translate(400, 50)">
+      <rect width="140" height="110" rx="6" fill="url(#backendGrad)"/>
+      <text x="70" y="30" text-anchor="middle" class="step-title">Sessions</text>
+      <text x="70" y="55" text-anchor="middle" class="step-desc">Track active devices</text>
+      <text x="70" y="75" text-anchor="middle" class="step-desc">IP + User-Agent</text>
+      <text x="70" y="95" text-anchor="middle" class="step-desc">Revoke per-session</text>
+    </g>
+
+    <!-- Refresh Flow -->
+    <rect x="20" y="175" width="520" height="40" rx="4" fill="#fce7f3"/>
+    <text x="280" y="195" text-anchor="middle" class="label">
+      POST /api/v1/auth/refresh → validates current token → issues new token with extended expiry
+    </text>
+    <text x="280" y="208" text-anchor="middle" class="note">Token blacklist prevents reuse of invalidated tokens (logout, password change)</text>
+  </g>
+
+  <!-- ===== SECTION 4: API KEY AUTHENTICATION ===== -->
+  <g transform="translate(610, 355)">
+    <rect width="560" height="230" rx="8" fill="#ecfeff" stroke="#06b6d4" stroke-width="2"/>
+    <text x="280" y="25" text-anchor="middle" class="phase-title" fill="#06b6d4">4. API Key Authentication (Programmatic Access)</text>
+
+    <!-- API Key Structure -->
+    <g transform="translate(20, 50)">
+      <rect width="170" height="110" rx="6" fill="url(#apiKeyGrad)"/>
+      <text x="85" y="30" text-anchor="middle" class="step-title">API Key Format</text>
+      <text x="85" y="55" text-anchor="middle" class="step-desc">qg_[base64url]</text>
+      <text x="85" y="75" text-anchor="middle" class="step-desc">32 random bytes</text>
+      <text x="85" y="95" text-anchor="middle" class="step-desc">SHA256 hashed storage</text>
+    </g>
+
+    <!-- Scopes -->
+    <g transform="translate(210, 50)">
+      <rect width="150" height="110" rx="6" fill="#cffafe"/>
+      <text x="75" y="25" text-anchor="middle" class="label">Scopes</text>
+      <text x="15" y="48" class="note">read - View only</text>
+      <text x="15" y="64" class="note">execute - Run tests</text>
+      <text x="15" y="80" class="note">write - Create/modify</text>
+      <text x="15" y="96" class="note">admin - Full access</text>
+    </g>
+
+    <!-- MCP Scopes -->
+    <g transform="translate(380, 50)">
+      <rect width="160" height="110" rx="6" fill="#cffafe"/>
+      <text x="80" y="25" text-anchor="middle" class="label">MCP Scopes</text>
+      <text x="15" y="48" class="note">mcp - General MCP</text>
+      <text x="15" y="64" class="note">mcp:read - Read tools</text>
+      <text x="15" y="80" class="note">mcp:write - Write tools</text>
+      <text x="15" y="96" class="note">mcp:execute - Run tools</text>
+    </g>
+
+    <!-- Usage -->
+    <rect x="20" y="175" width="520" height="40" rx="4" fill="#cffafe"/>
+    <text x="280" y="192" text-anchor="middle" class="label">
+      Header: Authorization: Bearer qg_[key] | Used by: CI/CD, MCP, REST API clients
+    </text>
+    <text x="280" y="208" text-anchor="middle" class="note">Keys can be rotated without downtime | Expiration optional | Revocable instantly</text>
+  </g>
+
+  <!-- ===== SECTION 5: REQUEST AUTHENTICATION FLOW ===== -->
+  <g transform="translate(30, 610)">
+    <rect width="700" height="180" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+    <text x="350" y="25" text-anchor="middle" class="phase-title" fill="#22c55e">5. Protected Route Authentication Middleware</text>
+
+    <!-- Request flow -->
+    <rect x="20" y="50" width="100" height="50" rx="6" fill="url(#frontendGrad)"/>
+    <text x="70" y="80" text-anchor="middle" class="step-title">API Request</text>
+
+    <!-- Extract token -->
+    <rect x="150" y="50" width="120" height="50" rx="6" fill="url(#backendGrad)"/>
+    <text x="210" y="73" text-anchor="middle" class="step-title">Extract Token</text>
+    <text x="210" y="88" text-anchor="middle" class="step-desc">Authorization header</text>
+
+    <!-- Validate -->
+    <rect x="300" y="50" width="120" height="50" rx="6" fill="url(#backendGrad)"/>
+    <text x="360" y="73" text-anchor="middle" class="step-title">Validate Token</text>
+    <text x="360" y="88" text-anchor="middle" class="step-desc">JWT verify / API key</text>
+
+    <!-- Check role -->
+    <rect x="450" y="50" width="110" height="50" rx="6" fill="url(#backendGrad)"/>
+    <text x="505" y="73" text-anchor="middle" class="step-title">Check Role</text>
+    <text x="505" y="88" text-anchor="middle" class="step-desc">RBAC validation</text>
+
+    <!-- Success -->
+    <rect x="590" y="50" width="90" height="50" rx="6" fill="url(#backendGrad)"/>
+    <text x="635" y="80" text-anchor="middle" class="step-title">Execute</text>
+
+    <!-- Arrows -->
+    <path d="M120 75 L150 75" class="arrow"/>
+    <path d="M270 75 L300 75" class="arrow"/>
+    <path d="M420 75 L450 75" class="arrow"/>
+    <path d="M560 75 L590 75" class="success-arrow"/>
+
+    <!-- Roles -->
+    <rect x="20" y="115" width="660" height="50" rx="4" fill="#dcfce7"/>
+    <text x="30" y="135" class="label">User Roles:</text>
+    <text x="100" y="135" class="note">owner (full access + billing)</text>
+    <text x="260" y="135" class="note">admin (user + project management)</text>
+    <text x="450" y="135" class="note">developer (create + run tests)</text>
+    <text x="600" y="135" class="note">viewer (read-only)</text>
+    <text x="30" y="155" class="note">Role hierarchy enforced: owner &gt; admin &gt; developer &gt; viewer | requireRoles() middleware validates access</text>
+  </g>
+
+  <!-- ===== SECTION 6: SECURITY MEASURES ===== -->
+  <g transform="translate(760, 610)">
+    <rect width="410" height="180" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+    <text x="205" y="25" text-anchor="middle" class="phase-title" fill="#ef4444">6. Security Measures</text>
+
+    <rect x="20" y="50" width="180" height="50" rx="6" fill="url(#redGrad)"/>
+    <text x="110" y="75" text-anchor="middle" class="step-title">Password Security</text>
+    <text x="110" y="90" text-anchor="middle" class="step-desc">bcrypt + salt rounds</text>
+
+    <rect x="210" y="50" width="180" height="50" rx="6" fill="url(#redGrad)"/>
+    <text x="300" y="75" text-anchor="middle" class="step-title">Token Blacklist</text>
+    <text x="300" y="90" text-anchor="middle" class="step-desc">Redis-backed invalidation</text>
+
+    <rect x="20" y="115" width="370" height="50" rx="4" fill="#fee2e2"/>
+    <text x="205" y="135" text-anchor="middle" class="label">Protection: Rate limiting | CORS | Helmet | CSRF prevention</text>
+    <text x="205" y="155" text-anchor="middle" class="note">Sensitive ops require password confirmation | API keys shown only once on creation</text>
+  </g>
+
+  <!-- ===== LEGEND ===== -->
+  <g transform="translate(30, 815)">
+    <rect width="1140" height="55" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1"/>
+    <text x="50" y="22" class="phase-title">Legend:</text>
+
+    <rect x="120" y="12" width="20" height="15" fill="url(#userGrad)" rx="2"/>
+    <text x="145" y="24" class="label">User/Client</text>
+
+    <rect x="230" y="12" width="20" height="15" fill="url(#frontendGrad)" rx="2"/>
+    <text x="255" y="24" class="label">Frontend</text>
+
+    <rect x="330" y="12" width="20" height="15" fill="url(#backendGrad)" rx="2"/>
+    <text x="355" y="24" class="label">Backend</text>
+
+    <rect x="430" y="12" width="20" height="15" fill="url(#oauthGrad)" rx="2"/>
+    <text x="455" y="24" class="label">OAuth Provider</text>
+
+    <rect x="570" y="12" width="20" height="15" fill="url(#jwtGrad)" rx="2"/>
+    <text x="595" y="24" class="label">JWT Token</text>
+
+    <rect x="680" y="12" width="20" height="15" fill="url(#apiKeyGrad)" rx="2"/>
+    <text x="705" y="24" class="label">API Key</text>
+
+    <rect x="790" y="12" width="20" height="15" fill="url(#redGrad)" rx="2"/>
+    <text x="815" y="24" class="label">Security</text>
+
+    <line x1="900" y1="20" x2="950" y2="20" class="success-arrow"/>
+    <text x="960" y="24" class="label">Success</text>
+
+    <line x1="1020" y1="20" x2="1070" y2="20" class="fail-arrow"/>
+    <text x="1080" y="24" class="label">Fail</text>
+  </g>
+
+  <!-- ===== TECHNICAL NOTES ===== -->
+  <g transform="translate(30, 885)">
+    <rect width="1140" height="45" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1"/>
+    <text x="30" y="20" class="label">Libraries: @fastify/jwt (token signing)</text>
+    <text x="250" y="20" class="label">bcryptjs (password hashing)</text>
+    <text x="450" y="20" class="label">Storage: PostgreSQL (users) + Redis (sessions, blacklist)</text>
+    <text x="850" y="20" class="label">Standards: OAuth 2.0, JWT (RFC 7519)</text>
+    <text x="30" y="37" class="note">Password policy: 8+ chars, uppercase, lowercase, number required | Token expiry: 7 days (configurable) | API keys: SHA256 hashed, never stored in plain text</text>
+  </g>
+
+  <!-- Version info -->
+  <text x="1150" y="940" text-anchor="end" class="subtitle">QA Guardian v1.0 - Authentication Flow</text>
+</svg>

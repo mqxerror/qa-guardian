@@ -1,0 +1,139 @@
+# =============================================================================
+# QA Guardian Backend - Production Dockerfile for Dokploy
+# =============================================================================
+# Optimized multi-stage build with Playwright support
+# Uses node:20-slim (Debian-based) for Playwright compatibility (requires glibc)
+#
+# Build: docker build -f dokploy/Dockerfile.backend -t qa-guardian-backend:latest ./backend
+# Run:   docker run -p 3001:3001 --env-file .env qa-guardian-backend:latest
+# =============================================================================
+
+
+# ==============================================================================
+# Stage 1: Dependencies
+# ==============================================================================
+# Install all npm dependencies including native modules and Playwright browsers
+FROM node:20-slim AS deps
+
+WORKDIR /app
+
+# Install build dependencies for native modules (bcrypt)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package files
+COPY package*.json ./
+
+# Install ALL dependencies (including devDependencies for building)
+RUN npm ci
+
+# Install Playwright browsers with dependencies
+# This downloads Chromium, Firefox, and WebKit
+RUN npx playwright install --with-deps chromium
+
+
+# ==============================================================================
+# Stage 2: Builder
+# ==============================================================================
+# Compile TypeScript to JavaScript
+FROM node:20-slim AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies (reuse from deps if available via --mount)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build TypeScript to dist/
+RUN npm run build
+
+
+# ==============================================================================
+# Stage 3: Production Runtime
+# ==============================================================================
+# Minimal image with only production runtime
+FROM node:20-slim AS production
+
+# Install runtime dependencies for Playwright and health checks
+# These are the libraries Playwright/Chromium needs to run
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Health check utility
+    curl \
+    # Process signal handling
+    dumb-init \
+    # Playwright/Chromium dependencies
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libdbus-1-3 \
+    libxkbcommon0 \
+    libatspi2.0-0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    libpango-1.0-0 \
+    libcairo2 \
+    # Clean up
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create non-root user for security
+RUN groupadd --gid 1001 nodejs && \
+    useradd --uid 1001 --gid nodejs --shell /bin/bash --create-home nodejs
+
+WORKDIR /app
+
+# Copy production dependencies only (reinstall without devDependencies)
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy Playwright browsers from deps stage
+# Browsers are installed to /root/.cache/ms-playwright by default
+COPY --from=deps /root/.cache/ms-playwright /home/nodejs/.cache/ms-playwright
+RUN chown -R nodejs:nodejs /home/nodejs/.cache
+
+# Copy built application from builder stage
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+
+# Copy migrations
+COPY --chown=nodejs:nodejs migrations ./migrations
+
+# Create directories for runtime data
+RUN mkdir -p /app/uploads /app/logs /app/data /app/screenshots /app/traces /app/videos && \
+    chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3001
+# Tell Playwright where to find browsers
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/nodejs/.cache/ms-playwright
+
+# Expose API port
+EXPOSE 3001
+
+# Health check - verify API and MCP are responding
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:3001/health && curl -f http://localhost:3001/api/v1/mcp/status || exit 1
+
+# Use dumb-init to handle signals properly (PID 1 issues)
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application
+CMD ["node", "dist/index.js"]

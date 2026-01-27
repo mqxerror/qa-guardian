@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-01-14T18:52:34.224Z",
+  "testId": "1768416747716",
+  "testName": "Browser Crash Test",
+  "runId": "1768416753692",
+  "errorMessage": "Browser process terminated unexpectedly - the browser crashed during test execution. This may be caused by insufficient memory, a page causing excessive resource usage, or a browser bug.",
+  "originalError": "Browser process terminated unexpectedly: Target page, context or browser has been closed",
+  "browserType": "chromium",
+  "targetUrl": "https://example.com",
+  "viewportWidth": 1920,
+  "viewportHeight": 1080,
+  "stepResults": [],
+  "suggestion": "Try running the test again. If the crash persists, check if the target page has memory issues or reduce test parallelism."
+}

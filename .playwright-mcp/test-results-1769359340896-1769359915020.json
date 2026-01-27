@@ -1,0 +1,11 @@
+[
+  {
+    "test_id": "1769359335942",
+    "test_name": "Visual Regression - example.com",
+    "status": "failed",
+    "duration_ms": 445,
+    "error": "Visual regression test failed: page.goto: net::ERR_NAME_NOT_RESOLVED at https://example.com/\nCall log:\n\u001b[2m  - navigating to \"https://example.com/\", waiting until \"networkidle\"\u001b[22m\n",
+    "steps_count": 1,
+    "failed_steps": 1
+  }
+]

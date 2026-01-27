@@ -1,0 +1,82 @@
+{
+  "suite": {
+    "name": "Test Suite 1",
+    "description": "Suite for testing unsaved changes",
+    "browser": "chromium",
+    "viewport_width": 1280,
+    "viewport_height": 720,
+    "timeout": 30,
+    "retry_count": 0
+  },
+  "tests": [
+    {
+      "name": "Login Test",
+      "description": "Test login functionality",
+      "steps": [
+        {
+          "id": "1768322085862",
+          "action": "navigate",
+          "value": "https://example.com",
+          "order": 0
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "name": "Test 2",
+      "description": "Second test case",
+      "steps": [
+        {
+          "id": "1768322312297",
+          "action": "click",
+          "selector": "#button",
+          "order": 0
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "name": "Test 3",
+      "description": "Third test case",
+      "steps": [
+        {
+          "id": "1768322317926",
+          "action": "type",
+          "selector": "#input",
+          "value": "hello",
+          "order": 0
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "name": "Test 4",
+      "description": "Fourth test case",
+      "steps": [
+        {
+          "id": "1768322323275",
+          "action": "wait",
+          "value": "1000",
+          "order": 0
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "name": "Test 5",
+      "description": "Fifth test case",
+      "steps": [
+        {
+          "id": "1768322329602",
+          "action": "assert",
+          "selector": "#result",
+          "value": "success",
+          "order": 0
+        }
+      ],
+      "status": "draft"
+    }
+  ],
+  "exported_at": "2026-01-13T16:39:59.728Z",
+  "version": "1.0"
+}

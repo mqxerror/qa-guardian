@@ -1,0 +1,17 @@
+{
+  "1769328613492-single-main": {
+    "testId": "1769328613492",
+    "viewportId": "single",
+    "branch": "main",
+    "approvedBy": "owner@example.com",
+    "approvedByUserId": "1",
+    "approvedAt": "2026-01-25T08:31:06.273Z",
+    "sourceRunId": "1769329358992",
+    "createdAt": "2026-01-25T08:31:06.273Z",
+    "createdByUserId": "1",
+    "createdByUserEmail": "owner@example.com",
+    "viewport": "single",
+    "browser": "chromium",
+    "version": 1
+  }
+}

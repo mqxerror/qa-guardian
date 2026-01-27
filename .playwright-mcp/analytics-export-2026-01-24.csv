@@ -1,0 +1,21 @@
+=== ANALYTICS SUMMARY ===
+Metric,Value
+Overall Pass Rate,N/A%
+Total Runs,0
+Total Passed,0
+Total Failed,0
+Date Range,2026-01-17 to 2026-01-24
+
+=== PASS RATE TRENDS ===
+Date,Pass Rate,Total Runs,Passed,Failed
+2026-01-18,N/A%,undefined,0,0
+2026-01-19,N/A%,undefined,0,0
+2026-01-20,N/A%,undefined,0,0
+2026-01-21,N/A%,undefined,0,0
+2026-01-22,N/A%,undefined,0,0
+2026-01-23,N/A%,undefined,0,0
+2026-01-24,N/A%,undefined,0,0
+
+=== PROJECT COMPARISON ===
+Project,Slug,Suites,Tests,Total Runs,Pass Rate,Passed,Failed
+"Authentication Project",authentication-project,2,4,0,0%,0,0

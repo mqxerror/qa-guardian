@@ -1,0 +1,5 @@
+test_id,test_name,status,duration_ms,error,steps_count,failed_steps
+1769359335942,Visual Regression - example.com,failed,445,"Visual regression test failed: page.goto: net::ERR_NAME_NOT_RESOLVED at https://example.com/
+Call log:
+[2m  - navigating to ""https://example.com/"", waiting until ""networkidle""[22m
+",1,1

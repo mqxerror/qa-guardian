@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <style>
+      .title { font: bold 24px sans-serif; fill: #1a1a2e; }
+      .subtitle { font: 14px sans-serif; fill: #666; }
+      .section-title { font: bold 16px sans-serif; fill: #333; }
+      .step-title { font: bold 12px sans-serif; fill: #fff; }
+      .step-desc { font: 10px sans-serif; fill: #fff; opacity: 0.9; }
+      .label { font: 11px sans-serif; fill: #333; }
+      .note { font: 10px sans-serif; fill: #666; font-style: italic; }
+      .arrow { stroke: #64748b; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .dashed-arrow { stroke: #64748b; stroke-width: 2; stroke-dasharray: 5,3; fill: none; marker-end: url(#arrowhead); }
+      .bidirectional { stroke: #64748b; stroke-width: 2; fill: none; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <linearGradient id="cdnGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="lbGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="dockerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+    <linearGradient id="workerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="dbGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#db2777"/>
+    </linearGradient>
+    <linearGradient id="cacheGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#dc2626"/>
+    </linearGradient>
+    <linearGradient id="storageGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4"/>
+      <stop offset="100%" style="stop-color:#0891b2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="900" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <text x="600" y="40" text-anchor="middle" class="title">Deployment Topology</text>
+  <text x="600" y="62" text-anchor="middle" class="subtitle">Production architecture with Docker, load balancing, and database replication</text>
+
+  <!-- ===== USER/INTERNET ===== -->
+  <g transform="translate(30, 95)">
+    <rect width="120" height="60" rx="8" fill="#f3f4f6" stroke="#333" stroke-width="2"/>
+    <text x="60" y="35" text-anchor="middle" class="section-title" fill="#333">Users</text>
+    <text x="60" y="52" text-anchor="middle" class="note">Browsers/API</text>
+  </g>
+
+  <!-- ===== CDN LAYER ===== -->
+  <g transform="translate(200, 85)">
+    <rect width="280" height="80" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+    <text x="140" y="25" text-anchor="middle" class="section-title" fill="#f59e0b">CDN (CloudFront/Cloudflare)</text>
+
+    <!-- Static assets -->
+    <rect x="20" y="40" width="110" height="30" rx="6" fill="url(#cdnGrad)"/>
+    <text x="75" y="60" text-anchor="middle" class="step-title">Static Assets</text>
+
+    <!-- Edge cache -->
+    <rect x="150" y="40" width="110" height="30" rx="6" fill="url(#cdnGrad)"/>
+    <text x="205" y="60" text-anchor="middle" class="step-title">Edge Cache</text>
+  </g>
+
+  <!-- ===== LOAD BALANCER ===== -->
+  <g transform="translate(530, 85)">
+    <rect width="280" height="80" rx="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="140" y="25" text-anchor="middle" class="section-title" fill="#8b5cf6">Load Balancer (ALB/nginx)</text>
+
+    <!-- HTTP -->
+    <rect x="20" y="40" width="75" height="30" rx="6" fill="url(#lbGrad)"/>
+    <text x="57" y="60" text-anchor="middle" class="step-title">HTTP</text>
+
+    <!-- HTTPS -->
+    <rect x="105" y="40" width="75" height="30" rx="6" fill="url(#lbGrad)"/>
+    <text x="142" y="60" text-anchor="middle" class="step-title">HTTPS</text>
+
+    <!-- WebSocket -->
+    <rect x="190" y="40" width="70" height="30" rx="6" fill="url(#lbGrad)"/>
+    <text x="225" y="60" text-anchor="middle" class="step-title">WS</text>
+  </g>
+
+  <!-- ===== API CONTAINERS ===== -->
+  <g transform="translate(30, 200)">
+    <rect width="450" height="200" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="225" y="25" text-anchor="middle" class="section-title" fill="#3b82f6">Docker Containers - API Layer (Auto-scaled)</text>
+
+    <!-- Container 1 -->
+    <rect x="20" y="45" width="130" height="70" rx="6" fill="url(#dockerGrad)"/>
+    <text x="85" y="72" text-anchor="middle" class="step-title">api-1</text>
+    <text x="85" y="90" text-anchor="middle" class="step-desc">Node.js + Fastify</text>
+    <text x="85" y="105" text-anchor="middle" class="step-desc">Port 3001</text>
+
+    <!-- Container 2 -->
+    <rect x="160" y="45" width="130" height="70" rx="6" fill="url(#dockerGrad)"/>
+    <text x="225" y="72" text-anchor="middle" class="step-title">api-2</text>
+    <text x="225" y="90" text-anchor="middle" class="step-desc">Node.js + Fastify</text>
+    <text x="225" y="105" text-anchor="middle" class="step-desc">Port 3001</text>
+
+    <!-- Container N -->
+    <rect x="300" y="45" width="130" height="70" rx="6" fill="url(#dockerGrad)"/>
+    <text x="365" y="72" text-anchor="middle" class="step-title">api-n</text>
+    <text x="365" y="90" text-anchor="middle" class="step-desc">Node.js + Fastify</text>
+    <text x="365" y="105" text-anchor="middle" class="step-desc">Port 3001</text>
+
+    <!-- Scaling info -->
+    <rect x="20" y="130" width="410" height="55" rx="4" fill="#dbeafe"/>
+    <text x="225" y="150" text-anchor="middle" class="label">Horizontal Auto-Scaling</text>
+    <text x="225" y="168" text-anchor="middle" class="note">CPU/Memory based scaling: min 2, max 10 replicas</text>
+    <text x="225" y="183" text-anchor="middle" class="note">Health checks: /health endpoint, 30s interval</text>
+  </g>
+
+  <!-- ===== WORKER CONTAINERS ===== -->
+  <g transform="translate(510, 200)">
+    <rect width="450" height="200" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+    <text x="225" y="25" text-anchor="middle" class="section-title" fill="#10b981">Docker Containers - Test Workers (Job-based)</text>
+
+    <!-- Worker 1 -->
+    <rect x="20" y="45" width="130" height="70" rx="6" fill="url(#workerGrad)"/>
+    <text x="85" y="72" text-anchor="middle" class="step-title">worker-1</text>
+    <text x="85" y="90" text-anchor="middle" class="step-desc">Playwright + Chrome</text>
+    <text x="85" y="105" text-anchor="middle" class="step-desc">Ephemeral</text>
+
+    <!-- Worker 2 -->
+    <rect x="160" y="45" width="130" height="70" rx="6" fill="url(#workerGrad)"/>
+    <text x="225" y="72" text-anchor="middle" class="step-title">worker-2</text>
+    <text x="225" y="90" text-anchor="middle" class="step-desc">Playwright + Firefox</text>
+    <text x="225" y="105" text-anchor="middle" class="step-desc">Ephemeral</text>
+
+    <!-- Worker N -->
+    <rect x="300" y="45" width="130" height="70" rx="6" fill="url(#workerGrad)"/>
+    <text x="365" y="72" text-anchor="middle" class="step-title">worker-n</text>
+    <text x="365" y="90" text-anchor="middle" class="step-desc">Playwright + WebKit</text>
+    <text x="365" y="105" text-anchor="middle" class="step-desc">Ephemeral</text>
+
+    <!-- Worker info -->
+    <rect x="20" y="130" width="410" height="55" rx="4" fill="#d1fae5"/>
+    <text x="225" y="150" text-anchor="middle" class="label">Kubernetes Jobs / AWS Fargate Tasks</text>
+    <text x="225" y="168" text-anchor="middle" class="note">Spin up on demand, terminate after test completion</text>
+    <text x="225" y="183" text-anchor="middle" class="note">Pre-installed browsers: Chromium, Firefox, WebKit</text>
+  </g>
+
+  <!-- ===== FRONTEND CONTAINER ===== -->
+  <g transform="translate(990, 85)">
+    <rect width="180" height="80" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="90" y="25" text-anchor="middle" class="section-title" fill="#3b82f6">Frontend</text>
+
+    <rect x="20" y="40" width="140" height="30" rx="6" fill="url(#dockerGrad)"/>
+    <text x="90" y="60" text-anchor="middle" class="step-title">React + Nginx</text>
+  </g>
+
+  <!-- ===== DATABASE LAYER ===== -->
+  <g transform="translate(30, 430)">
+    <rect width="450" height="200" rx="8" fill="#fdf2f8" stroke="#ec4899" stroke-width="2"/>
+    <text x="225" y="25" text-anchor="middle" class="section-title" fill="#ec4899">PostgreSQL Cluster (Database Replication)</text>
+
+    <!-- Primary -->
+    <rect x="20" y="45" width="130" height="80" rx="6" fill="url(#dbGrad)"/>
+    <text x="85" y="72" text-anchor="middle" class="step-title">Primary</text>
+    <text x="85" y="90" text-anchor="middle" class="step-desc">Read/Write</text>
+    <text x="85" y="108" text-anchor="middle" class="step-desc">PostgreSQL 15</text>
+
+    <!-- Replica 1 -->
+    <rect x="160" y="45" width="130" height="80" rx="6" fill="url(#dbGrad)" fill-opacity="0.8"/>
+    <text x="225" y="72" text-anchor="middle" class="step-title">Replica 1</text>
+    <text x="225" y="90" text-anchor="middle" class="step-desc">Read Only</text>
+    <text x="225" y="108" text-anchor="middle" class="step-desc">Hot Standby</text>
+
+    <!-- Replica 2 -->
+    <rect x="300" y="45" width="130" height="80" rx="6" fill="url(#dbGrad)" fill-opacity="0.6"/>
+    <text x="365" y="72" text-anchor="middle" class="step-title">Replica 2</text>
+    <text x="365" y="90" text-anchor="middle" class="step-desc">Read Only</text>
+    <text x="365" y="108" text-anchor="middle" class="step-desc">Async Replica</text>
+
+    <!-- Replication arrows -->
+    <path d="M150 85 L160 85" class="arrow"/>
+    <path d="M290 85 L300 85" class="arrow"/>
+
+    <!-- DB info -->
+    <rect x="20" y="140" width="410" height="45" rx="4" fill="#fce7f3"/>
+    <text x="225" y="160" text-anchor="middle" class="label">Streaming Replication + Auto-failover (Patroni)</text>
+    <text x="225" y="178" text-anchor="middle" class="note">Read replicas serve read-heavy queries, Primary handles writes</text>
+  </g>
+
+  <!-- ===== REDIS CACHE ===== -->
+  <g transform="translate(510, 430)">
+    <rect width="220" height="200" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+    <text x="110" y="25" text-anchor="middle" class="section-title" fill="#ef4444">Redis Cluster</text>
+
+    <!-- Redis Primary -->
+    <rect x="20" y="45" width="85" height="70" rx="6" fill="url(#cacheGrad)"/>
+    <text x="62" y="72" text-anchor="middle" class="step-title">Primary</text>
+    <text x="62" y="92" text-anchor="middle" class="step-desc">Cache +</text>
+    <text x="62" y="105" text-anchor="middle" class="step-desc">Queue</text>
+
+    <!-- Redis Replica -->
+    <rect x="115" y="45" width="85" height="70" rx="6" fill="url(#cacheGrad)" fill-opacity="0.7"/>
+    <text x="157" y="72" text-anchor="middle" class="step-title">Replica</text>
+    <text x="157" y="92" text-anchor="middle" class="step-desc">Read-only</text>
+    <text x="157" y="105" text-anchor="middle" class="step-desc">Standby</text>
+
+    <!-- Redis info -->
+    <rect x="20" y="130" width="180" height="55" rx="4" fill="#fee2e2"/>
+    <text x="110" y="150" text-anchor="middle" class="label">BullMQ + Sessions</text>
+    <text x="110" y="168" text-anchor="middle" class="note">Job queue, rate limiting</text>
+    <text x="110" y="183" text-anchor="middle" class="note">Session cache, pub/sub</text>
+  </g>
+
+  <!-- ===== OBJECT STORAGE ===== -->
+  <g transform="translate(760, 430)">
+    <rect width="200" height="200" rx="8" fill="#ecfeff" stroke="#06b6d4" stroke-width="2"/>
+    <text x="100" y="25" text-anchor="middle" class="section-title" fill="#06b6d4">Object Storage</text>
+
+    <!-- MinIO/S3 -->
+    <rect x="20" y="45" width="160" height="70" rx="6" fill="url(#storageGrad)"/>
+    <text x="100" y="75" text-anchor="middle" class="step-title">MinIO / AWS S3</text>
+    <text x="100" y="95" text-anchor="middle" class="step-desc">Screenshots, Traces</text>
+    <text x="100" y="108" text-anchor="middle" class="step-desc">Baselines, Reports</text>
+
+    <!-- Storage info -->
+    <rect x="20" y="130" width="160" height="55" rx="4" fill="#cffafe"/>
+    <text x="100" y="150" text-anchor="middle" class="label">S3-compatible</text>
+    <text x="100" y="168" text-anchor="middle" class="note">Multi-region replication</text>
+    <text x="100" y="183" text-anchor="middle" class="note">Lifecycle policies</text>
+  </g>
+
+  <!-- ===== MONITORING ===== -->
+  <g transform="translate(990, 200)">
+    <rect width="180" height="200" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+    <text x="90" y="25" text-anchor="middle" class="section-title" fill="#64748b">Monitoring</text>
+
+    <rect x="20" y="45" width="140" height="35" rx="4" fill="#e2e8f0"/>
+    <text x="90" y="68" text-anchor="middle" class="label">Prometheus</text>
+
+    <rect x="20" y="90" width="140" height="35" rx="4" fill="#e2e8f0"/>
+    <text x="90" y="113" text-anchor="middle" class="label">Grafana</text>
+
+    <rect x="20" y="135" width="140" height="35" rx="4" fill="#e2e8f0"/>
+    <text x="90" y="158" text-anchor="middle" class="label">Loki (Logs)</text>
+  </g>
+
+  <!-- ===== FLOW ARROWS ===== -->
+  <!-- User to CDN -->
+  <path d="M150 125 L200 125" class="arrow"/>
+
+  <!-- CDN to LB -->
+  <path d="M480 125 L530 125" class="arrow"/>
+
+  <!-- LB to API -->
+  <path d="M670 165 L255 200" class="arrow"/>
+
+  <!-- LB to Frontend -->
+  <path d="M810 125 L990 125" class="dashed-arrow"/>
+
+  <!-- API to Workers -->
+  <path d="M480 300 L510 300" class="arrow"/>
+
+  <!-- API to DB -->
+  <path d="M255 400 L255 430" class="arrow"/>
+
+  <!-- API to Redis -->
+  <path d="M480 400 L620 430" class="arrow"/>
+
+  <!-- API to Storage -->
+  <path d="M480 350 L860 430" class="dashed-arrow"/>
+
+  <!-- Workers to Storage -->
+  <path d="M735 400 L860 430" class="arrow"/>
+
+  <!-- ===== LEGEND ===== -->
+  <g transform="translate(30, 660)">
+    <rect width="1140" height="80" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1"/>
+    <text x="570" y="25" text-anchor="middle" class="section-title">Container Orchestration: Kubernetes or Docker Swarm</text>
+
+    <rect x="50" y="45" width="20" height="15" fill="url(#cdnGrad)" rx="2"/>
+    <text x="75" y="57" class="label">CDN</text>
+
+    <rect x="130" y="45" width="20" height="15" fill="url(#lbGrad)" rx="2"/>
+    <text x="155" y="57" class="label">Load Balancer</text>
+
+    <rect x="250" y="45" width="20" height="15" fill="url(#dockerGrad)" rx="2"/>
+    <text x="275" y="57" class="label">API Container</text>
+
+    <rect x="380" y="45" width="20" height="15" fill="url(#workerGrad)" rx="2"/>
+    <text x="405" y="57" class="label">Worker</text>
+
+    <rect x="480" y="45" width="20" height="15" fill="url(#dbGrad)" rx="2"/>
+    <text x="505" y="57" class="label">PostgreSQL</text>
+
+    <rect x="590" y="45" width="20" height="15" fill="url(#cacheGrad)" rx="2"/>
+    <text x="615" y="57" class="label">Redis</text>
+
+    <rect x="680" y="45" width="20" height="15" fill="url(#storageGrad)" rx="2"/>
+    <text x="705" y="57" class="label">S3/MinIO</text>
+
+    <text x="850" y="57" class="note">Total containers: 5-15 (varies with load)</text>
+  </g>
+
+  <!-- ===== DEPLOYMENT OPTIONS ===== -->
+  <g transform="translate(30, 760)">
+    <rect width="1140" height="110" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1"/>
+    <text x="30" y="25" class="section-title" fill="#3b82f6">Deployment Options</text>
+
+    <text x="30" y="50" class="label">AWS:</text>
+    <text x="80" y="50" class="note">ECS/Fargate + ALB + RDS + ElastiCache + S3 + CloudFront</text>
+
+    <text x="30" y="70" class="label">GCP:</text>
+    <text x="80" y="70" class="note">GKE + Cloud Load Balancing + Cloud SQL + Memorystore + GCS + Cloud CDN</text>
+
+    <text x="30" y="90" class="label">Self-Hosted:</text>
+    <text x="120" y="90" class="note">Kubernetes + nginx/Traefik + PostgreSQL + Redis + MinIO + Cloudflare</text>
+
+    <text x="700" y="50" class="label">Resource Estimates (Medium Load):</text>
+    <text x="700" y="70" class="note">API: 2-4 vCPU, 4-8GB RAM per replica</text>
+    <text x="700" y="90" class="note">Worker: 2 vCPU, 4GB RAM (ephemeral)</text>
+  </g>
+
+  <!-- Version info -->
+  <text x="1150" y="890" text-anchor="end" class="subtitle">QA Guardian v1.0 - Deployment Topology</text>
+</svg>

@@ -1,0 +1,48 @@
+{
+  "name": "@qa-guardian/mcp-server",
+  "version": "1.0.0",
+  "description": "QA Guardian MCP Server - Model Context Protocol integration for AI-powered test management",
+  "main": "dist/index.js",
+  "bin": {
+    "qa-guardian-mcp": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "qa",
+    "testing",
+    "test-management",
+    "playwright",
+    "ai",
+    "claude"
+  ],
+  "author": "QA Guardian Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qa-guardian/mcp-server.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
+    "dotenv": "^16.4.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}

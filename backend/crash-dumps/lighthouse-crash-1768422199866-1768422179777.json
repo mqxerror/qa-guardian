@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-01-14T20:23:19.866Z",
+  "testId": "1768422179777",
+  "testName": "Browser Crash Test",
+  "runId": "1768422199263",
+  "errorMessage": "Target page, context or browser has been closed",
+  "originalError": "Error: Target page, context or browser has been closed\n    at executeTest (/Users/mqxerrormac16/Documents/QA-Dam3oun/backend/src/routes/test-runs.ts:2854:30)\n    at async runTestsForRun (/Users/mqxerrormac16/Documents/QA-Dam3oun/backend/src/routes/test-runs.ts:5463:20)",
+  "browserType": "chromium",
+  "targetUrl": "http://localhost:5173",
+  "stepResults": [],
+  "suggestion": "Try running the audit again. If the crash persists, the target page may be causing excessive memory usage or triggering a browser bug. Consider reducing page complexity or testing in smaller segments."
+}

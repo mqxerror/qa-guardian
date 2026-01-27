@@ -1,0 +1,104 @@
+# =============================================================================
+# QA Guardian Frontend - Production Dockerfile for Dokploy
+# =============================================================================
+# Multi-stage build that bakes in production environment variables
+# and serves static files via nginx with reverse proxy to backend
+#
+# Build with production URLs:
+#   docker build -f dokploy/Dockerfile.frontend \
+#     --build-arg VITE_API_URL=https://qa.pixelcraftedmedia.com \
+#     --build-arg VITE_API_BASE_URL=https://qa.pixelcraftedmedia.com \
+#     --build-arg VITE_SOCKET_URL=https://qa.pixelcraftedmedia.com \
+#     --build-arg VITE_MCP_URL=https://qa.pixelcraftedmedia.com/mcp \
+#     -t qa-guardian-frontend:latest ./frontend
+#
+# Run: docker run -p 80:80 qa-guardian-frontend:latest
+# =============================================================================
+
+
+# ==============================================================================
+# Stage 1: Builder
+# ==============================================================================
+# Build the React app with production environment variables
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Build arguments for Vite environment variables
+# These get baked into the static bundle at build time
+ARG VITE_API_URL=https://qa.pixelcraftedmedia.com
+ARG VITE_API_BASE_URL=https://qa.pixelcraftedmedia.com
+ARG VITE_SOCKET_URL=https://qa.pixelcraftedmedia.com
+ARG VITE_MCP_URL=https://qa.pixelcraftedmedia.com/mcp
+
+# Set as environment variables for Vite build
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
+ENV VITE_MCP_URL=$VITE_MCP_URL
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build production bundle
+ENV NODE_ENV=production
+RUN npm run build
+
+
+# ==============================================================================
+# Stage 2: Production Runtime (nginx)
+# ==============================================================================
+# Lightweight nginx image serving static files
+FROM nginx:1.25-alpine AS production
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Remove default nginx content
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy custom nginx configuration for Dokploy
+# This includes:
+# - Gzip compression
+# - Static asset caching (1 year)
+# - Security headers (X-Frame-Options, X-Content-Type-Options)
+# - /api/* proxy to backend:3001
+# - /socket.io/* proxy for WebSocket
+# - SPA fallback for React Router
+COPY dokploy/nginx.conf /etc/nginx/nginx.conf
+
+# Copy built static files from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Create nginx cache directories
+RUN mkdir -p /var/cache/nginx/client_temp \
+    /var/cache/nginx/proxy_temp \
+    /var/cache/nginx/fastcgi_temp \
+    /var/cache/nginx/uwsgi_temp \
+    /var/cache/nginx/scgi_temp
+
+# Set proper permissions for non-root user
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid
+
+# Expose HTTP port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+
+# Run as non-root user
+USER nginx
+
+# Start nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]

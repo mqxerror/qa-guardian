@@ -1,0 +1,45 @@
+{
+  "suite": {
+    "name": "EXPORT_TEST_SUITE_147",
+    "description": "",
+    "browser": "chromium",
+    "viewport_width": 1280,
+    "viewport_height": 720,
+    "timeout": 30,
+    "retry_count": 0
+  },
+  "tests": [
+    {
+      "name": "EXPORT_TEST_1_Login",
+      "description": "Test user login functionality",
+      "steps": [],
+      "status": "draft"
+    },
+    {
+      "name": "EXPORT_TEST_2_Signup",
+      "description": "Test user registration flow",
+      "steps": [],
+      "status": "draft"
+    },
+    {
+      "name": "EXPORT_TEST_3_Dashboard",
+      "description": "Test dashboard displays correctly",
+      "steps": [],
+      "status": "draft"
+    },
+    {
+      "name": "EXPORT_TEST_4_Search",
+      "description": "Test search functionality works",
+      "steps": [],
+      "status": "draft"
+    },
+    {
+      "name": "EXPORT_TEST_5_Settings",
+      "description": "Test settings page functionality",
+      "steps": [],
+      "status": "draft"
+    }
+  ],
+  "exported_at": "2026-01-13T16:45:44.339Z",
+  "version": "1.0"
+}

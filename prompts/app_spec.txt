@@ -1,0 +1,2406 @@
+<project_specification>
+  <project_name>QA Guardian</project_name>
+
+  <overview>
+    <tagline>All tests. One platform. AI-ready.</tagline>
+    <description>
+      QA Guardian is a unified test management platform that brings together E2E testing, visual regression, load testing, accessibility audits, and security scanning into a single MCP-native system. Built on Playwright with Claude AI integration, it enables both human teams and AI agents to author, execute, and analyze tests through a consistent interface.
+    </description>
+    <key_differentiators>
+      <item>MCP-native: 170+ Model Context Protocol tools for AI agent integration</item>
+      <item>Unified platform: All test types (E2E, visual, load, a11y, security) in one place</item>
+      <item>AI-powered: Claude integration for test generation, healing, and root cause analysis</item>
+      <item>Human + AI: Visual recorder for QA engineers, MCP tools for AI agent integration</item>
+    </key_differentiators>
+  </overview>
+
+  <version>2.2</version>
+  <last_updated>2026-01-23</last_updated>
+
+  <progress_summary>
+    <total_features>1473</total_features>
+    <completed>1405</completed>
+    <in_progress>0</in_progress>
+    <pending>68</pending>
+    <completion_percentage>95.4%</completion_percentage>
+    <note>Added 68 MCP Chat tool test features (1615-1682) for Playwright agent to test all MCP tools with real AI via MCP Chat interface</note>
+  </progress_summary>
+
+  <recent_changes date="2026-01-23">
+    <change>Phase 8: AI Provider Infrastructure - Major progress</change>
+    <change>Added AIRouter with Kie.ai (primary) + Anthropic (fallback) failover</change>
+    <change>Added reinitializeFromEnv() for late dotenv loading</change>
+    <change>MCP Chat now executes real tools (create_project, list_projects, etc.)</change>
+    <change>AI status indicator in MCP Chat UI</change>
+    <change>Fixed CORS configuration for frontend (port 5173)</change>
+    <change>Fixed authentication forwarding for tool execution</change>
+    <change>Expanded Claude system prompt with ALL 170+ MCP tools organized by category</change>
+    <change>Claude can now: manage projects, suites, tests, runs, analytics, visual regression, security, accessibility, performance, load testing, monitoring, flaky tests, artifacts, and all AI-powered features</change>
+    <change>Feature #1560: Added AI Agent Workspace page with Kanban-style task board</change>
+    <change>AI Agent Workspace: Real AI execution with quick actions for 7 tool categories (Project, Test Suite, Execution, Analytics, Visual, Security, AI Generation)</change>
+    <change>Multi-turn tool execution loop for chained operations (up to 5 turns)</change>
+    <change>Added 68 MCP Chat tool test features (IDs 1615-1682) for Playwright agent testing</change>
+    <change>Features cover ALL major MCP tool categories: Projects, Test Suites, Execution, Analytics, Visual Regression, Security, Performance, Load Testing, Monitoring, AI Generation, etc.</change>
+  </recent_changes>
+
+  <phases>
+    <phase number="1" status="completed">
+      <name>Foundation</name>
+      <description>Core platform with test authoring, execution, results, scheduling, and basic integrations</description>
+    </phase>
+    <phase number="2" status="completed">
+      <name>Advanced Testing</name>
+      <description>Visual regression testing, load testing (K6), performance testing (Lighthouse), accessibility testing (axe-core)</description>
+    </phase>
+    <phase number="3" status="mostly_completed">
+      <name>AI-Powered Intelligence</name>
+      <description>MCP integration (170+ tools completed), root cause analysis (completed), flaky test management (completed), AI Copilot features (completed). Remaining: AI test healing ML core, AI test generation, anomaly detection</description>
+      <sub_status>
+        <item name="MCP Integration" status="completed">170+ tools implemented</item>
+        <item name="Root Cause Analysis" status="completed">All 16 features passed</item>
+        <item name="Flaky Test Management" status="completed">All 20 features passed</item>
+        <item name="AI Test Healing" status="partial">UI/MCP tools done, ML core pending (15 features)</item>
+        <item name="Predictive Failure" status="removed">Complex ML feature removed - not needed for SMB</item>
+        <item name="AI Test Generation" status="pending">30 features pending</item>
+        <item name="Intelligent Prioritization" status="removed">Complex ML feature removed - simple priority kept</item>
+        <item name="Anomaly Detection" status="removed">Enterprise monitoring feature removed - not needed for SMB</item>
+      </sub_status>
+    </phase>
+    <phase number="4" status="partial">
+      <name>Enterprise Security</name>
+      <description>DAST scanning (completed), dependency vulnerability scanning (partial - advanced features pending), secret detection (pending), SBOM generation (pending)</description>
+      <sub_status>
+        <item name="DAST Scanning" status="completed">OWASP ZAP integration done</item>
+        <item name="Dependency Scanning" status="partial">Basic Trivy/Grype done, 17 advanced features pending</item>
+        <item name="Secret Detection" status="pending">Gitleaks integration pending</item>
+      </sub_status>
+    </phase>
+    <phase number="5" status="mostly_completed">
+      <name>Advanced AI & Testing Intelligence</name>
+      <description>AI Copilot, AI test discovery, predictive intelligence, natural language interface - most features completed</description>
+      <sub_status>
+        <item name="AI Copilot" status="completed">Real-time suggestions, autocomplete, explain test</item>
+        <item name="AI Test Discovery" status="completed">Test discovery, self-maintenance suggestions</item>
+        <item name="Predictive Intelligence" status="completed">Production risk, tech debt, quality correlation</item>
+        <item name="Natural Language" status="completed">Chat interface, debugging, voice control</item>
+        <item name="Visual AI" status="completed">Screenshot understanding, impact analysis</item>
+        <item name="Documentation" status="completed">Auto-generate docs, release notes</item>
+        <item name="MCP Advanced Tools" status="partial">13 advanced AI tools pending</item>
+      </sub_status>
+    </phase>
+    <phase number="6" status="removed">
+      <name>External Integrations (REMOVED)</name>
+      <description>Replaced with webhooks + n8n/Zapier approach. Users can connect to any tool via webhooks.</description>
+      <sub_status>
+        <item name="Issue Tracking" status="removed">Use webhooks + n8n/Zapier for Jira, Linear, etc.</item>
+        <item name="CI/CD" status="removed">Use webhooks for CI/CD tools</item>
+        <item name="Observability" status="removed">Use webhooks for observability tools</item>
+        <item name="Alerting" status="partial">OpsGenie, Slack, Teams, PagerDuty supported via alert destinations</item>
+      </sub_status>
+    </phase>
+    <phase number="7" status="pending">
+      <name>Webhooks System</name>
+      <description>Enhanced webhook system for external platform integration (n8n, Zapier, Make)</description>
+      <sub_status>
+        <item name="Webhook Events" status="completed">12 essential event types (test.run.started/completed/failed/passed, visual.diff.detected, baseline.approved, security.vulnerability.found, flaky.test.detected, schedule.triggered, performance.budget.exceeded, accessibility.issue.found, test.created)</item>
+      </sub_status>
+    </phase>
+    <phase number="8" status="mostly_completed">
+      <name>AI Provider Infrastructure</name>
+      <description>Multi-provider AI architecture with Kie.ai (primary, 70% savings) and Anthropic (fallback)</description>
+      <sub_status>
+        <item name="Provider Integration" status="completed">Kie.ai + Anthropic providers with automatic failover, circuit breaker, cost tracking</item>
+        <item name="AI Router" status="completed">AIRouter with reinitializeFromEnv(), automatic failover, cost savings tracking</item>
+        <item name="MCP Chat with Tool Execution" status="completed">Claude can execute MCP tools (create_project, list_projects, etc.) via natural language</item>
+        <item name="AI Status API" status="completed">GET /api/v1/mcp/status - Check AI provider availability</item>
+        <item name="AI Settings UI" status="pending">Configuration pages and API key management (5 features)</item>
+        <item name="LLM-Powered Features" status="partial">Chat working, test generation via chat working, RCA pending</item>
+        <item name="MCP AI Tools" status="partial">Tool execution via chat working, dedicated AI tool endpoints pending</item>
+        <item name="Prompt Caching" status="pending">Anthropic prompt caching for 25-40% cost savings</item>
+        <item name="Response Caching" status="pending">Cache duplicate AI requests for 10-15% savings</item>
+      </sub_status>
+      <cost_savings>
+        <kie_ai_pricing>
+          <model name="Claude Opus 4.5 Thinking">
+            <input>$1.50 per million tokens (70% off Anthropic)</input>
+            <output>$7.50 per million tokens (70% off Anthropic)</output>
+          </model>
+          <model name="Claude Sonnet 4">
+            <input>$0.90 per million tokens (70% off)</input>
+            <output>$4.50 per million tokens (70% off)</output>
+          </model>
+          <model name="Claude Haiku">
+            <input>$0.075 per million tokens (70% off)</input>
+            <output>$0.375 per million tokens (70% off)</output>
+          </model>
+        </kie_ai_pricing>
+        <anthropic_pricing note="Fallback only">
+          <model name="Claude Opus 4.5 Thinking">
+            <input>$5.00 per million tokens</input>
+            <output>$25.00 per million tokens</output>
+          </model>
+          <model name="Claude Sonnet 4">
+            <input>$3.00 per million tokens</input>
+            <output>$15.00 per million tokens</output>
+          </model>
+        </anthropic_pricing>
+      </cost_savings>
+    </phase>
+    <phase number="9" status="pending">
+      <name>Navigation Redesign</name>
+      <description>Simplify 38-item sidebar to ~12 visible items with collapsible groups and hub pages</description>
+      <sub_status>
+        <item name="Collapsible Groups" status="pending">Group menu items with expand/collapse (6 features)</item>
+        <item name="Hub Pages" status="pending">AI Insights Hub, MCP Hub consolidation</item>
+        <item name="Role-Based Nav" status="pending">Show/hide items based on user role</item>
+        <item name="Command Palette" status="pending">Cmd+K quick navigation</item>
+      </sub_status>
+    </phase>
+    <phase number="10" status="pending">
+      <name>Code Refactoring</name>
+      <description>Split oversized files (test-runs.ts 26K lines, monitoring.ts 10K lines) into modules</description>
+      <sub_status>
+        <item name="test-runs.ts" status="pending">Split 26,697 lines into 6 modules (7 features)</item>
+        <item name="monitoring.ts" status="pending">Split 10,291 lines into 5 modules</item>
+        <item name="github.ts" status="pending">Split 8,181 lines into 4 modules</item>
+        <item name="sast.ts" status="pending">Split 5,771 lines into 4 modules</item>
+      </sub_status>
+    </phase>
+  </phases>
+
+  <target_users>
+    <user type="AI Agent" priority="primary">Autonomous test management via 170+ MCP tools - create, run, analyze, and heal tests</user>
+    <user type="QA Engineer" priority="primary">Visual test recorder and no-code UI for creating and managing test suites</user>
+    <user type="Developer" priority="secondary">GitHub integration for existing Playwright tests, MCP for AI-assisted development</user>
+    <user type="Engineering Manager" priority="secondary">Dashboards, trends, quality metrics, and release readiness reporting</user>
+    <user type="DevOps Engineer" priority="tertiary">CI/CD integration, schedules, alerts, and automation workflows</user>
+    <user type="Security Engineer" priority="tertiary">DAST scanning, dependency analysis, and compliance reporting</user>
+  </target_users>
+
+  <technology_stack>
+    <frontend>
+      <framework>React 18+ with TypeScript</framework>
+      <styling>Tailwind CSS + Radix UI primitives</styling>
+      <state>TanStack Query + Zustand</state>
+      <charts>Recharts</charts>
+      <realtime>Socket.IO client</realtime>
+      <build>Vite</build>
+      <code_editor>Monaco Editor (for K6 scripts, Playwright code)</code_editor>
+    </frontend>
+    <backend>
+      <runtime>Node.js 20+ with TypeScript</runtime>
+      <framework>Express.js or Fastify</framework>
+      <database>PostgreSQL (primary) + Redis (cache/queue)</database>
+      <queue>BullMQ for job scheduling</queue>
+      <storage>MinIO or S3-compatible for artifacts</storage>
+      <websocket>Socket.IO server</websocket>
+      <mcp>Model Context Protocol server (stdio + SSE transports)</mcp>
+    </backend>
+    <testing_engine>
+      <core>Playwright</core>
+      <browsers>Chromium, Firefox, WebKit</browsers>
+      <mobile>Playwright mobile emulation (iPhone, Android viewports)</mobile>
+      <execution>Containerized workers (Docker)</execution>
+      <load_testing>K6</load_testing>
+      <performance>Lighthouse</performance>
+      <accessibility>axe-core</accessibility>
+      <visual_regression>Playwright screenshots + pixelmatch</visual_regression>
+    </testing_engine>
+    <security_scanning>
+      <dast>OWASP ZAP or similar</dast>
+      <dependency_scanning>Trivy, Grype, npm audit</dependency_scanning>
+      <secret_detection>Gitleaks</secret_detection>
+      <container_scanning>Trivy</container_scanning>
+    </security_scanning>
+    <ai_ml>
+      <architecture>Hybrid: Rule-based for fast static decisions + LLM for complex analysis</architecture>
+      <test_healing>ML-based selector matching, visual element matching via Claude Vision</test_healing>
+      <root_cause>Rule-based pattern matching + Claude for complex explanations</root_cause>
+      <prediction>Historical failure pattern analysis + ML models</prediction>
+      <generation>Claude-powered test generation from natural language</generation>
+      <providers>
+        <primary>Kie.ai (70% cost savings on Claude models)</primary>
+        <fallback>Anthropic Direct API</fallback>
+        <models>Claude Opus 4.5 Thinking, Claude Sonnet 4, Claude Haiku</models>
+      </providers>
+    </ai_ml>
+    <communication>
+      <api>REST API with OpenAPI/Swagger documentation</api>
+      <realtime>WebSocket for live test progress</realtime>
+      <webhooks>Outbound webhooks for integrations</webhooks>
+      <mcp>Model Context Protocol for AI agent integration</mcp>
+    </communication>
+  </technology_stack>
+
+  <prerequisites>
+    <environment_setup>
+      - Node.js 20+
+      - PostgreSQL 15+
+      - Redis 7+
+      - Docker (for test execution workers)
+      - MinIO or S3-compatible storage
+      - K6 (for load testing)
+      - Chrome/Chromium (for Lighthouse)
+    </environment_setup>
+  </prerequisites>
+
+  <security_and_access_control>
+    <user_roles>
+      <role name="owner">
+        <description>Organization owner with full access including billing and deletion</description>
+        <permissions>
+          - Full access to all features
+          - Manage billing and subscription
+          - Delete organization
+          - Transfer ownership
+          - Manage all users and roles
+          - Access security scanning and compliance
+        </permissions>
+      </role>
+      <role name="admin">
+        <description>Administrator with user and project management access</description>
+        <permissions>
+          - Manage users (invite, remove, change roles)
+          - Manage all projects
+          - Manage organization settings
+          - View audit logs
+          - Access security scanning
+          - Cannot delete organization or manage billing
+        </permissions>
+      </role>
+      <role name="developer">
+        <description>Team member who can create and run tests</description>
+        <permissions>
+          - Create, edit, delete tests in assigned projects
+          - Run tests manually
+          - View all results and artifacts
+          - Manage schedules for own tests
+          - Connect GitHub repositories
+          - Use MCP for AI-assisted testing
+          - Cannot manage users or organization settings
+        </permissions>
+      </role>
+      <role name="viewer">
+        <description>Read-only access to results and dashboards</description>
+        <permissions>
+          - View projects and test suites
+          - View test results and artifacts
+          - View dashboards and reports
+          - Cannot create, edit, or run tests
+          - Cannot modify any settings
+        </permissions>
+      </role>
+    </user_roles>
+    <authentication>
+      <method>Email/password + Google OAuth SSO</method>
+      <session_timeout>7 days (configurable)</session_timeout>
+      <password_requirements>Minimum 8 characters, 1 uppercase, 1 lowercase, 1 number</password_requirements>
+      <mfa>Optional TOTP-based MFA</mfa>
+    </authentication>
+    <api_authentication>
+      <method>API keys with scoped permissions</method>
+      <scopes>read, execute, write, admin, mcp:read, mcp:execute, mcp:write</scopes>
+      <rotation>Keys can be rotated without downtime</rotation>
+    </api_authentication>
+    <sensitive_operations>
+      - Delete organization requires password confirmation
+      - Delete project requires confirmation dialog
+      - Bulk delete tests requires confirmation
+      - API key creation shows key only once
+      - Security scan results access controlled
+    </sensitive_operations>
+  </security_and_access_control>
+
+  <!-- ==================== CORE FEATURES (Phase 1 - COMPLETED) ==================== -->
+  <core_features status="completed">
+    <authentication_and_users>
+      - Email/password registration with email verification
+      - Google OAuth SSO login
+      - Password reset via email
+      - User profile management (name, avatar, preferences)
+      - Session management (view active sessions, logout all)
+      - Organization creation on signup
+      - Team invitation via email
+      - Role assignment and modification
+      - User deactivation (soft delete)
+    </authentication_and_users>
+
+    <organizations_and_projects>
+      - Organization dashboard with overview stats
+      - Organization settings (name, logo, timezone)
+      - Project creation with name and description
+      - Project settings (base URL, default browser, timeout)
+      - GitHub repository connection via OAuth
+      - Project archival and deletion
+      - Project-level user permissions
+      - Project environment variables (encrypted)
+    </organizations_and_projects>
+
+    <test_authoring_visual>
+      - Visual test recorder (browser-based recording)
+      - Step-by-step test editor (click, type, assert, wait, screenshot)
+      - Element selector helper (click to select elements)
+      - Custom assertions (text contains, element visible, URL matches)
+      - Test step reordering via drag-and-drop
+      - Test duplication and templating
+      - View generated Playwright code (read-only for beginners)
+      - Edit Playwright code directly (for advanced users)
+      - Test validation before save
+      - Test preview/dry-run
+    </test_authoring_visual>
+
+    <test_authoring_github>
+      - Connect GitHub repository via OAuth
+      - Auto-discover Playwright test files (*.spec.ts, *.test.ts)
+      - Manual test file refresh
+      - View test file contents (read-only)
+      - Select which test files to include in suites
+      - Branch selection for test discovery
+      - Webhook for auto-refresh on push
+    </test_authoring_github>
+
+    <test_suites>
+      - Create test suites (groups of tests)
+      - Add/remove tests from suites
+      - Suite-level configuration (browser, viewport, timeout)
+      - Suite-level environment variables
+      - Suite ordering and prioritization
+      - Suite duplication
+      - Suite archival and deletion
+    </test_suites>
+
+    <test_execution>
+      - Run single test manually
+      - Run entire suite manually
+      - Run selected tests from suite
+      - Parallel execution across browsers (Chrome, Firefox, Safari)
+      - Mobile viewport emulation (iPhone 14, Pixel 7, iPad)
+      - Real-time progress via WebSocket
+      - Cancel running tests
+      - Retry failed tests (configurable retry count)
+      - Test execution queue management
+      - Execution timeout handling
+    </test_execution>
+
+    <test_results>
+      - Results dashboard with pass/fail/skip summary
+      - Individual test result details
+      - Step-by-step execution trace
+      - Screenshot on failure (automatic)
+      - Screenshot on every step (optional)
+      - Video recording of test execution
+      - Playwright trace file download
+      - Console logs capture
+      - Network request logs
+      - Error messages and stack traces
+      - Execution duration per step
+      - Browser and viewport info in results
+      - Results filtering (status, browser, date range)
+      - Results search by test name
+      - Results comparison between runs
+      - Flaky test detection (pass/fail inconsistency)
+    </test_results>
+
+    <artifacts>
+      - Screenshot viewer with zoom
+      - Video player for recordings
+      - Trace viewer (embedded Playwright trace viewer)
+      - Artifact download (individual and bulk)
+      - Artifact retention policy (configurable days)
+      - Artifact storage usage display
+    </artifacts>
+
+    <scheduling>
+      - Cron-based schedule creation
+      - Schedule frequency presets (hourly, daily, weekly)
+      - Custom cron expression input
+      - Timezone selection for schedules
+      - Schedule enable/disable toggle
+      - Next run time display
+      - Schedule history (past runs)
+      - Multiple schedules per suite
+    </scheduling>
+
+    <github_integration>
+      - PR status checks (pass/fail badge)
+      - Auto-run tests on PR open/update
+      - Auto-run tests on push to branch
+      - PR comment with results summary
+      - Commit SHA linking in results
+      - Branch filtering (only run on specific branches)
+      - GitHub Actions workflow example generation
+      - Required status check configuration
+    </github_integration>
+
+    <alerting>
+      - Email alerts on test failure
+      - Slack integration (OAuth connection)
+      - Slack channel selection per project
+      - Slack message customization
+      - Webhook alerts (custom URL)
+      - Alert conditions (any failure, all failures, threshold)
+      - Alert suppression (don't alert on retry success)
+      - Alert digest (batch notifications)
+      - Alert history log
+      - Alert rate limiting (in progress)
+      - Alert correlation (pending)
+      - Alert runbook links (pending)
+    </alerting>
+
+    <webhooks status="pending">
+      <description>Enhanced webhook system for integrating with external platforms (n8n, Zapier, Make, etc.)</description>
+      <events>
+        <test_events>
+          - Webhook event: test.run.started
+          - Webhook event: test.run.completed
+          - Webhook event: test.run.failed
+          - Webhook event: test.run.passed
+          - Webhook event: test.created
+          - Webhook event: test.updated
+          - Webhook event: test.deleted
+          - Webhook event: suite.created
+          - Webhook event: suite.updated
+        </test_events>
+        <visual_events>
+          - Webhook event: visual.diff.detected
+          - Webhook event: baseline.approved
+          - Webhook event: baseline.rejected
+        </visual_events>
+        <quality_events>
+          - Webhook event: performance.budget.exceeded
+          - Webhook event: security.vulnerability.found
+          - Webhook event: flaky.test.detected
+          - Webhook event: accessibility.issue.found
+          - Webhook event: load.test.completed
+          - Webhook event: lighthouse.audit.completed
+        </quality_events>
+        <system_events>
+          - Webhook event: schedule.triggered
+          - Webhook event: schedule.created
+          - Webhook event: alert.sent
+          - Webhook event: project.created
+          - Webhook event: user.invited
+          - Webhook event: api.key.created
+        </system_events>
+      </events>
+      <configuration>
+        - Webhook payload customization (JSON template)
+        - Webhook payload variables (project, suite, test, result)
+        - Webhook signature verification (HMAC-SHA256)
+        - Webhook retry with exponential backoff
+        - Webhook delivery logs
+        - Webhook delivery status tracking
+        - Webhook test endpoint
+        - Webhook batch delivery option
+      </configuration>
+      <filtering>
+        - Webhook filter by event type
+        - Webhook filter by project
+        - Webhook filter by result status
+      </filtering>
+      <ui>
+        - Webhook configuration page
+        - Webhook creation modal
+        - Webhook delivery history view
+      </ui>
+    </webhooks>
+
+    <api>
+      - REST API for all operations
+      - API key generation and management
+      - API key scopes (read, execute, write, admin)
+      - API rate limiting (configurable per tier)
+      - OpenAPI/Swagger documentation
+      - API versioning (v1)
+      - Webhook signature verification
+      - Trigger test run via API
+      - Get test results via API
+      - List projects and suites via API
+      - CRUD operations for all entities
+    </api>
+
+    <dashboard_and_analytics>
+      - Organization-wide quality health score
+      - Pass rate trends over time (7d, 30d, 90d)
+      - Test execution count trends
+      - Average test duration trends
+      - Most failing tests list
+      - Flaky tests list with flakiness score
+      - Browser-specific pass rates
+      - Project comparison dashboard
+      - Export dashboard data (CSV)
+    </dashboard_and_analytics>
+
+    <settings_and_preferences>
+      - User notification preferences (email, in-app)
+      - Theme preference (light, dark, system)
+      - Timezone preference
+      - Default test timeout
+      - Default retry count
+      - Default browser selection
+    </settings_and_preferences>
+  </core_features>
+
+  <!-- ==================== ADVANCED TESTING (Phase 2 - COMPLETED) ==================== -->
+  <advanced_testing_features status="completed">
+    <visual_regression_testing>
+      <description>Pixel-perfect visual comparison to detect unintended UI changes</description>
+      <features>
+        - Create visual regression test from UI
+        - Full-page screenshot capture
+        - Viewport-only screenshot capture
+        - Element-specific screenshot capture (by CSS selector)
+        - Desktop viewport preset (1920x1080)
+        - Tablet viewport preset (768x1024)
+        - Mobile viewport preset (375x667)
+        - Custom viewport dimensions
+        - Wait for page load before screenshot
+        - Baseline image management
+        - Pixel-by-pixel comparison with pixelmatch
+        - Diff highlighting (overlay, side-by-side, slider)
+        - Configurable diff threshold (sensitivity)
+        - Ignore regions (dynamic content masking)
+        - Auto-approve option for minor changes
+        - Baseline approval workflow
+        - Visual diff review queue
+        - Historical baseline versions
+        - Responsive testing across viewports
+        - Cross-browser visual comparison
+        - Visual trends over time
+        - Batch baseline operations
+      </features>
+    </visual_regression_testing>
+
+    <load_testing_k6>
+      <description>Performance and load testing using K6</description>
+      <features>
+        - Create K6 load test from UI
+        - K6 script editor with syntax highlighting
+        - Line numbers in editor
+        - Load test template (gradual ramp)
+        - Stress test template (aggressive scaling)
+        - Spike test template (sudden surge)
+        - Soak test template (long duration)
+        - Configure virtual users (VUs)
+        - Configure test duration
+        - Configure ramp-up stages
+        - Run K6 test from UI
+        - Real-time VU count display
+        - Real-time RPS display
+        - Real-time latency display
+        - Real-time error rate display
+        - Results: p50 latency
+        - Results: p90 latency
+        - Results: p95 latency
+        - Results: p99 latency
+        - Results: total requests
+        - Results: average RPS
+        - Results: error count and rate
+        - Results: data transferred
+        - K6 threshold evaluation (pass/fail)
+        - Schedule K6 tests
+        - Cancel running K6 test
+        - K6 test history
+        - K6 templates dropdown
+      </features>
+      <pending>
+        - K6 editor code folding
+        - K6 custom metrics tracking
+        - Compare K6 test runs
+        - K6 results: peak RPS
+      </pending>
+    </load_testing_k6>
+
+    <performance_testing_lighthouse>
+      <description>Web performance auditing using Lighthouse</description>
+      <features>
+        - Run Lighthouse audit from UI
+        - Performance score (0-100)
+        - Accessibility score
+        - Best practices score
+        - SEO score
+        - Core Web Vitals (LCP, FID, CLS)
+        - Performance recommendations
+        - Opportunity sizing (potential savings)
+        - Diagnostic details
+        - Screenshot thumbnails
+        - Performance budget configuration
+        - Budget violation alerts
+        - Performance trends over time
+        - Schedule Lighthouse audits
+        - Compare audit results
+        - Mobile vs desktop audits
+      </features>
+    </performance_testing_lighthouse>
+
+    <accessibility_testing_axe>
+      <description>Accessibility auditing using axe-core</description>
+      <features>
+        - Run accessibility scan from UI
+        - WCAG 2.1 AA compliance checking
+        - WCAG 2.1 AAA compliance checking
+        - Issue severity levels (critical, serious, moderate, minor)
+        - Issue impact descriptions
+        - Affected elements highlighting
+        - Remediation guidance
+        - Accessibility score calculation
+        - Accessibility trends over time
+        - Schedule accessibility scans
+        - Export accessibility reports
+        - Filter issues by severity
+        - Group issues by category
+        - Detailed element inspection
+      </features>
+    </accessibility_testing_axe>
+  </advanced_testing_features>
+
+  <!-- ==================== MCP INTEGRATION (Phase 3 - MOSTLY COMPLETED) ==================== -->
+  <mcp_integration status="mostly_completed">
+    <description>Model Context Protocol integration for AI agent automation - 170+ tools implemented</description>
+
+    <transports status="completed">
+      - stdio transport for local CLI usage
+      - SSE transport for remote/web connections
+      - Configuration via JSON config file
+      - Graceful shutdown handling
+      - Connection event logging
+      - Tool invocation logging
+      - Concurrent request handling
+    </transports>
+
+    <rate_limiting status="completed">
+      - Rate limiting per API key
+      - Rate limit headers in responses
+      - 429 response when exceeded
+    </rate_limiting>
+
+    <core_tools status="completed">
+      - trigger-test-run: Start test suite execution
+      - cancel-test-run: Stop running tests
+      - get-run-status: Check test run status with progress
+      - list-test-suites: List available test suites with filtering
+      - list-projects: List accessible projects
+      - get-test-config: Get test suite configuration
+      - get-test-results: Get detailed test results
+      - get-test-artifacts: Get artifact URLs (screenshots, videos, traces)
+    </core_tools>
+
+    <resources status="completed">
+      - qaguardian://projects - List all projects
+      - qaguardian://projects/{id} - Project details
+      - qaguardian://test-runs/{id} - Test run details
+      - qaguardian://test-runs/{id}/results - Test results
+      - qaguardian://test-runs/{id}/artifacts - Test artifacts
+    </resources>
+
+    <error_handling status="completed">
+      - Invalid API key (401)
+      - Insufficient scope (403)
+      - Rate limit exceeded (429)
+      - Malformed JSON (400)
+      - Unknown tool (404)
+      - Missing parameters (400)
+      - Invalid parameter types (400)
+      - Resource not found (404)
+      - SSE connection timeout handling
+      - Concurrent request limits
+      - Test cancellation during execution
+    </error_handling>
+
+    <completed_mcp_features>
+      <mcp_infrastructure status="completed">
+        - MCP v2.0 server package release ✓
+        - MCP enhanced rate limiting with burst support ✓
+        - MCP request logging and audit trail ✓
+        - MCP usage analytics dashboard ✓
+        - MCP tool execution timeout configuration ✓
+        - MCP concurrent request limits per API key ✓
+        - MCP request priority queuing ✓
+        - MCP error standardization ✓
+        - MCP request validation against schema ✓
+        - MCP response streaming ✓
+        - MCP webhook callbacks ✓
+        - MCP batch operations support ✓
+        - MCP idempotency keys ✓
+        - MCP API versioning ✓
+        - MCP connection status in dashboard ✓
+        - MCP tool usage analytics tracking ✓
+      </mcp_infrastructure>
+
+      <mcp_project_management_tools status="completed">
+        - create-project ✓
+        - update-project ✓
+        - delete-project ✓
+        - create-test-suite ✓
+        - update-test-suite ✓
+        - delete-test-suite ✓
+      </mcp_project_management_tools>
+
+      <mcp_test_authoring_tools status="completed">
+        - create-test ✓
+        - update-test ✓
+        - delete-test ✓
+        - duplicate-test ✓
+        - import-tests ✓
+        - export-tests ✓
+        - reorder-tests ✓
+        - add-test-step ✓
+        - update-test-step ✓
+        - delete-test-step ✓
+        - get-test-code ✓
+        - update-test-code ✓
+        - validate-test ✓
+        - get-test-history ✓
+      </mcp_test_authoring_tools>
+
+      <mcp_execution_tools status="completed">
+        - run-test ✓
+        - run-suite ✓
+        - run-selected-tests ✓
+        - run-failed-tests ✓
+        - run-flaky-tests ✓
+        - schedule-run ✓
+        - cancel-run (enhanced) ✓
+        - pause-run ✓
+        - resume-run ✓
+        - get-run-progress ✓
+        - get-run-logs ✓
+        - get-console-output ✓
+        - get-network-logs ✓
+        - compare-runs ✓
+        - get-run-metrics ✓
+        - set-run-environment ✓
+        - get-queue-status ✓
+        - prioritize-run ✓
+        - get-execution-browsers ✓
+        - get-execution-viewports ✓
+      </mcp_execution_tools>
+
+      <mcp_results_tools status="completed">
+        - get-test-results (enhanced) ✓
+        - get-result-details ✓
+        - get-screenshots ✓
+        - get-screenshot-base64 ✓
+        - get-video ✓
+        - get-trace ✓
+        - analyze-failure ✓
+        - get-error-stacktrace ✓
+        - download-artifacts ✓
+        - delete-artifacts ✓
+        - get-artifact-storage ✓
+        - search-results ✓
+        - get-failure-patterns ✓
+        - mark-result-reviewed ✓
+        - create-bug-report ✓
+        - export-results ✓
+        - get-result-diff ✓
+        - annotate-result ✓
+        - share-result ✓
+        - get-result-timeline ✓
+      </mcp_results_tools>
+
+      <mcp_security_tools status="completed">
+        - run-security-scan ✓
+        - get-security-scan-status ✓
+        - get-vulnerabilities ✓
+        - get-vulnerability-details ✓
+        - dismiss-vulnerability ✓
+        - get-dependency-audit ✓
+        - get-security-trends ✓
+        - get-security-score ✓
+        - get-exposed-secrets ✓
+        - verify-secret-status ✓
+        - generate-sbom ✓
+        - get-compliance-status ✓
+        - run-dast-scan ✓
+        - get-dast-findings ✓
+        - generate-security-report ✓
+        - configure-security-policy ✓
+        - get-container-vulnerabilities ✓
+        - compare-security-scans ✓
+        - schedule-security-scan ✓
+        - get-fix-suggestions ✓
+      </mcp_security_tools>
+
+      <mcp_monitoring_tools status="completed">
+        - get-uptime-status ✓
+        - get-check-results ✓
+        - create-check ✓
+        - update-check ✓
+        - delete-check ✓
+        - pause-check ✓
+        - resume-check ✓
+        - get-incidents ✓
+        - get-incident-details ✓
+        - create-incident ✓
+        - update-incident ✓
+        - acknowledge-alert ✓
+        - resolve-alert ✓
+        - snooze-alert ✓
+        - get-alert-history ✓
+        - get-oncall-schedule ✓
+        - get-uptime-report ✓
+        - test-alert-channel ✓
+        - create-maintenance-window ✓
+        - get-status-page-status ✓
+      </mcp_monitoring_tools>
+
+      <mcp_visual_regression_tools status="completed">
+        - get-visual-diffs ✓
+        - get-visual-diff-details ✓
+        - approve-visual-diff ✓
+        - reject-visual-diff ✓
+        - batch-approve-diffs ✓
+        - set-baseline ✓
+        - get-baseline-history ✓
+        - restore-baseline ✓
+        - add-ignore-region ✓
+        - get-visual-comparison-image ✓
+        - configure-visual-threshold ✓
+        - get-visual-trends ✓
+        - run-visual-comparison ✓
+        - get-visual-review-queue ✓
+        - compare-screenshots ✓
+      </mcp_visual_regression_tools>
+
+      <mcp_performance_tools status="completed">
+        - run-lighthouse-audit ✓
+        - get-lighthouse-results ✓
+        - get-performance-trends ✓
+        - set-performance-budget ✓
+        - get-budget-violations ✓
+        - run-k6-test ✓
+        - get-k6-results ✓
+        - get-k6-progress ✓
+        - stop-k6-test ✓
+        - create-k6-script ✓
+        - update-k6-script ✓
+        - get-k6-templates ✓
+        - get-load-test-trends ✓
+        - compare-load-tests ✓
+        - run-accessibility-scan ✓
+        - get-accessibility-results ✓
+        - get-accessibility-trends ✓
+        - export-accessibility-report ✓
+        - get-core-web-vitals ✓
+        - schedule-performance-audit ✓
+      </mcp_performance_tools>
+
+      <mcp_analytics_tools status="completed">
+        - get-dashboard-summary ✓
+        - get-project-analytics ✓
+        - get-flaky-tests ✓
+        - get-failing-tests ✓
+        - get-test-coverage ✓
+        - get-quality-score ✓
+        - generate-report ✓
+        - export-analytics-csv ✓
+        - get-team-metrics ✓
+        - get-browser-analytics ✓
+        - get-execution-time-analytics ✓
+        - get-failure-categories ✓
+        - get-release-quality ✓
+        - compare-releases ✓
+        - schedule-report ✓
+        - get-audit-log ✓
+        - get-usage-statistics ✓
+        - get-anomalies ✓
+      </mcp_analytics_tools>
+
+      <mcp_organization_tools status="completed">
+        - get-organization-info ✓
+        - get-team-members ✓
+        - invite-member ✓
+        - update-member-role ✓
+        - remove-member ✓
+        - get-api-keys ✓
+        - create-api-key ✓
+        - revoke-api-key ✓
+        - update-settings ✓
+        - get-integrations ✓
+      </mcp_organization_tools>
+
+      <mcp_resources status="completed">
+        - qaguardian://projects ✓
+        - qaguardian://projects/{id} ✓
+        - qaguardian://projects/{id}/suites ✓
+        - qaguardian://test-runs/{id} ✓
+        - qaguardian://test-runs/{id}/results ✓
+        - qaguardian://test-runs/{id}/artifacts ✓
+        - qaguardian://security/vulnerabilities ✓
+        - qaguardian://checks/{id}/status ✓
+        - qaguardian://alerts/active ✓
+        - qaguardian://analytics/dashboard ✓
+      </mcp_resources>
+
+      <mcp_ai_tools status="completed">
+        - get-healing-history ✓
+        - approve-healing ✓
+        - reject-healing ✓
+        - configure-healing ✓
+        - get-healing-suggestions ✓
+        - analyze-root-cause ✓
+        - explain-failure ✓
+        - get-failure-clusters ✓
+        - correlate-with-commits ✓
+        - get-remediation-suggestions ✓
+        - get-flaky-tests ✓
+        - quarantine-test ✓
+        - get-flakiness-trends ✓
+        - suggest-flaky-fixes ✓
+        - stream-test-run ✓
+        - subscribe-to-alerts ✓
+        - batch-trigger-tests ✓
+        - create-workflow ✓
+        - execute-workflow ✓
+        - schedule-workflow ✓
+        - get-trend-analysis ✓
+        - get-related-prs ✓
+        - get-deployment-context ✓
+        - notify-team ✓
+        - get-help ✓
+        - list-all-tools ✓
+        - validate-api-key ✓
+        - chat ✓
+        - get-production-risk ✓
+        - get-tech-debt-score ✓
+        - discover-tests ✓
+        - generate-documentation ✓
+        - generate-release-notes ✓
+      </mcp_ai_tools>
+    </completed_mcp_features>
+
+    <pending_mcp_features>
+      <mcp_infrastructure status="pending">
+        - Install MCP server via npx (@qa-guardian/mcp-server)
+        - Install MCP server via npm global
+        - MCP server starts with npx command
+      </mcp_infrastructure>
+
+      <mcp_advanced_ai_tools status="pending">
+        - ask-qa-guardian: Natural language interface
+        - get-quality-score: Quality health score
+        - compare-runs: Intelligent comparison
+        - get-release-readiness: Release assessment
+        - summarize-test-results: AI summary
+        - create-investigation: AI investigation
+        - get-investigation-status: Progress check
+        - apply-suggestion: Apply AI fix
+        - rollback-change: Undo AI change
+        - explain-codebase-coverage: Coverage explanation
+        - suggest-test-strategy: Testing approach
+        - analyze-test-maintenance: Maintenance burden
+      </mcp_advanced_ai_tools>
+
+      <mcp_ai_provider_tools status="pending">
+        - get-ai-provider-status: Get current AI provider status and configuration
+        - get-ai-cost-report: Get AI cost analytics and savings report
+        - switch-ai-provider: Switch primary AI provider (admin only)
+        - generate-test-from-description: Generate Playwright test from natural language
+        - explain-test-failure-ai: Get AI-powered detailed failure explanation
+        - predict-test-impact: Impact prediction
+        - WebSocket transport for real-time updates
+      </mcp_ai_provider_tools>
+    </pending_mcp_features>
+  </mcp_integration>
+
+  <!-- ==================== AI PROVIDER INFRASTRUCTURE (Phase 8 - PENDING) ==================== -->
+  <ai_provider_infrastructure status="pending">
+    <description>Multi-provider AI architecture with Kie.ai as primary (70% cost savings) and Anthropic as fallback</description>
+
+    <architecture>
+      <hybrid_approach>
+        <fast_path name="Rule-Based" description="Instant, free processing for static decisions">
+          - Pattern matching for error categorization
+          - Flaky score calculation (mathematical)
+          - Selector fallback strategies (predefined)
+          - Simple remediation suggestions (templated)
+          - Historical pattern matching (database queries)
+        </fast_path>
+        <smart_path name="LLM-Powered" description="Claude AI for complex analysis">
+          - Natural language test generation
+          - Complex root cause explanations
+          - Screenshot understanding (vision)
+          - Code explanation and suggestions
+          - Chat interface queries
+          - Anomaly explanations
+          - Test improvement recommendations
+        </smart_path>
+      </hybrid_approach>
+
+      <provider_routing>
+        <primary_provider>Kie.ai</primary_provider>
+        <fallback_provider>Anthropic Direct</fallback_provider>
+        <fallback_triggers>
+          - Provider timeout (configurable, default 30s)
+          - Rate limit exceeded (429 response)
+          - Server errors (5xx responses)
+          - Connection failures
+        </fallback_triggers>
+        <retry_policy>
+          - Retry count: 2 (configurable)
+          - Backoff: Exponential (1s, 2s, 4s)
+          - Fallback after max retries
+        </retry_policy>
+      </provider_routing>
+    </architecture>
+
+    <cost_comparison>
+      <note>Kie.ai provides 70% savings on Claude models compared to Anthropic direct pricing</note>
+      <kie_ai_pricing>
+        <model name="Claude Opus 4.5 Thinking">
+          <input_per_million>$1.50</input_per_million>
+          <output_per_million>$7.50</output_per_million>
+          <savings>70% off Anthropic</savings>
+        </model>
+        <model name="Claude Sonnet 4">
+          <input_per_million>$0.90</input_per_million>
+          <output_per_million>$4.50</output_per_million>
+          <savings>70% off Anthropic</savings>
+        </model>
+        <model name="Claude Haiku">
+          <input_per_million>$0.075</input_per_million>
+          <output_per_million>$0.375</output_per_million>
+          <savings>70% off Anthropic</savings>
+        </model>
+      </kie_ai_pricing>
+      <anthropic_pricing note="Fallback only - used when Kie.ai unavailable">
+        <model name="Claude Opus 4.5 Thinking">
+          <input_per_million>$5.00</input_per_million>
+          <output_per_million>$25.00</output_per_million>
+        </model>
+        <model name="Claude Sonnet 4">
+          <input_per_million>$3.00</input_per_million>
+          <output_per_million>$15.00</output_per_million>
+        </model>
+        <model name="Claude Haiku">
+          <input_per_million>$0.25</input_per_million>
+          <output_per_million>$1.25</output_per_million>
+        </model>
+      </anthropic_pricing>
+      <monthly_estimate scenario="10,000 AI requests">
+        <kie_only cost="$30">Primary path for all requests</kie_only>
+        <anthropic_only cost="$100">If all requests went to Anthropic</anthropic_only>
+        <hybrid cost="$33" split="95% Kie / 5% Anthropic fallback">Recommended configuration</hybrid>
+        <savings>67% savings with hybrid approach vs Anthropic only</savings>
+      </monthly_estimate>
+    </cost_comparison>
+
+    <features>
+      <provider_integration>
+        - Kie.ai provider integration with 70% cost savings
+        - Anthropic direct provider integration (fallback)
+        - AI provider router with automatic fallback
+        - Provider health monitoring (latency, errors, availability)
+        - AI cost tracking per request with token counts
+        - AI usage analytics dashboard
+        - Provider switching without restart (hot-swap)
+        - AI API key rotation support
+        - Monthly AI budget limits (soft/hard caps)
+        - AI cost alert notifications
+        - AI request retry with exponential backoff
+        - AI response caching for identical requests
+        - Model selection per feature category
+        - AI request timeout configuration
+        - Provider-specific rate limiting
+      </provider_integration>
+
+      <settings_ui>
+        - AI provider configuration page
+        - AI API key management UI (encrypted storage)
+        - Model selection UI per feature
+        - Fallback rules configuration UI
+        - AI cost budget settings UI
+      </settings_ui>
+
+      <llm_powered_features>
+        - LLM-powered complex root cause analysis
+        - Natural language test generation (English → Playwright)
+        - Screenshot-to-test conversion (Claude Vision)
+        - Voice input test creation
+        - AI chat interface for QA queries
+        - AI test code explanation
+        - Intelligent test healing with vision
+        - AI anomaly explanation
+        - AI-powered release notes generation
+        - AI test improvement suggestions
+      </llm_powered_features>
+
+      <mcp_tools>
+        - get-ai-provider-status: Current provider status and config
+        - get-ai-cost-report: Cost analytics and savings report
+        - switch-ai-provider: Switch primary provider (admin)
+        - generate-test-from-description: NL to Playwright test
+        - explain-test-failure-ai: AI-powered failure explanation
+      </mcp_tools>
+    </features>
+
+    <environment_variables>
+      <!-- Provider Selection -->
+      AI_PROVIDER_PRIMARY=kie              <!-- Primary: 'kie' or 'anthropic' -->
+      AI_PROVIDER_FALLBACK=anthropic       <!-- Fallback: 'anthropic', 'kie', or 'none' -->
+
+      <!-- Kie.ai Configuration -->
+      KIE_API_KEY=kie_xxxxxxxxxxxxxxxx
+      KIE_API_URL=https://api.kie.ai/v1
+      KIE_DEFAULT_MODEL=claude-opus-4-5-thinking
+
+      <!-- Anthropic Configuration (Fallback) -->
+      ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxx
+      ANTHROPIC_DEFAULT_MODEL=claude-sonnet-4-20250514
+
+      <!-- Routing Configuration -->
+      AI_FALLBACK_ON_ERROR=true
+      AI_FALLBACK_ON_TIMEOUT=true
+      AI_TIMEOUT_MS=30000
+      AI_RETRY_COUNT=2
+      AI_COST_TRACKING=true
+
+      <!-- Budget Configuration -->
+      AI_MONTHLY_BUDGET_USD=100
+      AI_BUDGET_ALERT_THRESHOLD=0.8
+    </environment_variables>
+  </ai_provider_infrastructure>
+
+  <!-- ==================== AI-POWERED TEST HEALING (Phase 3 - PARTIAL) ==================== -->
+  <ai_test_healing status="partial">
+    <description>Self-healing tests that automatically adapt when selectors break. UI/MCP tools completed, ML core features pending.</description>
+    <features>
+      <selector_management>
+        - Record multiple element attributes during test creation
+        - Store element visual fingerprint for matching
+        - Calculate selector confidence scores
+        - Multiple selector strategies (id, class, text, ARIA, data-testid)
+      </selector_management>
+      <healing_process>
+        - Detect element not found during execution
+        - Try alternative selectors in priority order
+        - Visual element matching using ML model
+        - Auto-apply healing fix above confidence threshold
+        - Pause for manual approval below threshold
+        - Update test definition with healed selector
+      </healing_process>
+      <tracking_and_reporting>
+        - View healing history for test
+        - Healing success rate dashboard
+        - Healing suggestions report
+        - DOM change adaptation tracking
+      </tracking_and_reporting>
+      <configuration>
+        - Configure healing confidence threshold per project
+        - Enable/disable healing strategies
+        - Set healing timeout duration
+        - Manual override for healed selectors
+      </configuration>
+      <mcp_tools>
+        - get-healing-history: Retrieve healing history
+        - approve-healing: Approve pending healing
+        - reject-healing: Reject pending healing
+        - configure-healing: Configure settings
+        - get-healing-suggestions: AI suggestions
+      </mcp_tools>
+      <ui_elements>
+        - Healing indicator badge on test card
+        - Healing diff visualization (old vs new selector)
+        - Confidence meter visualization
+        - Navigate from failure to healing options
+      </ui_elements>
+    </features>
+  </ai_test_healing>
+
+  <!-- ==================== AI ROOT CAUSE ANALYSIS (Phase 3 - COMPLETED) ==================== -->
+  <ai_root_cause_analysis status="completed">
+    <description>AI-powered failure analysis that identifies root causes and suggests fixes - All 16 features implemented</description>
+    <features>
+      <failure_clustering>
+        - Cluster similar failures across test runs
+        - Identify failure patterns (network, timing, data)
+        - Correlate failures with code changes
+        - Cross-test failure correlation
+      </failure_clustering>
+      <analysis>
+        - Root cause confidence scoring
+        - Evidence gathering for root cause
+        - Historical pattern matching
+        - AI-suggested remediation actions
+      </analysis>
+      <explanations>
+        - Generate human-readable failure explanation
+        - Generate technical failure explanation
+        - Generate executive failure summary
+      </explanations>
+      <mcp_tools>
+        - analyze-root-cause: Get AI analysis
+        - explain-failure: Human-readable explanation
+        - get-failure-clusters: List clusters
+        - correlate-with-commits: Commit correlation
+        - get-remediation-suggestions: Fix suggestions
+      </mcp_tools>
+      <ui_elements>
+        - Root cause analysis visualization
+        - Failure cluster visualization
+        - Evidence timeline visualization
+        - Navigate from cluster to affected tests
+      </ui_elements>
+    </features>
+  </ai_root_cause_analysis>
+
+  <!-- ==================== FLAKY TEST MANAGEMENT (Phase 3 - COMPLETED) ==================== -->
+  <flaky_test_management status="completed">
+    <description>Comprehensive system for detecting, managing, and fixing flaky tests - All 20 features implemented</description>
+    <features>
+      <detection>
+        - Calculate flakiness score (0-1) for each test
+        - Detect from pass/fail patterns
+        - Detect from retry success patterns
+        - Detect time-based flakiness
+        - Detect environment-specific flakiness
+      </detection>
+      <management>
+        - Flaky tests dashboard
+        - Flakiness trend tracking over time
+        - Flaky test impact report
+        - Quarantine flaky test
+        - Auto-quarantine above threshold
+        - Configure retry strategy per flakiness level
+        - Flakiness remediation suggestions
+        - Release from quarantine after fix
+      </management>
+      <mcp_tools>
+        - get-flaky-tests: List with scores
+        - quarantine-test: Quarantine test
+        - get-flakiness-trends: Trends data
+        - suggest-flaky-fixes: AI suggestions
+      </mcp_tools>
+      <ui_elements>
+        - Flakiness indicator badge on test
+        - Flakiness sparkline visualization
+        - Quarantine status badge
+      </ui_elements>
+    </features>
+  </flaky_test_management>
+
+  <!-- ==================== PREDICTIVE TEST FAILURE (REMOVED) ==================== -->
+  <!-- This feature was removed as complex ML is not needed for SMB users.
+       Original scope included: ML prediction, release risk scoring, prediction accuracy,
+       model retraining, feature importance, GitHub PR predictions, Slack notifications.
+       Users can achieve similar results with simpler flaky test detection and historical analysis. -->
+
+  <!-- ==================== AI TEST GENERATION (Phase 3 - PENDING) ==================== -->
+  <ai_test_generation status="pending">
+    <description>Create tests from natural language descriptions using AI</description>
+    <features>
+      <generation>
+        - Create test from plain English description
+        - Multi-step test generation
+        - AI suggests optimal selectors
+        - Generate assertions from expected outcomes
+        - Handle ambiguous descriptions gracefully
+      </generation>
+      <review_workflow>
+        - Preview generated test before saving
+        - Edit generated test code
+        - Regenerate with feedback
+        - Human review workflow for AI tests
+        - Batch review AI-generated tests
+        - Test generation confidence score
+      </review_workflow>
+      <advanced_generation>
+        - Test variation suggestions
+        - Coverage gap identification
+        - Auto-suggest tests for new features
+        - Generate test suite from user story
+        - BDD/Gherkin to Playwright conversion
+        - API test generation from OpenAPI spec
+      </advanced_generation>
+      <input_methods>
+        - Voice input for test description
+        - Screenshot to test generation (Claude Vision)
+        <!-- Video to test conversion - REMOVED: Unproven technology, adds complexity -->
+      </input_methods>
+      <mcp_tools>
+        - generate-test: From description
+        - get-coverage-gaps: Coverage gaps
+        - generate-test-suite: From user story
+        - convert-gherkin: Gherkin to Playwright
+        - suggest-test-improvements: Improve existing
+      </mcp_tools>
+      <ui_elements>
+        - AI test generation wizard interface
+        - Code diff view for regenerations
+        - AI confidence badge on generated tests
+        - Navigate from coverage gap to generator
+      </ui_elements>
+    </features>
+  </ai_test_generation>
+
+  <!-- ==================== INTELLIGENT TEST PRIORITIZATION (REMOVED) ==================== -->
+  <!-- This feature was removed as complex ML prioritization is not needed for SMB users.
+       Simple manual priority (low/normal/high) is sufficient and already implemented.
+       Original scope included: risk-based ordering, code path analysis, correlation scoring,
+       time-to-feedback optimization, dependency-aware ordering, effectiveness reports. -->
+
+  <!-- ==================== ANOMALY DETECTION (REMOVED) ==================== -->
+  <!-- This feature was removed as enterprise monitoring ML is not needed for SMB users.
+       Original scope included: performance anomaly detection, baseline learning, error rate spikes,
+       seasonal patterns, correlation detection, early warning, false positive management.
+       Users can monitor test results through the existing dashboard and analytics features. -->
+
+  <!-- ==================== ENTERPRISE SECURITY (Phase 4 - PENDING) ==================== -->
+  <enterprise_security status="pending">
+    <description>Comprehensive security scanning and compliance features</description>
+    <features>
+      <dast_scanning>
+        - DAST comparison between scans
+        - DAST GraphQL scanning
+      </dast_scanning>
+      <dependency_scanning>
+        - Trivy integration for dependency scanning
+        - Grype as secondary scanner
+        - npm audit integration
+        - CVE database vulnerability detection
+        - License compliance checking
+        - Container image scanning
+        - SBOM generation (CycloneDX/SPDX)
+        - Upgrade recommendations for vulnerable packages
+        - Dependency tree visualization
+        - Dependency scan on PR
+        - Vulnerable dependency alerts
+        - Dependency policy enforcement
+        - Auto-PR for dependency updates
+        - Dependency age tracking
+        - Multi-language support (npm, pip, maven, go, cargo)
+        - Dependency vulnerability history
+        - Exploitability analysis
+        - Dependency scan caching
+        - Dependency allowlist/blocklist
+        - Dependency health score
+      </dependency_scanning>
+      <secret_detection>
+        - Gitleaks integration for secret detection
+      </secret_detection>
+    </features>
+  </enterprise_security>
+
+  <!-- ==================== EXTERNAL INTEGRATIONS (REMOVED - Use Webhooks) ==================== -->
+  <external_integrations status="removed">
+    <description>Direct integrations replaced with webhooks + n8n/Zapier approach for maximum flexibility</description>
+    <note>
+      Instead of building custom integrations for each tool, users connect via:
+      - Webhooks (12 event types available)
+      - n8n (self-hosted automation)
+      - Zapier (cloud automation)
+      - Make (cloud automation)
+
+      This approach provides more flexibility and works with any tool without maintenance burden.
+    </note>
+    <available_alerting>
+      Alert destinations still support: OpsGenie, Slack, Teams, Discord, PagerDuty, Telegram, Email, Webhooks, n8n
+    </available_alerting>
+  </external_integrations>
+
+  <!-- ==================== AI COPILOT & AUTONOMOUS TESTING (Phase 5 - MOSTLY COMPLETED) ==================== -->
+  <ai_copilot_autonomous status="mostly_completed">
+    <description>Advanced AI features for autonomous test management and natural language interaction - Most features implemented</description>
+    <features>
+      <ai_copilot>
+        - Real-time suggestions during test creation
+        - Autocomplete test steps
+        - Explain existing test in plain English
+      </ai_copilot>
+      <ai_test_discovery>
+        - Discovers new test scenarios automatically
+        - Suggests test maintenance as app changes
+      </ai_test_discovery>
+      <predictive_intelligence>
+        - Predict production incidents from test patterns
+        - Technical debt scoring from test data
+        - Code quality correlation analysis
+        - Cross-project failure pattern learning
+      </predictive_intelligence>
+      <recommendations>
+        - Best practices recommendation engine
+        - Automated benchmark against industry
+      </recommendations>
+      <natural_language>
+        - Chat interface for entire platform
+        - Natural language test debugging
+        - Voice-controlled test execution
+      </natural_language>
+      <visual_ai>
+        - AI understands screenshots semantically
+        - Visual change impact analysis
+        - Brand consistency checker
+      </visual_ai>
+      <documentation>
+        - Auto-generate test documentation from tests
+        - Living documentation that updates with tests
+        - AI-generated release notes from test changes
+      </documentation>
+      <optimization>
+        - Dynamic test parallelization
+        <!-- Feature #1410: AI-optimized test scheduling removed - keep simple cron scheduling -->
+        <!-- Feature #1409: Predictive resource scaling removed - enterprise infrastructure -->
+      </optimization>
+      <!-- Feature #1408: team_insights removed - enterprise bloat -->
+      <learning>
+        - AI model personalization per organization
+      </learning>
+      <debugging>
+        - AI compares successful vs failed runs
+      </debugging>
+      <mcp_tools>
+        - ask-qa-guardian: Natural language interface
+        - get-quality-score: Quality health score
+        - compare-runs: Intelligent comparison
+        - get-release-readiness: Release assessment
+        - summarize-test-results: AI summary
+        - create-investigation: AI investigation
+        - get-investigation-status: Progress check
+        - apply-suggestion: Apply AI fix
+        - rollback-change: Undo AI change
+        - explain-codebase-coverage: Coverage explanation
+        - suggest-test-strategy: Testing approach
+        - analyze-test-maintenance: Maintenance burden
+        - predict-test-impact: Impact prediction
+        - stream-test-run: WebSocket streaming
+        - subscribe-to-alerts: Alert stream
+        - batch-trigger-tests: Batch triggers
+        - create-workflow: Define automation
+        - execute-workflow: Run workflow
+        - schedule-workflow: Recurring workflow
+        - get-trend-analysis: AI trends
+        - get-related-prs: Related PRs
+        - get-deployment-context: Deployment info
+        - notify-team: Send notifications
+        - get-help: Contextual help
+        - list-all-tools: List tools
+        - validate-api-key: Validate key
+        - chat: Conversation interface
+        - get-production-risk: Production prediction
+        - get-tech-debt-score: Tech debt analysis
+        - discover-tests: AI test discovery
+        - generate-documentation: Generate docs
+        - generate-release-notes: Release notes
+      </mcp_tools>
+      <ui_elements>
+        - AI Insights command palette (Cmd+K)
+        - AI confidence indicators throughout UI
+        - AI thinking indicator
+        - AI suggestions sidebar
+        - Navigate from AI suggestion to action
+        - MCP tool catalog UI
+        - MCP tool playground
+        - MCP usage analytics dashboard
+      </ui_elements>
+    </features>
+  </ai_copilot_autonomous>
+
+  <!-- ==================== DATABASE SCHEMA ==================== -->
+  <database_schema>
+    <note>Schema has expanded to support new features. Additional tables needed for:</note>
+    <new_tables>
+      - visual_baselines (baseline screenshots, versions)
+      - visual_comparisons (diff results, approval status)
+      - k6_tests (load test scripts, configurations)
+      - k6_results (load test results, metrics)
+      - lighthouse_audits (performance audit results)
+      - accessibility_scans (axe-core results)
+      - security_scans (DAST, dependency scans)
+      - vulnerabilities (detected vulnerabilities)
+      - healing_events (selector healing history)
+      - failure_clusters (grouped failures)
+      - flaky_test_scores (flakiness tracking)
+      - predictions (failure predictions)
+      - ai_generated_tests (AI-created tests)
+      - mcp_sessions (MCP connection tracking)
+      - mcp_audit_log (MCP operation history)
+      - anomalies (detected anomalies)
+      - integrations (external service connections)
+    </new_tables>
+
+    <existing_tables>
+      <organizations>
+        - id (UUID, PK)
+        - name (VARCHAR 255)
+        - slug (VARCHAR 100, unique)
+        - logo_url (VARCHAR 500, nullable)
+        - timezone (VARCHAR 50, default 'UTC')
+        - plan (VARCHAR 50: free, pro, business, enterprise)
+        - settings (JSONB)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+      </organizations>
+
+      <users>
+        - id (UUID, PK)
+        - email (VARCHAR 255, unique)
+        - password_hash (VARCHAR 255, nullable for OAuth)
+        - name (VARCHAR 255)
+        - avatar_url (VARCHAR 500, nullable)
+        - email_verified (BOOLEAN)
+        - google_id (VARCHAR 255, nullable, unique)
+        - preferences (JSONB)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+        - last_login_at (TIMESTAMP)
+      </users>
+
+      <organization_members>
+        - id (UUID, PK)
+        - organization_id (UUID, FK organizations)
+        - user_id (UUID, FK users)
+        - role (VARCHAR 50: owner, admin, developer, viewer)
+        - invited_by (UUID, FK users, nullable)
+        - invited_at (TIMESTAMP)
+        - joined_at (TIMESTAMP, nullable)
+        - status (VARCHAR 50: pending, active, deactivated)
+        - created_at (TIMESTAMP)
+        - UNIQUE(organization_id, user_id)
+      </organization_members>
+
+      <projects>
+        - id (UUID, PK)
+        - organization_id (UUID, FK organizations)
+        - name (VARCHAR 255)
+        - slug (VARCHAR 100)
+        - description (TEXT, nullable)
+        - base_url (VARCHAR 500, nullable)
+        - github_repo_url (VARCHAR 500, nullable)
+        - github_repo_id (VARCHAR 100, nullable)
+        - github_default_branch (VARCHAR 100, default 'main')
+        - settings (JSONB: default_browser, timeout, retries, healing_threshold)
+        - environment_variables (JSONB, encrypted)
+        - is_archived (BOOLEAN, default false)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+        - UNIQUE(organization_id, slug)
+      </projects>
+
+      <test_suites>
+        - id (UUID, PK)
+        - project_id (UUID, FK projects)
+        - name (VARCHAR 255)
+        - description (TEXT, nullable)
+        - type (VARCHAR 50: e2e, visual, load, performance, accessibility)
+        - configuration (JSONB: browsers, viewport, timeout, retries)
+        - environment_variables (JSONB)
+        - is_archived (BOOLEAN, default false)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+      </test_suites>
+
+      <tests>
+        - id (UUID, PK)
+        - test_suite_id (UUID, FK test_suites)
+        - name (VARCHAR 255)
+        - description (TEXT, nullable)
+        - type (VARCHAR 50: recorded, imported, ai_generated)
+        - source (VARCHAR 50: ui, github, ai)
+        - github_file_path (VARCHAR 500, nullable)
+        - steps (JSONB: array of step objects with multiple selectors)
+        - playwright_code (TEXT, nullable)
+        - configuration (JSONB: overrides)
+        - order_index (INTEGER)
+        - flakiness_score (FLOAT, nullable)
+        - is_quarantined (BOOLEAN, default false)
+        - is_archived (BOOLEAN, default false)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+      </tests>
+
+      <test_runs>
+        - id (UUID, PK)
+        - test_suite_id (UUID, FK test_suites)
+        - status (VARCHAR 50: pending, running, passed, failed, cancelled, error)
+        - trigger (VARCHAR 50: manual, schedule, webhook, api, github_pr, github_push, mcp)
+        - triggered_by (UUID, FK users, nullable)
+        - branch (VARCHAR 100, nullable)
+        - commit_sha (VARCHAR 40, nullable)
+        - pr_number (INTEGER, nullable)
+        - environment (VARCHAR 100, nullable)
+        - configuration (JSONB: browsers, viewport used)
+        - summary (JSONB: total, passed, failed, skipped)
+        - started_at (TIMESTAMP, nullable)
+        - completed_at (TIMESTAMP, nullable)
+        - duration_ms (INTEGER, nullable)
+        - created_at (TIMESTAMP)
+      </test_runs>
+
+      <test_results>
+        - id (UUID, PK)
+        - test_run_id (UUID, FK test_runs)
+        - test_id (UUID, FK tests)
+        - browser (VARCHAR 50)
+        - viewport (VARCHAR 50)
+        - status (VARCHAR 50: passed, failed, skipped, error)
+        - error_message (TEXT, nullable)
+        - stack_trace (TEXT, nullable)
+        - retry_count (INTEGER, default 0)
+        - step_results (JSONB: array of step result objects)
+        - duration_ms (INTEGER)
+        - healed (BOOLEAN, default false)
+        - started_at (TIMESTAMP)
+        - completed_at (TIMESTAMP)
+      </test_results>
+
+      <artifacts>
+        - id (UUID, PK)
+        - test_result_id (UUID, FK test_results)
+        - type (VARCHAR 50: screenshot, video, trace, log, visual_diff, baseline)
+        - name (VARCHAR 255)
+        - storage_path (VARCHAR 500)
+        - size_bytes (BIGINT)
+        - mime_type (VARCHAR 100)
+        - step_index (INTEGER, nullable)
+        - metadata (JSONB)
+        - created_at (TIMESTAMP)
+      </artifacts>
+
+      <schedules>
+        - id (UUID, PK)
+        - test_suite_id (UUID, FK test_suites)
+        - name (VARCHAR 255)
+        - cron_expression (VARCHAR 100)
+        - timezone (VARCHAR 50)
+        - is_active (BOOLEAN, default true)
+        - configuration (JSONB: browsers, environment)
+        - last_run_at (TIMESTAMP, nullable)
+        - next_run_at (TIMESTAMP, nullable)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+      </schedules>
+
+      <github_connections>
+        - id (UUID, PK)
+        - organization_id (UUID, FK organizations)
+        - github_installation_id (VARCHAR 100)
+        - github_account_login (VARCHAR 255)
+        - github_account_type (VARCHAR 50: user, organization)
+        - access_token_encrypted (TEXT)
+        - token_expires_at (TIMESTAMP)
+        - connected_by (UUID, FK users)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+      </github_connections>
+
+      <alert_channels>
+        - id (UUID, PK)
+        - project_id (UUID, FK projects)
+        - type (VARCHAR 50: email, slack, webhook, pagerduty, teams, opsgenie)
+        - name (VARCHAR 255)
+        - configuration (JSONB: email addresses, slack webhook, url)
+        - conditions (JSONB: on_failure, threshold)
+        - is_active (BOOLEAN, default true)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+      </alert_channels>
+
+      <alert_history>
+        - id (UUID, PK)
+        - alert_channel_id (UUID, FK alert_channels)
+        - test_run_id (UUID, FK test_runs)
+        - status (VARCHAR 50: sent, failed, suppressed, rate_limited)
+        - error_message (TEXT, nullable)
+        - sent_at (TIMESTAMP)
+      </alert_history>
+
+      <api_keys>
+        - id (UUID, PK)
+        - organization_id (UUID, FK organizations)
+        - name (VARCHAR 255)
+        - key_hash (VARCHAR 255)
+        - key_prefix (VARCHAR 10: for display qg_xxxx...)
+        - scopes (TEXT[]: read, execute, write, admin, mcp:read, mcp:execute, mcp:write)
+        - rate_limit (INTEGER, nullable)
+        - last_used_at (TIMESTAMP, nullable)
+        - expires_at (TIMESTAMP, nullable)
+        - created_by (UUID, FK users)
+        - created_at (TIMESTAMP)
+        - revoked_at (TIMESTAMP, nullable)
+      </api_keys>
+
+      <audit_logs>
+        - id (UUID, PK)
+        - organization_id (UUID, FK organizations)
+        - user_id (UUID, FK users, nullable)
+        - action (VARCHAR 100)
+        - resource_type (VARCHAR 100)
+        - resource_id (UUID)
+        - details (JSONB)
+        - ip_address (VARCHAR 45)
+        - user_agent (TEXT)
+        - source (VARCHAR 50: ui, api, mcp)
+        - created_at (TIMESTAMP)
+      </audit_logs>
+
+      <invitations>
+        - id (UUID, PK)
+        - organization_id (UUID, FK organizations)
+        - email (VARCHAR 255)
+        - role (VARCHAR 50)
+        - token (VARCHAR 255, unique)
+        - invited_by (UUID, FK users)
+        - expires_at (TIMESTAMP)
+        - accepted_at (TIMESTAMP, nullable)
+        - created_at (TIMESTAMP)
+      </invitations>
+
+      <sessions>
+        - id (UUID, PK)
+        - user_id (UUID, FK users)
+        - token_hash (VARCHAR 255)
+        - ip_address (VARCHAR 45)
+        - user_agent (TEXT)
+        - expires_at (TIMESTAMP)
+        - created_at (TIMESTAMP)
+        - last_active_at (TIMESTAMP)
+      </sessions>
+    </existing_tables>
+
+    <indexes>
+      - idx_org_members_org_user ON organization_members(organization_id, user_id)
+      - idx_projects_org ON projects(organization_id)
+      - idx_test_suites_project ON test_suites(project_id)
+      - idx_tests_suite ON tests(test_suite_id)
+      - idx_tests_flakiness ON tests(flakiness_score) WHERE flakiness_score > 0
+      - idx_test_runs_suite_status ON test_runs(test_suite_id, status)
+      - idx_test_runs_created ON test_runs(created_at DESC)
+      - idx_test_results_run ON test_results(test_run_id)
+      - idx_artifacts_result ON artifacts(test_result_id)
+      - idx_schedules_next_run ON schedules(next_run_at) WHERE is_active = true
+      - idx_audit_logs_org_time ON audit_logs(organization_id, created_at DESC)
+      - idx_api_keys_hash ON api_keys(key_hash)
+    </indexes>
+  </database_schema>
+
+  <!-- ==================== API ENDPOINTS SUMMARY ==================== -->
+  <api_endpoints_summary>
+    <authentication>
+      - POST /api/v1/auth/register (email registration)
+      - POST /api/v1/auth/login (email login)
+      - POST /api/v1/auth/logout
+      - POST /api/v1/auth/refresh (refresh token)
+      - POST /api/v1/auth/forgot-password
+      - POST /api/v1/auth/reset-password
+      - GET /api/v1/auth/google (OAuth redirect)
+      - GET /api/v1/auth/google/callback
+      - GET /api/v1/auth/me (current user)
+    </authentication>
+
+    <users>
+      - GET /api/v1/users/me
+      - PATCH /api/v1/users/me
+      - PUT /api/v1/users/me/password
+      - GET /api/v1/users/me/sessions
+      - DELETE /api/v1/users/me/sessions/:id
+      - DELETE /api/v1/users/me/sessions (logout all)
+    </users>
+
+    <organizations>
+      - POST /api/v1/organizations
+      - GET /api/v1/organizations
+      - GET /api/v1/organizations/:id
+      - PATCH /api/v1/organizations/:id
+      - DELETE /api/v1/organizations/:id
+      - GET /api/v1/organizations/:id/members
+      - POST /api/v1/organizations/:id/invitations
+      - DELETE /api/v1/organizations/:id/invitations/:inviteId
+      - PATCH /api/v1/organizations/:id/members/:userId
+      - DELETE /api/v1/organizations/:id/members/:userId
+    </organizations>
+
+    <projects>
+      - POST /api/v1/projects
+      - GET /api/v1/projects
+      - GET /api/v1/projects/:id
+      - PATCH /api/v1/projects/:id
+      - DELETE /api/v1/projects/:id
+      - POST /api/v1/projects/:id/github/connect
+      - DELETE /api/v1/projects/:id/github/disconnect
+      - POST /api/v1/projects/:id/github/refresh
+    </projects>
+
+    <test_suites>
+      - POST /api/v1/projects/:projectId/suites
+      - GET /api/v1/projects/:projectId/suites
+      - GET /api/v1/suites/:id
+      - PATCH /api/v1/suites/:id
+      - DELETE /api/v1/suites/:id
+      - POST /api/v1/suites/:id/duplicate
+    </test_suites>
+
+    <tests>
+      - POST /api/v1/suites/:suiteId/tests
+      - GET /api/v1/suites/:suiteId/tests
+      - GET /api/v1/tests/:id
+      - PATCH /api/v1/tests/:id
+      - DELETE /api/v1/tests/:id
+      - POST /api/v1/tests/:id/duplicate
+      - PUT /api/v1/tests/:id/steps
+      - PUT /api/v1/suites/:suiteId/tests/reorder
+      - POST /api/v1/tests/:id/quarantine
+      - DELETE /api/v1/tests/:id/quarantine
+    </tests>
+
+    <test_runs>
+      - POST /api/v1/suites/:suiteId/runs (trigger run)
+      - GET /api/v1/suites/:suiteId/runs
+      - GET /api/v1/runs/:id
+      - POST /api/v1/runs/:id/cancel
+      - GET /api/v1/runs/:id/results
+      - POST /api/v1/runs/:id/retry-failed
+    </test_runs>
+
+    <test_results>
+      - GET /api/v1/results/:id
+      - GET /api/v1/results/:id/artifacts
+      - GET /api/v1/results/:id/trace
+    </test_results>
+
+    <artifacts>
+      - GET /api/v1/artifacts/:id
+      - GET /api/v1/artifacts/:id/download
+    </artifacts>
+
+    <schedules>
+      - POST /api/v1/suites/:suiteId/schedules
+      - GET /api/v1/suites/:suiteId/schedules
+      - GET /api/v1/schedules/:id
+      - PATCH /api/v1/schedules/:id
+      - DELETE /api/v1/schedules/:id
+      - POST /api/v1/schedules/:id/toggle
+    </schedules>
+
+    <alert_channels>
+      - POST /api/v1/projects/:projectId/alerts
+      - GET /api/v1/projects/:projectId/alerts
+      - GET /api/v1/alerts/:id
+      - PATCH /api/v1/alerts/:id
+      - DELETE /api/v1/alerts/:id
+      - POST /api/v1/alerts/:id/test
+    </alert_channels>
+
+    <api_keys>
+      - POST /api/v1/organizations/:orgId/api-keys
+      - GET /api/v1/organizations/:orgId/api-keys
+      - DELETE /api/v1/api-keys/:id
+      - POST /api/v1/api-keys/:id/rotate
+    </api_keys>
+
+    <analytics>
+      - GET /api/v1/organizations/:orgId/analytics/overview
+      - GET /api/v1/projects/:projectId/analytics/trends
+      - GET /api/v1/projects/:projectId/analytics/flaky-tests
+      - GET /api/v1/projects/:projectId/analytics/failing-tests
+    </analytics>
+
+    <visual_regression>
+      - GET /api/v1/projects/:projectId/visual/baselines
+      - POST /api/v1/visual/baselines/:id/approve
+      - POST /api/v1/visual/baselines/:id/reject
+      - GET /api/v1/visual/comparisons/:id
+      - POST /api/v1/visual/comparisons/:id/ignore-region
+    </visual_regression>
+
+    <load_testing>
+      - GET /api/v1/projects/:projectId/k6-tests
+      - POST /api/v1/projects/:projectId/k6-tests
+      - GET /api/v1/k6-tests/:id
+      - PATCH /api/v1/k6-tests/:id
+      - DELETE /api/v1/k6-tests/:id
+      - POST /api/v1/k6-tests/:id/run
+      - POST /api/v1/k6-runs/:id/stop
+      - GET /api/v1/k6-runs/:id/results
+    </load_testing>
+
+    <performance>
+      - POST /api/v1/projects/:projectId/lighthouse
+      - GET /api/v1/lighthouse/:id/results
+      - GET /api/v1/projects/:projectId/lighthouse/trends
+    </performance>
+
+    <accessibility>
+      - POST /api/v1/projects/:projectId/accessibility
+      - GET /api/v1/accessibility/:id/results
+      - GET /api/v1/projects/:projectId/accessibility/trends
+    </accessibility>
+
+    <mcp>
+      - GET /api/v1/mcp/status
+      - GET /api/v1/mcp/tools
+      - GET /api/v1/mcp/connections
+    </mcp>
+
+    <webhooks>
+      - POST /api/v1/webhooks/github (GitHub webhook receiver)
+    </webhooks>
+  </api_endpoints_summary>
+
+  <!-- ==================== UI LAYOUT ==================== -->
+  <ui_layout>
+    <main_structure>
+      Sidebar navigation (collapsible) + Main content area
+      - Sidebar: Organization switcher, navigation menu, AI suggestions panel, user menu
+      - Top bar: Breadcrumbs, search (Cmd+K), notifications, AI thinking indicator, settings
+      - Main content: Page-specific content with consistent padding
+    </main_structure>
+
+    <pages>
+      <public>
+        - Landing/Marketing page
+        - Login page
+        - Register page
+        - Forgot password page
+        - Reset password page
+        - Accept invitation page
+      </public>
+
+      <authenticated>
+        - Dashboard (organization overview with quality score)
+        - Projects list
+        - Project detail (suites, settings, GitHub connection)
+        - Test suite detail (tests, runs, schedules)
+        - Test editor (visual recorder, code view)
+        - Test run detail (results, artifacts)
+        - Test result detail (steps, screenshots, trace, healing history)
+        - Visual regression dashboard (baselines, comparisons, diffs)
+        - Load testing dashboard (K6 tests, results, trends)
+        - Performance dashboard (Lighthouse audits, Core Web Vitals)
+        - Accessibility dashboard (axe-core scans, issues)
+        - Security dashboard (vulnerabilities, scans, compliance)
+        - Flaky tests dashboard
+        - AI insights dashboard (predictions, anomalies, suggestions)
+        - MCP connections dashboard
+        - Schedules management
+        - Alert channels management
+        - Organization settings
+        - Team management
+        - API keys management
+        - Integrations management
+        - User profile settings
+      </authenticated>
+    </pages>
+
+    <key_components>
+      - Sidebar with collapsible navigation
+      - Project/suite/test hierarchical breadcrumbs
+      - Test step visual editor (drag-drop reorder)
+      - Live test execution progress panel
+      - Screenshot comparison slider
+      - Video player with playback controls
+      - Embedded Playwright trace viewer
+      - Pass/fail summary cards with trends
+      - Data tables with sorting, filtering, pagination
+      - Modal dialogs for confirmations and forms
+      - Toast notifications for feedback
+      - Empty states with helpful actions
+      - AI suggestions sidebar
+      - Command palette (Cmd+K)
+      - AI confidence indicators
+      - Flakiness sparklines
+      - Healing indicator badges
+      - Anomaly severity badges
+      - MCP tool playground
+      - K6 code editor with templates
+    </key_components>
+  </ui_layout>
+
+  <!-- ==================== DESIGN SYSTEM ==================== -->
+  <design_system>
+    <color_palette>
+      <primary>Blue 600 (#2563EB) - Primary actions, links</primary>
+      <success>Emerald 500 (#10B981) - Passed tests, success states</success>
+      <warning>Amber 500 (#F59E0B) - Flaky tests, warnings</warning>
+      <error>Red 500 (#EF4444) - Failed tests, errors</error>
+      <neutral>Gray 500 (#6B7280) - Secondary text, borders</neutral>
+      <background>White (#FFFFFF) light / Gray 900 (#111827) dark</background>
+      <ai>Purple 500 (#8B5CF6) - AI features, suggestions</ai>
+      <security>Red 600 (#DC2626) - Security issues</security>
+    </color_palette>
+    <typography>
+      <font_family>Inter for UI, JetBrains Mono for code</font_family>
+      <base_size>14px</base_size>
+      <scale>1.25 (Minor Third)</scale>
+    </typography>
+    <spacing>
+      <unit>4px base unit</unit>
+      <padding>16px standard padding</padding>
+      <gap>8px standard gap</gap>
+    </spacing>
+    <components>
+      - Use Radix UI primitives for accessibility
+      - Tailwind CSS utility classes
+      - Consistent border-radius (6px default)
+      - Subtle shadows for elevation
+      - Focus rings for keyboard navigation
+      - AI confidence meters
+      - Flakiness sparklines
+      - Healing diff viewers
+    </components>
+  </design_system>
+
+  <!-- ==================== NAVIGATION REDESIGN (Phase 9 - PENDING) ==================== -->
+  <navigation_redesign status="pending">
+    <description>Simplify sidebar from 38 items to ~12 visible items using collapsible groups and hub pages</description>
+
+    <current_problems>
+      - 38 flat menu items overwhelming users
+      - Difficult to find features
+      - No organization by user role
+      - MCP tools scattered across 13 pages
+      - AI Insights scattered across 11 pages
+    </current_problems>
+
+    <proposed_structure>
+      <always_visible>
+        📊 Dashboard
+        📁 Projects
+      </always_visible>
+
+      <collapsible_group name="Testing" default="expanded">
+        📅 Schedules
+        👁️ Visual Review (with badge for pending)
+        📈 Analytics
+      </collapsible_group>
+
+      <collapsible_group name="Security &amp; Quality" default="collapsed">
+        🛡️ Security Scans
+        📡 Monitoring
+      </collapsible_group>
+
+      <collapsible_group name="AI Features" default="collapsed">
+        🧠 AI Insights Hub (combines 11 pages with tabs)
+        💬 AI Chat
+      </collapsible_group>
+
+      <collapsible_group name="Settings" default="collapsed">
+        👥 Team
+        ⚙️ Settings
+        💳 Billing
+        🔑 API Keys
+      </collapsible_group>
+
+      <collapsible_group name="Developer Tools" default="collapsed" role_required="developer">
+        🔧 MCP Hub (combines 13 pages with tabs)
+        📋 Audit Logs
+      </collapsible_group>
+    </proposed_structure>
+
+    <features>
+      <navigation>
+        - Collapsible navigation groups (F-1361)
+        - AI Insights Hub with tabs (F-1362)
+        - Role-based menu visibility (F-1363)
+        - User navigation preferences (F-1364)
+        - MCP Tools Hub with tabs (F-1365)
+        - Global search/command palette Cmd+K (F-1366)
+      </navigation>
+    </features>
+
+    <benefits>
+      - Reduces visible items from 38 to ~12 for regular users
+      - Developers see MCP tools, QA engineers see testing features
+      - Faster navigation with collapsible groups
+      - Command palette for power users
+      - Consistent with modern app patterns (VSCode, Notion, Linear)
+    </benefits>
+  </navigation_redesign>
+
+  <!-- ==================== CODE REFACTORING (Phase 10 - PENDING) ==================== -->
+  <code_refactoring status="pending">
+    <description>Split oversized files into modular components for better maintainability</description>
+
+    <problem_files>
+      <file name="test-runs.ts" lines="26,697" status="critical">
+        Split into: execution.ts, visual-regression.ts, alerts.ts, storage.ts, ai-analysis.ts, routes.ts
+      </file>
+      <file name="monitoring.ts" lines="10,291" status="high">
+        Split into: checks.ts, incidents.ts, alerts.ts, uptime.ts, status-page.ts
+      </file>
+      <file name="github.ts" lines="8,181" status="medium">
+        Split into: auth.ts, repos.ts, webhooks.ts, ai-providers.ts
+      </file>
+      <file name="sast.ts" lines="5,771" status="medium">
+        Split into: scanning.ts, vulnerabilities.ts, secrets.ts, reports.ts
+      </file>
+    </problem_files>
+
+    <features>
+      <test_runs_refactor priority="critical">
+        - Create module structure (F-1367)
+        - Extract execution module (F-1368)
+        - Extract visual regression module (F-1369)
+        - Extract alerts module (F-1370)
+        - Extract storage module (F-1371)
+        - Extract AI analysis module (F-1372)
+        - Clean up route handlers (F-1373)
+      </test_runs_refactor>
+      <other_refactors priority="high">
+        - Split monitoring.ts (F-1374)
+        - Split github.ts (F-1375)
+        - Split sast.ts (F-1376)
+      </other_refactors>
+    </features>
+
+    <verification>
+      - All existing tests must pass after refactoring
+      - No functionality changes, only code organization
+      - Each module under 800 lines
+      - Clear separation of concerns
+    </verification>
+  </code_refactoring>
+
+  <!-- ==================== IMPLEMENTATION ROADMAP ==================== -->
+  <implementation_roadmap>
+    <completed>
+      <phase number="1">
+        <title>Foundation (COMPLETED)</title>
+        <items>
+          - Project setup and infrastructure ✓
+          - Authentication and user management ✓
+          - Organizations and teams ✓
+          - Projects and test suites ✓
+          - Test authoring (visual and GitHub) ✓
+          - Test execution engine ✓
+          - Results and artifacts ✓
+          - Scheduling and automation ✓
+          - GitHub integration ✓
+          - Alerting and notifications ✓
+          - REST API and documentation ✓
+          - Analytics and dashboard ✓
+          - Polish and production readiness ✓
+        </items>
+      </phase>
+
+      <phase number="2">
+        <title>Advanced Testing (COMPLETED)</title>
+        <items>
+          - Visual regression testing ✓
+          - K6 load testing integration ✓
+          - Lighthouse performance audits ✓
+          - axe-core accessibility testing ✓
+          - Enhanced results dashboards ✓
+        </items>
+      </phase>
+
+      <phase number="3">
+        <title>AI-Powered Intelligence (MOSTLY COMPLETED - 85%)</title>
+        <completed_items>
+          - MCP server with 170+ tools ✓
+          - Root cause analysis (all 16 features) ✓
+          - Flaky test management (all 20 features) ✓
+          - AI test healing UI/MCP tools ✓
+          - Alert rate limiting ✓
+          - Alert correlation ✓
+          - Alert runbook links ✓
+        </completed_items>
+        <pending_items>
+          - AI test healing ML core (15 features)
+          - AI test generation (30 features)
+        </pending_items>
+        <removed_items>
+          - Predictive failure ML (22 features) - Complex ML not needed for SMB
+          - Intelligent prioritization (15 features) - Simple priority kept
+          - Anomaly detection (20 features) - Enterprise monitoring not needed for SMB
+        </removed_items>
+      </phase>
+
+      <phase number="5">
+        <title>Advanced AI & Autonomous Testing (MOSTLY COMPLETED - 90%)</title>
+        <completed_items>
+          - AI Copilot (real-time suggestions, autocomplete, explain test) ✓
+          - AI test discovery (suggestions, maintenance recommendations) ✓
+          - Predictive intelligence (production risk, tech debt, quality) ✓
+          - Natural language interface (chat, debugging, voice) ✓
+          - Visual AI (screenshot understanding, impact analysis) ✓
+          - Documentation (auto-generate docs, release notes) ✓
+          - AI debugging tools ✓
+          - MCP AI tools (40+ tools) ✓
+        </completed_items>
+        <pending_items>
+          - 13 advanced MCP AI tools
+        </pending_items>
+      </phase>
+    </completed>
+
+    <in_progress>
+      <phase number="4">
+        <title>Enterprise Security (PARTIAL - 60%)</title>
+        <completed_items>
+          - DAST scanning (OWASP ZAP) ✓
+          - Basic dependency scanning (Trivy, Grype, npm audit) ✓
+        </completed_items>
+        <pending_items>
+          - Advanced dependency scanning (17 features)
+          - Secret detection (Gitleaks)
+          - Container scanning enhancements
+          - SBOM generation
+        </pending_items>
+      </phase>
+    </in_progress>
+
+    <pending>
+      <phase number="6" status="removed">
+        <title>External Integrations (REMOVED)</title>
+        <note>
+          Replaced with webhooks + n8n/Zapier approach.
+          Users can connect to Jira, Linear, GitLab, etc. via webhooks.
+          Alert destinations support OpsGenie, Slack, Teams, PagerDuty, etc.
+        </note>
+      </phase>
+
+      <phase number="7">
+        <title>Enhanced Webhooks System (38 features)</title>
+        <items>
+          - Webhook events (test, visual, performance, security, system)
+          - Webhook payload customization and variables
+          - Webhook signature verification (HMAC-SHA256)
+          - Webhook retry with exponential backoff
+          - Webhook delivery logs and status tracking
+          - Webhook filtering (event type, project, status)
+          - Webhook configuration UI
+        </items>
+      </phase>
+
+      <phase number="8">
+        <title>AI Provider Infrastructure (35 features)</title>
+        <description>Multi-provider AI with Kie.ai (70% savings) + Anthropic fallback</description>
+        <items>
+          <provider_integration>
+            - Kie.ai provider integration (70% cost savings)
+            - Anthropic direct provider integration (fallback)
+            - AI provider router with automatic fallback
+            - Provider health monitoring
+            - AI cost tracking per request
+            - AI usage analytics dashboard
+            - Provider switching without restart
+            - AI API key rotation support
+            - Monthly AI budget limits
+            - AI cost alert notifications
+            - AI request retry with exponential backoff
+            - AI response caching
+            - Model selection per feature
+            - AI request timeout configuration
+            - Provider-specific rate limiting
+          </provider_integration>
+          <settings_ui>
+            - AI provider configuration page
+            - AI API key management UI
+            - Model selection UI per feature
+            - Fallback rules configuration UI
+            - AI cost budget settings UI
+          </settings_ui>
+          <llm_features>
+            - LLM-powered complex root cause analysis
+            - Natural language test generation
+            - Screenshot-to-test conversion (Claude Vision)
+            - Voice input test creation
+            - AI chat interface for QA queries
+            - AI test code explanation
+            - Intelligent test healing with vision
+            - AI anomaly explanation
+            - AI-powered release notes generation
+            - AI test improvement suggestions
+          </llm_features>
+          <mcp_tools>
+            - MCP: get-ai-provider-status
+            - MCP: get-ai-cost-report
+            - MCP: switch-ai-provider
+            - MCP: generate-test-from-description
+            - MCP: explain-test-failure-ai
+          </mcp_tools>
+        </items>
+        <cost_savings>
+          - Kie.ai: Claude Opus 4.5 Thinking @ $1.50/$7.50 per M tokens (70% off)
+          - Anthropic fallback: Standard pricing when Kie.ai unavailable
+          - Estimated 67% monthly cost reduction vs Anthropic-only
+        </cost_savings>
+      </phase>
+    </pending>
+  </implementation_roadmap>
+
+  <!-- ==================== SUCCESS CRITERIA ==================== -->
+  <success_criteria>
+    <functionality>
+      - Users can sign up, create organizations, and invite team members
+      - Users can create tests via visual recorder, import from GitHub, or AI generation
+      - Tests execute successfully across Chrome, Firefox, Safari
+      - Visual regression detects UI changes with configurable sensitivity
+      - Load tests measure performance under stress
+      - Accessibility audits identify WCAG violations
+      - Results display with screenshots, videos, and traces
+      - Schedules run automatically at configured times
+      - GitHub integration posts status checks on PRs
+      - Alerts fire on test failures via email, Slack, webhooks, PagerDuty
+      - AI heals broken selectors automatically
+      - AI analyzes root causes of failures
+      - Flaky tests are detected and managed
+      - MCP enables full AI agent automation
+      - API allows full programmatic control
+    </functionality>
+
+    <user_experience>
+      - Onboarding flow completes in under 5 minutes
+      - Test creation via recorder takes under 2 minutes per test
+      - AI test generation from description in under 30 seconds
+      - Results load in under 2 seconds
+      - Real-time progress updates during test execution
+      - Mobile-responsive design works on tablets
+      - Keyboard navigation works for all features
+      - AI suggestions are helpful and accurate
+    </user_experience>
+
+    <technical_quality>
+      - All API endpoints have input validation
+      - Proper error handling with meaningful messages
+      - No console errors during normal operation
+      - 80%+ code coverage for critical paths
+      - Database queries optimized with proper indexes
+      - Secrets properly encrypted at rest
+      - MCP handles 100+ concurrent connections
+      - AI models achieve 90%+ accuracy
+    </technical_quality>
+
+    <code_quality_requirements>
+      <description>MANDATORY: After implementing each feature, code must meet these standards</description>
+      <file_size_limits>
+        <!-- Feature #1440: Updated frontend limit to 1500 lines for practical maintainability -->
+        - Backend route files: MAX 1500 lines (split into modules if larger)
+        - Backend service files: MAX 1500 lines
+        - Frontend components: MAX 1500 lines (split into sub-components if larger)
+        - Utility files: MAX 500 lines
+      </file_size_limits>
+      <modularization>
+        - Large route files MUST be split into subdirectories with index.ts
+        - Example: routes/test-runs/ with execution.ts, results.ts, analysis.ts
+        - Each module should have a single responsibility
+        - Shared code extracted to utils/ or lib/
+      </modularization>
+      <component_standards>
+        - Each React component: clear props interface with TypeScript
+        - No prop drilling beyond 2 levels (use context or state management)
+        - Components should be independently testable
+        - Avoid inline styles; use design system tokens
+      </component_standards>
+      <refactoring_checklist>
+        - [ ] File under size limit?
+        - [ ] Single responsibility?
+        - [ ] No duplicated code blocks (10+ lines)?
+        - [ ] Proper TypeScript types (no 'any')?
+        - [ ] Imports organized and minimal?
+        - [ ] Component/function is independently testable?
+      </refactoring_checklist>
+    </code_quality_requirements>
+
+    <design_polish>
+      - Consistent visual design following design system
+      - Smooth transitions and loading states
+      - Empty states with helpful guidance
+      - Toast notifications for all actions
+      - Dark mode fully implemented
+      - AI features clearly indicated
+      - Confidence levels visible for predictions
+    </design_polish>
+  </success_criteria>
+</project_specification>

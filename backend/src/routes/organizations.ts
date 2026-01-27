@@ -1,0 +1,1463 @@
+import { FastifyInstance } from 'fastify';
+import bcrypt from 'bcryptjs';
+import { authenticate, requireRoles, JwtPayload, getOrganizationId } from '../middleware/auth';
+import { users } from './auth';
+import { projects } from './projects';
+import { testSuites, tests } from './test-suites';
+import { testRuns } from './test-runs';
+import { auditLogs } from './audit-logs';
+
+// In-memory organization store for development
+interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  timezone: string;
+  created_at: Date;
+}
+
+interface OrganizationMember {
+  user_id: string;
+  organization_id: string;
+  role: 'owner' | 'admin' | 'developer' | 'viewer';
+}
+
+interface Invitation {
+  id: string;
+  organization_id: string;
+  email: string;
+  role: 'admin' | 'developer' | 'viewer';
+  invited_by: string;
+  created_at: Date;
+  status: 'pending' | 'accepted' | 'expired';
+  accepted_at?: Date;
+  accepted_by?: string; // user_id who accepted
+}
+
+// Feature #1104: Auto-quarantine settings interface
+export interface AutoQuarantineSettings {
+  enabled: boolean;                 // Whether auto-quarantine is enabled
+  threshold: number;                // Flakiness score threshold (0-1) to trigger auto-quarantine
+  min_runs: number;                 // Minimum runs required before auto-quarantine can trigger
+  notify_on_quarantine: boolean;    // Send notification when auto-quarantine triggers
+  quarantine_reason_prefix: string; // Prefix for auto-quarantine reason message
+}
+
+// Default auto-quarantine settings
+export const DEFAULT_AUTO_QUARANTINE_SETTINGS: AutoQuarantineSettings = {
+  enabled: true,
+  threshold: 0.7,          // 70% flakiness score
+  min_runs: 5,             // Need at least 5 runs
+  notify_on_quarantine: true,
+  quarantine_reason_prefix: 'Auto-quarantined: ',
+};
+
+// In-memory stores
+export const organizations: Map<string, Organization> = new Map();
+export const organizationMembers: Map<string, OrganizationMember[]> = new Map();
+export const invitations: Map<string, Invitation> = new Map();
+
+// Feature #1104: Store for auto-quarantine settings per organization
+export const autoQuarantineSettings: Map<string, AutoQuarantineSettings> = new Map();
+
+// Feature #1105: Retry strategy based on flakiness level
+export interface RetryStrategyRule {
+  min_score: number;     // Minimum flakiness score (inclusive)
+  max_score: number;     // Maximum flakiness score (exclusive)
+  retries: number;       // Number of retries for tests in this score range
+}
+
+export interface RetryStrategySettings {
+  enabled: boolean;                  // Whether dynamic retry strategy is enabled
+  rules: RetryStrategyRule[];        // Retry rules based on flakiness score
+  default_retries: number;           // Default retries for tests without flakiness data
+  max_retries: number;               // Maximum allowed retries
+}
+
+// Default retry strategy settings
+export const DEFAULT_RETRY_STRATEGY_SETTINGS: RetryStrategySettings = {
+  enabled: true,
+  rules: [
+    { min_score: 0, max_score: 0.3, retries: 1 },       // Low flakiness: 1 retry
+    { min_score: 0.3, max_score: 0.6, retries: 2 },    // Medium flakiness: 2 retries
+    { min_score: 0.6, max_score: 1.01, retries: 3 },   // High flakiness: 3 retries (1.01 to include 1.0)
+  ],
+  default_retries: 1,
+  max_retries: 5,
+};
+
+// Feature #1105: Store for retry strategy settings per organization
+export const retryStrategySettings: Map<string, RetryStrategySettings> = new Map();
+
+// Feature #1105: Helper function to get retry strategy settings for an organization
+export function getRetryStrategySettings(organizationId: string): RetryStrategySettings {
+  return retryStrategySettings.get(organizationId) || { ...DEFAULT_RETRY_STRATEGY_SETTINGS, rules: [...DEFAULT_RETRY_STRATEGY_SETTINGS.rules] };
+}
+
+// Feature #1105: Helper function to update retry strategy settings for an organization
+export function setRetryStrategySettings(organizationId: string, settings: Partial<RetryStrategySettings>): RetryStrategySettings {
+  const current = getRetryStrategySettings(organizationId);
+  const updated: RetryStrategySettings = {
+    ...current,
+    ...settings,
+    // Validate max_retries is between 1 and 10
+    max_retries: Math.max(1, Math.min(10, settings.max_retries ?? current.max_retries)),
+    // Validate default_retries doesn't exceed max_retries
+    default_retries: Math.max(0, Math.min(
+      settings.max_retries ?? current.max_retries,
+      settings.default_retries ?? current.default_retries
+    )),
+    // Ensure rules array exists
+    rules: settings.rules ?? current.rules,
+  };
+  retryStrategySettings.set(organizationId, updated);
+  return updated;
+}
+
+// Feature #1105: Helper function to get the appropriate retry count for a given flakiness score
+export function getRetriesForFlakinessScore(organizationId: string, flakinessScore: number): number {
+  const settings = getRetryStrategySettings(organizationId);
+
+  if (!settings.enabled) {
+    return settings.default_retries;
+  }
+
+  // Find the matching rule
+  for (const rule of settings.rules) {
+    if (flakinessScore >= rule.min_score && flakinessScore < rule.max_score) {
+      return Math.min(rule.retries, settings.max_retries);
+    }
+  }
+
+  // No matching rule, use default
+  return settings.default_retries;
+}
+
+// Seed default organizations
+organizations.set('1', {
+  id: '1',
+  name: 'Default Organization',
+  slug: 'default-org',
+  timezone: 'UTC',
+  created_at: new Date(),
+});
+
+organizations.set('2', {
+  id: '2',
+  name: 'Other Organization',
+  slug: 'other-org',
+  timezone: 'UTC',
+  created_at: new Date(),
+});
+
+// Test users belong to organizations
+organizationMembers.set('1', [
+  { user_id: '1', organization_id: '1', role: 'owner' },
+  { user_id: '2', organization_id: '1', role: 'admin' },
+  { user_id: '3', organization_id: '1', role: 'developer' },
+  { user_id: '4', organization_id: '1', role: 'viewer' },
+]);
+
+// User 5 belongs to a different organization, and user 1 (owner) is an admin in both
+organizationMembers.set('2', [
+  { user_id: '5', organization_id: '2', role: 'owner' },
+  { user_id: '1', organization_id: '2', role: 'admin' }, // Allow owner@example.com to switch orgs
+]);
+
+// Helper function to get user's first organization
+export function getUserOrganization(userId: string): string | null {
+  for (const [orgId, members] of organizationMembers) {
+    if (members.some(m => m.user_id === userId)) {
+      return orgId;
+    }
+  }
+  return null;
+}
+
+// Helper function to get all organizations a user belongs to
+export function getUserOrganizations(userId: string): Array<{ organization_id: string; role: string; organization: Organization | undefined }> {
+  const userOrgs: Array<{ organization_id: string; role: string; organization: Organization | undefined }> = [];
+
+  for (const [orgId, members] of organizationMembers) {
+    const membership = members.find(m => m.user_id === userId);
+    if (membership) {
+      userOrgs.push({
+        organization_id: orgId,
+        role: membership.role,
+        organization: organizations.get(orgId),
+      });
+    }
+  }
+
+  return userOrgs;
+}
+
+// Feature #1104: Helper function to get auto-quarantine settings for an organization
+export function getAutoQuarantineSettings(organizationId: string): AutoQuarantineSettings {
+  return autoQuarantineSettings.get(organizationId) || { ...DEFAULT_AUTO_QUARANTINE_SETTINGS };
+}
+
+// Feature #1104: Helper function to update auto-quarantine settings for an organization
+export function setAutoQuarantineSettings(organizationId: string, settings: Partial<AutoQuarantineSettings>): AutoQuarantineSettings {
+  const current = getAutoQuarantineSettings(organizationId);
+  const updated: AutoQuarantineSettings = {
+    ...current,
+    ...settings,
+    // Validate threshold is between 0 and 1
+    threshold: Math.max(0, Math.min(1, settings.threshold ?? current.threshold)),
+    // Validate min_runs is at least 2
+    min_runs: Math.max(2, settings.min_runs ?? current.min_runs),
+  };
+  autoQuarantineSettings.set(organizationId, updated);
+  return updated;
+}
+
+interface InvitationBody {
+  email: string;
+  role: 'admin' | 'developer' | 'viewer';
+}
+
+interface OrgParams {
+  id: string;
+}
+
+interface CreateOrganizationBody {
+  name: string;
+  slug?: string;
+  timezone?: string;
+}
+
+// Helper to generate slug from name
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export async function organizationRoutes(app: FastifyInstance) {
+  // Get all organizations the current user belongs to
+  app.get('/api/v1/organizations', {
+    preHandler: [authenticate],
+  }, async (request) => {
+    const user = request.user as JwtPayload;
+    const userOrgs = getUserOrganizations(user.id);
+
+    return {
+      organizations: userOrgs.map(org => ({
+        id: org.organization_id,
+        name: org.organization?.name,
+        slug: org.organization?.slug,
+        role: org.role,
+        is_current: org.organization_id === user.organization_id,
+      })),
+      current_organization_id: user.organization_id,
+    };
+  });
+
+  // Switch to a different organization - issues a new token
+  app.post<{ Body: { organization_id: string } }>('/api/v1/organizations/switch', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const user = request.user as JwtPayload;
+    const { organization_id } = request.body;
+
+    if (!organization_id) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'organization_id is required',
+      });
+    }
+
+    // Check if user belongs to the target organization
+    const userOrgs = getUserOrganizations(user.id);
+    const targetOrg = userOrgs.find(o => o.organization_id === organization_id);
+
+    if (!targetOrg) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'You are not a member of this organization',
+      });
+    }
+
+    // Generate a new token with the new organization
+    const token = app.jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: targetOrg.role, // Use role in the target organization
+        organization_id: organization_id,
+      },
+      { expiresIn: '7d' }
+    );
+
+    return {
+      token,
+      expiresIn: 7 * 24 * 60 * 60, // 7 days in seconds
+      organization: {
+        id: organization_id,
+        name: targetOrg.organization?.name,
+        slug: targetOrg.organization?.slug,
+        role: targetOrg.role,
+      },
+    };
+  });
+
+  // Create organization
+  app.post<{ Body: CreateOrganizationBody }>('/api/v1/organizations', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { name, slug: providedSlug, timezone = 'UTC' } = request.body;
+    const user = request.user as JwtPayload;
+
+    if (!name || name.trim().length === 0) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Organization name is required',
+      });
+    }
+
+    if (name.length > 100) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Organization name must be 100 characters or less',
+      });
+    }
+
+    // Generate or validate slug
+    const slug = providedSlug || generateSlug(name);
+
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Slug can only contain lowercase letters, numbers, and hyphens',
+      });
+    }
+
+    // Check for duplicate slug
+    for (const org of organizations.values()) {
+      if (org.slug === slug) {
+        return reply.status(409).send({
+          error: 'Conflict',
+          message: 'An organization with this slug already exists',
+        });
+      }
+    }
+
+    // Create the organization
+    const id = String(Date.now());
+    const organization: Organization = {
+      id,
+      name: name.trim(),
+      slug,
+      timezone,
+      created_at: new Date(),
+    };
+
+    organizations.set(id, organization);
+
+    // Add the creating user as owner
+    organizationMembers.set(id, [
+      { user_id: user.id, organization_id: id, role: 'owner' },
+    ]);
+
+    return reply.status(201).send({
+      organization,
+      message: 'Organization created successfully',
+    });
+  });
+
+  // Get organization
+  app.get<{ Params: OrgParams }>('/api/v1/organizations/:id', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const org = organizations.get(id);
+
+    if (!org) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Organization not found',
+      });
+    }
+
+    return { organization: org };
+  });
+
+  // Get organization members (with user details)
+  app.get<{ Params: OrgParams }>('/api/v1/organizations/:id/members', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const memberRecords = organizationMembers.get(id) || [];
+
+    // Enrich with user details
+    const members = memberRecords.map(member => {
+      // Find user by ID
+      let userDetails = null;
+      for (const [, user] of users) {
+        if (user.id === member.user_id) {
+          userDetails = {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+          };
+          break;
+        }
+      }
+      return {
+        ...member,
+        ...userDetails,
+      };
+    });
+
+    return { members };
+  });
+
+  // Create invitation (requires owner or admin role)
+  app.post<{ Params: OrgParams; Body: InvitationBody }>('/api/v1/organizations/:id/invitations', {
+    preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const { email, role } = request.body;
+    const user = request.user as JwtPayload;
+
+    if (!email || !role) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Email and role are required',
+      });
+    }
+
+    if (!['admin', 'developer', 'viewer'].includes(role)) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Invalid role. Must be admin, developer, or viewer',
+      });
+    }
+
+    // Check if organization exists
+    if (!organizations.has(id)) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Organization not found',
+      });
+    }
+
+    // Create invitation
+    const invitationId = String(Date.now());
+    const invitation: Invitation = {
+      id: invitationId,
+      organization_id: id,
+      email,
+      role,
+      invited_by: user.id,
+      created_at: new Date(),
+      status: 'pending',
+    };
+
+    invitations.set(invitationId, invitation);
+
+    // Log to console (email would be sent in production)
+    console.log(`
+====================================
+  Invitation Created
+====================================
+  To: ${email}
+  Role: ${role}
+  Organization: ${id}
+  Invited by: ${user.email}
+====================================
+    `);
+
+    return reply.status(201).send({
+      invitation: {
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        created_at: invitation.created_at,
+      },
+    });
+  });
+
+  // Get invitations for organization (requires owner or admin role)
+  app.get<{ Params: OrgParams }>('/api/v1/organizations/:id/invitations', {
+    preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+  }, async (request, reply) => {
+    const { id } = request.params;
+
+    const orgInvitations = Array.from(invitations.values())
+      .filter(inv => inv.organization_id === id);
+
+    return { invitations: orgInvitations };
+  });
+
+  // Delete invitation (requires owner or admin role)
+  app.delete<{ Params: { id: string; inviteId: string } }>('/api/v1/organizations/:id/invitations/:inviteId', {
+    preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+  }, async (request, reply) => {
+    const { inviteId } = request.params;
+
+    if (!invitations.has(inviteId)) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Invitation not found',
+      });
+    }
+
+    invitations.delete(inviteId);
+
+    return { message: 'Invitation deleted successfully' };
+  });
+
+  // Get invitation details (public - for accepting)
+  app.get<{ Params: { inviteId: string } }>('/api/v1/invitations/:inviteId', async (request, reply) => {
+    const { inviteId } = request.params;
+
+    const invitation = invitations.get(inviteId);
+    if (!invitation) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Invitation not found or has expired',
+      });
+    }
+
+    if (invitation.status !== 'pending') {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: invitation.status === 'accepted'
+          ? 'This invitation has already been accepted'
+          : 'This invitation has expired',
+      });
+    }
+
+    // Get organization details
+    const org = organizations.get(invitation.organization_id);
+
+    return {
+      invitation: {
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        organization: org ? {
+          id: org.id,
+          name: org.name,
+          slug: org.slug,
+        } : null,
+        created_at: invitation.created_at,
+      },
+    };
+  });
+
+  // Accept invitation (requires authentication - user must be logged in)
+  app.post<{ Params: { inviteId: string } }>('/api/v1/invitations/:inviteId/accept', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { inviteId } = request.params;
+    const user = request.user as JwtPayload;
+
+    const invitation = invitations.get(inviteId);
+    if (!invitation) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Invitation not found',
+      });
+    }
+
+    if (invitation.status !== 'pending') {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: invitation.status === 'accepted'
+          ? 'This invitation has already been accepted'
+          : 'This invitation has expired',
+      });
+    }
+
+    // Verify the logged in user's email matches the invitation
+    if (user.email.toLowerCase() !== invitation.email.toLowerCase()) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'This invitation was sent to a different email address',
+      });
+    }
+
+    // Check if organization still exists
+    const org = organizations.get(invitation.organization_id);
+    if (!org) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'The organization no longer exists',
+      });
+    }
+
+    // Check if user is already a member
+    const members = organizationMembers.get(invitation.organization_id) || [];
+    const existingMember = members.find(m => m.user_id === user.id);
+    if (existingMember) {
+      // Mark invitation as accepted but don't add duplicate member
+      invitation.status = 'accepted';
+      invitation.accepted_at = new Date();
+      invitation.accepted_by = user.id;
+      invitations.set(inviteId, invitation);
+
+      return {
+        message: 'You are already a member of this organization',
+        organization: {
+          id: org.id,
+          name: org.name,
+          slug: org.slug,
+          role: existingMember.role,
+        },
+      };
+    }
+
+    // Add user to organization with invited role
+    members.push({
+      user_id: user.id,
+      organization_id: invitation.organization_id,
+      role: invitation.role,
+    });
+    organizationMembers.set(invitation.organization_id, members);
+
+    // Mark invitation as accepted
+    invitation.status = 'accepted';
+    invitation.accepted_at = new Date();
+    invitation.accepted_by = user.id;
+    invitations.set(inviteId, invitation);
+
+    console.log(`
+====================================
+  Invitation Accepted
+====================================
+  User: ${user.email}
+  Organization: ${org.name}
+  Role: ${invitation.role}
+====================================
+    `);
+
+    return {
+      message: 'Invitation accepted successfully',
+      organization: {
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        role: invitation.role,
+      },
+    };
+  });
+
+  // Update organization (requires owner or admin role)
+  app.patch<{ Params: OrgParams; Body: Partial<Organization> }>('/api/v1/organizations/:id', {
+    preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const updates = request.body;
+
+    const org = organizations.get(id);
+    if (!org) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Organization not found',
+      });
+    }
+
+    // Update allowed fields
+    if (updates.name) org.name = updates.name;
+    if (updates.timezone) org.timezone = updates.timezone;
+
+    organizations.set(id, org);
+
+    return { organization: org };
+  });
+
+  // Delete organization (requires owner role only AND password confirmation)
+  app.delete<{ Params: OrgParams; Body: { password: string } }>('/api/v1/organizations/:id', {
+    preHandler: [authenticate, requireRoles(['owner'])],
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const { password } = request.body || {};
+    const jwtUser = request.user as JwtPayload;
+
+    // Require password confirmation
+    if (!password) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Password confirmation is required to delete an organization',
+      });
+    }
+
+    // Get user from database to verify password
+    const user = users.get(jwtUser.email);
+    if (!user) {
+      return reply.status(401).send({
+        error: 'Unauthorized',
+        message: 'User not found',
+      });
+    }
+
+    // Verify password
+    const validPassword = await bcrypt.compare(password, user.password_hash);
+    if (!validPassword) {
+      return reply.status(401).send({
+        error: 'Unauthorized',
+        message: 'Incorrect password. Please try again.',
+      });
+    }
+
+    // Check if organization exists
+    if (!organizations.has(id)) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Organization not found',
+      });
+    }
+
+    // Verify user owns this organization
+    if (jwtUser.organization_id !== id) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'You can only delete your own organization',
+      });
+    }
+
+    // Cascade delete all organization data
+    // 1. Delete test runs for this organization
+    let deletedRuns = 0;
+    for (const [runId, run] of testRuns) {
+      if (run.organization_id === id) {
+        testRuns.delete(runId);
+        deletedRuns++;
+      }
+    }
+
+    // 2. Get counts for logging
+    const orgSuiteIds = new Set(
+      Array.from(testSuites.values())
+        .filter(s => s.organization_id === id)
+        .map(s => s.id)
+    );
+
+    const orgTestIds = new Set(
+      Array.from(tests.values())
+        .filter(t => t.organization_id === id)
+        .map(t => t.id)
+    );
+
+    // 3. Delete tests in organization
+    for (const testId of orgTestIds) {
+      tests.delete(testId);
+    }
+
+    // 4. Delete test suites
+    for (const suiteId of orgSuiteIds) {
+      testSuites.delete(suiteId);
+    }
+
+    // 5. Delete projects and count them
+    let deletedProjects = 0;
+    for (const [projectId, project] of projects) {
+      if (project.organization_id === id) {
+        projects.delete(projectId);
+        deletedProjects++;
+      }
+    }
+
+    // 6. Delete the organization and members
+    const memberCount = (organizationMembers.get(id) || []).length;
+    organizations.delete(id);
+    organizationMembers.delete(id);
+
+    console.log(`\n[ORGANIZATION DELETED] Organization ${id} was deleted by ${jwtUser.email}`);
+    console.log(`  Cascade deleted: ${deletedProjects} projects, ${orgSuiteIds.size} suites, ${orgTestIds.size} tests, ${deletedRuns} runs, ${memberCount} members\n`);
+
+    return { message: 'Organization deleted successfully' };
+  });
+
+  // Remove member from organization (requires owner or admin role)
+  app.delete<{ Params: { id: string; memberId: string } }>('/api/v1/organizations/:id/members/:memberId', {
+    preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+  }, async (request, reply) => {
+    const { id, memberId } = request.params;
+    const jwtUser = request.user as JwtPayload;
+
+    // Check if organization exists
+    if (!organizations.has(id)) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Organization not found',
+      });
+    }
+
+    // Get current members
+    const members = organizationMembers.get(id) || [];
+
+    // Find the member to remove
+    const memberIndex = members.findIndex(m => m.user_id === memberId);
+    if (memberIndex === -1) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Member not found in organization',
+      });
+    }
+
+    const memberToRemove = members[memberIndex];
+
+    // Cannot remove the owner
+    if (memberToRemove.role === 'owner') {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Cannot remove the organization owner',
+      });
+    }
+
+    // Cannot remove yourself
+    if (memberToRemove.user_id === jwtUser.id) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Cannot remove yourself from the organization',
+      });
+    }
+
+    // Remove the member
+    members.splice(memberIndex, 1);
+    organizationMembers.set(id, members);
+
+    console.log(`\n[MEMBER REMOVED] User ${memberId} removed from organization ${id} by ${jwtUser.email}\n`);
+
+    return { message: 'Member removed successfully' };
+  });
+
+  // Update member role (requires owner or admin role)
+  app.patch<{ Params: { id: string; memberId: string }; Body: { role: 'admin' | 'developer' | 'viewer' } }>(
+    '/api/v1/organizations/:id/members/:memberId',
+    {
+      preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+    },
+    async (request, reply) => {
+      const { id, memberId } = request.params;
+      const { role } = request.body;
+      const jwtUser = request.user as JwtPayload;
+
+      // Validate role
+      if (!role || !['admin', 'developer', 'viewer'].includes(role)) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Valid role is required (admin, developer, or viewer)',
+        });
+      }
+
+      // Check if organization exists
+      if (!organizations.has(id)) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Organization not found',
+        });
+      }
+
+      // Get current members
+      const members = organizationMembers.get(id) || [];
+
+      // Find the member to update
+      const memberIndex = members.findIndex(m => m.user_id === memberId);
+      if (memberIndex === -1) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Member not found in organization',
+        });
+      }
+
+      const memberToUpdate = members[memberIndex];
+
+      // Cannot change the owner's role
+      if (memberToUpdate.role === 'owner') {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Cannot change the organization owner\'s role',
+        });
+      }
+
+      // Admins cannot promote others to admin (only owner can)
+      if (jwtUser.role === 'admin' && role === 'admin') {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Only the organization owner can promote members to admin',
+        });
+      }
+
+      // Update the role
+      const oldRole = memberToUpdate.role;
+      members[memberIndex].role = role;
+      organizationMembers.set(id, members);
+
+      console.log(`\n[ROLE UPDATED] User ${memberId} role changed from ${oldRole} to ${role} by ${jwtUser.email}\n`);
+
+      return {
+        message: 'Member role updated successfully',
+        member: {
+          user_id: memberId,
+          role: role,
+        },
+      };
+    }
+  );
+
+  // Transfer ownership (requires owner role and password confirmation)
+  app.post<{ Params: OrgParams; Body: { new_owner_id: string; password: string } }>(
+    '/api/v1/organizations/:id/transfer-ownership',
+    {
+      preHandler: [authenticate, requireRoles(['owner'])],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { new_owner_id, password } = request.body;
+      const jwtUser = request.user as JwtPayload;
+
+      // Validate inputs
+      if (!new_owner_id || !password) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'New owner ID and password are required',
+        });
+      }
+
+      // Check if organization exists
+      if (!organizations.has(id)) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Organization not found',
+        });
+      }
+
+      // Verify password
+      const currentUser = users.get(jwtUser.email);
+      if (!currentUser) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'User not found',
+        });
+      }
+
+      const validPassword = await bcrypt.compare(password, currentUser.password_hash);
+      if (!validPassword) {
+        return reply.status(401).send({
+          error: 'Unauthorized',
+          message: 'Invalid password',
+        });
+      }
+
+      // Get current members
+      const members = organizationMembers.get(id) || [];
+
+      // Find the new owner in members
+      const newOwnerIndex = members.findIndex(m => m.user_id === new_owner_id);
+      if (newOwnerIndex === -1) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'New owner must be a member of the organization',
+        });
+      }
+
+      // Find current owner
+      const currentOwnerIndex = members.findIndex(m => m.user_id === jwtUser.id);
+      if (currentOwnerIndex === -1) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Current owner not found in organization',
+        });
+      }
+
+      // Cannot transfer to yourself
+      if (new_owner_id === jwtUser.id) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Cannot transfer ownership to yourself',
+        });
+      }
+
+      // Transfer ownership
+      const oldOwnerEmail = jwtUser.email;
+      members[newOwnerIndex].role = 'owner';
+      members[currentOwnerIndex].role = 'admin';
+      organizationMembers.set(id, members);
+
+      // Get new owner details for response
+      let newOwnerEmail = '';
+      for (const [, user] of users) {
+        if (user.id === new_owner_id) {
+          newOwnerEmail = user.email;
+          break;
+        }
+      }
+
+      console.log(`\n[OWNERSHIP TRANSFERRED] Organization ${id} ownership transferred from ${oldOwnerEmail} to ${newOwnerEmail}\n`);
+
+      return {
+        message: 'Ownership transferred successfully',
+        previous_owner: {
+          user_id: jwtUser.id,
+          new_role: 'admin',
+        },
+        new_owner: {
+          user_id: new_owner_id,
+          role: 'owner',
+        },
+      };
+    }
+  );
+
+  // Feature #1002: Get team metrics - productivity metrics for organization members
+  app.get<{ Params: OrgParams; Querystring: { period?: string; include_trends?: string; include_activity?: string } }>(
+    '/api/v1/organizations/:id/team-metrics',
+    {
+      preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+    },
+    async (request, reply) => {
+      const { id: orgId } = request.params;
+      const userOrgId = getOrganizationId(request);
+      const period = request.query.period || '30d';
+      const includeTrends = request.query.include_trends !== 'false';
+      const includeActivity = request.query.include_activity !== 'false';
+
+      // Verify user has access to this organization
+      if (orgId !== userOrgId) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'You do not have access to this organization',
+        });
+      }
+
+      // Parse period
+      const periodMatch = period.match(/^(\d+)([dhw])$/);
+      if (!periodMatch) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Invalid period format. Use formats like 7d, 14d, 30d, or 4w',
+        });
+      }
+
+      const periodValue = parseInt(periodMatch[1], 10);
+      const periodUnit = periodMatch[2];
+      let periodMs: number;
+      switch (periodUnit) {
+        case 'h':
+          periodMs = periodValue * 60 * 60 * 1000;
+          break;
+        case 'd':
+          periodMs = periodValue * 24 * 60 * 60 * 1000;
+          break;
+        case 'w':
+          periodMs = periodValue * 7 * 24 * 60 * 60 * 1000;
+          break;
+        default:
+          periodMs = 30 * 24 * 60 * 60 * 1000;
+      }
+
+      const cutoffDate = new Date(Date.now() - periodMs);
+      const previousCutoffDate = new Date(Date.now() - periodMs * 2);
+
+      // Get organization members
+      const memberRecords = organizationMembers.get(orgId) || [];
+
+      // Build member details map
+      const memberDetails = new Map<string, { id: string; name: string; email: string; role: string }>();
+      for (const member of memberRecords) {
+        for (const [, user] of users) {
+          if (user.id === member.user_id) {
+            memberDetails.set(member.user_id, {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: member.role,
+            });
+            break;
+          }
+        }
+      }
+
+      // Get audit logs for this organization in the period
+      const currentPeriodLogs = Array.from(auditLogs.values()).filter(
+        log => log.organization_id === orgId && log.created_at >= cutoffDate
+      );
+
+      const previousPeriodLogs = includeTrends
+        ? Array.from(auditLogs.values()).filter(
+            log => log.organization_id === orgId &&
+                   log.created_at >= previousCutoffDate &&
+                   log.created_at < cutoffDate
+          )
+        : [];
+
+      // Calculate metrics per user
+      const userMetrics: Array<{
+        user_id: string;
+        user_name: string;
+        user_email: string;
+        role: string;
+        tests_created: number;
+        tests_updated: number;
+        tests_deleted: number;
+        runs_triggered: number;
+        runs_completed: number;
+        suites_created: number;
+        projects_created: number;
+        total_actions: number;
+        last_activity?: string;
+        activity_score: number;
+      }> = [];
+
+      for (const [userId, details] of memberDetails) {
+        const userLogs = currentPeriodLogs.filter(log => log.user_id === userId);
+
+        // Count actions by type
+        const testsCreated = userLogs.filter(log => log.action === 'create' && log.resource_type === 'test').length;
+        const testsUpdated = userLogs.filter(log => log.action === 'update' && log.resource_type === 'test').length;
+        const testsDeleted = userLogs.filter(log => log.action === 'delete' && log.resource_type === 'test').length;
+        const runsTriggered = userLogs.filter(log => log.action === 'create' && log.resource_type === 'test_run').length;
+        const runsCompleted = userLogs.filter(log => log.action === 'complete' && log.resource_type === 'test_run').length;
+        const suitesCreated = userLogs.filter(log => log.action === 'create' && log.resource_type === 'test_suite').length;
+        const projectsCreated = userLogs.filter(log => log.action === 'create' && log.resource_type === 'project').length;
+
+        // Get last activity
+        const sortedLogs = userLogs.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+        const lastActivity = sortedLogs.length > 0 ? sortedLogs[0].created_at.toISOString() : undefined;
+
+        // Calculate activity score (weighted sum of actions)
+        const activityScore =
+          testsCreated * 3 +
+          testsUpdated * 1 +
+          runsTriggered * 2 +
+          runsCompleted * 1 +
+          suitesCreated * 4 +
+          projectsCreated * 5;
+
+        userMetrics.push({
+          user_id: userId,
+          user_name: details.name,
+          user_email: details.email,
+          role: details.role,
+          tests_created: testsCreated,
+          tests_updated: testsUpdated,
+          tests_deleted: testsDeleted,
+          runs_triggered: runsTriggered,
+          runs_completed: runsCompleted,
+          suites_created: suitesCreated,
+          projects_created: projectsCreated,
+          total_actions: userLogs.length,
+          last_activity: lastActivity,
+          activity_score: activityScore,
+        });
+      }
+
+      // Sort by activity score descending
+      userMetrics.sort((a, b) => b.activity_score - a.activity_score);
+
+      // Calculate totals
+      const totals = {
+        tests_created: userMetrics.reduce((sum, m) => sum + m.tests_created, 0),
+        tests_updated: userMetrics.reduce((sum, m) => sum + m.tests_updated, 0),
+        runs_triggered: userMetrics.reduce((sum, m) => sum + m.runs_triggered, 0),
+        runs_completed: userMetrics.reduce((sum, m) => sum + m.runs_completed, 0),
+        suites_created: userMetrics.reduce((sum, m) => sum + m.suites_created, 0),
+        projects_created: userMetrics.reduce((sum, m) => sum + m.projects_created, 0),
+        total_actions: userMetrics.reduce((sum, m) => sum + m.total_actions, 0),
+      };
+
+      // Calculate trends
+      let trends: {
+        tests_created_change: number;
+        runs_triggered_change: number;
+        total_actions_change: number;
+        trend_direction: 'improving' | 'declining' | 'stable';
+      } | null = null;
+
+      if (includeTrends && previousPeriodLogs.length > 0) {
+        const prevTestsCreated = previousPeriodLogs.filter(
+          log => log.action === 'create' && log.resource_type === 'test'
+        ).length;
+        const prevRunsTriggered = previousPeriodLogs.filter(
+          log => log.action === 'create' && log.resource_type === 'test_run'
+        ).length;
+        const prevTotalActions = previousPeriodLogs.length;
+
+        const testsCreatedChange = totals.tests_created - prevTestsCreated;
+        const runsTriggeredChange = totals.runs_triggered - prevRunsTriggered;
+        const totalActionsChange = totals.total_actions - prevTotalActions;
+
+        const avgChange = (testsCreatedChange + runsTriggeredChange + totalActionsChange) / 3;
+
+        trends = {
+          tests_created_change: testsCreatedChange,
+          runs_triggered_change: runsTriggeredChange,
+          total_actions_change: totalActionsChange,
+          trend_direction: avgChange > 2 ? 'improving' : avgChange < -2 ? 'declining' : 'stable',
+        };
+      }
+
+      // Calculate activity by day for the period
+      let activityByDay: Array<{ date: string; actions: number; tests_created: number; runs_triggered: number }> | null = null;
+
+      if (includeActivity) {
+        const dayMap = new Map<string, { actions: number; tests_created: number; runs_triggered: number }>();
+
+        for (const log of currentPeriodLogs) {
+          const dayKey = log.created_at.toISOString().split('T')[0];
+          const existing = dayMap.get(dayKey) || { actions: 0, tests_created: 0, runs_triggered: 0 };
+          existing.actions++;
+          if (log.action === 'create' && log.resource_type === 'test') {
+            existing.tests_created++;
+          }
+          if (log.action === 'create' && log.resource_type === 'test_run') {
+            existing.runs_triggered++;
+          }
+          dayMap.set(dayKey, existing);
+        }
+
+        activityByDay = Array.from(dayMap.entries())
+          .map(([date, data]) => ({ date, ...data }))
+          .sort((a, b) => a.date.localeCompare(b.date));
+      }
+
+      // Calculate active members (members with at least one action in period)
+      const activeMembers = userMetrics.filter(m => m.total_actions > 0).length;
+
+      return {
+        organization_id: orgId,
+        period,
+        period_start: cutoffDate.toISOString(),
+        period_end: new Date().toISOString(),
+        members: userMetrics,
+        totals,
+        summary: {
+          total_members: memberDetails.size,
+          active_members: activeMembers,
+          inactive_members: memberDetails.size - activeMembers,
+          average_actions_per_member: memberDetails.size > 0
+            ? Math.round(totals.total_actions / memberDetails.size * 10) / 10
+            : 0,
+          most_active_member: userMetrics.length > 0 && userMetrics[0].total_actions > 0
+            ? { user_id: userMetrics[0].user_id, user_name: userMetrics[0].user_name, actions: userMetrics[0].total_actions }
+            : null,
+        },
+        ...(trends && { trends }),
+        ...(activityByDay && { activity_by_day: activityByDay }),
+      };
+    }
+  );
+
+  // ===========================================
+  // Feature #1104: Auto-Quarantine Settings
+  // ===========================================
+
+  // Get auto-quarantine settings for the organization
+  app.get('/api/v1/organization/auto-quarantine-settings', {
+    preHandler: [authenticate],
+  }, async (request) => {
+    const orgId = getOrganizationId(request);
+    const settings = getAutoQuarantineSettings(orgId);
+
+    return {
+      settings,
+      organization_id: orgId,
+      note: 'Tests exceeding the flakiness threshold will be automatically quarantined during test runs',
+    };
+  });
+
+  // Update auto-quarantine settings for the organization (requires owner or admin role)
+  app.patch<{
+    Body: Partial<AutoQuarantineSettings>;
+  }>('/api/v1/organization/auto-quarantine-settings', {
+    preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+  }, async (request) => {
+    const orgId = getOrganizationId(request);
+    const updates = request.body;
+
+    const settings = setAutoQuarantineSettings(orgId, updates);
+
+    return {
+      message: 'Auto-quarantine settings updated successfully',
+      settings,
+      organization_id: orgId,
+    };
+  });
+
+  // Get auto-quarantine statistics for the organization
+  app.get('/api/v1/organization/auto-quarantine-stats', {
+    preHandler: [authenticate],
+  }, async (request) => {
+    const orgId = getOrganizationId(request);
+    const settings = getAutoQuarantineSettings(orgId);
+
+    // Get all tests that were auto-quarantined
+    const autoQuarantinedTests = Array.from(tests.values())
+      .filter(t =>
+        t.organization_id === orgId &&
+        t.quarantined &&
+        (t as { quarantine_reason?: string }).quarantine_reason?.startsWith(settings.quarantine_reason_prefix)
+      )
+      .map(t => {
+        const suite = testSuites.get(t.suite_id);
+        const project = suite ? projects.get(suite.project_id) : null;
+        return {
+          test_id: t.id,
+          test_name: t.name,
+          suite_name: suite?.name || 'Unknown',
+          project_name: project?.name || 'Unknown',
+          quarantine_reason: (t as { quarantine_reason?: string }).quarantine_reason,
+          quarantined_at: (t as { quarantined_at?: Date }).quarantined_at?.toISOString(),
+        };
+      });
+
+    return {
+      settings,
+      stats: {
+        total_auto_quarantined: autoQuarantinedTests.length,
+        tests: autoQuarantinedTests,
+      },
+      organization_id: orgId,
+    };
+  });
+
+  // ===========================================
+  // Feature #1105: Retry Strategy Settings
+  // ===========================================
+
+  // Get retry strategy settings for the organization
+  app.get('/api/v1/organization/retry-strategy-settings', {
+    preHandler: [authenticate],
+  }, async (request) => {
+    const orgId = getOrganizationId(request);
+    const settings = getRetryStrategySettings(orgId);
+
+    return {
+      settings,
+      organization_id: orgId,
+      note: 'Tests will be retried based on their flakiness score using these rules',
+    };
+  });
+
+  // Update retry strategy settings for the organization (requires owner or admin role)
+  app.patch<{
+    Body: Partial<RetryStrategySettings>;
+  }>('/api/v1/organization/retry-strategy-settings', {
+    preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+  }, async (request) => {
+    const orgId = getOrganizationId(request);
+    const updates = request.body;
+
+    const settings = setRetryStrategySettings(orgId, updates);
+
+    return {
+      message: 'Retry strategy settings updated successfully',
+      settings,
+      organization_id: orgId,
+    };
+  });
+
+  // Get retry count for a specific test based on its flakiness score
+  app.get<{
+    Params: { testId: string };
+  }>('/api/v1/organization/retry-strategy/:testId', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { testId } = request.params;
+    const orgId = getOrganizationId(request);
+
+    // Find the test
+    const test = tests.get(testId);
+    if (!test || test.organization_id !== orgId) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Test not found',
+      });
+    }
+
+    // Get the test's flakiness score (use 0 if not available)
+    const flakinessScore = (test as { flakiness_score?: number }).flakiness_score ?? 0;
+    const retries = getRetriesForFlakinessScore(orgId, flakinessScore);
+    const settings = getRetryStrategySettings(orgId);
+
+    // Find which rule was applied
+    let appliedRule: RetryStrategyRule | null = null;
+    for (const rule of settings.rules) {
+      if (flakinessScore >= rule.min_score && flakinessScore < rule.max_score) {
+        appliedRule = rule;
+        break;
+      }
+    }
+
+    return {
+      test_id: testId,
+      test_name: test.name,
+      flakiness_score: flakinessScore,
+      retries,
+      applied_rule: appliedRule,
+      strategy_enabled: settings.enabled,
+      organization_id: orgId,
+    };
+  });
+
+  // Preview retry counts for all flaky tests
+  app.get('/api/v1/organization/retry-strategy-preview', {
+    preHandler: [authenticate],
+  }, async (request) => {
+    const orgId = getOrganizationId(request);
+    const settings = getRetryStrategySettings(orgId);
+
+    // Get all tests with flakiness data
+    const testsWithRetries = Array.from(tests.values())
+      .filter(t => t.organization_id === orgId)
+      .map(t => {
+        const flakinessScore = (t as { flakiness_score?: number }).flakiness_score ?? 0;
+        const retries = getRetriesForFlakinessScore(orgId, flakinessScore);
+
+        // Find which rule was applied
+        let appliedRule: string = 'default';
+        for (const rule of settings.rules) {
+          if (flakinessScore >= rule.min_score && flakinessScore < rule.max_score) {
+            appliedRule = `${(rule.min_score * 100).toFixed(0)}%-${(rule.max_score * 100).toFixed(0)}%`;
+            break;
+          }
+        }
+
+        const suite = testSuites.get(t.suite_id);
+        const project = suite ? projects.get(suite.project_id) : null;
+
+        return {
+          test_id: t.id,
+          test_name: t.name,
+          suite_name: suite?.name || 'Unknown',
+          project_name: project?.name || 'Unknown',
+          flakiness_score: flakinessScore,
+          flakiness_percentage: Math.round(flakinessScore * 100),
+          retries,
+          applied_rule: appliedRule,
+          severity: flakinessScore >= 0.6 ? 'high' : flakinessScore >= 0.3 ? 'medium' : 'low',
+        };
+      })
+      .filter(t => t.flakiness_score > 0) // Only include tests with flakiness data
+      .sort((a, b) => b.flakiness_score - a.flakiness_score);
+
+    // Summary by rule
+    const rulesSummary = settings.rules.map(rule => {
+      const testsInRule = testsWithRetries.filter(
+        t => t.flakiness_score >= rule.min_score && t.flakiness_score < rule.max_score
+      );
+      return {
+        range: `${(rule.min_score * 100).toFixed(0)}%-${((rule.max_score >= 1 ? 100 : rule.max_score * 100)).toFixed(0)}%`,
+        retries: rule.retries,
+        test_count: testsInRule.length,
+        tests: testsInRule.map(t => ({ test_id: t.test_id, test_name: t.test_name, flakiness_percentage: t.flakiness_percentage })),
+      };
+    });
+
+    return {
+      settings,
+      preview: {
+        total_flaky_tests: testsWithRetries.length,
+        tests: testsWithRetries,
+        by_rule: rulesSummary,
+      },
+      organization_id: orgId,
+    };
+  });
+}

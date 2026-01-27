@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 850" width="1200" height="850">
+  <defs>
+    <style>
+      .title { font: bold 24px sans-serif; fill: #1a1a2e; }
+      .subtitle { font: 14px sans-serif; fill: #666; }
+      .phase-title { font: bold 16px sans-serif; fill: #333; }
+      .step-title { font: bold 12px sans-serif; fill: #fff; }
+      .step-desc { font: 10px sans-serif; fill: #fff; opacity: 0.9; }
+      .label { font: 11px sans-serif; fill: #333; }
+      .note { font: 10px sans-serif; fill: #666; font-style: italic; }
+      .arrow { stroke: #64748b; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .parallel-arrow { stroke: #10b981; stroke-width: 2; stroke-dasharray: 5,3; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <linearGradient id="triggerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+    <linearGradient id="queueGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="workerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="browserGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="storageGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#db2777"/>
+    </linearGradient>
+    <linearGradient id="notifyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4"/>
+      <stop offset="100%" style="stop-color:#0891b2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="850" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <text x="600" y="40" text-anchor="middle" class="title">Test Execution Pipeline</text>
+  <text x="600" y="62" text-anchor="middle" class="subtitle">From trigger to completion - orchestrated by BullMQ</text>
+
+  <!-- ===== PHASE 1: TRIGGER SOURCES ===== -->
+  <g transform="translate(30, 90)">
+    <rect width="180" height="320" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="90" y="25" text-anchor="middle" class="phase-title" fill="#3b82f6">1. Trigger Sources</text>
+
+    <!-- Manual -->
+    <rect x="20" y="45" width="140" height="55" rx="6" fill="url(#triggerGrad)"/>
+    <text x="90" y="70" text-anchor="middle" class="step-title">Manual</text>
+    <text x="90" y="85" text-anchor="middle" class="step-desc">UI "Run" button click</text>
+
+    <!-- Schedule -->
+    <rect x="20" y="110" width="140" height="55" rx="6" fill="url(#triggerGrad)"/>
+    <text x="90" y="135" text-anchor="middle" class="step-title">Schedule</text>
+    <text x="90" y="150" text-anchor="middle" class="step-desc">Cron-based triggers</text>
+
+    <!-- API -->
+    <rect x="20" y="175" width="140" height="55" rx="6" fill="url(#triggerGrad)"/>
+    <text x="90" y="200" text-anchor="middle" class="step-title">REST API</text>
+    <text x="90" y="215" text-anchor="middle" class="step-desc">POST /api/runs</text>
+
+    <!-- GitHub -->
+    <rect x="20" y="240" width="140" height="55" rx="6" fill="url(#triggerGrad)"/>
+    <text x="90" y="265" text-anchor="middle" class="step-title">GitHub Webhook</text>
+    <text x="90" y="280" text-anchor="middle" class="step-desc">Push/PR events</text>
+  </g>
+
+  <!-- ===== PHASE 2: JOB QUEUE ===== -->
+  <g transform="translate(240, 90)">
+    <rect width="200" height="320" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+    <text x="100" y="25" text-anchor="middle" class="phase-title" fill="#f59e0b">2. Job Queue</text>
+
+    <!-- API Handler -->
+    <rect x="20" y="45" width="160" height="55" rx="6" fill="url(#queueGrad)"/>
+    <text x="100" y="70" text-anchor="middle" class="step-title">API Handler</text>
+    <text x="100" y="85" text-anchor="middle" class="step-desc">Validate &amp; create run record</text>
+
+    <!-- BullMQ -->
+    <rect x="20" y="115" width="160" height="70" rx="6" fill="url(#queueGrad)"/>
+    <text x="100" y="140" text-anchor="middle" class="step-title">BullMQ Queue</text>
+    <text x="100" y="155" text-anchor="middle" class="step-desc">test-execution queue</text>
+    <text x="100" y="170" text-anchor="middle" class="step-desc">Redis-backed</text>
+
+    <!-- Redis -->
+    <rect x="20" y="200" width="160" height="55" rx="6" fill="url(#queueGrad)"/>
+    <text x="100" y="225" text-anchor="middle" class="step-title">Redis</text>
+    <text x="100" y="240" text-anchor="middle" class="step-desc">Job state &amp; pub/sub</text>
+
+    <!-- Job details -->
+    <rect x="20" y="270" width="160" height="35" rx="4" fill="#fef3c7"/>
+    <text x="100" y="293" text-anchor="middle" class="note">Priority, retries, timeout</text>
+  </g>
+
+  <!-- ===== PHASE 3: WORKERS ===== -->
+  <g transform="translate(470, 90)">
+    <rect width="200" height="320" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+    <text x="100" y="25" text-anchor="middle" class="phase-title" fill="#10b981">3. Worker Pool</text>
+
+    <!-- Worker Manager -->
+    <rect x="20" y="45" width="160" height="55" rx="6" fill="url(#workerGrad)"/>
+    <text x="100" y="70" text-anchor="middle" class="step-title">Worker Manager</text>
+    <text x="100" y="85" text-anchor="middle" class="step-desc">Job distribution</text>
+
+    <!-- Docker Workers -->
+    <rect x="20" y="115" width="70" height="70" rx="6" fill="url(#workerGrad)"/>
+    <text x="55" y="145" text-anchor="middle" class="step-title">Worker 1</text>
+    <text x="55" y="160" text-anchor="middle" class="step-desc">Docker</text>
+
+    <rect x="110" y="115" width="70" height="70" rx="6" fill="url(#workerGrad)"/>
+    <text x="145" y="145" text-anchor="middle" class="step-title">Worker N</text>
+    <text x="145" y="160" text-anchor="middle" class="step-desc">Docker</text>
+
+    <!-- Test Loader -->
+    <rect x="20" y="200" width="160" height="55" rx="6" fill="url(#workerGrad)"/>
+    <text x="100" y="225" text-anchor="middle" class="step-title">Test Loader</text>
+    <text x="100" y="240" text-anchor="middle" class="step-desc">Fetch test config &amp; steps</text>
+
+    <!-- Concurrency -->
+    <rect x="20" y="270" width="160" height="35" rx="4" fill="#d1fae5"/>
+    <text x="100" y="293" text-anchor="middle" class="note">Configurable concurrency</text>
+  </g>
+
+  <!-- ===== PHASE 4: BROWSER EXECUTION ===== -->
+  <g transform="translate(700, 90)">
+    <rect width="230" height="320" rx="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="115" y="25" text-anchor="middle" class="phase-title" fill="#8b5cf6">4. Browser Execution</text>
+
+    <!-- Playwright -->
+    <rect x="20" y="45" width="190" height="55" rx="6" fill="url(#browserGrad)"/>
+    <text x="115" y="70" text-anchor="middle" class="step-title">Playwright Context</text>
+    <text x="115" y="85" text-anchor="middle" class="step-desc">Browser launch &amp; context</text>
+
+    <!-- Parallel browsers -->
+    <rect x="20" y="115" width="55" height="60" rx="6" fill="url(#browserGrad)"/>
+    <text x="47" y="145" text-anchor="middle" class="step-title">Chrome</text>
+
+    <rect x="87" y="115" width="55" height="60" rx="6" fill="url(#browserGrad)"/>
+    <text x="114" y="145" text-anchor="middle" class="step-title">Firefox</text>
+
+    <rect x="155" y="115" width="55" height="60" rx="6" fill="url(#browserGrad)"/>
+    <text x="182" y="145" text-anchor="middle" class="step-title">WebKit</text>
+
+    <!-- Test Runner -->
+    <rect x="20" y="190" width="190" height="55" rx="6" fill="url(#browserGrad)"/>
+    <text x="115" y="215" text-anchor="middle" class="step-title">Test Runner</text>
+    <text x="115" y="230" text-anchor="middle" class="step-desc">Execute steps sequentially</text>
+
+    <!-- Assertions -->
+    <rect x="20" y="260" width="190" height="45" rx="6" fill="#ddd6fe"/>
+    <text x="115" y="280" text-anchor="middle" class="label">Actions | Assertions | Screenshots</text>
+    <text x="115" y="295" text-anchor="middle" class="note">Each step logged with timing</text>
+  </g>
+
+  <!-- ===== PHASE 5: STORAGE ===== -->
+  <g transform="translate(960, 90)">
+    <rect width="210" height="320" rx="8" fill="#fdf2f8" stroke="#ec4899" stroke-width="2"/>
+    <text x="105" y="25" text-anchor="middle" class="phase-title" fill="#ec4899">5. Artifact Storage</text>
+
+    <!-- Screenshots -->
+    <rect x="20" y="45" width="170" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="105" y="70" text-anchor="middle" class="step-title">Screenshots</text>
+    <text x="105" y="85" text-anchor="middle" class="step-desc">PNG to MinIO</text>
+
+    <!-- Traces -->
+    <rect x="20" y="105" width="170" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="105" y="130" text-anchor="middle" class="step-title">Trace Files</text>
+    <text x="105" y="145" text-anchor="middle" class="step-desc">Playwright traces</text>
+
+    <!-- Videos -->
+    <rect x="20" y="165" width="170" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="105" y="190" text-anchor="middle" class="step-title">Videos</text>
+    <text x="105" y="205" text-anchor="middle" class="step-desc">Test recordings</text>
+
+    <!-- Logs -->
+    <rect x="20" y="225" width="170" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="105" y="250" text-anchor="middle" class="step-title">Console Logs</text>
+    <text x="105" y="265" text-anchor="middle" class="step-desc">Browser console output</text>
+
+    <!-- S3 note -->
+    <rect x="20" y="290" width="170" height="25" rx="4" fill="#fce7f3"/>
+    <text x="105" y="308" text-anchor="middle" class="note">S3-compatible (MinIO)</text>
+  </g>
+
+  <!-- ===== PHASE 6: RESULTS ===== -->
+  <g transform="translate(30, 450)">
+    <rect width="400" height="180" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+    <text x="200" y="25" text-anchor="middle" class="phase-title" fill="#22c55e">6. Results Recording</text>
+
+    <!-- PostgreSQL -->
+    <rect x="20" y="50" width="110" height="60" rx="6" fill="url(#workerGrad)"/>
+    <text x="75" y="80" text-anchor="middle" class="step-title">PostgreSQL</text>
+    <text x="75" y="95" text-anchor="middle" class="step-desc">test_results</text>
+
+    <!-- Step results -->
+    <rect x="145" y="50" width="110" height="60" rx="6" fill="url(#workerGrad)"/>
+    <text x="200" y="80" text-anchor="middle" class="step-title">Step Results</text>
+    <text x="200" y="95" text-anchor="middle" class="step-desc">JSONB</text>
+
+    <!-- Metrics -->
+    <rect x="270" y="50" width="110" height="60" rx="6" fill="url(#workerGrad)"/>
+    <text x="325" y="80" text-anchor="middle" class="step-title">Metrics</text>
+    <text x="325" y="95" text-anchor="middle" class="step-desc">Duration, flakiness</text>
+
+    <!-- Recorded data -->
+    <rect x="20" y="125" width="360" height="40" rx="4" fill="#dcfce7"/>
+    <text x="200" y="150" text-anchor="middle" class="label">status | duration_ms | error_message | step_results[] | artifact_urls[]</text>
+  </g>
+
+  <!-- ===== PHASE 7: NOTIFICATIONS ===== -->
+  <g transform="translate(460, 450)">
+    <rect width="350" height="180" rx="8" fill="#ecfeff" stroke="#06b6d4" stroke-width="2"/>
+    <text x="175" y="25" text-anchor="middle" class="phase-title" fill="#06b6d4">7. Notifications</text>
+
+    <!-- WebSocket -->
+    <rect x="20" y="50" width="100" height="55" rx="6" fill="url(#notifyGrad)"/>
+    <text x="70" y="75" text-anchor="middle" class="step-title">WebSocket</text>
+    <text x="70" y="90" text-anchor="middle" class="step-desc">Real-time UI</text>
+
+    <!-- Slack -->
+    <rect x="130" y="50" width="100" height="55" rx="6" fill="url(#notifyGrad)"/>
+    <text x="180" y="75" text-anchor="middle" class="step-title">Slack</text>
+    <text x="180" y="90" text-anchor="middle" class="step-desc">Alert channels</text>
+
+    <!-- Webhook -->
+    <rect x="240" y="50" width="100" height="55" rx="6" fill="url(#notifyGrad)"/>
+    <text x="290" y="75" text-anchor="middle" class="step-title">Webhooks</text>
+    <text x="290" y="90" text-anchor="middle" class="step-desc">CI/CD callback</text>
+
+    <!-- Events -->
+    <rect x="20" y="120" width="320" height="45" rx="4" fill="#cffafe"/>
+    <text x="180" y="140" text-anchor="middle" class="label">Events: test:started | step:progress | test:completed | test:failed</text>
+    <text x="180" y="155" text-anchor="middle" class="note">Broadcast via Redis pub/sub</text>
+  </g>
+
+  <!-- ===== PHASE 8: COMPLETION ===== -->
+  <g transform="translate(840, 450)">
+    <rect width="330" height="180" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+    <text x="165" y="25" text-anchor="middle" class="phase-title" fill="#ef4444">8. Run Completion</text>
+
+    <!-- Status update -->
+    <rect x="20" y="50" width="140" height="55" rx="6" fill="#f87171"/>
+    <text x="90" y="75" text-anchor="middle" class="step-title">Update Status</text>
+    <text x="90" y="90" text-anchor="middle" class="step-desc">passed | failed</text>
+
+    <!-- Cleanup -->
+    <rect x="170" y="50" width="140" height="55" rx="6" fill="#fca5a5"/>
+    <text x="240" y="75" text-anchor="middle" class="step-title">Cleanup</text>
+    <text x="240" y="90" text-anchor="middle" class="step-desc">Browser contexts</text>
+
+    <!-- Final stats -->
+    <rect x="20" y="120" width="290" height="45" rx="4" fill="#fee2e2"/>
+    <text x="165" y="140" text-anchor="middle" class="label">Final: pass_count | fail_count | duration_ms | completed_at</text>
+    <text x="165" y="155" text-anchor="middle" class="note">Job removed from queue</text>
+  </g>
+
+  <!-- ===== FLOW ARROWS ===== -->
+  <!-- Triggers to Queue -->
+  <path d="M210 250 L240 250" class="arrow"/>
+
+  <!-- Queue to Workers -->
+  <path d="M440 250 L470 250" class="arrow"/>
+
+  <!-- Workers to Browsers -->
+  <path d="M670 250 L700 250" class="arrow"/>
+
+  <!-- Browsers to Storage -->
+  <path d="M930 250 L960 250" class="arrow"/>
+
+  <!-- Storage down to Results -->
+  <path d="M1065 410 L1065 430 L400 430 L400 450" class="arrow"/>
+
+  <!-- Results to Notifications -->
+  <path d="M430 540 L460 540" class="arrow"/>
+
+  <!-- Notifications to Completion -->
+  <path d="M810 540 L840 540" class="arrow"/>
+
+  <!-- Parallel execution indicator -->
+  <g transform="translate(700, 420)">
+    <rect width="230" height="25" rx="4" fill="#f3e8ff" stroke="#8b5cf6" stroke-dasharray="5,3"/>
+    <text x="115" y="17" text-anchor="middle" class="note" fill="#8b5cf6">Parallel execution across browsers</text>
+  </g>
+
+  <!-- ===== TIMELINE ===== -->
+  <g transform="translate(30, 670)">
+    <rect width="1140" height="80" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1"/>
+    <text x="570" y="25" text-anchor="middle" class="phase-title">Typical Timeline</text>
+
+    <!-- Timeline bar -->
+    <rect x="50" y="45" width="1040" height="8" rx="4" fill="#e2e8f0"/>
+
+    <!-- Phase markers -->
+    <circle cx="80" cy="49" r="8" fill="#3b82f6"/>
+    <text x="80" y="72" text-anchor="middle" class="note">0s</text>
+
+    <circle cx="200" cy="49" r="8" fill="#f59e0b"/>
+    <text x="200" y="72" text-anchor="middle" class="note">~100ms</text>
+
+    <circle cx="400" cy="49" r="8" fill="#10b981"/>
+    <text x="400" y="72" text-anchor="middle" class="note">~200ms</text>
+
+    <circle cx="600" cy="49" r="8" fill="#8b5cf6"/>
+    <text x="600" y="72" text-anchor="middle" class="note">1-60s</text>
+
+    <circle cx="850" cy="49" r="8" fill="#ec4899"/>
+    <text x="850" y="72" text-anchor="middle" class="note">+500ms</text>
+
+    <circle cx="1060" cy="49" r="8" fill="#ef4444"/>
+    <text x="1060" y="72" text-anchor="middle" class="note">Done</text>
+
+    <!-- Phase labels -->
+    <text x="80" y="38" text-anchor="middle" class="label">Trigger</text>
+    <text x="200" y="38" text-anchor="middle" class="label">Queue</text>
+    <text x="400" y="38" text-anchor="middle" class="label">Worker</text>
+    <text x="600" y="38" text-anchor="middle" class="label">Execute</text>
+    <text x="850" y="38" text-anchor="middle" class="label">Store</text>
+    <text x="1060" y="38" text-anchor="middle" class="label">Complete</text>
+  </g>
+
+  <!-- ===== LEGEND ===== -->
+  <g transform="translate(30, 770)">
+    <text x="0" y="15" class="phase-title">Legend:</text>
+
+    <rect x="100" y="5" width="20" height="15" fill="url(#triggerGrad)" rx="2"/>
+    <text x="125" y="17" class="label">Trigger</text>
+
+    <rect x="200" y="5" width="20" height="15" fill="url(#queueGrad)" rx="2"/>
+    <text x="225" y="17" class="label">Queue</text>
+
+    <rect x="290" y="5" width="20" height="15" fill="url(#workerGrad)" rx="2"/>
+    <text x="315" y="17" class="label">Worker</text>
+
+    <rect x="380" y="5" width="20" height="15" fill="url(#browserGrad)" rx="2"/>
+    <text x="405" y="17" class="label">Browser</text>
+
+    <rect x="480" y="5" width="20" height="15" fill="url(#storageGrad)" rx="2"/>
+    <text x="505" y="17" class="label">Storage</text>
+
+    <rect x="580" y="5" width="20" height="15" fill="url(#notifyGrad)" rx="2"/>
+    <text x="605" y="17" class="label">Notify</text>
+
+    <line x1="700" y1="12" x2="750" y2="12" class="arrow"/>
+    <text x="760" y="17" class="label">Sequential</text>
+
+    <line x1="850" y1="12" x2="900" y2="12" class="parallel-arrow" stroke-dasharray="5,3"/>
+    <text x="910" y="17" class="label">Parallel</text>
+  </g>
+
+  <!-- Version info -->
+  <text x="1150" y="830" text-anchor="end" class="subtitle">QA Guardian v1.0 - Test Execution Pipeline</text>
+</svg>

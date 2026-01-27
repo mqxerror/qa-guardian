@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <defs>
+    <style>
+      .title { font: bold 24px sans-serif; fill: #1a1a2e; }
+      .subtitle { font: 14px sans-serif; fill: #666; }
+      .layer-title { font: bold 16px sans-serif; fill: #333; }
+      .component-title { font: bold 12px sans-serif; fill: #fff; }
+      .component-desc { font: 10px sans-serif; fill: #fff; opacity: 0.9; }
+      .label { font: 11px sans-serif; fill: #333; }
+      .arrow { stroke: #666; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .dashed { stroke-dasharray: 5,5; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+    <!-- Gradients -->
+    <linearGradient id="frontendGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+    <linearGradient id="backendGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="dbGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="runnerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="integrationGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#db2777"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="800" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <text x="600" y="40" text-anchor="middle" class="title">QA Guardian System Architecture</text>
+  <text x="600" y="62" text-anchor="middle" class="subtitle">Enterprise QA Automation Platform</text>
+
+  <!-- Frontend Layer -->
+  <g transform="translate(50, 90)">
+    <rect width="300" height="180" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="150" y="25" text-anchor="middle" class="layer-title" fill="#3b82f6">Frontend Layer</text>
+
+    <!-- React App -->
+    <rect x="20" y="40" width="120" height="60" rx="6" fill="url(#frontendGrad)"/>
+    <text x="80" y="65" text-anchor="middle" class="component-title">React 18+</text>
+    <text x="80" y="80" text-anchor="middle" class="component-desc">TypeScript + Vite</text>
+
+    <!-- UI Components -->
+    <rect x="160" y="40" width="120" height="60" rx="6" fill="url(#frontendGrad)"/>
+    <text x="220" y="65" text-anchor="middle" class="component-title">UI Components</text>
+    <text x="220" y="80" text-anchor="middle" class="component-desc">Tailwind + Radix</text>
+
+    <!-- State Management -->
+    <rect x="20" y="110" width="120" height="50" rx="6" fill="url(#frontendGrad)"/>
+    <text x="80" y="135" text-anchor="middle" class="component-title">State</text>
+    <text x="80" y="150" text-anchor="middle" class="component-desc">TanStack + Zustand</text>
+
+    <!-- Real-time -->
+    <rect x="160" y="110" width="120" height="50" rx="6" fill="url(#frontendGrad)"/>
+    <text x="220" y="135" text-anchor="middle" class="component-title">Real-time</text>
+    <text x="220" y="150" text-anchor="middle" class="component-desc">Socket.IO Client</text>
+  </g>
+
+  <!-- Backend Layer -->
+  <g transform="translate(400, 90)">
+    <rect width="350" height="180" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+    <text x="175" y="25" text-anchor="middle" class="layer-title" fill="#10b981">Backend Layer</text>
+
+    <!-- API Server -->
+    <rect x="20" y="40" width="100" height="60" rx="6" fill="url(#backendGrad)"/>
+    <text x="70" y="65" text-anchor="middle" class="component-title">API Server</text>
+    <text x="70" y="80" text-anchor="middle" class="component-desc">Express.js</text>
+
+    <!-- WebSocket -->
+    <rect x="130" y="40" width="100" height="60" rx="6" fill="url(#backendGrad)"/>
+    <text x="180" y="65" text-anchor="middle" class="component-title">WebSocket</text>
+    <text x="180" y="80" text-anchor="middle" class="component-desc">Socket.IO</text>
+
+    <!-- Job Queue -->
+    <rect x="240" y="40" width="100" height="60" rx="6" fill="url(#backendGrad)"/>
+    <text x="290" y="65" text-anchor="middle" class="component-title">Job Queue</text>
+    <text x="290" y="80" text-anchor="middle" class="component-desc">BullMQ</text>
+
+    <!-- Auth -->
+    <rect x="20" y="110" width="100" height="50" rx="6" fill="url(#backendGrad)"/>
+    <text x="70" y="135" text-anchor="middle" class="component-title">Auth</text>
+    <text x="70" y="150" text-anchor="middle" class="component-desc">JWT + OAuth</text>
+
+    <!-- MCP Server -->
+    <rect x="130" y="110" width="100" height="50" rx="6" fill="url(#backendGrad)"/>
+    <text x="180" y="135" text-anchor="middle" class="component-title">MCP Server</text>
+    <text x="180" y="150" text-anchor="middle" class="component-desc">AI Agent API</text>
+
+    <!-- Workers -->
+    <rect x="240" y="110" width="100" height="50" rx="6" fill="url(#backendGrad)"/>
+    <text x="290" y="135" text-anchor="middle" class="component-title">Workers</text>
+    <text x="290" y="150" text-anchor="middle" class="component-desc">Docker</text>
+  </g>
+
+  <!-- Database Layer -->
+  <g transform="translate(800, 90)">
+    <rect width="350" height="180" rx="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="175" y="25" text-anchor="middle" class="layer-title" fill="#8b5cf6">Data Layer</text>
+
+    <!-- PostgreSQL -->
+    <rect x="20" y="40" width="100" height="60" rx="6" fill="url(#dbGrad)"/>
+    <text x="70" y="65" text-anchor="middle" class="component-title">PostgreSQL</text>
+    <text x="70" y="80" text-anchor="middle" class="component-desc">Primary DB</text>
+
+    <!-- Redis -->
+    <rect x="130" y="40" width="100" height="60" rx="6" fill="url(#dbGrad)"/>
+    <text x="180" y="65" text-anchor="middle" class="component-title">Redis</text>
+    <text x="180" y="80" text-anchor="middle" class="component-desc">Cache + Queue</text>
+
+    <!-- MinIO -->
+    <rect x="240" y="40" width="100" height="60" rx="6" fill="url(#dbGrad)"/>
+    <text x="290" y="65" text-anchor="middle" class="component-title">MinIO/S3</text>
+    <text x="290" y="80" text-anchor="middle" class="component-desc">Artifacts</text>
+
+    <!-- Data types -->
+    <rect x="20" y="110" width="320" height="50" rx="6" fill="#ddd6fe" stroke="#8b5cf6"/>
+    <text x="180" y="135" text-anchor="middle" class="label">Tests | Results | Screenshots | Traces | Videos</text>
+  </g>
+
+  <!-- Test Runners Layer -->
+  <g transform="translate(50, 320)">
+    <rect width="500" height="150" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+    <text x="250" y="25" text-anchor="middle" class="layer-title" fill="#f59e0b">Test Execution Engines</text>
+
+    <!-- Playwright -->
+    <rect x="20" y="45" width="105" height="80" rx="6" fill="url(#runnerGrad)"/>
+    <text x="72" y="75" text-anchor="middle" class="component-title">Playwright</text>
+    <text x="72" y="90" text-anchor="middle" class="component-desc">E2E Testing</text>
+    <text x="72" y="105" text-anchor="middle" class="component-desc">Cross-browser</text>
+
+    <!-- K6 -->
+    <rect x="140" y="45" width="105" height="80" rx="6" fill="url(#runnerGrad)"/>
+    <text x="192" y="75" text-anchor="middle" class="component-title">K6</text>
+    <text x="192" y="90" text-anchor="middle" class="component-desc">Load Testing</text>
+    <text x="192" y="105" text-anchor="middle" class="component-desc">Performance</text>
+
+    <!-- Lighthouse -->
+    <rect x="260" y="45" width="105" height="80" rx="6" fill="url(#runnerGrad)"/>
+    <text x="312" y="75" text-anchor="middle" class="component-title">Lighthouse</text>
+    <text x="312" y="90" text-anchor="middle" class="component-desc">Performance</text>
+    <text x="312" y="105" text-anchor="middle" class="component-desc">Core Web Vitals</text>
+
+    <!-- axe-core -->
+    <rect x="380" y="45" width="105" height="80" rx="6" fill="url(#runnerGrad)"/>
+    <text x="432" y="75" text-anchor="middle" class="component-title">axe-core</text>
+    <text x="432" y="90" text-anchor="middle" class="component-desc">Accessibility</text>
+    <text x="432" y="105" text-anchor="middle" class="component-desc">WCAG Testing</text>
+  </g>
+
+  <!-- External Integrations -->
+  <g transform="translate(600, 320)">
+    <rect width="550" height="150" rx="8" fill="#fdf2f8" stroke="#ec4899" stroke-width="2"/>
+    <text x="275" y="25" text-anchor="middle" class="layer-title" fill="#ec4899">External Integrations</text>
+
+    <!-- GitHub -->
+    <rect x="20" y="45" width="100" height="80" rx="6" fill="url(#integrationGrad)"/>
+    <text x="70" y="75" text-anchor="middle" class="component-title">GitHub</text>
+    <text x="70" y="90" text-anchor="middle" class="component-desc">Repo Sync</text>
+    <text x="70" y="105" text-anchor="middle" class="component-desc">OAuth</text>
+
+    <!-- Slack -->
+    <rect x="135" y="45" width="100" height="80" rx="6" fill="url(#integrationGrad)"/>
+    <text x="185" y="75" text-anchor="middle" class="component-title">Slack</text>
+    <text x="185" y="90" text-anchor="middle" class="component-desc">Notifications</text>
+    <text x="185" y="105" text-anchor="middle" class="component-desc">Alerts</text>
+
+    <!-- Webhooks -->
+    <rect x="250" y="45" width="100" height="80" rx="6" fill="url(#integrationGrad)"/>
+    <text x="300" y="75" text-anchor="middle" class="component-title">Webhooks</text>
+    <text x="300" y="90" text-anchor="middle" class="component-desc">CI/CD</text>
+    <text x="300" y="105" text-anchor="middle" class="component-desc">Custom</text>
+
+    <!-- Claude Code -->
+    <rect x="365" y="45" width="100" height="80" rx="6" fill="url(#integrationGrad)"/>
+    <text x="415" y="75" text-anchor="middle" class="component-title">Claude Code</text>
+    <text x="415" y="90" text-anchor="middle" class="component-desc">MCP Protocol</text>
+    <text x="415" y="105" text-anchor="middle" class="component-desc">AI Agents</text>
+
+    <!-- Google OAuth -->
+    <rect x="480" y="45" width="55" height="80" rx="6" fill="url(#integrationGrad)"/>
+    <text x="507" y="75" text-anchor="middle" class="component-title">Google</text>
+    <text x="507" y="90" text-anchor="middle" class="component-desc">OAuth</text>
+    <text x="507" y="105" text-anchor="middle" class="component-desc">SSO</text>
+  </g>
+
+  <!-- Browser Targets -->
+  <g transform="translate(50, 520)">
+    <rect width="300" height="100" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+    <text x="150" y="25" text-anchor="middle" class="layer-title" fill="#64748b">Browser Targets</text>
+
+    <rect x="20" y="45" width="80" height="40" rx="4" fill="#64748b"/>
+    <text x="60" y="70" text-anchor="middle" class="component-title">Chromium</text>
+
+    <rect x="110" y="45" width="80" height="40" rx="4" fill="#64748b"/>
+    <text x="150" y="70" text-anchor="middle" class="component-title">Firefox</text>
+
+    <rect x="200" y="45" width="80" height="40" rx="4" fill="#64748b"/>
+    <text x="240" y="70" text-anchor="middle" class="component-title">WebKit</text>
+  </g>
+
+  <!-- Users -->
+  <g transform="translate(400, 520)">
+    <rect width="350" height="100" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+    <text x="175" y="25" text-anchor="middle" class="layer-title" fill="#64748b">User Roles</text>
+
+    <rect x="15" y="45" width="75" height="40" rx="4" fill="#64748b"/>
+    <text x="52" y="70" text-anchor="middle" class="component-title">Owner</text>
+
+    <rect x="100" y="45" width="75" height="40" rx="4" fill="#64748b"/>
+    <text x="137" y="70" text-anchor="middle" class="component-title">Admin</text>
+
+    <rect x="185" y="45" width="75" height="40" rx="4" fill="#64748b"/>
+    <text x="222" y="70" text-anchor="middle" class="component-title">Developer</text>
+
+    <rect x="270" y="45" width="65" height="40" rx="4" fill="#64748b"/>
+    <text x="302" y="70" text-anchor="middle" class="component-title">Viewer</text>
+  </g>
+
+  <!-- Data Flow -->
+  <g transform="translate(800, 520)">
+    <rect width="350" height="100" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+    <text x="175" y="25" text-anchor="middle" class="layer-title" fill="#64748b">Communication</text>
+
+    <rect x="20" y="45" width="100" height="40" rx="4" fill="#64748b"/>
+    <text x="70" y="70" text-anchor="middle" class="component-title">REST API</text>
+
+    <rect x="130" y="45" width="100" height="40" rx="4" fill="#64748b"/>
+    <text x="180" y="70" text-anchor="middle" class="component-title">WebSocket</text>
+
+    <rect x="240" y="45" width="100" height="40" rx="4" fill="#64748b"/>
+    <text x="290" y="70" text-anchor="middle" class="component-title">MCP</text>
+  </g>
+
+  <!-- Connection arrows -->
+  <!-- Frontend to Backend -->
+  <path d="M350 180 L400 180" class="arrow"/>
+
+  <!-- Backend to Database -->
+  <path d="M750 180 L800 180" class="arrow"/>
+
+  <!-- Backend to Test Runners -->
+  <path d="M575 270 L575 320" class="arrow"/>
+  <path d="M575 320 L300 320" class="arrow"/>
+
+  <!-- Backend to External -->
+  <path d="M625 270 L625 320" class="arrow"/>
+  <path d="M625 320 L875 320" class="arrow"/>
+
+  <!-- Test Runners to Browsers -->
+  <path d="M200 470 L200 520" class="arrow"/>
+
+  <!-- Legend -->
+  <g transform="translate(50, 660)">
+    <text x="0" y="0" class="layer-title">Legend:</text>
+    <rect x="0" y="15" width="20" height="15" fill="url(#frontendGrad)"/>
+    <text x="25" y="27" class="label">Frontend</text>
+    <rect x="100" y="15" width="20" height="15" fill="url(#backendGrad)"/>
+    <text x="125" y="27" class="label">Backend</text>
+    <rect x="200" y="15" width="20" height="15" fill="url(#dbGrad)"/>
+    <text x="225" y="27" class="label">Data</text>
+    <rect x="280" y="15" width="20" height="15" fill="url(#runnerGrad)"/>
+    <text x="305" y="27" class="label">Test Runners</text>
+    <rect x="410" y="15" width="20" height="15" fill="url(#integrationGrad)"/>
+    <text x="435" y="27" class="label">Integrations</text>
+  </g>
+
+  <!-- Version info -->
+  <text x="1150" y="780" text-anchor="end" class="subtitle">QA Guardian v1.0 - Phase 1</text>
+</svg>

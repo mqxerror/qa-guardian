@@ -1,0 +1,33 @@
+{
+  "suite": {
+    "name": "Smoke Test Suite",
+    "description": "Basic smoke tests",
+    "browser": "chromium",
+    "viewport_width": 1280,
+    "viewport_height": 720,
+    "timeout": 30,
+    "retry_count": 0
+  },
+  "tests": [
+    {
+      "name": "Homepage Load Test",
+      "description": "Verify homepage loads correctly",
+      "steps": [],
+      "status": "draft"
+    },
+    {
+      "name": "Login Page Verification",
+      "description": "Check login page elements",
+      "steps": [],
+      "status": "draft"
+    },
+    {
+      "name": "K6 Folding Test",
+      "description": "Test for code folding",
+      "steps": [],
+      "status": "draft"
+    }
+  ],
+  "exported_at": "2026-01-14T22:15:15.402Z",
+  "version": "1.0"
+}

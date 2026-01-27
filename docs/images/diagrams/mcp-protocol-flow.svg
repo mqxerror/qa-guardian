@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750">
+  <defs>
+    <style>
+      .title { font: bold 24px sans-serif; fill: #1a1a2e; }
+      .subtitle { font: 14px sans-serif; fill: #666; }
+      .section-title { font: bold 16px sans-serif; fill: #333; }
+      .component-title { font: bold 12px sans-serif; fill: #fff; }
+      .component-desc { font: 10px sans-serif; fill: #fff; opacity: 0.9; }
+      .label { font: 11px sans-serif; fill: #333; }
+      .note { font: 10px sans-serif; fill: #666; font-style: italic; }
+      .code { font: 10px monospace; fill: #333; }
+      .arrow { stroke: #64748b; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .bidirectional { stroke: #3b82f6; stroke-width: 2; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="arrowhead-both" markerWidth="10" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <polygon points="0 3.5, 5 0, 10 3.5, 5 7" fill="#3b82f6"/>
+    </marker>
+    <linearGradient id="clientGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="transportGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+    <linearGradient id="serverGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="toolGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="apiGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#db2777"/>
+    </linearGradient>
+    <linearGradient id="authGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#dc2626"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="750" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <text x="600" y="40" text-anchor="middle" class="title">MCP Protocol Flow</text>
+  <text x="600" y="62" text-anchor="middle" class="subtitle">Model Context Protocol Integration with QA Guardian</text>
+
+  <!-- ===== AI AGENT CLIENT ===== -->
+  <g transform="translate(30, 90)">
+    <rect width="280" height="280" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+    <text x="140" y="25" text-anchor="middle" class="section-title" fill="#f59e0b">AI Agent (Client)</text>
+
+    <!-- Claude Code -->
+    <rect x="20" y="45" width="240" height="60" rx="6" fill="url(#clientGrad)"/>
+    <text x="140" y="75" text-anchor="middle" class="component-title">Claude Code / AI Agent</text>
+    <text x="140" y="90" text-anchor="middle" class="component-desc">Anthropic MCP SDK</text>
+
+    <!-- MCP Client -->
+    <rect x="20" y="115" width="240" height="50" rx="6" fill="url(#clientGrad)"/>
+    <text x="140" y="140" text-anchor="middle" class="component-title">MCP Client</text>
+    <text x="140" y="155" text-anchor="middle" class="component-desc">Protocol handler</text>
+
+    <!-- Request types -->
+    <rect x="20" y="175" width="240" height="85" rx="4" fill="#fef3c7"/>
+    <text x="140" y="195" text-anchor="middle" class="label" style="font-weight:bold;">Request Types:</text>
+    <text x="30" y="215" class="code">tools/list</text>
+    <text x="30" y="230" class="code">tools/call</text>
+    <text x="30" y="245" class="code">resources/list</text>
+    <text x="150" y="215" class="code">resources/read</text>
+    <text x="150" y="230" class="code">prompts/list</text>
+    <text x="150" y="245" class="code">prompts/get</text>
+  </g>
+
+  <!-- ===== TRANSPORT LAYER ===== -->
+  <g transform="translate(350, 90)">
+    <rect width="200" height="280" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="100" y="25" text-anchor="middle" class="section-title" fill="#3b82f6">Transport Layer</text>
+
+    <!-- stdio -->
+    <rect x="20" y="50" width="160" height="70" rx="6" fill="url(#transportGrad)"/>
+    <text x="100" y="80" text-anchor="middle" class="component-title">stdio Transport</text>
+    <text x="100" y="95" text-anchor="middle" class="component-desc">stdin/stdout pipes</text>
+    <text x="100" y="110" text-anchor="middle" class="component-desc">Local process</text>
+
+    <!-- SSE -->
+    <rect x="20" y="130" width="160" height="70" rx="6" fill="url(#transportGrad)"/>
+    <text x="100" y="160" text-anchor="middle" class="component-title">SSE Transport</text>
+    <text x="100" y="175" text-anchor="middle" class="component-desc">Server-Sent Events</text>
+    <text x="100" y="190" text-anchor="middle" class="component-desc">HTTP streaming</text>
+
+    <!-- JSON-RPC -->
+    <rect x="20" y="215" width="160" height="50" rx="4" fill="#dbeafe"/>
+    <text x="100" y="235" text-anchor="middle" class="label" style="font-weight:bold;">Protocol</text>
+    <text x="100" y="252" text-anchor="middle" class="code">JSON-RPC 2.0</text>
+  </g>
+
+  <!-- ===== MCP SERVER ===== -->
+  <g transform="translate(590, 90)">
+    <rect width="280" height="280" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+    <text x="140" y="25" text-anchor="middle" class="section-title" fill="#10b981">MCP Server</text>
+
+    <!-- Server Core -->
+    <rect x="20" y="45" width="240" height="50" rx="6" fill="url(#serverGrad)"/>
+    <text x="140" y="70" text-anchor="middle" class="component-title">QA Guardian MCP Server</text>
+    <text x="140" y="85" text-anchor="middle" class="component-desc">@modelcontextprotocol/sdk</text>
+
+    <!-- Auth Middleware -->
+    <rect x="20" y="105" width="115" height="50" rx="6" fill="url(#authGrad)"/>
+    <text x="77" y="130" text-anchor="middle" class="component-title">Auth</text>
+    <text x="77" y="145" text-anchor="middle" class="component-desc">API Key check</text>
+
+    <!-- Rate Limiter -->
+    <rect x="145" y="105" width="115" height="50" rx="6" fill="url(#authGrad)"/>
+    <text x="202" y="130" text-anchor="middle" class="component-title">Rate Limit</text>
+    <text x="202" y="145" text-anchor="middle" class="component-desc">Scoped limits</text>
+
+    <!-- Request Router -->
+    <rect x="20" y="165" width="240" height="50" rx="6" fill="url(#serverGrad)"/>
+    <text x="140" y="190" text-anchor="middle" class="component-title">Request Router</text>
+    <text x="140" y="205" text-anchor="middle" class="component-desc">Route to handlers</text>
+
+    <!-- Scopes -->
+    <rect x="20" y="225" width="240" height="45" rx="4" fill="#d1fae5"/>
+    <text x="140" y="245" text-anchor="middle" class="label" style="font-weight:bold;">Required Scopes:</text>
+    <text x="140" y="262" text-anchor="middle" class="code">mcp | mcp:read | mcp:write | mcp:execute</text>
+  </g>
+
+  <!-- ===== TOOL HANDLERS ===== -->
+  <g transform="translate(910, 90)">
+    <rect width="260" height="280" rx="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="130" y="25" text-anchor="middle" class="section-title" fill="#8b5cf6">Tool Handlers</text>
+
+    <!-- trigger-test-run -->
+    <rect x="15" y="45" width="110" height="50" rx="6" fill="url(#toolGrad)"/>
+    <text x="70" y="70" text-anchor="middle" class="component-title">trigger-test-run</text>
+    <text x="70" y="85" text-anchor="middle" class="component-desc">Start suite</text>
+
+    <!-- get-run-status -->
+    <rect x="135" y="45" width="110" height="50" rx="6" fill="url(#toolGrad)"/>
+    <text x="190" y="70" text-anchor="middle" class="component-title">get-run-status</text>
+    <text x="190" y="85" text-anchor="middle" class="component-desc">Check progress</text>
+
+    <!-- get-test-results -->
+    <rect x="15" y="105" width="110" height="50" rx="6" fill="url(#toolGrad)"/>
+    <text x="70" y="130" text-anchor="middle" class="component-title">get-test-results</text>
+    <text x="70" y="145" text-anchor="middle" class="component-desc">Fetch results</text>
+
+    <!-- cancel-test-run -->
+    <rect x="135" y="105" width="110" height="50" rx="6" fill="url(#toolGrad)"/>
+    <text x="190" y="130" text-anchor="middle" class="component-title">cancel-test-run</text>
+    <text x="190" y="145" text-anchor="middle" class="component-desc">Stop execution</text>
+
+    <!-- list-projects -->
+    <rect x="15" y="165" width="110" height="50" rx="6" fill="url(#toolGrad)"/>
+    <text x="70" y="190" text-anchor="middle" class="component-title">list-projects</text>
+    <text x="70" y="205" text-anchor="middle" class="component-desc">Get projects</text>
+
+    <!-- list-suites -->
+    <rect x="135" y="165" width="110" height="50" rx="6" fill="url(#toolGrad)"/>
+    <text x="190" y="190" text-anchor="middle" class="component-title">list-suites</text>
+    <text x="190" y="205" text-anchor="middle" class="component-desc">Get test suites</text>
+
+    <!-- Tool schemas -->
+    <rect x="15" y="225" width="230" height="45" rx="4" fill="#ede9fe"/>
+    <text x="130" y="245" text-anchor="middle" class="label" style="font-weight:bold;">Input Schema</text>
+    <text x="130" y="262" text-anchor="middle" class="note">JSON Schema validation</text>
+  </g>
+
+  <!-- ===== INTERNAL API ===== -->
+  <g transform="translate(30, 400)">
+    <rect width="400" height="160" rx="8" fill="#fdf2f8" stroke="#ec4899" stroke-width="2"/>
+    <text x="200" y="25" text-anchor="middle" class="section-title" fill="#ec4899">Internal API Layer</text>
+
+    <!-- Test Service -->
+    <rect x="20" y="50" width="110" height="50" rx="6" fill="url(#apiGrad)"/>
+    <text x="75" y="75" text-anchor="middle" class="component-title">Test Service</text>
+    <text x="75" y="90" text-anchor="middle" class="component-desc">Business logic</text>
+
+    <!-- Run Service -->
+    <rect x="145" y="50" width="110" height="50" rx="6" fill="url(#apiGrad)"/>
+    <text x="200" y="75" text-anchor="middle" class="component-title">Run Service</text>
+    <text x="200" y="90" text-anchor="middle" class="component-desc">Execution mgmt</text>
+
+    <!-- Results Service -->
+    <rect x="270" y="50" width="110" height="50" rx="6" fill="url(#apiGrad)"/>
+    <text x="325" y="75" text-anchor="middle" class="component-title">Results Service</text>
+    <text x="325" y="90" text-anchor="middle" class="component-desc">Data queries</text>
+
+    <!-- Note -->
+    <rect x="20" y="115" width="360" height="30" rx="4" fill="#fce7f3"/>
+    <text x="200" y="135" text-anchor="middle" class="note">Same services used by REST API - unified business logic</text>
+  </g>
+
+  <!-- ===== AUTHENTICATION FLOW ===== -->
+  <g transform="translate(470, 400)">
+    <rect width="350" height="160" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+    <text x="175" y="25" text-anchor="middle" class="section-title" fill="#ef4444">Authentication Flow</text>
+
+    <!-- Steps -->
+    <rect x="20" y="50" width="65" height="40" rx="4" fill="#fecaca"/>
+    <text x="52" y="75" text-anchor="middle" class="label">1. Connect</text>
+
+    <rect x="95" y="50" width="75" height="40" rx="4" fill="#fecaca"/>
+    <text x="132" y="75" text-anchor="middle" class="label">2. API Key</text>
+
+    <rect x="180" y="50" width="80" height="40" rx="4" fill="#fecaca"/>
+    <text x="220" y="75" text-anchor="middle" class="label">3. Validate</text>
+
+    <rect x="270" y="50" width="60" height="40" rx="4" fill="#fecaca"/>
+    <text x="300" y="75" text-anchor="middle" class="label">4. Scopes</text>
+
+    <!-- Arrows -->
+    <path d="M85 70 L95 70" class="arrow"/>
+    <path d="M170 70 L180 70" class="arrow"/>
+    <path d="M260 70 L270 70" class="arrow"/>
+
+    <!-- API Key format -->
+    <rect x="20" y="100" width="310" height="45" rx="4" fill="#fee2e2"/>
+    <text x="175" y="120" text-anchor="middle" class="label" style="font-weight:bold;">API Key Header</text>
+    <text x="175" y="138" text-anchor="middle" class="code">Authorization: Bearer qag_xxxxxxxxxxxx</text>
+  </g>
+
+  <!-- ===== RESOURCE HANDLERS ===== -->
+  <g transform="translate(860, 400)">
+    <rect width="310" height="160" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+    <text x="155" y="25" text-anchor="middle" class="section-title" fill="#22c55e">MCP Resources</text>
+
+    <rect x="20" y="50" width="270" height="35" rx="4" fill="#dcfce7"/>
+    <text x="155" y="73" text-anchor="middle" class="code">qaguardian://projects/{id}</text>
+
+    <rect x="20" y="95" width="270" height="35" rx="4" fill="#dcfce7"/>
+    <text x="155" y="118" text-anchor="middle" class="code">qaguardian://runs/{runId}/results</text>
+
+    <text x="155" y="150" text-anchor="middle" class="note">URI-based resource access for AI agents</text>
+  </g>
+
+  <!-- ===== MESSAGE FLOW EXAMPLE ===== -->
+  <g transform="translate(30, 590)">
+    <rect width="1140" height="130" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+    <text x="570" y="25" text-anchor="middle" class="section-title">Example: Triggering a Test Run</text>
+
+    <!-- Step boxes -->
+    <rect x="20" y="45" width="180" height="70" rx="4" fill="#fef3c7"/>
+    <text x="110" y="65" text-anchor="middle" class="label" style="font-weight:bold;">1. Claude Code</text>
+    <text x="110" y="82" text-anchor="middle" class="code">tools/call</text>
+    <text x="110" y="98" text-anchor="middle" class="note">trigger-test-run</text>
+
+    <rect x="230" y="45" width="180" height="70" rx="4" fill="#dbeafe"/>
+    <text x="320" y="65" text-anchor="middle" class="label" style="font-weight:bold;">2. Transport</text>
+    <text x="320" y="82" text-anchor="middle" class="code">JSON-RPC request</text>
+    <text x="320" y="98" text-anchor="middle" class="note">via stdio/SSE</text>
+
+    <rect x="440" y="45" width="180" height="70" rx="4" fill="#d1fae5"/>
+    <text x="530" y="65" text-anchor="middle" class="label" style="font-weight:bold;">3. MCP Server</text>
+    <text x="530" y="82" text-anchor="middle" class="code">Auth + Route</text>
+    <text x="530" y="98" text-anchor="middle" class="note">validate scopes</text>
+
+    <rect x="650" y="45" width="180" height="70" rx="4" fill="#ede9fe"/>
+    <text x="740" y="65" text-anchor="middle" class="label" style="font-weight:bold;">4. Tool Handler</text>
+    <text x="740" y="82" text-anchor="middle" class="code">Execute action</text>
+    <text x="740" y="98" text-anchor="middle" class="note">call internal API</text>
+
+    <rect x="860" y="45" width="180" height="70" rx="4" fill="#fce7f3"/>
+    <text x="950" y="65" text-anchor="middle" class="label" style="font-weight:bold;">5. Response</text>
+    <text x="950" y="82" text-anchor="middle" class="code">{runId: "abc123"}</text>
+    <text x="950" y="98" text-anchor="middle" class="note">JSON result</text>
+
+    <!-- Flow arrows -->
+    <path d="M200 80 L230 80" class="arrow"/>
+    <path d="M410 80 L440 80" class="arrow"/>
+    <path d="M620 80 L650 80" class="arrow"/>
+    <path d="M830 80 L860 80" class="arrow"/>
+  </g>
+
+  <!-- ===== MAIN FLOW ARROWS ===== -->
+  <!-- Client to Transport -->
+  <path d="M310 230 L350 230" class="arrow"/>
+  <text x="330" y="220" text-anchor="middle" class="note">request</text>
+
+  <!-- Transport to Server -->
+  <path d="M550 230 L590 230" class="arrow"/>
+  <text x="570" y="220" text-anchor="middle" class="note">JSON-RPC</text>
+
+  <!-- Server to Tools -->
+  <path d="M870 230 L910 230" class="arrow"/>
+  <text x="890" y="220" text-anchor="middle" class="note">route</text>
+
+  <!-- Server down to Internal API -->
+  <path d="M730 370 L730 400" class="arrow"/>
+
+  <!-- Tools to Server (response) -->
+  <path d="M910 260 L870 260" stroke="#64748b" stroke-width="2" fill="none" marker-start="url(#arrowhead)"/>
+
+  <!-- ===== LEGEND ===== -->
+  <g transform="translate(30, 720)">
+    <text x="0" y="15" class="section-title">Legend:</text>
+
+    <rect x="100" y="5" width="20" height="15" fill="url(#clientGrad)" rx="2"/>
+    <text x="125" y="17" class="label">AI Client</text>
+
+    <rect x="210" y="5" width="20" height="15" fill="url(#transportGrad)" rx="2"/>
+    <text x="235" y="17" class="label">Transport</text>
+
+    <rect x="320" y="5" width="20" height="15" fill="url(#serverGrad)" rx="2"/>
+    <text x="345" y="17" class="label">MCP Server</text>
+
+    <rect x="440" y="5" width="20" height="15" fill="url(#toolGrad)" rx="2"/>
+    <text x="465" y="17" class="label">Tools</text>
+
+    <rect x="530" y="5" width="20" height="15" fill="url(#apiGrad)" rx="2"/>
+    <text x="555" y="17" class="label">Internal API</text>
+
+    <rect x="650" y="5" width="20" height="15" fill="url(#authGrad)" rx="2"/>
+    <text x="675" y="17" class="label">Auth</text>
+
+    <line x1="750" y1="12" x2="800" y2="12" class="arrow"/>
+    <text x="810" y="17" class="label">Request Flow</text>
+  </g>
+
+  <!-- Version info -->
+  <text x="1150" y="720" text-anchor="end" class="subtitle">QA Guardian v1.0 - MCP Protocol Flow</text>
+</svg>

@@ -1,0 +1,694 @@
+// Projects Module - Core Project Routes
+// Handles CRUD operations for projects and environment variables
+
+import { FastifyInstance } from 'fastify';
+import { authenticate, requireScopes, JwtPayload, ApiKeyPayload, getOrganizationId } from '../../middleware/auth';
+import { testSuites, tests, TestSuite, Test } from '../test-suites';
+import { logAuditEntry } from '../audit-logs';
+import { Project, CreateProjectBody, ProjectParams, EnvironmentVariable } from './types';
+import { projects, projectMembers, projectEnvVars } from './stores';
+import { hasProjectAccess } from './utils';
+import { testRuns, BrowserType } from '../test-runs/execution';
+
+export async function coreRoutes(app: FastifyInstance) {
+  // List all projects (requires authentication, only from user's organization)
+  // API keys need 'read' scope
+  // For developers/viewers, only show projects they have explicit access to
+  // Query params: include_archived=true to include archived projects, archived_only=true for only archived
+  app.get<{ Querystring: { include_archived?: string; archived_only?: string } }>('/api/v1/projects', {
+    preHandler: [authenticate, requireScopes(['read'])],
+  }, async (request) => {
+    const orgId = getOrganizationId(request);
+    const user = request.user as JwtPayload | ApiKeyPayload;
+    const { include_archived, archived_only } = request.query;
+
+    let projectList = Array.from(projects.values())
+      .filter(p => p.organization_id === orgId);
+
+    // For JWT users (not API keys), filter by project-level access for non-admin users
+    if (!('type' in user)) {
+      const jwtUser = user as JwtPayload;
+      if (jwtUser.role !== 'owner' && jwtUser.role !== 'admin') {
+        // Filter to only projects this user has explicit access to
+        projectList = projectList.filter(p => hasProjectAccess(p.id, jwtUser.id, jwtUser.role));
+      }
+    }
+
+    // Filter by archive status
+    if (archived_only === 'true') {
+      // Show only archived projects
+      projectList = projectList.filter(p => p.archived === true);
+    } else if (include_archived !== 'true') {
+      // By default, hide archived projects
+      projectList = projectList.filter(p => !p.archived);
+    }
+    // If include_archived=true, show all projects (no filtering)
+
+    return { projects: projectList };
+  });
+
+  // Get single project (requires authentication, organization membership, and project access)
+  app.get<{ Params: ProjectParams }>('/api/v1/projects/:id', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const user = request.user as JwtPayload;
+    const project = projects.get(id);
+
+    if (!project) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    // Check if user belongs to the project's organization
+    if (project.organization_id !== user.organization_id) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    // Check project-level access for non-admin users
+    if (!hasProjectAccess(id, user.id, user.role)) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'You do not have access to this project',
+      });
+    }
+
+    return { project };
+  });
+
+  // Create project (requires authentication, at least developer role)
+  // API keys need 'write' scope
+  app.post<{ Body: CreateProjectBody }>('/api/v1/projects', {
+    preHandler: [authenticate, requireScopes(['write'])],
+  }, async (request, reply) => {
+    const { name, description, base_url } = request.body;
+    const user = request.user as JwtPayload | ApiKeyPayload;
+    const orgId = getOrganizationId(request);
+
+    // For JWT users, viewers cannot create projects
+    if (!('type' in user) && user.role === 'viewer') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Viewers cannot create projects',
+      });
+    }
+
+    // Validate name - trim and check for empty/whitespace-only
+    const trimmedName = name?.trim();
+    if (!trimmedName) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Project name is required',
+      });
+    }
+    if (trimmedName.length < 2) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Project name must be at least 2 characters',
+      });
+    }
+    if (trimmedName.length > 100) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Project name must be less than 100 characters',
+      });
+    }
+
+    // Check for duplicate name within organization (use trimmed name)
+    const existingProject = Array.from(projects.values()).find(
+      p => p.organization_id === orgId && p.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (existingProject) {
+      return reply.status(409).send({
+        error: 'Conflict',
+        message: 'A project with this name already exists in your organization',
+      });
+    }
+
+    const id = String(Date.now());
+    const slug = trimmedName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+    const project: Project = {
+      id,
+      organization_id: orgId,
+      name: trimmedName,
+      slug,
+      description,
+      base_url,
+      archived: false,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    projects.set(id, project);
+
+    // For non-admin/owner users, automatically add them as a project member
+    // so they can access the project they just created
+    if (!('type' in user)) {
+      const jwtUser = user as JwtPayload;
+      if (jwtUser.role !== 'owner' && jwtUser.role !== 'admin') {
+        const members = projectMembers.get(id) || [];
+        members.push({
+          project_id: id,
+          user_id: jwtUser.id,
+          role: 'admin', // Creator gets admin role on their project
+          added_at: new Date(),
+          added_by: jwtUser.id,
+        });
+        projectMembers.set(id, members);
+        console.log(`[PROJECT CREATED] User ${jwtUser.id} automatically added as admin to their new project ${project.name}`);
+      }
+    }
+
+    // Log audit entry
+    logAuditEntry(request, 'create', 'project', id, project.name, { description, base_url });
+
+    return reply.status(201).send({ project });
+  });
+
+  // Update project (requires authentication and organization membership)
+  app.patch<{ Params: ProjectParams; Body: Partial<CreateProjectBody> }>('/api/v1/projects/:id', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const updates = request.body;
+    const user = request.user as JwtPayload;
+
+    // Viewers cannot update projects
+    if (user.role === 'viewer') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Viewers cannot update projects',
+      });
+    }
+
+    const project = projects.get(id);
+    if (!project) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    // Check organization membership
+    if (project.organization_id !== user.organization_id) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    // Update allowed fields
+    if (updates.name) {
+      project.name = updates.name;
+      project.slug = updates.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    }
+    if (updates.description !== undefined) project.description = updates.description;
+    if (updates.base_url !== undefined) project.base_url = updates.base_url;
+    project.updated_at = new Date();
+
+    projects.set(id, project);
+
+    // Log audit entry
+    logAuditEntry(request, 'update', 'project', id, project.name, { updates });
+
+    return { project };
+  });
+
+  // Delete project (requires authentication, admin or owner, and organization membership)
+  app.delete<{ Params: ProjectParams }>('/api/v1/projects/:id', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const user = request.user as JwtPayload;
+
+    // Only admin or owner can delete projects
+    if (user.role !== 'admin' && user.role !== 'owner') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Only administrators can delete projects',
+      });
+    }
+
+    const project = projects.get(id);
+    if (!project) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    // Check organization membership
+    if (project.organization_id !== user.organization_id) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    // Cascade delete: first delete all tests in suites belonging to this project
+    const projectSuites = Array.from(testSuites.values()).filter(s => s.project_id === id);
+    for (const suite of projectSuites) {
+      // Delete all tests in this suite
+      for (const [testId, test] of tests) {
+        if (test.suite_id === suite.id) {
+          tests.delete(testId);
+        }
+      }
+      // Delete the suite
+      testSuites.delete(suite.id);
+    }
+
+    // Finally delete the project
+    const projectName = project.name;
+    projects.delete(id);
+
+    // Log audit entry
+    logAuditEntry(request, 'delete', 'project', id, projectName);
+
+    return { message: 'Project deleted successfully' };
+  });
+
+  // Archive/unarchive project (requires authentication, admin or owner, and organization membership)
+  app.post<{ Params: ProjectParams; Body: { archived: boolean } }>('/api/v1/projects/:id/archive', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const { archived } = request.body;
+    const user = request.user as JwtPayload;
+
+    // Only admin or owner can archive projects
+    if (user.role !== 'admin' && user.role !== 'owner') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Only administrators can archive or unarchive projects',
+      });
+    }
+
+    const project = projects.get(id);
+    if (!project) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    // Check organization membership
+    if (project.organization_id !== user.organization_id) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    // Update archive status
+    project.archived = archived;
+    project.archived_at = archived ? new Date() : undefined;
+    project.updated_at = new Date();
+    projects.set(id, project);
+
+    // Log audit entry
+    const action = archived ? 'archive' : 'unarchive';
+    logAuditEntry(request, action, 'project', id, project.name);
+
+    return {
+      project,
+      message: archived ? 'Project archived successfully' : 'Project unarchived successfully',
+    };
+  });
+
+  // ========== ENVIRONMENT VARIABLES ==========
+
+  // List environment variables for a project
+  app.get<{ Params: ProjectParams }>('/api/v1/projects/:id/env', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const user = request.user as JwtPayload;
+
+    const project = projects.get(id);
+    if (!project) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    // Check organization membership
+    if (project.organization_id !== user.organization_id) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    const envVars = projectEnvVars.get(id) || [];
+
+    // Mask secret values
+    const maskedVars = envVars.map(v => ({
+      ...v,
+      value: v.is_secret ? '********' : v.value,
+    }));
+
+    return { env_vars: maskedVars };
+  });
+
+  // Add environment variable to a project
+  app.post<{ Params: ProjectParams; Body: { key: string; value: string; is_secret?: boolean } }>('/api/v1/projects/:id/env', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const { key, value, is_secret = false } = request.body;
+    const user = request.user as JwtPayload;
+
+    // Only admin or owner can modify env vars
+    if (user.role !== 'admin' && user.role !== 'owner') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Only administrators can manage environment variables',
+      });
+    }
+
+    const project = projects.get(id);
+    if (!project) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    // Check organization membership
+    if (project.organization_id !== user.organization_id) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    // Validate key
+    if (!key || key.trim().length === 0) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Environment variable key is required',
+      });
+    }
+
+    const trimmedKey = key.trim().toUpperCase();
+    if (!/^[A-Z_][A-Z0-9_]*$/.test(trimmedKey)) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Key must start with a letter or underscore and contain only letters, numbers, and underscores',
+      });
+    }
+
+    // Check for duplicate keys
+    const envVars = projectEnvVars.get(id) || [];
+    if (envVars.some(v => v.key === trimmedKey)) {
+      return reply.status(409).send({
+        error: 'Conflict',
+        message: `Environment variable '${trimmedKey}' already exists`,
+      });
+    }
+
+    const envVar: EnvironmentVariable = {
+      id: String(Date.now()),
+      project_id: id,
+      key: trimmedKey,
+      value: value,
+      is_secret: is_secret,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    envVars.push(envVar);
+    projectEnvVars.set(id, envVars);
+
+    // Log audit entry
+    logAuditEntry(request, 'create', 'env_var', envVar.id, trimmedKey, { project_id: id, is_secret });
+
+    return reply.status(201).send({
+      env_var: {
+        ...envVar,
+        value: is_secret ? '********' : value,
+      },
+    });
+  });
+
+  // Update environment variable
+  app.put<{ Params: { id: string; varId: string }; Body: { value?: string; is_secret?: boolean } }>('/api/v1/projects/:id/env/:varId', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { id, varId } = request.params;
+    const { value, is_secret } = request.body;
+    const user = request.user as JwtPayload;
+
+    // Only admin or owner can modify env vars
+    if (user.role !== 'admin' && user.role !== 'owner') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Only administrators can manage environment variables',
+      });
+    }
+
+    const project = projects.get(id);
+    if (!project) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    // Check organization membership
+    if (project.organization_id !== user.organization_id) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    const envVars = projectEnvVars.get(id) || [];
+    const varIndex = envVars.findIndex(v => v.id === varId);
+
+    if (varIndex === -1) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Environment variable not found',
+      });
+    }
+
+    // Get the env var (guaranteed to exist after findIndex check)
+    const envVar = envVars[varIndex]!;
+
+    // Update fields
+    if (value !== undefined) {
+      envVar.value = value;
+    }
+    if (is_secret !== undefined) {
+      envVar.is_secret = is_secret;
+    }
+    envVar.updated_at = new Date();
+
+    projectEnvVars.set(id, envVars);
+
+    // Log audit entry
+    logAuditEntry(request, 'update', 'env_var', varId, envVar.key, { project_id: id });
+
+    return {
+      env_var: {
+        ...envVar,
+        value: envVar.is_secret ? '********' : envVar.value,
+      },
+    };
+  });
+
+  // Delete environment variable
+  app.delete<{ Params: { id: string; varId: string } }>('/api/v1/projects/:id/env/:varId', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { id, varId } = request.params;
+    const user = request.user as JwtPayload;
+
+    // Only admin or owner can modify env vars
+    if (user.role !== 'admin' && user.role !== 'owner') {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Only administrators can manage environment variables',
+      });
+    }
+
+    const project = projects.get(id);
+    if (!project) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    // Check organization membership
+    if (project.organization_id !== user.organization_id) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    const envVars = projectEnvVars.get(id) || [];
+    const varIndex = envVars.findIndex(v => v.id === varId);
+
+    if (varIndex === -1) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Environment variable not found',
+      });
+    }
+
+    const deletedVar = envVars[varIndex]!;
+    envVars.splice(varIndex, 1);
+    projectEnvVars.set(id, envVars);
+
+    // Log audit entry
+    logAuditEntry(request, 'delete', 'env_var', varId, deletedVar.key, { project_id: id });
+
+    return { message: 'Environment variable deleted successfully' };
+  });
+
+  // Feature #1975: Quick Smoke Test - One-click smoke test from project dashboard
+  app.post<{ Params: ProjectParams; Body: { target_url: string } }>('/api/v1/projects/:id/quick-smoke-test', {
+    preHandler: [authenticate, requireScopes(['execute'])],
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const { target_url } = request.body;
+    const user = request.user as JwtPayload;
+    const orgId = getOrganizationId(request);
+
+    // Verify project exists and user has access
+    const project = projects.get(id);
+    if (!project || project.organization_id !== orgId) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Project not found',
+      });
+    }
+
+    if (!hasProjectAccess(id, user.id, user.role)) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'You do not have access to this project',
+      });
+    }
+
+    const url = target_url || project.base_url;
+    if (!url) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'No target URL provided and no base URL configured for the project',
+      });
+    }
+
+    // Find or create a "Quick Smoke Tests" suite for this project
+    let smokeSuite = Array.from(testSuites.values()).find(
+      s => s.project_id === id && s.name === 'Quick Smoke Tests'
+    );
+
+    if (!smokeSuite) {
+      const suiteId = Date.now().toString();
+      smokeSuite = {
+        id: suiteId,
+        project_id: id,
+        organization_id: orgId,
+        name: 'Quick Smoke Tests',
+        description: 'Auto-generated suite for quick smoke tests',
+        browser: 'chromium' as const,
+        viewport_width: 1280,
+        viewport_height: 720,
+        timeout: 30000,
+        retry_count: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+      } as unknown as TestSuite;
+      testSuites.set(suiteId, smokeSuite);
+    }
+
+    // Create the smoke test
+    const testId = Date.now().toString();
+    const hostname = (() => {
+      try {
+        return new URL(url).hostname;
+      } catch {
+        return url;
+      }
+    })();
+
+    const smokeTest = {
+      id: testId,
+      suite_id: smokeSuite.id,
+      organization_id: orgId,
+      name: `Smoke Test - ${hostname}`,
+      description: `Quick health check for ${url} - verifies page loads, no critical issues`,
+      type: 'e2e',
+      status: 'active',
+      target_url: url,
+      steps: [
+        { id: '1', action: 'navigate', value: url, order: 1 },
+        { id: '2', action: 'wait', value: '1000', order: 2 },
+        { id: '3', action: 'screenshot', value: 'smoke_test_page', order: 3 },
+        { id: '4', action: 'assert_no_console_errors', value: 'critical', order: 4 },
+      ],
+      created_at: new Date(),
+      updated_at: new Date(),
+    } as unknown as Test;
+    tests.set(testId, smokeTest);
+
+    // Create and start the test run
+    const runId = (Date.now() + 1).toString(); // +1 to ensure unique ID
+    const testRun = {
+      id: runId,
+      suite_id: smokeSuite.id,
+      test_id: testId,
+      organization_id: orgId,
+      browser: 'chromium' as BrowserType,
+      branch: 'main',
+      status: 'pending',
+      created_at: new Date(),
+      started_at: null as Date | null,
+      completed_at: null as Date | null,
+      duration_ms: null as number | null,
+      results: [] as any[],
+      error: null as string | null,
+    };
+    testRuns.set(runId, testRun as any);
+
+    // Import and run tests (this will start executing in the background)
+    // We need to dynamically import to avoid circular dependency
+    // Note: test-runs.ts is the main file, test-runs/ is the folder with modules
+    try {
+      const testRunsModule = await import('../test-runs.js');
+      if (typeof testRunsModule.runTestsForRun === 'function') {
+        testRunsModule.runTestsForRun(runId).catch(console.error);
+      } else {
+        console.error('[Quick Smoke Test] runTestsForRun not found in test-runs module');
+      }
+    } catch (err) {
+      console.error('[Quick Smoke Test] Failed to start test execution:', err);
+    }
+
+    // Log audit entry
+    logAuditEntry(request, 'create', 'quick_smoke_test', testId, `Quick smoke test for ${hostname}`, {
+      project_id: id,
+      run_id: runId,
+      target_url: url,
+    });
+
+    return {
+      run_id: runId,
+      test_id: testId,
+      suite_id: smokeSuite.id,
+      message: 'Smoke test started',
+    };
+  });
+}

@@ -1,0 +1,11 @@
+[
+  {
+    "test_id": "1769452565649",
+    "test_name": "Visual Test",
+    "status": "passed",
+    "duration_ms": 1628,
+    "error": null,
+    "steps_count": 1,
+    "failed_steps": 0
+  }
+]

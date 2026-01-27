@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <style>
+      .title { font: bold 24px sans-serif; fill: #1a1a2e; }
+      .subtitle { font: 14px sans-serif; fill: #666; }
+      .phase-title { font: bold 16px sans-serif; fill: #333; }
+      .step-title { font: bold 12px sans-serif; fill: #fff; }
+      .step-desc { font: 10px sans-serif; fill: #fff; opacity: 0.9; }
+      .label { font: 11px sans-serif; fill: #333; }
+      .note { font: 10px sans-serif; fill: #666; font-style: italic; }
+      .arrow { stroke: #64748b; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .decision-arrow { stroke: #f59e0b; stroke-width: 2; fill: none; marker-end: url(#arrowhead-orange); }
+      .success-arrow { stroke: #22c55e; stroke-width: 2; fill: none; marker-end: url(#arrowhead-green); }
+      .fail-arrow { stroke: #ef4444; stroke-width: 2; fill: none; marker-end: url(#arrowhead-red); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="arrowhead-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#f59e0b"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e"/>
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444"/>
+    </marker>
+    <linearGradient id="captureGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="storageGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#db2777"/>
+    </linearGradient>
+    <linearGradient id="compareGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+    <linearGradient id="decisionGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="approvalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="rejectGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#dc2626"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="900" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <text x="600" y="40" text-anchor="middle" class="title">Visual Regression Workflow</text>
+  <text x="600" y="62" text-anchor="middle" class="subtitle">Screenshot capture, baseline comparison, and approval management</text>
+
+  <!-- ===== PHASE 1: SCREENSHOT CAPTURE ===== -->
+  <g transform="translate(30, 95)">
+    <rect width="220" height="300" rx="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="110" y="25" text-anchor="middle" class="phase-title" fill="#8b5cf6">1. Screenshot Capture</text>
+
+    <!-- Playwright Context -->
+    <rect x="20" y="50" width="180" height="50" rx="6" fill="url(#captureGrad)"/>
+    <text x="110" y="75" text-anchor="middle" class="step-title">Playwright Context</text>
+    <text x="110" y="90" text-anchor="middle" class="step-desc">Browser launch + page.goto()</text>
+
+    <!-- Apply Masks -->
+    <rect x="20" y="115" width="180" height="50" rx="6" fill="url(#captureGrad)"/>
+    <text x="110" y="140" text-anchor="middle" class="step-title">Apply Element Masks</text>
+    <text x="110" y="155" text-anchor="middle" class="step-desc">hide_selectors, remove_selectors</text>
+
+    <!-- Capture Screenshot -->
+    <rect x="20" y="180" width="180" height="50" rx="6" fill="url(#captureGrad)"/>
+    <text x="110" y="205" text-anchor="middle" class="step-title">Capture Screenshot</text>
+    <text x="110" y="220" text-anchor="middle" class="step-desc">page.screenshot() with options</text>
+
+    <!-- Config notes -->
+    <rect x="20" y="245" width="180" height="40" rx="4" fill="#ede9fe"/>
+    <text x="110" y="263" text-anchor="middle" class="note">Full page or viewport</text>
+    <text x="110" y="277" text-anchor="middle" class="note">Multiple viewports supported</text>
+  </g>
+
+  <!-- ===== PHASE 2: BASELINE STORAGE ===== -->
+  <g transform="translate(280, 95)">
+    <rect width="220" height="300" rx="8" fill="#fdf2f8" stroke="#ec4899" stroke-width="2"/>
+    <text x="110" y="25" text-anchor="middle" class="phase-title" fill="#ec4899">2. Baseline Storage</text>
+
+    <!-- MinIO/S3 -->
+    <rect x="20" y="50" width="180" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="110" y="75" text-anchor="middle" class="step-title">MinIO / S3 Storage</text>
+    <text x="110" y="90" text-anchor="middle" class="step-desc">baselines/{branch}/{testId}/</text>
+
+    <!-- Branch-specific -->
+    <rect x="20" y="115" width="180" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="110" y="140" text-anchor="middle" class="step-title">Branch-Specific Baselines</text>
+    <text x="110" y="155" text-anchor="middle" class="step-desc">Isolate feature branch changes</text>
+
+    <!-- Metadata -->
+    <rect x="20" y="180" width="180" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="110" y="205" text-anchor="middle" class="step-title">Baseline Metadata</text>
+    <text x="110" y="220" text-anchor="middle" class="step-desc">version, createdAt, approvedBy</text>
+
+    <!-- Version history -->
+    <rect x="20" y="245" width="180" height="40" rx="4" fill="#fce7f3"/>
+    <text x="110" y="263" text-anchor="middle" class="note">Version history maintained</text>
+    <text x="110" y="277" text-anchor="middle" class="note">Rollback capability</text>
+  </g>
+
+  <!-- ===== PHASE 3: PIXELMATCH COMPARISON ===== -->
+  <g transform="translate(530, 95)">
+    <rect width="250" height="300" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="125" y="25" text-anchor="middle" class="phase-title" fill="#3b82f6">3. Pixelmatch Comparison</text>
+
+    <!-- Load Images -->
+    <rect x="20" y="50" width="210" height="50" rx="6" fill="url(#compareGrad)"/>
+    <text x="125" y="75" text-anchor="middle" class="step-title">Load PNG Images</text>
+    <text x="125" y="90" text-anchor="middle" class="step-desc">baseline.png + current.png</text>
+
+    <!-- Apply Ignore Regions -->
+    <rect x="20" y="115" width="210" height="50" rx="6" fill="url(#compareGrad)"/>
+    <text x="125" y="140" text-anchor="middle" class="step-title">Apply Ignore Regions</text>
+    <text x="125" y="155" text-anchor="middle" class="step-desc">Mask dynamic content areas</text>
+
+    <!-- Pixel-by-Pixel -->
+    <rect x="20" y="180" width="210" height="50" rx="6" fill="url(#compareGrad)"/>
+    <text x="125" y="205" text-anchor="middle" class="step-title">Pixel-by-Pixel Compare</text>
+    <text x="125" y="220" text-anchor="middle" class="step-desc">threshold: 0.1 (configurable)</text>
+
+    <!-- Output -->
+    <rect x="20" y="245" width="210" height="40" rx="4" fill="#dbeafe"/>
+    <text x="125" y="263" text-anchor="middle" class="note">Output: diff image + mismatch %</text>
+    <text x="125" y="277" text-anchor="middle" class="note">Anti-aliasing tolerance support</text>
+  </g>
+
+  <!-- ===== PHASE 4: DECISION ===== -->
+  <g transform="translate(810, 95)">
+    <rect width="180" height="300" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+    <text x="90" y="25" text-anchor="middle" class="phase-title" fill="#f59e0b">4. Decision Point</text>
+
+    <!-- Diamond decision -->
+    <g transform="translate(45, 70)">
+      <polygon points="45,0 90,45 45,90 0,45" fill="url(#decisionGrad)"/>
+      <text x="45" y="42" text-anchor="middle" class="step-title">Diff %</text>
+      <text x="45" y="55" text-anchor="middle" class="step-desc">&gt; threshold?</text>
+    </g>
+
+    <!-- No baseline case -->
+    <rect x="20" y="180" width="140" height="45" rx="6" fill="#fef3c7"/>
+    <text x="90" y="200" text-anchor="middle" class="label">First Run?</text>
+    <text x="90" y="215" text-anchor="middle" class="note">Create new baseline</text>
+
+    <!-- Threshold info -->
+    <rect x="20" y="240" width="140" height="45" rx="4" fill="#fef3c7"/>
+    <text x="90" y="260" text-anchor="middle" class="note">Default threshold: 0.1%</text>
+    <text x="90" y="275" text-anchor="middle" class="note">User configurable per test</text>
+  </g>
+
+  <!-- ===== PHASE 5: APPROVAL WORKFLOW ===== -->
+  <g transform="translate(1010, 95)">
+    <rect width="160" height="140" rx="8" fill="#ecfdf5" stroke="#22c55e" stroke-width="2"/>
+    <text x="80" y="25" text-anchor="middle" class="phase-title" fill="#22c55e">5a. Pass</text>
+
+    <rect x="20" y="50" width="120" height="40" rx="6" fill="url(#approvalGrad)"/>
+    <text x="80" y="75" text-anchor="middle" class="step-title">Test Passed</text>
+
+    <rect x="20" y="100" width="120" height="25" rx="4" fill="#d1fae5"/>
+    <text x="80" y="117" text-anchor="middle" class="note">Diff within threshold</text>
+  </g>
+
+  <!-- ===== PHASE 5B: REVIEW REQUIRED ===== -->
+  <g transform="translate(1010, 250)">
+    <rect width="160" height="145" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+    <text x="80" y="25" text-anchor="middle" class="phase-title" fill="#ef4444">5b. Review</text>
+
+    <rect x="20" y="50" width="120" height="40" rx="6" fill="url(#rejectGrad)"/>
+    <text x="80" y="75" text-anchor="middle" class="step-title">Diff Detected</text>
+
+    <rect x="20" y="100" width="120" height="30" rx="4" fill="#fee2e2"/>
+    <text x="80" y="120" text-anchor="middle" class="note">Manual review needed</text>
+  </g>
+
+  <!-- ===== APPROVAL/REJECTION FLOW ===== -->
+  <g transform="translate(30, 430)">
+    <rect width="550" height="200" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+    <text x="275" y="30" text-anchor="middle" class="phase-title" fill="#22c55e">6. Approval Workflow</text>
+
+    <!-- Review UI -->
+    <rect x="20" y="55" width="160" height="70" rx="6" fill="url(#approvalGrad)"/>
+    <text x="100" y="85" text-anchor="middle" class="step-title">Review Interface</text>
+    <text x="100" y="100" text-anchor="middle" class="step-desc">Side-by-side comparison</text>
+    <text x="100" y="113" text-anchor="middle" class="step-desc">Overlay diff view</text>
+
+    <!-- Approve button -->
+    <rect x="200" y="55" width="160" height="70" rx="6" fill="url(#approvalGrad)"/>
+    <text x="280" y="85" text-anchor="middle" class="step-title">Approve Changes</text>
+    <text x="280" y="100" text-anchor="middle" class="step-desc">Update baseline</text>
+    <text x="280" y="113" text-anchor="middle" class="step-desc">Add to version history</text>
+
+    <!-- Reject button -->
+    <rect x="380" y="55" width="150" height="70" rx="6" fill="url(#rejectGrad)"/>
+    <text x="455" y="85" text-anchor="middle" class="step-title">Reject Changes</text>
+    <text x="455" y="100" text-anchor="middle" class="step-desc">Mark test as failed</text>
+    <text x="455" y="113" text-anchor="middle" class="step-desc">Keep current baseline</text>
+
+    <!-- Metadata tracking -->
+    <rect x="20" y="140" width="510" height="45" rx="4" fill="#dcfce7"/>
+    <text x="275" y="160" text-anchor="middle" class="label">Tracked: approvedBy | approvedAt | previousVersion | sourceRunId</text>
+    <text x="275" y="175" text-anchor="middle" class="note">Optimistic locking prevents concurrent conflicts (version check)</text>
+  </g>
+
+  <!-- ===== ARTIFACTS ===== -->
+  <g transform="translate(610, 430)">
+    <rect width="280" height="200" rx="8" fill="#fdf2f8" stroke="#ec4899" stroke-width="2"/>
+    <text x="140" y="30" text-anchor="middle" class="phase-title" fill="#ec4899">7. Stored Artifacts</text>
+
+    <!-- Baseline -->
+    <rect x="20" y="55" width="115" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="77" y="80" text-anchor="middle" class="step-title">Baseline PNG</text>
+    <text x="77" y="93" text-anchor="middle" class="step-desc">Reference image</text>
+
+    <!-- Current -->
+    <rect x="145" y="55" width="115" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="202" y="80" text-anchor="middle" class="step-title">Current PNG</text>
+    <text x="202" y="93" text-anchor="middle" class="step-desc">Test run capture</text>
+
+    <!-- Diff -->
+    <rect x="20" y="115" width="115" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="77" y="140" text-anchor="middle" class="step-title">Diff PNG</text>
+    <text x="77" y="153" text-anchor="middle" class="step-desc">Highlighted changes</text>
+
+    <!-- Metadata -->
+    <rect x="145" y="115" width="115" height="50" rx="6" fill="url(#storageGrad)"/>
+    <text x="202" y="140" text-anchor="middle" class="step-title">Metadata JSON</text>
+    <text x="202" y="153" text-anchor="middle" class="step-desc">Comparison data</text>
+
+    <text x="140" y="185" text-anchor="middle" class="note">All artifacts retained for debugging</text>
+  </g>
+
+  <!-- ===== ERROR HANDLING ===== -->
+  <g transform="translate(920, 430)">
+    <rect width="250" height="200" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+    <text x="125" y="30" text-anchor="middle" class="phase-title" fill="#ef4444">8. Error Handling</text>
+
+    <rect x="20" y="55" width="210" height="35" rx="4" fill="#fee2e2"/>
+    <text x="125" y="78" text-anchor="middle" class="label">Corrupted baseline detection</text>
+
+    <rect x="20" y="100" width="210" height="35" rx="4" fill="#fee2e2"/>
+    <text x="125" y="123" text-anchor="middle" class="label">Storage quota exceeded</text>
+
+    <rect x="20" y="145" width="210" height="35" rx="4" fill="#fee2e2"/>
+    <text x="125" y="168" text-anchor="middle" class="label">Browser crash recovery</text>
+
+    <text x="125" y="195" text-anchor="middle" class="note">Graceful degradation + retry logic</text>
+  </g>
+
+  <!-- ===== FLOW ARROWS ===== -->
+  <!-- Capture to Storage -->
+  <path d="M250 245 L280 245" class="arrow"/>
+
+  <!-- Storage to Compare -->
+  <path d="M500 245 L530 245" class="arrow"/>
+
+  <!-- Compare to Decision -->
+  <path d="M780 245 L810 245" class="arrow"/>
+
+  <!-- Decision to Pass (NO) -->
+  <path d="M945 140 L1010 140" class="success-arrow"/>
+  <text x="965" y="130" class="label" fill="#22c55e">No</text>
+
+  <!-- Decision to Review (YES) -->
+  <path d="M945 190 L1010 290" class="fail-arrow"/>
+  <text x="965" y="230" class="label" fill="#ef4444">Yes</text>
+
+  <!-- Review to Approval workflow -->
+  <path d="M1090 395 L1090 650 L580 650 L580 630" class="decision-arrow"/>
+
+  <!-- First run creates baseline -->
+  <path d="M855 270 L855 360 L400 360 L400 395" class="arrow"/>
+  <text x="620" y="355" class="note">First run: auto-create baseline</text>
+
+  <!-- ===== LEGEND ===== -->
+  <g transform="translate(30, 670)">
+    <rect width="1140" height="100" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1"/>
+    <text x="570" y="25" text-anchor="middle" class="phase-title">Visual Regression Components</text>
+
+    <!-- Legend items -->
+    <rect x="50" y="45" width="20" height="15" fill="url(#captureGrad)" rx="2"/>
+    <text x="75" y="57" class="label">Capture</text>
+
+    <rect x="150" y="45" width="20" height="15" fill="url(#storageGrad)" rx="2"/>
+    <text x="175" y="57" class="label">Storage (MinIO/S3)</text>
+
+    <rect x="300" y="45" width="20" height="15" fill="url(#compareGrad)" rx="2"/>
+    <text x="325" y="57" class="label">Comparison (pixelmatch)</text>
+
+    <rect x="500" y="45" width="20" height="15" fill="url(#decisionGrad)" rx="2"/>
+    <text x="525" y="57" class="label">Decision</text>
+
+    <rect x="620" y="45" width="20" height="15" fill="url(#approvalGrad)" rx="2"/>
+    <text x="645" y="57" class="label">Pass/Approve</text>
+
+    <rect x="750" y="45" width="20" height="15" fill="url(#rejectGrad)" rx="2"/>
+    <text x="775" y="57" class="label">Fail/Reject</text>
+
+    <!-- Key metrics -->
+    <text x="50" y="85" class="label">Key Metrics:</text>
+    <text x="200" y="85" class="note">mismatch_percentage | threshold | diff_pixels | viewport_size</text>
+
+    <text x="600" y="85" class="label">Supported Browsers:</text>
+    <text x="770" y="85" class="note">Chromium | Firefox | WebKit (via Playwright)</text>
+  </g>
+
+  <!-- ===== TECHNICAL NOTES ===== -->
+  <g transform="translate(30, 790)">
+    <rect width="1140" height="85" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1"/>
+    <text x="30" y="25" class="phase-title" fill="#3b82f6">Technical Implementation Details</text>
+
+    <text x="30" y="50" class="label">Comparison Library: pixelmatch (fast pixel-level comparison)</text>
+    <text x="400" y="50" class="label">Image Format: PNG (lossless, supports alpha)</text>
+    <text x="750" y="50" class="label">Storage: S3-compatible (MinIO local / AWS S3 prod)</text>
+
+    <text x="30" y="70" class="label">Default Threshold: 0.1% mismatch tolerance</text>
+    <text x="400" y="70" class="label">Anti-aliasing: Configurable tolerance (low/medium/high)</text>
+    <text x="750" y="70" class="label">Concurrency: Optimistic locking for baseline updates</text>
+  </g>
+
+  <!-- Version info -->
+  <text x="1150" y="885" text-anchor="end" class="subtitle">QA Guardian v1.0 - Visual Regression Workflow</text>
+</svg>

@@ -1,0 +1,930 @@
+<project_specification>
+  <project_name>QA Guardian</project_name>
+
+  <overview>
+    QA Guardian is an enterprise-grade quality assurance automation platform that unifies test authoring, execution, and monitoring into a single intelligent system. Phase 1 delivers the foundation: a hybrid platform supporting both no-code visual test recording for QA engineers and GitHub-integrated test execution for developers. Built on Playwright, it enables cross-browser E2E testing with comprehensive results dashboards, artifact management, scheduling, and CI/CD integration.
+  </overview>
+
+  <phase>1 - Foundation</phase>
+
+  <target_users>
+    <user type="QA Engineer">Uses visual recorder and UI to create/run tests without coding</user>
+    <user type="Developer">Connects GitHub repos with existing Playwright tests</user>
+    <user type="Engineering Manager">Views dashboards, trends, team analytics</user>
+    <user type="DevOps Engineer">Integrates with CI/CD, manages schedules and alerts</user>
+  </target_users>
+
+  <technology_stack>
+    <frontend>
+      <framework>React 18+ with TypeScript</framework>
+      <styling>Tailwind CSS + Radix UI primitives</styling>
+      <state>TanStack Query + Zustand</state>
+      <charts>Recharts</charts>
+      <realtime>Socket.IO client</realtime>
+      <build>Vite</build>
+    </frontend>
+    <backend>
+      <runtime>Node.js 20+ with TypeScript</runtime>
+      <framework>Express.js or Fastify</framework>
+      <database>PostgreSQL (primary) + Redis (cache/queue)</database>
+      <queue>BullMQ for job scheduling</queue>
+      <storage>MinIO or S3-compatible for artifacts</storage>
+      <websocket>Socket.IO server</websocket>
+    </backend>
+    <testing_engine>
+      <core>Playwright</core>
+      <browsers>Chromium, Firefox, WebKit</browsers>
+      <mobile>Playwright mobile emulation (iPhone, Android viewports)</mobile>
+      <execution>Containerized workers (Docker)</execution>
+    </testing_engine>
+    <communication>
+      <api>REST API with OpenAPI/Swagger documentation</api>
+      <realtime>WebSocket for live test progress</realtime>
+      <webhooks>Outbound webhooks for integrations</webhooks>
+    </communication>
+  </technology_stack>
+
+  <prerequisites>
+    <environment_setup>
+      - Node.js 20+
+      - PostgreSQL 15+
+      - Redis 7+
+      - Docker (for test execution workers)
+      - MinIO or S3-compatible storage
+    </environment_setup>
+  </prerequisites>
+
+  <feature_count>200</feature_count>
+
+  <security_and_access_control>
+    <user_roles>
+      <role name="owner">
+        <description>Organization owner with full access including billing and deletion</description>
+        <permissions>
+          - Full access to all features
+          - Manage billing and subscription
+          - Delete organization
+          - Transfer ownership
+          - Manage all users and roles
+        </permissions>
+      </role>
+      <role name="admin">
+        <description>Administrator with user and project management access</description>
+        <permissions>
+          - Manage users (invite, remove, change roles)
+          - Manage all projects
+          - Manage organization settings
+          - View audit logs
+          - Cannot delete organization or manage billing
+        </permissions>
+      </role>
+      <role name="developer">
+        <description>Team member who can create and run tests</description>
+        <permissions>
+          - Create, edit, delete tests in assigned projects
+          - Run tests manually
+          - View all results and artifacts
+          - Manage schedules for own tests
+          - Connect GitHub repositories
+          - Cannot manage users or organization settings
+        </permissions>
+      </role>
+      <role name="viewer">
+        <description>Read-only access to results and dashboards</description>
+        <permissions>
+          - View projects and test suites
+          - View test results and artifacts
+          - View dashboards and reports
+          - Cannot create, edit, or run tests
+          - Cannot modify any settings
+        </permissions>
+      </role>
+    </user_roles>
+    <authentication>
+      <method>Email/password + Google OAuth SSO</method>
+      <session_timeout>7 days (configurable)</session_timeout>
+      <password_requirements>Minimum 8 characters, 1 uppercase, 1 lowercase, 1 number</password_requirements>
+      <mfa>Optional TOTP-based MFA (Phase 1 stretch goal)</mfa>
+    </authentication>
+    <api_authentication>
+      <method>API keys with scoped permissions</method>
+      <scopes>read, execute, write, admin</scopes>
+      <rotation>Keys can be rotated without downtime</rotation>
+    </api_authentication>
+    <sensitive_operations>
+      - Delete organization requires password confirmation
+      - Delete project requires confirmation dialog
+      - Bulk delete tests requires confirmation
+      - API key creation shows key only once
+    </sensitive_operations>
+  </security_and_access_control>
+
+  <core_features>
+    <authentication_and_users>
+      - Email/password registration with email verification
+      - Google OAuth SSO login
+      - Password reset via email
+      - User profile management (name, avatar, preferences)
+      - Session management (view active sessions, logout all)
+      - Organization creation on signup
+      - Team invitation via email
+      - Role assignment and modification
+      - User deactivation (soft delete)
+    </authentication_and_users>
+
+    <organizations_and_projects>
+      - Organization dashboard with overview stats
+      - Organization settings (name, logo, timezone)
+      - Project creation with name and description
+      - Project settings (base URL, default browser, timeout)
+      - GitHub repository connection via OAuth
+      - Project archival and deletion
+      - Project-level user permissions
+      - Project environment variables (encrypted)
+    </organizations_and_projects>
+
+    <test_authoring_visual>
+      - Visual test recorder (browser-based recording)
+      - Step-by-step test editor (click, type, assert, wait, screenshot)
+      - Element selector helper (click to select elements)
+      - Custom assertions (text contains, element visible, URL matches)
+      - Test step reordering via drag-and-drop
+      - Test duplication and templating
+      - View generated Playwright code (read-only for beginners)
+      - Edit Playwright code directly (for advanced users)
+      - Test validation before save
+      - Test preview/dry-run
+    </test_authoring_visual>
+
+    <test_authoring_github>
+      - Connect GitHub repository via OAuth
+      - Auto-discover Playwright test files (*.spec.ts, *.test.ts)
+      - Manual test file refresh
+      - View test file contents (read-only)
+      - Select which test files to include in suites
+      - Branch selection for test discovery
+      - Webhook for auto-refresh on push
+    </test_authoring_github>
+
+    <test_suites>
+      - Create test suites (groups of tests)
+      - Add/remove tests from suites
+      - Suite-level configuration (browser, viewport, timeout)
+      - Suite-level environment variables
+      - Suite ordering and prioritization
+      - Suite duplication
+      - Suite archival and deletion
+    </test_suites>
+
+    <test_execution>
+      - Run single test manually
+      - Run entire suite manually
+      - Run selected tests from suite
+      - Parallel execution across browsers (Chrome, Firefox, Safari)
+      - Mobile viewport emulation (iPhone 14, Pixel 7, iPad)
+      - Real-time progress via WebSocket
+      - Cancel running tests
+      - Retry failed tests (configurable retry count)
+      - Test execution queue management
+      - Execution timeout handling
+    </test_execution>
+
+    <test_results>
+      - Results dashboard with pass/fail/skip summary
+      - Individual test result details
+      - Step-by-step execution trace
+      - Screenshot on failure (automatic)
+      - Screenshot on every step (optional)
+      - Video recording of test execution
+      - Playwright trace file download
+      - Console logs capture
+      - Network request logs
+      - Error messages and stack traces
+      - Execution duration per step
+      - Browser and viewport info in results
+      - Results filtering (status, browser, date range)
+      - Results search by test name
+      - Results comparison between runs
+      - Flaky test detection (pass/fail inconsistency)
+    </test_results>
+
+    <artifacts>
+      - Screenshot viewer with zoom
+      - Video player for recordings
+      - Trace viewer (embedded Playwright trace viewer)
+      - Artifact download (individual and bulk)
+      - Artifact retention policy (configurable days)
+      - Artifact storage usage display
+    </artifacts>
+
+    <scheduling>
+      - Cron-based schedule creation
+      - Schedule frequency presets (hourly, daily, weekly)
+      - Custom cron expression input
+      - Timezone selection for schedules
+      - Schedule enable/disable toggle
+      - Next run time display
+      - Schedule history (past runs)
+      - Multiple schedules per suite
+    </scheduling>
+
+    <github_integration>
+      - PR status checks (pass/fail badge)
+      - Auto-run tests on PR open/update
+      - Auto-run tests on push to branch
+      - PR comment with results summary
+      - Commit SHA linking in results
+      - Branch filtering (only run on specific branches)
+      - GitHub Actions workflow example generation
+      - Required status check configuration
+    </github_integration>
+
+    <alerting>
+      - Email alerts on test failure
+      - Slack integration (OAuth connection)
+      - Slack channel selection per project
+      - Slack message customization
+      - Webhook alerts (custom URL)
+      - Webhook payload customization (JSON template)
+      - Alert conditions (any failure, all failures, threshold)
+      - Alert suppression (don't alert on retry success)
+      - Alert digest (batch notifications)
+      - Alert history log
+    </alerting>
+
+    <api>
+      - REST API for all operations
+      - API key generation and management
+      - API key scopes (read, execute, write, admin)
+      - API rate limiting (configurable per tier)
+      - OpenAPI/Swagger documentation
+      - API versioning (v1)
+      - Webhook signature verification
+      - Trigger test run via API
+      - Get test results via API
+      - List projects and suites via API
+      - CRUD operations for all entities
+    </api>
+
+    <dashboard_and_analytics>
+      - Organization-wide quality health score
+      - Pass rate trends over time (7d, 30d, 90d)
+      - Test execution count trends
+      - Average test duration trends
+      - Most failing tests list
+      - Flaky tests list with flakiness score
+      - Browser-specific pass rates
+      - Project comparison dashboard
+      - Export dashboard data (CSV)
+    </dashboard_and_analytics>
+
+    <settings_and_preferences>
+      - User notification preferences (email, in-app)
+      - Theme preference (light, dark, system)
+      - Timezone preference
+      - Default test timeout
+      - Default retry count
+      - Default browser selection
+    </settings_and_preferences>
+  </core_features>
+
+  <database_schema>
+    <tables>
+      <organizations>
+        - id (UUID, PK)
+        - name (VARCHAR 255)
+        - slug (VARCHAR 100, unique)
+        - logo_url (VARCHAR 500, nullable)
+        - timezone (VARCHAR 50, default 'UTC')
+        - plan (VARCHAR 50: free, pro, business, enterprise)
+        - settings (JSONB)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+      </organizations>
+
+      <users>
+        - id (UUID, PK)
+        - email (VARCHAR 255, unique)
+        - password_hash (VARCHAR 255, nullable for OAuth)
+        - name (VARCHAR 255)
+        - avatar_url (VARCHAR 500, nullable)
+        - email_verified (BOOLEAN)
+        - google_id (VARCHAR 255, nullable, unique)
+        - preferences (JSONB)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+        - last_login_at (TIMESTAMP)
+      </users>
+
+      <organization_members>
+        - id (UUID, PK)
+        - organization_id (UUID, FK organizations)
+        - user_id (UUID, FK users)
+        - role (VARCHAR 50: owner, admin, developer, viewer)
+        - invited_by (UUID, FK users, nullable)
+        - invited_at (TIMESTAMP)
+        - joined_at (TIMESTAMP, nullable)
+        - status (VARCHAR 50: pending, active, deactivated)
+        - created_at (TIMESTAMP)
+        - UNIQUE(organization_id, user_id)
+      </organization_members>
+
+      <projects>
+        - id (UUID, PK)
+        - organization_id (UUID, FK organizations)
+        - name (VARCHAR 255)
+        - slug (VARCHAR 100)
+        - description (TEXT, nullable)
+        - base_url (VARCHAR 500, nullable)
+        - github_repo_url (VARCHAR 500, nullable)
+        - github_repo_id (VARCHAR 100, nullable)
+        - github_default_branch (VARCHAR 100, default 'main')
+        - settings (JSONB: default_browser, timeout, retries)
+        - environment_variables (JSONB, encrypted)
+        - is_archived (BOOLEAN, default false)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+        - UNIQUE(organization_id, slug)
+      </projects>
+
+      <test_suites>
+        - id (UUID, PK)
+        - project_id (UUID, FK projects)
+        - name (VARCHAR 255)
+        - description (TEXT, nullable)
+        - configuration (JSONB: browsers, viewport, timeout, retries)
+        - environment_variables (JSONB)
+        - is_archived (BOOLEAN, default false)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+      </test_suites>
+
+      <tests>
+        - id (UUID, PK)
+        - test_suite_id (UUID, FK test_suites)
+        - name (VARCHAR 255)
+        - description (TEXT, nullable)
+        - type (VARCHAR 50: recorded, imported)
+        - source (VARCHAR 50: ui, github)
+        - github_file_path (VARCHAR 500, nullable)
+        - steps (JSONB: array of step objects)
+        - playwright_code (TEXT, nullable)
+        - configuration (JSONB: overrides)
+        - order_index (INTEGER)
+        - is_archived (BOOLEAN, default false)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+      </tests>
+
+      <test_runs>
+        - id (UUID, PK)
+        - test_suite_id (UUID, FK test_suites)
+        - status (VARCHAR 50: pending, running, passed, failed, cancelled, error)
+        - trigger (VARCHAR 50: manual, schedule, webhook, api, github_pr, github_push)
+        - triggered_by (UUID, FK users, nullable)
+        - branch (VARCHAR 100, nullable)
+        - commit_sha (VARCHAR 40, nullable)
+        - pr_number (INTEGER, nullable)
+        - environment (VARCHAR 100, nullable)
+        - configuration (JSONB: browsers, viewport used)
+        - summary (JSONB: total, passed, failed, skipped)
+        - started_at (TIMESTAMP, nullable)
+        - completed_at (TIMESTAMP, nullable)
+        - duration_ms (INTEGER, nullable)
+        - created_at (TIMESTAMP)
+      </test_runs>
+
+      <test_results>
+        - id (UUID, PK)
+        - test_run_id (UUID, FK test_runs)
+        - test_id (UUID, FK tests)
+        - browser (VARCHAR 50)
+        - viewport (VARCHAR 50)
+        - status (VARCHAR 50: passed, failed, skipped, error)
+        - error_message (TEXT, nullable)
+        - stack_trace (TEXT, nullable)
+        - retry_count (INTEGER, default 0)
+        - step_results (JSONB: array of step result objects)
+        - duration_ms (INTEGER)
+        - started_at (TIMESTAMP)
+        - completed_at (TIMESTAMP)
+      </test_results>
+
+      <artifacts>
+        - id (UUID, PK)
+        - test_result_id (UUID, FK test_results)
+        - type (VARCHAR 50: screenshot, video, trace, log)
+        - name (VARCHAR 255)
+        - storage_path (VARCHAR 500)
+        - size_bytes (BIGINT)
+        - mime_type (VARCHAR 100)
+        - step_index (INTEGER, nullable)
+        - metadata (JSONB)
+        - created_at (TIMESTAMP)
+      </artifacts>
+
+      <schedules>
+        - id (UUID, PK)
+        - test_suite_id (UUID, FK test_suites)
+        - name (VARCHAR 255)
+        - cron_expression (VARCHAR 100)
+        - timezone (VARCHAR 50)
+        - is_active (BOOLEAN, default true)
+        - configuration (JSONB: browsers, environment)
+        - last_run_at (TIMESTAMP, nullable)
+        - next_run_at (TIMESTAMP, nullable)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+      </schedules>
+
+      <github_connections>
+        - id (UUID, PK)
+        - organization_id (UUID, FK organizations)
+        - github_installation_id (VARCHAR 100)
+        - github_account_login (VARCHAR 255)
+        - github_account_type (VARCHAR 50: user, organization)
+        - access_token_encrypted (TEXT)
+        - token_expires_at (TIMESTAMP)
+        - connected_by (UUID, FK users)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+      </github_connections>
+
+      <alert_channels>
+        - id (UUID, PK)
+        - project_id (UUID, FK projects)
+        - type (VARCHAR 50: email, slack, webhook)
+        - name (VARCHAR 255)
+        - configuration (JSONB: email addresses, slack webhook, url)
+        - conditions (JSONB: on_failure, threshold)
+        - is_active (BOOLEAN, default true)
+        - created_at (TIMESTAMP)
+        - updated_at (TIMESTAMP)
+      </alert_channels>
+
+      <alert_history>
+        - id (UUID, PK)
+        - alert_channel_id (UUID, FK alert_channels)
+        - test_run_id (UUID, FK test_runs)
+        - status (VARCHAR 50: sent, failed)
+        - error_message (TEXT, nullable)
+        - sent_at (TIMESTAMP)
+      </alert_history>
+
+      <api_keys>
+        - id (UUID, PK)
+        - organization_id (UUID, FK organizations)
+        - name (VARCHAR 255)
+        - key_hash (VARCHAR 255)
+        - key_prefix (VARCHAR 10: for display qg_xxxx...)
+        - scopes (TEXT[]: read, execute, write, admin)
+        - last_used_at (TIMESTAMP, nullable)
+        - expires_at (TIMESTAMP, nullable)
+        - created_by (UUID, FK users)
+        - created_at (TIMESTAMP)
+        - revoked_at (TIMESTAMP, nullable)
+      </api_keys>
+
+      <audit_logs>
+        - id (UUID, PK)
+        - organization_id (UUID, FK organizations)
+        - user_id (UUID, FK users, nullable)
+        - action (VARCHAR 100)
+        - resource_type (VARCHAR 100)
+        - resource_id (UUID)
+        - details (JSONB)
+        - ip_address (VARCHAR 45)
+        - user_agent (TEXT)
+        - created_at (TIMESTAMP)
+      </audit_logs>
+
+      <invitations>
+        - id (UUID, PK)
+        - organization_id (UUID, FK organizations)
+        - email (VARCHAR 255)
+        - role (VARCHAR 50)
+        - token (VARCHAR 255, unique)
+        - invited_by (UUID, FK users)
+        - expires_at (TIMESTAMP)
+        - accepted_at (TIMESTAMP, nullable)
+        - created_at (TIMESTAMP)
+      </invitations>
+
+      <sessions>
+        - id (UUID, PK)
+        - user_id (UUID, FK users)
+        - token_hash (VARCHAR 255)
+        - ip_address (VARCHAR 45)
+        - user_agent (TEXT)
+        - expires_at (TIMESTAMP)
+        - created_at (TIMESTAMP)
+        - last_active_at (TIMESTAMP)
+      </sessions>
+    </tables>
+
+    <indexes>
+      - idx_org_members_org_user ON organization_members(organization_id, user_id)
+      - idx_projects_org ON projects(organization_id)
+      - idx_test_suites_project ON test_suites(project_id)
+      - idx_tests_suite ON tests(test_suite_id)
+      - idx_test_runs_suite_status ON test_runs(test_suite_id, status)
+      - idx_test_runs_created ON test_runs(created_at DESC)
+      - idx_test_results_run ON test_results(test_run_id)
+      - idx_artifacts_result ON artifacts(test_result_id)
+      - idx_schedules_next_run ON schedules(next_run_at) WHERE is_active = true
+      - idx_audit_logs_org_time ON audit_logs(organization_id, created_at DESC)
+      - idx_api_keys_hash ON api_keys(key_hash)
+    </indexes>
+  </database_schema>
+
+  <api_endpoints_summary>
+    <authentication>
+      - POST /api/v1/auth/register (email registration)
+      - POST /api/v1/auth/login (email login)
+      - POST /api/v1/auth/logout
+      - POST /api/v1/auth/refresh (refresh token)
+      - POST /api/v1/auth/forgot-password
+      - POST /api/v1/auth/reset-password
+      - GET /api/v1/auth/google (OAuth redirect)
+      - GET /api/v1/auth/google/callback
+      - GET /api/v1/auth/me (current user)
+    </authentication>
+
+    <users>
+      - GET /api/v1/users/me
+      - PATCH /api/v1/users/me
+      - PUT /api/v1/users/me/password
+      - GET /api/v1/users/me/sessions
+      - DELETE /api/v1/users/me/sessions/:id
+      - DELETE /api/v1/users/me/sessions (logout all)
+    </users>
+
+    <organizations>
+      - POST /api/v1/organizations
+      - GET /api/v1/organizations
+      - GET /api/v1/organizations/:id
+      - PATCH /api/v1/organizations/:id
+      - DELETE /api/v1/organizations/:id
+      - GET /api/v1/organizations/:id/members
+      - POST /api/v1/organizations/:id/invitations
+      - DELETE /api/v1/organizations/:id/invitations/:inviteId
+      - PATCH /api/v1/organizations/:id/members/:userId
+      - DELETE /api/v1/organizations/:id/members/:userId
+    </organizations>
+
+    <projects>
+      - POST /api/v1/projects
+      - GET /api/v1/projects
+      - GET /api/v1/projects/:id
+      - PATCH /api/v1/projects/:id
+      - DELETE /api/v1/projects/:id
+      - POST /api/v1/projects/:id/github/connect
+      - DELETE /api/v1/projects/:id/github/disconnect
+      - POST /api/v1/projects/:id/github/refresh
+    </projects>
+
+    <test_suites>
+      - POST /api/v1/projects/:projectId/suites
+      - GET /api/v1/projects/:projectId/suites
+      - GET /api/v1/suites/:id
+      - PATCH /api/v1/suites/:id
+      - DELETE /api/v1/suites/:id
+      - POST /api/v1/suites/:id/duplicate
+    </test_suites>
+
+    <tests>
+      - POST /api/v1/suites/:suiteId/tests
+      - GET /api/v1/suites/:suiteId/tests
+      - GET /api/v1/tests/:id
+      - PATCH /api/v1/tests/:id
+      - DELETE /api/v1/tests/:id
+      - POST /api/v1/tests/:id/duplicate
+      - PUT /api/v1/tests/:id/steps
+      - GET /api/v1/suites/:suiteId/tests/reorder
+    </tests>
+
+    <test_runs>
+      - POST /api/v1/suites/:suiteId/runs (trigger run)
+      - GET /api/v1/suites/:suiteId/runs
+      - GET /api/v1/runs/:id
+      - POST /api/v1/runs/:id/cancel
+      - GET /api/v1/runs/:id/results
+      - POST /api/v1/runs/:id/retry-failed
+    </test_runs>
+
+    <test_results>
+      - GET /api/v1/results/:id
+      - GET /api/v1/results/:id/artifacts
+      - GET /api/v1/results/:id/trace
+    </test_results>
+
+    <artifacts>
+      - GET /api/v1/artifacts/:id
+      - GET /api/v1/artifacts/:id/download
+    </artifacts>
+
+    <schedules>
+      - POST /api/v1/suites/:suiteId/schedules
+      - GET /api/v1/suites/:suiteId/schedules
+      - GET /api/v1/schedules/:id
+      - PATCH /api/v1/schedules/:id
+      - DELETE /api/v1/schedules/:id
+      - POST /api/v1/schedules/:id/toggle
+    </schedules>
+
+    <alert_channels>
+      - POST /api/v1/projects/:projectId/alerts
+      - GET /api/v1/projects/:projectId/alerts
+      - GET /api/v1/alerts/:id
+      - PATCH /api/v1/alerts/:id
+      - DELETE /api/v1/alerts/:id
+      - POST /api/v1/alerts/:id/test
+    </alert_channels>
+
+    <api_keys>
+      - POST /api/v1/organizations/:orgId/api-keys
+      - GET /api/v1/organizations/:orgId/api-keys
+      - DELETE /api/v1/api-keys/:id
+      - POST /api/v1/api-keys/:id/rotate
+    </api_keys>
+
+    <analytics>
+      - GET /api/v1/organizations/:orgId/analytics/overview
+      - GET /api/v1/projects/:projectId/analytics/trends
+      - GET /api/v1/projects/:projectId/analytics/flaky-tests
+      - GET /api/v1/projects/:projectId/analytics/failing-tests
+    </analytics>
+
+    <webhooks>
+      - POST /api/v1/webhooks/github (GitHub webhook receiver)
+    </webhooks>
+  </api_endpoints_summary>
+
+  <ui_layout>
+    <main_structure>
+      Sidebar navigation (collapsible) + Main content area
+      - Sidebar: Organization switcher, navigation menu, user menu
+      - Top bar: Breadcrumbs, search, notifications, settings
+      - Main content: Page-specific content with consistent padding
+    </main_structure>
+
+    <pages>
+      <public>
+        - Landing/Marketing page
+        - Login page
+        - Register page
+        - Forgot password page
+        - Reset password page
+        - Accept invitation page
+      </public>
+
+      <authenticated>
+        - Dashboard (organization overview)
+        - Projects list
+        - Project detail (suites, settings, GitHub connection)
+        - Test suite detail (tests, runs, schedules)
+        - Test editor (visual recorder, code view)
+        - Test run detail (results, artifacts)
+        - Test result detail (steps, screenshots, trace)
+        - Schedules management
+        - Alert channels management
+        - Organization settings
+        - Team management
+        - API keys management
+        - User profile settings
+      </authenticated>
+    </pages>
+
+    <key_components>
+      - Sidebar with collapsible navigation
+      - Project/suite/test hierarchical breadcrumbs
+      - Test step visual editor (drag-drop reorder)
+      - Live test execution progress panel
+      - Screenshot comparison slider
+      - Video player with playback controls
+      - Embedded Playwright trace viewer
+      - Pass/fail summary cards with trends
+      - Data tables with sorting, filtering, pagination
+      - Modal dialogs for confirmations and forms
+      - Toast notifications for feedback
+      - Empty states with helpful actions
+    </key_components>
+  </ui_layout>
+
+  <design_system>
+    <color_palette>
+      <primary>Blue 600 (#2563EB) - Primary actions, links</primary>
+      <success>Emerald 500 (#10B981) - Passed tests, success states</success>
+      <warning>Amber 500 (#F59E0B) - Flaky tests, warnings</warning>
+      <error>Red 500 (#EF4444) - Failed tests, errors</error>
+      <neutral>Gray 500 (#6B7280) - Secondary text, borders</neutral>
+      <background>White (#FFFFFF) light / Gray 900 (#111827) dark</background>
+    </color_palette>
+    <typography>
+      <font_family>Inter for UI, JetBrains Mono for code</font_family>
+      <base_size>14px</base_size>
+      <scale>1.25 (Minor Third)</scale>
+    </typography>
+    <spacing>
+      <unit>4px base unit</unit>
+      <padding>16px standard padding</padding>
+      <gap>8px standard gap</gap>
+    </spacing>
+    <components>
+      - Use Radix UI primitives for accessibility
+      - Tailwind CSS utility classes
+      - Consistent border-radius (6px default)
+      - Subtle shadows for elevation
+      - Focus rings for keyboard navigation
+    </components>
+  </design_system>
+
+  <implementation_steps>
+    <step number="1">
+      <title>Project Setup and Infrastructure</title>
+      <tasks>
+        - Initialize monorepo structure (frontend, backend, shared)
+        - Set up TypeScript configuration
+        - Configure PostgreSQL with migrations
+        - Configure Redis connection
+        - Set up MinIO/S3 for artifact storage
+        - Docker compose for local development
+        - Basic CI pipeline for linting and tests
+      </tasks>
+    </step>
+
+    <step number="2">
+      <title>Authentication and User Management</title>
+      <tasks>
+        - User registration with email verification
+        - Email/password login with JWT
+        - Google OAuth integration
+        - Password reset flow
+        - Session management
+        - User profile CRUD
+      </tasks>
+    </step>
+
+    <step number="3">
+      <title>Organizations and Teams</title>
+      <tasks>
+        - Organization CRUD
+        - Role-based access control
+        - Team invitations via email
+        - Member management
+        - Organization settings
+      </tasks>
+    </step>
+
+    <step number="4">
+      <title>Projects and Test Suites</title>
+      <tasks>
+        - Project CRUD with settings
+        - Test suite CRUD
+        - Environment variables (encrypted)
+        - GitHub repository connection
+        - Test file discovery from GitHub
+      </tasks>
+    </step>
+
+    <step number="5">
+      <title>Test Authoring</title>
+      <tasks>
+        - Visual test recorder (browser extension or embedded)
+        - Test step editor UI
+        - Playwright code generation
+        - Code editor view
+        - Test validation
+      </tasks>
+    </step>
+
+    <step number="6">
+      <title>Test Execution Engine</title>
+      <tasks>
+        - Docker-based Playwright workers
+        - Job queue with BullMQ
+        - Multi-browser execution
+        - Mobile emulation
+        - Artifact capture (screenshots, video, trace)
+        - Real-time progress via WebSocket
+      </tasks>
+    </step>
+
+    <step number="7">
+      <title>Results and Artifacts</title>
+      <tasks>
+        - Results dashboard
+        - Detailed result view
+        - Screenshot viewer
+        - Video player
+        - Trace viewer integration
+        - Artifact download
+      </tasks>
+    </step>
+
+    <step number="8">
+      <title>Scheduling and Automation</title>
+      <tasks>
+        - Cron-based scheduler
+        - Schedule management UI
+        - Timezone handling
+        - Schedule history
+      </tasks>
+    </step>
+
+    <step number="9">
+      <title>GitHub Integration</title>
+      <tasks>
+        - GitHub App installation
+        - PR status checks
+        - Auto-run on PR/push
+        - PR comments with results
+        - Branch selection
+      </tasks>
+    </step>
+
+    <step number="10">
+      <title>Alerting and Notifications</title>
+      <tasks>
+        - Email notifications
+        - Slack integration
+        - Webhook delivery
+        - Alert conditions
+        - Alert history
+      </tasks>
+    </step>
+
+    <step number="11">
+      <title>API and Documentation</title>
+      <tasks>
+        - Complete REST API
+        - API key management
+        - Rate limiting
+        - OpenAPI documentation
+        - API versioning
+      </tasks>
+    </step>
+
+    <step number="12">
+      <title>Analytics and Dashboard</title>
+      <tasks>
+        - Organization dashboard
+        - Pass rate trends
+        - Flaky test detection
+        - Failing tests analysis
+        - Export functionality
+      </tasks>
+    </step>
+
+    <step number="13">
+      <title>Polish and Production Readiness</title>
+      <tasks>
+        - Responsive design
+        - Dark mode
+        - Accessibility audit
+        - Performance optimization
+        - Error handling improvements
+        - Documentation
+      </tasks>
+    </step>
+  </implementation_steps>
+
+  <success_criteria>
+    <functionality>
+      - Users can sign up, create organizations, and invite team members
+      - Users can create tests via visual recorder or import from GitHub
+      - Tests execute successfully across Chrome, Firefox, Safari
+      - Results display with screenshots, videos, and traces
+      - Schedules run automatically at configured times
+      - GitHub integration posts status checks on PRs
+      - Alerts fire on test failures via email, Slack, webhooks
+      - API allows full programmatic control
+    </functionality>
+
+    <user_experience>
+      - Onboarding flow completes in under 5 minutes
+      - Test creation via recorder takes under 2 minutes per test
+      - Results load in under 2 seconds
+      - Real-time progress updates during test execution
+      - Mobile-responsive design works on tablets
+      - Keyboard navigation works for all features
+    </user_experience>
+
+    <technical_quality>
+      - All API endpoints have input validation
+      - Proper error handling with meaningful messages
+      - No console errors during normal operation
+      - 80%+ code coverage for critical paths
+      - Database queries optimized with proper indexes
+      - Secrets properly encrypted at rest
+    </technical_quality>
+
+    <design_polish>
+      - Consistent visual design following design system
+      - Smooth transitions and loading states
+      - Empty states with helpful guidance
+      - Toast notifications for all actions
+      - Dark mode fully implemented
+    </design_polish>
+  </success_criteria>
+</project_specification>

@@ -1,0 +1,29 @@
+=== ANALYTICS SUMMARY ===
+Metric,Value
+Overall Pass Rate,0%
+Total Runs,1
+Total Passed,0
+Total Failed,1
+Date Range,2026-01-18 to 2026-01-25
+
+=== PASS RATE TRENDS ===
+Date,Pass Rate,Total Runs,Passed,Failed
+2026-01-19,N/A%,undefined,0,0
+2026-01-20,N/A%,undefined,0,0
+2026-01-21,N/A%,undefined,0,0
+2026-01-22,N/A%,undefined,0,0
+2026-01-23,N/A%,undefined,0,0
+2026-01-24,N/A%,undefined,0,0
+2026-01-25,0%,undefined,0,1
+
+=== MOST FAILING TESTS ===
+Test Name,Suite,Project,Failures,Total Runs,Failure Rate,Last Failure
+"Visual Regression - httpbin.org","Core Functionality Tests","Regression Test Project",1,1,100%,2026-01-25T10:14:41.983Z
+
+=== BROWSER STATISTICS ===
+Browser,Total Runs,Passed,Failed,Error,Pass Rate
+Chrome,1,0,1,0,0%
+
+=== PROJECT COMPARISON ===
+Project,Slug,Suites,Tests,Total Runs,Pass Rate,Passed,Failed
+"Regression Test Project",regression-test-project,1,7,1,0%,0,1

@@ -1,0 +1,4 @@
+test_name,test_type,status,duration_formatted,error,browser,timestamp,steps_count,failed_steps
+E2E Test - example.com,E2E,passed,2.42s,,chromium,2026-01-26T20:32:34.954Z,3,0
+Visual Regression - example.com,Visual,passed,1.90s,,chromium,2026-01-26T20:32:34.954Z,2,0
+Accessibility - example.com,Accessibility,passed,1.90s,,chromium,2026-01-26T20:32:34.954Z,1,0

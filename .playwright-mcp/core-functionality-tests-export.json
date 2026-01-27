@@ -1,0 +1,114 @@
+{
+  "suite": {
+    "name": "Core Functionality Tests",
+    "description": "Tests for core features",
+    "browser": "chromium",
+    "viewport_width": 1280,
+    "viewport_height": 720,
+    "timeout": 30,
+    "retry_count": 0
+  },
+  "tests": [
+    {
+      "name": "E2E Test - httpbin.org",
+      "description": "Auto-generated e2e test for https://httpbin.org",
+      "steps": [
+        {
+          "action": "navigate",
+          "value": "https://httpbin.org",
+          "id": "1769335826113",
+          "order": 0
+        },
+        {
+          "action": "wait",
+          "value": "2000",
+          "id": "1769335826114",
+          "order": 1
+        },
+        {
+          "action": "screenshot",
+          "value": "initial_page",
+          "id": "1769335826115",
+          "order": 2
+        }
+      ],
+      "status": "active"
+    },
+    {
+      "name": "Visual Regression - httpbin.org",
+      "description": "Auto-generated visual test for https://httpbin.org",
+      "steps": [],
+      "status": "draft"
+    },
+    {
+      "name": "Accessibility - httpbin.org",
+      "description": "Auto-generated accessibility test for https://httpbin.org",
+      "steps": [],
+      "status": "draft"
+    },
+    {
+      "name": "E2E Test - httpbin.org (Copy)",
+      "description": "Auto-generated e2e test for https://httpbin.org",
+      "steps": [
+        {
+          "action": "navigate",
+          "value": "https://httpbin.org",
+          "id": "1769336482590",
+          "order": 0
+        },
+        {
+          "action": "wait",
+          "value": "2000",
+          "id": "1769336482591",
+          "order": 1
+        },
+        {
+          "action": "screenshot",
+          "value": "initial_page",
+          "id": "1769336482592",
+          "order": 2
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "name": "E2E Test - example.com",
+      "description": "Auto-generated e2e test for https://example.com",
+      "steps": [
+        {
+          "action": "navigate",
+          "value": "https://example.com",
+          "id": "1769336885813",
+          "order": 0
+        },
+        {
+          "action": "wait",
+          "value": "2000",
+          "id": "1769336885814",
+          "order": 1
+        },
+        {
+          "action": "screenshot",
+          "value": "initial_page",
+          "id": "1769336885815",
+          "order": 2
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "name": "Visual Regression - example.com",
+      "description": "Auto-generated visual test for https://example.com",
+      "steps": [],
+      "status": "draft"
+    },
+    {
+      "name": "Accessibility - example.com",
+      "description": "Auto-generated accessibility test for https://example.com",
+      "steps": [],
+      "status": "draft"
+    }
+  ],
+  "exported_at": "2026-01-25T12:40:06.262Z",
+  "version": "1.0"
+}
