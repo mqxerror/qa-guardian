@@ -6,7 +6,21 @@ import { authenticate, requireScopes, JwtPayload, ApiKeyPayload, getOrganization
 import { testSuites, tests, TestSuite, Test } from '../test-suites';
 import { logAuditEntry } from '../audit-logs';
 import { Project, CreateProjectBody, ProjectParams, EnvironmentVariable } from './types';
-import { projects, projectMembers, projectEnvVars } from './stores';
+import {
+  projects,
+  projectMembers,
+  projectEnvVars,
+  createProject as dbCreateProject,
+  getProject as dbGetProject,
+  updateProject as dbUpdateProject,
+  deleteProject as dbDeleteProject,
+  listProjects as dbListProjects,
+  getProjectByName as dbGetProjectByName,
+  addProjectMember as dbAddProjectMember,
+  addProjectEnvVar as dbAddProjectEnvVar,
+  getProjectEnvVars as dbGetProjectEnvVars,
+  deleteProjectEnvVar as dbDeleteProjectEnvVar,
+} from './stores';
 import { hasProjectAccess } from './utils';
 import { testRuns, BrowserType } from '../test-runs/execution';
 
@@ -22,8 +36,8 @@ export async function coreRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload | ApiKeyPayload;
     const { include_archived, archived_only } = request.query;
 
-    let projectList = Array.from(projects.values())
-      .filter(p => p.organization_id === orgId);
+    // Use async database function with Map fallback
+    let projectList = await dbListProjects(orgId);
 
     // For JWT users (not API keys), filter by project-level access for non-admin users
     if (!('type' in user)) {
@@ -53,7 +67,7 @@ export async function coreRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const { id } = request.params;
     const user = request.user as JwtPayload;
-    const project = projects.get(id);
+    const project = await dbGetProject(id);
 
     if (!project) {
       return reply.status(404).send({
@@ -120,9 +134,7 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     // Check for duplicate name within organization (use trimmed name)
-    const existingProject = Array.from(projects.values()).find(
-      p => p.organization_id === orgId && p.name.toLowerCase() === trimmedName.toLowerCase()
-    );
+    const existingProject = await dbGetProjectByName(orgId, trimmedName);
     if (existingProject) {
       return reply.status(409).send({
         error: 'Conflict',
@@ -133,7 +145,7 @@ export async function coreRoutes(app: FastifyInstance) {
     const id = String(Date.now());
     const slug = trimmedName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-    const project: Project = {
+    const projectData: Project = {
       id,
       organization_id: orgId,
       name: trimmedName,
@@ -145,22 +157,21 @@ export async function coreRoutes(app: FastifyInstance) {
       updated_at: new Date(),
     };
 
-    projects.set(id, project);
+    // Save to database (falls back to in-memory if DB not available)
+    const project = await dbCreateProject(projectData);
 
     // For non-admin/owner users, automatically add them as a project member
     // so they can access the project they just created
     if (!('type' in user)) {
       const jwtUser = user as JwtPayload;
       if (jwtUser.role !== 'owner' && jwtUser.role !== 'admin') {
-        const members = projectMembers.get(id) || [];
-        members.push({
+        await dbAddProjectMember({
           project_id: id,
           user_id: jwtUser.id,
           role: 'admin', // Creator gets admin role on their project
           added_at: new Date(),
           added_by: jwtUser.id,
         });
-        projectMembers.set(id, members);
         console.log(`[PROJECT CREATED] User ${jwtUser.id} automatically added as admin to their new project ${project.name}`);
       }
     }
@@ -187,7 +198,7 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const project = projects.get(id);
+    const project = await dbGetProject(id);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -203,21 +214,22 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    // Update allowed fields
+    // Prepare update fields
+    const updateFields: Partial<Project> = {};
     if (updates.name) {
-      project.name = updates.name;
-      project.slug = updates.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      updateFields.name = updates.name;
+      updateFields.slug = updates.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     }
-    if (updates.description !== undefined) project.description = updates.description;
-    if (updates.base_url !== undefined) project.base_url = updates.base_url;
-    project.updated_at = new Date();
+    if (updates.description !== undefined) updateFields.description = updates.description;
+    if (updates.base_url !== undefined) updateFields.base_url = updates.base_url;
 
-    projects.set(id, project);
+    // Update in database (falls back to in-memory if DB not available)
+    const updatedProject = await dbUpdateProject(id, updateFields);
 
     // Log audit entry
-    logAuditEntry(request, 'update', 'project', id, project.name, { updates });
+    logAuditEntry(request, 'update', 'project', id, updatedProject?.name || project.name, { updates });
 
-    return { project };
+    return { project: updatedProject };
   });
 
   // Delete project (requires authentication, admin or owner, and organization membership)
@@ -235,7 +247,7 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const project = projects.get(id);
+    const project = await dbGetProject(id);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -264,9 +276,9 @@ export async function coreRoutes(app: FastifyInstance) {
       testSuites.delete(suite.id);
     }
 
-    // Finally delete the project
+    // Delete the project from database (falls back to in-memory if DB not available)
     const projectName = project.name;
-    projects.delete(id);
+    await dbDeleteProject(id);
 
     // Log audit entry
     logAuditEntry(request, 'delete', 'project', id, projectName);
@@ -290,7 +302,7 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const project = projects.get(id);
+    const project = await dbGetProject(id);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -306,18 +318,18 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    // Update archive status
-    project.archived = archived;
-    project.archived_at = archived ? new Date() : undefined;
-    project.updated_at = new Date();
-    projects.set(id, project);
+    // Update archive status in database
+    const updatedProject = await dbUpdateProject(id, {
+      archived,
+      archived_at: archived ? new Date() : undefined,
+    });
 
     // Log audit entry
     const action = archived ? 'archive' : 'unarchive';
     logAuditEntry(request, action, 'project', id, project.name);
 
     return {
-      project,
+      project: updatedProject,
       message: archived ? 'Project archived successfully' : 'Project unarchived successfully',
     };
   });
@@ -331,7 +343,7 @@ export async function coreRoutes(app: FastifyInstance) {
     const { id } = request.params;
     const user = request.user as JwtPayload;
 
-    const project = projects.get(id);
+    const project = await dbGetProject(id);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -347,7 +359,7 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const envVars = projectEnvVars.get(id) || [];
+    const envVars = await dbGetProjectEnvVars(id);
 
     // Mask secret values
     const maskedVars = envVars.map(v => ({
@@ -374,7 +386,7 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const project = projects.get(id);
+    const project = await dbGetProject(id);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -407,7 +419,7 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     // Check for duplicate keys
-    const envVars = projectEnvVars.get(id) || [];
+    const envVars = await dbGetProjectEnvVars(id);
     if (envVars.some(v => v.key === trimmedKey)) {
       return reply.status(409).send({
         error: 'Conflict',
@@ -425,8 +437,8 @@ export async function coreRoutes(app: FastifyInstance) {
       updated_at: new Date(),
     };
 
-    envVars.push(envVar);
-    projectEnvVars.set(id, envVars);
+    // Save to database (falls back to in-memory if DB not available)
+    await dbAddProjectEnvVar(envVar);
 
     // Log audit entry
     logAuditEntry(request, 'create', 'env_var', envVar.id, trimmedKey, { project_id: id, is_secret });
@@ -455,7 +467,7 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const project = projects.get(id);
+    const project = await dbGetProject(id);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -471,7 +483,7 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const envVars = projectEnvVars.get(id) || [];
+    const envVars = await dbGetProjectEnvVars(id);
     const varIndex = envVars.findIndex(v => v.id === varId);
 
     if (varIndex === -1) {
@@ -493,7 +505,8 @@ export async function coreRoutes(app: FastifyInstance) {
     }
     envVar.updated_at = new Date();
 
-    projectEnvVars.set(id, envVars);
+    // Save updated env var to database
+    await dbAddProjectEnvVar(envVar);
 
     // Log audit entry
     logAuditEntry(request, 'update', 'env_var', varId, envVar.key, { project_id: id });
@@ -521,7 +534,7 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const project = projects.get(id);
+    const project = await dbGetProject(id);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -537,22 +550,21 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const envVars = projectEnvVars.get(id) || [];
-    const varIndex = envVars.findIndex(v => v.id === varId);
+    const envVars = await dbGetProjectEnvVars(id);
+    const envVar = envVars.find(v => v.id === varId);
 
-    if (varIndex === -1) {
+    if (!envVar) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Environment variable not found',
       });
     }
 
-    const deletedVar = envVars[varIndex]!;
-    envVars.splice(varIndex, 1);
-    projectEnvVars.set(id, envVars);
+    // Delete from database (falls back to in-memory if DB not available)
+    await dbDeleteProjectEnvVar(id, varId);
 
     // Log audit entry
-    logAuditEntry(request, 'delete', 'env_var', varId, deletedVar.key, { project_id: id });
+    logAuditEntry(request, 'delete', 'env_var', varId, envVar.key, { project_id: id });
 
     return { message: 'Environment variable deleted successfully' };
   });
@@ -567,7 +579,7 @@ export async function coreRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Verify project exists and user has access
-    const project = projects.get(id);
+    const project = await dbGetProject(id);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
