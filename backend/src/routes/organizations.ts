@@ -7,162 +7,51 @@ import { testSuites, tests } from './test-suites';
 import { testRuns } from './test-runs';
 import { auditLogs } from './audit-logs';
 
-// In-memory organization store for development
-interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  timezone: string;
-  created_at: Date;
-}
+// Feature #2085: Import repository functions and types
+import {
+  Organization,
+  OrganizationMember,
+  Invitation,
+  AutoQuarantineSettings,
+  RetryStrategySettings,
+  RetryStrategyRule,
+  DEFAULT_AUTO_QUARANTINE_SETTINGS,
+  DEFAULT_RETRY_STRATEGY_SETTINGS,
+  getMemoryOrganizations,
+  getMemoryOrganizationMembers,
+  getMemoryInvitations,
+  getMemoryAutoQuarantineSettings,
+  getMemoryRetryStrategySettings,
+  getAutoQuarantineSettings as repoGetAutoQuarantineSettings,
+  setAutoQuarantineSettings as repoSetAutoQuarantineSettings,
+  getRetryStrategySettings as repoGetRetryStrategySettings,
+  setRetryStrategySettings as repoSetRetryStrategySettings,
+  getRetriesForFlakinessScore as repoGetRetriesForFlakinessScore,
+} from '../services/repositories/organizations';
 
-interface OrganizationMember {
-  user_id: string;
-  organization_id: string;
-  role: 'owner' | 'admin' | 'developer' | 'viewer';
-}
+// Re-export types for backward compatibility
+export type { AutoQuarantineSettings, RetryStrategySettings, RetryStrategyRule };
 
-interface Invitation {
-  id: string;
-  organization_id: string;
-  email: string;
-  role: 'admin' | 'developer' | 'viewer';
-  invited_by: string;
-  created_at: Date;
-  status: 'pending' | 'accepted' | 'expired';
-  accepted_at?: Date;
-  accepted_by?: string; // user_id who accepted
-}
+// Re-export default settings
+export { DEFAULT_AUTO_QUARANTINE_SETTINGS, DEFAULT_RETRY_STRATEGY_SETTINGS };
 
-// Feature #1104: Auto-quarantine settings interface
-export interface AutoQuarantineSettings {
-  enabled: boolean;                 // Whether auto-quarantine is enabled
-  threshold: number;                // Flakiness score threshold (0-1) to trigger auto-quarantine
-  min_runs: number;                 // Minimum runs required before auto-quarantine can trigger
-  notify_on_quarantine: boolean;    // Send notification when auto-quarantine triggers
-  quarantine_reason_prefix: string; // Prefix for auto-quarantine reason message
-}
+// In-memory stores (backed by repository)
+export const organizations: Map<string, Organization> = getMemoryOrganizations();
+export const organizationMembers: Map<string, OrganizationMember[]> = getMemoryOrganizationMembers();
+export const invitations: Map<string, Invitation> = getMemoryInvitations();
 
-// Default auto-quarantine settings
-export const DEFAULT_AUTO_QUARANTINE_SETTINGS: AutoQuarantineSettings = {
-  enabled: true,
-  threshold: 0.7,          // 70% flakiness score
-  min_runs: 5,             // Need at least 5 runs
-  notify_on_quarantine: true,
-  quarantine_reason_prefix: 'Auto-quarantined: ',
-};
+// Feature #1104: Store for auto-quarantine settings per organization (backed by repository)
+export const autoQuarantineSettings: Map<string, AutoQuarantineSettings> = getMemoryAutoQuarantineSettings();
 
-// In-memory stores
-export const organizations: Map<string, Organization> = new Map();
-export const organizationMembers: Map<string, OrganizationMember[]> = new Map();
-export const invitations: Map<string, Invitation> = new Map();
+// Feature #1105: Store for retry strategy settings per organization (backed by repository)
+export const retryStrategySettings: Map<string, RetryStrategySettings> = getMemoryRetryStrategySettings();
 
-// Feature #1104: Store for auto-quarantine settings per organization
-export const autoQuarantineSettings: Map<string, AutoQuarantineSettings> = new Map();
-
-// Feature #1105: Retry strategy based on flakiness level
-export interface RetryStrategyRule {
-  min_score: number;     // Minimum flakiness score (inclusive)
-  max_score: number;     // Maximum flakiness score (exclusive)
-  retries: number;       // Number of retries for tests in this score range
-}
-
-export interface RetryStrategySettings {
-  enabled: boolean;                  // Whether dynamic retry strategy is enabled
-  rules: RetryStrategyRule[];        // Retry rules based on flakiness score
-  default_retries: number;           // Default retries for tests without flakiness data
-  max_retries: number;               // Maximum allowed retries
-}
-
-// Default retry strategy settings
-export const DEFAULT_RETRY_STRATEGY_SETTINGS: RetryStrategySettings = {
-  enabled: true,
-  rules: [
-    { min_score: 0, max_score: 0.3, retries: 1 },       // Low flakiness: 1 retry
-    { min_score: 0.3, max_score: 0.6, retries: 2 },    // Medium flakiness: 2 retries
-    { min_score: 0.6, max_score: 1.01, retries: 3 },   // High flakiness: 3 retries (1.01 to include 1.0)
-  ],
-  default_retries: 1,
-  max_retries: 5,
-};
-
-// Feature #1105: Store for retry strategy settings per organization
-export const retryStrategySettings: Map<string, RetryStrategySettings> = new Map();
-
-// Feature #1105: Helper function to get retry strategy settings for an organization
-export function getRetryStrategySettings(organizationId: string): RetryStrategySettings {
-  return retryStrategySettings.get(organizationId) || { ...DEFAULT_RETRY_STRATEGY_SETTINGS, rules: [...DEFAULT_RETRY_STRATEGY_SETTINGS.rules] };
-}
-
-// Feature #1105: Helper function to update retry strategy settings for an organization
-export function setRetryStrategySettings(organizationId: string, settings: Partial<RetryStrategySettings>): RetryStrategySettings {
-  const current = getRetryStrategySettings(organizationId);
-  const updated: RetryStrategySettings = {
-    ...current,
-    ...settings,
-    // Validate max_retries is between 1 and 10
-    max_retries: Math.max(1, Math.min(10, settings.max_retries ?? current.max_retries)),
-    // Validate default_retries doesn't exceed max_retries
-    default_retries: Math.max(0, Math.min(
-      settings.max_retries ?? current.max_retries,
-      settings.default_retries ?? current.default_retries
-    )),
-    // Ensure rules array exists
-    rules: settings.rules ?? current.rules,
-  };
-  retryStrategySettings.set(organizationId, updated);
-  return updated;
-}
-
-// Feature #1105: Helper function to get the appropriate retry count for a given flakiness score
-export function getRetriesForFlakinessScore(organizationId: string, flakinessScore: number): number {
-  const settings = getRetryStrategySettings(organizationId);
-
-  if (!settings.enabled) {
-    return settings.default_retries;
-  }
-
-  // Find the matching rule
-  for (const rule of settings.rules) {
-    if (flakinessScore >= rule.min_score && flakinessScore < rule.max_score) {
-      return Math.min(rule.retries, settings.max_retries);
-    }
-  }
-
-  // No matching rule, use default
-  return settings.default_retries;
-}
-
-// Seed default organizations
-organizations.set('1', {
-  id: '1',
-  name: 'Default Organization',
-  slug: 'default-org',
-  timezone: 'UTC',
-  created_at: new Date(),
-});
-
-organizations.set('2', {
-  id: '2',
-  name: 'Other Organization',
-  slug: 'other-org',
-  timezone: 'UTC',
-  created_at: new Date(),
-});
-
-// Test users belong to organizations
-organizationMembers.set('1', [
-  { user_id: '1', organization_id: '1', role: 'owner' },
-  { user_id: '2', organization_id: '1', role: 'admin' },
-  { user_id: '3', organization_id: '1', role: 'developer' },
-  { user_id: '4', organization_id: '1', role: 'viewer' },
-]);
-
-// User 5 belongs to a different organization, and user 1 (owner) is an admin in both
-organizationMembers.set('2', [
-  { user_id: '5', organization_id: '2', role: 'owner' },
-  { user_id: '1', organization_id: '2', role: 'admin' }, // Allow owner@example.com to switch orgs
-]);
+// Re-export helper functions from repository
+export const getRetryStrategySettings = repoGetRetryStrategySettings;
+export const setRetryStrategySettings = repoSetRetryStrategySettings;
+export const getRetriesForFlakinessScore = repoGetRetriesForFlakinessScore;
+export const getAutoQuarantineSettings = repoGetAutoQuarantineSettings;
+export const setAutoQuarantineSettings = repoSetAutoQuarantineSettings;
 
 // Helper function to get user's first organization
 export function getUserOrganization(userId: string): string | null {
@@ -190,26 +79,6 @@ export function getUserOrganizations(userId: string): Array<{ organization_id: s
   }
 
   return userOrgs;
-}
-
-// Feature #1104: Helper function to get auto-quarantine settings for an organization
-export function getAutoQuarantineSettings(organizationId: string): AutoQuarantineSettings {
-  return autoQuarantineSettings.get(organizationId) || { ...DEFAULT_AUTO_QUARANTINE_SETTINGS };
-}
-
-// Feature #1104: Helper function to update auto-quarantine settings for an organization
-export function setAutoQuarantineSettings(organizationId: string, settings: Partial<AutoQuarantineSettings>): AutoQuarantineSettings {
-  const current = getAutoQuarantineSettings(organizationId);
-  const updated: AutoQuarantineSettings = {
-    ...current,
-    ...settings,
-    // Validate threshold is between 0 and 1
-    threshold: Math.max(0, Math.min(1, settings.threshold ?? current.threshold)),
-    // Validate min_runs is at least 2
-    min_runs: Math.max(2, settings.min_runs ?? current.min_runs),
-  };
-  autoQuarantineSettings.set(organizationId, updated);
-  return updated;
 }
 
 interface InvitationBody {

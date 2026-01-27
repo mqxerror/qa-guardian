@@ -273,6 +273,19 @@ async function initializeSchema(): Promise<void> {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
 
+    -- Invitations table (Feature #2085: Organization invitations)
+    CREATE TABLE IF NOT EXISTS invitations (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      email VARCHAR(255) NOT NULL,
+      role VARCHAR(50) NOT NULL,
+      invited_by UUID,
+      token_hash VARCHAR(255) UNIQUE NOT NULL,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      accepted_at TIMESTAMP WITH TIME ZONE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
     -- Visual Baselines table
     CREATE TABLE IF NOT EXISTS visual_baselines (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -418,6 +431,8 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires ON token_blacklist(expires_at);
     CREATE INDEX IF NOT EXISTS idx_reset_tokens_email ON reset_tokens(user_email);
     CREATE INDEX IF NOT EXISTS idx_reset_tokens_expires ON reset_tokens(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_invitations_organization ON invitations(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email);
     CREATE INDEX IF NOT EXISTS idx_visual_baselines_test ON visual_baselines(test_id);
     CREATE INDEX IF NOT EXISTS idx_flaky_tests_test ON flaky_tests(test_id);
     CREATE INDEX IF NOT EXISTS idx_flaky_tests_project ON flaky_tests(project_id);
