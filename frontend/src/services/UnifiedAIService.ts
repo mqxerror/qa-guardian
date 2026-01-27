@@ -200,6 +200,14 @@ class UnifiedAIServiceClass {
       });
 
       if (!response.ok) {
+        // Feature #2065: Return user-friendly message for auth errors
+        if (response.status === 401 || response.status === 403) {
+          return {
+            success: false,
+            content: '🔐 **Authentication Required**\n\nPlease log in to use the AI Assistant. Your session may have expired.',
+            error: 'auth_required',
+          };
+        }
         throw new Error(`API error: ${response.status}`);
       }
 

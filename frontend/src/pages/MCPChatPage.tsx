@@ -6,6 +6,7 @@
 // Feature #1769: Now uses UnifiedAIService for consistent behavior
 
 import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import {
@@ -141,6 +142,7 @@ interface MCPChatMessage {
 
 export function MCPChatPage() {
   const { user, token } = useAuthStore();
+  const location = useLocation();
   const [messages, setMessages] = useState<MCPChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -385,6 +387,72 @@ Just type naturally and I'll help you manage your QA workflows!`,
     '/help',
     'What coverage gaps exist?'
   ];
+
+  // Feature #2065: Show login prompt when user is not authenticated
+  if (!token) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+          <div className="max-w-md w-full bg-card rounded-xl border border-border shadow-lg p-8 text-center">
+            {/* Icon */}
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
+              <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+
+            {/* Title */}
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              Login Required
+            </h1>
+
+            {/* Description */}
+            <p className="text-muted-foreground mb-6">
+              Please log in to use the AI Assistant. The MCP Chat interface requires authentication to execute commands and manage your QA workflows.
+            </p>
+
+            {/* Features list */}
+            <div className="text-left mb-6 bg-muted/50 rounded-lg p-4">
+              <p className="text-sm font-medium text-foreground mb-2">With MCP Chat you can:</p>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li className="flex items-center gap-2">
+                  <span className="text-green-500">✓</span> Run tests with natural language
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-green-500">✓</span> Create and manage test suites
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-green-500">✓</span> Analyze test failures with AI
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-green-500">✓</span> Generate reports and insights
+                </li>
+              </ul>
+            </div>
+
+            {/* Login button */}
+            <Link
+              to={`/login?redirect=${encodeURIComponent(location.pathname)}`}
+              className="inline-flex items-center justify-center gap-2 w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+              </svg>
+              Log In to Continue
+            </Link>
+
+            {/* Register link */}
+            <p className="mt-4 text-sm text-muted-foreground">
+              Don't have an account?{' '}
+              <Link to="/register" className="text-primary hover:underline">
+                Create one
+              </Link>
+            </p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
