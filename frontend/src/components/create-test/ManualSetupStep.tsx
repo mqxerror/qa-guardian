@@ -398,86 +398,93 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
             Test Configuration
           </h4>
 
-          <FormField label="Test Name" required error={touched.name ? errors.name : undefined}>
-            <input
-              type="text"
-              value={formState.name}
-              onChange={(e) => updateField('name', e.target.value)}
-              onBlur={() => handleBlur('name')}
-              placeholder="Enter test name"
-              className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                touched.name && errors.name
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
-              }`}
-            />
-          </FormField>
+          {/* Skip common fields for visual tests - VisualConfig component renders them */}
+          {formState.testType !== 'visual' && (
+            <>
+              <FormField label="Test Name" required error={touched.name ? errors.name : undefined}>
+                <input
+                  type="text"
+                  value={formState.name}
+                  onChange={(e) => updateField('name', e.target.value)}
+                  onBlur={() => handleBlur('name')}
+                  placeholder="Enter test name"
+                  className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    touched.name && errors.name
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                  }`}
+                />
+              </FormField>
 
-          <FormField label="Target URL" required error={touched.targetUrl ? errors.targetUrl : undefined}>
-            <input
-              type="url"
-              value={formState.targetUrl}
-              onChange={(e) => updateField('targetUrl', e.target.value)}
-              onBlur={() => handleBlur('targetUrl')}
-              placeholder={projectBaseUrl || 'https://your-site.com'}
-              className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                touched.targetUrl && errors.targetUrl
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
-              }`}
-            />
-          </FormField>
+              <FormField label="Target URL" required error={touched.targetUrl ? errors.targetUrl : undefined}>
+                <input
+                  type="url"
+                  value={formState.targetUrl}
+                  onChange={(e) => updateField('targetUrl', e.target.value)}
+                  onBlur={() => handleBlur('targetUrl')}
+                  placeholder={projectBaseUrl || 'https://your-site.com'}
+                  className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    touched.targetUrl && errors.targetUrl
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                  }`}
+                />
+              </FormField>
 
-          <FormField label="Description">
-            <textarea
-              value={formState.description}
-              onChange={(e) => updateField('description', e.target.value)}
-              placeholder="Describe what this test does..."
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-            />
-          </FormField>
+              <FormField label="Description">
+                <textarea
+                  value={formState.description}
+                  onChange={(e) => updateField('description', e.target.value)}
+                  placeholder="Describe what this test does..."
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                />
+              </FormField>
+            </>
+          )}
 
           {/* Type-specific fields */}
           {renderTypeSpecificFields()}
 
-          {/* Advanced Settings */}
-          <CollapsibleSection
-            title="Advanced Settings"
-            isOpen={showAdvanced}
-            onToggle={() => setShowAdvanced(!showAdvanced)}
-          >
-            <div className="space-y-4">
-              <FormField label="Tags" hint="Comma-separated list of tags">
-                <input
-                  type="text"
-                  placeholder="smoke, regression, critical"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </FormField>
+          {/* Advanced Settings - skip for visual tests (VisualConfig has its own) */}
+          {formState.testType !== 'visual' && (
+            <CollapsibleSection
+              title="Advanced Settings"
+              isOpen={showAdvanced}
+              onToggle={() => setShowAdvanced(!showAdvanced)}
+            >
+              <div className="space-y-4">
+                <FormField label="Tags" hint="Comma-separated list of tags">
+                  <input
+                    type="text"
+                    placeholder="smoke, regression, critical"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </FormField>
 
-              <FormField label="Timeout (ms)" hint="Maximum time for test execution">
-                <input
-                  type="number"
-                  defaultValue={30000}
-                  min={1000}
-                  max={300000}
-                  step={1000}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </FormField>
+                <FormField label="Timeout (ms)" hint="Maximum time for test execution">
+                  <input
+                    type="number"
+                    defaultValue={30000}
+                    min={1000}
+                    max={300000}
+                    step={1000}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </FormField>
 
-              <FormField label="Retries" hint="Number of retry attempts on failure">
-                <input
-                  type="number"
-                  defaultValue={0}
-                  min={0}
-                  max={5}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </FormField>
-            </div>
-          </CollapsibleSection>
+                <FormField label="Retries" hint="Number of retry attempts on failure">
+                  <input
+                    type="number"
+                    defaultValue={0}
+                    min={0}
+                    max={5}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </FormField>
+              </div>
+            </CollapsibleSection>
+          )}
         </div>
       )}
 
