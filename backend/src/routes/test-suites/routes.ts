@@ -245,8 +245,8 @@ export async function coreRoutes(app: FastifyInstance) {
       const lastRun = testRunsForTest[0];
 
       // Calculate last result from the most recent run
-      // Feature #2051: Expand type to include all TestRunStatus values
-      let lastResult: 'pending' | 'running' | 'paused' | 'passed' | 'failed' | 'warning' | 'error' | 'cancelled' | 'cancelling' | null = null;
+      // Feature #2051: Expand type to include all TestRunStatus values (including visual statuses)
+      let lastResult: 'pending' | 'running' | 'paused' | 'passed' | 'failed' | 'warning' | 'error' | 'cancelled' | 'cancelling' | 'visual_approved' | 'visual_rejected' | null = null;
       if (lastRun) {
         lastResult = lastRun.status;
       }
