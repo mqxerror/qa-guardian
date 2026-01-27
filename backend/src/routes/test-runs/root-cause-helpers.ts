@@ -412,12 +412,15 @@ export function generateRelatedCommits(errorMessage: string, branch: string, now
   const isConfigError = /config|env|environment|permission/i.test(errorMessage);
 
   const commits: RelatedCommit[] = [];
-  const authors = [
+  const authors: Array<{ name: string; email: string; avatar_url: string }> = [
     { name: 'Alice Developer', email: 'alice@example.com', avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4' },
     { name: 'Bob Engineer', email: 'bob@example.com', avatar_url: 'https://avatars.githubusercontent.com/u/2?v=4' },
     { name: 'Carol QA', email: 'carol@example.com', avatar_url: 'https://avatars.githubusercontent.com/u/3?v=4' },
     { name: 'Dave DevOps', email: 'dave@example.com', avatar_url: 'https://avatars.githubusercontent.com/u/4?v=4' },
-  ];
+  ] as const;
+
+  // Default author for safe access
+  const defaultAuthor = { name: 'Unknown', email: 'unknown@example.com', avatar_url: 'https://avatars.githubusercontent.com/u/0?v=4' };
 
   // Generate commits based on error type
   if (isElementError) {
@@ -425,7 +428,7 @@ export function generateRelatedCommits(errorMessage: string, branch: string, now
       sha: 'abc123def456789012345678901234567890abcd',
       short_sha: 'abc123d',
       message: 'refactor: Update button component class names',
-      author: authors[0],
+      author: authors[0] ?? defaultAuthor,
       timestamp: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
       files_changed: [
         { path: 'src/components/Button.tsx', additions: 15, deletions: 10, status: 'modified' as const },
@@ -438,7 +441,7 @@ export function generateRelatedCommits(errorMessage: string, branch: string, now
       sha: 'def456abc789012345678901234567890defgh',
       short_sha: 'def456a',
       message: 'feat: Add new login form layout',
-      author: authors[1],
+      author: authors[1] ?? defaultAuthor,
       timestamp: new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString(),
       files_changed: [
         { path: 'src/pages/Login.tsx', additions: 45, deletions: 30, status: 'modified' as const },
@@ -452,7 +455,7 @@ export function generateRelatedCommits(errorMessage: string, branch: string, now
       sha: 'net789abc123456789012345678901234567890',
       short_sha: 'net789a',
       message: 'fix: Update API endpoint URLs for v2',
-      author: authors[1],
+      author: authors[1] ?? defaultAuthor,
       timestamp: new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString(),
       files_changed: [
         { path: 'src/api/client.ts', additions: 8, deletions: 8, status: 'modified' as const },
@@ -465,7 +468,7 @@ export function generateRelatedCommits(errorMessage: string, branch: string, now
       sha: 'api456def789012345678901234567890abcde',
       short_sha: 'api456d',
       message: 'chore: Add request timeout configuration',
-      author: authors[3],
+      author: authors[3] ?? defaultAuthor,
       timestamp: new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString(),
       files_changed: [
         { path: 'src/api/config.ts', additions: 12, deletions: 2, status: 'modified' as const },
@@ -478,7 +481,7 @@ export function generateRelatedCommits(errorMessage: string, branch: string, now
       sha: 'data123xyz456789012345678901234567890ab',
       short_sha: 'data123',
       message: 'refactor: Change user data structure',
-      author: authors[0],
+      author: authors[0] ?? defaultAuthor,
       timestamp: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
       files_changed: [
         { path: 'src/types/user.ts', additions: 20, deletions: 15, status: 'modified' as const },
@@ -493,7 +496,7 @@ export function generateRelatedCommits(errorMessage: string, branch: string, now
       sha: 'cfg789env123456789012345678901234567890',
       short_sha: 'cfg789e',
       message: 'chore: Update environment configuration',
-      author: authors[3],
+      author: authors[3] ?? defaultAuthor,
       timestamp: new Date(now.getTime() - 45 * 60 * 1000).toISOString(),
       files_changed: [
         { path: '.env.example', additions: 5, deletions: 2, status: 'modified' as const },
@@ -510,7 +513,7 @@ export function generateRelatedCommits(errorMessage: string, branch: string, now
     sha: 'gen001abc456789012345678901234567890xyz',
     short_sha: 'gen001a',
     message: 'test: Update test fixtures',
-    author: authors[2],
+    author: authors[2] ?? defaultAuthor,
     timestamp: new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(),
     files_changed: [
       { path: 'tests/fixtures/users.json', additions: 10, deletions: 5, status: 'modified' as const },
@@ -523,7 +526,7 @@ export function generateRelatedCommits(errorMessage: string, branch: string, now
     sha: 'gen002def789012345678901234567890abcde',
     short_sha: 'gen002d',
     message: 'docs: Update README',
-    author: authors[0],
+    author: authors[0] ?? defaultAuthor,
     timestamp: new Date(now.getTime() - 8 * 60 * 60 * 1000).toISOString(),
     files_changed: [
       { path: 'README.md', additions: 25, deletions: 10, status: 'modified' as const },
@@ -688,9 +691,9 @@ export function parseStackTrace(errorMessage: string): { frames: Array<{ functio
     while ((match = frameRegex.exec(rawTrace)) !== null) {
       frames.push({
         function_name: match[1] || '<anonymous>',
-        file: match[2],
-        line: parseInt(match[3], 10),
-        column: parseInt(match[4], 10),
+        file: match[2] ?? 'unknown',
+        line: parseInt(match[3] ?? '0', 10),
+        column: parseInt(match[4] ?? '0', 10),
       });
     }
   }

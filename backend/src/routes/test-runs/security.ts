@@ -1036,7 +1036,7 @@ export async function securityRoutes(app: FastifyInstance) {
       totalVulns = Math.max(10, totalVulns + dailyNew - dailyFixed);
 
       dataPoints.push({
-        date: date.toISOString().split('T')[0],
+        date: date.toISOString().split('T')[0] ?? '',
         vulnerabilities: {
           total: totalVulns,
           critical: Math.floor(totalVulns * 0.05),
@@ -1049,6 +1049,9 @@ export async function securityRoutes(app: FastifyInstance) {
       });
     }
 
+    const lastDataPoint = dataPoints[dataPoints.length - 1];
+    const firstDataPoint = dataPoints[0];
+
     return {
       period,
       start_date: startDate.toISOString(),
@@ -1057,7 +1060,7 @@ export async function securityRoutes(app: FastifyInstance) {
       summary: {
         total_data_points: dataPoints.length,
         average_vulnerabilities: Math.round(dataPoints.reduce((a, b) => a + b.vulnerabilities.total, 0) / dataPoints.length),
-        trend: dataPoints.length > 1 && dataPoints[dataPoints.length - 1].vulnerabilities.total < dataPoints[0].vulnerabilities.total ? 'improving' : 'stable',
+        trend: dataPoints.length > 1 && lastDataPoint && firstDataPoint && lastDataPoint.vulnerabilities.total < firstDataPoint.vulnerabilities.total ? 'improving' : 'stable',
         average_fix_rate: Math.round(dataPoints.reduce((a, b) => a + b.fix_rate, 0) / dataPoints.length),
       },
       filters_applied: { project_id, period },
