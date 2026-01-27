@@ -53,6 +53,7 @@ import {
   loadBaselineWithValidation,
   hasBaseline,
   saveBaseline as saveBaselineToFile,
+  AntiAliasingOptions,
 } from './visual-regression';
 
 import {
@@ -75,6 +76,7 @@ import {
   trackHealingFailure,
   getSelectorHistory,
   recordHealingEvent,
+  PendingHealingApproval,
 } from './healing';
 
 import {
@@ -168,11 +170,14 @@ export interface ExecuteTestConfig {
   id: string;
   name: string;
   steps: any[];
+  suite_id?: string; // Feature #1059: Required for healing stats tracking
+  organization_id?: string; // Organization context for visual comparison
   test_type?: 'e2e' | 'visual_regression' | 'lighthouse' | 'load' | 'accessibility';
   device_preset?: 'mobile' | 'desktop';
   performance_threshold?: number;
   lcp_threshold?: number;
   cls_threshold?: number;
+  color_threshold?: number; // Alias for cls_threshold for visual tests
   bypass_csp?: boolean;
   ignore_ssl_errors?: boolean;
   audit_timeout?: number;
@@ -196,6 +201,7 @@ export interface ExecuteTestConfig {
   mask_dynamic_content?: boolean;
   branch?: string;
   screenshot_timeout?: number; // Timeout for screenshot capture in ms
+  anti_aliasing_tolerance?: 'off' | 'low' | 'medium' | 'high'; // Feature #647: Anti-aliasing tolerance
   // K6 Load test fields
   virtual_users?: number;
   duration?: number;
@@ -598,7 +604,7 @@ async function executeTest(
                   console.log(`[HEALING] Element not found for selector: ${step.selector}`);
 
                   // Feature #1059: Get project ID for stats tracking
-                  const healingSuite = testSuites.get(test.suite_id);
+                  const healingSuite = test.suite_id ? testSuites.get(test.suite_id) : undefined;
                   const healingProjectId = healingSuite?.project_id || 'unknown';
 
                   // Feature #1059: Track healing attempt
@@ -738,7 +744,7 @@ async function executeTest(
                   console.log(`[HEALING] Element not found for selector: ${step.selector}`);
 
                   // Feature #1059: Get project ID for stats tracking
-                  const fillHealingSuite = testSuites.get(test.suite_id);
+                  const fillHealingSuite = test.suite_id ? testSuites.get(test.suite_id) : undefined;
                   const fillHealingProjectId = fillHealingSuite?.project_id || 'unknown';
 
                   // Feature #1059: Track healing attempt
@@ -890,7 +896,7 @@ async function executeTest(
 
             // Try to find baseline for this checkpoint
             const checkpointBaselineKey = `${test.id}-${checkpointName}`;
-            const checkpointBaselinePath = path.join(baselinesDir, `${checkpointBaselineKey}.png`);
+            const checkpointBaselinePath = path.join(BASELINES_DIR, `${checkpointBaselineKey}.png`);
 
             if (fs.existsSync(checkpointBaselinePath)) {
               // Compare with existing baseline
@@ -916,16 +922,16 @@ async function executeTest(
 
                 // Store diff image for review
                 if (checkpointComparison.diffImage) {
-                  diff_image_base64 = checkpointComparison.diffImage.toString('base64');
+                  diffImageBase64 = checkpointComparison.diffImage; // Already base64 encoded
                 }
-                baseline_screenshot_base64 = checkpointBaseline.toString('base64');
+                baselineScreenshotBase64 = checkpointBaseline.toString('base64');
               } else {
                 // Checkpoint passed
                 console.log(`[Visual Checkpoint] "${checkpointName}" passed: ${checkpointComparison.diffPercentage?.toFixed(2) ?? 0}% difference`);
               }
             } else {
               // No baseline exists, create one
-              fs.mkdirSync(baselinesDir, { recursive: true });
+              fs.mkdirSync(BASELINES_DIR, { recursive: true });
               fs.writeFileSync(checkpointBaselinePath, checkpointBuffer);
               console.log(`[Visual Checkpoint] Created baseline for "${checkpointName}"`);
             }
@@ -971,9 +977,12 @@ async function executeTest(
             const numStepViolations = Math.floor(Math.random() * 4);
             for (let v = 0; v < numStepViolations; v++) {
               const violationType = stepViolationTypes[Math.floor(Math.random() * stepViolationTypes.length)];
-              if (!stepViolations.find(sv => sv.id === violationType.id)) {
+              if (violationType && !stepViolations.find(sv => sv.id === violationType.id)) {
                 stepViolations.push({
-                  ...violationType,
+                  id: violationType.id,
+                  impact: violationType.impact,
+                  description: violationType.description,
+                  wcagTags: violationType.wcagTags,
                   nodes: [{ html: '<div class="element">Sample</div>', target: ['.element'] }],
                 });
               }
@@ -1201,6 +1210,7 @@ async function executeTest(
       // Add crash-specific step result
       stepResults.push({
         id: 'browser_crash',
+        action: 'browser_crash_detection',
         name: 'Browser Crash Detection',
         status: 'failed',
         duration_ms: Date.now() - startTime,

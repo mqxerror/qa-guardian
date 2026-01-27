@@ -155,6 +155,81 @@ export interface StepResult {
       label?: string;
     }>;
   };
+  // Feature #1137: Additional step metadata for detailed reporting
+  name?: string; // Human-readable step name
+  metadata?: Record<string, any>; // Arbitrary metadata for the step
+  // Feature #1136: Accessibility test results
+  accessibility?: {
+    violations: Array<{
+      id: string;
+      impact: 'critical' | 'serious' | 'moderate' | 'minor';
+      description: string;
+      wcagTags: string[];
+      nodes: Array<{
+        html: string;
+        target: string[];
+      }>;
+    }>;
+    passes?: number;
+    incomplete?: number;
+    inapplicable?: number;
+    score?: number;
+    wcagLevel?: 'A' | 'AA' | 'AAA'; // WCAG conformance level tested
+    axeVersion?: string; // Version of axe-core used
+  };
+  // Feature #1296: Load test results - flexible structure for K6 results
+  load_test?: {
+    summary?: {
+      total_requests?: number;
+      failed_requests?: number;
+      success_rate?: string;
+      requests_per_second?: string;
+    };
+    response_times?: {
+      min?: number;
+      avg?: number;
+      p95?: number;
+      p99?: number;
+      max?: number;
+    };
+    virtual_users?: {
+      configured?: number;
+      max_concurrent?: number;
+    };
+    duration?: {
+      configured?: number;
+      actual?: number;
+      ramp_up?: number;
+    };
+    custom_metrics?: Record<string, any>;
+    server_unavailable?: {
+      detected?: boolean;
+      failureRate?: number;
+      message?: string;
+    };
+    // Legacy K6 output format support
+    vus?: number;
+    duration_s?: number;
+    iterations?: number;
+    http_reqs?: number;
+    http_req_duration?: {
+      avg?: number;
+      min?: number;
+      max?: number;
+      p95?: number;
+      p99?: number;
+    };
+    http_req_failed?: number;
+    error_rate?: number;
+    throughput?: number;
+    thresholds_passed?: boolean;
+    thresholds?: Array<{
+      metric: string;
+      passed: boolean;
+      value: number;
+      threshold: string;
+    }>;
+  };
 }
 
 /**
