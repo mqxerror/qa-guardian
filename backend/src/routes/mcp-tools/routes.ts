@@ -426,22 +426,25 @@ export default async function mcpToolsRoutes(fastify: FastifyInstance) {
       };
       // Feature #1941: Complexity-based model routing
       complexity?: 'simple' | 'complex';
+      // Feature #2074: User-selected provider/model preferences
+      provider?: 'kie' | 'anthropic' | 'auto';
+      model?: string;
     };
   }>('/chat', async (request, reply) => {
     const startTime = Date.now();
 
     try {
-      const { message, context = {}, complexity = 'complex' } = request.body;
+      const { message, context = {}, complexity = 'complex', provider, model } = request.body;
 
-      // Feature #1941: Select model based on complexity
-      // Simple: Haiku ($0.075/M) - for passed tests, minor diffs
-      // Complex: Sonnet ($0.90/M) - for failed tests, errors, detailed analysis
+      // Feature #2074: User-specified model takes precedence
+      // Feature #1941: Fallback to complexity-based model routing
       const modelByComplexity = {
         simple: 'claude-3-haiku-20240307',
         complex: 'claude-sonnet-4-20250514',  // Claude Sonnet 4 for complex analysis
       };
-      const selectedModel = modelByComplexity[complexity];
-      logger.info(`Complexity: ${complexity}, Selected model: ${selectedModel}`);
+      // If user specified a model (from preferences), use that; otherwise use complexity-based selection
+      const selectedModel = model || modelByComplexity[complexity];
+      logger.info(`User model: ${model || 'auto'}, Complexity: ${complexity}, Selected model: ${selectedModel}`);
 
       if (!message) {
         return reply.status(400).send({

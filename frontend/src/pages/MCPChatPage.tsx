@@ -15,6 +15,13 @@ import {
   SlashCommandSuggestion,
 } from '../components/mcp-chat';
 import { UnifiedAIService, AIStatusResponse } from '../services/UnifiedAIService';
+import {
+  useAIModelPreferencesStore,
+  MODELS,
+  getModelsForProvider,
+  type AIModel,
+  type AIProvider,
+} from '../stores/aiModelPreferencesStore';
 
 // Helper functions that delegate to the modular system
 function parseSlashCommand(message: string) {
@@ -155,6 +162,14 @@ export function MCPChatPage() {
   const [commandSuggestions, setCommandSuggestions] = useState<Array<{ command: string; description: string; params: string[] }>>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Feature #2074: AI Model Selection for Different Tasks
+  const { preferences, setTaskPreference, getEffectivePreference } = useAIModelPreferencesStore();
+  const chatPreference = preferences.chat;
+  const [showModelSelector, setShowModelSelector] = useState(false);
+  const availableModels = chatPreference.provider === 'auto'
+    ? MODELS
+    : getModelsForProvider(chatPreference.provider);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -196,6 +211,7 @@ Just type naturally and I'll help you manage your QA workflows!`,
   }, []);
 
   // Feature #1769: Call AI via UnifiedAIService for consistent behavior
+  // Feature #2074: Pass user's model preferences to the API
   const callMCPChatAPI = async (userMessage: string): Promise<{
     content: string;
     toolCalled?: string;
@@ -210,8 +226,14 @@ Just type naturally and I'll help you manage your QA workflows!`,
     // Feature #1729: Quick action buttons
     actions?: QuickAction[];
   }> => {
+    // Get the effective model preferences (resolves 'auto' to actual provider/model)
+    const effectivePrefs = getEffectivePreference('chat');
+
     // Use UnifiedAIService.chat() for consistent behavior
-    const response = await UnifiedAIService.chat(userMessage, conversationId);
+    const response = await UnifiedAIService.chat(userMessage, conversationId, {
+      provider: effectivePrefs.provider,
+      model: effectivePrefs.model,
+    });
 
     // Generate quick action buttons based on the tool and result
     const actions = generateQuickActions(
@@ -483,6 +505,63 @@ Just type naturally and I'll help you manage your QA workflows!`,
                   <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
                     {aiStatus.providers.primary.model.split('-').slice(0, 2).join('-')}
                   </span>
+                )}
+              </div>
+              <span className="text-xs text-muted-foreground">|</span>
+              {/* Feature #2074: Model Selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowModelSelector(!showModelSelector)}
+                  className="flex items-center gap-1.5 px-2 py-1 text-xs rounded-md border border-border hover:bg-muted"
+                  title="Select AI model for chat"
+                >
+                  <span className="text-muted-foreground">Model:</span>
+                  <span className="font-medium text-foreground">
+                    {chatPreference.model === 'auto' ? 'Auto' : MODELS.find(m => m.id === chatPreference.model)?.name || chatPreference.model}
+                  </span>
+                  <svg className="w-3 h-3 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {showModelSelector && (
+                  <div className="absolute right-0 top-full mt-1 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
+                    <div className="p-2 border-b border-border">
+                      <p className="text-xs text-muted-foreground">Select model for MCP Chat</p>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {availableModels.map(model => (
+                        <button
+                          key={model.id}
+                          onClick={() => {
+                            setTaskPreference('chat', { ...chatPreference, model: model.id });
+                            setShowModelSelector(false);
+                          }}
+                          className={`w-full px-3 py-2 text-left hover:bg-muted flex items-center justify-between ${
+                            chatPreference.model === model.id ? 'bg-primary/10' : ''
+                          }`}
+                        >
+                          <div>
+                            <div className="text-sm font-medium text-foreground">{model.name}</div>
+                            <div className="text-xs text-muted-foreground">{model.description}</div>
+                          </div>
+                          {chatPreference.model === model.id && (
+                            <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="p-2 border-t border-border">
+                      <Link
+                        to="/settings?tab=ai-config"
+                        className="text-xs text-primary hover:underline"
+                        onClick={() => setShowModelSelector(false)}
+                      >
+                        Configure all AI settings
+                      </Link>
+                    </div>
+                  </div>
                 )}
               </div>
               <span className="text-xs text-muted-foreground">|</span>

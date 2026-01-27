@@ -182,10 +182,12 @@ class UnifiedAIServiceClass {
   /**
    * Send a chat message to the AI
    * Used by MCP Chat and other natural language interfaces
+   * Feature #2074: Added modelPreferences for user-specified provider/model
    */
   public async chat(
     message: string,
-    conversationId?: string
+    conversationId?: string,
+    modelPreferences?: { provider?: string; model?: string }
   ): Promise<ChatResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/mcp/chat`, {
@@ -196,6 +198,11 @@ class UnifiedAIServiceClass {
           context: {
             conversation_id: conversationId || `conv_${Date.now()}`,
           },
+          // Feature #2074: Pass user's model preferences to backend
+          ...(modelPreferences && {
+            provider: modelPreferences.provider,
+            model: modelPreferences.model,
+          }),
         }),
       });
 
