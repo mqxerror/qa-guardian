@@ -1176,6 +1176,29 @@ export function generateRootCauseAnalysis(
     weak_evidence: allEvidence.filter(e => e.strength === 'weak').length,
   };
 
+  // Handle case where no causes were identified
+  if (!primaryCause) {
+    const unknownCause: RootCause = {
+      id: 'unknown',
+      category: 'Unknown',
+      title: 'Unable to Determine Root Cause',
+      description: 'The analysis could not identify a specific root cause from the available evidence.',
+      confidence: 0,
+      evidence: [],
+      is_primary: true,
+      fix_recommendations: ['Manual investigation required', 'Review test logs and error messages'],
+      affected_components: ['Unknown'],
+    };
+    return {
+      primary_cause: unknownCause,
+      alternative_causes: [],
+      overall_confidence: 0,
+      evidence_summary: evidenceSummary,
+      ai_reasoning: 'Unable to determine root cause from available evidence.',
+      requires_manual_review: true,
+    };
+  }
+
   // Generate AI reasoning
   const aiReasoning = `Based on analysis of the error message and ${evidenceSummary.total_evidence_points} evidence points (${evidenceSummary.strong_evidence} strong, ${evidenceSummary.moderate_evidence} moderate, ${evidenceSummary.weak_evidence} weak), the most likely root cause is "${primaryCause.title}" with ${(primaryCause.confidence * 100).toFixed(0)}% confidence. ${alternativeCauses.length > 0 ? `${alternativeCauses.length} alternative cause(s) were also identified with lower confidence.` : ''} The analysis is based on error pattern matching, historical failure data, and code change correlation.`;
 
@@ -1368,9 +1391,9 @@ function parseStackTrace(errorMessage: string): { frames: Array<{ function_name:
     while ((match = frameRegex.exec(rawTrace)) !== null) {
       frames.push({
         function_name: match[1] || '<anonymous>',
-        file: match[2],
-        line: parseInt(match[3], 10),
-        column: parseInt(match[4], 10),
+        file: match[2] ?? 'unknown',
+        line: parseInt(match[3] ?? '0', 10),
+        column: parseInt(match[4] ?? '0', 10),
       });
     }
   }
