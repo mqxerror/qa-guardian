@@ -128,7 +128,10 @@ function testModelSelector() {
   const history = selector.getSelectionHistory();
   console.log(`  - Selection history entries: ${history.length}`);
   if (history.length > 0) {
-    console.log(`  - Last selection: ${history[history.length - 1].feature} -> ${history[history.length - 1].model}`);
+    const lastSelection = history[history.length - 1];
+    if (lastSelection) {
+      console.log(`  - Last selection: ${lastSelection.feature} -> ${lastSelection.model}`);
+    }
   }
 
   // Step 13: Test getFeatureModelsSummary

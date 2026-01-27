@@ -102,7 +102,10 @@ async function testHotSwap() {
   const history = router.getProviderSwitchHistory();
   console.log(`  - Total switch events: ${history.length}`);
   for (let i = 0; i < history.length; i++) {
-    console.log(`    ${i + 1}. ${history[i].previousPrimary} -> ${history[i].newPrimary} (${history[i].reason})`);
+    const event = history[i];
+    if (event) {
+      console.log(`    ${i + 1}. ${event.previousPrimary} -> ${event.newPrimary} (${event.reason})`);
+    }
   }
 
   // Step 9: Test getCircuitBreaker

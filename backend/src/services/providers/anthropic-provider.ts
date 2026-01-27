@@ -701,8 +701,10 @@ export class AnthropicProvider implements IAIProvider {
    * Estimate cost for tokens
    */
   estimateCost(inputTokens: number, outputTokens: number, model?: string): number {
-    const pricing = TOKEN_PRICING[(model || this.config.defaultModel)] ||
-      TOKEN_PRICING['claude-sonnet-4-20250514'];
+    // Default pricing for claude-sonnet-4 if model not found
+    const defaultPricing = { input: 3.00, output: 15.00 };
+    const pricing = TOKEN_PRICING[(model || this.config.defaultModel)] ??
+      TOKEN_PRICING['claude-sonnet-4-20250514'] ?? defaultPricing;
 
     const inputCost = (inputTokens / 1_000_000) * pricing.input;
     const outputCost = (outputTokens / 1_000_000) * pricing.output;
@@ -724,9 +726,10 @@ export class AnthropicProvider implements IAIProvider {
     this.usageStats.requestsByModel[response.model] =
       (this.usageStats.requestsByModel[response.model] || 0) + 1;
 
-    // Calculate cost
-    const pricing = TOKEN_PRICING[response.model] ||
-      TOKEN_PRICING['claude-sonnet-4-20250514'];
+    // Calculate cost (default to claude-sonnet-4 pricing if model not found)
+    const defaultPricing = { input: 3.00, output: 15.00 };
+    const pricing = TOKEN_PRICING[response.model] ??
+      TOKEN_PRICING['claude-sonnet-4-20250514'] ?? defaultPricing;
 
     const inputCost = (response.inputTokens / 1_000_000) * pricing.input;
     const outputCost = (response.outputTokens / 1_000_000) * pricing.output;

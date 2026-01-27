@@ -9,6 +9,7 @@
  */
 
 import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest } from './types';
+import type { SiteAnalysis } from '../../services/crawl4ai';
 
 export function generateVisualTemplate(options: TemplateGeneratorOptions): TestSuiteTemplate {
   const { baseUrl, siteAnalysis, projectName } = options;
@@ -120,7 +121,7 @@ interface KeyPage {
   url: string;
 }
 
-function getKeyPagesFromAnalysis(analysis: typeof import('../../services/crawl4ai').SiteAnalysis.prototype, baseUrl: string): KeyPage[] {
+function getKeyPagesFromAnalysis(analysis: SiteAnalysis, baseUrl: string): KeyPage[] {
   const pages: KeyPage[] = [];
   const hostname = new URL(baseUrl).hostname;
 

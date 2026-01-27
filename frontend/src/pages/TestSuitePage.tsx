@@ -172,7 +172,7 @@ interface TestType {
   reviewed_at?: string;
   // Self-healing properties
   healing_active?: boolean;
-  healing_status?: 'idle' | 'healing' | 'healed';
+  healing_status?: 'idle' | 'healing' | 'healed' | 'pending' | 'applied' | 'rejected';
   healing_count?: number;
   // Feature #1958: Run metadata for test list display
   run_count?: number;
@@ -1020,7 +1020,7 @@ function TestSuitePage() {
         // Update all tests in state
         if (data.results) {
           const updatedTestMap = new Map(data.results.filter((r: any) => r.success).map((r: any) => [r.test_id, r.test]));
-          setTests(prev => prev.map(t => updatedTestMap.has(t.id) ? updatedTestMap.get(t.id) : t));
+          setTests(prev => prev.map(t => updatedTestMap.has(t.id) ? (updatedTestMap.get(t.id) as TestType) : t));
         }
         // Update review stats
         if (suiteId) {

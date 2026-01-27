@@ -11,6 +11,7 @@
  */
 
 import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest } from './types';
+import type { SiteAnalysis } from '../../services/crawl4ai';
 
 export function generateLoadTemplate(options: TemplateGeneratorOptions): TestSuiteTemplate {
   const { baseUrl, siteAnalysis, projectName } = options;
@@ -231,7 +232,7 @@ export function generateLoadTemplate(options: TemplateGeneratorOptions): TestSui
   };
 }
 
-function findLoginUrl(analysis: typeof import('../../services/crawl4ai').SiteAnalysis.prototype, baseUrl: string): string {
+function findLoginUrl(analysis: SiteAnalysis, baseUrl: string): string {
   const loginPatterns = [/login/i, /signin/i, /sign-in/i, /auth/i];
 
   for (const link of analysis.links) {
@@ -248,7 +249,7 @@ function findLoginUrl(analysis: typeof import('../../services/crawl4ai').SiteAna
   return `${baseUrl.replace(/\/$/, '')}/login`;
 }
 
-function getJourneyPages(analysis: typeof import('../../services/crawl4ai').SiteAnalysis.prototype, baseUrl: string): string[] {
+function getJourneyPages(analysis: SiteAnalysis, baseUrl: string): string[] {
   const pages: string[] = [baseUrl];
   const addedPaths = new Set<string>(['/']);
 

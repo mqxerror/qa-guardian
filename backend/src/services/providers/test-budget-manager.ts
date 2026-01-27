@@ -79,7 +79,7 @@ async function testBudgetManager() {
   console.log(`    alerts generated: ${alerts.length} (expected: 1)`);
 
   if (alerts.length > 0) {
-    console.log(`    Alert type: ${alerts[alerts.length - 1].type}`);
+    console.log(`    Alert type: ${alerts[alerts.length - 1]?.type ?? 'unknown'}`);
   }
 
   // Step 7: Track spending to exceed budget
@@ -94,7 +94,7 @@ async function testBudgetManager() {
   console.log(`    alerts generated: ${alerts.length} (expected: 2)`);
 
   if (alerts.length > 1) {
-    console.log(`    Latest alert type: ${alerts[alerts.length - 1].type}`);
+    console.log(`    Latest alert type: ${alerts[alerts.length - 1]?.type ?? 'unknown'}`);
   }
 
   // Step 8: Test canMakeRequest after exceeding budget
@@ -105,7 +105,7 @@ async function testBudgetManager() {
   console.log(`  - alerts generated: ${alerts.length} (expected: 3 - includes block alert)`);
 
   if (alerts.length > 2) {
-    console.log(`    Latest alert type: ${alerts[alerts.length - 1].type} (expected: request_blocked)`);
+    console.log(`    Latest alert type: ${alerts[alerts.length - 1]?.type ?? 'unknown'} (expected: request_blocked)`);
   }
 
   // Step 9: Test with blockOnExceed disabled

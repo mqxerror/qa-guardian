@@ -10,6 +10,7 @@
  */
 
 import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest } from './types';
+import type { SiteAnalysis } from '../../services/crawl4ai';
 
 export function generatePerformanceTemplate(options: TemplateGeneratorOptions): TestSuiteTemplate {
   const { baseUrl, siteAnalysis, projectName } = options;
@@ -136,7 +137,7 @@ interface KeyPage {
   url: string;
 }
 
-function getKeyPagesForPerformance(analysis: typeof import('../../services/crawl4ai').SiteAnalysis.prototype, baseUrl: string): KeyPage[] {
+function getKeyPagesForPerformance(analysis: SiteAnalysis, baseUrl: string): KeyPage[] {
   const pages: KeyPage[] = [];
 
   // Important pages for performance testing

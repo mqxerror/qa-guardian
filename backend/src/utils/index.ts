@@ -554,12 +554,17 @@ export function createAPIError(
   code?: string,
   details?: unknown
 ): APIError {
-  return {
+  const result: APIError = {
     error: code || 'ERROR',
     message,
-    ...(code && { code }),
-    ...(details && { details }),
   };
+  if (code) {
+    result.code = code;
+  }
+  if (details !== undefined) {
+    result.details = details;
+  }
+  return result;
 }
 
 /**

@@ -21,6 +21,7 @@ import {
 import type {
   IAIProvider,
   AIMessage,
+  AIMessageContent,
   AISendMessageOptions,
   AIResponse,
   StreamCallbacks,
@@ -30,6 +31,21 @@ import type {
   ProviderStatus,
   ProviderConfig,
 } from './types.js';
+
+/**
+ * Convert AIMessageContent to string for Kie.ai API
+ * AIMessageContent can be either a string or an array of content blocks
+ */
+function contentToString(content: AIMessageContent): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+  // Content is an array of text/image blocks - extract text parts
+  return content
+    .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
+    .map(block => block.text)
+    .join('\n');
+}
 
 // Health check thresholds
 const LATENCY_THRESHOLDS = {
@@ -86,10 +102,10 @@ export class KieAIProvider implements IAIProvider {
     messages: AIMessage[],
     options: AISendMessageOptions = {}
   ): Promise<AIResponse> {
-    // Convert to Kie.ai message format
+    // Convert to Kie.ai message format (Kie API expects string content)
     const kieMessages: KieMessage[] = messages.map(msg => ({
       role: msg.role,
-      content: msg.content,
+      content: contentToString(msg.content),
     }));
 
     // Convert to Kie.ai options format
@@ -117,10 +133,10 @@ export class KieAIProvider implements IAIProvider {
     options: AISendMessageOptions = {},
     callbacks: StreamCallbacks = {}
   ): Promise<AIResponse> {
-    // Convert to Kie.ai message format
+    // Convert to Kie.ai message format (Kie API expects string content)
     const kieMessages: KieMessage[] = messages.map(msg => ({
       role: msg.role,
-      content: msg.content,
+      content: contentToString(msg.content),
     }));
 
     // Convert to Kie.ai options format

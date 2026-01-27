@@ -11,6 +11,7 @@
  */
 
 import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest } from './types';
+import type { SiteAnalysis } from '../../services/crawl4ai';
 
 export function generateAccessibilityTemplate(options: TemplateGeneratorOptions): TestSuiteTemplate {
   const { baseUrl, siteAnalysis, projectName } = options;
@@ -146,7 +147,7 @@ export function generateAccessibilityTemplate(options: TemplateGeneratorOptions)
   };
 }
 
-function getKeyPageUrls(analysis: typeof import('../../services/crawl4ai').SiteAnalysis.prototype, baseUrl: string): string[] {
+function getKeyPageUrls(analysis: SiteAnalysis, baseUrl: string): string[] {
   const urls: string[] = [];
 
   analysis.links.forEach(link => {

@@ -447,7 +447,9 @@ export class AIRouter implements IAIProvider {
 
     // Calculate cost based on provider pricing
     const pricing = provider === 'kie' ? KIE_PRICING : ANTHROPIC_PRICING;
-    const modelPricing = pricing[model] || pricing['claude-3-haiku-20240307']; // fallback to haiku pricing
+    // Default pricing if model not found (claude-3-haiku rates)
+    const defaultPricing = { input: 0.25, output: 1.25 };
+    const modelPricing = pricing[model] ?? pricing['claude-3-haiku-20240307'] ?? defaultPricing;
 
     const costUsd = (inputTokens * modelPricing.input + outputTokens * modelPricing.output) / 1_000_000;
 
@@ -960,7 +962,8 @@ export class AIRouter implements IAIProvider {
     // Calculate what Anthropic would have cost for ALL requests
     // (even the ones routed through Kie.ai)
     // We use average model pricing (assume claude-3-haiku for simplicity, or weighted average)
-    const avgAnthropicPricing = ANTHROPIC_PRICING['claude-3-haiku-20240307'];
+    // Default to haiku pricing if not found
+    const avgAnthropicPricing = ANTHROPIC_PRICING['claude-3-haiku-20240307'] ?? { input: 0.25, output: 1.25 };
     const anthropicCostUsd = (totalInputTokens * avgAnthropicPricing.input + totalOutputTokens * avgAnthropicPricing.output) / 1_000_000;
 
     // Actual cost is what we actually paid

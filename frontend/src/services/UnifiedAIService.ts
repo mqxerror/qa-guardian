@@ -530,7 +530,7 @@ class UnifiedAIServiceClass {
       test_type: testType,
     }).then((response) => ({
       success: response.success,
-      suggestions: response.result?.suggestions as string[] | undefined,
+      suggestions: (response.result as { suggestions?: string[] } | undefined)?.suggestions,
       error: response.error,
     }));
   }

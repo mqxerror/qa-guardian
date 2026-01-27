@@ -10,6 +10,7 @@
  */
 
 import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest, TestStep } from './types';
+import type { SiteAnalysis } from '../../services/crawl4ai';
 
 export function generateE2ETemplate(options: TemplateGeneratorOptions): TestSuiteTemplate {
   const { baseUrl, siteAnalysis, projectName } = options;
@@ -67,7 +68,7 @@ export function generateE2ETemplate(options: TemplateGeneratorOptions): TestSuit
   };
 }
 
-function generateNavigationTests(analysis: typeof import('../../services/crawl4ai').SiteAnalysis.prototype, baseUrl: string): GeneratedTest[] {
+function generateNavigationTests(analysis: SiteAnalysis, baseUrl: string): GeneratedTest[] {
   const tests: GeneratedTest[] = [];
 
   // Test main navigation items (limit to 5)
@@ -95,7 +96,7 @@ function generateNavigationTests(analysis: typeof import('../../services/crawl4a
   return tests;
 }
 
-function generateFormTests(analysis: typeof import('../../services/crawl4ai').SiteAnalysis.prototype, baseUrl: string): GeneratedTest[] {
+function generateFormTests(analysis: SiteAnalysis, baseUrl: string): GeneratedTest[] {
   const tests: GeneratedTest[] = [];
 
   // Test each form (limit to 3)
@@ -129,7 +130,7 @@ function generateFormTests(analysis: typeof import('../../services/crawl4ai').Si
   return tests;
 }
 
-function generateLoginTest(analysis: typeof import('../../services/crawl4ai').SiteAnalysis.prototype, baseUrl: string): GeneratedTest {
+function generateLoginTest(analysis: SiteAnalysis, baseUrl: string): GeneratedTest {
   return {
     name: 'Login form interaction',
     description: 'Test login form fields and submission',
@@ -146,7 +147,7 @@ function generateLoginTest(analysis: typeof import('../../services/crawl4ai').Si
   };
 }
 
-function generateSearchTest(analysis: typeof import('../../services/crawl4ai').SiteAnalysis.prototype, baseUrl: string): GeneratedTest {
+function generateSearchTest(analysis: SiteAnalysis, baseUrl: string): GeneratedTest {
   return {
     name: 'Search functionality',
     description: 'Test search input and results',
@@ -162,7 +163,7 @@ function generateSearchTest(analysis: typeof import('../../services/crawl4ai').S
   };
 }
 
-function generateCartTest(analysis: typeof import('../../services/crawl4ai').SiteAnalysis.prototype, baseUrl: string): GeneratedTest {
+function generateCartTest(analysis: SiteAnalysis, baseUrl: string): GeneratedTest {
   return {
     name: 'Cart functionality',
     description: 'Test add to cart and cart display',
@@ -178,7 +179,7 @@ function generateCartTest(analysis: typeof import('../../services/crawl4ai').Sit
   };
 }
 
-function generateLinkTests(analysis: typeof import('../../services/crawl4ai').SiteAnalysis.prototype, baseUrl: string): GeneratedTest[] {
+function generateLinkTests(analysis: SiteAnalysis, baseUrl: string): GeneratedTest[] {
   const tests: GeneratedTest[] = [];
 
   // Test internal links (limit to 5)
