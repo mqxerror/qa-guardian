@@ -159,6 +159,14 @@ interface StepResult {
       screenshot_base64: string;
       label?: string;
     }>;
+    // Comparison to previous run
+    comparison_to_previous?: {
+      improved?: boolean;
+      avg_change?: number;
+      performance_change?: number;
+      accessibility_change?: number;
+      seo_change?: number;
+    };
   };
   accessibility?: {
     violations: AccessibilityViolation[];
@@ -257,11 +265,18 @@ interface TestResult {
       requests_per_second: string;
       data_transferred: number;
       data_transferred_formatted: string;
+      max_vus?: number;
+      duration_formatted?: string;
+      peak_rps?: number;
+      data_sent?: number;
+      data_received?: number;
     };
     response_times: {
       min: number;
       avg: number;
       median: number;
+      p50?: number;
+      p75?: number;
       p90: number;
       p95: number;
       p99: number;
@@ -277,7 +292,8 @@ interface TestResult {
       ramp_up: number;
     };
     http_codes: Record<string, number>;
-    checks: Record<string, { passes: number; fails: number }>;
+    // Checks - array of assertion results
+    checks: Array<{ name: string; passes: number; fails: number; pass_rate?: number }>;
     // Feature #1836: K6 dashboard additions
     thresholds?: Record<string, boolean>;
     endpoints?: Array<{
@@ -301,6 +317,52 @@ interface TestResult {
       count: number;
       percentage: number;
     }>;
+    // Additional load test properties
+    started_at?: string;
+    target_url?: string;
+    environment?: string;
+    configuration?: {
+      max_vus?: number;
+      target_vus?: number;
+      duration?: string;
+      duration_formatted?: string;
+    };
+    comparison_to_previous?: {
+      improved?: boolean;
+      percentage_change?: number;
+      requests_per_second_change?: number;
+      avg_response_time_change?: number;
+      success_rate_change?: number;
+    };
+    peak_rps?: number;
+    threshold_details?: Array<{
+      name: string;
+      passed: boolean;
+      value: number;
+      threshold: number;
+    }>;
+    error_annotations?: Array<{
+      time: string;
+      timestamp?: number;
+      message: string;
+      type?: string;
+    }>;
+    error_time_series?: Array<{
+      timestamp: number;
+      count: number;
+      types: Record<string, number>;
+    }>;
+    data_sent?: number;
+    data_received?: number;
+    expected_bandwidth?: number;
+    content_type_breakdown?: Array<{ type: string; bytes: number; percentage: number }>;
+    error_types?: Record<string, number>;
+    custom_metrics?: Array<{
+      name: string;
+      type: 'counter' | 'rate' | 'trend' | 'gauge';
+      value?: number;
+      values?: { avg?: number; min?: number; max?: number; p90?: number; p95?: number };
+    }>;
   };
 }
 
@@ -316,6 +378,8 @@ interface TestRun {
   created_at: string;
   results: TestResult[];
   error?: string;
+  browser?: string;
+  branch?: string;
 }
 
 interface TestInfo {
@@ -9101,7 +9165,7 @@ Format your response with clear sections using **bold headers** and code blocks 
                             <div className="p-4">
                               {/* Enhanced histogram with reference lines */}
                               {(() => {
-                                const rt = loadTest.response_times || {};
+                                const rt = loadTest.response_times || { min: 0, avg: 0, median: 0, p90: 0, p95: 0, p99: 0, max: 0 };
                                 const median = rt.median || rt.p50 || 0;
                                 const avg = rt.avg || 0;
                                 const p95 = rt.p95 || 0;
