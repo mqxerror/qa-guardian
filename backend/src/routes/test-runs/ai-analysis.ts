@@ -414,14 +414,14 @@ export function generateCategorySpecificAnalysis(
       action: 'Review error details and investigate',
       rationale: 'Understanding the cause is the first step to fixing it',
       estimated_time: '15-30 minutes',
-      complexity: 'low' as const,
-    }],
+      complexity: 'low' as 'low' | 'medium' | 'high',
+    }] as LLMRootCauseAnalysis['remediation']['immediate_actions'],
     longTermFixes: [{
       action: 'Improve test stability',
       benefit: 'Reduce flaky test failures',
       effort: 'Medium',
     }],
-    codeChanges: [],
+    codeChanges: [] as LLMRootCauseAnalysis['remediation']['code_changes'],
   };
 
   const analyses: Record<string, typeof defaultAnalysis> = {
@@ -686,7 +686,7 @@ export function generateCategorySpecificAnalysis(
     },
   };
 
-  return analyses[category] || analyses['unknown'];
+  return analyses[category] ?? analyses['unknown'] ?? defaultAnalysis;
 }
 
 // ============================================
