@@ -6,7 +6,8 @@
  */
 
 // Import types from execution module
-import { NetworkRequest } from './execution';
+import { NetworkRequest, StepResult } from './execution';
+import { Page } from 'playwright';
 
 // ============================================================================
 // Types

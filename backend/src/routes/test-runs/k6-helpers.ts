@@ -140,7 +140,7 @@ export function detectCircularImports(script: string): CircularImportCheckResult
   const mainImports: string[] = [];
   let match;
   while ((match = importRegex.exec(script)) !== null) {
-    const importPath = match[1];
+    const importPath = match[1] ?? '';
     // Only track local imports (starting with ./ or ../)
     if (importPath.startsWith('./') || importPath.startsWith('../')) {
       mainImports.push(importPath);
@@ -174,18 +174,19 @@ export function detectCircularImports(script: string): CircularImportCheckResult
   const moduleBlockRegex = /\/\/\s*(\w+)(?:\.js)?\s*(?:imports|:)\s*([\s\S]*?)(?=\/\/\s*\w+(?:\.js)?\s*(?:imports|:|$)|$)/gi;
   let moduleMatch;
   while ((moduleMatch = moduleBlockRegex.exec(script)) !== null) {
-    const moduleName = moduleMatch[1];
-    const blockContent = moduleMatch[2];
+    const moduleName = moduleMatch[1] ?? '';
+    const blockContent = moduleMatch[2] ?? '';
     const blockImports: string[] = [];
 
     // Find imports within this block
     const blockImportRegex = /import\s+.*from\s+['"]\.\/(\w+)['"]/g;
     let blockImportMatch;
     while ((blockImportMatch = blockImportRegex.exec(blockContent)) !== null) {
-      blockImports.push(blockImportMatch[1]);
+      const importName = blockImportMatch[1] ?? '';
+      if (importName) blockImports.push(importName);
     }
 
-    moduleDefinitions.set(moduleName, blockImports);
+    if (moduleName) moduleDefinitions.set(moduleName, blockImports);
   }
 
   // Check for circular dependencies in module definitions
@@ -231,7 +232,8 @@ export function detectCircularImports(script: string): CircularImportCheckResult
       const exportPattern = new RegExp(`export\\s+.*\\s+(\\w+)\\s*=`, 'g');
       let exportMatch;
       while ((exportMatch = exportPattern.exec(script)) !== null) {
-        importers.add(exportMatch[1]);
+        const exportName = exportMatch[1] ?? '';
+        if (exportName) importers.add(exportName);
       }
 
       // Look for explicit cross-reference pattern in script
@@ -258,8 +260,8 @@ export function detectCircularImports(script: string): CircularImportCheckResult
   if (/circular\s*import|import\s*cycle|dependency\s*cycle/i.test(script)) {
     // Extract module names from the context
     const contextMatch = script.match(/(\w+)\s*(?:->|imports)\s*(\w+)\s*(?:->|imports)\s*\1/i);
-    if (contextMatch) {
-      const chain = [contextMatch[1], contextMatch[2], contextMatch[1]];
+    if (contextMatch && contextMatch[1] && contextMatch[2]) {
+      const chain: string[] = [contextMatch[1], contextMatch[2], contextMatch[1]];
       return {
         hasCircular: true,
         chain,
@@ -281,17 +283,19 @@ export function validateK6ScriptImports(script: string): K6ImportValidationResul
 
   let match;
   while ((match = importRegex.exec(script)) !== null) {
-    const [fullMatch, defaultImport, namedImports, namespaceImport, modulePath] = match;
+    const [fullMatch, defaultImport, namedImports, namespaceImport, modulePathRaw] = match;
+    const modulePath = modulePathRaw ?? '';
 
     // Find line number of this import
     let lineNumber = 1;
     let charCount = 0;
     for (let i = 0; i < lines.length; i++) {
-      if (charCount + lines[i].length >= match.index) {
+      const line = lines[i] ?? '';
+      if (charCount + line.length >= match.index) {
         lineNumber = i + 1;
         break;
       }
-      charCount += lines[i].length + 1; // +1 for newline
+      charCount += line.length + 1; // +1 for newline
     }
 
     // Check if it's a K6 built-in module
@@ -301,8 +305,9 @@ export function validateK6ScriptImports(script: string): K6ImportValidationResul
         const similarModules = Object.keys(k6BuiltInModules)
           .filter(m => {
             const parts = modulePath.split('/');
-            const lastPart = parts[parts.length - 1];
-            return m.includes(lastPart) || lastPart.includes(m.split('/').pop()!);
+            const lastPart = parts[parts.length - 1] ?? '';
+            const mLastPart = m.split('/').pop() ?? '';
+            return m.includes(lastPart) || lastPart.includes(mLastPart);
           })
           .slice(0, 3);
 
@@ -320,14 +325,14 @@ export function validateK6ScriptImports(script: string): K6ImportValidationResul
 
       // Validate named imports if present
       if (namedImports) {
-        const importedItems = namedImports.split(',').map(i => i.trim().split(' as ')[0].trim());
-        const availableExports = k6BuiltInModules[modulePath];
-        const invalidImports = importedItems.filter(i => !availableExports.includes(i));
+        const importedItems = namedImports.split(',').map((i: string) => i.trim().split(' as ')[0]?.trim() ?? '');
+        const availableExports = k6BuiltInModules[modulePath] ?? [];
+        const invalidImports = importedItems.filter((i: string) => !availableExports.includes(i));
 
         if (invalidImports.length > 0) {
           // Find similar export names
-          const suggestions = invalidImports.map(invalid => {
-            const similar = availableExports.filter(e =>
+          const suggestions = invalidImports.map((invalid: string) => {
+            const similar = availableExports.filter((e: string) =>
               e.toLowerCase().includes(invalid.toLowerCase()) ||
               invalid.toLowerCase().includes(e.toLowerCase())
             );
@@ -424,7 +429,7 @@ export function validateK6Thresholds(thresholds: Array<{ metric: string; express
       // Find similar metrics
       const similar = k6Metrics.filter(m =>
         m.includes(metricName.toLowerCase()) ||
-        metricName.toLowerCase().includes(m.split('_')[0])
+        metricName.toLowerCase().includes(m.split('_')[0] ?? '')
       ).slice(0, 3);
 
       errors.push({
@@ -488,7 +493,10 @@ export function validateK6Thresholds(thresholds: Array<{ metric: string; express
       return;
     }
 
-    const [, func, funcArg, operator, value] = exprMatch;
+    const [, funcRaw, funcArg, operatorRaw, valueRaw] = exprMatch;
+    const func = funcRaw ?? '';
+    const operator = operatorRaw ?? '';
+    const value = valueRaw ?? '';
 
     // Validate function name
     if (!thresholdFunctions.includes(func)) {
@@ -586,7 +594,7 @@ export function validateK6ScriptSyntax(script: string): K6SyntaxValidationResult
       // Convert import statements to variable declarations
       .replace(/import\s+(\w+)\s+from\s+['"][^'"]+['"]/g, 'const $1 = {}')
       .replace(/import\s+\{([^}]+)\}\s+from\s+['"][^'"]+['"]/g, (_, imports) => {
-        const vars = imports.split(',').map((v: string) => v.trim().split(' as ')[0].trim());
+        const vars = imports.split(',').map((v: string) => (v.trim().split(' as ')[0] ?? '').trim());
         return `const { ${vars.join(', ')} } = {}`;
       })
       .replace(/import\s+\*\s+as\s+(\w+)\s+from\s+['"][^'"]+['"]/g, 'const $1 = {}')
@@ -620,7 +628,7 @@ export function validateK6ScriptSyntax(script: string): K6SyntaxValidationResult
       // If we couldn't get line number from stack, try to find it from message
       if (!lineNumber) {
         const lineInMsg = message.match(/line\s+(\d+)/i);
-        if (lineInMsg) {
+        if (lineInMsg && lineInMsg[1]) {
           lineNumber = parseInt(lineInMsg[1], 10);
         }
       }
@@ -671,7 +679,8 @@ export function detectRequiredEnvVars(script: string): K6EnvVarsResult {
   let match;
 
   while ((match = envVarRegex.exec(script)) !== null) {
-    requiredVars.add(match[1]);
+    const varName = match[1] ?? '';
+    if (varName) requiredVars.add(varName);
   }
 
   // Check if any of these look like sensitive values
@@ -704,11 +713,15 @@ export function detectCustomMetrics(script: string): CustomMetricDefinition[] {
 
     let match;
     while ((match = regex.exec(script)) !== null) {
-      metrics.push({
-        variableName: match[1],
-        name: match[2],
-        type: metricType.toLowerCase() as 'counter' | 'trend' | 'gauge' | 'rate',
-      });
+      const variableName = match[1] ?? '';
+      const name = match[2] ?? '';
+      if (variableName && name) {
+        metrics.push({
+          variableName,
+          name,
+          type: metricType.toLowerCase() as 'counter' | 'trend' | 'gauge' | 'rate',
+        });
+      }
     }
   }
 

@@ -281,6 +281,10 @@ export interface TestRunResult {
   reviewed_at?: Date;
   reviewed_by?: string; // User ID who reviewed
   review_notes?: string;
+  // Feature #2069: Timing and network properties for results-routes
+  started_at?: Date;
+  completed_at?: Date;
+  network_logs?: any[]; // Network logs for timeline generation
 }
 
 /**
