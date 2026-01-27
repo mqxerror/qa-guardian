@@ -18,33 +18,50 @@ import {
   UpdateTestBody,
   UpdateSuiteBody,
 } from './types';
-import { testSuites, tests } from './stores';
+// Import both Map stores (for backward compat) and async database functions
+import {
+  testSuites,
+  tests,
+  listTestSuites as dbListTestSuites,
+  getTestSuite as dbGetTestSuite,
+  createTestSuite as dbCreateTestSuite,
+  updateTestSuite as dbUpdateTestSuite,
+  deleteTestSuite as dbDeleteTestSuite,
+  listTests as dbListTests,
+  getTest as dbGetTest,
+  createTest as dbCreateTest,
+  updateTest as dbUpdateTest,
+  deleteTest as dbDeleteTest,
+} from './stores';
 import { generatePlaywrightCode } from './utils';
 // Feature #1958: Import testRuns for run metadata on test list
 import { testRuns } from '../test-runs/execution';
 
 export async function coreRoutes(app: FastifyInstance) {
   // List test suites for a project
+  // Feature #2081: Use async database functions for persistence
   app.get<{ Params: ProjectParams }>('/api/v1/projects/:projectId/suites', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const suites = Array.from(testSuites.values())
-      .filter(s => s.project_id === projectId && s.organization_id === orgId);
+    // Use async database function
+    const suites = await dbListTestSuites(projectId, orgId);
 
     return { suites };
   });
 
   // Get single test suite
+  // Feature #2081: Use async database functions for persistence
   app.get<{ Params: SuiteParams }>('/api/v1/suites/:suiteId', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { suiteId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const suite = testSuites.get(suiteId);
+    // Use async database function
+    const suite = await dbGetTestSuite(suiteId);
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -115,16 +132,18 @@ export async function coreRoutes(app: FastifyInstance) {
       updated_at: new Date(),
     };
 
-    testSuites.set(id, suite);
+    // Feature #2081: Use async database function for persistence
+    const savedSuite = await dbCreateTestSuite(suite);
 
     // Log audit entry
-    logAuditEntry(request, 'create', 'test_suite', id, suite.name, { projectId, type, base_url, browser: defaultBrowser, browsers, viewport_width, viewport_height });
+    logAuditEntry(request, 'create', 'test_suite', id, savedSuite.name, { projectId, type, base_url, browser: defaultBrowser, browsers, viewport_width, viewport_height });
 
-    return reply.status(201).send({ suite });
+    return reply.status(201).send({ suite: savedSuite });
   });
 
   // Feature #1688: Update test suite
   // MCP tool: update_test_suite
+  // Feature #2081: Use async database functions for persistence
   app.patch<{ Params: SuiteParams; Body: UpdateSuiteBody }>('/api/v1/suites/:suiteId', {
     preHandler: [authenticate],
   }, async (request, reply) => {
@@ -141,40 +160,42 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const suite = testSuites.get(suiteId);
-    if (!suite || suite.organization_id !== orgId) {
+    // Use async database function
+    const existingSuite = await dbGetTestSuite(suiteId);
+    if (!existingSuite || existingSuite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Test suite not found',
       });
     }
 
-    // Apply updates
-    if (updates.name !== undefined) suite.name = updates.name;
-    if (updates.description !== undefined) suite.description = updates.description;
-    if (updates.type !== undefined) suite.type = updates.type;
-    if (updates.base_url !== undefined) suite.base_url = updates.base_url;
-    if (updates.browser !== undefined) suite.browser = updates.browser;
-    if (updates.browsers !== undefined) suite.browsers = updates.browsers;
-    if (updates.viewport_width !== undefined) suite.viewport_width = updates.viewport_width;
-    if (updates.viewport_height !== undefined) suite.viewport_height = updates.viewport_height;
-    if (updates.timeout !== undefined) suite.timeout = updates.timeout;
+    // Build updates object for database
+    const suiteUpdates: Partial<TestSuite> = {};
+    if (updates.name !== undefined) suiteUpdates.name = updates.name;
+    if (updates.description !== undefined) suiteUpdates.description = updates.description;
+    if (updates.type !== undefined) suiteUpdates.type = updates.type;
+    if (updates.base_url !== undefined) suiteUpdates.base_url = updates.base_url;
+    if (updates.browser !== undefined) suiteUpdates.browser = updates.browser;
+    if (updates.browsers !== undefined) suiteUpdates.browsers = updates.browsers;
+    if (updates.viewport_width !== undefined) suiteUpdates.viewport_width = updates.viewport_width;
+    if (updates.viewport_height !== undefined) suiteUpdates.viewport_height = updates.viewport_height;
+    if (updates.timeout !== undefined) suiteUpdates.timeout = updates.timeout;
     // Support both retry_count and retries (MCP compatibility)
-    if (updates.retry_count !== undefined) suite.retry_count = updates.retry_count;
-    if (updates.retries !== undefined) suite.retry_count = updates.retries;
-    if (updates.require_human_review !== undefined) suite.require_human_review = updates.require_human_review;
+    if (updates.retry_count !== undefined) suiteUpdates.retry_count = updates.retry_count;
+    if (updates.retries !== undefined) suiteUpdates.retry_count = updates.retries;
+    if (updates.require_human_review !== undefined) suiteUpdates.require_human_review = updates.require_human_review;
 
-    suite.updated_at = new Date();
-
-    testSuites.set(suiteId, suite);
+    // Use async database function
+    const updatedSuite = await dbUpdateTestSuite(suiteId, suiteUpdates);
 
     // Log audit entry
-    logAuditEntry(request, 'update', 'test_suite', suiteId, suite.name, { updates: Object.keys(updates) });
+    logAuditEntry(request, 'update', 'test_suite', suiteId, updatedSuite?.name || existingSuite.name, { updates: Object.keys(updates) });
 
-    return { suite };
+    return { suite: updatedSuite || existingSuite };
   });
 
   // Delete test suite
+  // Feature #2081: Use async database functions for persistence
   app.delete<{ Params: SuiteParams }>('/api/v1/suites/:suiteId', {
     preHandler: [authenticate],
   }, async (request, reply) => {
@@ -190,7 +211,8 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const suite = testSuites.get(suiteId);
+    // Use async database function
+    const suite = await dbGetTestSuite(suiteId);
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -198,15 +220,10 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    // Delete all tests in the suite
-    for (const [testId, test] of tests) {
-      if (test.suite_id === suiteId) {
-        tests.delete(testId);
-      }
-    }
-
     const suiteName = suite.name;
-    testSuites.delete(suiteId);
+
+    // Use async database function - it will cascade delete tests
+    await dbDeleteTestSuite(suiteId);
 
     // Log audit entry
     logAuditEntry(request, 'delete', 'test_suite', suiteId, suiteName);
@@ -216,13 +233,15 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // List tests in a suite
   // Feature #1958: Include run metadata (last_run, last_result, run_count, avg_duration)
+  // Feature #2081: Use async database functions for persistence
   app.get<{ Params: SuiteParams }>('/api/v1/suites/:suiteId/tests', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { suiteId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const suite = testSuites.get(suiteId);
+    // Use async database function
+    const suite = await dbGetTestSuite(suiteId);
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -230,9 +249,8 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const testList = Array.from(tests.values())
-      .filter(t => t.suite_id === suiteId)
-      .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order (Feature #871)
+    // Use async database function
+    const testList = await dbListTests(suiteId);
 
     // Feature #1958: Compute run metadata for each test
     const testsWithRunMetadata = testList.map(test => {
@@ -271,13 +289,15 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Get single test
+  // Feature #2081: Use async database functions for persistence
   app.get<{ Params: TestParams }>('/api/v1/tests/:testId', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const test = tests.get(testId);
+    // Use async database function
+    const test = await dbGetTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -289,6 +309,7 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Feature #875: Get generated Playwright code for a test
+  // Feature #2081: Use async database functions for persistence
   app.get<{ Params: TestParams; Querystring: { format?: 'typescript' | 'javascript' } }>('/api/v1/tests/:testId/code', {
     preHandler: [authenticate],
   }, async (request, reply) => {
@@ -296,7 +317,8 @@ export async function coreRoutes(app: FastifyInstance) {
     const format = request.query.format || 'typescript';
     const orgId = getOrganizationId(request);
 
-    const test = tests.get(testId);
+    // Use async database function
+    const test = await dbGetTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -304,8 +326,8 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    // Get the suite for base URL
-    const suite = testSuites.get(test.suite_id);
+    // Get the suite for base URL using async database function
+    const suite = await dbGetTestSuite(test.suite_id);
     const baseUrl = suite?.base_url || 'https://example.com';
 
     // If custom code exists and is enabled, return it
@@ -335,6 +357,7 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Create test in a suite
+  // Feature #2081: Use async database functions for persistence
   app.post<{ Params: SuiteParams; Body: CreateTestBody }>('/api/v1/suites/:suiteId/tests', {
     preHandler: [authenticate],
   }, async (request, reply) => {
@@ -351,7 +374,8 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const suite = testSuites.get(suiteId);
+    // Use async database function
+    const suite = await dbGetTestSuite(suiteId);
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -503,10 +527,11 @@ export async function coreRoutes(app: FastifyInstance) {
       updated_at: new Date(),
     };
 
-    tests.set(id, test);
+    // Feature #2081: Use async database function for persistence
+    const savedTest = await dbCreateTest(test);
 
     // Log audit entry
-    logAuditEntry(request, 'create', 'test', id, test.name, { suiteId, stepCount: steps.length });
+    logAuditEntry(request, 'create', 'test', id, savedTest.name, { suiteId, stepCount: steps.length });
 
     // Feature #1305: Send test.created webhook
     sendTestCreatedWebhook(orgId, {
@@ -522,10 +547,11 @@ export async function coreRoutes(app: FastifyInstance) {
       console.error('[WEBHOOK] Failed to send test.created webhook:', err);
     });
 
-    return reply.status(201).send({ test });
+    return reply.status(201).send({ test: savedTest });
   });
 
   // Update test
+  // Feature #2081: Use async database functions for persistence
   app.patch<{ Params: TestParams; Body: UpdateTestBody }>('/api/v1/tests/:testId', {
     preHandler: [authenticate],
   }, async (request, reply) => {
@@ -542,65 +568,69 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const test = tests.get(testId);
-    if (!test || test.organization_id !== orgId) {
+    // Use async database function
+    const existingTest = await dbGetTest(testId);
+    if (!existingTest || existingTest.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Test not found',
       });
     }
 
-    if (updates.name) test.name = updates.name;
-    if (updates.description !== undefined) test.description = updates.description;
-    if (updates.test_type) test.test_type = updates.test_type;
-    if (updates.steps) test.steps = updates.steps.map((s, i) => ({ ...s, id: s.id || String(Date.now() + i), order: i }));
-    if (updates.playwright_code !== undefined) test.playwright_code = updates.playwright_code;
-    if (updates.use_custom_code !== undefined) test.use_custom_code = updates.use_custom_code;
+    // Build updates object for database
+    const testUpdates: Partial<Test> = {};
+    if (updates.name) testUpdates.name = updates.name;
+    if (updates.description !== undefined) testUpdates.description = updates.description;
+    if (updates.test_type) testUpdates.test_type = updates.test_type;
+    if (updates.steps) testUpdates.steps = updates.steps.map((s, i) => ({ ...s, id: s.id || String(Date.now() + i), order: i }));
+    if (updates.playwright_code !== undefined) testUpdates.playwright_code = updates.playwright_code;
+    if (updates.use_custom_code !== undefined) testUpdates.use_custom_code = updates.use_custom_code;
     // Visual regression fields
-    if (updates.target_url !== undefined) test.target_url = updates.target_url;
-    if (updates.viewport_width !== undefined) test.viewport_width = updates.viewport_width;
-    if (updates.viewport_height !== undefined) test.viewport_height = updates.viewport_height;
-    if (updates.viewport_preset !== undefined) test.viewport_preset = updates.viewport_preset;
-    if (updates.capture_mode !== undefined) test.capture_mode = updates.capture_mode;
-    if (updates.element_selector !== undefined) test.element_selector = updates.element_selector;
-    if (updates.wait_for_selector !== undefined) test.wait_for_selector = updates.wait_for_selector;
-    if (updates.wait_time !== undefined) test.wait_time = updates.wait_time;
-    if (updates.hide_selectors !== undefined) test.hide_selectors = updates.hide_selectors;
-    if (updates.remove_selectors !== undefined) test.remove_selectors = updates.remove_selectors;
-    if (updates.multi_viewport !== undefined) test.multi_viewport = updates.multi_viewport;
-    if (updates.viewports !== undefined) test.viewports = updates.viewports;
-    if (updates.diff_threshold !== undefined) test.diff_threshold = updates.diff_threshold;
-    if (updates.diff_threshold_mode !== undefined) test.diff_threshold_mode = updates.diff_threshold_mode;
-    if (updates.diff_pixel_threshold !== undefined) test.diff_pixel_threshold = updates.diff_pixel_threshold;
-    if (updates.ignore_regions !== undefined) test.ignore_regions = updates.ignore_regions;
-    if (updates.ignore_selectors !== undefined) test.ignore_selectors = updates.ignore_selectors;
-    if (updates.mask_datetime_selectors !== undefined) test.mask_datetime_selectors = updates.mask_datetime_selectors;
-    if (updates.mask_dynamic_content !== undefined) test.mask_dynamic_content = updates.mask_dynamic_content;
+    if (updates.target_url !== undefined) testUpdates.target_url = updates.target_url;
+    if (updates.viewport_width !== undefined) testUpdates.viewport_width = updates.viewport_width;
+    if (updates.viewport_height !== undefined) testUpdates.viewport_height = updates.viewport_height;
+    if (updates.viewport_preset !== undefined) testUpdates.viewport_preset = updates.viewport_preset;
+    if (updates.capture_mode !== undefined) testUpdates.capture_mode = updates.capture_mode;
+    if (updates.element_selector !== undefined) testUpdates.element_selector = updates.element_selector;
+    if (updates.wait_for_selector !== undefined) testUpdates.wait_for_selector = updates.wait_for_selector;
+    if (updates.wait_time !== undefined) testUpdates.wait_time = updates.wait_time;
+    if (updates.hide_selectors !== undefined) testUpdates.hide_selectors = updates.hide_selectors;
+    if (updates.remove_selectors !== undefined) testUpdates.remove_selectors = updates.remove_selectors;
+    if (updates.multi_viewport !== undefined) testUpdates.multi_viewport = updates.multi_viewport;
+    if (updates.viewports !== undefined) testUpdates.viewports = updates.viewports;
+    if (updates.diff_threshold !== undefined) testUpdates.diff_threshold = updates.diff_threshold;
+    if (updates.diff_threshold_mode !== undefined) testUpdates.diff_threshold_mode = updates.diff_threshold_mode;
+    if (updates.diff_pixel_threshold !== undefined) testUpdates.diff_pixel_threshold = updates.diff_pixel_threshold;
+    if (updates.ignore_regions !== undefined) testUpdates.ignore_regions = updates.ignore_regions;
+    if (updates.ignore_selectors !== undefined) testUpdates.ignore_selectors = updates.ignore_selectors;
+    if (updates.mask_datetime_selectors !== undefined) testUpdates.mask_datetime_selectors = updates.mask_datetime_selectors;
+    if (updates.mask_dynamic_content !== undefined) testUpdates.mask_dynamic_content = updates.mask_dynamic_content;
     // Feature #969: Anti-aliasing and color threshold settings
-    if (updates.anti_aliasing_tolerance !== undefined) test.anti_aliasing_tolerance = updates.anti_aliasing_tolerance;
-    if (updates.color_threshold !== undefined) test.color_threshold = updates.color_threshold;
+    if (updates.anti_aliasing_tolerance !== undefined) testUpdates.anti_aliasing_tolerance = updates.anti_aliasing_tolerance;
+    if (updates.color_threshold !== undefined) testUpdates.color_threshold = updates.color_threshold;
     // Lighthouse fields
-    if (updates.device_preset !== undefined) test.device_preset = updates.device_preset;
-    if (updates.performance_threshold !== undefined) test.performance_threshold = updates.performance_threshold;
-    if (updates.lcp_threshold !== undefined) test.lcp_threshold = updates.lcp_threshold;
-    if (updates.cls_threshold !== undefined) test.cls_threshold = updates.cls_threshold;
-    if (updates.bypass_csp !== undefined) test.bypass_csp = updates.bypass_csp;
-    if (updates.ignore_ssl_errors !== undefined) test.ignore_ssl_errors = updates.ignore_ssl_errors;
-    if (updates.audit_timeout !== undefined) test.audit_timeout = updates.audit_timeout;
+    if (updates.device_preset !== undefined) testUpdates.device_preset = updates.device_preset;
+    if (updates.performance_threshold !== undefined) testUpdates.performance_threshold = updates.performance_threshold;
+    if (updates.lcp_threshold !== undefined) testUpdates.lcp_threshold = updates.lcp_threshold;
+    if (updates.cls_threshold !== undefined) testUpdates.cls_threshold = updates.cls_threshold;
+    if (updates.bypass_csp !== undefined) testUpdates.bypass_csp = updates.bypass_csp;
+    if (updates.ignore_ssl_errors !== undefined) testUpdates.ignore_ssl_errors = updates.ignore_ssl_errors;
+    if (updates.audit_timeout !== undefined) testUpdates.audit_timeout = updates.audit_timeout;
     // Load test fields
-    if (updates.k6_script !== undefined) test.k6_script = updates.k6_script;
-    if (updates.status) test.status = updates.status;
-    test.updated_at = new Date();
+    if (updates.k6_script !== undefined) testUpdates.k6_script = updates.k6_script;
+    if (updates.status) testUpdates.status = updates.status;
 
-    tests.set(testId, test);
+    // Use async database function
+    const updatedTest = await dbUpdateTest(testId, testUpdates);
 
     // Log audit entry
-    logAuditEntry(request, 'update', 'test', testId, test.name, { updates: Object.keys(updates) });
+    logAuditEntry(request, 'update', 'test', testId, updatedTest?.name || existingTest.name, { updates: Object.keys(updates) });
 
-    return { test };
+    return { test: updatedTest || existingTest };
   });
 
   // Reorder test steps
+  // Feature #2081: Use async database functions for persistence
   app.put<{ Params: TestParams; Body: { steps: Array<{ id: string; action: string; selector?: string; value?: string; order?: number }> } }>('/api/v1/tests/:testId/steps/reorder', {
     preHandler: [authenticate],
   }, async (request, reply) => {
@@ -617,8 +647,9 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const test = tests.get(testId);
-    if (!test || test.organization_id !== orgId) {
+    // Use async database function
+    const existingTest = await dbGetTest(testId);
+    if (!existingTest || existingTest.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Test not found',
@@ -626,19 +657,19 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     // Update the steps with new order
-    test.steps = steps.map((s, i) => ({
+    const newSteps = steps.map((s, i) => ({
       ...s,
       id: s.id || String(Date.now() + i),
       order: i
     }));
-    test.updated_at = new Date();
 
-    tests.set(testId, test);
+    // Use async database function
+    const updatedTest = await dbUpdateTest(testId, { steps: newSteps });
 
     // Log audit entry
-    logAuditEntry(request, 'update', 'test', testId, test.name, { action: 'reorder_steps' });
+    logAuditEntry(request, 'update', 'test', testId, updatedTest?.name || existingTest.name, { action: 'reorder_steps' });
 
-    return { test };
+    return { test: updatedTest || existingTest };
   });
 
   // Feature #872: Add a step to a test
@@ -658,8 +689,9 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const test = tests.get(testId);
-    if (!test || test.organization_id !== orgId) {
+    // Use async database function
+    const existingTest = await dbGetTest(testId);
+    if (!existingTest || existingTest.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Test not found',
@@ -692,32 +724,34 @@ export async function coreRoutes(app: FastifyInstance) {
     };
 
     // Insert at specified index or append to end
-    const insertIndex = typeof index === 'number' && index >= 0 && index <= test.steps.length
+    const insertIndex = typeof index === 'number' && index >= 0 && index <= existingTest.steps.length
       ? index
-      : test.steps.length;
+      : existingTest.steps.length;
 
-    test.steps.splice(insertIndex, 0, newStep);
+    const newSteps = [...existingTest.steps];
+    newSteps.splice(insertIndex, 0, newStep);
 
     // Re-order all steps
-    test.steps.forEach((step, i) => {
+    newSteps.forEach((step, i) => {
       step.order = i;
     });
 
-    test.updated_at = new Date();
-    tests.set(testId, test);
+    // Use async database function
+    const updatedTest = await dbUpdateTest(testId, { steps: newSteps });
 
     // Log audit entry
-    logAuditEntry(request, 'update', 'test', testId, test.name, { action: 'add_step', stepAction: action, stepIndex: insertIndex });
+    logAuditEntry(request, 'update', 'test', testId, updatedTest?.name || existingTest.name, { action: 'add_step', stepAction: action, stepIndex: insertIndex });
 
     return reply.status(201).send({
       step: newStep,
       test_id: testId,
       index: insertIndex,
-      total_steps: test.steps.length,
+      total_steps: newSteps.length,
     });
   });
 
   // Feature #873: Update a step in a test
+  // Feature #2081: Use async database functions for persistence
   app.patch<{ Params: { testId: string; stepId: string }; Body: { action?: string; selector?: string; value?: string } }>('/api/v1/tests/:testId/steps/:stepId', {
     preHandler: [authenticate],
   }, async (request, reply) => {
@@ -734,8 +768,9 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const test = tests.get(testId);
-    if (!test || test.organization_id !== orgId) {
+    // Use async database function
+    const existingTest = await dbGetTest(testId);
+    if (!existingTest || existingTest.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Test not found',
@@ -743,7 +778,7 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     // Find the step
-    const stepIndex = test.steps.findIndex(s => s.id === stepId);
+    const stepIndex = existingTest.steps.findIndex(s => s.id === stepId);
     if (stepIndex === -1) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -751,7 +786,7 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const step = test.steps[stepIndex];
+    const step = existingTest.steps[stepIndex];
     if (!step) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -775,11 +810,15 @@ export async function coreRoutes(app: FastifyInstance) {
     if (selector !== undefined) step.selector = selector || undefined;
     if (value !== undefined) step.value = value || undefined;
 
-    test.updated_at = new Date();
-    tests.set(testId, test);
+    // Update steps array with modified step
+    const newSteps = [...existingTest.steps];
+    newSteps[stepIndex] = step;
+
+    // Use async database function
+    const updatedTest = await dbUpdateTest(testId, { steps: newSteps });
 
     // Log audit entry
-    logAuditEntry(request, 'update', 'test', testId, test.name, { action: 'update_step', stepId, stepIndex });
+    logAuditEntry(request, 'update', 'test', testId, updatedTest?.name || existingTest.name, { action: 'update_step', stepId, stepIndex });
 
     return {
       updated: true,
@@ -790,6 +829,7 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Feature #874: Delete a step from a test
+  // Feature #2081: Use async database functions for persistence
   app.delete<{ Params: { testId: string; stepId: string } }>('/api/v1/tests/:testId/steps/:stepId', {
     preHandler: [authenticate],
   }, async (request, reply) => {
@@ -805,8 +845,9 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const test = tests.get(testId);
-    if (!test || test.organization_id !== orgId) {
+    // Use async database function
+    const existingTest = await dbGetTest(testId);
+    if (!existingTest || existingTest.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Test not found',
@@ -814,7 +855,7 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     // Find the step
-    const stepIndex = test.steps.findIndex(s => s.id === stepId);
+    const stepIndex = existingTest.steps.findIndex(s => s.id === stepId);
     if (stepIndex === -1) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -822,34 +863,36 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const deletedStep = test.steps[stepIndex];
+    const deletedStep = existingTest.steps[stepIndex];
 
     // Remove the step
-    test.steps.splice(stepIndex, 1);
+    const newSteps = [...existingTest.steps];
+    newSteps.splice(stepIndex, 1);
 
     // Reindex remaining steps
-    test.steps.forEach((step, i) => {
+    newSteps.forEach((step, i) => {
       step.order = i;
     });
 
-    test.updated_at = new Date();
-    tests.set(testId, test);
+    // Use async database function
+    const updatedTest = await dbUpdateTest(testId, { steps: newSteps });
 
     // Log audit entry
-    logAuditEntry(request, 'update', 'test', testId, test.name, { action: 'delete_step', stepId, stepIndex });
+    logAuditEntry(request, 'update', 'test', testId, updatedTest?.name || existingTest.name, { action: 'delete_step', stepId, stepIndex });
 
     return {
       deleted: true,
       deleted_step: deletedStep,
       test_id: testId,
       deleted_index: stepIndex,
-      remaining_steps: test.steps.length,
+      remaining_steps: newSteps.length,
     };
   });
 
   // Feature #871: Reorder tests within a suite
   app.put<{ Params: SuiteParams; Body: { test_ids: string[] } }>('/api/v1/suites/:suiteId/tests/reorder', {
     preHandler: [authenticate],
+  // Feature #2081: Use async database functions for persistence
   }, async (request, reply) => {
     const { suiteId } = request.params;
     const { test_ids } = request.body;
@@ -864,7 +907,8 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const suite = testSuites.get(suiteId);
+    // Use async database function
+    const suite = await dbGetTestSuite(suiteId);
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -879,8 +923,8 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    // Get all tests in this suite
-    const suiteTests = Array.from(tests.values()).filter(t => t.suite_id === suiteId);
+    // Get all tests in this suite using async database function
+    const suiteTests = await dbListTests(suiteId);
 
     // Validate all test IDs belong to this suite
     const suiteTestIds = new Set(suiteTests.map(t => t.id));
@@ -892,21 +936,18 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    // Update order for each test
-    test_ids.forEach((testId, index) => {
-      const test = tests.get(testId);
-      if (test) {
-        test.order = index;
-        test.updated_at = new Date();
-        tests.set(testId, test);
+    // Update order for each test using async database function
+    const reorderedTests: Test[] = [];
+    for (let index = 0; index < test_ids.length; index++) {
+      const testId = test_ids[index];
+      const updatedTest = await dbUpdateTest(testId, { order: index });
+      if (updatedTest) {
+        reorderedTests.push(updatedTest);
       }
-    });
+    }
 
     // Log audit entry
     logAuditEntry(request, 'update', 'suite', suiteId, suite.name, { action: 'reorder_tests', test_count: test_ids.length });
-
-    // Return updated tests in new order
-    const reorderedTests = test_ids.map(id => tests.get(id)).filter(Boolean);
 
     return {
       reordered: true,
@@ -917,6 +958,7 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Delete test
+  // Feature #2081: Use async database functions for persistence
   app.delete<{ Params: TestParams }>('/api/v1/tests/:testId', {
     preHandler: [authenticate],
   }, async (request, reply) => {
@@ -932,16 +974,19 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const test = tests.get(testId);
-    if (!test || test.organization_id !== orgId) {
+    // Use async database function
+    const existingTest = await dbGetTest(testId);
+    if (!existingTest || existingTest.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Test not found',
       });
     }
 
-    const testName = test.name;
-    tests.delete(testId);
+    const testName = existingTest.name;
+
+    // Use async database function
+    await dbDeleteTest(testId);
 
     // Log audit entry
     logAuditEntry(request, 'delete', 'test', testId, testName);
