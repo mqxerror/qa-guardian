@@ -207,7 +207,8 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
 
     // Get test and suite info
     const suite = testSuites.get(run.suite_id);
-    const test = suite?.tests?.find((t: any) => t.id === testId);
+    const suiteAny = suite as any;
+    const test = suiteAny?.tests?.find((t: any) => t.id === testId);
 
     // Extract error information
     const errorMessage = result.error || 'Unknown error';
@@ -234,6 +235,7 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     if (result.steps && result.steps.length > 0) {
       for (let i = 0; i < result.steps.length; i++) {
         const step = result.steps[i];
+        if (!step) continue;
         let stepDesc = `${i + 1}. ${step.action}`;
         if (step.selector) {
           stepDesc += ` on element "${step.selector}"`;
@@ -300,7 +302,7 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
       error_details: {
         category: errorCategory,
         message: errorMessage.substring(0, 500),
-        failed_step: failedSteps.length > 0 ? {
+        failed_step: failedSteps.length > 0 && failedSteps[0] ? {
           action: failedSteps[0].action,
           selector: failedSteps[0].selector,
           error: failedSteps[0].error,
@@ -431,7 +433,9 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     // Get test suite info
     const suite = testSuites.get(run.suite_id);
 
-    // Build export data
+    // Build export data - cast run to any for optional properties that may exist at runtime
+    const runAny = run as any;
+    const results = run.results || [];
     const exportData = {
       run_id: run.id,
       suite_id: run.suite_id,
@@ -441,21 +445,23 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
       completed_at: run.completed_at,
       duration_ms: run.duration_ms,
       browser: run.browser,
-      viewport: run.viewport,
-      total_tests: run.results.length,
-      passed: run.results.filter(r => r.status === 'passed').length,
-      failed: run.results.filter(r => r.status === 'failed').length,
-      skipped: run.results.filter(r => r.status === 'skipped').length,
-      error: run.results.filter(r => r.status === 'error').length,
-      results: run.results.map(result => {
+      viewport: runAny.viewport || null,
+      total_tests: results.length,
+      passed: results.filter(r => r.status === 'passed').length,
+      failed: results.filter(r => r.status === 'failed').length,
+      skipped: results.filter(r => r.status === 'skipped').length,
+      error: results.filter(r => r.status === 'error').length,
+      results: results.map(result => {
+        // Cast result to any for optional properties that may exist at runtime
+        const resultAny = result as any;
         const resultData: any = {
           test_id: result.test_id,
           test_name: result.test_name,
           status: result.status,
           duration_ms: result.duration_ms,
-          started_at: result.started_at,
-          completed_at: result.completed_at,
-          error_message: result.error_message || null,
+          started_at: resultAny.started_at || null,
+          completed_at: resultAny.completed_at || null,
+          error_message: resultAny.error_message || result.error || null,
         };
 
         if (includeSteps && result.steps) {
@@ -470,10 +476,12 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
         }
 
         if (includeArtifacts) {
+          // Cast to any to access optional URL properties that may exist at runtime
+          const resultAny = result as any;
           resultData.artifacts = {
-            screenshot_url: result.screenshot_url || null,
-            video_url: result.video_url || null,
-            trace_url: result.trace_url || null,
+            screenshot_url: resultAny.screenshot_url || null,
+            video_url: resultAny.video_url || null,
+            trace_url: resultAny.trace_url || null,
           };
         }
 
