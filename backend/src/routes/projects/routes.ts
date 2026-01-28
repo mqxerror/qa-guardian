@@ -4,7 +4,6 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, JwtPayload, ApiKeyPayload, getOrganizationId } from '../../middleware/auth';
 import { TestSuite, Test } from '../test-suites';
-import { testSuites, tests } from '../test-suites/maps';
 import {
   listTestSuites as dbListTestSuitesByProject,
   listTests as dbListTestsBySuite,
@@ -278,11 +277,9 @@ export async function coreRoutes(app: FastifyInstance) {
       const suiteTests = await dbListTestsBySuite(suite.id);
       for (const test of suiteTests) {
         await dbDeleteTestAsync(test.id);
-        tests.delete(test.id); // Also clear from in-memory Map
       }
       // Delete the suite
       await dbDeleteTestSuiteAsync(suite.id);
-      testSuites.delete(suite.id); // Also clear from in-memory Map
     }
 
     // Delete the project from database (falls back to in-memory if DB not available)
@@ -632,7 +629,6 @@ export async function coreRoutes(app: FastifyInstance) {
         updated_at: new Date(),
       } as unknown as TestSuite;
       smokeSuite = await dbCreateTestSuiteAsync(suiteData);
-      testSuites.set(suiteId, smokeSuite); // Also populate in-memory Map
     }
 
     // Create the smoke test
@@ -664,7 +660,6 @@ export async function coreRoutes(app: FastifyInstance) {
       updated_at: new Date(),
     } as unknown as Test;
     const smokeTest = await dbCreateTestAsync(smokeTestData);
-    tests.set(testId, smokeTest); // Also populate in-memory Map
 
     // Create and start the test run
     const runId = crypto.randomUUID();
