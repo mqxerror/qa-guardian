@@ -317,21 +317,6 @@ async function initializeSchema(): Promise<void> {
       UNIQUE(test_id)
     );
 
-    -- Schedules table
-    CREATE TABLE IF NOT EXISTS schedules (
-      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-      project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
-      suite_id UUID REFERENCES test_suites(id) ON DELETE CASCADE,
-      name VARCHAR(255) NOT NULL,
-      cron_expression VARCHAR(100) NOT NULL,
-      enabled BOOLEAN DEFAULT TRUE,
-      config JSONB DEFAULT '{}',
-      last_run_at TIMESTAMP WITH TIME ZONE,
-      next_run_at TIMESTAMP WITH TIME ZONE,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    );
-
     -- Webhooks table
     CREATE TABLE IF NOT EXISTS webhooks (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -345,19 +330,6 @@ async function initializeSchema(): Promise<void> {
       headers JSONB DEFAULT '{}',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    );
-
-    -- Audit Logs table
-    CREATE TABLE IF NOT EXISTS audit_logs (
-      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
-      user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-      action VARCHAR(100) NOT NULL,
-      resource_type VARCHAR(100) NOT NULL,
-      resource_id UUID,
-      details JSONB DEFAULT '{}',
-      ip_address VARCHAR(45),
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
 
     -- MCP Connections table (Feature #2084: Active MCP connections)
