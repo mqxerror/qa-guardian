@@ -5,6 +5,7 @@ dotenv.config();
 
 import Fastify from 'fastify';
 import { initializeDatabase, isDatabaseConnected, healthCheck as dbHealthCheck, closeDatabase } from './services/database';
+import { initializeStoreSync, stopStoreSync } from './store-sync';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import swagger from '@fastify/swagger';
@@ -290,6 +291,7 @@ async function start() {
     const dbConnected = await initializeDatabase();
     if (dbConnected) {
       console.log('[Startup] PostgreSQL database connected - data will persist');
+      await initializeStoreSync();
     } else {
       console.log('[Startup] Using in-memory storage - data will NOT persist across restarts');
     }
@@ -401,6 +403,7 @@ start();
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('[Shutdown] SIGTERM received, closing connections...');
+  stopStoreSync();
   await closeDatabase();
   await app.close();
   process.exit(0);
@@ -408,6 +411,7 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   console.log('[Shutdown] SIGINT received, closing connections...');
+  stopStoreSync();
   await closeDatabase();
   await app.close();
   process.exit(0);
