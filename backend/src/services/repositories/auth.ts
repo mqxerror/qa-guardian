@@ -1,9 +1,14 @@
 /**
  * Auth Repository
  * Feature #2083: Migrate Auth module to PostgreSQL database
+ * Feature #2104: Full DB-only cleanup - removed all memory Maps and isDatabaseConnected guards
  *
- * This module provides database persistence for users, sessions, tokens
- * with fallback to in-memory storage.
+ * PostgreSQL is REQUIRED - memory fallback has been fully removed.
+ * When database is not connected, operations will:
+ * - CREATE: throw error (data would be lost)
+ * - READ: return undefined/empty arrays
+ * - UPDATE: return undefined
+ * - DELETE: return false
  */
 
 import { query, isDatabaseConnected } from '../database';
@@ -43,13 +48,11 @@ export interface ResetToken {
 }
 
 // ============================================================================
-// In-Memory Fallback Stores
+// Memory Maps REMOVED (Feature #2104) - PostgreSQL is the only data store.
+// Token blacklist kept in-memory as a runtime cache (cleared on restart).
 // ============================================================================
 
-const memoryUsers: Map<string, User> = new Map();
 const memoryTokenBlacklist: Set<string> = new Set();
-const memoryUserSessions: Map<string, Session[]> = new Map();
-const memoryResetTokens: Map<string, ResetToken> = new Map();
 
 // ============================================================================
 // Helper Functions
@@ -95,34 +98,34 @@ function rowToSession(row: any): Session {
  * Create a new user
  */
 export async function createUser(user: User): Promise<User> {
-  if (isDatabaseConnected()) {
-    try {
-      const result = await query<any>(
-        `INSERT INTO users (id, email, password_hash, name, avatar_url, role, email_verified, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING *`,
-        [
-          user.id,
-          user.email,
-          user.password_hash,
-          user.name,
-          user.avatar_url,
-          user.role,
-          user.email_verified,
-          user.created_at,
-        ]
-      );
-      if (result && result.rows[0]) {
-        memoryUsers.set(user.email, user);
-        return rowToUser(result.rows[0]);
-      }
-    } catch (error) {
-      console.error('[AuthRepo] Failed to create user in database:', error);
-    }
+  if (!isDatabaseConnected()) {
+    throw new Error('Database connection required - cannot create user without PostgreSQL');
   }
 
-  // Fallback to memory
-  memoryUsers.set(user.email, user);
+  try {
+    const result = await query<any>(
+      `INSERT INTO users (id, email, password_hash, name, avatar_url, role, email_verified, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [
+        user.id,
+        user.email,
+        user.password_hash,
+        user.name,
+        user.avatar_url,
+        user.role,
+        user.email_verified,
+        user.created_at,
+      ]
+    );
+    if (result && result.rows[0]) {
+      return rowToUser(result.rows[0]);
+    }
+  } catch (error) {
+    console.error('[AuthRepo] Failed to create user in database:', error);
+    throw error;
+  }
+
   return user;
 }
 
@@ -130,48 +133,45 @@ export async function createUser(user: User): Promise<User> {
  * Get a user by email
  */
 export async function getUserByEmail(email: string): Promise<User | undefined> {
-  if (isDatabaseConnected()) {
-    try {
-      const result = await query<any>(
-        'SELECT * FROM users WHERE email = $1',
-        [email]
-      );
-      if (result && result.rows[0]) {
-        return rowToUser(result.rows[0]);
-      }
-    } catch (error) {
-      console.error('[AuthRepo] Failed to get user from database:', error);
-    }
+  if (!isDatabaseConnected()) {
+    return undefined;
   }
 
-  // Fallback to memory
-  return memoryUsers.get(email);
+  try {
+    const result = await query<any>(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    );
+    if (result && result.rows[0]) {
+      return rowToUser(result.rows[0]);
+    }
+  } catch (error) {
+    console.error('[AuthRepo] Failed to get user from database:', error);
+  }
+
+  return undefined;
 }
 
 /**
  * Get a user by ID
  */
 export async function getUserById(id: string): Promise<User | undefined> {
-  if (isDatabaseConnected()) {
-    try {
-      const result = await query<any>(
-        'SELECT * FROM users WHERE id = $1',
-        [id]
-      );
-      if (result && result.rows[0]) {
-        return rowToUser(result.rows[0]);
-      }
-    } catch (error) {
-      console.error('[AuthRepo] Failed to get user from database:', error);
-    }
+  if (!isDatabaseConnected()) {
+    return undefined;
   }
 
-  // Fallback to memory
-  for (const user of memoryUsers.values()) {
-    if (user.id === id) {
-      return user;
+  try {
+    const result = await query<any>(
+      'SELECT * FROM users WHERE id = $1',
+      [id]
+    );
+    if (result && result.rows[0]) {
+      return rowToUser(result.rows[0]);
     }
+  } catch (error) {
+    console.error('[AuthRepo] Failed to get user from database:', error);
   }
+
   return undefined;
 }
 
@@ -179,93 +179,90 @@ export async function getUserById(id: string): Promise<User | undefined> {
  * Update a user
  */
 export async function updateUser(email: string, updates: Partial<User>): Promise<User | undefined> {
-  // Update memory first
-  const existing = memoryUsers.get(email);
-  if (existing) {
-    const updated = { ...existing, ...updates };
-    memoryUsers.set(email, updated);
+  if (!isDatabaseConnected()) {
+    return undefined;
   }
 
-  if (isDatabaseConnected()) {
-    try {
-      const setClauses: string[] = [];
-      const values: any[] = [];
-      let paramIndex = 1;
+  try {
+    const setClauses: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
 
-      const fieldMappings: Record<string, string> = {
-        password_hash: 'password_hash',
-        name: 'name',
-        avatar_url: 'avatar_url',
-        role: 'role',
-        email_verified: 'email_verified',
-      };
+    const fieldMappings: Record<string, string> = {
+      password_hash: 'password_hash',
+      name: 'name',
+      avatar_url: 'avatar_url',
+      role: 'role',
+      email_verified: 'email_verified',
+    };
 
-      for (const [key, dbField] of Object.entries(fieldMappings)) {
-        if (key in updates) {
-          setClauses.push(`${dbField} = $${paramIndex}`);
-          values.push((updates as any)[key]);
-          paramIndex++;
-        }
+    for (const [key, dbField] of Object.entries(fieldMappings)) {
+      if (key in updates) {
+        setClauses.push(`${dbField} = $${paramIndex}`);
+        values.push((updates as any)[key]);
+        paramIndex++;
       }
-
-      if (setClauses.length > 0) {
-        setClauses.push(`updated_at = NOW()`);
-        values.push(email);
-        const result = await query<any>(
-          `UPDATE users SET ${setClauses.join(', ')} WHERE email = $${paramIndex} RETURNING *`,
-          values
-        );
-        if (result && result.rows[0]) {
-          const updated = rowToUser(result.rows[0]);
-          memoryUsers.set(email, updated);
-          return updated;
-        }
-      }
-    } catch (error) {
-      console.error('[AuthRepo] Failed to update user in database:', error);
     }
+
+    if (setClauses.length > 0) {
+      setClauses.push(`updated_at = NOW()`);
+      values.push(email);
+      const result = await query<any>(
+        `UPDATE users SET ${setClauses.join(', ')} WHERE email = $${paramIndex} RETURNING *`,
+        values
+      );
+      if (result && result.rows[0]) {
+        return rowToUser(result.rows[0]);
+      }
+    }
+  } catch (error) {
+    console.error('[AuthRepo] Failed to update user in database:', error);
   }
 
-  return memoryUsers.get(email);
+  return undefined;
 }
 
 /**
  * Check if a user exists by email
  */
 export async function userExists(email: string): Promise<boolean> {
-  if (isDatabaseConnected()) {
-    try {
-      const result = await query<any>(
-        'SELECT 1 FROM users WHERE email = $1',
-        [email]
-      );
-      if (result && result.rows.length > 0) {
-        return true;
-      }
-    } catch (error) {
-      console.error('[AuthRepo] Failed to check user existence:', error);
-    }
+  if (!isDatabaseConnected()) {
+    return false;
   }
 
-  return memoryUsers.has(email);
+  try {
+    const result = await query<any>(
+      'SELECT 1 FROM users WHERE email = $1',
+      [email]
+    );
+    if (result && result.rows.length > 0) {
+      return true;
+    }
+  } catch (error) {
+    console.error('[AuthRepo] Failed to check user existence:', error);
+  }
+
+  return false;
 }
 
 /**
  * Get the count of users (for generating new IDs)
  */
 export async function getUserCount(): Promise<number> {
-  if (isDatabaseConnected()) {
-    try {
-      const result = await query<any>('SELECT COUNT(*) as count FROM users');
-      if (result && result.rows[0]) {
-        return parseInt(result.rows[0].count, 10);
-      }
-    } catch (error) {
-      console.error('[AuthRepo] Failed to get user count:', error);
-    }
+  if (!isDatabaseConnected()) {
+    return 0;
   }
 
-  return memoryUsers.size;
+  try {
+    const result = await query<any>('SELECT COUNT(*) as count FROM users');
+    if (result && result.rows[0]) {
+      return parseInt(result.rows[0].count, 10);
+    }
+  } catch (error) {
+    console.error('[AuthRepo] Failed to get user count:', error);
+  }
+
+  return 0;
 }
 
 // ============================================================================
@@ -276,6 +273,7 @@ export async function getUserCount(): Promise<number> {
  * Add a token to the blacklist
  */
 export async function blacklistToken(token: string, expiresAt?: Date): Promise<void> {
+  // Always add to runtime cache (fast lookup, cleared on restart)
   memoryTokenBlacklist.add(token);
 
   if (isDatabaseConnected()) {
@@ -317,30 +315,28 @@ export async function isTokenBlacklisted(token: string): Promise<boolean> {
  * Create a new session
  */
 export async function createSession(session: Session): Promise<Session> {
-  // Add to memory
-  const sessions = memoryUserSessions.get(session.user_id) || [];
-  sessions.push(session);
-  memoryUserSessions.set(session.user_id, sessions);
+  if (!isDatabaseConnected()) {
+    throw new Error('Database connection required - cannot create session without PostgreSQL');
+  }
 
-  if (isDatabaseConnected()) {
-    try {
-      await query(
-        `INSERT INTO sessions (id, user_id, token_hash, device, browser, ip_address, last_active, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          session.id,
-          session.user_id,
-          session.token, // In production, this should be hashed
-          session.device,
-          session.browser,
-          session.ip_address,
-          session.last_active,
-          session.created_at,
-        ]
-      );
-    } catch (error) {
-      console.error('[AuthRepo] Failed to create session in database:', error);
-    }
+  try {
+    await query(
+      `INSERT INTO sessions (id, user_id, token_hash, device, browser, ip_address, last_active, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        session.id,
+        session.user_id,
+        session.token, // In production, this should be hashed
+        session.device,
+        session.browser,
+        session.ip_address,
+        session.last_active,
+        session.created_at,
+      ]
+    );
+  } catch (error) {
+    console.error('[AuthRepo] Failed to create session in database:', error);
+    throw error;
   }
 
   return session;
@@ -350,45 +346,40 @@ export async function createSession(session: Session): Promise<Session> {
  * Get all sessions for a user
  */
 export async function getUserSessions(userId: string): Promise<Session[]> {
-  if (isDatabaseConnected()) {
-    try {
-      const result = await query<any>(
-        'SELECT * FROM sessions WHERE user_id = $1 ORDER BY last_active DESC',
-        [userId]
-      );
-      if (result && result.rows) {
-        return result.rows.map(rowToSession);
-      }
-    } catch (error) {
-      console.error('[AuthRepo] Failed to get sessions from database:', error);
-    }
+  if (!isDatabaseConnected()) {
+    return [];
   }
 
-  return memoryUserSessions.get(userId) || [];
+  try {
+    const result = await query<any>(
+      'SELECT * FROM sessions WHERE user_id = $1 ORDER BY last_active DESC',
+      [userId]
+    );
+    if (result && result.rows) {
+      return result.rows.map(rowToSession);
+    }
+  } catch (error) {
+    console.error('[AuthRepo] Failed to get sessions from database:', error);
+  }
+
+  return [];
 }
 
 /**
  * Update session last active time
  */
 export async function updateSessionLastActive(sessionId: string): Promise<void> {
-  // Update in memory
-  for (const [userId, sessions] of memoryUserSessions.entries()) {
-    const session = sessions.find(s => s.id === sessionId);
-    if (session) {
-      session.last_active = new Date();
-      break;
-    }
+  if (!isDatabaseConnected()) {
+    return;
   }
 
-  if (isDatabaseConnected()) {
-    try {
-      await query(
-        'UPDATE sessions SET last_active = NOW() WHERE id = $1',
-        [sessionId]
-      );
-    } catch (error) {
-      console.error('[AuthRepo] Failed to update session:', error);
-    }
+  try {
+    await query(
+      'UPDATE sessions SET last_active = NOW() WHERE id = $1',
+      [sessionId]
+    );
+  } catch (error) {
+    console.error('[AuthRepo] Failed to update session:', error);
   }
 }
 
@@ -396,58 +387,44 @@ export async function updateSessionLastActive(sessionId: string): Promise<void> 
  * Delete a session
  */
 export async function deleteSession(sessionId: string, userId: string): Promise<boolean> {
-  // Remove from memory
-  const sessions = memoryUserSessions.get(userId);
-  if (sessions) {
-    const index = sessions.findIndex(s => s.id === sessionId);
-    if (index !== -1) {
-      sessions.splice(index, 1);
-    }
+  if (!isDatabaseConnected()) {
+    return false;
   }
 
-  if (isDatabaseConnected()) {
-    try {
-      const result = await query(
-        'DELETE FROM sessions WHERE id = $1 AND user_id = $2',
-        [sessionId, userId]
-      );
-      return result !== null && result.rowCount !== null && result.rowCount > 0;
-    } catch (error) {
-      console.error('[AuthRepo] Failed to delete session:', error);
-    }
+  try {
+    const result = await query(
+      'DELETE FROM sessions WHERE id = $1 AND user_id = $2',
+      [sessionId, userId]
+    );
+    return result !== null && result.rowCount !== null && result.rowCount > 0;
+  } catch (error) {
+    console.error('[AuthRepo] Failed to delete session:', error);
   }
 
-  return true;
+  return false;
 }
 
 /**
  * Delete all sessions for a user except current
  */
 export async function deleteOtherSessions(userId: string, currentSessionId: string): Promise<number> {
-  // Remove from memory
-  const sessions = memoryUserSessions.get(userId);
-  let deletedCount = 0;
-  if (sessions) {
-    const newSessions = sessions.filter(s => s.id === currentSessionId);
-    deletedCount = sessions.length - newSessions.length;
-    memoryUserSessions.set(userId, newSessions);
+  if (!isDatabaseConnected()) {
+    return 0;
   }
 
-  if (isDatabaseConnected()) {
-    try {
-      const result = await query(
-        'DELETE FROM sessions WHERE user_id = $1 AND id != $2',
-        [userId, currentSessionId]
-      );
-      if (result && result.rowCount !== null) {
-        return result.rowCount;
-      }
-    } catch (error) {
-      console.error('[AuthRepo] Failed to delete other sessions:', error);
+  try {
+    const result = await query(
+      'DELETE FROM sessions WHERE user_id = $1 AND id != $2',
+      [userId, currentSessionId]
+    );
+    if (result && result.rowCount !== null) {
+      return result.rowCount;
     }
+  } catch (error) {
+    console.error('[AuthRepo] Failed to delete other sessions:', error);
   }
 
-  return deletedCount;
+  return 0;
 }
 
 // ============================================================================
@@ -458,23 +435,24 @@ export async function deleteOtherSessions(userId: string, currentSessionId: stri
  * Create a password reset token
  */
 export async function createResetToken(resetToken: ResetToken): Promise<ResetToken> {
-  memoryResetTokens.set(resetToken.token, resetToken);
+  if (!isDatabaseConnected()) {
+    throw new Error('Database connection required - cannot create reset token without PostgreSQL');
+  }
 
-  if (isDatabaseConnected()) {
-    try {
-      await query(
-        `INSERT INTO reset_tokens (token_hash, user_email, expires_at, created_at)
-         VALUES ($1, $2, $3, $4)`,
-        [
-          resetToken.token, // In production, this should be hashed
-          resetToken.email,
-          new Date(resetToken.createdAt.getTime() + 60 * 60 * 1000), // 1 hour expiry
-          resetToken.createdAt,
-        ]
-      );
-    } catch (error) {
-      console.error('[AuthRepo] Failed to create reset token in database:', error);
-    }
+  try {
+    await query(
+      `INSERT INTO reset_tokens (token_hash, user_email, expires_at, created_at)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        resetToken.token, // In production, this should be hashed
+        resetToken.email,
+        new Date(resetToken.createdAt.getTime() + 60 * 60 * 1000), // 1 hour expiry
+        resetToken.createdAt,
+      ]
+    );
+  } catch (error) {
+    console.error('[AuthRepo] Failed to create reset token in database:', error);
+    throw error;
   }
 
   return resetToken;
@@ -484,47 +462,46 @@ export async function createResetToken(resetToken: ResetToken): Promise<ResetTok
  * Get a reset token
  */
 export async function getResetToken(token: string): Promise<ResetToken | undefined> {
-  if (isDatabaseConnected()) {
-    try {
-      const result = await query<any>(
-        'SELECT * FROM reset_tokens WHERE token_hash = $1',
-        [token]
-      );
-      if (result && result.rows[0]) {
-        const row = result.rows[0];
-        return {
-          email: row.user_email,
-          token: row.token_hash,
-          createdAt: new Date(row.created_at),
-          used: row.used_at !== null,
-        };
-      }
-    } catch (error) {
-      console.error('[AuthRepo] Failed to get reset token from database:', error);
-    }
+  if (!isDatabaseConnected()) {
+    return undefined;
   }
 
-  return memoryResetTokens.get(token);
+  try {
+    const result = await query<any>(
+      'SELECT * FROM reset_tokens WHERE token_hash = $1',
+      [token]
+    );
+    if (result && result.rows[0]) {
+      const row = result.rows[0];
+      return {
+        email: row.user_email,
+        token: row.token_hash,
+        createdAt: new Date(row.created_at),
+        used: row.used_at !== null,
+      };
+    }
+  } catch (error) {
+    console.error('[AuthRepo] Failed to get reset token from database:', error);
+  }
+
+  return undefined;
 }
 
 /**
  * Mark a reset token as used
  */
 export async function markResetTokenUsed(token: string): Promise<void> {
-  const resetToken = memoryResetTokens.get(token);
-  if (resetToken) {
-    resetToken.used = true;
+  if (!isDatabaseConnected()) {
+    return;
   }
 
-  if (isDatabaseConnected()) {
-    try {
-      await query(
-        'UPDATE reset_tokens SET used_at = NOW() WHERE token_hash = $1',
-        [token]
-      );
-    } catch (error) {
-      console.error('[AuthRepo] Failed to mark reset token as used:', error);
-    }
+  try {
+    await query(
+      'UPDATE reset_tokens SET used_at = NOW() WHERE token_hash = $1',
+      [token]
+    );
+  } catch (error) {
+    console.error('[AuthRepo] Failed to mark reset token as used:', error);
   }
 }
 
@@ -584,8 +561,14 @@ export const DEFAULT_USER_IDS = {
 
 /**
  * Seed test users (for development)
+ * Feature #2104: Requires PostgreSQL - skips seeding when DB not connected
  */
 export async function seedTestUsers(): Promise<void> {
+  if (!isDatabaseConnected()) {
+    console.warn('[AuthRepo] Database not connected - cannot seed test users. Will seed when DB connects.');
+    return;
+  }
+
   const testUsers = [
     {
       id: DEFAULT_USER_IDS.owner,
@@ -642,21 +625,29 @@ export async function seedTestUsers(): Promise<void> {
 }
 
 // ============================================================================
-// Memory Store Accessors (for backward compatibility)
+// Memory Store Accessors (deprecated - Feature #2104)
+// Return empty collections for backward compatibility with route files.
+// Token blacklist is the only runtime cache that remains.
 // ============================================================================
 
+/** @deprecated Memory maps removed in Feature #2104. Use async repository functions instead. */
 export function getMemoryUsers(): Map<string, User> {
-  return memoryUsers;
+  console.warn('[AuthRepo] DEPRECATED: getMemoryUsers() - memory maps removed. Use async repository functions.');
+  return new Map<string, User>();
 }
 
 export function getMemoryTokenBlacklist(): Set<string> {
-  return memoryTokenBlacklist;
+  return memoryTokenBlacklist; // Runtime cache, not deprecated
 }
 
+/** @deprecated Memory maps removed in Feature #2104. Use async repository functions instead. */
 export function getMemoryUserSessions(): Map<string, Session[]> {
-  return memoryUserSessions;
+  console.warn('[AuthRepo] DEPRECATED: getMemoryUserSessions() - memory maps removed. Use async repository functions.');
+  return new Map<string, Session[]>();
 }
 
+/** @deprecated Memory maps removed in Feature #2104. Use async repository functions instead. */
 export function getMemoryResetTokens(): Map<string, ResetToken> {
-  return memoryResetTokens;
+  console.warn('[AuthRepo] DEPRECATED: getMemoryResetTokens() - memory maps removed. Use async repository functions.');
+  return new Map<string, ResetToken>();
 }
