@@ -1,0 +1,12 @@
+const Database = require('better-sqlite3');
+const db = new Database('features.db');
+const total = db.prepare('SELECT COUNT(*) as c FROM features').get().c;
+const passing = db.prepare('SELECT COUNT(*) as c FROM features WHERE passes = 1').get().c;
+const pending = db.prepare('SELECT COUNT(*) as c FROM features WHERE passes = 0 AND in_progress = 0').get().c;
+const inProgress = db.prepare('SELECT COUNT(*) as c FROM features WHERE in_progress = 1').get().c;
+console.log('Total:', total);
+console.log('Passing:', passing);
+console.log('Pending:', pending);
+console.log('In Progress:', inProgress);
+console.log('Percentage:', ((passing / total) * 100).toFixed(1) + '%');
+db.close();

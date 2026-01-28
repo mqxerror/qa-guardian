@@ -1,9 +1,5 @@
 const Database = require('better-sqlite3');
 const db = new Database('features.db');
-const pending = db.prepare('SELECT id, name, steps FROM features WHERE passes = 0 ORDER BY priority').all();
-console.log('=== Pending Features (' + pending.length + ') ===');
-pending.forEach(f => {
-  console.log('\nID:', f.id, '- Name:', f.name);
-  console.log('Steps:', f.steps);
-});
+const rows = db.prepare('SELECT id, category, name FROM features WHERE passes = 0 AND in_progress = 0 ORDER BY id ASC LIMIT 30').all();
+rows.forEach(r => console.log(r.id + ': [' + r.category + '] ' + r.name));
 db.close();
