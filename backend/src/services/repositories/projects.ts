@@ -439,32 +439,5 @@ export async function getProjectsMap(): Promise<Map<string, Project>> {
   return new Map<string, Project>();
 }
 
-/**
- * Synchronous access to projects store
- * NOTE: Memory fallback removed (Feature #2101) - returns empty Map
- * Use async getProjectsMap() instead
- */
-export function getMemoryProjects(): Map<string, Project> {
-  console.warn('[DEPRECATED] getMemoryProjects() returns empty Map - use async getProjectsMap() instead');
-  return new Map<string, Project>();
-}
-
-export function getMemoryProjectMembers(): Map<string, ProjectMember[]> {
-  console.warn('[DEPRECATED] getMemoryProjectMembers() returns empty Map - use async functions instead');
-  return new Map<string, ProjectMember[]>();
-}
-
-export function getMemoryProjectEnvVars(): Map<string, EnvironmentVariable[]> {
-  console.warn('[DEPRECATED] getMemoryProjectEnvVars() returns empty Map - use async functions instead');
-  return new Map<string, EnvironmentVariable[]>();
-}
-
-export function getMemoryProjectVisualSettings(): Map<string, ProjectVisualSettings> {
-  console.warn('[DEPRECATED] getMemoryProjectVisualSettings() returns empty Map - use async functions instead');
-  return new Map<string, ProjectVisualSettings>();
-}
-
-export function getMemoryProjectHealingSettings(): Map<string, ProjectHealingSettings> {
-  console.warn('[DEPRECATED] getMemoryProjectHealingSettings() returns empty Map - use async functions instead');
-  return new Map<string, ProjectHealingSettings>();
-}
+// Feature #2102: Removed deprecated getMemory* functions
+// Use async functions: getProjectsMap(), getProject(), listProjects(), etc.
