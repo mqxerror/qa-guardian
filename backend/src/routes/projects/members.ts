@@ -3,7 +3,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
-import { projects, projectMembers } from './stores';
+import { getProject, getProjectMembers, addProjectMember, removeProjectMember } from './stores';
 
 export async function memberRoutes(app: FastifyInstance) {
   // Get project members
@@ -13,7 +13,7 @@ export async function memberRoutes(app: FastifyInstance) {
     const { projectId } = request.params;
     const user = request.user as JwtPayload;
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -37,7 +37,7 @@ export async function memberRoutes(app: FastifyInstance) {
       });
     }
 
-    const members = projectMembers.get(projectId) || [];
+    const members = await getProjectMembers(projectId);
     return { members };
   });
 
@@ -67,7 +67,7 @@ export async function memberRoutes(app: FastifyInstance) {
         });
       }
 
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -92,7 +92,7 @@ export async function memberRoutes(app: FastifyInstance) {
       }
 
       // Get or initialize project members array
-      const members = projectMembers.get(projectId) || [];
+      const members = await getProjectMembers(projectId);
 
       // Check if user is already a member
       if (members.some(m => m.user_id === user_id)) {
@@ -103,16 +103,13 @@ export async function memberRoutes(app: FastifyInstance) {
       }
 
       // Add the new member
-      const newMember = {
+      const newMember = await addProjectMember(projectId, {
         project_id: projectId,
         user_id,
         role,
         added_at: new Date(),
         added_by: user.id,
-      };
-
-      members.push(newMember);
-      projectMembers.set(projectId, members);
+      });
 
       console.log(`\n[PROJECT MEMBER ADDED] User ${user_id} added to project ${project.name} with role ${role}\n`);
 
@@ -133,7 +130,7 @@ export async function memberRoutes(app: FastifyInstance) {
       const { projectId, memberId } = request.params;
       const user = request.user as JwtPayload;
 
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -158,7 +155,7 @@ export async function memberRoutes(app: FastifyInstance) {
       }
 
       // Get project members
-      const members = projectMembers.get(projectId) || [];
+      const members = await getProjectMembers(projectId);
       const memberIndex = members.findIndex(m => m.user_id === memberId);
 
       if (memberIndex === -1) {
@@ -169,8 +166,7 @@ export async function memberRoutes(app: FastifyInstance) {
       }
 
       // Remove the member
-      members.splice(memberIndex, 1);
-      projectMembers.set(projectId, members);
+      await removeProjectMember(projectId, memberId);
 
       console.log(`\n[PROJECT MEMBER REMOVED] User ${memberId} removed from project ${project.name}\n`);
 
@@ -196,7 +192,7 @@ export async function memberRoutes(app: FastifyInstance) {
         });
       }
 
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -221,7 +217,7 @@ export async function memberRoutes(app: FastifyInstance) {
       }
 
       // Get project members
-      const members = projectMembers.get(projectId) || [];
+      const members = await getProjectMembers(projectId);
       const member = members.find(m => m.user_id === memberId);
 
       if (!member) {
@@ -232,8 +228,13 @@ export async function memberRoutes(app: FastifyInstance) {
       }
 
       const oldRole = member.role;
+      // Update role: remove and re-add with new role
+      await removeProjectMember(projectId, memberId);
+      await addProjectMember(projectId, {
+        ...member,
+        role,
+      });
       member.role = role;
-      projectMembers.set(projectId, members);
 
       console.log(`\n[PROJECT MEMBER ROLE UPDATED] User ${memberId} role changed from ${oldRole} to ${role} on project ${project.name}\n`);
 

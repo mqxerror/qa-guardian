@@ -4,7 +4,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
 import { ProjectVisualSettings, ProjectHealingSettings } from './types';
-import { projects } from './stores';
+import { getProject } from './stores';
 import {
   getProjectVisualSettings,
   setProjectVisualSettings,
@@ -28,7 +28,7 @@ export async function settingsRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
     const userOrgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== userOrgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -37,14 +37,14 @@ export async function settingsRoutes(app: FastifyInstance) {
     }
 
     // Check project access
-    if (!hasProjectAccess(projectId, user.id, user.role)) {
+    if (!(await hasProjectAccess(projectId, user.id, user.role))) {
       return reply.status(403).send({
         error: 'Forbidden',
         message: 'You do not have access to this project',
       });
     }
 
-    const settings = getProjectVisualSettings(projectId);
+    const settings = await getProjectVisualSettings(projectId);
 
     return {
       project_id: projectId,
@@ -68,7 +68,7 @@ export async function settingsRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
     const userOrgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== userOrgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -77,7 +77,7 @@ export async function settingsRoutes(app: FastifyInstance) {
     }
 
     // Only owners, admins, and project admins can change settings
-    const projectRole = getProjectRole(projectId, user.id, user.role);
+    const projectRole = await getProjectRole(projectId, user.id, user.role);
     if (!['owner', 'admin'].includes(projectRole || '')) {
       return reply.status(403).send({
         error: 'Forbidden',
@@ -136,7 +136,7 @@ export async function settingsRoutes(app: FastifyInstance) {
       });
     }
 
-    const updatedSettings = setProjectVisualSettings(projectId, updates);
+    const updatedSettings = await setProjectVisualSettings(projectId, updates);
 
     console.log(`[PROJECT VISUAL SETTINGS] Project ${project.name} visual settings updated by ${user.email}`);
 
@@ -155,7 +155,7 @@ export async function settingsRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
     const userOrgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== userOrgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -164,14 +164,14 @@ export async function settingsRoutes(app: FastifyInstance) {
     }
 
     // Check project access
-    if (!hasProjectAccess(projectId, user.id, user.role)) {
+    if (!(await hasProjectAccess(projectId, user.id, user.role))) {
       return reply.status(403).send({
         error: 'Forbidden',
         message: 'You do not have access to this project',
       });
     }
 
-    const settings = getProjectHealingSettings(projectId);
+    const settings = await getProjectHealingSettings(projectId);
 
     return {
       project_id: projectId,
@@ -196,7 +196,7 @@ export async function settingsRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
     const userOrgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== userOrgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -205,7 +205,7 @@ export async function settingsRoutes(app: FastifyInstance) {
     }
 
     // Only owners, admins, and project admins can change settings
-    const projectRole = getProjectRole(projectId, user.id, user.role);
+    const projectRole = await getProjectRole(projectId, user.id, user.role);
     if (!['owner', 'admin'].includes(projectRole || '')) {
       return reply.status(403).send({
         error: 'Forbidden',
@@ -268,7 +268,7 @@ export async function settingsRoutes(app: FastifyInstance) {
       }
     }
 
-    const updatedSettings = setProjectHealingSettings(projectId, updates);
+    const updatedSettings = await setProjectHealingSettings(projectId, updates);
 
     console.log(`[PROJECT HEALING SETTINGS] Project ${project.name} healing settings updated by ${user.email}`);
     console.log(`[PROJECT HEALING SETTINGS] New timeout: ${updatedSettings.healing_timeout}s, Max attempts: ${updatedSettings.max_healing_attempts}, Threshold: ${updatedSettings.auto_heal_confidence_threshold}`);
