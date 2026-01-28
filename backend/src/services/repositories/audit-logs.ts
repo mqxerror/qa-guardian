@@ -2,6 +2,7 @@
  * Audit Logs Repository - PostgreSQL persistence
  *
  * Feature #2093: Migrate Audit Logs Module to PostgreSQL
+ * Feature #2110: Remove in-memory Map stores (DB-only migration)
  *
  * Provides CRUD operations for:
  * - Audit log entries for tracking user actions
@@ -25,15 +26,14 @@ export interface AuditLogEntry {
   created_at: Date;
 }
 
-// Memory fallback store
-const memoryAuditLogs: Map<string, AuditLogEntry> = new Map();
-
 // ============================================
-// Memory Store Accessor (for backward compatibility)
+// Deprecated Memory Store Accessor
 // ============================================
 
+/** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryAuditLogs(): Map<string, AuditLogEntry> {
-  return memoryAuditLogs;
+  console.warn('[DEPRECATED] getMemoryAuditLogs() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  return new Map();
 }
 
 // ============================================
@@ -92,8 +92,7 @@ export async function createAuditLog(entry: AuditLogEntry): Promise<AuditLogEntr
       return parseAuditLogRow(result.rows[0]);
     }
   }
-  // Memory fallback
-  memoryAuditLogs.set(entry.id, entry);
+  // DB-only: return entry as-is if DB unavailable
   return entry;
 }
 
@@ -111,7 +110,7 @@ export async function getAuditLog(logId: string): Promise<AuditLogEntry | undefi
     }
     return undefined;
   }
-  return memoryAuditLogs.get(logId);
+  return undefined;
 }
 
 /**
@@ -175,27 +174,8 @@ export async function listAuditLogs(
     return { logs: [], total: 0 };
   }
 
-  // Memory fallback
-  let logs = Array.from(memoryAuditLogs.values())
-    .filter(log => log.organization_id === organizationId);
-
-  if (action) {
-    logs = logs.filter(log => log.action === action);
-  }
-  if (resourceType) {
-    logs = logs.filter(log => log.resource_type === resourceType);
-  }
-  if (userId) {
-    logs = logs.filter(log => log.user_id === userId);
-  }
-
-  // Sort by created_at descending
-  logs.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
-
-  const total = logs.length;
-  const paginatedLogs = logs.slice(offset, offset + limit);
-
-  return { logs: paginatedLogs, total };
+  // DB-only: return empty when DB unavailable
+  return { logs: [], total: 0 };
 }
 
 /**
@@ -213,14 +193,8 @@ export async function getUniqueActions(organizationId: string): Promise<string[]
     return [];
   }
 
-  // Memory fallback
-  const actions = new Set<string>();
-  for (const log of memoryAuditLogs.values()) {
-    if (log.organization_id === organizationId) {
-      actions.add(log.action);
-    }
-  }
-  return Array.from(actions).sort();
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 /**
@@ -238,14 +212,8 @@ export async function getUniqueResourceTypes(organizationId: string): Promise<st
     return [];
   }
 
-  // Memory fallback
-  const resourceTypes = new Set<string>();
-  for (const log of memoryAuditLogs.values()) {
-    if (log.organization_id === organizationId) {
-      resourceTypes.add(log.resource_type);
-    }
-  }
-  return Array.from(resourceTypes).sort();
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 /**
@@ -260,15 +228,8 @@ export async function deleteOldAuditLogs(olderThan: Date): Promise<number> {
     return result?.rowCount ?? 0;
   }
 
-  // Memory fallback
-  let deletedCount = 0;
-  for (const [id, log] of memoryAuditLogs.entries()) {
-    if (log.created_at < olderThan) {
-      memoryAuditLogs.delete(id);
-      deletedCount++;
-    }
-  }
-  return deletedCount;
+  // DB-only: return 0 when DB unavailable
+  return 0;
 }
 
 /**
@@ -291,10 +252,8 @@ export async function getAuditLogCount(organizationId?: string): Promise<number>
     return 0;
   }
 
-  if (organizationId) {
-    return Array.from(memoryAuditLogs.values()).filter(l => l.organization_id === organizationId).length;
-  }
-  return memoryAuditLogs.size;
+  // DB-only: return 0 when DB unavailable
+  return 0;
 }
 
 /**
@@ -315,11 +274,8 @@ export async function getAuditLogsByUser(
     return [];
   }
 
-  // Memory fallback
-  return Array.from(memoryAuditLogs.values())
-    .filter(log => log.user_id === userId)
-    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
-    .slice(0, limit);
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 /**
@@ -341,9 +297,6 @@ export async function getAuditLogsByResource(
     return [];
   }
 
-  // Memory fallback
-  return Array.from(memoryAuditLogs.values())
-    .filter(log => log.resource_type === resourceType && log.resource_id === resourceId)
-    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
-    .slice(0, limit);
+  // DB-only: return empty when DB unavailable
+  return [];
 }

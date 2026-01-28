@@ -2,10 +2,10 @@
  * API Keys Repository for PostgreSQL
  *
  * This repository provides database persistence for API keys, MCP connections,
- * tool calls, and audit logs. Falls back to in-memory storage when database
- * is unavailable.
+ * tool calls, and audit logs.
  *
  * Feature #2084: Migrate API Keys Module to PostgreSQL
+ * Feature #2110: Remove in-memory Map stores (DB-only migration)
  */
 
 import { query, isDatabaseConnected } from '../database';
@@ -17,27 +17,32 @@ import {
 } from '../../routes/api-keys/types';
 import crypto from 'crypto';
 
-// In-memory fallback stores
-const memoryApiKeys: Map<string, ApiKey> = new Map();
-const memoryMcpConnections: Map<string, McpConnection> = new Map();
-const memoryMcpToolCalls: Map<string, McpToolCall[]> = new Map();
-const memoryMcpAuditLogs: Map<string, McpAuditLogEntry[]> = new Map();
+// ============================================
+// Deprecated Memory Store Accessors
+// ============================================
 
-// Export memory stores for compatibility
+/** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryApiKeys(): Map<string, ApiKey> {
-  return memoryApiKeys;
+  console.warn('[DEPRECATED] getMemoryApiKeys() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  return new Map();
 }
 
+/** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryMcpConnections(): Map<string, McpConnection> {
-  return memoryMcpConnections;
+  console.warn('[DEPRECATED] getMemoryMcpConnections() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  return new Map();
 }
 
+/** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryMcpToolCalls(): Map<string, McpToolCall[]> {
-  return memoryMcpToolCalls;
+  console.warn('[DEPRECATED] getMemoryMcpToolCalls() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  return new Map();
 }
 
+/** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryMcpAuditLogs(): Map<string, McpAuditLogEntry[]> {
-  return memoryMcpAuditLogs;
+  console.warn('[DEPRECATED] getMemoryMcpAuditLogs() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  return new Map();
 }
 
 // ============================================================================
@@ -83,9 +88,6 @@ function rowToApiKey(row: ApiKeyRow): ApiKey {
 }
 
 export async function createApiKey(apiKey: ApiKey): Promise<ApiKey> {
-  // Always store in memory for fast access
-  memoryApiKeys.set(apiKey.id, apiKey);
-
   if (isDatabaseConnected()) {
     try {
       await query(
@@ -121,10 +123,6 @@ export async function createApiKey(apiKey: ApiKey): Promise<ApiKey> {
 }
 
 export async function getApiKeyById(id: string): Promise<ApiKey | null> {
-  // Try memory first for speed
-  const memKey = memoryApiKeys.get(id);
-  if (memKey) return memKey;
-
   if (isDatabaseConnected()) {
     try {
       const result = await query<ApiKeyRow>(
@@ -132,9 +130,7 @@ export async function getApiKeyById(id: string): Promise<ApiKey | null> {
         [id]
       );
       if (result && result.rows.length > 0) {
-        const apiKey = rowToApiKey(result.rows[0]);
-        memoryApiKeys.set(id, apiKey);
-        return apiKey;
+        return rowToApiKey(result.rows[0]);
       }
     } catch (error) {
       console.error('[API Keys Repo] Failed to get API key from database:', error);
@@ -145,13 +141,6 @@ export async function getApiKeyById(id: string): Promise<ApiKey | null> {
 }
 
 export async function getApiKeyByHash(keyHash: string): Promise<ApiKey | null> {
-  // Try memory first
-  for (const [, key] of memoryApiKeys) {
-    if (key.key_hash === keyHash && !key.revoked_at) {
-      return key;
-    }
-  }
-
   if (isDatabaseConnected()) {
     try {
       const result = await query<ApiKeyRow>(
@@ -159,9 +148,7 @@ export async function getApiKeyByHash(keyHash: string): Promise<ApiKey | null> {
         [keyHash]
       );
       if (result && result.rows.length > 0) {
-        const apiKey = rowToApiKey(result.rows[0]);
-        memoryApiKeys.set(apiKey.id, apiKey);
-        return apiKey;
+        return rowToApiKey(result.rows[0]);
       }
     } catch (error) {
       console.error('[API Keys Repo] Failed to get API key by hash:', error);
@@ -172,8 +159,6 @@ export async function getApiKeyByHash(keyHash: string): Promise<ApiKey | null> {
 }
 
 export async function listApiKeysByOrg(orgId: string): Promise<ApiKey[]> {
-  const keys: ApiKey[] = [];
-
   if (isDatabaseConnected()) {
     try {
       const result = await query<ApiKeyRow>(
@@ -181,26 +166,15 @@ export async function listApiKeysByOrg(orgId: string): Promise<ApiKey[]> {
         [orgId]
       );
       if (result) {
-        for (const row of result.rows) {
-          const apiKey = rowToApiKey(row);
-          memoryApiKeys.set(apiKey.id, apiKey);
-          keys.push(apiKey);
-        }
-        return keys;
+        return result.rows.map(rowToApiKey);
       }
     } catch (error) {
       console.error('[API Keys Repo] Failed to list API keys:', error);
     }
   }
 
-  // Fallback to memory
-  for (const [, key] of memoryApiKeys) {
-    if (key.organization_id === orgId && !key.revoked_at) {
-      keys.push(key);
-    }
-  }
-
-  return keys;
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 export async function updateApiKey(id: string, updates: Partial<ApiKey>): Promise<ApiKey | null> {
@@ -208,7 +182,6 @@ export async function updateApiKey(id: string, updates: Partial<ApiKey>): Promis
   if (!existing) return null;
 
   const updated = { ...existing, ...updates };
-  memoryApiKeys.set(id, updated);
 
   if (isDatabaseConnected()) {
     try {
@@ -243,14 +216,13 @@ export async function revokeApiKey(id: string): Promise<boolean> {
   const apiKey = await getApiKeyById(id);
   if (!apiKey) return false;
 
-  apiKey.revoked_at = new Date();
-  memoryApiKeys.set(id, apiKey);
+  const revokedAt = new Date();
 
   if (isDatabaseConnected()) {
     try {
       await query(
         'UPDATE api_keys SET revoked_at = $2 WHERE id = $1',
-        [id, apiKey.revoked_at]
+        [id, revokedAt]
       );
     } catch (error) {
       console.error('[API Keys Repo] Failed to revoke API key:', error);
@@ -289,8 +261,6 @@ function rowToMcpConnection(row: McpConnectionRow): McpConnection {
 }
 
 export async function createMcpConnection(connection: McpConnection): Promise<McpConnection> {
-  memoryMcpConnections.set(connection.id, connection);
-
   if (isDatabaseConnected()) {
     try {
       await query(
@@ -318,9 +288,6 @@ export async function createMcpConnection(connection: McpConnection): Promise<Mc
 }
 
 export async function getMcpConnection(id: string): Promise<McpConnection | null> {
-  const memConn = memoryMcpConnections.get(id);
-  if (memConn) return memConn;
-
   if (isDatabaseConnected()) {
     try {
       const result = await query<McpConnectionRow>(
@@ -328,9 +295,7 @@ export async function getMcpConnection(id: string): Promise<McpConnection | null
         [id]
       );
       if (result && result.rows.length > 0) {
-        const conn = rowToMcpConnection(result.rows[0]);
-        memoryMcpConnections.set(id, conn);
-        return conn;
+        return rowToMcpConnection(result.rows[0]);
       }
     } catch (error) {
       console.error('[API Keys Repo] Failed to get MCP connection:', error);
@@ -341,11 +306,6 @@ export async function getMcpConnection(id: string): Promise<McpConnection | null
 }
 
 export async function updateMcpConnectionActivity(id: string): Promise<void> {
-  const connection = memoryMcpConnections.get(id);
-  if (connection) {
-    connection.last_activity_at = new Date();
-  }
-
   if (isDatabaseConnected()) {
     try {
       await query(
@@ -359,8 +319,6 @@ export async function updateMcpConnectionActivity(id: string): Promise<void> {
 }
 
 export async function deleteMcpConnection(id: string): Promise<void> {
-  memoryMcpConnections.delete(id);
-
   if (isDatabaseConnected()) {
     try {
       await query('DELETE FROM mcp_connections WHERE id = $1', [id]);
@@ -371,27 +329,17 @@ export async function deleteMcpConnection(id: string): Promise<void> {
 }
 
 export async function cleanupStaleMcpConnections(staleThresholdMs: number = 30 * 60 * 1000): Promise<number> {
-  const now = Date.now();
   let cleaned = 0;
 
-  // Clean memory
-  for (const [connectionId, connection] of memoryMcpConnections) {
-    if (now - connection.last_activity_at.getTime() > staleThresholdMs) {
-      memoryMcpConnections.delete(connectionId);
-      cleaned++;
-    }
-  }
-
-  // Clean database
   if (isDatabaseConnected()) {
     try {
-      const staleTime = new Date(now - staleThresholdMs);
+      const staleTime = new Date(Date.now() - staleThresholdMs);
       const result = await query(
         'DELETE FROM mcp_connections WHERE last_activity_at < $1',
         [staleTime]
       );
       if (result) {
-        cleaned = Math.max(cleaned, result.rowCount || 0);
+        cleaned = result.rowCount || 0;
       }
     } catch (error) {
       console.error('[API Keys Repo] Failed to cleanup stale connections:', error);
@@ -432,20 +380,6 @@ function rowToMcpToolCall(row: McpToolCallRow): McpToolCall {
 }
 
 export async function createMcpToolCall(toolCall: McpToolCall): Promise<McpToolCall> {
-  // Store in memory (with retention)
-  const orgId = toolCall.organization_id;
-  let orgToolCalls = memoryMcpToolCalls.get(orgId);
-  if (!orgToolCalls) {
-    orgToolCalls = [];
-    memoryMcpToolCalls.set(orgId, orgToolCalls);
-  }
-  orgToolCalls.push(toolCall);
-
-  // Keep only last 1000 entries per org
-  if (orgToolCalls.length > 1000) {
-    orgToolCalls.shift();
-  }
-
   if (isDatabaseConnected()) {
     try {
       await query(
@@ -474,7 +408,7 @@ export async function createMcpToolCall(toolCall: McpToolCall): Promise<McpToolC
           ORDER BY timestamp DESC
           OFFSET 1000
         )`,
-        [orgId]
+        [toolCall.organization_id]
       );
     } catch (error) {
       console.error('[API Keys Repo] Failed to create MCP tool call:', error);
@@ -502,22 +436,15 @@ export async function getMcpToolCallsByOrg(
 
       const result = await query<McpToolCallRow>(sql, params);
       if (result) {
-        const calls = result.rows.map(rowToMcpToolCall);
-        // Update memory cache
-        memoryMcpToolCalls.set(orgId, calls);
-        return calls;
+        return result.rows.map(rowToMcpToolCall);
       }
     } catch (error) {
       console.error('[API Keys Repo] Failed to get MCP tool calls:', error);
     }
   }
 
-  // Fallback to memory
-  const memCalls = memoryMcpToolCalls.get(orgId) || [];
-  if (since) {
-    return memCalls.filter(c => c.timestamp >= since);
-  }
-  return memCalls;
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 // ============================================================================
@@ -571,20 +498,6 @@ function rowToMcpAuditLog(row: McpAuditLogRow): McpAuditLogEntry {
 }
 
 export async function createMcpAuditLog(entry: McpAuditLogEntry): Promise<McpAuditLogEntry> {
-  // Store in memory (with retention)
-  const orgId = entry.organization_id;
-  let orgAuditLogs = memoryMcpAuditLogs.get(orgId);
-  if (!orgAuditLogs) {
-    orgAuditLogs = [];
-    memoryMcpAuditLogs.set(orgId, orgAuditLogs);
-  }
-  orgAuditLogs.push(entry);
-
-  // Keep only last 500 entries per org
-  if (orgAuditLogs.length > 500) {
-    orgAuditLogs.shift();
-  }
-
   if (isDatabaseConnected()) {
     try {
       await query(
@@ -626,7 +539,7 @@ export async function createMcpAuditLog(entry: McpAuditLogEntry): Promise<McpAud
           ORDER BY timestamp DESC
           OFFSET 500
         )`,
-        [orgId]
+        [entry.organization_id]
       );
     } catch (error) {
       console.error('[API Keys Repo] Failed to create MCP audit log:', error);
@@ -704,30 +617,6 @@ export async function getMcpAuditLogs(
     }
   }
 
-  // Fallback to memory
-  let filtered = memoryMcpAuditLogs.get(orgId) || [];
-
-  if (options.method) {
-    filtered = filtered.filter(log => log.method === options.method);
-  }
-  if (options.api_key_id) {
-    filtered = filtered.filter(log => log.api_key_id === options.api_key_id);
-  }
-  if (options.response_type) {
-    filtered = filtered.filter(log => log.response_type === options.response_type);
-  }
-  if (options.since) {
-    filtered = filtered.filter(log => log.timestamp >= options.since!);
-  }
-  if (options.until) {
-    filtered = filtered.filter(log => log.timestamp <= options.until!);
-  }
-
-  // Sort by timestamp descending
-  filtered.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-
-  return {
-    logs: filtered.slice(offset, offset + limit),
-    total: filtered.length,
-  };
+  // DB-only: return empty when DB unavailable
+  return { logs: [], total: 0 };
 }

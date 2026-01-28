@@ -2,6 +2,7 @@
  * Reports Repository - PostgreSQL persistence
  *
  * Feature #2091: Migrate Reports Module to PostgreSQL
+ * Feature #2110: Remove in-memory Map stores (DB-only migration)
  *
  * Provides CRUD operations for:
  * - Comprehensive reports with all test type sections
@@ -11,15 +12,14 @@
 import { query, isDatabaseConnected } from '../database';
 import { ComprehensiveReport, ReportSummary } from '../../routes/reports/types';
 
-// Memory fallback store
-const memoryReports: Map<string, ComprehensiveReport> = new Map();
-
 // ============================================
-// Memory Store Accessor (for backward compatibility)
+// Deprecated Memory Store Accessor
 // ============================================
 
+/** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryReports(): Map<string, ComprehensiveReport> {
-  return memoryReports;
+  console.warn('[DEPRECATED] getMemoryReports() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  return new Map();
 }
 
 // ============================================
@@ -110,8 +110,7 @@ export async function storeReport(report: ComprehensiveReport): Promise<Comprehe
       return parseReportRow(result.rows[0]);
     }
   }
-  // Memory fallback
-  memoryReports.set(report.id, report);
+  // DB-only: return report as-is if DB unavailable
   return report;
 }
 
@@ -129,7 +128,7 @@ export async function getReport(reportId: string): Promise<ComprehensiveReport |
     }
     return undefined;
   }
-  return memoryReports.get(reportId);
+  return undefined;
 }
 
 /**
@@ -155,16 +154,8 @@ export async function listReports(projectId?: string): Promise<ReportSummary[]> 
     return [];
   }
 
-  // Memory fallback
-  const allReports = Array.from(memoryReports.values());
-
-  const filtered = projectId
-    ? allReports.filter(r => r.projectId === projectId)
-    : allReports;
-
-  return filtered
-    .map(createSummaryFromReport)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 /**
@@ -178,7 +169,7 @@ export async function deleteReport(reportId: string): Promise<boolean> {
     );
     return (result?.rowCount ?? 0) > 0;
   }
-  return memoryReports.delete(reportId);
+  return false;
 }
 
 /**
@@ -201,10 +192,8 @@ export async function getReportCount(projectId?: string): Promise<number> {
     return 0;
   }
 
-  if (projectId) {
-    return Array.from(memoryReports.values()).filter(r => r.projectId === projectId).length;
-  }
-  return memoryReports.size;
+  // DB-only: return 0 when DB unavailable
+  return 0;
 }
 
 /**
@@ -221,8 +210,8 @@ export async function getReportsByOrganization(organizationId: string): Promise<
     }
     return [];
   }
-  // Memory fallback - no organization filter available in memory store
-  return listReports();
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 /**
@@ -240,11 +229,8 @@ export async function getRecentReports(limit: number = 10): Promise<ReportSummar
     return [];
   }
 
-  // Memory fallback
-  return Array.from(memoryReports.values())
-    .map(createSummaryFromReport)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, limit);
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 /**
@@ -287,14 +273,6 @@ export async function updateReport(
     return undefined;
   }
 
-  // Memory fallback
-  const existing = memoryReports.get(reportId);
-  if (!existing) return undefined;
-
-  const updated: ComprehensiveReport = {
-    ...existing,
-    ...updates,
-  };
-  memoryReports.set(reportId, updated);
-  return updated;
+  // DB-only: return undefined when DB unavailable
+  return undefined;
 }

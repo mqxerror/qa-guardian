@@ -2,6 +2,7 @@
  * Schedules Repository - PostgreSQL persistence
  *
  * Feature #2092: Migrate Schedules Module to PostgreSQL
+ * Feature #2110: Remove in-memory Map stores (DB-only migration)
  *
  * Provides CRUD operations for:
  * - Test schedules with cron expressions or one-time runs
@@ -30,15 +31,14 @@ export interface Schedule {
   run_count: number;
 }
 
-// Memory fallback store
-const memorySchedules: Map<string, Schedule> = new Map();
-
 // ============================================
-// Memory Store Accessor (for backward compatibility)
+// Deprecated Memory Store Accessor
 // ============================================
 
+/** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemorySchedules(): Map<string, Schedule> {
-  return memorySchedules;
+  console.warn('[DEPRECATED] getMemorySchedules() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  return new Map();
 }
 
 // ============================================
@@ -108,8 +108,7 @@ export async function createSchedule(schedule: Schedule): Promise<Schedule> {
       return parseScheduleRow(result.rows[0]);
     }
   }
-  // Memory fallback
-  memorySchedules.set(schedule.id, schedule);
+  // DB-only: return schedule as-is if DB unavailable
   return schedule;
 }
 
@@ -127,7 +126,7 @@ export async function getSchedule(scheduleId: string): Promise<Schedule | undefi
     }
     return undefined;
   }
-  return memorySchedules.get(scheduleId);
+  return undefined;
 }
 
 /**
@@ -206,17 +205,8 @@ export async function updateSchedule(
     return undefined;
   }
 
-  // Memory fallback
-  const existing = memorySchedules.get(scheduleId);
-  if (!existing) return undefined;
-
-  const updated: Schedule = {
-    ...existing,
-    ...updates,
-    updated_at: new Date(),
-  };
-  memorySchedules.set(scheduleId, updated);
-  return updated;
+  // DB-only: return undefined when DB unavailable
+  return undefined;
 }
 
 /**
@@ -230,7 +220,7 @@ export async function deleteSchedule(scheduleId: string): Promise<boolean> {
     );
     return (result?.rowCount ?? 0) > 0;
   }
-  return memorySchedules.delete(scheduleId);
+  return false;
 }
 
 /**
@@ -248,10 +238,8 @@ export async function listSchedules(organizationId: string): Promise<Schedule[]>
     return [];
   }
 
-  // Memory fallback
-  return Array.from(memorySchedules.values())
-    .filter(s => s.organization_id === organizationId)
-    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 /**
@@ -269,14 +257,8 @@ export async function getEnabledSchedules(): Promise<Schedule[]> {
     return [];
   }
 
-  // Memory fallback
-  return Array.from(memorySchedules.values())
-    .filter(s => s.enabled)
-    .sort((a, b) => {
-      if (!a.next_run_at) return 1;
-      if (!b.next_run_at) return -1;
-      return a.next_run_at.getTime() - b.next_run_at.getTime();
-    });
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 /**
@@ -294,10 +276,8 @@ export async function getSchedulesBySuiteId(suiteId: string): Promise<Schedule[]
     return [];
   }
 
-  // Memory fallback
-  return Array.from(memorySchedules.values())
-    .filter(s => s.suite_id === suiteId)
-    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 /**
@@ -320,10 +300,8 @@ export async function getScheduleCount(organizationId?: string): Promise<number>
     return 0;
   }
 
-  if (organizationId) {
-    return Array.from(memorySchedules.values()).filter(s => s.organization_id === organizationId).length;
-  }
-  return memorySchedules.size;
+  // DB-only: return 0 when DB unavailable
+  return 0;
 }
 
 /**
@@ -347,12 +325,6 @@ export async function getSchedulesDueToRun(): Promise<Schedule[]> {
     return [];
   }
 
-  // Memory fallback
-  return Array.from(memorySchedules.values())
-    .filter(s => s.enabled && s.next_run_at && s.next_run_at <= now)
-    .sort((a, b) => {
-      if (!a.next_run_at) return 1;
-      if (!b.next_run_at) return -1;
-      return a.next_run_at.getTime() - b.next_run_at.getTime();
-    });
+  // DB-only: return empty when DB unavailable
+  return [];
 }

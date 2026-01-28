@@ -1,9 +1,10 @@
 /**
  * Test Runs Repository
  * Feature #2082: Migrate Test Runs module to PostgreSQL database
+ * Feature #2110: Remove in-memory Map stores (DB-only migration)
  *
  * This module provides database persistence for test runs, selector overrides,
- * and healed selectors with fallback to in-memory storage.
+ * and healed selectors.
  *
  * NOTE: runningBrowsers stays in-memory as it contains runtime state (Browser instances)
  */
@@ -19,14 +20,6 @@ import type {
   SelectorOverride,
   HealedSelectorEntry,
 } from '../../routes/test-runs/execution';
-
-// ============================================================================
-// In-Memory Fallback Stores
-// ============================================================================
-
-const memoryTestRuns: Map<string, TestRun> = new Map();
-const memorySelectorOverrides: Map<string, SelectorOverride> = new Map();
-const memoryHealedSelectorHistory: Map<string, HealedSelectorEntry> = new Map();
 
 // ============================================================================
 // Helper Functions
@@ -155,8 +148,6 @@ export async function createTestRun(run: TestRun): Promise<TestRun> {
         ]
       );
       if (result && result.rows[0]) {
-        // Also store in memory for fast access during execution
-        memoryTestRuns.set(run.id, run);
         return rowToTestRun(result.rows[0]);
       }
     } catch (error) {
@@ -164,8 +155,7 @@ export async function createTestRun(run: TestRun): Promise<TestRun> {
     }
   }
 
-  // Fallback to memory
-  memoryTestRuns.set(run.id, run);
+  // DB-only: return run as-is if DB unavailable
   return run;
 }
 
@@ -173,12 +163,6 @@ export async function createTestRun(run: TestRun): Promise<TestRun> {
  * Get a test run by ID
  */
 export async function getTestRun(id: string): Promise<TestRun | undefined> {
-  // First check memory for running tests (they need fast access)
-  const memoryRun = memoryTestRuns.get(id);
-  if (memoryRun && (memoryRun.status === 'running' || memoryRun.status === 'pending')) {
-    return memoryRun;
-  }
-
   if (isDatabaseConnected()) {
     try {
       const result = await query<any>(
@@ -193,21 +177,14 @@ export async function getTestRun(id: string): Promise<TestRun | undefined> {
     }
   }
 
-  // Fallback to memory
-  return memoryTestRuns.get(id);
+  // DB-only: return undefined when DB unavailable
+  return undefined;
 }
 
 /**
  * Update an existing test run
  */
 export async function updateTestRun(id: string, updates: Partial<TestRun>): Promise<TestRun | undefined> {
-  // Always update memory first for fast access during execution
-  const existing = memoryTestRuns.get(id);
-  if (existing) {
-    const updated = { ...existing, ...updates };
-    memoryTestRuns.set(id, updated);
-  }
-
   if (isDatabaseConnected()) {
     try {
       const setClauses: string[] = [];
@@ -268,9 +245,7 @@ export async function updateTestRun(id: string, updates: Partial<TestRun>): Prom
           values
         );
         if (result && result.rows[0]) {
-          const updated = rowToTestRun(result.rows[0]);
-          memoryTestRuns.set(id, updated);
-          return updated;
+          return rowToTestRun(result.rows[0]);
         }
       }
     } catch (error) {
@@ -278,16 +253,14 @@ export async function updateTestRun(id: string, updates: Partial<TestRun>): Prom
     }
   }
 
-  // Return from memory
-  return memoryTestRuns.get(id);
+  // DB-only: return undefined when DB unavailable
+  return undefined;
 }
 
 /**
  * Delete a test run
  */
 export async function deleteTestRun(id: string): Promise<boolean> {
-  memoryTestRuns.delete(id);
-
   if (isDatabaseConnected()) {
     try {
       const result = await query('DELETE FROM test_runs WHERE id = $1', [id]);
@@ -297,7 +270,7 @@ export async function deleteTestRun(id: string): Promise<boolean> {
     }
   }
 
-  return true;
+  return false;
 }
 
 /**
@@ -325,10 +298,8 @@ export async function listTestRunsBySuite(suiteId: string, orgId?: string): Prom
     }
   }
 
-  // Fallback to memory
-  return Array.from(memoryTestRuns.values())
-    .filter(r => r.suite_id === suiteId && (!orgId || r.organization_id === orgId))
-    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 /**
@@ -356,10 +327,8 @@ export async function listTestRunsByProject(projectId: string, orgId?: string): 
     }
   }
 
-  // Fallback to memory
-  return Array.from(memoryTestRuns.values())
-    .filter(r => r.project_id === projectId && (!orgId || r.organization_id === orgId))
-    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 /**
@@ -385,16 +354,8 @@ export async function listTestRunsByOrg(orgId: string, limit?: number): Promise<
     }
   }
 
-  // Fallback to memory
-  let runs = Array.from(memoryTestRuns.values())
-    .filter(r => r.organization_id === orgId)
-    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
-
-  if (limit) {
-    runs = runs.slice(0, limit);
-  }
-
-  return runs;
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 /**
@@ -433,15 +394,8 @@ export async function getRecentTestRuns(
     }
   }
 
-  // Fallback to memory
-  let runs = Array.from(memoryTestRuns.values())
-    .filter(r => r.organization_id === orgId && (!options.status || r.status === options.status))
-    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
-
-  const total = runs.length;
-  runs = runs.slice(offset, offset + limit);
-
-  return { runs, total };
+  // DB-only: return empty when DB unavailable
+  return { runs: [], total: 0 };
 }
 
 // ============================================================================
@@ -452,8 +406,6 @@ export async function getRecentTestRuns(
  * Create or update a selector override
  */
 export async function upsertSelectorOverride(override: SelectorOverride): Promise<SelectorOverride> {
-  const key = `${override.test_id}-${override.step_id}`;
-
   if (isDatabaseConnected()) {
     try {
       const result = await query<any>(
@@ -475,7 +427,6 @@ export async function upsertSelectorOverride(override: SelectorOverride): Promis
         ]
       );
       if (result && result.rows[0]) {
-        memorySelectorOverrides.set(key, override);
         return rowToSelectorOverride(result.rows[0]);
       }
     } catch (error) {
@@ -483,8 +434,7 @@ export async function upsertSelectorOverride(override: SelectorOverride): Promis
     }
   }
 
-  // Fallback to memory
-  memorySelectorOverrides.set(key, override);
+  // DB-only: return override as-is if DB unavailable
   return override;
 }
 
@@ -492,8 +442,6 @@ export async function upsertSelectorOverride(override: SelectorOverride): Promis
  * Get a selector override by test and step ID
  */
 export async function getSelectorOverride(testId: string, stepId: string): Promise<SelectorOverride | undefined> {
-  const key = `${testId}-${stepId}`;
-
   if (isDatabaseConnected()) {
     try {
       const result = await query<any>(
@@ -508,17 +456,14 @@ export async function getSelectorOverride(testId: string, stepId: string): Promi
     }
   }
 
-  // Fallback to memory
-  return memorySelectorOverrides.get(key);
+  // DB-only: return undefined when DB unavailable
+  return undefined;
 }
 
 /**
  * Delete a selector override
  */
 export async function deleteSelectorOverride(testId: string, stepId: string): Promise<boolean> {
-  const key = `${testId}-${stepId}`;
-  memorySelectorOverrides.delete(key);
-
   if (isDatabaseConnected()) {
     try {
       const result = await query(
@@ -531,7 +476,7 @@ export async function deleteSelectorOverride(testId: string, stepId: string): Pr
     }
   }
 
-  return true;
+  return false;
 }
 
 /**
@@ -552,9 +497,8 @@ export async function listSelectorOverrides(testId: string): Promise<SelectorOve
     }
   }
 
-  // Fallback to memory
-  return Array.from(memorySelectorOverrides.values())
-    .filter(o => o.test_id === testId);
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 // ============================================================================
@@ -565,8 +509,6 @@ export async function listSelectorOverrides(testId: string): Promise<SelectorOve
  * Create or update a healed selector entry
  */
 export async function upsertHealedSelectorEntry(entry: HealedSelectorEntry): Promise<HealedSelectorEntry> {
-  const key = `${entry.test_id}-${entry.step_id}`;
-
   if (isDatabaseConnected()) {
     try {
       const result = await query<any>(
@@ -605,7 +547,6 @@ export async function upsertHealedSelectorEntry(entry: HealedSelectorEntry): Pro
         ]
       );
       if (result && result.rows[0]) {
-        memoryHealedSelectorHistory.set(key, entry);
         return rowToHealedSelectorEntry(result.rows[0]);
       }
     } catch (error) {
@@ -613,8 +554,7 @@ export async function upsertHealedSelectorEntry(entry: HealedSelectorEntry): Pro
     }
   }
 
-  // Fallback to memory
-  memoryHealedSelectorHistory.set(key, entry);
+  // DB-only: return entry as-is if DB unavailable
   return entry;
 }
 
@@ -622,8 +562,6 @@ export async function upsertHealedSelectorEntry(entry: HealedSelectorEntry): Pro
  * Get a healed selector entry by test and step ID
  */
 export async function getHealedSelectorEntry(testId: string, stepId: string): Promise<HealedSelectorEntry | undefined> {
-  const key = `${testId}-${stepId}`;
-
   if (isDatabaseConnected()) {
     try {
       const result = await query<any>(
@@ -638,8 +576,8 @@ export async function getHealedSelectorEntry(testId: string, stepId: string): Pr
     }
   }
 
-  // Fallback to memory
-  return memoryHealedSelectorHistory.get(key);
+  // DB-only: return undefined when DB unavailable
+  return undefined;
 }
 
 /**
@@ -660,34 +598,28 @@ export async function listHealedSelectorHistory(testId: string): Promise<HealedS
     }
   }
 
-  // Fallback to memory
-  return Array.from(memoryHealedSelectorHistory.values())
-    .filter(e => e.test_id === testId)
-    .sort((a, b) => new Date(b.healed_at).getTime() - new Date(a.healed_at).getTime());
+  // DB-only: return empty when DB unavailable
+  return [];
 }
 
 // ============================================================================
-// Memory Store Accessors (for backward compatibility)
+// Deprecated Memory Store Accessors (for backward compatibility)
 // ============================================================================
 
-/**
- * Get the in-memory test runs Map
- * Used for backward compatibility with code that needs synchronous access
- */
+/** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryTestRuns(): Map<string, TestRun> {
-  return memoryTestRuns;
+  console.warn('[DEPRECATED] getMemoryTestRuns() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  return new Map();
 }
 
-/**
- * Get the in-memory selector overrides Map
- */
+/** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemorySelectorOverrides(): Map<string, SelectorOverride> {
-  return memorySelectorOverrides;
+  console.warn('[DEPRECATED] getMemorySelectorOverrides() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  return new Map();
 }
 
-/**
- * Get the in-memory healed selector history Map
- */
+/** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryHealedSelectorHistory(): Map<string, HealedSelectorEntry> {
-  return memoryHealedSelectorHistory;
+  console.warn('[DEPRECATED] getMemoryHealedSelectorHistory() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  return new Map();
 }
