@@ -2,72 +2,82 @@
  * Test Suites Repository - Database CRUD operations for test suites and tests
  *
  * This module provides database persistence for test suites and tests.
- * Primary storage is PostgreSQL. Memory fallback is provided for development
- * when DATABASE_URL is not configured.
+ * PostgreSQL is REQUIRED - memory fallback has been removed (Feature #2100).
+ * When database is not connected, operations will:
+ * - CREATE: throw error (data would be lost)
+ * - READ: return undefined/empty arrays
+ * - UPDATE: return undefined
+ * - DELETE: return false
  */
 
 import { query, isDatabaseConnected } from '../database';
 import { TestSuite, Test } from '../../routes/test-suites/types';
 
-// Memory fallback stores (used ONLY when database is not connected in development)
-const memoryTestSuites: Map<string, TestSuite> = new Map();
-const memoryTests: Map<string, Test> = new Map();
+// NOTE: Memory fallback stores have been REMOVED (Feature #2100)
+// All data is now persisted to PostgreSQL. If the database is not connected,
+// operations will fail gracefully (return undefined/empty arrays) or throw errors.
+// This ensures data integrity and prevents "not found" errors after server restarts.
 
 // ===== TEST SUITES =====
 
 export async function createTestSuite(suite: TestSuite): Promise<TestSuite> {
-  if (isDatabaseConnected()) {
-    const result = await query<TestSuite>(
-      `INSERT INTO test_suites (id, project_id, name, description, type, config, tags, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING *`,
-      [
-        suite.id,
-        suite.project_id,
-        suite.name,
-        suite.description || null,
-        suite.type || 'e2e',
-        JSON.stringify({
-          organization_id: suite.organization_id,
-          base_url: suite.base_url,
-          browser: suite.browser,
-          browsers: suite.browsers,
-          viewport_width: suite.viewport_width,
-          viewport_height: suite.viewport_height,
-          timeout: suite.timeout,
-          retry_count: suite.retry_count,
-          require_human_review: suite.require_human_review,
-        }),
-        suite.type ? [suite.type] : [],
-        suite.created_at,
-        suite.updated_at,
-      ]
-    );
-    if (result && result.rows[0]) {
-      return rowToTestSuite(result.rows[0]);
-    }
-    throw new Error('Failed to create test suite in database');
+  if (!isDatabaseConnected()) {
+    throw new Error('Database connection required - cannot create test suite without PostgreSQL');
   }
-  // Memory fallback for development
-  memoryTestSuites.set(suite.id, suite);
-  return suite;
+
+  const result = await query<TestSuite>(
+    `INSERT INTO test_suites (id, project_id, name, description, type, config, tags, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     RETURNING *`,
+    [
+      suite.id,
+      suite.project_id,
+      suite.name,
+      suite.description || null,
+      suite.type || 'e2e',
+      JSON.stringify({
+        organization_id: suite.organization_id,
+        base_url: suite.base_url,
+        browser: suite.browser,
+        browsers: suite.browsers,
+        viewport_width: suite.viewport_width,
+        viewport_height: suite.viewport_height,
+        timeout: suite.timeout,
+        retry_count: suite.retry_count,
+        require_human_review: suite.require_human_review,
+      }),
+      suite.type ? [suite.type] : [],
+      suite.created_at,
+      suite.updated_at,
+    ]
+  );
+  if (result && result.rows[0]) {
+    return rowToTestSuite(result.rows[0]);
+  }
+  throw new Error('Failed to create test suite in database');
 }
 
 export async function getTestSuite(id: string): Promise<TestSuite | undefined> {
-  if (isDatabaseConnected()) {
-    const result = await query<any>(
-      `SELECT * FROM test_suites WHERE id = $1`,
-      [id]
-    );
-    if (result && result.rows[0]) {
-      return rowToTestSuite(result.rows[0]);
-    }
+  if (!isDatabaseConnected()) {
+    // Return undefined when database not connected (graceful degradation)
     return undefined;
   }
-  return memoryTestSuites.get(id);
+
+  const result = await query<any>(
+    `SELECT * FROM test_suites WHERE id = $1`,
+    [id]
+  );
+  if (result && result.rows[0]) {
+    return rowToTestSuite(result.rows[0]);
+  }
+  return undefined;
 }
 
 export async function updateTestSuite(id: string, updates: Partial<TestSuite>): Promise<TestSuite | undefined> {
+  if (!isDatabaseConnected()) {
+    return undefined;
+  }
+
   const existing = await getTestSuite(id);
   if (!existing) return undefined;
 
@@ -77,153 +87,147 @@ export async function updateTestSuite(id: string, updates: Partial<TestSuite>): 
     updated_at: new Date(),
   };
 
-  if (isDatabaseConnected()) {
-    const result = await query<any>(
-      `UPDATE test_suites SET
-        name = $2, description = $3, type = $4, config = $5, tags = $6, updated_at = $7
-       WHERE id = $1
-       RETURNING *`,
-      [
-        id,
-        updatedSuite.name,
-        updatedSuite.description || null,
-        updatedSuite.type || 'e2e',
-        JSON.stringify({
-          organization_id: updatedSuite.organization_id,
-          base_url: updatedSuite.base_url,
-          browser: updatedSuite.browser,
-          browsers: updatedSuite.browsers,
-          viewport_width: updatedSuite.viewport_width,
-          viewport_height: updatedSuite.viewport_height,
-          timeout: updatedSuite.timeout,
-          retry_count: updatedSuite.retry_count,
-          require_human_review: updatedSuite.require_human_review,
-        }),
-        updatedSuite.type ? [updatedSuite.type] : [],
-        updatedSuite.updated_at,
-      ]
-    );
-    if (result && result.rows[0]) {
-      return rowToTestSuite(result.rows[0]);
-    }
-    return undefined;
+  const result = await query<any>(
+    `UPDATE test_suites SET
+      name = $2, description = $3, type = $4, config = $5, tags = $6, updated_at = $7
+     WHERE id = $1
+     RETURNING *`,
+    [
+      id,
+      updatedSuite.name,
+      updatedSuite.description || null,
+      updatedSuite.type || 'e2e',
+      JSON.stringify({
+        organization_id: updatedSuite.organization_id,
+        base_url: updatedSuite.base_url,
+        browser: updatedSuite.browser,
+        browsers: updatedSuite.browsers,
+        viewport_width: updatedSuite.viewport_width,
+        viewport_height: updatedSuite.viewport_height,
+        timeout: updatedSuite.timeout,
+        retry_count: updatedSuite.retry_count,
+        require_human_review: updatedSuite.require_human_review,
+      }),
+      updatedSuite.type ? [updatedSuite.type] : [],
+      updatedSuite.updated_at,
+    ]
+  );
+  if (result && result.rows[0]) {
+    return rowToTestSuite(result.rows[0]);
   }
-  // Memory fallback
-  memoryTestSuites.set(id, updatedSuite);
-  return updatedSuite;
+  return undefined;
 }
 
 export async function deleteTestSuite(id: string): Promise<boolean> {
-  if (isDatabaseConnected()) {
-    // Delete all tests in this suite first (CASCADE should handle this, but being explicit)
-    await query(`DELETE FROM tests WHERE suite_id = $1`, [id]);
-    const result = await query(
-      `DELETE FROM test_suites WHERE id = $1`,
-      [id]
-    );
-    return result !== null && (result.rowCount ?? 0) > 0;
+  if (!isDatabaseConnected()) {
+    return false;
   }
-  // Memory fallback
-  for (const [testId, test] of memoryTests) {
-    if (test.suite_id === id) {
-      memoryTests.delete(testId);
-    }
-  }
-  return memoryTestSuites.delete(id);
+
+  // Delete all tests in this suite first (CASCADE should handle this, but being explicit)
+  await query(`DELETE FROM tests WHERE suite_id = $1`, [id]);
+  const result = await query(
+    `DELETE FROM test_suites WHERE id = $1`,
+    [id]
+  );
+  return result !== null && (result.rowCount ?? 0) > 0;
 }
 
 export async function listTestSuites(projectId: string, organizationId: string): Promise<TestSuite[]> {
-  if (isDatabaseConnected()) {
-    const result = await query<any>(
-      `SELECT * FROM test_suites WHERE project_id = $1 ORDER BY created_at DESC`,
-      [projectId]
-    );
-    if (result) {
-      // Filter by organization_id from the config JSONB
-      return result.rows
-        .map(row => rowToTestSuite(row))
-        .filter(suite => suite.organization_id === organizationId);
-    }
+  if (!isDatabaseConnected()) {
     return [];
   }
-  return Array.from(memoryTestSuites.values()).filter(
-    s => s.project_id === projectId && s.organization_id === organizationId
+
+  const result = await query<any>(
+    `SELECT * FROM test_suites WHERE project_id = $1 ORDER BY created_at DESC`,
+    [projectId]
   );
+  if (result) {
+    // Filter by organization_id from the config JSONB
+    return result.rows
+      .map(row => rowToTestSuite(row))
+      .filter(suite => suite.organization_id === organizationId);
+  }
+  return [];
 }
 
 export async function listAllTestSuites(organizationId: string): Promise<TestSuite[]> {
-  if (isDatabaseConnected()) {
-    const result = await query<any>(
-      `SELECT * FROM test_suites ORDER BY created_at DESC`
-    );
-    if (result) {
-      return result.rows
-        .map(row => rowToTestSuite(row))
-        .filter(suite => suite.organization_id === organizationId);
-    }
+  if (!isDatabaseConnected()) {
     return [];
   }
-  return Array.from(memoryTestSuites.values()).filter(s => s.organization_id === organizationId);
+
+  const result = await query<any>(
+    `SELECT * FROM test_suites ORDER BY created_at DESC`
+  );
+  if (result) {
+    return result.rows
+      .map(row => rowToTestSuite(row))
+      .filter(suite => suite.organization_id === organizationId);
+  }
+  return [];
 }
 
 // ===== TESTS =====
 
 export async function createTest(test: Test): Promise<Test> {
-  if (isDatabaseConnected()) {
-    // Get the suite to find the project_id
-    const suite = await getTestSuite(test.suite_id);
-    const projectId = suite?.project_id || null;
-
-    const result = await query<Test>(
-      `INSERT INTO tests (id, suite_id, project_id, name, description, type, config, code, enabled, priority, tags, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-       RETURNING *`,
-      [
-        test.id,
-        test.suite_id,
-        projectId,
-        test.name,
-        test.description || null,
-        test.test_type,
-        JSON.stringify(testToConfig(test)),
-        test.playwright_code || null,
-        test.status === 'active',
-        test.order || 0,
-        test.test_type ? [test.test_type] : [],
-        test.created_at,
-        test.updated_at,
-      ]
-    );
-    if (result && result.rows[0]) {
-      return rowToTest(result.rows[0], test.organization_id);
-    }
-    throw new Error('Failed to create test in database');
+  if (!isDatabaseConnected()) {
+    throw new Error('Database connection required - cannot create test without PostgreSQL');
   }
-  // Memory fallback
-  memoryTests.set(test.id, test);
-  return test;
+
+  // Get the suite to find the project_id
+  const suite = await getTestSuite(test.suite_id);
+  const projectId = suite?.project_id || null;
+
+  const result = await query<Test>(
+    `INSERT INTO tests (id, suite_id, project_id, name, description, type, config, code, enabled, priority, tags, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+     RETURNING *`,
+    [
+      test.id,
+      test.suite_id,
+      projectId,
+      test.name,
+      test.description || null,
+      test.test_type,
+      JSON.stringify(testToConfig(test)),
+      test.playwright_code || null,
+      test.status === 'active',
+      test.order || 0,
+      test.test_type ? [test.test_type] : [],
+      test.created_at,
+      test.updated_at,
+    ]
+  );
+  if (result && result.rows[0]) {
+    return rowToTest(result.rows[0], test.organization_id);
+  }
+  throw new Error('Failed to create test in database');
 }
 
 export async function getTest(id: string): Promise<Test | undefined> {
-  if (isDatabaseConnected()) {
-    const result = await query<any>(
-      `SELECT t.*, ts.config as suite_config FROM tests t
-       LEFT JOIN test_suites ts ON t.suite_id = ts.id
-       WHERE t.id = $1`,
-      [id]
-    );
-    if (result && result.rows[0]) {
-      // Extract organization_id from suite config
-      const suiteConfig = result.rows[0].suite_config;
-      const orgId = suiteConfig?.organization_id || '';
-      return rowToTest(result.rows[0], orgId);
-    }
+  if (!isDatabaseConnected()) {
     return undefined;
   }
-  return memoryTests.get(id);
+
+  const result = await query<any>(
+    `SELECT t.*, ts.config as suite_config FROM tests t
+     LEFT JOIN test_suites ts ON t.suite_id = ts.id
+     WHERE t.id = $1`,
+    [id]
+  );
+  if (result && result.rows[0]) {
+    // Extract organization_id from suite config
+    const suiteConfig = result.rows[0].suite_config;
+    const orgId = suiteConfig?.organization_id || '';
+    return rowToTest(result.rows[0], orgId);
+  }
+  return undefined;
 }
 
 export async function updateTest(id: string, updates: Partial<Test>): Promise<Test | undefined> {
+  if (!isDatabaseConnected()) {
+    return undefined;
+  }
+
   const existing = await getTest(id);
   if (!existing) return undefined;
 
@@ -233,86 +237,82 @@ export async function updateTest(id: string, updates: Partial<Test>): Promise<Te
     updated_at: new Date(),
   };
 
-  if (isDatabaseConnected()) {
-    const result = await query<any>(
-      `UPDATE tests SET
-        name = $2, description = $3, type = $4, config = $5, code = $6,
-        enabled = $7, priority = $8, tags = $9, updated_at = $10
-       WHERE id = $1
-       RETURNING *`,
-      [
-        id,
-        updatedTest.name,
-        updatedTest.description || null,
-        updatedTest.test_type,
-        JSON.stringify(testToConfig(updatedTest)),
-        updatedTest.playwright_code || null,
-        updatedTest.status === 'active',
-        updatedTest.order || 0,
-        updatedTest.test_type ? [updatedTest.test_type] : [],
-        updatedTest.updated_at,
-      ]
-    );
-    if (result && result.rows[0]) {
-      return rowToTest(result.rows[0], existing.organization_id);
-    }
-    return undefined;
+  const result = await query<any>(
+    `UPDATE tests SET
+      name = $2, description = $3, type = $4, config = $5, code = $6,
+      enabled = $7, priority = $8, tags = $9, updated_at = $10
+     WHERE id = $1
+     RETURNING *`,
+    [
+      id,
+      updatedTest.name,
+      updatedTest.description || null,
+      updatedTest.test_type,
+      JSON.stringify(testToConfig(updatedTest)),
+      updatedTest.playwright_code || null,
+      updatedTest.status === 'active',
+      updatedTest.order || 0,
+      updatedTest.test_type ? [updatedTest.test_type] : [],
+      updatedTest.updated_at,
+    ]
+  );
+  if (result && result.rows[0]) {
+    return rowToTest(result.rows[0], existing.organization_id);
   }
-  // Memory fallback
-  memoryTests.set(id, updatedTest);
-  return updatedTest;
+  return undefined;
 }
 
 export async function deleteTest(id: string): Promise<boolean> {
-  if (isDatabaseConnected()) {
-    const result = await query(
-      `DELETE FROM tests WHERE id = $1`,
-      [id]
-    );
-    return result !== null && (result.rowCount ?? 0) > 0;
+  if (!isDatabaseConnected()) {
+    return false;
   }
-  return memoryTests.delete(id);
+
+  const result = await query(
+    `DELETE FROM tests WHERE id = $1`,
+    [id]
+  );
+  return result !== null && (result.rowCount ?? 0) > 0;
 }
 
 export async function listTests(suiteId: string): Promise<Test[]> {
-  if (isDatabaseConnected()) {
-    // Get the suite to find the organization_id
-    const suite = await getTestSuite(suiteId);
-    const orgId = suite?.organization_id || '';
-
-    const result = await query<any>(
-      `SELECT * FROM tests WHERE suite_id = $1 ORDER BY priority ASC, created_at ASC`,
-      [suiteId]
-    );
-    if (result) {
-      return result.rows.map(row => rowToTest(row, orgId));
-    }
+  if (!isDatabaseConnected()) {
     return [];
   }
-  return Array.from(memoryTests.values())
-    .filter(t => t.suite_id === suiteId)
-    .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+
+  // Get the suite to find the organization_id
+  const suite = await getTestSuite(suiteId);
+  const orgId = suite?.organization_id || '';
+
+  const result = await query<any>(
+    `SELECT * FROM tests WHERE suite_id = $1 ORDER BY priority ASC, created_at ASC`,
+    [suiteId]
+  );
+  if (result) {
+    return result.rows.map(row => rowToTest(row, orgId));
+  }
+  return [];
 }
 
 export async function listAllTests(organizationId: string): Promise<Test[]> {
-  if (isDatabaseConnected()) {
-    const result = await query<any>(
-      `SELECT t.*, ts.config as suite_config FROM tests t
-       LEFT JOIN test_suites ts ON t.suite_id = ts.id
-       ORDER BY t.created_at DESC`
-    );
-    if (result) {
-      return result.rows
-        .map(row => {
-          const suiteConfig = row.suite_config;
-          const orgId = suiteConfig?.organization_id || '';
-          return rowToTest(row, orgId);
-        })
-        .filter(test => test.organization_id === organizationId);
-    }
+  if (!isDatabaseConnected()) {
     return [];
   }
-  return Array.from(memoryTests.values()).filter(t => t.organization_id === organizationId);
+
+  const result = await query<any>(
+    `SELECT t.*, ts.config as suite_config FROM tests t
+     LEFT JOIN test_suites ts ON t.suite_id = ts.id
+     ORDER BY t.created_at DESC`
+  );
+  if (result) {
+    return result.rows
+      .map(row => {
+        const suiteConfig = row.suite_config;
+        const orgId = suiteConfig?.organization_id || '';
+        return rowToTest(row, orgId);
+      })
+      .filter(test => test.organization_id === organizationId);
+  }
+  return [];
 }
 
 // ===== HELPER FUNCTIONS =====
@@ -512,52 +512,63 @@ function testToConfig(test: Test): Record<string, any> {
  * Get all test suites as a Map (for compatibility with existing code)
  */
 export async function getTestSuitesMap(): Promise<Map<string, TestSuite>> {
-  if (isDatabaseConnected()) {
-    const result = await query<any>(`SELECT * FROM test_suites ORDER BY created_at DESC`);
-    const map = new Map<string, TestSuite>();
-    if (result) {
-      for (const row of result.rows) {
-        const suite = rowToTestSuite(row);
-        map.set(row.id, suite);
-      }
-    }
-    return map;
+  const map = new Map<string, TestSuite>();
+
+  if (!isDatabaseConnected()) {
+    return map; // Return empty map when database not connected
   }
-  return memoryTestSuites;
+
+  const result = await query<any>(`SELECT * FROM test_suites ORDER BY created_at DESC`);
+  if (result) {
+    for (const row of result.rows) {
+      const suite = rowToTestSuite(row);
+      map.set(row.id, suite);
+    }
+  }
+  return map;
 }
 
 /**
  * Get all tests as a Map (for compatibility with existing code)
  */
 export async function getTestsMap(): Promise<Map<string, Test>> {
-  if (isDatabaseConnected()) {
-    const result = await query<any>(
-      `SELECT t.*, ts.config as suite_config FROM tests t
-       LEFT JOIN test_suites ts ON t.suite_id = ts.id
-       ORDER BY t.created_at DESC`
-    );
-    const map = new Map<string, Test>();
-    if (result) {
-      for (const row of result.rows) {
-        const suiteConfig = row.suite_config;
-        const orgId = suiteConfig?.organization_id || '';
-        const test = rowToTest(row, orgId);
-        map.set(row.id, test);
-      }
-    }
-    return map;
+  const map = new Map<string, Test>();
+
+  if (!isDatabaseConnected()) {
+    return map; // Return empty map when database not connected
   }
-  return memoryTests;
+
+  const result = await query<any>(
+    `SELECT t.*, ts.config as suite_config FROM tests t
+     LEFT JOIN test_suites ts ON t.suite_id = ts.id
+     ORDER BY t.created_at DESC`
+  );
+  if (result) {
+    for (const row of result.rows) {
+      const suiteConfig = row.suite_config;
+      const orgId = suiteConfig?.organization_id || '';
+      const test = rowToTest(row, orgId);
+      map.set(row.id, test);
+    }
+  }
+  return map;
 }
 
 /**
  * Get memory stores for backward compatibility with synchronous code
- * DEPRECATED: Use async functions instead
+ * DEPRECATED: These now return empty Maps. Use async functions instead.
+ * Will be removed in Feature #2103 when stores.ts is updated.
  */
 export function getMemoryTestSuites(): Map<string, TestSuite> {
-  return memoryTestSuites;
+  // NOTE: Memory fallback removed (Feature #2100)
+  // Returns empty Map for backward compatibility until stores.ts is updated (Feature #2103)
+  console.warn('[DEPRECATED] getMemoryTestSuites() returns empty Map - use async getTestSuitesMap() instead');
+  return new Map<string, TestSuite>();
 }
 
 export function getMemoryTests(): Map<string, Test> {
-  return memoryTests;
+  // NOTE: Memory fallback removed (Feature #2100)
+  // Returns empty Map for backward compatibility until stores.ts is updated (Feature #2103)
+  console.warn('[DEPRECATED] getMemoryTests() returns empty Map - use async getTestsMap() instead');
+  return new Map<string, Test>();
 }
