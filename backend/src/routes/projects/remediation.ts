@@ -5,7 +5,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
 import { testSuites, tests } from '../test-suites';
 import { testRuns } from '../test-runs';
-import { projects } from './stores';
+import { projects } from './maps';
 
 // Remediation suggestion interface
 interface RemediationSuggestion {

@@ -36,11 +36,9 @@ export {
   getTestsMap,
 } from './stores';
 
-// DEPRECATED: Empty Map exports for backward compatibility until route migration (#2115)
-// These return empty Maps - consumers must migrate to async DB functions
-import { TestSuite, Test } from './types';
-export const testSuites = new Map<string, TestSuite>();
-export const tests = new Map<string, Test>();
+// DEPRECATED: Re-export empty Maps from ./maps for backward compatibility (Feature #2100)
+// Maps are in a separate file to break circular dependencies (index.ts → route files → index.ts)
+export { testSuites, tests } from './maps';
 
 // Re-export utility functions
 export { generatePlaywrightCode, stepToPlaywrightCode } from './utils';

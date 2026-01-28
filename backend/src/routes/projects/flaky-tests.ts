@@ -6,7 +6,7 @@ import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/au
 import { testSuites, tests } from '../test-suites';
 import { testRuns } from '../test-runs';
 import { getAutoQuarantineSettings } from '../organizations';
-import { projects } from './stores';
+import { projects } from './maps';
 
 export async function flakyTestsRoutes(app: FastifyInstance) {
   // Get flaky tests - tests with inconsistent results (some pass, some fail)
