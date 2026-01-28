@@ -1,8 +1,11 @@
 // Test Suites Module - Data Stores
 //
 // This module provides data access for test suites and tests with database persistence.
-// Primary storage is PostgreSQL with memory fallback for development.
-// Backward-compatible Map exports are provided for files not yet migrated to async.
+// PostgreSQL is REQUIRED - memory fallback has been removed (Feature #2100).
+//
+// Feature #2103: Deprecated Map exports are kept for backward compatibility but
+// return empty Maps. These will be removed in Feature #2106 when all route files
+// have been migrated to use async functions.
 
 import { TestSuite, Test } from './types';
 
@@ -22,16 +25,41 @@ import {
   listAllTests as dbListAllTests,
   getTestSuitesMap,
   getTestsMap,
-  getMemoryTestSuites,
-  getMemoryTests,
 } from '../../services/repositories/test-suites';
 
-// ===== BACKWARD COMPATIBILITY =====
-// These export the memory stores for synchronous code not yet migrated to async
-// In development (no database), these are the primary storage
-// In production (with database), these are only used as fallback
-export const testSuites: Map<string, TestSuite> = getMemoryTestSuites();
-export const tests: Map<string, Test> = getMemoryTests();
+// ===== DEPRECATED MAP EXPORTS =====
+// WARNING: These Maps are EMPTY and DEPRECATED!
+// They return empty Maps for backward compatibility during migration.
+// Use async functions instead: getTestSuite(), listAllTestSuites(), getTest(), listAllTests()
+// These exports will be REMOVED in Feature #2106.
+
+let deprecationWarned = false;
+function warnDeprecation() {
+  if (!deprecationWarned) {
+    console.warn('[DEPRECATED] testSuites and tests Map exports are deprecated and return empty data.');
+    console.warn('[DEPRECATED] Use async functions instead: getTestSuite(), listAllTestSuites(), getTest(), listAllTests()');
+    deprecationWarned = true;
+  }
+}
+
+// Create empty Maps with deprecation warning
+const emptyTestSuitesMap = new Map<string, TestSuite>();
+const emptyTestsMap = new Map<string, Test>();
+
+// Wrap with proxy to log deprecation warning on first access
+export const testSuites: Map<string, TestSuite> = new Proxy(emptyTestSuitesMap, {
+  get(target, prop) {
+    warnDeprecation();
+    return Reflect.get(target, prop);
+  }
+});
+
+export const tests: Map<string, Test> = new Proxy(emptyTestsMap, {
+  get(target, prop) {
+    warnDeprecation();
+    return Reflect.get(target, prop);
+  }
+});
 
 // ===== ASYNC DATABASE FUNCTIONS =====
 // Use these functions for all new code
