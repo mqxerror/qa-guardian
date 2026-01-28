@@ -1,221 +1,246 @@
 {
+  "title": "Remove In-Memory Maps - Use Database-Only Storage",
+  "updated": "2026-01-28",
+  "total_features": 23,
+  "total_memory_maps_to_remove": 93,
+  "phases": 4,
+  "priority_breakdown": {
+    "critical": 12,
+    "high": 6,
+    "medium": 5
+  },
+  "current_state": {
+    "note": "Features #2100-2103 were partially done: replaced memory Maps with isDatabaseConnected() guards and Proxy wrappers. The Proxy approach BROKE production. New requirement: COMPLETE removal of all Maps, Proxy, isDatabaseConnected() checks, and getMemory* functions.",
+    "files_partially_done": [
+      "backend/src/services/repositories/test-suites.ts (isDatabaseConnected guards added, getMemory* deprecated)",
+      "backend/src/services/repositories/projects.ts (isDatabaseConnected guards added, getMemory* deprecated)",
+      "backend/src/routes/test-suites/stores.ts (Proxy wrappers added - BROKE production)",
+      "backend/src/routes/projects/stores.ts (Proxy wrappers added)",
+      "backend/src/routes/api-keys/stores.ts (Proxy wrappers added)"
+    ],
+    "files_untouched": [
+      "backend/src/services/repositories/organizations.ts (5 memory Maps)",
+      "backend/src/services/repositories/auth.ts (3 memory Maps)",
+      "backend/src/services/repositories/monitoring.ts (37 memory Maps - LARGEST)",
+      "backend/src/services/repositories/dast.ts (6 memory Maps)",
+      "backend/src/services/repositories/sast.ts (6 memory Maps)",
+      "backend/src/services/repositories/github.ts (5 memory Maps)",
+      "backend/src/services/repositories/ai-test-generator.ts (6 memory Maps)",
+      "backend/src/services/repositories/audit-logs.ts (1 memory Map)",
+      "backend/src/services/repositories/schedules.ts (1 memory Map)",
+      "backend/src/services/repositories/reports.ts (1 memory Map)",
+      "backend/src/services/repositories/api-keys.ts (4 memory Maps)",
+      "backend/src/services/repositories/test-runs.ts (3 memory Maps)",
+      "94 route files using Map operations"
+    ]
+  },
   "features": [
     {
       "id": 2100,
-      "category": "Backend/DataLayer",
-      "name": "Remove Memory Maps from test-suites Repository",
-      "description": "Remove memoryTestSuites and memoryTests Maps from backend/src/services/repositories/test-suites.ts. Remove all memory fallback logic and getMemoryTestSuites(), getMemoryTests() exports. This is critical to fix the 'not found' errors after server restarts.",
+      "phase": 0,
+      "category": "Database",
+      "name": "Create Missing Database Tables for Memory Removal",
       "priority": "critical",
       "status": "pending",
-      "steps": [
-        "Delete const memoryTestSuites: Map<string, TestSuite> = new Map() (line 12)",
-        "Delete const memoryTests: Map<string, Test> = new Map() (line 13)",
-        "Remove memory fallbacks in createTestSuite(), getTestSuite(), updateTestSuite(), deleteTestSuite(), listTestSuites(), listAllTestSuites()",
-        "Remove memory fallbacks in createTest(), getTest(), updateTest(), deleteTest(), listTests(), listAllTests()",
-        "Delete getMemoryTestSuites() and getMemoryTests() functions (lines 519-525)",
-        "Delete getTestSuitesMap() and getTestsMap() compatibility functions (lines 530-567)",
-        "Rebuild and test"
-      ],
-      "files_affected": [
-        "backend/src/services/repositories/test-suites.ts"
-      ]
+      "description": "Before removing memory Maps, ensure all required PostgreSQL tables exist. Key missing: organization_members table."
     },
     {
       "id": 2101,
+      "phase": 1,
       "category": "Backend/DataLayer",
-      "name": "Remove Memory Maps from projects Repository",
-      "description": "Remove 5 memory Maps from backend/src/services/repositories/projects.ts and all fallback logic. Maps to remove: memoryProjects, memoryProjectMembers, memoryProjectEnvVars, memoryProjectVisualSettings, memoryProjectHealingSettings.",
+      "name": "Clean test-suites Repository - Full DB-Only",
       "priority": "critical",
       "status": "pending",
-      "steps": [
-        "Delete memoryProjects, memoryProjectMembers, memoryProjectEnvVars, memoryProjectVisualSettings, memoryProjectHealingSettings Maps (lines 23-27)",
-        "Remove memory fallbacks from createProject(), getProject(), updateProject(), deleteProject(), listProjects(), getProjectBySlug(), getProjectByName()",
-        "Remove memory fallbacks from addProjectMember(), getProjectMembers(), removeProjectMember()",
-        "Remove memory fallbacks from getProjectVisualSettings(), updateProjectVisualSettings()",
-        "Remove memory fallbacks from getProjectHealingSettings(), updateProjectHealingSettings()",
-        "Remove memory fallbacks from addProjectEnvVar(), getProjectEnvVars(), deleteProjectEnvVar()",
-        "Delete getMemoryProjects() and related compatibility exports (lines 456-474)",
-        "Delete getProjectsMap() function (lines 433-450)",
-        "Rebuild and test"
-      ],
-      "files_affected": [
-        "backend/src/services/repositories/projects.ts"
-      ]
+      "description": "Remove ALL isDatabaseConnected() checks, getMemory*, getTestSuitesMap/getTestsMap from test-suites.ts"
     },
     {
       "id": 2102,
+      "phase": 1,
       "category": "Backend/DataLayer",
-      "name": "Remove Memory Maps from organizations Repository",
-      "description": "Remove 5 memory Maps from backend/src/services/repositories/organizations.ts. Maps to remove: memoryOrganizations, memoryOrganizationMembers, memoryInvitations, memoryAutoQuarantineSettings, memoryRetryStrategySettings.",
+      "name": "Clean projects Repository - Full DB-Only",
       "priority": "critical",
       "status": "pending",
-      "steps": [
-        "Delete memoryOrganizations, memoryOrganizationMembers, memoryInvitations, memoryAutoQuarantineSettings, memoryRetryStrategySettings Maps (lines 88-92)",
-        "Remove memory fallbacks from all organization CRUD functions",
-        "Remove memory fallbacks from all member management functions",
-        "Remove memory fallbacks from invitation functions",
-        "Remove memory fallbacks from settings functions",
-        "Delete getMemoryOrganizations() and related exports",
-        "Rebuild and test"
-      ],
-      "files_affected": [
-        "backend/src/services/repositories/organizations.ts"
-      ]
+      "description": "Remove ALL isDatabaseConnected() checks, 5 getMemory* functions, getProjectsMap from projects.ts"
     },
     {
       "id": 2103,
+      "phase": 1,
       "category": "Backend/DataLayer",
-      "name": "Update test-suites stores.ts",
-      "description": "Update backend/src/routes/test-suites/stores.ts to stop exporting memory Maps. Remove imports of getMemoryTestSuites, getMemoryTests and remove exports of testSuites and tests Maps.",
-      "priority": "high",
+      "name": "Clean organizations Repository - Full DB-Only",
+      "priority": "critical",
       "status": "pending",
-      "steps": [
-        "Remove imports of getMemoryTestSuites, getMemoryTests (lines 23-24)",
-        "Remove exports of testSuites and tests Maps (lines 29-30)",
-        "Keep only async database function exports",
-        "Update all files that import testSuites or tests from this stores.ts to use async functions instead"
-      ],
-      "files_affected": [
-        "backend/src/routes/test-suites/stores.ts",
-        "Files importing from stores.ts"
-      ]
+      "description": "Remove 5 memory Maps, ALL getMemory* functions, update seedDefaultOrganizations() to use PostgreSQL"
     },
     {
       "id": 2104,
+      "phase": 1,
       "category": "Backend/DataLayer",
-      "name": "Update Route Files to Use Async Repository Functions",
-      "description": "Update 94 route files to use async repository functions instead of direct Map operations. Replace synchronous Map.get/set/delete with await getX/createX/deleteX calls.",
-      "priority": "high",
+      "name": "Clean auth Repository - Remove Memory Maps",
+      "priority": "critical",
       "status": "pending",
-      "steps": [
-        "Replace testSuites.get(id) with await getTestSuite(id)",
-        "Replace testSuites.set(id, data) with await createTestSuite(data) or await updateTestSuite(id, data)",
-        "Replace testSuites.delete(id) with await deleteTestSuite(id)",
-        "Replace tests.get(id) with await getTest(id)",
-        "Replace tests.set(id, data) with await createTest(data) or await updateTest(id, data)",
-        "Replace projects.get(id) with await getProject(id)",
-        "Replace Array.from(testSuites.values()) with await listAllTestSuites()",
-        "Replace Array.from(tests.values()) with await listAllTests()",
-        "Ensure all route handlers are async",
-        "Test each route after update"
-      ],
-      "files_affected": [
-        "backend/src/routes/test-suites/routes.ts",
-        "backend/src/routes/test-suites/review.ts",
-        "backend/src/routes/test-suites/healing.ts",
-        "backend/src/routes/test-suites/ai-*.ts",
-        "backend/src/routes/projects/routes.ts",
-        "backend/src/routes/auth.ts",
-        "backend/src/routes/organizations.ts",
-        "94 total route files (see grep results)"
-      ]
+      "description": "Remove 3 memory Maps (memoryUsers, memoryUserSessions, memoryResetTokens) from auth.ts"
     },
     {
       "id": 2105,
+      "phase": 1,
       "category": "Backend/DataLayer",
-      "name": "Remove Memory Maps from Other Repositories",
-      "description": "Remove memory fallbacks from remaining 11 repository files: ai-test-generator, auth, audit-logs, schedules, reports, sast, dast, github, monitoring, api-keys, test-runs.",
-      "priority": "medium",
+      "name": "Clean monitoring Repository - Remove 37 Memory Maps",
+      "priority": "high",
       "status": "pending",
-      "steps": [
-        "backend/src/services/repositories/ai-test-generator.ts - Remove memory fallbacks",
-        "backend/src/services/repositories/auth.ts - Evaluate session handling, remove memory fallbacks",
-        "backend/src/services/repositories/audit-logs.ts - Remove memory fallbacks",
-        "backend/src/services/repositories/schedules.ts - Remove memory fallbacks",
-        "backend/src/services/repositories/reports.ts - Remove memory fallbacks",
-        "backend/src/services/repositories/sast.ts - Remove memory fallbacks",
-        "backend/src/services/repositories/dast.ts - Remove memory fallbacks",
-        "backend/src/services/repositories/github.ts - Remove memory fallbacks",
-        "backend/src/services/repositories/monitoring.ts - Remove memory fallbacks",
-        "backend/src/services/repositories/api-keys.ts - Remove memory fallbacks",
-        "backend/src/services/repositories/test-runs.ts - Remove memory fallbacks"
-      ],
-      "files_affected": [
-        "backend/src/services/repositories/ai-test-generator.ts",
-        "backend/src/services/repositories/auth.ts",
-        "backend/src/services/repositories/audit-logs.ts",
-        "backend/src/services/repositories/schedules.ts",
-        "backend/src/services/repositories/reports.ts",
-        "backend/src/services/repositories/sast.ts",
-        "backend/src/services/repositories/dast.ts",
-        "backend/src/services/repositories/github.ts",
-        "backend/src/services/repositories/monitoring.ts",
-        "backend/src/services/repositories/api-keys.ts",
-        "backend/src/services/repositories/test-runs.ts"
-      ]
+      "description": "LARGEST file: remove 37 memory Maps from monitoring.ts covering uptime, transactions, performance, webhooks, DNS, TCP, status pages, on-call, incidents, alerts"
     },
     {
       "id": 2106,
+      "phase": 1,
       "category": "Backend/DataLayer",
-      "name": "Remove All Route Store Files Memory Exports",
-      "description": "Update or remove stores.ts files in routes that export memory Maps. These files provide synchronous access to memory stores and need to be updated to only export async database functions.",
+      "name": "Clean dast Repository - Remove 6 Memory Maps",
       "priority": "medium",
       "status": "pending",
-      "steps": [
-        "backend/src/routes/projects/stores.ts - Update to remove memory exports",
-        "backend/src/routes/api-keys/stores.ts - Update",
-        "backend/src/routes/monitoring/stores.ts - Update",
-        "backend/src/routes/github/stores.ts - Update",
-        "backend/src/routes/dast/stores.ts - Update",
-        "backend/src/routes/sast/stores.ts - Update",
-        "backend/src/routes/ai-test-generator/stores.ts - Update",
-        "backend/src/routes/reports/stores.ts - Update"
-      ],
-      "files_affected": [
-        "backend/src/routes/projects/stores.ts",
-        "backend/src/routes/api-keys/stores.ts",
-        "backend/src/routes/monitoring/stores.ts",
-        "backend/src/routes/github/stores.ts",
-        "backend/src/routes/dast/stores.ts",
-        "backend/src/routes/sast/stores.ts",
-        "backend/src/routes/ai-test-generator/stores.ts",
-        "backend/src/routes/reports/stores.ts"
-      ]
+      "description": "Remove 6 memory Maps from dast.ts"
     },
     {
       "id": 2107,
-      "category": "QA/Testing",
-      "name": "Final Verification - Database-Only Storage",
-      "description": "Comprehensive testing after all memory removal to verify the application works correctly with PostgreSQL as the single source of truth.",
+      "phase": 1,
+      "category": "Backend/DataLayer",
+      "name": "Clean sast Repository - Remove 6 Memory Maps",
+      "priority": "medium",
+      "status": "pending",
+      "description": "Remove 6 memory Maps from sast.ts"
+    },
+    {
+      "id": 2108,
+      "phase": 1,
+      "category": "Backend/DataLayer",
+      "name": "Clean github Repository - Remove 5 Memory Maps",
+      "priority": "medium",
+      "status": "pending",
+      "description": "Remove 5 memory Maps from github.ts"
+    },
+    {
+      "id": 2109,
+      "phase": 1,
+      "category": "Backend/DataLayer",
+      "name": "Clean ai-test-generator Repository - Remove 6 Memory Maps",
+      "priority": "medium",
+      "status": "pending",
+      "description": "Remove 6 memory Maps from ai-test-generator.ts"
+    },
+    {
+      "id": 2110,
+      "phase": 1,
+      "category": "Backend/DataLayer",
+      "name": "Clean Remaining Repositories - Remove Memory Maps",
+      "priority": "medium",
+      "status": "pending",
+      "description": "Remove 10 memory Maps from 5 files: audit-logs (1), schedules (1), reports (1), api-keys (4), test-runs (3)"
+    },
+    {
+      "id": 2111,
+      "phase": 2,
+      "category": "Backend/Routes",
+      "name": "Remove Proxy Maps from test-suites stores.ts",
       "priority": "critical",
       "status": "pending",
-      "steps": [
-        "Rebuild backend: docker compose build --no-cache backend",
-        "Restart: docker compose stop backend && docker compose rm -f backend && docker compose up -d backend",
-        "Create test suite and verify it exists",
-        "Restart container",
-        "Verify test suite still exists after restart (proves DB read works)",
-        "Test all CRUD operations for projects",
-        "Test all CRUD operations for test suites",
-        "Test all CRUD operations for tests",
-        "Test all CRUD operations for organizations",
-        "Run existing automated tests",
-        "Check logs for errors: docker compose logs --tail=100 backend",
-        "Verify no 'not found' errors for existing data",
-        "Grep codebase to confirm no memoryXxx variables remain",
-        "Grep codebase to confirm no .get(), .set(), .delete() on Map objects for data storage"
-      ],
-      "files_affected": [],
-      "acceptance_criteria": [
-        "No memoryXxx variables in codebase",
-        "No .get(), .set(), .delete() on Map objects for data storage",
-        "All data operations use await with repository functions",
-        "Application works after container restart",
-        "No 'not found' errors for existing data"
-      ]
-    }
-  ],
-  "metadata": {
-    "created_at": "2026-01-28",
-    "created_by": "Claude Project Assistant",
-    "total_features": 8,
-    "category": "Backend Refactoring - Remove In-Memory Maps",
-    "priority_breakdown": {
-      "critical": 4,
-      "high": 2,
-      "medium": 2
+      "description": "Remove Proxy-wrapped Map exports that BROKE production. Keep only async function exports."
     },
-    "estimated_effort": "Large (multi-file refactor across 100+ files)",
-    "notes": "Work file by file. Test after each change. Commit working states. Do NOT change Redis caching, database connection logic, or JWT handling."
-  }
+    {
+      "id": 2112,
+      "phase": 2,
+      "category": "Backend/Routes",
+      "name": "Remove Proxy Maps from projects stores.ts",
+      "priority": "critical",
+      "status": "pending",
+      "description": "Remove 5 Proxy-wrapped Map exports. Keep only async function exports."
+    },
+    {
+      "id": 2113,
+      "phase": 2,
+      "category": "Backend/Routes",
+      "name": "Remove Proxy Maps from api-keys stores.ts",
+      "priority": "high",
+      "status": "pending",
+      "description": "Remove 4 Proxy-wrapped Map exports. Keep only async function exports."
+    },
+    {
+      "id": 2114,
+      "phase": 2,
+      "category": "Backend/Routes",
+      "name": "Remove Memory from Remaining 6 stores.ts Files",
+      "priority": "high",
+      "status": "pending",
+      "description": "Clean monitoring, github, dast, sast, ai-test-generator, reports stores.ts files"
+    },
+    {
+      "id": 2115,
+      "phase": 3,
+      "category": "Backend/Routes",
+      "name": "Migrate test-suites Route Files to Async DB Calls",
+      "priority": "critical",
+      "status": "pending",
+      "description": "Replace Map operations in 7 test-suites route files with async DB calls"
+    },
+    {
+      "id": 2116,
+      "phase": 3,
+      "category": "Backend/Routes",
+      "name": "Migrate projects Route Files to Async DB Calls",
+      "priority": "critical",
+      "status": "pending",
+      "description": "Replace Map operations in 7 projects route files with async DB calls"
+    },
+    {
+      "id": 2117,
+      "phase": 3,
+      "category": "Backend/Routes",
+      "name": "Migrate Auth and Organizations Routes to Async DB",
+      "priority": "critical",
+      "status": "pending",
+      "description": "CRITICAL: Change getUserOrganization() to query organization_members table. Update all callers."
+    },
+    {
+      "id": 2118,
+      "phase": 3,
+      "category": "Backend/Routes",
+      "name": "Migrate test-runs Route Files to Async DB Calls",
+      "priority": "high",
+      "status": "pending",
+      "description": "Replace Map operations in 37+ test-runs route files"
+    },
+    {
+      "id": 2119,
+      "phase": 3,
+      "category": "Backend/Routes",
+      "name": "Migrate Remaining Route Files to Async DB Calls",
+      "priority": "high",
+      "status": "pending",
+      "description": "Replace Map operations in monitoring, github, sast, dast, api-keys, schedules, audit-logs route files"
+    },
+    {
+      "id": 2120,
+      "phase": 3,
+      "category": "Backend/MCP",
+      "name": "Migrate MCP Handlers to Async DB Calls",
+      "priority": "high",
+      "status": "pending",
+      "description": "Update MCP server and handler files to use async DB functions instead of Map operations"
+    },
+    {
+      "id": 2121,
+      "phase": 4,
+      "category": "QA/Verification",
+      "name": "Final Verification - Zero Memory Maps in Codebase",
+      "priority": "critical",
+      "status": "pending",
+      "description": "Grep verification: zero matches for getMemory, new Proxy, isDatabaseConnected, const memory in codebase"
+    },
+    {
+      "id": 2122,
+      "phase": 4,
+      "category": "QA/Verification",
+      "name": "End-to-End CRUD Verification After Memory Removal",
+      "priority": "critical",
+      "status": "pending",
+      "description": "Login, create project/suite/tests, restart container, verify data persists. No 'not found' errors."
+    }
+  ]
 }
