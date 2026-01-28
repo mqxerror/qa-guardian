@@ -243,7 +243,8 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const password_hash = await bcrypt.hash(password, 10);
-    const id = String(users.size + 1);
+    // Feature #2095: Use proper UUID format instead of simple string IDs
+    const id = crypto.randomUUID();
 
     const user: User = {
       id,
@@ -258,7 +259,8 @@ export async function authRoutes(app: FastifyInstance) {
     users.set(email, user);
 
     // Create a default organization for the new user
-    const orgId = String(Date.now());
+    // Feature #2095: Use proper UUID format instead of timestamp string
+    const orgId = crypto.randomUUID();
     const orgName = `${name}'s Organization`;
     organizations.set(orgId, {
       id: orgId,
