@@ -40,16 +40,16 @@ const emptyMcpToolCallsMap = new Map<string, McpToolCall[]>();
 const emptyMcpAuditLogsMap = new Map<string, McpAuditLogEntry[]>();
 
 export const apiKeys: Map<string, ApiKey> = new Proxy(emptyApiKeysMap, {
-  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+  get(target, prop) { warnDeprecation(); const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val; }
 });
 export const mcpConnections: Map<string, McpConnection> = new Proxy(emptyMcpConnectionsMap, {
-  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+  get(target, prop) { warnDeprecation(); const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val; }
 });
 export const mcpToolCalls: Map<string, McpToolCall[]> = new Proxy(emptyMcpToolCallsMap, {
-  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+  get(target, prop) { warnDeprecation(); const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val; }
 });
 export const mcpAuditLogs: Map<string, McpAuditLogEntry[]> = new Proxy(emptyMcpAuditLogsMap, {
-  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+  get(target, prop) { warnDeprecation(); const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val; }
 });
 
 // Re-export async database functions for consumers

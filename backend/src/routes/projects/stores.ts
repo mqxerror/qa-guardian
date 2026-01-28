@@ -58,19 +58,19 @@ const emptyVisualSettingsMap = new Map<string, ProjectVisualSettings>();
 const emptyHealingSettingsMap = new Map<string, ProjectHealingSettings>();
 
 export const projects: Map<string, Project> = new Proxy(emptyProjectsMap, {
-  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+  get(target, prop) { warnDeprecation(); const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val; }
 });
 export const projectMembers: Map<string, ProjectMember[]> = new Proxy(emptyMembersMap, {
-  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+  get(target, prop) { warnDeprecation(); const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val; }
 });
 export const projectEnvVars: Map<string, EnvironmentVariable[]> = new Proxy(emptyEnvVarsMap, {
-  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+  get(target, prop) { warnDeprecation(); const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val; }
 });
 export const projectVisualSettings: Map<string, ProjectVisualSettings> = new Proxy(emptyVisualSettingsMap, {
-  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+  get(target, prop) { warnDeprecation(); const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val; }
 });
 export const projectHealingSettings: Map<string, ProjectHealingSettings> = new Proxy(emptyHealingSettingsMap, {
-  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+  get(target, prop) { warnDeprecation(); const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val; }
 });
 
 // Export default settings

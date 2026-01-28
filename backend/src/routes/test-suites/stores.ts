@@ -47,14 +47,14 @@ const emptyTestsMap = new Map<string, Test>();
 export const testSuites: Map<string, TestSuite> = new Proxy(emptyTestSuitesMap, {
   get(target, prop) {
     warnDeprecation();
-    return Reflect.get(target, prop);
+    const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val;
   }
 });
 
 export const tests: Map<string, Test> = new Proxy(emptyTestsMap, {
   get(target, prop) {
     warnDeprecation();
-    return Reflect.get(target, prop);
+    const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val;
   }
 });
 
