@@ -4,7 +4,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate } from '../../middleware/auth';
 import { Test } from './types';
-import { testSuites, tests } from './stores';
+import { getTestSuite, getTest, updateTest, updateTestSuite, listTests } from './stores';
 
 // Review action body interface
 interface ReviewTestBody {
@@ -26,8 +26,7 @@ export async function reviewRoutes(app: FastifyInstance) {
     preHandler: [authenticate],
   }, async (request) => {
     const { suiteId } = request.params;
-    const allTests = Array.from(tests.values());
-    const suiteTests = allTests.filter(t => t.suite_id === suiteId);
+    const suiteTests = await listTests(suiteId);
     const pendingTests = suiteTests.filter(t => t.review_status === 'pending_review');
 
     return {
@@ -55,7 +54,7 @@ export async function reviewRoutes(app: FastifyInstance) {
     const { action, notes } = request.body;
     const user = request.user as { id: string; email: string; name?: string };
 
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test) {
       throw { statusCode: 404, message: 'Test not found' };
     }
@@ -66,21 +65,17 @@ export async function reviewRoutes(app: FastifyInstance) {
     }
 
     // Update review status
-    test.review_status = action === 'approve' ? 'approved' : 'rejected';
-    test.reviewed_by = user.id;
-    test.reviewed_at = new Date();
-    test.review_notes = notes;
-
-    // If approved, make the test active
-    if (action === 'approve') {
-      test.status = 'active';
-    }
-
-    test.updated_at = new Date();
-    tests.set(testId, test);
+    const updatedTest = await updateTest(testId, {
+      review_status: action === 'approve' ? 'approved' : 'rejected',
+      reviewed_by: user.id,
+      reviewed_at: new Date(),
+      review_notes: notes,
+      status: action === 'approve' ? 'active' : test.status,
+      updated_at: new Date(),
+    });
 
     return {
-      test,
+      test: updatedTest,
       message: `Test ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
     };
   });
@@ -107,7 +102,7 @@ export async function reviewRoutes(app: FastifyInstance) {
     const errors: { test_id: string; error: string }[] = [];
 
     for (const testId of test_ids) {
-      const test = tests.get(testId);
+      const test = await getTest(testId);
       if (!test) {
         errors.push({ test_id: testId, error: 'Test not found' });
         continue;
@@ -119,18 +114,17 @@ export async function reviewRoutes(app: FastifyInstance) {
       }
 
       // Update review status
-      test.review_status = action === 'approve' ? 'approved' : 'rejected';
-      test.reviewed_by = user.id;
-      test.reviewed_at = new Date();
-      test.review_notes = notes;
-
-      if (action === 'approve') {
-        test.status = 'active';
+      const updatedTest = await updateTest(testId, {
+        review_status: action === 'approve' ? 'approved' : 'rejected',
+        reviewed_by: user.id,
+        reviewed_at: new Date(),
+        review_notes: notes,
+        status: action === 'approve' ? 'active' : test.status,
+        updated_at: new Date(),
+      });
+      if (updatedTest) {
+        reviewedTests.push(updatedTest);
       }
-
-      test.updated_at = new Date();
-      tests.set(testId, test);
-      reviewedTests.push(test);
     }
 
     return {
@@ -157,17 +151,18 @@ export async function reviewRoutes(app: FastifyInstance) {
     const { suiteId } = request.params;
     const { require_human_review } = request.body;
 
-    const suite = testSuites.get(suiteId);
+    const suite = await getTestSuite(suiteId);
     if (!suite) {
       throw { statusCode: 404, message: 'Test suite not found' };
     }
 
-    suite.require_human_review = require_human_review;
-    suite.updated_at = new Date();
-    testSuites.set(suiteId, suite);
+    const updatedSuite = await updateTestSuite(suiteId, {
+      require_human_review,
+      updated_at: new Date(),
+    });
 
     return {
-      suite,
+      suite: updatedSuite,
       message: `Human review requirement ${require_human_review ? 'enabled' : 'disabled'}`,
     };
   });
@@ -178,14 +173,13 @@ export async function reviewRoutes(app: FastifyInstance) {
   }, async (request) => {
     const { suiteId } = request.params;
 
-    const suite = testSuites.get(suiteId);
+    const suite = await getTestSuite(suiteId);
     if (!suite) {
       throw { statusCode: 404, message: 'Test suite not found' };
     }
 
     // Count pending review tests
-    const allTests = Array.from(tests.values());
-    const suiteTests = allTests.filter(t => t.suite_id === suiteId);
+    const suiteTests = await listTests(suiteId);
     const pendingReview = suiteTests.filter(t => t.review_status === 'pending_review').length;
     const approved = suiteTests.filter(t => t.review_status === 'approved').length;
     const rejected = suiteTests.filter(t => t.review_status === 'rejected').length;

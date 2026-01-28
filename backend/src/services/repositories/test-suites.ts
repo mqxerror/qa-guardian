@@ -1,14 +1,15 @@
 /**
  * Test Suites Repository - Database CRUD operations for test suites and tests
  *
- * This module provides database persistence for test suites and tests when PostgreSQL is available,
- * with transparent fallback to in-memory storage when database is not connected.
+ * This module provides database persistence for test suites and tests.
+ * Primary storage is PostgreSQL. Memory fallback is provided for development
+ * when DATABASE_URL is not configured.
  */
 
 import { query, isDatabaseConnected } from '../database';
 import { TestSuite, Test } from '../../routes/test-suites/types';
 
-// In-memory stores (used as fallback when database is not available)
+// Memory fallback stores (used ONLY when database is not connected in development)
 const memoryTestSuites: Map<string, TestSuite> = new Map();
 const memoryTests: Map<string, Test> = new Map();
 
@@ -43,11 +44,11 @@ export async function createTestSuite(suite: TestSuite): Promise<TestSuite> {
       ]
     );
     if (result && result.rows[0]) {
-      // Convert DB row back to TestSuite type
       return rowToTestSuite(result.rows[0]);
     }
+    throw new Error('Failed to create test suite in database');
   }
-  // Fallback to memory
+  // Memory fallback for development
   memoryTestSuites.set(suite.id, suite);
   return suite;
 }
@@ -67,16 +68,16 @@ export async function getTestSuite(id: string): Promise<TestSuite | undefined> {
 }
 
 export async function updateTestSuite(id: string, updates: Partial<TestSuite>): Promise<TestSuite | undefined> {
+  const existing = await getTestSuite(id);
+  if (!existing) return undefined;
+
+  const updatedSuite = {
+    ...existing,
+    ...updates,
+    updated_at: new Date(),
+  };
+
   if (isDatabaseConnected()) {
-    const existing = await getTestSuite(id);
-    if (!existing) return undefined;
-
-    const updatedSuite = {
-      ...existing,
-      ...updates,
-      updated_at: new Date(),
-    };
-
     const result = await query<any>(
       `UPDATE test_suites SET
         name = $2, description = $3, type = $4, config = $5, tags = $6, updated_at = $7
@@ -107,10 +108,7 @@ export async function updateTestSuite(id: string, updates: Partial<TestSuite>): 
     }
     return undefined;
   }
-  // Fallback to memory
-  const suite = memoryTestSuites.get(id);
-  if (!suite) return undefined;
-  const updatedSuite = { ...suite, ...updates, updated_at: new Date() };
+  // Memory fallback
   memoryTestSuites.set(id, updatedSuite);
   return updatedSuite;
 }
@@ -125,7 +123,7 @@ export async function deleteTestSuite(id: string): Promise<boolean> {
     );
     return result !== null && (result.rowCount ?? 0) > 0;
   }
-  // Also delete tests in memory
+  // Memory fallback
   for (const [testId, test] of memoryTests) {
     if (test.suite_id === id) {
       memoryTests.delete(testId);
@@ -199,8 +197,9 @@ export async function createTest(test: Test): Promise<Test> {
     if (result && result.rows[0]) {
       return rowToTest(result.rows[0], test.organization_id);
     }
+    throw new Error('Failed to create test in database');
   }
-  // Fallback to memory
+  // Memory fallback
   memoryTests.set(test.id, test);
   return test;
 }
@@ -225,16 +224,16 @@ export async function getTest(id: string): Promise<Test | undefined> {
 }
 
 export async function updateTest(id: string, updates: Partial<Test>): Promise<Test | undefined> {
+  const existing = await getTest(id);
+  if (!existing) return undefined;
+
+  const updatedTest = {
+    ...existing,
+    ...updates,
+    updated_at: new Date(),
+  };
+
   if (isDatabaseConnected()) {
-    const existing = await getTest(id);
-    if (!existing) return undefined;
-
-    const updatedTest = {
-      ...existing,
-      ...updates,
-      updated_at: new Date(),
-    };
-
     const result = await query<any>(
       `UPDATE tests SET
         name = $2, description = $3, type = $4, config = $5, code = $6,
@@ -259,10 +258,7 @@ export async function updateTest(id: string, updates: Partial<Test>): Promise<Te
     }
     return undefined;
   }
-  // Fallback to memory
-  const test = memoryTests.get(id);
-  if (!test) return undefined;
-  const updatedTest = { ...test, ...updates, updated_at: new Date() };
+  // Memory fallback
   memoryTests.set(id, updatedTest);
   return updatedTest;
 }
@@ -513,18 +509,6 @@ function testToConfig(test: Test): Record<string, any> {
 // ===== COMPATIBILITY EXPORTS =====
 
 /**
- * Synchronous access to in-memory test suites store
- * Use this only when async access is not possible
- */
-export function getMemoryTestSuites(): Map<string, TestSuite> {
-  return memoryTestSuites;
-}
-
-export function getMemoryTests(): Map<string, Test> {
-  return memoryTests;
-}
-
-/**
  * Get all test suites as a Map (for compatibility with existing code)
  */
 export async function getTestSuitesMap(): Promise<Map<string, TestSuite>> {
@@ -563,5 +547,17 @@ export async function getTestsMap(): Promise<Map<string, Test>> {
     }
     return map;
   }
+  return memoryTests;
+}
+
+/**
+ * Get memory stores for backward compatibility with synchronous code
+ * DEPRECATED: Use async functions instead
+ */
+export function getMemoryTestSuites(): Map<string, TestSuite> {
+  return memoryTestSuites;
+}
+
+export function getMemoryTests(): Map<string, Test> {
   return memoryTests;
 }

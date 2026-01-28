@@ -3,7 +3,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { testSuites, tests } from './stores';
+import { getTestSuite, createTest } from './stores';
 import { Test } from './types';
 import { generatePlaywrightCode } from './utils';
 import { logAuditEntry } from '../audit-logs';
@@ -694,7 +694,7 @@ export async function aiVariationsRoutes(app: FastifyInstance) {
     }
 
     // Verify suite exists
-    const suite = testSuites.get(suite_id);
+    const suite = await getTestSuite(suite_id);
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -734,7 +734,7 @@ export async function aiVariationsRoutes(app: FastifyInstance) {
     newTest.playwright_code = playwrightCode;
 
     // Store the test
-    tests.set(testId, newTest);
+    await createTest(newTest);
 
     // Log audit entry
     logAuditEntry(

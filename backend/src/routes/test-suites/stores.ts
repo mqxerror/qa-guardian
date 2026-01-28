@@ -1,8 +1,8 @@
 // Test Suites Module - Data Stores
 //
 // This module provides data access for test suites and tests with database persistence.
-// It maintains backward compatibility with Map-based access while adding
-// async database operations for persistent storage.
+// Primary storage is PostgreSQL with memory fallback for development.
+// Backward-compatible Map exports are provided for files not yet migrated to async.
 
 import { TestSuite, Test } from './types';
 
@@ -20,17 +20,21 @@ import {
   deleteTest as dbDeleteTest,
   listTests as dbListTests,
   listAllTests as dbListAllTests,
+  getTestSuitesMap,
+  getTestsMap,
   getMemoryTestSuites,
   getMemoryTests,
 } from '../../services/repositories/test-suites';
 
-// Export memory stores for backward compatibility with synchronous code
-// These are still used by code that hasn't been migrated to async yet
+// ===== BACKWARD COMPATIBILITY =====
+// These export the memory stores for synchronous code not yet migrated to async
+// In development (no database), these are the primary storage
+// In production (with database), these are only used as fallback
 export const testSuites: Map<string, TestSuite> = getMemoryTestSuites();
 export const tests: Map<string, Test> = getMemoryTests();
 
 // ===== ASYNC DATABASE FUNCTIONS =====
-// Use these functions for new code or when migrating to persistent storage
+// Use these functions for all new code
 
 // Test Suites CRUD
 export const createTestSuite = dbCreateTestSuite;
@@ -47,3 +51,6 @@ export const updateTest = dbUpdateTest;
 export const deleteTest = dbDeleteTest;
 export const listTests = dbListTests;
 export const listAllTests = dbListAllTests;
+
+// Async Map accessors for backward compatibility
+export { getTestSuitesMap, getTestsMap };

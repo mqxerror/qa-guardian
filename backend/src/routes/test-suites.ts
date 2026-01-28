@@ -16,8 +16,25 @@ export {
   UpdateTestBody,
 } from './test-suites/types';
 
-// Re-export stores
-export { testSuites, tests } from './test-suites/stores';
+// Re-export stores (both Maps for backward compat and async functions)
+export {
+  testSuites,
+  tests,
+  createTestSuite,
+  getTestSuite,
+  updateTestSuite,
+  deleteTestSuite,
+  listTestSuites,
+  listAllTestSuites,
+  createTest,
+  getTest,
+  updateTest,
+  deleteTest,
+  listTests,
+  listAllTests,
+  getTestSuitesMap,
+  getTestsMap,
+} from './test-suites/stores';
 
 // Re-export utility functions
 export { generatePlaywrightCode, stepToPlaywrightCode } from './test-suites/utils';

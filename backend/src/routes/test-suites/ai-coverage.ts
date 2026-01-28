@@ -5,7 +5,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { logAuditEntry } from '../audit-logs';
-import { testSuites, tests } from './stores';
+import { getTestSuite, createTest, listAllTests } from './stores';
 import { Test, TestStep } from './types';
 import { generatePlaywrightCode } from './utils';
 
@@ -818,9 +818,8 @@ export async function aiCoverageRoutes(app: FastifyInstance) {
     console.log(`[AI COVERAGE GAPS] Analyzing coverage for org ${orgId}`);
 
     // Get existing tests for the organization
-    const existingTests = Array.from(tests.values())
-      .filter(t => t.organization_id === orgId)
-      .filter(t => !suite_id || t.suite_id === suite_id);
+    const allTests = await listAllTests(orgId);
+    const existingTests = allTests.filter(t => !suite_id || t.suite_id === suite_id);
 
     // Analyze test coverage
     const analysis = analyzeCoverage(existingTests, known_pages, known_flows);
@@ -943,7 +942,7 @@ export async function aiCoverageRoutes(app: FastifyInstance) {
     }
 
     // Verify suite exists
-    const suite = testSuites.get(suite_id);
+    const suite = await getTestSuite(suite_id);
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -984,7 +983,7 @@ export async function aiCoverageRoutes(app: FastifyInstance) {
         const playwrightCode = generatePlaywrightCode(suggestion.test_name, generatedSteps, base_url || suite.base_url || '', 'typescript');
         newTest.playwright_code = playwrightCode;
 
-        tests.set(testId, newTest);
+        await createTest(newTest);
 
         generatedTests.push({
           id: testId,

@@ -4,7 +4,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { SuiteParams } from './types';
-import { testSuites, tests } from './stores';
+import { getTestSuite, listTests } from './stores';
 
 // Selector suggestion interface
 interface SelectorSuggestion {
@@ -71,7 +71,7 @@ export async function healingRoutes(app: FastifyInstance) {
     const limit = Math.min(parseInt(request.query.limit || '20', 10), 100);
     const orgId = getOrganizationId(request);
 
-    const suite = testSuites.get(suiteId);
+    const suite = await getTestSuite(suiteId);
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -80,7 +80,7 @@ export async function healingRoutes(app: FastifyInstance) {
     }
 
     // Get all tests in the suite
-    const suiteTests = Array.from(tests.values()).filter(t => t.suite_id === suiteId);
+    const suiteTests = await listTests(suiteId);
 
     const suggestions: SelectorSuggestion[] = [];
 

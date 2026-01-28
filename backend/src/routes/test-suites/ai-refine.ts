@@ -4,7 +4,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { logAuditEntry } from '../audit-logs';
-import { testSuites, tests } from './stores';
+import { getTestSuite, createTest } from './stores';
 import { Test, TestStep } from './types';
 import { generatePlaywrightCode } from './utils';
 
@@ -82,7 +82,7 @@ export async function aiRefineRoutes(app: FastifyInstance) {
     // If not ambiguous and auto_generate is enabled, generate the test
     if (!analysis.is_ambiguous && auto_generate_if_clear && suite_id) {
       const orgId = getOrganizationId(request);
-      const suite = testSuites.get(suite_id);
+      const suite = await getTestSuite(suite_id);
 
       if (!suite || suite.organization_id !== orgId) {
         return reply.status(404).send({
@@ -136,7 +136,7 @@ export async function aiRefineRoutes(app: FastifyInstance) {
     }
 
     // Verify suite exists
-    const suite = testSuites.get(suite_id);
+    const suite = await getTestSuite(suite_id);
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -184,7 +184,7 @@ export async function aiRefineRoutes(app: FastifyInstance) {
     newTest.playwright_code = playwrightCode;
 
     // Store the test
-    tests.set(testId, newTest);
+    await createTest(newTest);
 
     console.log(`[AI REFINE TEST] Created refined test ${testId} with ${generatedSteps.length} steps`);
 

@@ -18,10 +18,8 @@ import {
   UpdateTestBody,
   UpdateSuiteBody,
 } from './types';
-// Import both Map stores (for backward compat) and async database functions
+// Import async database functions
 import {
-  testSuites,
-  tests,
   listTestSuites as dbListTestSuites,
   getTestSuite as dbGetTestSuite,
   createTestSuite as dbCreateTestSuite,

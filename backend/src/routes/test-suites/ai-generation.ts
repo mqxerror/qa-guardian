@@ -5,7 +5,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
 import { logAuditEntry } from '../audit-logs';
 import { Test, TestStep } from './types';
-import { testSuites, tests } from './stores';
+import { getTestSuite, createTest } from './stores';
 import { generatePlaywrightCode } from './utils';
 
 // Feature #1137: Request body for AI test generation
@@ -294,7 +294,7 @@ export async function aiGenerationRoutes(app: FastifyInstance) {
     }
 
     // Verify suite exists and belongs to organization
-    const suite = testSuites.get(suite_id);
+    const suite = await getTestSuite(suite_id);
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -345,7 +345,7 @@ export async function aiGenerationRoutes(app: FastifyInstance) {
     newTest.playwright_code = playwrightCode;
 
     // Store the test
-    tests.set(testId, newTest);
+    await createTest(newTest);
 
     console.log(`[AI TEST GENERATION] Created test ${testId} with ${generatedSteps.length} steps (confidence: ${confidenceScore}%)`);
 
