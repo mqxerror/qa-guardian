@@ -17,7 +17,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth';
-import { projects } from '../projects';
+import { getProject } from '../../services/repositories/projects';
 import { exec, execSync, spawn } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
@@ -728,7 +728,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
       const user = request.user as JwtPayload;
       const { projectId } = request.params;
 
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -761,7 +761,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
       const { projectId } = request.params;
       const updates = request.body;
 
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -810,7 +810,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
       const { projectId } = request.params;
       const { branch = 'main', full_history = false } = request.body;
 
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -947,7 +947,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
       const { projectId } = request.params;
       const { limit = 10 } = request.query;
 
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -979,7 +979,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
       const user = request.user as JwtPayload;
       const { projectId, scanId } = request.params;
 
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -1027,7 +1027,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
       const { projectId } = request.params;
       const { format = 'pre-commit', mode = 'fail' } = request.query;
 
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -1088,7 +1088,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
       const { projectId } = request.params;
       const { format = 'pre-commit', mode = 'fail' } = request.query;
 
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({
           error: 'Not Found',

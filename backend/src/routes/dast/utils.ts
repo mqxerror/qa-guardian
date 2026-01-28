@@ -1,34 +1,36 @@
 // DAST Utility Functions
 
 import { DASTConfig, OpenAPISpec } from './types';
-import { dastConfigs, DEFAULT_DAST_CONFIG, openApiSpecs } from './stores';
+import {
+  getDastConfig,
+  saveDastConfig,
+  getOpenApiSpecsByProject,
+  DEFAULT_DAST_CONFIG,
+} from './stores';
 
 // Generate unique ID
 export function generateId(): string {
   return Date.now().toString() + Math.random().toString(36).substring(2, 9);
 }
 
-// Get DAST config for a project
-export function getDASTConfig(projectId: string): DASTConfig {
-  return dastConfigs.get(projectId) || { ...DEFAULT_DAST_CONFIG };
+// Get DAST config for a project (async)
+export async function getDASTConfig(projectId: string): Promise<DASTConfig> {
+  const config = await getDastConfig(projectId);
+  return config || { ...DEFAULT_DAST_CONFIG };
 }
 
-// Update DAST config for a project
-export function updateDASTConfig(projectId: string, config: Partial<DASTConfig>): DASTConfig {
-  const current = getDASTConfig(projectId);
+// Update DAST config for a project (async)
+export async function updateDASTConfig(projectId: string, config: Partial<DASTConfig>): Promise<DASTConfig> {
+  const current = await getDASTConfig(projectId);
   const updated: DASTConfig = { ...current, ...config };
-  dastConfigs.set(projectId, updated);
+  await saveDastConfig(projectId, updated);
   return updated;
 }
 
-// Get OpenAPI spec for a project
-export function getOpenAPISpec(projectId: string): OpenAPISpec | undefined {
-  for (const [, spec] of openApiSpecs) {
-    if (spec.projectId === projectId) {
-      return spec;
-    }
-  }
-  return undefined;
+// Get OpenAPI spec for a project (async)
+export async function getOpenAPISpec(projectId: string): Promise<OpenAPISpec | undefined> {
+  const specs = await getOpenApiSpecsByProject(projectId);
+  return specs.length > 0 ? specs[0] : undefined;
 }
 
 // Match URL against a pattern (supports * wildcard)

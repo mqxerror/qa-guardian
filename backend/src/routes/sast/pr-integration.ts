@@ -12,7 +12,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth';
-import { projects } from '../projects';
+import { getProject } from '../../services/repositories/projects';
 import { logAuditEntry } from '../audit-logs';
 import {
   SASTConfig,
@@ -22,9 +22,12 @@ import {
   SASTPRComment,
 } from './types';
 import {
-  sastScans,
-  sastPRChecks,
-  sastPRComments,
+  createSastScan,
+  createSastPRCheck,
+  getSastPRChecks,
+  updateSastPRCheck,
+  createSastPRComment,
+  getSastPRComments,
   getSASTConfig,
   updateSASTConfig,
   generateId,
@@ -68,7 +71,7 @@ export async function prIntegrationRoutes(
     const user = request.user as JwtPayload;
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -77,7 +80,7 @@ export async function prIntegrationRoutes(
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    const config = getSASTConfig(projectId);
+    const config = await getSASTConfig(projectId);
     return {
       prChecksEnabled: config.prChecksEnabled || false,
       prCommentsEnabled: config.prCommentsEnabled || false,
@@ -108,7 +111,7 @@ export async function prIntegrationRoutes(
     }
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -117,7 +120,7 @@ export async function prIntegrationRoutes(
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    const config = updateSASTConfig(projectId, updates);
+    const config = await updateSASTConfig(projectId, updates);
 
     // Log audit entry
     logAuditEntry(
@@ -165,7 +168,7 @@ export async function prIntegrationRoutes(
     }
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -174,7 +177,7 @@ export async function prIntegrationRoutes(
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    const config = getSASTConfig(projectId);
+    const config = await getSASTConfig(projectId);
     if (!config.prChecksEnabled) {
       return reply.status(400).send({ error: 'Bad Request', message: 'SAST PR checks are not enabled for this project' });
     }
@@ -196,11 +199,8 @@ export async function prIntegrationRoutes(
       updatedAt: new Date().toISOString(),
     };
 
-    // Store the PR check
-    if (!sastPRChecks.has(projectId)) {
-      sastPRChecks.set(projectId, []);
-    }
-    sastPRChecks.get(projectId)!.push(prCheck);
+    // Store the PR check via async DB
+    await createSastPRCheck(prCheck);
 
     // Run the scan asynchronously
     (async () => {
@@ -280,10 +280,8 @@ export async function prIntegrationRoutes(
           },
         };
 
-        // Store scan
-        const projectScans = sastScans.get(projectId) || [];
-        projectScans.unshift(scan);
-        sastScans.set(projectId, projectScans.slice(0, 50));
+        // Store scan via async DB
+        await createSastScan(scan);
 
         prCheck.scanId = scanId;
 
@@ -328,10 +326,7 @@ ${findingsList ? `### Top Findings:\n${findingsList}\n` : ''}`
             createdAt: new Date().toISOString(),
           };
 
-          if (!sastPRComments.has(projectId)) {
-            sastPRComments.set(projectId, []);
-          }
-          sastPRComments.get(projectId)!.push(prComment);
+          await createSastPRComment(prComment);
 
           console.log(`
 ====================================
@@ -386,7 +381,7 @@ ${findingsList ? `### Top Findings:\n${findingsList}\n` : ''}`
     const user = request.user as JwtPayload;
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -395,7 +390,7 @@ ${findingsList ? `### Top Findings:\n${findingsList}\n` : ''}`
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    let checks = sastPRChecks.get(projectId) || [];
+    let checks = await getSastPRChecks(projectId);
 
     if (prNumber) {
       checks = checks.filter(c => c.prNumber === parseInt(prNumber, 10));
@@ -415,7 +410,7 @@ ${findingsList ? `### Top Findings:\n${findingsList}\n` : ''}`
     const user = request.user as JwtPayload;
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -424,7 +419,7 @@ ${findingsList ? `### Top Findings:\n${findingsList}\n` : ''}`
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    const checks = sastPRChecks.get(projectId) || [];
+    const checks = await getSastPRChecks(projectId);
     const check = checks.find(c => c.id === checkId);
 
     if (!check) {
@@ -446,7 +441,7 @@ ${findingsList ? `### Top Findings:\n${findingsList}\n` : ''}`
     const user = request.user as JwtPayload;
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -455,7 +450,7 @@ ${findingsList ? `### Top Findings:\n${findingsList}\n` : ''}`
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    let comments = sastPRComments.get(projectId) || [];
+    let comments = await getSastPRComments(projectId);
 
     if (prNumber) {
       comments = comments.filter(c => c.prNumber === parseInt(prNumber, 10));

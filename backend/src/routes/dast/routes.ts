@@ -2,7 +2,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, JwtPayload, getOrganizationId } from '../../middleware/auth';
-import { projects } from '../projects';
+import { getProject, listProjects } from '../../services/repositories/projects';
 import { logAuditEntry } from '../audit-logs';
 
 import {
@@ -14,10 +14,15 @@ import {
   GraphQLScanConfig,
 } from './types';
 import {
-  dastScans,
-  dastFalsePositives,
-  openApiSpecs,
-  dastSchedules,
+  getDastScansByProject,
+  getDastScan,
+  getDastFalsePositives,
+  addDastFalsePositive,
+  deleteDastFalsePositive,
+  saveOpenApiSpec,
+  getOpenApiSpec,
+  getOpenApiSpecsByProject,
+  deleteOpenApiSpec,
   ZAP_SCAN_PROFILES,
   SCHEDULE_FREQUENCIES,
 } from './stores';
@@ -58,12 +63,12 @@ export async function dastRoutes(app: FastifyInstance) {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const config = getDASTConfig(projectId);
+    const config = await getDASTConfig(projectId);
     return reply.send({ config });
   });
 
@@ -77,12 +82,12 @@ export async function dastRoutes(app: FastifyInstance) {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const updatedConfig = updateDASTConfig(projectId, request.body);
+    const updatedConfig = await updateDASTConfig(projectId, request.body);
 
     logAuditEntry(
       request,
@@ -107,12 +112,12 @@ export async function dastRoutes(app: FastifyInstance) {
     const { limit = '10' } = request.query;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const scans = dastScans.get(projectId) || [];
+    const scans = await getDastScansByProject(projectId);
     const limitNum = Math.min(parseInt(limit) || 10, 100);
     const recentScans = [...scans].reverse().slice(0, limitNum);
 
@@ -135,12 +140,12 @@ export async function dastRoutes(app: FastifyInstance) {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const config = getDASTConfig(projectId);
+    const config = await getDASTConfig(projectId);
     const targetUrl = request.body.targetUrl || config.targetUrl;
     const scanProfile = request.body.scanProfile || config.scanProfile;
 
@@ -192,12 +197,12 @@ export async function dastRoutes(app: FastifyInstance) {
     const { projectId, scanId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const scans = dastScans.get(projectId) || [];
+    const scans = await getDastScansByProject(projectId);
     const scan = scans.find(s => s.id === scanId);
 
     if (!scan) {
@@ -218,12 +223,12 @@ export async function dastRoutes(app: FastifyInstance) {
     const { risk, confidence, includeFalsePositives = 'false' } = request.query;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const scans = dastScans.get(projectId) || [];
+    const scans = await getDastScansByProject(projectId);
     const scan = scans.find(s => s.id === scanId);
 
     if (!scan) {
@@ -268,12 +273,12 @@ export async function dastRoutes(app: FastifyInstance) {
     const { format = 'html' } = request.query;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const scans = dastScans.get(projectId) || [];
+    const scans = await getDastScansByProject(projectId);
     const scan = scans.find(s => s.id === scanId);
 
     if (!scan) {
@@ -382,7 +387,7 @@ export async function dastRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Project not found' });
     }
@@ -394,7 +399,7 @@ export async function dastRoutes(app: FastifyInstance) {
       });
     }
 
-    const scans = dastScans.get(projectId) || [];
+    const scans = await getDastScansByProject(projectId);
     const scan = scans.find(s => s.id === scanId);
 
     if (!scan) {
@@ -417,10 +422,7 @@ export async function dastRoutes(app: FastifyInstance) {
       markedAt: new Date().toISOString(),
     };
 
-    if (!dastFalsePositives.has(projectId)) {
-      dastFalsePositives.set(projectId, []);
-    }
-    dastFalsePositives.get(projectId)!.push(fp);
+    await addDastFalsePositive(fp);
 
     alert.isFalsePositive = true;
 
@@ -456,12 +458,12 @@ export async function dastRoutes(app: FastifyInstance) {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const fps = dastFalsePositives.get(projectId) || [];
+    const fps = await getDastFalsePositives(projectId);
 
     return reply.send({
       falsePositives: fps,
@@ -478,20 +480,19 @@ export async function dastRoutes(app: FastifyInstance) {
     const { projectId, falsePositiveId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const fps = dastFalsePositives.get(projectId) || [];
-    const fpIndex = fps.findIndex(fp => fp.id === falsePositiveId);
+    const fps = await getDastFalsePositives(projectId);
+    const fp = fps.find(f => f.id === falsePositiveId);
 
-    if (fpIndex === -1) {
+    if (!fp) {
       return reply.status(404).send({ error: 'False positive record not found' });
     }
 
-    const fp = fps[fpIndex]!;
-    fps.splice(fpIndex, 1);
+    await deleteDastFalsePositive(falsePositiveId);
 
     logAuditEntry(
       request,
@@ -516,7 +517,7 @@ export async function dastRoutes(app: FastifyInstance) {
     const daysNum = parseInt(days) || 30;
     const cutoff = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000);
 
-    const orgProjects = Array.from(projects.values()).filter(p => p.organization_id === orgId);
+    const orgProjects = await listProjects(orgId);
 
     let totalScans = 0;
     let totalAlerts = 0;
@@ -524,7 +525,7 @@ export async function dastRoutes(app: FastifyInstance) {
     const recentScans: DASTScanResult[] = [];
 
     for (const project of orgProjects) {
-      const scans = dastScans.get(project.id) || [];
+      const scans = await getDastScansByProject(project.id);
 
       for (const scan of scans) {
         if (new Date(scan.startedAt) >= cutoff) {
@@ -549,7 +550,7 @@ export async function dastRoutes(app: FastifyInstance) {
         totalScans,
         totalAlerts,
         alertsByRisk,
-        projectsWithDAST: orgProjects.filter(p => getDASTConfig(p.id).enabled).length,
+        projectsWithDAST: (await Promise.all(orgProjects.map(async p => (await getDASTConfig(p.id)).enabled))).filter(Boolean).length,
         totalProjects: orgProjects.length,
       },
       recentScans: recentScans.slice(0, 5).map(s => ({
@@ -576,7 +577,7 @@ export async function dastRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Project not found' });
     }
@@ -603,8 +604,8 @@ export async function dastRoutes(app: FastifyInstance) {
         uploadedBy: user.email,
       };
 
-      openApiSpecs.set(specId, spec);
-      updateDASTConfig(projectId, { openApiSpecId: specId });
+      await saveOpenApiSpec(spec);
+      await updateDASTConfig(projectId, { openApiSpecId: specId });
 
       logAuditEntry(
         request,
@@ -642,12 +643,12 @@ export async function dastRoutes(app: FastifyInstance) {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const config = getDASTConfig(projectId);
+    const config = await getDASTConfig(projectId);
     if (!config.openApiSpecId) {
       return reply.status(404).send({
         error: 'No OpenAPI specification found',
@@ -655,7 +656,7 @@ export async function dastRoutes(app: FastifyInstance) {
       });
     }
 
-    const spec = openApiSpecs.get(config.openApiSpecId);
+    const spec = await getOpenApiSpec(config.openApiSpecId);
     if (!spec) {
       return reply.status(404).send({ error: 'OpenAPI specification not found' });
     }
@@ -682,19 +683,19 @@ export async function dastRoutes(app: FastifyInstance) {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const config = getDASTConfig(projectId);
+    const config = await getDASTConfig(projectId);
     if (!config.openApiSpecId) {
       return reply.status(404).send({ error: 'No OpenAPI specification to delete' });
     }
 
-    const spec = openApiSpecs.get(config.openApiSpecId);
-    openApiSpecs.delete(config.openApiSpecId);
-    updateDASTConfig(projectId, { openApiSpecId: undefined });
+    const spec = await getOpenApiSpec(config.openApiSpecId);
+    await deleteOpenApiSpec(config.openApiSpecId);
+    await updateDASTConfig(projectId, { openApiSpecId: undefined });
 
     logAuditEntry(
       request,
@@ -758,7 +759,7 @@ export async function dastRoutes(app: FastifyInstance) {
     preHandler: [authenticate, requireScopes(['read'])],
   }, async (request, reply) => {
     const { scanId } = request.params;
-    const scan = getGraphQLScan(scanId);
+    const scan = await getGraphQLScan(scanId);
 
     if (!scan) {
       return reply.status(404).send({ error: 'GraphQL scan not found' });
@@ -776,7 +777,7 @@ export async function dastRoutes(app: FastifyInstance) {
     const { limit = '10', status } = request.query;
     const limitNum = Math.min(parseInt(limit) || 10, 100);
 
-    const scans = listGraphQLScans(limitNum, status);
+    const scans = await listGraphQLScans(limitNum, status);
 
     return reply.send({
       scans,

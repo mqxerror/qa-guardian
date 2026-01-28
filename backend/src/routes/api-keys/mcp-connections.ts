@@ -2,16 +2,22 @@
 
 import crypto from 'crypto';
 import { McpConnection } from './types';
-import { mcpConnections } from './stores';
+import {
+  dbCreateMcpConnection,
+  dbGetMcpConnection,
+  dbUpdateMcpConnectionActivity,
+  dbDeleteMcpConnection,
+  dbCleanupStaleMcpConnections,
+} from './stores';
 
-// Helper to register an MCP connection
-export function registerMcpConnection(
+// Helper to register an MCP connection (async)
+export async function registerMcpConnection(
   apiKeyId: string,
   apiKeyName: string,
   organizationId: string,
   clientInfo?: McpConnection['client_info'],
   ipAddress?: string
-): string {
+): Promise<string> {
   const connectionId = `mcp_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
 
   const connection: McpConnection = {
@@ -25,38 +31,28 @@ export function registerMcpConnection(
     ip_address: ipAddress,
   };
 
-  mcpConnections.set(connectionId, connection);
+  await dbCreateMcpConnection(connection);
   console.log(`[MCP] Connection registered: ${connectionId} for API key ${apiKeyName}`);
 
   return connectionId;
 }
 
-// Helper to update connection activity
-export function updateMcpActivity(connectionId: string): void {
-  const connection = mcpConnections.get(connectionId);
-  if (connection) {
-    connection.last_activity_at = new Date();
-  }
+// Helper to update connection activity (async)
+export async function updateMcpActivity(connectionId: string): Promise<void> {
+  await dbUpdateMcpConnectionActivity(connectionId);
 }
 
-// Helper to unregister an MCP connection
-export function unregisterMcpConnection(connectionId: string): void {
-  if (mcpConnections.has(connectionId)) {
-    mcpConnections.delete(connectionId);
-    console.log(`[MCP] Connection unregistered: ${connectionId}`);
-  }
+// Helper to unregister an MCP connection (async)
+export async function unregisterMcpConnection(connectionId: string): Promise<void> {
+  await dbDeleteMcpConnection(connectionId);
+  console.log(`[MCP] Connection unregistered: ${connectionId}`);
 }
 
-// Clean up stale connections (no activity for 30 minutes)
-export function cleanupStaleConnections(): void {
-  const staleThreshold = 30 * 60 * 1000; // 30 minutes
-  const now = Date.now();
-
-  for (const [connectionId, connection] of mcpConnections) {
-    if (now - connection.last_activity_at.getTime() > staleThreshold) {
-      mcpConnections.delete(connectionId);
-      console.log(`[MCP] Cleaned up stale connection: ${connectionId}`);
-    }
+// Clean up stale connections (no activity for 30 minutes) (async)
+export async function cleanupStaleConnections(): Promise<void> {
+  const cleaned = await dbCleanupStaleMcpConnections();
+  if (cleaned > 0) {
+    console.log(`[MCP] Cleaned up ${cleaned} stale connection(s)`);
   }
 }
 
@@ -65,7 +61,7 @@ let cleanupIntervalStarted = false;
 
 export function startConnectionCleanup(): void {
   if (!cleanupIntervalStarted) {
-    setInterval(cleanupStaleConnections, 5 * 60 * 1000);
+    setInterval(() => { cleanupStaleConnections().catch(console.error); }, 5 * 60 * 1000);
     cleanupIntervalStarted = true;
   }
 }

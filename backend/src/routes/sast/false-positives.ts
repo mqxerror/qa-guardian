@@ -12,7 +12,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth';
-import { projects } from '../projects';
+import { getProject } from '../../services/repositories/projects';
 import { logAuditEntry } from '../audit-logs';
 import { FalsePositive } from './types';
 import {
@@ -31,7 +31,7 @@ export async function falsePositivesRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -67,7 +67,7 @@ export async function falsePositivesRoutes(app: FastifyInstance) {
     }
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -132,7 +132,7 @@ export async function falsePositivesRoutes(app: FastifyInstance) {
     }
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }

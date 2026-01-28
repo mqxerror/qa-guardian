@@ -2,17 +2,22 @@
 
 import crypto from 'crypto';
 import { McpToolCall } from './types';
-import { mcpConnections, mcpToolCalls, apiKeys } from './stores';
+import {
+  dbGetMcpConnection,
+  dbCreateMcpToolCall,
+  dbGetMcpToolCallsByOrg,
+  dbGetApiKeyById,
+} from './stores';
 
-// Track a tool call
-export function trackMcpToolCall(
+// Track a tool call (async)
+export async function trackMcpToolCall(
   connectionId: string,
   toolName: string,
   durationMs?: number,
   success: boolean = true,
   error?: string
-): void {
-  const connection = mcpConnections.get(connectionId);
+): Promise<void> {
+  const connection = await dbGetMcpConnection(connectionId);
   if (!connection) {
     console.warn(`[MCP Analytics] Cannot track tool call - connection ${connectionId} not found`);
     return;
@@ -30,26 +35,13 @@ export function trackMcpToolCall(
     error,
   };
 
-  // Get or create org's tool call array
-  const orgId = connection.organization_id;
-  let orgToolCalls = mcpToolCalls.get(orgId);
-  if (!orgToolCalls) {
-    orgToolCalls = [];
-    mcpToolCalls.set(orgId, orgToolCalls);
-  }
-
-  orgToolCalls.push(toolCall);
-
-  // Keep only last 1000 entries per org
-  if (orgToolCalls.length > 1000) {
-    orgToolCalls.shift();
-  }
+  await dbCreateMcpToolCall(toolCall);
 
   console.log(`[MCP Analytics] Tracked tool call: ${toolName} for connection ${connectionId}`);
 }
 
-// Feature #848: Enhanced MCP analytics for dashboard
-export function getMcpAnalytics(orgId: string, since?: Date): {
+// Feature #848: Enhanced MCP analytics for dashboard (async)
+export async function getMcpAnalytics(orgId: string, since?: Date): Promise<{
   total_calls: number;
   successful_calls: number;
   failed_calls: number;
@@ -58,11 +50,8 @@ export function getMcpAnalytics(orgId: string, since?: Date): {
   by_day: Array<{ date: string; total: number; success: number; failed: number }>;
   avg_response_time_ms: number;
   recent_calls: McpToolCall[];
-} {
-  const orgToolCalls = mcpToolCalls.get(orgId) || [];
-  const filteredCalls = since
-    ? orgToolCalls.filter(call => call.timestamp >= since)
-    : orgToolCalls;
+}> {
+  const filteredCalls = await dbGetMcpToolCallsByOrg(orgId, { since, limit: 1000 });
 
   const totalCalls = filteredCalls.length;
   const successfulCalls = filteredCalls.filter(c => c.success).length;
@@ -97,8 +86,8 @@ export function getMcpAnalytics(orgId: string, since?: Date): {
   const byApiKey: Record<string, { name: string; count: number }> = {};
   for (const call of filteredCalls) {
     if (!byApiKey[call.api_key_id]) {
-      // Look up API key name
-      const apiKey = apiKeys.get(call.api_key_id);
+      // Look up API key name via async DB
+      const apiKey = await dbGetApiKeyById(call.api_key_id);
       byApiKey[call.api_key_id] = {
         name: apiKey?.name || 'Unknown',
         count: 0,
@@ -114,14 +103,14 @@ export function getMcpAnalytics(orgId: string, since?: Date): {
   const byDayMap: Record<string, { total: number; success: number; failed: number }> = {};
   for (const call of filteredCalls) {
     const dateKey = call.timestamp.toISOString().split('T')[0]; // YYYY-MM-DD
-    if (!byDayMap[dateKey]) {
-      byDayMap[dateKey] = { total: 0, success: 0, failed: 0 };
+    if (!byDayMap[dateKey!]) {
+      byDayMap[dateKey!] = { total: 0, success: 0, failed: 0 };
     }
-    byDayMap[dateKey].total++;
+    byDayMap[dateKey!]!.total++;
     if (call.success) {
-      byDayMap[dateKey].success++;
+      byDayMap[dateKey!]!.success++;
     } else {
-      byDayMap[dateKey].failed++;
+      byDayMap[dateKey!]!.failed++;
     }
   }
 

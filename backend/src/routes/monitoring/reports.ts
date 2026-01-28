@@ -13,8 +13,10 @@ import {
   ManagedIncident,
 } from './types';
 import {
-  uptimeChecks,
-  checkResults,
+  getUptimeCheck,
+  listUptimeChecks,
+  getCheckResults,
+  // managedIncidents / incidentsByOrg have no async DB functions yet; keep deprecated Map imports
   managedIncidents,
   incidentsByOrg,
 } from './stores';
@@ -51,13 +53,12 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
       let checksToReport: UptimeCheck[] = [];
       if (check_ids) {
         const checkIdList = check_ids.split(',').map(id => id.trim());
-        checksToReport = checkIdList
-          .map(id => uptimeChecks.get(id))
+        const fetchedChecks = await Promise.all(checkIdList.map(id => getUptimeCheck(id)));
+        checksToReport = fetchedChecks
           .filter((c): c is UptimeCheck => c !== undefined && c.organization_id === orgId);
       } else {
         // If no check_ids specified, get all checks for the organization
-        checksToReport = Array.from(uptimeChecks.values())
-          .filter(c => c.organization_id === orgId);
+        checksToReport = await listUptimeChecks(orgId);
       }
 
       // Calculate uptime for each check
@@ -96,7 +97,7 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
       let totalDowntimeSeconds = 0;
 
       for (const check of checksToReport) {
-        const results = checkResults.get(check.id) || [];
+        const results = await getCheckResults(check.id);
 
         // Filter results within the date range
         const periodResults = results.filter(r => {

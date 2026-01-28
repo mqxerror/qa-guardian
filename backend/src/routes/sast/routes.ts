@@ -14,7 +14,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth';
-import { projects } from '../projects';
+import { getProject, listProjects } from '../../services/repositories/projects';
 import { logAuditEntry } from '../audit-logs';
 
 import {
@@ -25,10 +25,12 @@ import {
 } from './types';
 
 import {
-  sastScans,
-  falsePositives,
   getSASTConfig,
   updateSASTConfig,
+  createSastScan,
+  getSastScan,
+  getSastScansByProject,
+  getFalsePositives,
   generateId,
 } from './stores';
 
@@ -272,7 +274,7 @@ if (!JWT_SECRET) {
   const filteredByThreshold = simulatedFindings.filter(f => severityOrder[f.severity] >= threshold);
 
   // Mark findings that are false positives
-  const projectFPs = falsePositives.get(projectId) || [];
+  const projectFPs = await getFalsePositives(projectId);
   return filteredByThreshold.map(finding => {
     const isFP = projectFPs.some(fp =>
       fp.ruleId === finding.ruleId &&
@@ -295,7 +297,7 @@ export async function coreRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -304,7 +306,7 @@ export async function coreRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    const config = getSASTConfig(projectId);
+    const config = await getSASTConfig(projectId);
     return { config };
   });
 
@@ -322,7 +324,7 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -331,7 +333,7 @@ export async function coreRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    const config = updateSASTConfig(projectId, updates);
+    const config = await updateSASTConfig(projectId, updates);
 
     // Log audit entry
     logAuditEntry(
@@ -379,7 +381,7 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -388,7 +390,7 @@ export async function coreRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    const config = getSASTConfig(projectId);
+    const config = await getSASTConfig(projectId);
 
     // Create scan record
     const scanId = generateId();
@@ -406,13 +408,11 @@ export async function coreRoutes(app: FastifyInstance) {
       },
     };
 
-    // Store scan
-    const projectScans = sastScans.get(projectId) || [];
-    projectScans.unshift(scan);
-    sastScans.set(projectId, projectScans.slice(0, 50)); // Keep last 50 scans
+    // Store scan via async DB
+    await createSastScan(scan);
 
     // Update config with scan status
-    updateSASTConfig(projectId, { lastScanAt: scan.startedAt, lastScanStatus: 'running' });
+    await updateSASTConfig(projectId, { lastScanAt: scan.startedAt, lastScanStatus: 'running' });
 
     // Run scan asynchronously
     (async () => {
@@ -440,13 +440,13 @@ export async function coreRoutes(app: FastifyInstance) {
         scan.findings = findings;
         scan.summary = summary;
 
-        updateSASTConfig(projectId, { lastScanStatus: 'completed' });
+        await updateSASTConfig(projectId, { lastScanStatus: 'completed' });
       } catch (error) {
         scan.status = 'failed';
         scan.completedAt = new Date().toISOString();
         scan.error = error instanceof Error ? error.message : 'Unknown error';
 
-        updateSASTConfig(projectId, { lastScanStatus: 'failed' });
+        await updateSASTConfig(projectId, { lastScanStatus: 'failed' });
       }
     })();
 
@@ -496,9 +496,8 @@ export async function coreRoutes(app: FastifyInstance) {
     const offsetNum = parseInt(offset, 10);
 
     // Get all projects in the user's organization
-    const orgProjects = Array.from(projects.entries())
-      .filter(([_, p]) => p.organization_id === user.organization_id)
-      .map(([id, p]) => ({ id, name: p.name, slug: p.slug }));
+    const orgProjectsList = await listProjects(user.organization_id);
+    const orgProjects = orgProjectsList.map(p => ({ id: p.id, name: p.name, slug: p.slug }));
 
     // Collect all findings from all projects
     interface DashboardFinding {
@@ -526,7 +525,7 @@ export async function coreRoutes(app: FastifyInstance) {
     const allFindings: DashboardFinding[] = [];
 
     for (const project of orgProjects) {
-      const projectScans = sastScans.get(project.id) || [];
+      const projectScans = await getSastScansByProject(project.id);
       // Get the most recent completed scan for each project
       const latestScan = projectScans.find(s => s.status === 'completed');
       if (latestScan) {
@@ -589,7 +588,7 @@ export async function coreRoutes(app: FastifyInstance) {
         acc[f.category] = (acc[f.category] || 0) + 1;
         return acc;
       }, {} as Record<string, number>),
-      projectsScanned: orgProjects.filter(p => sastScans.get(p.id)?.some(s => s.status === 'completed')).length,
+      projectsScanned: (await Promise.all(orgProjects.map(async p => (await getSastScansByProject(p.id)).some(s => s.status === 'completed')))).filter(Boolean).length,
       totalProjects: orgProjects.length,
       falsePositives: filteredFindings.filter(f => f.isFalsePositive).length,
     };
@@ -621,9 +620,8 @@ export async function coreRoutes(app: FastifyInstance) {
     const days = parseInt(request.query.days || '30', 10);
 
     // Get all projects in the user's organization
-    const orgProjects = Array.from(projects.entries())
-      .filter(([_, p]) => p.organization_id === user.organization_id)
-      .map(([id, p]) => ({ id, name: p.name }));
+    const orgProjectsList2 = await listProjects(user.organization_id);
+    const orgProjects = orgProjectsList2.map(p => ({ id: p.id, name: p.name }));
 
     // Collect all completed scans from all projects
     interface ScanDataPoint {
@@ -641,7 +639,7 @@ export async function coreRoutes(app: FastifyInstance) {
     const allScans: ScanDataPoint[] = [];
 
     for (const project of orgProjects) {
-      const projectScans = sastScans.get(project.id) || [];
+      const projectScans = await getSastScansByProject(project.id);
       for (const scan of projectScans) {
         if (scan.status === 'completed' && scan.completedAt) {
           allScans.push({
@@ -761,7 +759,7 @@ export async function coreRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -770,7 +768,8 @@ export async function coreRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    const scans = (sastScans.get(projectId) || []).slice(0, limit);
+    const allScans = await getSastScansByProject(projectId);
+    const scans = allScans.slice(0, limit);
     return { scans };
   });
 
@@ -782,7 +781,7 @@ export async function coreRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -791,8 +790,7 @@ export async function coreRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    const scans = sastScans.get(projectId) || [];
-    const scan = scans.find(s => s.id === scanId);
+    const scan = await getSastScan(scanId);
 
     if (!scan) {
       return reply.status(404).send({ error: 'Not Found', message: 'Scan not found' });

@@ -7,10 +7,10 @@ import {
   OpenAPIEndpoint,
 } from './types';
 import {
-  dastScans,
-  dastConfigs,
-  dastFalsePositives,
-  openApiSpecs,
+  createDastScan,
+  getDastFalsePositives,
+  getOpenApiSpecsByProject,
+  saveDastConfig,
 } from './stores';
 import {
   generateId,
@@ -19,14 +19,10 @@ import {
 } from './utils';
 import { generateSimulatedAlerts } from './alerts';
 
-// Get OpenAPI spec for a project
-export function getOpenAPISpec(projectId: string): OpenAPISpec | undefined {
-  for (const [, spec] of openApiSpecs) {
-    if (spec.projectId === projectId) {
-      return spec;
-    }
-  }
-  return undefined;
+// Get OpenAPI spec for a project (async)
+export async function getOpenAPISpec(projectId: string): Promise<OpenAPISpec | undefined> {
+  const specs = await getOpenApiSpecsByProject(projectId);
+  return specs.length > 0 ? specs[0] : undefined;
 }
 
 // Parse OpenAPI specification
@@ -151,11 +147,8 @@ export async function simulateZAPScan(
     },
   };
 
-  // Store scan
-  if (!dastScans.has(projectId)) {
-    dastScans.set(projectId, []);
-  }
-  dastScans.get(projectId)!.push(scan);
+  // Store scan via async DB
+  await createDastScan(scan);
 
   // Generate all alerts upfront (to add incrementally)
   const allAlerts = generateSimulatedAlerts(targetUrl, scanProfile, authConfig);
@@ -247,8 +240,8 @@ export async function simulateZAPScan(
   return scan;
 }
 
-// Complete the scan with final results
-function completeScan(
+// Complete the scan with final results (async for DB calls)
+async function completeScan(
   scan: DASTScanResult,
   projectId: string,
   filteredAlerts: any[],
@@ -258,7 +251,7 @@ function completeScan(
   targetRequests: number,
   totalDuration: number,
   scanProfile: 'baseline' | 'full' | 'api'
-): void {
+): Promise<void> {
   const urlsFilteredOut = allAlerts.length - filteredAlerts.length;
 
   // Store scope config used for this scan
@@ -270,8 +263,8 @@ function completeScan(
     };
   }
 
-  // Get false positives for this project
-  const fps = dastFalsePositives.get(projectId) || [];
+  // Get false positives for this project via async DB
+  const fps = await getDastFalsePositives(projectId);
 
   // Mark known false positives
   filteredAlerts.forEach(alert => {
@@ -324,7 +317,7 @@ function completeScan(
 
   // For API scans, add endpoint testing information
   if (scanProfile === 'api') {
-    const spec = getOpenAPISpec(projectId);
+    const spec = await getOpenAPISpec(projectId);
     if (spec && spec.endpoints.length > 0) {
       scan.endpointsTested = {
         total: spec.endpoints.length,
@@ -368,9 +361,9 @@ function completeScan(
     }
   }
 
-  // Update config with last scan info
-  const config = getDASTConfig(projectId);
+  // Update config with last scan info via async DB
+  const config = await getDASTConfig(projectId);
   config.lastScanAt = scan.completedAt;
   config.lastScanStatus = 'completed';
-  dastConfigs.set(projectId, config);
+  await saveDastConfig(projectId, config);
 }

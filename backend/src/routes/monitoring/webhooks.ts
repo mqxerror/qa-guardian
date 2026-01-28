@@ -17,7 +17,15 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth';
 import { logAuditEntry } from '../audit-logs';
 import { WebhookCheck, WebhookEvent } from './types';
-import { webhookChecks, webhookEvents, webhookTokenMap } from './stores';
+import {
+  createWebhookCheck,
+  getWebhookCheck,
+  getWebhookCheckByToken,
+  listWebhookChecks,
+  deleteWebhookCheck,
+  addWebhookEvent,
+  getWebhookEvents,
+} from './stores';
 
 export async function webhookRoutes(app: FastifyInstance): Promise<void> {
   // Get all webhook checks
@@ -28,10 +36,9 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request) => {
       const orgId = getOrganizationId(request);
-      const checks = Array.from(webhookChecks.values())
-        .filter(check => check.organization_id === orgId)
-        .map(check => {
-          const events = webhookEvents.get(check.id) || [];
+      const allChecks = await listWebhookChecks(orgId);
+      const checks = await Promise.all(allChecks.map(async (check) => {
+          const events = await getWebhookEvents(check.id);
           const lastEvent = events[0];
           const eventsLast24h = events.filter(e =>
             e.received_at > new Date(Date.now() - 24 * 60 * 60 * 1000)
@@ -45,7 +52,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
             last_payload_valid: lastEvent?.payload_valid ?? null,
             events_24h: eventsLast24h,
           };
-        });
+        }));
 
       return { checks, total: checks.length };
     }
@@ -108,10 +115,8 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
         updated_at: new Date(),
       };
 
-      // Store the token -> checkId mapping
-      webhookTokenMap.set(webhookToken, checkId);
-      webhookChecks.set(checkId, check);
-      webhookEvents.set(checkId, []);
+      // Store the webhook check via async DB
+      await createWebhookCheck(check);
 
       logAuditEntry(
         request,
@@ -139,17 +144,16 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/webhooks/receive/:token',
     async (request, reply) => {
       const { token } = request.params;
-      const checkId = webhookTokenMap.get(token);
+      const check = await getWebhookCheckByToken(token);
 
-      if (!checkId) {
+      if (!check) {
         return reply.status(404).send({
           error: 'Not Found',
           message: 'Invalid webhook endpoint',
         });
       }
 
-      const check = webhookChecks.get(checkId);
-      if (!check || !check.enabled) {
+      if (!check.enabled) {
         return reply.status(404).send({
           error: 'Not Found',
           message: 'Webhook check not found or disabled',
@@ -192,10 +196,10 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
         }
       }
 
-      // Record the event
+      // Record the event via async DB
       const event: WebhookEvent = {
         id: `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        check_id: checkId,
+        check_id: check.id,
         received_at: new Date(),
         source_ip: request.ip || 'unknown',
         headers: request.headers as Record<string, string>,
@@ -205,11 +209,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
         signature_valid: signatureValid,
       };
 
-      const events = webhookEvents.get(checkId) || [];
-      events.unshift(event); // Add to beginning
-      // Keep only last 100 events
-      if (events.length > 100) events.pop();
-      webhookEvents.set(checkId, events);
+      await addWebhookEvent(event);
 
       return {
         received: true,
@@ -231,7 +231,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = webhookChecks.get(checkId);
+      const check = await getWebhookCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -240,7 +240,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const events = webhookEvents.get(checkId) || [];
+      const events = await getWebhookEvents(checkId);
 
       return {
         check: {
@@ -267,7 +267,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = webhookChecks.get(checkId);
+      const check = await getWebhookCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -276,12 +276,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      // Remove token mapping
-      const token = check.webhook_url.split('/').pop();
-      if (token) webhookTokenMap.delete(token);
-
-      webhookChecks.delete(checkId);
-      webhookEvents.delete(checkId);
+      await deleteWebhookCheck(checkId);
 
       logAuditEntry(
         request,
@@ -306,7 +301,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
       const { payload = { test: true, timestamp: new Date().toISOString() } } = request.body || {};
       const orgId = getOrganizationId(request);
 
-      const check = webhookChecks.get(checkId);
+      const check = await getWebhookCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -342,7 +337,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
         }
       }
 
-      // Record the test event
+      // Record the test event via async DB
       const event: WebhookEvent = {
         id: `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         check_id: checkId,
@@ -354,10 +349,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
         validation_errors: validationErrors.length > 0 ? validationErrors : undefined,
       };
 
-      const events = webhookEvents.get(checkId) || [];
-      events.unshift(event);
-      if (events.length > 100) events.pop();
-      webhookEvents.set(checkId, events);
+      await addWebhookEvent(event);
 
       return {
         message: 'Test webhook sent successfully',

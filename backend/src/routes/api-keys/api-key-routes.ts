@@ -4,7 +4,14 @@ import { FastifyInstance } from 'fastify';
 import crypto from 'crypto';
 import { authenticate, requireRoles, JwtPayload } from '../../middleware/auth';
 import { ApiKey, CreateApiKeyBody, OrgParams, KeyParams } from './types';
-import { apiKeys } from './stores';
+import {
+  dbCreateApiKey,
+  dbGetApiKeyById,
+  dbGetApiKeyByHash,
+  dbListApiKeysByOrg,
+  dbUpdateApiKey,
+  dbRevokeApiKey,
+} from './stores';
 import { generateApiKey } from './utils';
 
 export async function registerApiKeyRoutes(app: FastifyInstance) {
@@ -22,8 +29,9 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
       });
     }
 
-    const keys = Array.from(apiKeys.values())
-      .filter(k => k.organization_id === orgId && !k.revoked_at)
+    const allKeys = await dbListApiKeysByOrg(orgId);
+    const keys = allKeys
+      .filter(k => !k.revoked_at)
       .map(k => ({
         id: k.id,
         name: k.name,
@@ -95,7 +103,7 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
       burst_window,
     };
 
-    apiKeys.set(apiKey.id, apiKey);
+    await dbCreateApiKey(apiKey);
 
     console.log(`
 ====================================
@@ -135,7 +143,7 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
     const { id } = request.params;
     const user = request.user as JwtPayload;
 
-    const apiKey = apiKeys.get(id);
+    const apiKey = await dbGetApiKeyById(id);
     if (!apiKey) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -150,8 +158,7 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
       });
     }
 
-    apiKey.revoked_at = new Date();
-    apiKeys.set(id, apiKey);
+    await dbRevokeApiKey(id);
 
     console.log(`[API KEY REVOKED] Key ${apiKey.key_prefix} revoked by ${user.email}`);
 
@@ -165,7 +172,7 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
     const { id } = request.params;
     const user = request.user as JwtPayload;
 
-    const oldKey = apiKeys.get(id);
+    const oldKey = await dbGetApiKeyById(id);
     if (!oldKey || oldKey.revoked_at) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -180,8 +187,7 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
       });
     }
 
-    oldKey.revoked_at = new Date();
-    apiKeys.set(id, oldKey);
+    await dbRevokeApiKey(id);
 
     const { key, prefix, hash } = generateApiKey();
 
@@ -199,7 +205,7 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
       revoked_at: null,
     };
 
-    apiKeys.set(newApiKey.id, newApiKey);
+    await dbCreateApiKey(newApiKey);
 
     console.log(`[API KEY ROTATED] Key ${oldKey.key_prefix} -> ${newApiKey.key_prefix} by ${user.email}`);
 
@@ -231,13 +237,8 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
 
     const keyHash = crypto.createHash('sha256').update(api_key).digest('hex');
 
-    let foundKey: ApiKey | undefined;
-    for (const [, key] of apiKeys) {
-      if (key.key_hash === keyHash && !key.revoked_at) {
-        foundKey = key;
-        break;
-      }
-    }
+    const foundKeyResult = await dbGetApiKeyByHash(keyHash);
+    const foundKey = foundKeyResult && !foundKeyResult.revoked_at ? foundKeyResult : undefined;
 
     if (!foundKey) {
       return reply.status(401).send({
@@ -271,8 +272,7 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
       });
     }
 
-    foundKey.last_used_at = new Date();
-    apiKeys.set(foundKey.id, foundKey);
+    await dbUpdateApiKey(foundKey.id, { last_used_at: new Date() });
 
     return {
       valid: true,

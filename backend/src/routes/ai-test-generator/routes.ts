@@ -24,7 +24,10 @@ import {
   ApprovalStatus,
 } from './types';
 import {
-  aiGeneratedTests,
+  createAiGeneratedTest,
+  getAiGeneratedTest,
+  updateAiGeneratedTest,
+  deleteAiGeneratedTest,
   generateTestId,
   indexTest,
   getTestsByUser,
@@ -33,6 +36,8 @@ import {
   getLatestVersion,
   updateApprovalStatusIndex,
   getTestsByApprovalStatus,
+  approveTest,
+  rejectTest,
 } from './stores';
 
 export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
@@ -197,7 +202,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
     try {
       const { testId } = request.params;
 
-      const test = aiGeneratedTests.get(testId);
+      const test = await getAiGeneratedTest(testId);
       if (!test) {
         return reply.status(404).send({
           success: false,
@@ -270,7 +275,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
     try {
       const { testId } = request.params;
 
-      const test = aiGeneratedTests.get(testId);
+      const test = await getAiGeneratedTest(testId);
       if (!test) {
         return reply.status(404).send({
           success: false,
@@ -279,7 +284,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       }
 
       // Remove from store
-      aiGeneratedTests.delete(testId);
+      await deleteAiGeneratedTest(testId);
 
       return reply.send({
         success: true,
@@ -351,7 +356,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       const { testId } = request.params;
       const { action, comment, add_to_suite_id } = request.body;
 
-      const test = aiGeneratedTests.get(testId);
+      const test = await getAiGeneratedTest(testId);
       if (!test) {
         return reply.status(404).send({
           success: false,
@@ -366,7 +371,20 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       const oldStatus = test.approval.status;
       const newStatus: ApprovalStatus = action === 'approve' ? 'approved' : 'rejected';
 
-      // Update approval info
+      // Update approval info via async DB
+      await updateAiGeneratedTest(testId, {
+        approval: {
+          status: newStatus,
+          reviewed_by: userId,
+          reviewed_by_name: userName,
+          reviewed_at: new Date(),
+          review_comment: comment,
+          added_to_suite_id: action === 'approve' ? add_to_suite_id : undefined,
+        },
+        updated_at: new Date(),
+      });
+
+      // Re-fetch updated test
       test.approval = {
         status: newStatus,
         reviewed_by: userId,
@@ -376,9 +394,6 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
         added_to_suite_id: action === 'approve' ? add_to_suite_id : undefined,
       };
       test.updated_at = new Date();
-
-      // Update the store
-      aiGeneratedTests.set(testId, test);
 
       // Update the approval status index
       await updateApprovalStatusIndex(testId, oldStatus, newStatus);

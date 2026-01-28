@@ -16,7 +16,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth';
-import { projects } from '../projects';
+import { getProject } from '../../services/repositories/projects';
 import { logAuditEntry } from '../audit-logs';
 import { SecretPattern, SASTSeverity } from './types';
 import {
@@ -48,7 +48,7 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
       const user = request.user as JwtPayload;
 
       // Check project exists and user has access
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
       }
@@ -93,7 +93,7 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
       }
 
       // Check project exists and user has access
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
       }
@@ -190,7 +190,7 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
       }
 
       // Check project exists and user has access
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
       }
@@ -251,7 +251,7 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
       }
 
       // Check project exists and user has access
-      const project = projects.get(projectId);
+      const project = await getProject(projectId);
       if (!project) {
         return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
       }

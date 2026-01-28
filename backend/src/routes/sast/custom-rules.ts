@@ -13,7 +13,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth';
-import { projects } from '../projects';
+import { getProject } from '../../services/repositories/projects';
 import { logAuditEntry } from '../audit-logs';
 import { CustomRule } from './types';
 import { getSASTConfig, updateSASTConfig, generateId } from './stores';
@@ -27,7 +27,7 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
     const user = request.user as JwtPayload;
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -36,7 +36,7 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    const config = getSASTConfig(projectId);
+    const config = await getSASTConfig(projectId);
     return { rules: config.customRulesYaml || [] };
   });
 
@@ -57,7 +57,7 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -79,7 +79,7 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
-    const config = getSASTConfig(projectId);
+    const config = await getSASTConfig(projectId);
     const customRules = config.customRulesYaml || [];
 
     // Create new custom rule
@@ -93,7 +93,7 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
     };
 
     customRules.push(newRule);
-    updateSASTConfig(projectId, { customRulesYaml: customRules });
+    await updateSASTConfig(projectId, { customRulesYaml: customRules });
 
     // Log audit entry
     logAuditEntry(
@@ -125,7 +125,7 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -134,7 +134,7 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    const config = getSASTConfig(projectId);
+    const config = await getSASTConfig(projectId);
     const customRules = config.customRulesYaml || [];
     const ruleIndex = customRules.findIndex(r => r.id === ruleId);
 
@@ -153,7 +153,7 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
     };
     customRules[ruleIndex] = updatedRule;
 
-    updateSASTConfig(projectId, { customRulesYaml: customRules });
+    await updateSASTConfig(projectId, { customRulesYaml: customRules });
 
     // Log audit entry
     logAuditEntry(
@@ -181,7 +181,7 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Check project exists and user has access
-    const project = projects.get(projectId);
+    const project = await getProject(projectId);
     if (!project) {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
@@ -190,7 +190,7 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
     }
 
-    const config = getSASTConfig(projectId);
+    const config = await getSASTConfig(projectId);
     const customRules = config.customRulesYaml || [];
     const ruleIndex = customRules.findIndex(r => r.id === ruleId);
 
@@ -200,7 +200,7 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
 
     const deletedRule = customRules[ruleIndex]!;
     customRules.splice(ruleIndex, 1);
-    updateSASTConfig(projectId, { customRulesYaml: customRules });
+    await updateSASTConfig(projectId, { customRulesYaml: customRules });
 
     // Log audit entry
     logAuditEntry(

@@ -3,8 +3,13 @@
 import { FastifyInstance } from 'fastify';
 import crypto from 'crypto';
 import { authenticate, requireRoles, JwtPayload } from '../../middleware/auth';
-import { ApiKey, OrgParams } from './types';
-import { apiKeys, mcpConnections } from './stores';
+import { ApiKey, McpConnection, OrgParams } from './types';
+import {
+  dbGetApiKeyByHash,
+  dbUpdateApiKey,
+  dbGetMcpConnection,
+} from './stores';
+import { query, isDatabaseConnected } from '../../services/database';
 import { formatDuration } from './utils';
 import {
   registerMcpConnection,
@@ -29,13 +34,8 @@ export async function registerMcpRoutes(app: FastifyInstance) {
 
     const keyHash = crypto.createHash('sha256').update(api_key).digest('hex');
 
-    let foundKey: ApiKey | undefined;
-    for (const [, key] of apiKeys) {
-      if (key.key_hash === keyHash && !key.revoked_at) {
-        foundKey = key;
-        break;
-      }
-    }
+    const foundKeyResult = await dbGetApiKeyByHash(keyHash);
+    const foundKey = foundKeyResult && !foundKeyResult.revoked_at ? foundKeyResult : undefined;
 
     if (!foundKey) {
       return reply.status(401).send({
@@ -51,7 +51,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
       });
     }
 
-    const connectionId = registerMcpConnection(
+    const connectionId = await registerMcpConnection(
       foundKey.id,
       foundKey.name,
       foundKey.organization_id,
@@ -59,8 +59,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
       ip_address
     );
 
-    foundKey.last_used_at = new Date();
-    apiKeys.set(foundKey.id, foundKey);
+    await dbUpdateApiKey(foundKey.id, { last_used_at: new Date() });
 
     return {
       connection_id: connectionId,
@@ -80,7 +79,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
       });
     }
 
-    const connection = mcpConnections.get(connection_id);
+    const connection = await dbGetMcpConnection(connection_id);
     if (!connection) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -88,7 +87,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
       });
     }
 
-    updateMcpActivity(connection_id);
+    await updateMcpActivity(connection_id);
 
     return {
       status: 'ok',
@@ -107,14 +106,15 @@ export async function registerMcpRoutes(app: FastifyInstance) {
       });
     }
 
-    if (!mcpConnections.has(connection_id)) {
+    const conn = await dbGetMcpConnection(connection_id);
+    if (!conn) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'MCP connection not found',
       });
     }
 
-    unregisterMcpConnection(connection_id);
+    await unregisterMcpConnection(connection_id);
 
     return {
       status: 'ok',
@@ -136,9 +136,32 @@ export async function registerMcpRoutes(app: FastifyInstance) {
       });
     }
 
-    const connections = Array.from(mcpConnections.values())
-      .filter(conn => conn.organization_id === orgId)
-      .map(conn => ({
+    // Query MCP connections for this org from DB
+    let orgConnections: McpConnection[] = [];
+    if (isDatabaseConnected()) {
+      try {
+        const result = await query(
+          'SELECT * FROM mcp_connections WHERE organization_id = $1 ORDER BY connected_at DESC',
+          [orgId]
+        );
+        if (result && result.rows) {
+          orgConnections = result.rows.map((row: any) => ({
+            id: row.id,
+            api_key_id: row.api_key_id,
+            api_key_name: row.api_key_name,
+            organization_id: row.organization_id,
+            connected_at: new Date(row.connected_at),
+            last_activity_at: new Date(row.last_activity_at),
+            client_info: typeof row.client_info === 'string' ? JSON.parse(row.client_info) : row.client_info,
+            ip_address: row.ip_address,
+          }));
+        }
+      } catch (error) {
+        console.error('[MCP] Failed to list connections:', error);
+      }
+    }
+
+    const connections = orgConnections.map(conn => ({
         id: conn.id,
         api_key_id: conn.api_key_id,
         api_key_name: conn.api_key_name,
@@ -150,8 +173,6 @@ export async function registerMcpRoutes(app: FastifyInstance) {
         client_info: conn.client_info,
         ip_address: conn.ip_address,
       }));
-
-    connections.sort((a, b) => new Date(b.connected_at).getTime() - new Date(a.connected_at).getTime());
 
     return {
       mcp_connections: connections,
@@ -170,7 +191,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
       });
     }
 
-    const connection = mcpConnections.get(connection_id);
+    const connection = await dbGetMcpConnection(connection_id);
     if (!connection) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -178,8 +199,8 @@ export async function registerMcpRoutes(app: FastifyInstance) {
       });
     }
 
-    trackMcpToolCall(connection_id, tool_name, duration_ms, success, error);
-    updateMcpActivity(connection_id);
+    await trackMcpToolCall(connection_id, tool_name, duration_ms, success, error);
+    await updateMcpActivity(connection_id);
 
     return {
       status: 'ok',
@@ -213,7 +234,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
       }
     }
 
-    const analytics = getMcpAnalytics(orgId, sinceDate);
+    const analytics = await getMcpAnalytics(orgId, sinceDate);
 
     return {
       analytics,
@@ -247,7 +268,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
       }
     }
 
-    const analytics = getMcpAnalytics(orgId, sinceDate);
+    const analytics = await getMcpAnalytics(orgId, sinceDate);
 
     if (format === 'json') {
       reply.header('Content-Type', 'application/json');
@@ -340,7 +361,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
       }
     }
 
-    const result = getMcpAuditLogs(orgId, {
+    const result = await getMcpAuditLogs(orgId, {
       limit: limit ? parseInt(limit, 10) : undefined,
       offset: offset ? parseInt(offset, 10) : undefined,
       method,
@@ -420,13 +441,8 @@ export async function registerMcpRoutes(app: FastifyInstance) {
 
     const keyHash = crypto.createHash('sha256').update(api_key).digest('hex');
 
-    let foundApiKey: ApiKey | undefined;
-    for (const [, key] of apiKeys) {
-      if (key.key_hash === keyHash && !key.revoked_at) {
-        foundApiKey = key;
-        break;
-      }
-    }
+    const foundApiKeyResult = await dbGetApiKeyByHash(keyHash);
+    const foundApiKey = foundApiKeyResult && !foundApiKeyResult.revoked_at ? foundApiKeyResult : undefined;
 
     if (!foundApiKey) {
       return reply.status(404).send({
@@ -438,7 +454,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     const ipAddress = (request.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || request.ip || '127.0.0.1';
     const userAgent = (request.headers['user-agent'] as string) || 'MCP Client';
 
-    logMcpAuditEntry({
+    await logMcpAuditEntry({
       organization_id: foundApiKey.organization_id,
       api_key_id: foundApiKey.id,
       api_key_name: foundApiKey.name,

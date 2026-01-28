@@ -8,7 +8,12 @@ import {
   GraphQLScanConfig,
   DASTRisk,
 } from './types';
-import { graphqlScans } from './stores';
+import {
+  createGraphqlScan,
+  getGraphqlScan,
+  updateGraphqlScan,
+  listGraphqlScans as dbListGraphqlScans,
+} from './stores';
 
 // Simulate GraphQL introspection
 export function performGraphQLIntrospection(endpoint: string, authHeader?: string): GraphQLSchema {
@@ -152,7 +157,7 @@ export async function startGraphQLScan(config: GraphQLScanConfig): Promise<Graph
     progress: { phase: 'Introspecting schema...', percentage: 10 },
   };
 
-  graphqlScans.set(scanId, scan);
+  await createGraphqlScan(scan);
 
   // Perform scan asynchronously
   (async () => {
@@ -165,7 +170,7 @@ export async function startGraphQLScan(config: GraphQLScanConfig): Promise<Graph
       scan.schema = schema;
       scan.status = 'scanning';
       scan.progress = { phase: 'Testing operations...', percentage: 30 };
-      graphqlScans.set(scanId, { ...scan });
+      await updateGraphqlScan(scanId, { schema: scan.schema, status: scan.status, progress: scan.progress });
 
       // Step 2: Test operations
       const queries = schema.operations.filter(o => o.type === 'query');
@@ -194,7 +199,7 @@ export async function startGraphQLScan(config: GraphQLScanConfig): Promise<Graph
           percentage: 30 + Math.floor((60 * (i + 1)) / allOps.length),
           currentOperation: op.name,
         };
-        graphqlScans.set(scanId, { ...scan });
+        await updateGraphqlScan(scanId, { operationsTested: scan.operationsTested, progress: scan.progress });
       }
 
       // Add introspection finding if enabled
@@ -228,13 +233,23 @@ export async function startGraphQLScan(config: GraphQLScanConfig): Promise<Graph
         },
       };
       scan.progress = { phase: 'Completed', percentage: 100 };
-      graphqlScans.set(scanId, { ...scan });
+      await updateGraphqlScan(scanId, {
+        status: scan.status,
+        completedAt: scan.completedAt,
+        findings: scan.findings,
+        summary: scan.summary,
+        progress: scan.progress,
+      });
 
     } catch (error: any) {
       scan.status = 'failed';
       scan.error = error.message || 'Unknown error during scan';
       scan.completedAt = new Date().toISOString();
-      graphqlScans.set(scanId, { ...scan });
+      await updateGraphqlScan(scanId, {
+        status: scan.status,
+        error: scan.error,
+        completedAt: scan.completedAt,
+      });
     }
   })();
 
@@ -242,13 +257,14 @@ export async function startGraphQLScan(config: GraphQLScanConfig): Promise<Graph
 }
 
 // Get GraphQL scan by ID
-export function getGraphQLScan(scanId: string): GraphQLScan | undefined {
-  return graphqlScans.get(scanId);
+export async function getGraphQLScan(scanId: string): Promise<GraphQLScan | undefined> {
+  const scan = await getGraphqlScan(scanId);
+  return scan || undefined;
 }
 
 // List all GraphQL scans
-export function listGraphQLScans(limit: number = 10, status?: string): GraphQLScan[] {
-  let scans = Array.from(graphqlScans.values());
+export async function listGraphQLScans(limit: number = 10, status?: string): Promise<GraphQLScan[]> {
+  let scans = await dbListGraphqlScans();
 
   if (status) {
     scans = scans.filter(s => s.status === status);
