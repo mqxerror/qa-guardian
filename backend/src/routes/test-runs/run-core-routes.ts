@@ -6,7 +6,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { tests, testSuites } from '../test-suites';
+import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites';
 import { testRuns, runningBrowsers, TestRun, BrowserType, TestRunResult } from './execution';
 
 // Type definitions for route params
@@ -164,8 +164,8 @@ export async function runCoreRoutes(app: FastifyInstance) {
     const result = run.results![idx];
 
     // Get test details for additional context
-    const test = result?.test_id ? tests.get(result.test_id) : null;
-    const suite = test ? testSuites.get(test.suite_id) : null;
+    const test = result?.test_id ? await getTest(result.test_id) : null;
+    const suite = test ? await getTestSuite(test.suite_id) : null;
 
     return {
       run_id: runId,
@@ -237,10 +237,10 @@ export async function runCoreRoutes(app: FastifyInstance) {
     // Get tests to run for this run
     let testsToRun: any[] = [];
     if (run.test_id) {
-      const test = tests.get(run.test_id);
+      const test = await getTest(run.test_id);
       if (test) testsToRun = [test];
     } else if (run.suite_id) {
-      testsToRun = Array.from(tests.values()).filter(t => t.suite_id === run.suite_id);
+      testsToRun = Array.from((await getTestsMap()).values()).filter(t => t.suite_id === run.suite_id);
     }
 
     const totalTests = testsToRun.length;
@@ -310,7 +310,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Verify suite exists
-    const suite = testSuites.get(suiteId);
+    const suite = await getTestSuite(suiteId);
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -352,7 +352,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Verify test exists
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -424,8 +424,9 @@ export async function runCoreRoutes(app: FastifyInstance) {
 
     // Filter by project_id if specified (need to check suite's project)
     if (project_id) {
+      const suitesMap = await getTestSuitesMap();
       runs = runs.filter(r => {
-        const suite = testSuites.get(r.suite_id);
+        const suite = suitesMap.get(r.suite_id);
         return suite && suite.project_id === project_id;
       });
     }
@@ -437,9 +438,11 @@ export async function runCoreRoutes(app: FastifyInstance) {
     runs = runs.slice(0, limit);
 
     // Map to response format
+    const allSuites = await getTestSuitesMap();
+    const allTests = await getTestsMap();
     const runsResponse = runs.map(r => {
-      const suite = testSuites.get(r.suite_id);
-      const test = r.test_id ? tests.get(r.test_id) : null;
+      const suite = allSuites.get(r.suite_id);
+      const test = r.test_id ? allTests.get(r.test_id) : null;
       return {
         id: r.id,
         suite_id: r.suite_id,

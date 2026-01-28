@@ -17,7 +17,7 @@
 import { FastifyInstance } from 'fastify';
 import * as crypto from 'crypto';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { tests, testSuites } from '../test-suites';
+import { getTestSuite } from '../test-suites';
 import { projects } from '../projects';
 import { testRuns } from './execution';
 
@@ -89,7 +89,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
       if (fromDate && new Date(run.created_at) < fromDate) continue;
       if (toDate && new Date(run.created_at) > toDate) continue;
 
-      const suite = testSuites.get(run.suite_id);
+      const suite = await getTestSuite(run.suite_id);
       if (!suite) continue;
 
       if (suite_id && suite.id !== suite_id) continue;
@@ -543,7 +543,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
-    const suite = testSuites.get(run.suite_id);
+    const suite = await getTestSuite(run.suite_id);
     const project = suite ? projects.get(suite.project_id) : null;
 
     return {

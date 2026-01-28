@@ -10,7 +10,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { tests, testSuites } from '../test-suites';
+import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites';
 import { projects } from '../projects';
 import {
   BaselineMetadata,
@@ -103,11 +103,11 @@ export async function visualBatchRoutes(app: FastifyInstance) {
             result.status === 'failed') {
 
           // Get test info
-          const test = tests.get(result.test_id);
+          const test = await getTest(result.test_id);
           if (!test || test.test_type !== 'visual_regression') continue;
 
           // Filter by project if specified
-          const suite = testSuites.get(run.suite_id);
+          const suite = await getTestSuite(run.suite_id);
           if (project_id && suite?.project_id !== project_id) continue;
 
           // Get project info
@@ -170,11 +170,11 @@ export async function visualBatchRoutes(app: FastifyInstance) {
             result.visual_comparison.diffPercentage > 0 &&
             result.status === 'failed') {
 
-          const test = tests.get(result.test_id);
+          const test = await getTest(result.test_id);
           if (!test || test.test_type !== 'visual_regression') continue;
 
           // Filter by project if specified
-          const suite = testSuites.get(run.suite_id);
+          const suite = await getTestSuite(run.suite_id);
           if (project_id && suite?.project_id !== project_id) continue;
 
           // Check if already rejected
@@ -206,18 +206,18 @@ export async function visualBatchRoutes(app: FastifyInstance) {
 
     // If specific test_id provided, use that
     if (requestTestId) {
-      const test = tests.get(requestTestId);
+      const test = await getTest(requestTestId);
       if (test && test.organization_id === orgId && test.test_type === 'visual_regression') {
         visualTestId = requestTestId;
         suiteId = test.suite_id;
       }
     } else {
       // Otherwise find the first visual regression test
-      for (const [testId, test] of tests) {
+      for (const [testId, test] of (await getTestsMap())) {
         if (test.organization_id === orgId && test.test_type === 'visual_regression') {
           visualTestId = testId;
           // Find the suite
-          for (const [sid, suite] of testSuites) {
+          for (const [sid, suite] of (await getTestSuitesMap())) {
             if (suite.id === test.suite_id) {
               suiteId = sid;
               break;
@@ -330,7 +330,7 @@ export async function visualBatchRoutes(app: FastifyInstance) {
 
       try {
         // Verify test exists and belongs to user's organization
-        const test = tests.get(testId);
+        const test = await getTest(testId);
         if (!test || test.organization_id !== orgId) {
           results.push({ runId, testId, success: false, error: 'Test not found' });
           continue;
@@ -450,7 +450,7 @@ export async function visualBatchRoutes(app: FastifyInstance) {
 
       try {
         // Verify test exists and belongs to user's organization
-        const test = tests.get(testId);
+        const test = await getTest(testId);
         if (!test || test.organization_id !== orgId) {
           results.push({ runId, testId, success: false, error: 'Test not found' });
           continue;

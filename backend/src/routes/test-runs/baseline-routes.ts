@@ -16,7 +16,7 @@ import { FastifyInstance } from 'fastify';
 import * as fs from 'fs';
 import * as path from 'path';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { tests, testSuites } from '../test-suites';
+import { getTest } from '../test-suites';
 import { testRuns } from './execution';
 import {
   getBaselinePath,
@@ -101,7 +101,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     const orgId = getOrganizationId(request);
 
     // Verify test exists and belongs to user's organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -226,7 +226,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     const orgId = getOrganizationId(request);
 
     // Verify test exists and belongs to user's organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send();
     }
@@ -273,7 +273,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     const orgId = getOrganizationId(request);
 
     // Verify test exists and belongs to user's organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -303,7 +303,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     const orgId = getOrganizationId(request);
 
     // Verify test exists and belongs to user's organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -350,7 +350,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     const orgId = getOrganizationId(request);
 
     // Verify test exists and belongs to user's organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -407,7 +407,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     const user = request.user as JwtPayload;
 
     // Verify test exists and belongs to user's organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -622,7 +622,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     const user = request.user as JwtPayload;
 
     // Verify test exists and belongs to user's organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -661,7 +661,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     const orgId = getOrganizationId(request);
 
     // Verify test exists and belongs to user's organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',

@@ -15,7 +15,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
 import { testRuns } from './execution';
-import { testSuites } from '../test-suites';
+import { getTestSuite } from '../test-suites';
 import { projects } from '../projects';
 import {
   artifactRetentionSettings,
@@ -441,7 +441,7 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
               totalTraceFiles++;
 
               // Find project for this run
-              const suite = testSuites.get(run.suite_id);
+              const suite = await getTestSuite(run.suite_id);
               if (suite) {
                 const projectId = suite.project_id;
                 const project = projects.get(projectId);

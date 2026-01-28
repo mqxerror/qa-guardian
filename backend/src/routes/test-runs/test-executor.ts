@@ -145,7 +145,7 @@ import {
   buildTestEngineInfo,
 } from './accessibility-helpers';
 
-import { tests, testSuites, IgnoreRegion } from '../test-suites';
+import { getTestSuite, IgnoreRegion } from '../test-suites';
 import { projects, getProjectVisualSettings, getProjectHealingSettings } from '../projects';
 
 // Import extracted test type executors
@@ -604,7 +604,7 @@ async function executeTest(
                   console.log(`[HEALING] Element not found for selector: ${step.selector}`);
 
                   // Feature #1059: Get project ID for stats tracking
-                  const healingSuite = test.suite_id ? testSuites.get(test.suite_id) : undefined;
+                  const healingSuite = test.suite_id ? await getTestSuite(test.suite_id) : undefined;
                   const healingProjectId = healingSuite?.project_id || 'unknown';
 
                   // Feature #1059: Track healing attempt
@@ -744,7 +744,7 @@ async function executeTest(
                   console.log(`[HEALING] Element not found for selector: ${step.selector}`);
 
                   // Feature #1059: Get project ID for stats tracking
-                  const fillHealingSuite = test.suite_id ? testSuites.get(test.suite_id) : undefined;
+                  const fillHealingSuite = test.suite_id ? await getTestSuite(test.suite_id) : undefined;
                   const fillHealingProjectId = fillHealingSuite?.project_id || 'unknown';
 
                   // Feature #1059: Track healing attempt

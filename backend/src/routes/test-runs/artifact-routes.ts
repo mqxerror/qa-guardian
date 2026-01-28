@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import archiver from 'archiver';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { testSuites } from '../test-suites';
+import { getTestSuite, getTestSuitesMap } from '../test-suites';
 import { projects } from '../projects';
 import { TRACES_DIR, VIDEOS_DIR } from './storage';
 import { testRuns, TestRun } from './execution';
@@ -1381,7 +1381,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     let totalTraces = 0;
 
     const projectMap = new Map<string, string>();
-    for (const [, suite] of testSuites) {
+    for (const [, suite] of (await getTestSuitesMap())) {
       if (suite.organization_id === orgId) {
         const project = projects.get(suite.project_id);
         if (project) {
@@ -1391,7 +1391,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     }
 
     for (const run of orgRuns) {
-      const suite = testSuites.get(run.suite_id);
+      const suite = await getTestSuite(run.suite_id);
       if (!suite) continue;
       const runProjectId = suite.project_id;
 

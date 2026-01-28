@@ -8,7 +8,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { testSuites } from '../test-suites';
+import { getTestSuite } from '../test-suites';
 import { testRuns } from './execution';
 
 // Type definitions for failure pattern analysis
@@ -319,7 +319,7 @@ export async function failurePatternsRoutes(app: FastifyInstance) {
         // Filter by project/suite if specified
         if (projectId) {
           // Get suite to check project_id
-          const suite = testSuites.get(run.suite_id);
+          const suite = await getTestSuite(run.suite_id);
           if (!suite || suite.project_id !== projectId) continue;
         }
         if (suiteId && run.suite_id !== suiteId) continue;

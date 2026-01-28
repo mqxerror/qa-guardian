@@ -10,7 +10,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { tests, testSuites } from '../test-suites';
+import { getTest, getTestSuite, getTestsMap, updateTest } from '../test-suites';
 import {
   // Types
   PendingHealingApproval,
@@ -362,7 +362,7 @@ export async function healingRoutes(app: FastifyInstance) {
     const { testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -392,7 +392,7 @@ export async function healingRoutes(app: FastifyInstance) {
     const { testId, stepIndex } = request.params;
     const orgId = getOrganizationId(request);
 
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -417,7 +417,7 @@ export async function healingRoutes(app: FastifyInstance) {
     const { testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -467,7 +467,7 @@ export async function healingRoutes(app: FastifyInstance) {
     const { testId, eventId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -544,7 +544,7 @@ export async function healingRoutes(app: FastifyInstance) {
     const { sha, message, author, timestamp, url } = request.body;
     const orgId = getOrganizationId(request);
 
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -630,12 +630,12 @@ export async function healingRoutes(app: FastifyInstance) {
     const fragilityReport: SelectorFragilityInfo[] = [];
 
     // Iterate through all tests for the organization
-    for (const [testId, test] of tests.entries()) {
+    for (const [testId, test] of (await getTestsMap()).entries()) {
       if (test.organization_id !== orgId) continue;
 
       // Filter by project if specified
       if (project_id) {
-        const suite = testSuites.get(test.suite_id);
+        const suite = await getTestSuite(test.suite_id);
         if (!suite || suite.project_id !== project_id) continue;
       }
 
@@ -644,7 +644,7 @@ export async function healingRoutes(app: FastifyInstance) {
 
       if (!test.steps || test.steps.length === 0) continue;
 
-      const suite = testSuites.get(test.suite_id);
+      const suite = await getTestSuite(test.suite_id);
       const suiteName = suite?.name || 'Unknown Suite';
 
       // Get healing history for this test
@@ -769,7 +769,7 @@ export async function healingRoutes(app: FastifyInstance) {
       const { test_id, step_index, new_selector } = update;
 
       // Validate the test exists and belongs to the organization
-      const test = tests.get(test_id);
+      const test = await getTest(test_id);
       if (!test || test.organization_id !== orgId) {
         results.push({
           test_id,
@@ -818,7 +818,7 @@ export async function healingRoutes(app: FastifyInstance) {
 
       // Update the selector
       step.selector = new_selector;
-      tests.set(test_id, test);
+      await updateTest(test_id, test);
 
       results.push({
         test_id,

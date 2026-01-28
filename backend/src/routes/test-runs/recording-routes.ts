@@ -8,7 +8,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { testSuites } from '../test-suites';
+import { getTestSuite } from '../test-suites';
 import { chromium, Browser, Page, BrowserContext } from 'playwright';
 
 // Recording session interface
@@ -89,7 +89,7 @@ export async function recordingRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Validate suite exists
-    const suite = testSuites.get(suite_id);
+    const suite = await getTestSuite(suite_id);
     if (!suite) {
       return reply.status(404).send({
         error: 'Not Found',

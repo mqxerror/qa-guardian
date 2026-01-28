@@ -8,7 +8,7 @@ import { FastifyInstance } from 'fastify';
 import * as fs from 'fs';
 import * as path from 'path';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { tests, testSuites } from '../test-suites';
+import { getTest, getTestSuite } from '../test-suites';
 import { testRuns } from './execution';
 import {
   BaselineMetadata,
@@ -50,7 +50,7 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     // Verify test exists and belongs to user's organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -182,7 +182,7 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     console.log(`[Visual] Baseline approved for test ${testId} branch ${branch} by ${user?.email || 'unknown'} from run ${targetRun.id} (version ${newVersion})`);
 
     // Feature #1310: Send baseline.approved webhook
-    const suite = testSuites.get((test as any).suite_id);
+    const suite = await getTestSuite((test as any).suite_id);
     sendBaselineApprovedWebhook(orgId, {
       test_id: testId,
       test_name: test.name,
@@ -234,7 +234,7 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     }
 
     // Verify test exists and belongs to user's organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -307,7 +307,7 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     }
 
     // Verify test exists and belongs to user's organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -343,7 +343,7 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Verify test exists and belongs to user's organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -417,7 +417,7 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Verify test exists and belongs to user's organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',

@@ -6,7 +6,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { tests, testSuites } from '../test-suites';
+import { getTest, getTestSuite, getTestsMap } from '../test-suites';
 import { projectEnvVars } from '../projects';
 import { testRuns } from './execution';
 
@@ -62,7 +62,7 @@ export async function runDataRoutes(app: FastifyInstance) {
 
     const results = run.results || [];
     for (const result of results) {
-      const testInfo = tests.get(result.test_id);
+      const testInfo = await getTest(result.test_id);
       const testName = testInfo?.name || 'Unknown Test';
 
       if (result.console_logs && Array.isArray(result.console_logs)) {
@@ -139,7 +139,7 @@ export async function runDataRoutes(app: FastifyInstance) {
       });
     }
 
-    const testInfo = tests.get(testId);
+    const testInfo = await getTest(testId);
     const consoleLogs = result.console_logs || [];
 
     // Categorize logs by level with highlighting info
@@ -224,7 +224,7 @@ export async function runDataRoutes(app: FastifyInstance) {
       });
     }
 
-    const testInfo = tests.get(testId);
+    const testInfo = await getTest(testId);
     const networkRequests = result.network_requests || [];
 
     // Calculate statistics
@@ -373,7 +373,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     for (const testId of allTestIds) {
       const baseResult = baseResultsMap.get(testId);
       const compareResult = compareResultsMap.get(testId);
-      const testInfo = tests.get(testId);
+      const testInfo = await getTest(testId);
       const testName = testInfo?.name || 'Unknown Test';
 
       if (baseResult && compareResult) {
@@ -464,7 +464,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     }
 
     const results = run.results || [];
-    const suite = testSuites.get(run.suite_id);
+    const suite = await getTestSuite(run.suite_id);
 
     // Duration metrics
     const testDurations = results
@@ -501,7 +501,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     // Test type breakdown
     const testTypeBreakdown: Record<string, { count: number; passed: number; failed: number }> = {};
     for (const result of results) {
-      const testInfo = tests.get(result.test_id);
+      const testInfo = await getTest(result.test_id);
       const testType = (testInfo as any)?.test_type || 'e2e';
       if (!testTypeBreakdown[testType]) {
         testTypeBreakdown[testType] = { count: 0, passed: 0, failed: 0 };
@@ -515,12 +515,13 @@ export async function runDataRoutes(app: FastifyInstance) {
     }
 
     // Slowest tests
+    const allTests = await getTestsMap();
     const slowestTests = results
       .filter(r => r.duration_ms !== undefined)
       .sort((a, b) => (b.duration_ms || 0) - (a.duration_ms || 0))
       .slice(0, 5)
       .map(r => {
-        const testInfo = tests.get(r.test_id);
+        const testInfo = allTests.get(r.test_id);
         return {
           test_id: r.test_id,
           test_name: testInfo?.name || 'Unknown Test',
@@ -614,7 +615,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     console.log(`[ENV] Set ${Object.keys(env_vars).length} environment variables for run ${runId} (merge=${merge})`);
 
     // Get the suite and project env vars for the response
-    const suite = testSuites.get(run.suite_id);
+    const suite = await getTestSuite(run.suite_id);
     const projectId = (suite as any)?.project_id;
     const projectEnvVarsArray = projectId ? projectEnvVars.get(projectId) || [] : [];
 
@@ -650,7 +651,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     }
 
     // Get the suite and project env vars
-    const suite = testSuites.get(run.suite_id);
+    const suite = await getTestSuite(run.suite_id);
     const projectId = (suite as any)?.project_id;
     const projectEnvVarsArray = projectId ? projectEnvVars.get(projectId) || [] : [];
 

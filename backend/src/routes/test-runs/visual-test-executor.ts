@@ -37,7 +37,7 @@ import {
   getIgnoreRegionsFromSelectors,
 } from './execute-test-helpers';
 
-import { testSuites, IgnoreRegion } from '../test-suites';
+import { getTestSuite, IgnoreRegion } from '../test-suites';
 import { getProjectVisualSettings } from '../projects';
 import { sendVisualDiffWebhook } from './webhook-events';
 
@@ -872,7 +872,7 @@ export async function executeVisualTest(
           diffImageBase64 = comparison.diffImage;
 
           // Get threshold configuration
-          const suite = test.suite_id ? testSuites.get(test.suite_id) : undefined;
+          const suite = test.suite_id ? await getTestSuite(test.suite_id) : undefined;
           const projectSettings = suite ? getProjectVisualSettings(suite.project_id) : null;
 
           const thresholdMode = test.diff_threshold_mode ??

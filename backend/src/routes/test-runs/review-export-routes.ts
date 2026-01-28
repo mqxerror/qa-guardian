@@ -15,7 +15,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { testRuns, TestRun } from './execution';
-import { testSuites } from '../test-suites';
+import { getTestSuite } from '../test-suites';
 
 /**
  * Register review and export routes
@@ -206,7 +206,7 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Get test and suite info
-    const suite = testSuites.get(run.suite_id);
+    const suite = await getTestSuite(run.suite_id);
     const suiteAny = suite as any;
     const test = suiteAny?.tests?.find((t: any) => t.id === testId);
 
@@ -431,7 +431,7 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Get test suite info
-    const suite = testSuites.get(run.suite_id);
+    const suite = await getTestSuite(run.suite_id);
 
     // Build export data - cast run to any for optional properties that may exist at runtime
     const runAny = run as any;
