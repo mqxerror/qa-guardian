@@ -1,7 +1,9 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, getOrganizationId, JwtPayload } from '../middleware/auth';
 import { getTestSuite, getTest, listTests, updateTest, IgnoreRegion } from './test-suites';
-import { projects, projectEnvVars, getProjectVisualSettings, getProjectHealingSettings } from './projects';
+import { projectEnvVars, getProjectVisualSettings, getProjectHealingSettings } from './projects';
+import { getProject } from './projects/stores';
+import { getTestRun } from '../services/repositories/test-runs';
 import { chromium, firefox, webkit, Browser, Page, BrowserContext } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -492,7 +494,7 @@ async function checkAndSendAlerts(run: TestRun, results: TestRunResult[]): Promi
   // Pre-fetch suite and project data for the run
   const suite = await getTestSuite(run.suite_id);
   const suiteInfo = suite ? { name: suite.name, project_id: suite.project_id } : undefined;
-  const project = suiteInfo?.project_id ? projects.get(suiteInfo.project_id) : undefined;
+  const project = suiteInfo?.project_id ? await getProject(suiteInfo.project_id) : undefined;
   const projectInfo = project ? { name: project.name } : undefined;
 
   // Call the base function with pre-fetched data
@@ -529,7 +531,8 @@ interface TestIdParams {
 
 // Run tests asynchronously with real-time progress updates
 export async function runTestsForRun(runId: string) {
-  const run = testRuns.get(runId);
+  // Try in-memory first (for in-flight runs), then fall back to DB
+  const run = testRuns.get(runId) || await getTestRun(runId);
   if (!run) return;
 
   const orgId = run.organization_id;
