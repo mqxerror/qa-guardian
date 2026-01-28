@@ -4,7 +4,7 @@
  * This repository provides database persistence for organizations, members,
  * invitations, and organization settings.
  *
- * PostgreSQL is REQUIRED - memory fallback has been removed (Feature #2102).
+ * PostgreSQL is REQUIRED - memory fallback has been fully removed.
  * When database is not connected, operations will:
  * - CREATE: throw error (data would be lost)
  * - READ: return null/empty arrays/default settings
@@ -13,6 +13,7 @@
  *
  * Feature #2085: Original PostgreSQL migration
  * Feature #2102: Remove memory Maps fallback
+ * Feature #2103: Full DB-only cleanup - removed all memory Maps and isDatabaseConnected guards
  */
 
 import { query, isDatabaseConnected } from '../database';
@@ -89,35 +90,39 @@ export const DEFAULT_RETRY_STRATEGY_SETTINGS: RetryStrategySettings = {
 };
 
 // ============================================================================
-// In-memory fallback stores (used when PostgreSQL is not connected)
-// When database IS connected, these are kept in sync as a cache.
+// Memory Maps REMOVED (Feature #2103) - PostgreSQL is the only data store.
+// getMemory* functions return empty Maps with deprecation warnings for
+// backward compatibility with route files that still import them.
 // ============================================================================
 
-const memoryOrganizations = new Map<string, Organization>();
-const memoryOrganizationMembers = new Map<string, OrganizationMember[]>();
-const memoryInvitations = new Map<string, Invitation>();
-const memoryAutoQuarantineSettings = new Map<string, AutoQuarantineSettings>();
-const memoryRetryStrategySettings = new Map<string, RetryStrategySettings>();
-
-// Export memory Maps for backward compatibility (used by route files)
+/** @deprecated Memory maps removed in Feature #2103. Use async repository functions instead. */
 export function getMemoryOrganizations(): Map<string, Organization> {
-  return memoryOrganizations;
+  console.warn('[Org Repo] DEPRECATED: getMemoryOrganizations() - memory maps removed. Use async repository functions.');
+  return new Map<string, Organization>();
 }
 
+/** @deprecated Memory maps removed in Feature #2103. Use async repository functions instead. */
 export function getMemoryOrganizationMembers(): Map<string, OrganizationMember[]> {
-  return memoryOrganizationMembers;
+  console.warn('[Org Repo] DEPRECATED: getMemoryOrganizationMembers() - memory maps removed. Use async repository functions.');
+  return new Map<string, OrganizationMember[]>();
 }
 
+/** @deprecated Memory maps removed in Feature #2103. Use async repository functions instead. */
 export function getMemoryInvitations(): Map<string, Invitation> {
-  return memoryInvitations;
+  console.warn('[Org Repo] DEPRECATED: getMemoryInvitations() - memory maps removed. Use async repository functions.');
+  return new Map<string, Invitation>();
 }
 
+/** @deprecated Memory maps removed in Feature #2103. Use async repository functions instead. */
 export function getMemoryAutoQuarantineSettings(): Map<string, AutoQuarantineSettings> {
-  return memoryAutoQuarantineSettings;
+  console.warn('[Org Repo] DEPRECATED: getMemoryAutoQuarantineSettings() - memory maps removed. Use async repository functions.');
+  return new Map<string, AutoQuarantineSettings>();
 }
 
+/** @deprecated Memory maps removed in Feature #2103. Use async repository functions instead. */
 export function getMemoryRetryStrategySettings(): Map<string, RetryStrategySettings> {
-  return memoryRetryStrategySettings;
+  console.warn('[Org Repo] DEPRECATED: getMemoryRetryStrategySettings() - memory maps removed. Use async repository functions.');
+  return new Map<string, RetryStrategySettings>();
 }
 
 // ============================================================================
@@ -143,11 +148,8 @@ function rowToOrganization(row: OrganizationRow): Organization {
 }
 
 export async function createOrganization(org: Organization): Promise<Organization> {
-  // Always store in memory for fallback
-  memoryOrganizations.set(org.id, org);
-
   if (!isDatabaseConnected()) {
-    return org;
+    throw new Error('Database connection required - cannot create organization without PostgreSQL');
   }
 
   try {
@@ -166,7 +168,7 @@ export async function createOrganization(org: Organization): Promise<Organizatio
 
 export async function getOrganizationById(id: string): Promise<Organization | null> {
   if (!isDatabaseConnected()) {
-    return memoryOrganizations.get(id) || null;
+    return null;
   }
 
   try {
@@ -264,15 +266,8 @@ export async function listOrganizations(): Promise<Organization[]> {
 // ============================================================================
 
 export async function addOrganizationMember(member: OrganizationMember): Promise<void> {
-  // Always store in memory for fallback
-  const existing = memoryOrganizationMembers.get(member.organization_id) || [];
-  if (!existing.some(m => m.user_id === member.user_id)) {
-    existing.push(member);
-  }
-  memoryOrganizationMembers.set(member.organization_id, existing);
-
   if (!isDatabaseConnected()) {
-    return;
+    throw new Error('Database connection required - cannot add organization member without PostgreSQL');
   }
 
   try {
@@ -318,7 +313,7 @@ export async function removeOrganizationMember(organizationId: string, userId: s
 
 export async function getOrganizationMembers(organizationId: string): Promise<OrganizationMember[]> {
   if (!isDatabaseConnected()) {
-    return memoryOrganizationMembers.get(organizationId) || [];
+    return [];
   }
 
   try {
@@ -359,12 +354,6 @@ export async function updateMemberRole(
 
 export async function getUserOrganization(userId: string): Promise<string | null> {
   if (!isDatabaseConnected()) {
-    // Use in-memory fallback
-    for (const [orgId, members] of memoryOrganizationMembers) {
-      if (members.some(m => m.user_id === userId)) {
-        return orgId;
-      }
-    }
     return null;
   }
 
@@ -695,40 +684,15 @@ export const DEFAULT_USER_IDS = {
 };
 
 /**
- * Seed default organizations and members to the database.
- * This function is async and should be called after database is connected.
- * If database is not connected, it does nothing (seed will happen when DB connects).
+ * Seed default organizations and members to PostgreSQL.
+ * This function is async and REQUIRES database to be connected.
+ * If database is not connected, it logs a warning and returns.
+ *
+ * Feature #2103: Removed memory seeding - PostgreSQL only.
  */
 export async function seedDefaultOrganizations(): Promise<void> {
   if (!isDatabaseConnected()) {
-    console.log('[Org Repo] Database not connected - seeding organizations to memory');
-    // Seed to memory maps so the app works without PostgreSQL
-    memoryOrganizations.set(DEFAULT_ORG_ID, {
-      id: DEFAULT_ORG_ID,
-      name: 'Default Organization',
-      slug: 'default-org',
-      timezone: 'UTC',
-      created_at: new Date(),
-    });
-    memoryOrganizations.set(OTHER_ORG_ID, {
-      id: OTHER_ORG_ID,
-      name: 'Other Organization',
-      slug: 'other-org',
-      timezone: 'UTC',
-      created_at: new Date(),
-    });
-    // Seed members
-    memoryOrganizationMembers.set(DEFAULT_ORG_ID, [
-      { user_id: DEFAULT_USER_IDS.owner, organization_id: DEFAULT_ORG_ID, role: 'owner' },
-      { user_id: DEFAULT_USER_IDS.admin, organization_id: DEFAULT_ORG_ID, role: 'admin' },
-      { user_id: DEFAULT_USER_IDS.developer, organization_id: DEFAULT_ORG_ID, role: 'developer' },
-      { user_id: DEFAULT_USER_IDS.viewer, organization_id: DEFAULT_ORG_ID, role: 'viewer' },
-    ]);
-    memoryOrganizationMembers.set(OTHER_ORG_ID, [
-      { user_id: DEFAULT_USER_IDS.otherOwner, organization_id: OTHER_ORG_ID, role: 'owner' },
-      { user_id: DEFAULT_USER_IDS.owner, organization_id: OTHER_ORG_ID, role: 'admin' },
-    ]);
-    console.log('[Org Repo] Seeded organizations and members to memory');
+    console.warn('[Org Repo] Database not connected - cannot seed organizations. Will seed when DB connects.');
     return;
   }
 
