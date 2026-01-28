@@ -28313,3 +28313,70 @@ Commit: ff27eb5
 
 Stats: Feature #2089 marked passing
 
+
+
+=== Session 2026-01-27 (Bug Fix Session #151) ===
+Progress: 37/37 (100%) ✅
+
+### Feature #2094: Fix UUID format in seed data for organizations and users - PASSED
+
+**Category:** Bug Fix
+
+**Problem:**
+The application was throwing "invalid input syntax for type uuid: '1'" when 
+listing/creating projects because seedDefaultOrganizations() and seedTestUsers() 
+used simple string IDs ('1', '2', etc.) instead of proper UUIDs. PostgreSQL 
+expects UUID format for organization_id fields.
+
+**Solution Applied:**
+1. Updated organizations.ts seedDefaultOrganizations():
+   - Changed org IDs from '1', '2' to proper UUIDs:
+     - DEFAULT_ORG_ID = '00000000-0000-0000-0000-000000000001'
+     - OTHER_ORG_ID = '00000000-0000-0000-0000-000000000002'
+
+2. Updated auth.ts seedTestUsers():
+   - Changed user IDs from '1' through '5' to proper UUIDs:
+     - owner: '00000000-0000-0000-0000-000000000011'
+     - admin: '00000000-0000-0000-0000-000000000012'
+     - developer: '00000000-0000-0000-0000-000000000013'
+     - viewer: '00000000-0000-0000-0000-000000000014'
+     - otherOwner: '00000000-0000-0000-0000-000000000015'
+
+3. Updated organizationMembers mapping to use new UUID-format user IDs
+
+4. Updated auth.ts routes to import and use DEFAULT_ORG_ID instead of '1' as fallback
+
+5. Exported constants (DEFAULT_ORG_ID, OTHER_ORG_ID, DEFAULT_USER_IDS) for reuse
+
+**Verification:**
+- ✅ Login as owner@example.com / Owner123\! successful
+- ✅ Dashboard loaded correctly showing "Test Owner" user
+- ✅ Projects page loads without UUID error
+- ✅ Created test project "TEST_UUID_VERIFICATION_PROJECT" successfully
+- ✅ Project detail page renders correctly
+- ✅ Deleted test project successfully
+- ✅ Zero JavaScript errors in console
+
+**Files Modified:**
+- backend/src/services/repositories/organizations.ts
+- backend/src/services/repositories/auth.ts
+- backend/src/routes/organizations.ts (re-export constants)
+- backend/src/routes/auth.ts (import DEFAULT_ORG_ID)
+
+**Commit:** a916a2d
+
+**Screenshots:**
+- feature-2094-login-success.png
+- feature-2094-project-created.png
+
+### Final Statistics:
+- Total Features: 37
+- Passing: 37
+- In Progress: 0
+- Blocked: 0
+- Percentage: 100.0%
+
+**Summary:** Fixed the PostgreSQL UUID format error by replacing simple string IDs 
+with proper UUID format in seed data. All CRUD operations now work correctly with 
+the database schema expectations.
+
