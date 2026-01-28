@@ -2,7 +2,8 @@
  * Monitoring Repository - Database CRUD operations for monitoring module
  *
  * Feature #2086: Migrates in-memory Map stores to PostgreSQL persistence.
- * Provides transparent fallback to in-memory storage when database is not connected.
+ * Feature #2105: Removed all in-memory Map fallback stores. PostgreSQL-only storage.
+ *   Memory maps have been removed; getMemory*() functions return empty Maps with deprecation warnings.
  *
  * This module handles all monitoring data including:
  * - Uptime checks and results
@@ -56,87 +57,10 @@ import {
 } from '../../routes/monitoring/types';
 
 // =============================
-// IN-MEMORY STORES (FALLBACK)
+// Feature #2105: IN-MEMORY STORES REMOVED
+// All 37 memory Map declarations have been removed.
+// This repository now requires PostgreSQL. getMemory*() functions return empty Maps.
 // =============================
-
-// Uptime checks and results
-const memoryUptimeChecks: Map<string, UptimeCheck> = new Map();
-const memoryCheckResults: Map<string, CheckResult[]> = new Map();
-
-// Transaction checks and results
-const memoryTransactionChecks: Map<string, TransactionCheck> = new Map();
-const memoryTransactionResults: Map<string, TransactionResult[]> = new Map();
-
-// Performance checks and results
-const memoryPerformanceChecks: Map<string, PerformanceCheck> = new Map();
-const memoryPerformanceResults: Map<string, PerformanceResult[]> = new Map();
-
-// Maintenance windows: checkId -> windows
-const memoryMaintenanceWindows: Map<string, MaintenanceWindow[]> = new Map();
-
-// Incidents: checkId -> incidents (closed ones)
-const memoryCheckIncidents: Map<string, Incident[]> = new Map();
-
-// Active incidents: checkId -> incident (ongoing)
-const memoryActiveIncidents: Map<string, Incident> = new Map();
-
-// Consecutive failures tracking: checkId -> count
-const memoryConsecutiveFailures: Map<string, number> = new Map();
-
-// Webhook checks and events
-const memoryWebhookChecks: Map<string, WebhookCheck> = new Map();
-const memoryWebhookEvents: Map<string, WebhookEvent[]> = new Map();
-const memoryWebhookTokenMap: Map<string, string> = new Map();
-
-// DNS checks and results
-const memoryDnsChecks: Map<string, DnsCheck> = new Map();
-const memoryDnsResults: Map<string, DnsCheckResult[]> = new Map();
-
-// TCP checks and results
-const memoryTcpChecks: Map<string, TcpCheck> = new Map();
-const memoryTcpResults: Map<string, TcpCheckResult[]> = new Map();
-
-// Organization monitoring settings
-const memoryMonitoringSettings: Map<string, MonitoringSettings> = new Map();
-
-// Status pages
-const memoryStatusPages: Map<string, StatusPage> = new Map();
-const memoryStatusPagesBySlug: Map<string, string> = new Map();
-const memoryStatusPageIncidents: Map<string, StatusPageIncident[]> = new Map();
-const memoryStatusPageSubscriptions: Map<string, StatusPageSubscription[]> = new Map();
-
-// On-call schedules
-const memoryOnCallSchedules: Map<string, OnCallSchedule> = new Map();
-
-// Escalation policies
-const memoryEscalationPolicies: Map<string, EscalationPolicy> = new Map();
-
-// Deleted check history
-const memoryDeletedCheckHistory: Map<string, DeletedCheckHistory> = new Map();
-
-// Alert grouping
-const memoryAlertGroupingRules: Map<string, AlertGroupingRule> = new Map();
-const memoryAlertGroups: Map<string, AlertGroup> = new Map();
-
-// Alert routing
-const memoryAlertRoutingRules: Map<string, AlertRoutingRule> = new Map();
-const memoryAlertRoutingLogs: Map<string, AlertRoutingLog[]> = new Map();
-
-// Alert rate limiting
-const memoryAlertRateLimitConfigs: Map<string, AlertRateLimitConfig> = new Map();
-const memoryAlertRateLimitStates: Map<string, AlertRateLimitState> = new Map();
-
-// Alert correlation
-const memoryAlertCorrelationConfigs: Map<string, AlertCorrelationConfig> = new Map();
-const memoryAlertCorrelations: Map<string, AlertCorrelation> = new Map();
-const memoryAlertToCorrelation: Map<string, string> = new Map();
-
-// Alert runbooks
-const memoryAlertRunbooks: Map<string, AlertRunbook> = new Map();
-
-// Managed incidents
-const memoryManagedIncidents: Map<string, ManagedIncident> = new Map();
-const memoryIncidentsByOrg: Map<string, string[]> = new Map();
 
 
 // =============================
@@ -169,9 +93,8 @@ export async function createUptimeCheck(check: UptimeCheck): Promise<UptimeCheck
       return parseUptimeCheckRow(result.rows[0]);
     }
   }
-  // Fallback to memory
-  memoryUptimeChecks.set(check.id, check);
-  return check;
+  // No DB fallback - require PostgreSQL
+  throw new Error('[Monitoring Repo] Database not connected - cannot create uptime check');
 }
 
 export async function getUptimeCheck(id: string): Promise<UptimeCheck | undefined> {
@@ -185,7 +108,7 @@ export async function getUptimeCheck(id: string): Promise<UptimeCheck | undefine
     }
     return undefined;
   }
-  return memoryUptimeChecks.get(id);
+  return undefined;
 }
 
 export async function updateUptimeCheck(id: string, updates: Partial<UptimeCheck>): Promise<UptimeCheck | undefined> {
@@ -223,8 +146,7 @@ export async function updateUptimeCheck(id: string, updates: Partial<UptimeCheck
     }
     return undefined;
   }
-  memoryUptimeChecks.set(id, updated);
-  return updated;
+  return undefined;
 }
 
 export async function deleteUptimeCheck(id: string): Promise<boolean> {
@@ -235,7 +157,7 @@ export async function deleteUptimeCheck(id: string): Promise<boolean> {
     );
     return result !== null && (result.rowCount ?? 0) > 0;
   }
-  return memoryUptimeChecks.delete(id);
+  return false;
 }
 
 export async function listUptimeChecks(organizationId: string): Promise<UptimeCheck[]> {
@@ -249,7 +171,7 @@ export async function listUptimeChecks(organizationId: string): Promise<UptimeCh
     }
     return [];
   }
-  return Array.from(memoryUptimeChecks.values()).filter(c => c.organization_id === organizationId);
+  return [];
 }
 
 export async function getAllUptimeChecks(): Promise<UptimeCheck[]> {
@@ -260,7 +182,7 @@ export async function getAllUptimeChecks(): Promise<UptimeCheck[]> {
     }
     return [];
   }
-  return Array.from(memoryUptimeChecks.values());
+  return [];
 }
 
 function parseUptimeCheckRow(row: any): UptimeCheck {
@@ -318,11 +240,8 @@ export async function addCheckResult(result: CheckResult): Promise<CheckResult> 
       return parseCheckResultRow(dbResult.rows[0]);
     }
   }
-  // Fallback to memory
-  const results = memoryCheckResults.get(result.check_id) || [];
-  results.push(result);
-  memoryCheckResults.set(result.check_id, results);
-  return result;
+  // No DB fallback - require PostgreSQL
+  throw new Error('[Monitoring Repo] Database not connected - cannot add check result');
 }
 
 export async function getCheckResults(checkId: string, limit: number = 100): Promise<CheckResult[]> {
@@ -336,8 +255,7 @@ export async function getCheckResults(checkId: string, limit: number = 100): Pro
     }
     return [];
   }
-  const results = memoryCheckResults.get(checkId) || [];
-  return results.slice(-limit).reverse();
+  return [];
 }
 
 export async function getLatestCheckResult(checkId: string): Promise<CheckResult | undefined> {
@@ -351,8 +269,7 @@ export async function getLatestCheckResult(checkId: string): Promise<CheckResult
     }
     return undefined;
   }
-  const results = memoryCheckResults.get(checkId) || [];
-  return results[results.length - 1];
+  return undefined;
 }
 
 export async function deleteOldCheckResults(checkId: string, retentionDays: number): Promise<number> {
@@ -365,11 +282,7 @@ export async function deleteOldCheckResults(checkId: string, retentionDays: numb
     );
     return result?.rowCount ?? 0;
   }
-  const results = memoryCheckResults.get(checkId) || [];
-  const filtered = results.filter(r => r.checked_at >= cutoff);
-  const deletedCount = results.length - filtered.length;
-  memoryCheckResults.set(checkId, filtered);
-  return deletedCount;
+  return 0;
 }
 
 function parseCheckResultRow(row: any): CheckResult {
@@ -411,15 +324,8 @@ export async function createIncident(incident: Incident): Promise<Incident> {
       return parseIncidentRow(result.rows[0]);
     }
   }
-  // Fallback to memory - add to both active and history based on status
-  if (!incident.ended_at) {
-    memoryActiveIncidents.set(incident.check_id, incident);
-  } else {
-    const incidents = memoryCheckIncidents.get(incident.check_id) || [];
-    incidents.push(incident);
-    memoryCheckIncidents.set(incident.check_id, incidents);
-  }
-  return incident;
+  // No DB fallback - require PostgreSQL
+  throw new Error('[Monitoring Repo] Database not connected - cannot create incident');
 }
 
 export async function getActiveIncident(checkId: string): Promise<Incident | undefined> {
@@ -433,7 +339,7 @@ export async function getActiveIncident(checkId: string): Promise<Incident | und
     }
     return undefined;
   }
-  return memoryActiveIncidents.get(checkId);
+  return undefined;
 }
 
 export async function setActiveIncident(checkId: string, incident: Incident): Promise<void> {
@@ -442,7 +348,7 @@ export async function setActiveIncident(checkId: string, incident: Incident): Pr
     await createIncident(incident);
     return;
   }
-  memoryActiveIncidents.set(checkId, incident);
+  // No memory fallback
 }
 
 export async function clearActiveIncident(checkId: string): Promise<void> {
@@ -451,7 +357,7 @@ export async function clearActiveIncident(checkId: string): Promise<void> {
     // The incident should already be resolved before calling this
     return;
   }
-  memoryActiveIncidents.delete(checkId);
+  // No memory fallback
 }
 
 export async function resolveIncident(incidentId: string, endedAt: Date): Promise<Incident | undefined> {
@@ -475,18 +381,7 @@ export async function resolveIncident(incidentId: string, endedAt: Date): Promis
     }
     return undefined;
   }
-  // Memory fallback
-  for (const [checkId, incident] of memoryActiveIncidents.entries()) {
-    if (incident.id === incidentId) {
-      incident.ended_at = endedAt;
-      incident.duration_seconds = Math.floor((endedAt.getTime() - incident.started_at.getTime()) / 1000);
-      memoryActiveIncidents.delete(checkId);
-      const incidents = memoryCheckIncidents.get(checkId) || [];
-      incidents.push(incident);
-      memoryCheckIncidents.set(checkId, incidents);
-      return incident;
-    }
-  }
+  // No memory fallback
   return undefined;
 }
 
@@ -501,7 +396,7 @@ export async function getCheckIncidents(checkId: string): Promise<Incident[]> {
     }
     return [];
   }
-  return memoryCheckIncidents.get(checkId) || [];
+  return [];
 }
 
 function parseIncidentRow(row: any): Incident {
@@ -533,7 +428,7 @@ export async function getConsecutiveFailures(checkId: string): Promise<number> {
     }
     return 0;
   }
-  return memoryConsecutiveFailures.get(checkId) || 0;
+  return 0;
 }
 
 export async function setConsecutiveFailures(checkId: string, count: number): Promise<void> {
@@ -546,7 +441,7 @@ export async function setConsecutiveFailures(checkId: string, count: number): Pr
     );
     return;
   }
-  memoryConsecutiveFailures.set(checkId, count);
+  // No memory fallback
 }
 
 
@@ -566,10 +461,8 @@ export async function createMaintenanceWindow(window: MaintenanceWindow): Promis
       return parseMaintenanceWindowRow(result.rows[0]);
     }
   }
-  const windows = memoryMaintenanceWindows.get(window.check_id) || [];
-  windows.push(window);
-  memoryMaintenanceWindows.set(window.check_id, windows);
-  return window;
+  // No DB fallback - require PostgreSQL
+  throw new Error('[Monitoring Repo] Database not connected - cannot create maintenance window');
 }
 
 export async function getMaintenanceWindows(checkId: string): Promise<MaintenanceWindow[]> {
@@ -583,7 +476,7 @@ export async function getMaintenanceWindows(checkId: string): Promise<Maintenanc
     }
     return [];
   }
-  return memoryMaintenanceWindows.get(checkId) || [];
+  return [];
 }
 
 export async function deleteMaintenanceWindow(windowId: string): Promise<boolean> {
@@ -593,13 +486,6 @@ export async function deleteMaintenanceWindow(windowId: string): Promise<boolean
       [windowId]
     );
     return result !== null && (result.rowCount ?? 0) > 0;
-  }
-  for (const [checkId, windows] of memoryMaintenanceWindows.entries()) {
-    const filtered = windows.filter(w => w.id !== windowId);
-    if (filtered.length < windows.length) {
-      memoryMaintenanceWindows.set(checkId, filtered);
-      return true;
-    }
   }
   return false;
 }
@@ -635,8 +521,8 @@ export async function createTransactionCheck(check: TransactionCheck): Promise<T
       return parseTransactionCheckRow(result.rows[0]);
     }
   }
-  memoryTransactionChecks.set(check.id, check);
-  return check;
+  // No DB fallback - require PostgreSQL
+  throw new Error('[Monitoring Repo] Database not connected - cannot create transaction check');
 }
 
 export async function getTransactionCheck(id: string): Promise<TransactionCheck | undefined> {
@@ -650,7 +536,7 @@ export async function getTransactionCheck(id: string): Promise<TransactionCheck 
     }
     return undefined;
   }
-  return memoryTransactionChecks.get(id);
+  return undefined;
 }
 
 export async function updateTransactionCheck(id: string, updates: Partial<TransactionCheck>): Promise<TransactionCheck | undefined> {
@@ -671,8 +557,7 @@ export async function updateTransactionCheck(id: string, updates: Partial<Transa
     }
     return undefined;
   }
-  memoryTransactionChecks.set(id, updated);
-  return updated;
+  return undefined;
 }
 
 export async function deleteTransactionCheck(id: string): Promise<boolean> {
@@ -680,7 +565,7 @@ export async function deleteTransactionCheck(id: string): Promise<boolean> {
     const result = await query(`DELETE FROM transaction_checks WHERE id = $1`, [id]);
     return result !== null && (result.rowCount ?? 0) > 0;
   }
-  return memoryTransactionChecks.delete(id);
+  return false;
 }
 
 export async function listTransactionChecks(organizationId: string): Promise<TransactionCheck[]> {
@@ -692,7 +577,7 @@ export async function listTransactionChecks(organizationId: string): Promise<Tra
     if (result) return result.rows.map(parseTransactionCheckRow);
     return [];
   }
-  return Array.from(memoryTransactionChecks.values()).filter(c => c.organization_id === organizationId);
+  return [];
 }
 
 function parseTransactionCheckRow(row: any): TransactionCheck {
@@ -727,9 +612,6 @@ export async function addTransactionResult(result: TransactionResult): Promise<T
       return parseTransactionResultRow(dbResult.rows[0]);
     }
   }
-  const results = memoryTransactionResults.get(result.transaction_id) || [];
-  results.push(result);
-  memoryTransactionResults.set(result.transaction_id, results);
   return result;
 }
 
@@ -742,8 +624,7 @@ export async function getTransactionResults(transactionId: string, limit: number
     if (result) return result.rows.map(parseTransactionResultRow);
     return [];
   }
-  const results = memoryTransactionResults.get(transactionId) || [];
-  return results.slice(-limit).reverse();
+  return [];
 }
 
 function parseTransactionResultRow(row: any): TransactionResult {
@@ -774,7 +655,6 @@ export async function createPerformanceCheck(check: PerformanceCheck): Promise<P
       return parsePerformanceCheckRow(result.rows[0]);
     }
   }
-  memoryPerformanceChecks.set(check.id, check);
   return check;
 }
 
@@ -784,7 +664,7 @@ export async function getPerformanceCheck(id: string): Promise<PerformanceCheck 
     if (result && result.rows[0]) return parsePerformanceCheckRow(result.rows[0]);
     return undefined;
   }
-  return memoryPerformanceChecks.get(id);
+  return undefined;
 }
 
 export async function updatePerformanceCheck(id: string, updates: Partial<PerformanceCheck>): Promise<PerformanceCheck | undefined> {
@@ -802,7 +682,6 @@ export async function updatePerformanceCheck(id: string, updates: Partial<Perfor
     if (result && result.rows[0]) return parsePerformanceCheckRow(result.rows[0]);
     return undefined;
   }
-  memoryPerformanceChecks.set(id, updated);
   return updated;
 }
 
@@ -811,7 +690,7 @@ export async function deletePerformanceCheck(id: string): Promise<boolean> {
     const result = await query(`DELETE FROM performance_checks WHERE id = $1`, [id]);
     return result !== null && (result.rowCount ?? 0) > 0;
   }
-  return memoryPerformanceChecks.delete(id);
+  return false;
 }
 
 export async function listPerformanceChecks(organizationId: string): Promise<PerformanceCheck[]> {
@@ -823,7 +702,7 @@ export async function listPerformanceChecks(organizationId: string): Promise<Per
     if (result) return result.rows.map(parsePerformanceCheckRow);
     return [];
   }
-  return Array.from(memoryPerformanceChecks.values()).filter(c => c.organization_id === organizationId);
+  return [];
 }
 
 function parsePerformanceCheckRow(row: any): PerformanceCheck {
@@ -858,9 +737,6 @@ export async function addPerformanceResult(result: PerformanceResult): Promise<P
       return parsePerformanceResultRow(dbResult.rows[0]);
     }
   }
-  const results = memoryPerformanceResults.get(result.check_id) || [];
-  results.push(result);
-  memoryPerformanceResults.set(result.check_id, results);
   return result;
 }
 
@@ -873,8 +749,7 @@ export async function getPerformanceResults(checkId: string, limit: number = 100
     if (result) return result.rows.map(parsePerformanceResultRow);
     return [];
   }
-  const results = memoryPerformanceResults.get(checkId) || [];
-  return results.slice(-limit).reverse();
+  return [];
 }
 
 function parsePerformanceResultRow(row: any): PerformanceResult {
@@ -912,12 +787,6 @@ export async function createWebhookCheck(check: WebhookCheck): Promise<WebhookCh
       return parseWebhookCheckRow(result.rows[0]);
     }
   }
-  memoryWebhookChecks.set(check.id, check);
-  // Also map the token to check ID
-  const token = check.webhook_url.split('/').pop();
-  if (token) {
-    memoryWebhookTokenMap.set(token, check.id);
-  }
   return check;
 }
 
@@ -927,7 +796,7 @@ export async function getWebhookCheck(id: string): Promise<WebhookCheck | undefi
     if (result && result.rows[0]) return parseWebhookCheckRow(result.rows[0]);
     return undefined;
   }
-  return memoryWebhookChecks.get(id);
+  return undefined;
 }
 
 export async function getWebhookCheckByToken(token: string): Promise<WebhookCheck | undefined> {
@@ -939,8 +808,6 @@ export async function getWebhookCheckByToken(token: string): Promise<WebhookChec
     if (result && result.rows[0]) return parseWebhookCheckRow(result.rows[0]);
     return undefined;
   }
-  const checkId = memoryWebhookTokenMap.get(token);
-  if (checkId) return memoryWebhookChecks.get(checkId);
   return undefined;
 }
 
@@ -961,7 +828,6 @@ export async function updateWebhookCheck(id: string, updates: Partial<WebhookChe
     if (result && result.rows[0]) return parseWebhookCheckRow(result.rows[0]);
     return undefined;
   }
-  memoryWebhookChecks.set(id, updated);
   return updated;
 }
 
@@ -970,12 +836,7 @@ export async function deleteWebhookCheck(id: string): Promise<boolean> {
     const result = await query(`DELETE FROM webhook_checks WHERE id = $1`, [id]);
     return result !== null && (result.rowCount ?? 0) > 0;
   }
-  const check = memoryWebhookChecks.get(id);
-  if (check) {
-    const token = check.webhook_url.split('/').pop();
-    if (token) memoryWebhookTokenMap.delete(token);
-  }
-  return memoryWebhookChecks.delete(id);
+  return false;
 }
 
 export async function listWebhookChecks(organizationId: string): Promise<WebhookCheck[]> {
@@ -987,7 +848,7 @@ export async function listWebhookChecks(organizationId: string): Promise<Webhook
     if (result) return result.rows.map(parseWebhookCheckRow);
     return [];
   }
-  return Array.from(memoryWebhookChecks.values()).filter(c => c.organization_id === organizationId);
+  return [];
 }
 
 function parseWebhookCheckRow(row: any): WebhookCheck {
@@ -1031,9 +892,6 @@ export async function addWebhookEvent(event: WebhookEvent): Promise<WebhookEvent
       return parseWebhookEventRow(result.rows[0]);
     }
   }
-  const events = memoryWebhookEvents.get(event.check_id) || [];
-  events.push(event);
-  memoryWebhookEvents.set(event.check_id, events);
   return event;
 }
 
@@ -1046,8 +904,7 @@ export async function getWebhookEvents(checkId: string, limit: number = 100): Pr
     if (result) return result.rows.map(parseWebhookEventRow);
     return [];
   }
-  const events = memoryWebhookEvents.get(checkId) || [];
-  return events.slice(-limit).reverse();
+  return [];
 }
 
 function parseWebhookEventRow(row: any): WebhookEvent {
@@ -1085,7 +942,6 @@ export async function createDnsCheck(check: DnsCheck): Promise<DnsCheck> {
     );
     if (result && result.rows[0]) return parseDnsCheckRow(result.rows[0]);
   }
-  memoryDnsChecks.set(check.id, check);
   return check;
 }
 
@@ -1095,7 +951,7 @@ export async function getDnsCheck(id: string): Promise<DnsCheck | undefined> {
     if (result && result.rows[0]) return parseDnsCheckRow(result.rows[0]);
     return undefined;
   }
-  return memoryDnsChecks.get(id);
+  return undefined;
 }
 
 export async function updateDnsCheck(id: string, updates: Partial<DnsCheck>): Promise<DnsCheck | undefined> {
@@ -1115,7 +971,6 @@ export async function updateDnsCheck(id: string, updates: Partial<DnsCheck>): Pr
     if (result && result.rows[0]) return parseDnsCheckRow(result.rows[0]);
     return undefined;
   }
-  memoryDnsChecks.set(id, updated);
   return updated;
 }
 
@@ -1124,7 +979,7 @@ export async function deleteDnsCheck(id: string): Promise<boolean> {
     const result = await query(`DELETE FROM dns_checks WHERE id = $1`, [id]);
     return result !== null && (result.rowCount ?? 0) > 0;
   }
-  return memoryDnsChecks.delete(id);
+  return false;
 }
 
 export async function listDnsChecks(organizationId: string): Promise<DnsCheck[]> {
@@ -1136,7 +991,7 @@ export async function listDnsChecks(organizationId: string): Promise<DnsCheck[]>
     if (result) return result.rows.map(parseDnsCheckRow);
     return [];
   }
-  return Array.from(memoryDnsChecks.values()).filter(c => c.organization_id === organizationId);
+  return [];
 }
 
 function parseDnsCheckRow(row: any): DnsCheck {
@@ -1178,9 +1033,6 @@ export async function addDnsResult(result: DnsCheckResult): Promise<DnsCheckResu
     );
     if (dbResult && dbResult.rows[0]) return parseDnsResultRow(dbResult.rows[0]);
   }
-  const results = memoryDnsResults.get(result.check_id) || [];
-  results.push(result);
-  memoryDnsResults.set(result.check_id, results);
   return result;
 }
 
@@ -1193,8 +1045,7 @@ export async function getDnsResults(checkId: string, limit: number = 100): Promi
     if (result) return result.rows.map(parseDnsResultRow);
     return [];
   }
-  const results = memoryDnsResults.get(checkId) || [];
-  return results.slice(-limit).reverse();
+  return [];
 }
 
 function parseDnsResultRow(row: any): DnsCheckResult {
@@ -1230,7 +1081,6 @@ export async function createTcpCheck(check: TcpCheck): Promise<TcpCheck> {
     );
     if (result && result.rows[0]) return parseTcpCheckRow(result.rows[0]);
   }
-  memoryTcpChecks.set(check.id, check);
   return check;
 }
 
@@ -1240,7 +1090,7 @@ export async function getTcpCheck(id: string): Promise<TcpCheck | undefined> {
     if (result && result.rows[0]) return parseTcpCheckRow(result.rows[0]);
     return undefined;
   }
-  return memoryTcpChecks.get(id);
+  return undefined;
 }
 
 export async function updateTcpCheck(id: string, updates: Partial<TcpCheck>): Promise<TcpCheck | undefined> {
@@ -1258,7 +1108,6 @@ export async function updateTcpCheck(id: string, updates: Partial<TcpCheck>): Pr
     if (result && result.rows[0]) return parseTcpCheckRow(result.rows[0]);
     return undefined;
   }
-  memoryTcpChecks.set(id, updated);
   return updated;
 }
 
@@ -1267,7 +1116,7 @@ export async function deleteTcpCheck(id: string): Promise<boolean> {
     const result = await query(`DELETE FROM tcp_checks WHERE id = $1`, [id]);
     return result !== null && (result.rowCount ?? 0) > 0;
   }
-  return memoryTcpChecks.delete(id);
+  return false;
 }
 
 export async function listTcpChecks(organizationId: string): Promise<TcpCheck[]> {
@@ -1279,7 +1128,7 @@ export async function listTcpChecks(organizationId: string): Promise<TcpCheck[]>
     if (result) return result.rows.map(parseTcpCheckRow);
     return [];
   }
-  return Array.from(memoryTcpChecks.values()).filter(c => c.organization_id === organizationId);
+  return [];
 }
 
 function parseTcpCheckRow(row: any): TcpCheck {
@@ -1313,9 +1162,6 @@ export async function addTcpResult(result: TcpCheckResult): Promise<TcpCheckResu
     );
     if (dbResult && dbResult.rows[0]) return parseTcpResultRow(dbResult.rows[0]);
   }
-  const results = memoryTcpResults.get(result.check_id) || [];
-  results.push(result);
-  memoryTcpResults.set(result.check_id, results);
   return result;
 }
 
@@ -1328,8 +1174,7 @@ export async function getTcpResults(checkId: string, limit: number = 100): Promi
     if (result) return result.rows.map(parseTcpResultRow);
     return [];
   }
-  const results = memoryTcpResults.get(checkId) || [];
-  return results.slice(-limit).reverse();
+  return [];
 }
 
 function parseTcpResultRow(row: any): TcpCheckResult {
@@ -1369,8 +1214,6 @@ export async function createStatusPage(page: StatusPage): Promise<StatusPage> {
     );
     if (result && result.rows[0]) return parseStatusPageRow(result.rows[0]);
   }
-  memoryStatusPages.set(page.id, page);
-  memoryStatusPagesBySlug.set(page.slug, page.id);
   return page;
 }
 
@@ -1380,7 +1223,7 @@ export async function getStatusPage(id: string): Promise<StatusPage | undefined>
     if (result && result.rows[0]) return parseStatusPageRow(result.rows[0]);
     return undefined;
   }
-  return memoryStatusPages.get(id);
+  return undefined;
 }
 
 export async function getStatusPageBySlug(slug: string): Promise<StatusPage | undefined> {
@@ -1389,8 +1232,6 @@ export async function getStatusPageBySlug(slug: string): Promise<StatusPage | un
     if (result && result.rows[0]) return parseStatusPageRow(result.rows[0]);
     return undefined;
   }
-  const id = memoryStatusPagesBySlug.get(slug);
-  if (id) return memoryStatusPages.get(id);
   return undefined;
 }
 
@@ -1417,12 +1258,6 @@ export async function updateStatusPage(id: string, updates: Partial<StatusPage>)
     if (result && result.rows[0]) return parseStatusPageRow(result.rows[0]);
     return undefined;
   }
-  // Update slug mapping if slug changed
-  if (existing.slug !== updated.slug) {
-    memoryStatusPagesBySlug.delete(existing.slug);
-    memoryStatusPagesBySlug.set(updated.slug, id);
-  }
-  memoryStatusPages.set(id, updated);
   return updated;
 }
 
@@ -1431,11 +1266,7 @@ export async function deleteStatusPage(id: string): Promise<boolean> {
     const result = await query(`DELETE FROM status_pages WHERE id = $1`, [id]);
     return result !== null && (result.rowCount ?? 0) > 0;
   }
-  const page = memoryStatusPages.get(id);
-  if (page) {
-    memoryStatusPagesBySlug.delete(page.slug);
-  }
-  return memoryStatusPages.delete(id);
+  return false;
 }
 
 export async function listStatusPages(organizationId: string): Promise<StatusPage[]> {
@@ -1447,7 +1278,7 @@ export async function listStatusPages(organizationId: string): Promise<StatusPag
     if (result) return result.rows.map(parseStatusPageRow);
     return [];
   }
-  return Array.from(memoryStatusPages.values()).filter(p => p.organization_id === organizationId);
+  return [];
 }
 
 function parseStatusPageRow(row: any): StatusPage {
@@ -1487,7 +1318,7 @@ export async function getMonitoringSettings(orgId: string): Promise<MonitoringSe
     if (result && result.rows[0]) return parseMonitoringSettingsRow(result.rows[0]);
     return undefined;
   }
-  return memoryMonitoringSettings.get(orgId);
+  return undefined;
 }
 
 export async function setMonitoringSettings(settings: MonitoringSettings): Promise<MonitoringSettings> {
@@ -1502,7 +1333,6 @@ export async function setMonitoringSettings(settings: MonitoringSettings): Promi
     );
     if (result && result.rows[0]) return parseMonitoringSettingsRow(result.rows[0]);
   }
-  memoryMonitoringSettings.set(settings.organization_id, settings);
   return settings;
 }
 
@@ -1537,7 +1367,6 @@ export async function addDeletedCheckHistory(history: DeletedCheckHistory): Prom
     );
     return history;
   }
-  memoryDeletedCheckHistory.set(history.check_id, history);
   return history;
 }
 
@@ -1562,7 +1391,7 @@ export async function getDeletedCheckHistory(checkId: string): Promise<DeletedCh
     }
     return undefined;
   }
-  return memoryDeletedCheckHistory.get(checkId);
+  return undefined;
 }
 
 
@@ -1570,41 +1399,41 @@ export async function getDeletedCheckHistory(checkId: string): Promise<DeletedCh
 // MEMORY STORE ACCESS (for compatibility)
 // =============================
 
-// Provide direct access to memory stores for use in stores.ts exports
-export function getMemoryUptimeChecks(): Map<string, UptimeCheck> { return memoryUptimeChecks; }
-export function getMemoryCheckResults(): Map<string, CheckResult[]> { return memoryCheckResults; }
-export function getMemoryTransactionChecks(): Map<string, TransactionCheck> { return memoryTransactionChecks; }
-export function getMemoryTransactionResults(): Map<string, TransactionResult[]> { return memoryTransactionResults; }
-export function getMemoryPerformanceChecks(): Map<string, PerformanceCheck> { return memoryPerformanceChecks; }
-export function getMemoryPerformanceResults(): Map<string, PerformanceResult[]> { return memoryPerformanceResults; }
-export function getMemoryMaintenanceWindows(): Map<string, MaintenanceWindow[]> { return memoryMaintenanceWindows; }
-export function getMemoryCheckIncidents(): Map<string, Incident[]> { return memoryCheckIncidents; }
-export function getMemoryActiveIncidents(): Map<string, Incident> { return memoryActiveIncidents; }
-export function getMemoryConsecutiveFailures(): Map<string, number> { return memoryConsecutiveFailures; }
-export function getMemoryWebhookChecks(): Map<string, WebhookCheck> { return memoryWebhookChecks; }
-export function getMemoryWebhookEvents(): Map<string, WebhookEvent[]> { return memoryWebhookEvents; }
-export function getMemoryWebhookTokenMap(): Map<string, string> { return memoryWebhookTokenMap; }
-export function getMemoryDnsChecks(): Map<string, DnsCheck> { return memoryDnsChecks; }
-export function getMemoryDnsResults(): Map<string, DnsCheckResult[]> { return memoryDnsResults; }
-export function getMemoryTcpChecks(): Map<string, TcpCheck> { return memoryTcpChecks; }
-export function getMemoryTcpResults(): Map<string, TcpCheckResult[]> { return memoryTcpResults; }
-export function getMemoryMonitoringSettings(): Map<string, MonitoringSettings> { return memoryMonitoringSettings; }
-export function getMemoryStatusPages(): Map<string, StatusPage> { return memoryStatusPages; }
-export function getMemoryStatusPagesBySlug(): Map<string, string> { return memoryStatusPagesBySlug; }
-export function getMemoryStatusPageIncidents(): Map<string, StatusPageIncident[]> { return memoryStatusPageIncidents; }
-export function getMemoryStatusPageSubscriptions(): Map<string, StatusPageSubscription[]> { return memoryStatusPageSubscriptions; }
-export function getMemoryOnCallSchedules(): Map<string, OnCallSchedule> { return memoryOnCallSchedules; }
-export function getMemoryEscalationPolicies(): Map<string, EscalationPolicy> { return memoryEscalationPolicies; }
-export function getMemoryDeletedCheckHistory(): Map<string, DeletedCheckHistory> { return memoryDeletedCheckHistory; }
-export function getMemoryAlertGroupingRules(): Map<string, AlertGroupingRule> { return memoryAlertGroupingRules; }
-export function getMemoryAlertGroups(): Map<string, AlertGroup> { return memoryAlertGroups; }
-export function getMemoryAlertRoutingRules(): Map<string, AlertRoutingRule> { return memoryAlertRoutingRules; }
-export function getMemoryAlertRoutingLogs(): Map<string, AlertRoutingLog[]> { return memoryAlertRoutingLogs; }
-export function getMemoryAlertRateLimitConfigs(): Map<string, AlertRateLimitConfig> { return memoryAlertRateLimitConfigs; }
-export function getMemoryAlertRateLimitStates(): Map<string, AlertRateLimitState> { return memoryAlertRateLimitStates; }
-export function getMemoryAlertCorrelationConfigs(): Map<string, AlertCorrelationConfig> { return memoryAlertCorrelationConfigs; }
-export function getMemoryAlertCorrelations(): Map<string, AlertCorrelation> { return memoryAlertCorrelations; }
-export function getMemoryAlertToCorrelation(): Map<string, string> { return memoryAlertToCorrelation; }
-export function getMemoryAlertRunbooks(): Map<string, AlertRunbook> { return memoryAlertRunbooks; }
-export function getMemoryManagedIncidents(): Map<string, ManagedIncident> { return memoryManagedIncidents; }
-export function getMemoryIncidentsByOrg(): Map<string, string[]> { return memoryIncidentsByOrg; }
+// Return empty Maps for backward compatibility (memory stores removed in #2105)
+export function getMemoryUptimeChecks(): Map<string, UptimeCheck> { return new Map(); }
+export function getMemoryCheckResults(): Map<string, CheckResult[]> { return new Map(); }
+export function getMemoryTransactionChecks(): Map<string, TransactionCheck> { return new Map(); }
+export function getMemoryTransactionResults(): Map<string, TransactionResult[]> { return new Map(); }
+export function getMemoryPerformanceChecks(): Map<string, PerformanceCheck> { return new Map(); }
+export function getMemoryPerformanceResults(): Map<string, PerformanceResult[]> { return new Map(); }
+export function getMemoryMaintenanceWindows(): Map<string, MaintenanceWindow[]> { return new Map(); }
+export function getMemoryCheckIncidents(): Map<string, Incident[]> { return new Map(); }
+export function getMemoryActiveIncidents(): Map<string, Incident> { return new Map(); }
+export function getMemoryConsecutiveFailures(): Map<string, number> { return new Map(); }
+export function getMemoryWebhookChecks(): Map<string, WebhookCheck> { return new Map(); }
+export function getMemoryWebhookEvents(): Map<string, WebhookEvent[]> { return new Map(); }
+export function getMemoryWebhookTokenMap(): Map<string, string> { return new Map(); }
+export function getMemoryDnsChecks(): Map<string, DnsCheck> { return new Map(); }
+export function getMemoryDnsResults(): Map<string, DnsCheckResult[]> { return new Map(); }
+export function getMemoryTcpChecks(): Map<string, TcpCheck> { return new Map(); }
+export function getMemoryTcpResults(): Map<string, TcpCheckResult[]> { return new Map(); }
+export function getMemoryMonitoringSettings(): Map<string, MonitoringSettings> { return new Map(); }
+export function getMemoryStatusPages(): Map<string, StatusPage> { return new Map(); }
+export function getMemoryStatusPagesBySlug(): Map<string, string> { return new Map(); }
+export function getMemoryStatusPageIncidents(): Map<string, StatusPageIncident[]> { return new Map(); }
+export function getMemoryStatusPageSubscriptions(): Map<string, StatusPageSubscription[]> { return new Map(); }
+export function getMemoryOnCallSchedules(): Map<string, OnCallSchedule> { return new Map(); }
+export function getMemoryEscalationPolicies(): Map<string, EscalationPolicy> { return new Map(); }
+export function getMemoryDeletedCheckHistory(): Map<string, DeletedCheckHistory> { return new Map(); }
+export function getMemoryAlertGroupingRules(): Map<string, AlertGroupingRule> { return new Map(); }
+export function getMemoryAlertGroups(): Map<string, AlertGroup> { return new Map(); }
+export function getMemoryAlertRoutingRules(): Map<string, AlertRoutingRule> { return new Map(); }
+export function getMemoryAlertRoutingLogs(): Map<string, AlertRoutingLog[]> { return new Map(); }
+export function getMemoryAlertRateLimitConfigs(): Map<string, AlertRateLimitConfig> { return new Map(); }
+export function getMemoryAlertRateLimitStates(): Map<string, AlertRateLimitState> { return new Map(); }
+export function getMemoryAlertCorrelationConfigs(): Map<string, AlertCorrelationConfig> { return new Map(); }
+export function getMemoryAlertCorrelations(): Map<string, AlertCorrelation> { return new Map(); }
+export function getMemoryAlertToCorrelation(): Map<string, string> { return new Map(); }
+export function getMemoryAlertRunbooks(): Map<string, AlertRunbook> { return new Map(); }
+export function getMemoryManagedIncidents(): Map<string, ManagedIncident> { return new Map(); }
+export function getMemoryIncidentsByOrg(): Map<string, string[]> { return new Map(); }
