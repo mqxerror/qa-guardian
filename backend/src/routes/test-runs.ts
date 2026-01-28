@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, getOrganizationId, JwtPayload } from '../middleware/auth';
-import { tests, testSuites, IgnoreRegion } from './test-suites';
+import { getTestSuite, getTest, listTests, updateTest, IgnoreRegion } from './test-suites';
 import { projects, projectEnvVars, getProjectVisualSettings, getProjectHealingSettings } from './projects';
 import { chromium, firefox, webkit, Browser, Page, BrowserContext } from 'playwright';
 import * as fs from 'fs';
@@ -489,18 +489,18 @@ async function checkAndSendAlerts(run: TestRun, results: TestRunResult[]): Promi
     passed_on_retry: r.passed_on_retry,
   }));
 
-  // Call the base function with accessors for testSuites and projects
+  // Pre-fetch suite and project data for the run
+  const suite = await getTestSuite(run.suite_id);
+  const suiteInfo = suite ? { name: suite.name, project_id: suite.project_id } : undefined;
+  const project = suiteInfo?.project_id ? projects.get(suiteInfo.project_id) : undefined;
+  const projectInfo = project ? { name: project.name } : undefined;
+
+  // Call the base function with pre-fetched data
   await checkAndSendAlertsBase(
     run,
     alertResults,
-    (suiteId) => {
-      const suite = testSuites.get(suiteId);
-      return suite ? { name: suite.name, project_id: suite.project_id } : undefined;
-    },
-    (projectId) => {
-      const project = projects.get(projectId);
-      return project ? { name: project.name } : undefined;
-    }
+    () => suiteInfo,
+    () => projectInfo
   );
 }
 
@@ -547,7 +547,7 @@ export async function runTestsForRun(runId: string) {
   });
 
   // Feature #1283: Send test.run.started webhook
-  const suite = testSuites.get(run.suite_id);
+  const suite = await getTestSuite(run.suite_id);
   if (suite) {
     // Determine trigger info (default to 'manual' if not specified)
     const triggerInfo = {
@@ -585,7 +585,7 @@ export async function runTestsForRun(runId: string) {
 
     if (run.test_id) {
       // Running single test
-      const test = tests.get(run.test_id);
+      const test = await getTest(run.test_id);
       if (test) {
         testsToRun = [{
           id: test.id,
@@ -632,9 +632,8 @@ export async function runTestsForRun(runId: string) {
       }
     } else {
       // Running all tests in suite
-      testsToRun = Array.from(tests.values())
-        .filter(t => t.suite_id === run.suite_id)
-        .map(t => ({
+      const suiteTests = await listTests(run.suite_id);
+      testsToRun = suiteTests.map(t => ({
           id: t.id,
           name: t.name,
           steps: t.steps,
@@ -678,9 +677,9 @@ export async function runTestsForRun(runId: string) {
         }));
     }
 
-    // Get suite for retry configuration
-    const suite = testSuites.get(run.suite_id);
-    const maxRetries = suite?.retry_count || 0;
+    // Get suite for retry configuration (reuse suite if already fetched)
+    const suiteForRetry = suite || await getTestSuite(run.suite_id);
+    const maxRetries = suiteForRetry?.retry_count || 0;
 
     // Get project environment variables (unmasked for test execution)
     const projectId = suite?.project_id;
@@ -833,7 +832,7 @@ export async function runTestsForRun(runId: string) {
     }
 
     // Feature #1284: Send test.run.completed webhook
-    const suiteForWebhook = testSuites.get(run.suite_id);
+    const suiteForWebhook = await getTestSuite(run.suite_id);
     if (suiteForWebhook) {
       // Send webhook asynchronously (don't wait)
       sendRunCompletedWebhook(run, { id: suiteForWebhook.id, name: suiteForWebhook.name, project_id: suiteForWebhook.project_id }, results)
@@ -855,11 +854,9 @@ export async function runTestsForRun(runId: string) {
       // Draft should only be for tests that have NEVER been run
       // A test becomes 'active' after its first execution, regardless of pass/fail status
       for (const result of results) {
-        const test = tests.get(result.test_id);
+        const test = await getTest(result.test_id);
         if (test && test.status === 'draft') {
-          test.status = 'active';
-          test.updated_at = new Date();
-          tests.set(result.test_id, test);
+          await updateTest(result.test_id, { status: 'active', updated_at: new Date() });
           console.log(`[STATUS] Test "${test.name}" promoted from draft to active after first run (status: ${result.status})`);
         }
       }
