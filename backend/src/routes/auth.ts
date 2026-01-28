@@ -103,11 +103,16 @@ function createSession(userId: string, token: string, request: FastifyRequest): 
 // Feature #2083: resetTokens Map backed by repository memory store
 export const resetTokens: Map<string, ResetToken> = getMemoryResetTokens();
 
+// Feature #2099: Seeding completion guard to prevent race conditions
+let seedingComplete = false;
+
 // Seed some test users for development
 // Feature #2083: Now uses async repository function
 // Feature #2083: Initialize test users using repository
 async function initTestUsers() {
   await seedTestUsers();
+  seedingComplete = true;
+  console.log('[Auth] Test user seeding complete');
 }
 
 // Initialize test users
@@ -127,6 +132,14 @@ interface RegisterBody {
 export async function authRoutes(app: FastifyInstance) {
   // Login endpoint
   app.post<{ Body: LoginBody }>('/api/v1/auth/login', async (request, reply) => {
+    // Feature #2099: Guard against race conditions during server initialization
+    if (!seedingComplete) {
+      return reply.status(503).send({
+        error: 'Service Unavailable',
+        message: 'Server is initializing, please try again shortly',
+      });
+    }
+
     const { email, password } = request.body;
 
     if (!email || !password) {
@@ -196,6 +209,14 @@ export async function authRoutes(app: FastifyInstance) {
 
   // Register endpoint
   app.post<{ Body: RegisterBody }>('/api/v1/auth/register', async (request, reply) => {
+    // Feature #2099: Guard against race conditions during server initialization
+    if (!seedingComplete) {
+      return reply.status(503).send({
+        error: 'Service Unavailable',
+        message: 'Server is initializing, please try again shortly',
+      });
+    }
+
     const { email, password, name } = request.body;
 
     if (!email || !password || !name) {
