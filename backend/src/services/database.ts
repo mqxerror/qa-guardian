@@ -967,6 +967,44 @@ async function initializeSchema(): Promise<void> {
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
 
+    -- Gitleaks tables (Feature #2121: Migrate gitleaks to PostgreSQL)
+    CREATE TABLE IF NOT EXISTS gitleaks_configs (
+      project_id UUID PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE,
+      enabled BOOLEAN DEFAULT FALSE,
+      scan_on_push BOOLEAN DEFAULT FALSE,
+      scan_on_pr BOOLEAN DEFAULT FALSE,
+      scan_full_history BOOLEAN DEFAULT FALSE,
+      exclude_paths JSONB DEFAULT '[]',
+      allowlist_patterns JSONB DEFAULT '[]',
+      custom_rules JSONB DEFAULT '[]',
+      severity_threshold VARCHAR(20) DEFAULT 'all',
+      fail_on_leak BOOLEAN DEFAULT TRUE,
+      notification_channels JSONB DEFAULT '[]',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS gitleaks_scans (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL,
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      repository VARCHAR(255),
+      branch VARCHAR(255),
+      status VARCHAR(50) NOT NULL DEFAULT 'pending',
+      started_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      completed_at TIMESTAMP WITH TIME ZONE,
+      trigger VARCHAR(50) DEFAULT 'manual',
+      commits_scanned INTEGER DEFAULT 0,
+      findings JSONB DEFAULT '[]',
+      summary JSONB NOT NULL,
+      error_message TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_gitleaks_scans_project ON gitleaks_scans(project_id);
+    CREATE INDEX IF NOT EXISTS idx_gitleaks_scans_created ON gitleaks_scans(created_at DESC);
+
     -- Create indexes for performance
     CREATE INDEX IF NOT EXISTS idx_users_organization ON users(organization_id);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);

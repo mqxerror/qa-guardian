@@ -25,6 +25,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { SecretPattern } from './types';
 import { getSecretPatterns } from './stores';
+import * as gitleaksRepo from '../../services/repositories/gitleaks';
 
 const execAsync = promisify(exec);
 
@@ -106,11 +107,12 @@ export interface GitleaksScan {
 }
 
 // ============================================================
-// In-memory stores for Gitleaks
+// In-memory stores for Gitleaks - DEPRECATED (#2121)
+// Kept for backward compatibility; routes now use async DB calls.
 // ============================================================
 
-export const gitleaksConfigs: Map<string, GitleaksConfig> = new Map(); // projectId -> config
-export const gitleaksScans: Map<string, GitleaksScan[]> = new Map(); // projectId -> scans
+export const gitleaksConfigs: Map<string, GitleaksConfig> = new Map(); // DEPRECATED
+export const gitleaksScans: Map<string, GitleaksScan[]> = new Map(); // DEPRECATED
 
 // Default Gitleaks configuration
 const DEFAULT_GITLEAKS_CONFIG: GitleaksConfig = {
@@ -743,10 +745,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const config = gitleaksConfigs.get(projectId) || {
-        ...DEFAULT_GITLEAKS_CONFIG,
-        notification_channels: ['in_app' as any],
-      };
+      const config = await gitleaksRepo.getGitleaksConfigOrDefault(projectId);
 
       return { config };
     }
@@ -776,10 +775,10 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const existingConfig = gitleaksConfigs.get(projectId) || { ...DEFAULT_GITLEAKS_CONFIG };
+      const existingConfig = await gitleaksRepo.getGitleaksConfigOrDefault(projectId);
 
       const config = { ...existingConfig, ...updates };
-      gitleaksConfigs.set(projectId, config);
+      await gitleaksRepo.upsertGitleaksConfig(projectId, config);
 
       console.log(`
 ====================================
@@ -825,7 +824,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const config = gitleaksConfigs.get(projectId);
+      const config = await gitleaksRepo.getGitleaksConfig(projectId);
       if (!config?.enabled) {
         return reply.status(400).send({
           error: 'Bad Request',
@@ -844,7 +843,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
       const repoPath = process.env.GITLEAKS_SCAN_PATH || process.cwd();
 
       // Feature #1558: Get custom secret patterns for this project
-      const customPatterns = getSecretPatterns(projectId);
+      const customPatterns = await getSecretPatterns(projectId);
       const enabledPatternsCount = customPatterns.filter(p => p.enabled).length;
 
       console.log(`
@@ -908,10 +907,8 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
         error_message: scanResult.error,
       };
 
-      // Store scan
-      const projectScans = gitleaksScans.get(projectId) || [];
-      projectScans.unshift(scan);
-      gitleaksScans.set(projectId, projectScans.slice(0, 50)); // Keep last 50 scans
+      // Store scan in database
+      await gitleaksRepo.createGitleaksScan(scan);
 
       console.log(`
 ====================================
@@ -962,7 +959,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const scans = (gitleaksScans.get(projectId) || []).slice(0, limit);
+      const scans = await gitleaksRepo.getGitleaksScans(projectId, limit);
 
       return {
         scans,
@@ -994,8 +991,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const scans = gitleaksScans.get(projectId) || [];
-      const scan = scans.find(s => s.id === scanId);
+      const scan = await gitleaksRepo.getGitleaksScan(projectId, scanId);
 
       if (!scan) {
         return reply.status(404).send({
@@ -1043,7 +1039,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
       }
 
       // Get custom patterns for the project
-      const customPatterns = getSecretPatterns(projectId);
+      const customPatterns = await getSecretPatterns(projectId);
       const enabledPatterns = customPatterns.filter(p => p.enabled);
 
       if (format === 'git-hook') {
@@ -1103,7 +1099,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const customPatterns = getSecretPatterns(projectId);
+      const customPatterns = await getSecretPatterns(projectId);
       const enabledPatterns = customPatterns.filter(p => p.enabled);
 
       if (format === 'git-hook') {
@@ -1220,13 +1216,7 @@ else
     echo ""
     echo "$GITLEAKS_OUTPUT"
     echo ""
-${failOnError ? `    echo -e "\\${RED}COMMIT BLOCKED\\${NC} - Please remove secrets before committing."
-    echo "If this is a false positive, you can:"
-    echo "  1. Add the file to .gitleaksignore"
-    echo "  2. Use 'git commit --no-verify' to bypass (not recommended)"
-    exit 1` : `    echo -e "\\${YELLOW}WARNING:\\${NC} Secrets detected but commit allowed (warn mode)."
-    echo "Please review the findings above and consider removing secrets."
-    exit 0`}
+${failOnError ? '    echo -e "\\${RED}COMMIT BLOCKED\\${NC} - Please remove secrets before committing."\n    echo "If this is a false positive, you can:"\n    echo "  1. Add the file to .gitleaksignore"\n    echo "  2. Use \'git commit --no-verify\' to bypass (not recommended)"\n    exit 1' : '    echo -e "\\${YELLOW}WARNING:\\${NC} Secrets detected but commit allowed (warn mode)."\n    echo "Please review the findings above and consider removing secrets."\n    exit 0'}
 fi
 `;
 }

@@ -82,7 +82,7 @@ export async function falsePositivesRoutes(app: FastifyInstance) {
     }
 
     // Check if already marked as false positive
-    const existingFPs = getFalsePositives(projectId);
+    const existingFPs = await getFalsePositives(projectId);
     const alreadyExists = existingFPs.some(fp =>
       fp.ruleId === ruleId && fp.filePath === filePath && fp.line === line
     );

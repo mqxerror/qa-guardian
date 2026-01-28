@@ -57,7 +57,7 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
         return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
       }
 
-      const patterns = getSecretPatterns(projectId);
+      const patterns = await getSecretPatterns(projectId);
       return {
         patterns,
         count: patterns.length,
@@ -211,7 +211,7 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
         }
       }
 
-      const updatedPattern = updateSecretPattern(projectId, patternId, updates);
+      const updatedPattern = await updateSecretPattern(projectId, patternId, updates);
 
       if (!updatedPattern) {
         return reply.status(404).send({
@@ -261,10 +261,10 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
       }
 
       // Get pattern name for audit log before deleting
-      const patterns = getSecretPatterns(projectId);
+      const patterns = await getSecretPatterns(projectId);
       const pattern = patterns.find(p => p.id === patternId);
 
-      const success = removeSecretPattern(projectId, patternId);
+      const success = await removeSecretPattern(projectId, patternId);
 
       if (!success) {
         return reply.status(404).send({
