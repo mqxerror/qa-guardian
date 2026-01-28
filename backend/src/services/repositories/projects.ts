@@ -8,6 +8,17 @@
 import { query, isDatabaseConnected, transaction } from '../database';
 import { Project, ProjectMember, EnvironmentVariable, ProjectVisualSettings, ProjectHealingSettings } from '../../routes/projects/types';
 
+// Feature #2097: UUID validation helper for defensive programming
+// Allows both standard UUIDs (versions 1-5) and zero/nil UUIDs used for seeded test data
+function isValidUUID(str: string): boolean {
+  if (!str) return false;
+  // Standard UUID pattern (versions 1-5)
+  const standardUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  // Zero/nil UUID pattern (used for seeded default org/user data)
+  const zeroUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return standardUUID.test(str) || zeroUUID.test(str);
+}
+
 // In-memory stores (used as fallback when database is not available)
 const memoryProjects: Map<string, Project> = new Map();
 const memoryProjectMembers: Map<string, ProjectMember[]> = new Map();
@@ -36,6 +47,12 @@ export const DEFAULT_PROJECT_HEALING_SETTINGS: ProjectHealingSettings = {
 // ===== PROJECTS =====
 
 export async function createProject(project: Project): Promise<Project> {
+  // Feature #2097: Defensive UUID validation
+  if (!isValidUUID(project.organization_id)) {
+    console.error('[Projects] Invalid organization_id format in createProject:', project.organization_id);
+    throw new Error('Invalid organization_id format');
+  }
+
   if (isDatabaseConnected()) {
     const result = await query<Project>(
       `INSERT INTO projects (id, organization_id, name, slug, description, base_url, archived, created_at, updated_at)
@@ -120,6 +137,12 @@ export async function deleteProject(id: string): Promise<boolean> {
 }
 
 export async function listProjects(organizationId: string): Promise<Project[]> {
+  // Feature #2097: Defensive UUID validation to prevent cryptic database errors
+  if (!isValidUUID(organizationId)) {
+    console.error('[Projects] Invalid organization_id format:', organizationId);
+    return [];
+  }
+
   if (isDatabaseConnected()) {
     const result = await query<Project>(
       `SELECT * FROM projects WHERE organization_id = $1 ORDER BY created_at DESC`,
@@ -139,6 +162,12 @@ export async function listProjects(organizationId: string): Promise<Project[]> {
 }
 
 export async function getProjectBySlug(organizationId: string, slug: string): Promise<Project | undefined> {
+  // Feature #2097: Defensive UUID validation
+  if (!isValidUUID(organizationId)) {
+    console.error('[Projects] Invalid organization_id format in getProjectBySlug:', organizationId);
+    return undefined;
+  }
+
   if (isDatabaseConnected()) {
     const result = await query<Project>(
       `SELECT * FROM projects WHERE organization_id = $1 AND slug = $2`,
@@ -158,6 +187,12 @@ export async function getProjectBySlug(organizationId: string, slug: string): Pr
 }
 
 export async function getProjectByName(organizationId: string, name: string): Promise<Project | undefined> {
+  // Feature #2097: Defensive UUID validation
+  if (!isValidUUID(organizationId)) {
+    console.error('[Projects] Invalid organization_id format in getProjectByName:', organizationId);
+    return undefined;
+  }
+
   if (isDatabaseConnected()) {
     const result = await query<Project>(
       `SELECT * FROM projects WHERE organization_id = $1 AND LOWER(name) = LOWER($2)`,
