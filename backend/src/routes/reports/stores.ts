@@ -2,8 +2,10 @@
  * Report Store
  * Feature #1732: In-memory storage for comprehensive reports
  * Feature #2091: PostgreSQL migration
+ * Feature #2106: Map exports are DEPRECATED - use async functions instead.
  *
- * Now uses repository functions with in-memory fallback.
+ * WARNING: Map exports may return empty data when database is unavailable.
+ * Use async functions: storeReport(), getReport(), listReports(), etc.
  */
 
 import { ComprehensiveReport, ReportSummary } from './types';
@@ -24,6 +26,7 @@ export const updateReport = reportsRepo.updateReport;
 // Re-export helper functions
 export const generateReportId = reportsRepo.generateReportId;
 
-// Backward compatible Map export (from repository memory store)
-// Kept for backward compatibility with existing code that uses Map operations
+// DEPRECATED Map export (Feature #2106)
+// WARNING: This Map is DEPRECATED and may return empty data!
+// Use async functions above instead.
 export const reports: Map<string, ComprehensiveReport> = reportsRepo.getMemoryReports();

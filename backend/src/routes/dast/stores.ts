@@ -1,7 +1,10 @@
 // DAST In-memory Data Stores and Constants
 //
 // Updated for Feature #2088: PostgreSQL migration
-// Now uses repository functions with in-memory fallback
+// Feature #2106: Map exports are DEPRECATED - use async functions instead.
+//
+// WARNING: Map exports may return empty data when database is unavailable.
+// Use async functions: getDastConfig(), saveDastConfig(), etc.
 
 import {
   DASTConfig,

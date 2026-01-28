@@ -2,9 +2,10 @@
  * AI Test Generator Module - Data Stores
  * Feature #1499: Add test generation history and versioning
  * Feature #2090: PostgreSQL migration
+ * Feature #2106: Map exports are DEPRECATED - use async functions instead.
  *
- * In-memory store for AI-generated test history.
- * Now uses repository functions with in-memory fallback.
+ * WARNING: Map exports may return empty data when database is unavailable.
+ * Use async functions: createAiGeneratedTest(), getAiGeneratedTest(), etc.
  */
 
 import { AIGeneratedTest, ApprovalStatus } from './types';
@@ -39,8 +40,9 @@ export const getVersionChainKey = aiTestGenRepo.getVersionChainKey;
 export const indexTest = aiTestGenRepo.indexTest;
 export const updateApprovalStatusIndex = aiTestGenRepo.updateApprovalStatusIndex;
 
-// Backward compatible Map exports (from repository memory stores)
-// These are kept for backward compatibility with existing code that uses Map operations
+// DEPRECATED Map exports (Feature #2106)
+// WARNING: These Maps are DEPRECATED and may return empty data!
+// Use async functions above instead.
 export const aiGeneratedTests: Map<string, AIGeneratedTest> = aiTestGenRepo.getMemoryAiGeneratedTests();
 export const testsByUser: Map<string, Set<string>> = aiTestGenRepo.getMemoryTestsByUser();
 export const testsByOrganization: Map<string, Set<string>> = aiTestGenRepo.getMemoryTestsByOrganization();

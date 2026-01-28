@@ -5,7 +5,10 @@
  * Extracted from sast.ts (Feature #1376)
  *
  * Updated for Feature #2089: PostgreSQL migration
- * Now uses repository functions with in-memory fallback
+ * Feature #2106: Map exports are DEPRECATED - use async functions instead.
+ *
+ * WARNING: Map exports may return empty data when database is unavailable.
+ * Use async functions: getSASTConfig(), updateSASTConfig(), etc.
  */
 
 import {
