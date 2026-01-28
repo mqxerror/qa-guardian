@@ -194,8 +194,31 @@ export function isApiKeyRequest(request: FastifyRequest): boolean {
   return 'type' in user && user.type === 'api_key';
 }
 
+// Feature #2096: UUID validation helper
+// Allows both standard UUIDs (versions 1-5) and nil/zero UUIDs used for seeded test data
+function isValidUUID(str: string): boolean {
+  // Standard UUID pattern (versions 1-5)
+  const standardUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  // Zero/nil UUID pattern (used for seeded default org/user data)
+  const zeroUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return standardUUID.test(str) || zeroUUID.test(str);
+}
+
 // Helper to get organization ID from either JWT or API key
+// Feature #2096: Added UUID validation to catch invalid tokens early
 export function getOrganizationId(request: FastifyRequest): string {
-  const user = request.user as JwtPayload | ApiKeyPayload;
-  return user.organization_id;
+  const user = request.user as JwtPayload | ApiKeyPayload | InternalServicePayload;
+  const orgId = user.organization_id;
+
+  // Allow 'system' org_id for internal service tokens
+  if ('type' in user && user.type === 'internal_service' && orgId === 'system') {
+    return orgId;
+  }
+
+  // Validate UUID format for all other tokens
+  if (!orgId || !isValidUUID(orgId)) {
+    throw new Error('Invalid organization_id in token - please log in again');
+  }
+
+  return orgId;
 }
