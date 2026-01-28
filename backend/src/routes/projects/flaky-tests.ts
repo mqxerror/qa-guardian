@@ -3,10 +3,10 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
-import { testSuites, tests } from '../test-suites';
-import { testRuns } from '../test-runs';
 import { getAutoQuarantineSettings } from '../organizations';
-import { projects } from './maps';
+import { getProject } from './stores';
+import { getTest, getTestSuite, listAllTests } from '../test-suites/stores';
+import { listTestRunsByOrg } from '../../services/repositories/test-runs';
 
 export async function flakyTestsRoutes(app: FastifyInstance) {
   // Get flaky tests - tests with inconsistent results (some pass, some fail)
@@ -15,9 +15,9 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
   }, async (request) => {
     const orgId = getOrganizationId(request);
 
-    // Get all test runs for this organization
-    const orgRuns = Array.from(testRuns.values())
-      .filter(r => r.organization_id === orgId && r.results);
+    // Get all test runs for this organization (async DB call)
+    const allOrgRuns = await listTestRunsByOrg(orgId);
+    const orgRuns = allOrgRuns.filter(r => r.results);
 
     // Track pass/fail count per test
     // Feature #1096: Also track run history for pattern visualization
@@ -58,13 +58,13 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
 
       for (const result of run.results) {
         const testId = result.test_id;
-        const test = tests.get(testId);
+        const test = await getTest(testId);
         if (!test) continue;
 
-        const suite = testSuites.get(test.suite_id);
+        const suite = await getTestSuite(test.suite_id);
         if (!suite) continue;
 
-        const project = projects.get(suite.project_id);
+        const project = await getProject(suite.project_id);
         if (!project) continue;
 
         const existingStats: TestStatsEntry = testStats.get(testId) || {
@@ -412,26 +412,27 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Verify test exists and belongs to org
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
     }
 
-    const suite = testSuites.get(test.suite_id);
+    const suite = await getTestSuite(test.suite_id);
     if (!suite) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test suite not found' });
     }
 
-    const project = projects.get(suite.project_id);
+    const project = await getProject(suite.project_id);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
     }
 
-    // Get all runs for this test
+    // Get all runs for this test (async DB call)
+    const allOrgRuns = await listTestRunsByOrg(orgId);
     const testRunData: Array<{ date: Date; result: 'passed' | 'failed'; run_id: string; duration_ms?: number }> = [];
 
-    for (const run of testRuns.values()) {
-      if (run.organization_id !== orgId || !run.results) continue;
+    for (const run of allOrgRuns) {
+      if (!run.results) continue;
 
       for (const result of run.results) {
         if (result.test_id !== testId) continue;
@@ -608,13 +609,12 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // Get all runs for this organization in the last 30 days
-    const recentRuns = Array.from(testRuns.values())
-      .filter(r => r.organization_id === orgId && r.created_at >= thirtyDaysAgo);
+    // Get all runs for this organization in the last 30 days (async DB call)
+    const allOrgRuns = await listTestRunsByOrg(orgId);
+    const recentRuns = allOrgRuns.filter(r => r.created_at >= thirtyDaysAgo);
 
-    // Get all tests to determine flaky ones
-    const orgTests = Array.from(tests.values())
-      .filter(t => t.organization_id === orgId);
+    // Get all tests to determine flaky ones (async DB call)
+    const orgTests = await listAllTests(orgId);
 
     // Calculate flakiness data for each test
     const testFlakiness: Map<string, {
@@ -638,7 +638,7 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
         const testId = result.test_id;
         if (!testId) continue;
 
-        const test = tests.get(testId);
+        const test = await getTest(testId);
         if (!test) continue;
 
         const existing = testFlakiness.get(testId) || {
@@ -831,8 +831,8 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
     const orgId = getOrganizationId(request);
 
-    // Find the test
-    const test = tests.get(testId);
+    // Find the test (async DB call)
+    const test = await getTest(testId);
     if (!test) {
       return reply.status(404).send({ error: 'Test not found' });
     }
@@ -879,8 +879,8 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     const { testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    // Find the test
-    const test = tests.get(testId);
+    // Find the test (async DB call)
+    const test = await getTest(testId);
     if (!test) {
       return reply.status(404).send({ error: 'Test not found' });
     }
@@ -918,11 +918,11 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
   }, async (request) => {
     const orgId = getOrganizationId(request);
 
-    const quarantinedTests = Array.from(tests.values())
-      .filter(t => t.organization_id === orgId && t.quarantined)
-      .map(t => {
-        const suite = testSuites.get(t.suite_id);
-        const project = suite ? projects.get(suite.project_id) : null;
+    const allTests = await listAllTests(orgId);
+    const quarantinedTestsList = allTests.filter(t => t.quarantined);
+    const quarantinedTests = await Promise.all(quarantinedTestsList.map(async t => {
+        const suite = await getTestSuite(t.suite_id);
+        const project = suite ? await getProject(suite.project_id) : null;
         return {
           test_id: t.id,
           test_name: t.name,
@@ -934,7 +934,7 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
           quarantined_at: (t as { quarantined_at?: Date }).quarantined_at?.toISOString(),
           quarantined_by: (t as { quarantined_by?: string }).quarantined_by,
         };
-      });
+      }));
 
     return {
       quarantined_tests: quarantinedTests,
@@ -960,9 +960,9 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
       };
     }
 
-    // Get all test runs for this organization to calculate flakiness
-    const orgRuns = Array.from(testRuns.values())
-      .filter(r => r.organization_id === orgId && r.results);
+    // Get all test runs for this organization to calculate flakiness (async DB call)
+    const allOrgRuns = await listTestRunsByOrg(orgId);
+    const orgRuns = allOrgRuns.filter(r => r.results);
 
     // Track pass/fail count per test
     const testStats: Map<string, {
@@ -981,7 +981,7 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
 
       for (const result of run.results) {
         const testId = result.test_id;
-        const test = tests.get(testId);
+        const test = await getTest(testId);
         if (!test) continue;
 
         const existingStats = testStats.get(testId) || {
@@ -1026,7 +1026,7 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
 
       // Check if exceeds threshold
       if (flakiness_score >= settings.threshold) {
-        const test = tests.get(stats.test_id);
+        const test = await getTest(stats.test_id);
         if (!test || test.quarantined) continue; // Skip if already quarantined
 
         testsToQuarantine.push({
@@ -1048,7 +1048,7 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     }> = [];
 
     for (const toQuarantine of testsToQuarantine) {
-      const test = tests.get(toQuarantine.test_id);
+      const test = await getTest(toQuarantine.test_id);
       if (!test) continue;
 
       // Apply quarantine
