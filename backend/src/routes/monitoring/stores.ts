@@ -118,6 +118,7 @@ export const setMonitoringSettings = monitoringRepo.setMonitoringSettings;
 // Deleted check history
 export const addDeletedCheckHistory = monitoringRepo.addDeletedCheckHistory;
 export const getDeletedCheckHistory = monitoringRepo.getDeletedCheckHistory;
+export const listDeletedCheckHistory = monitoringRepo.listDeletedCheckHistory;
 
 
 // =============================

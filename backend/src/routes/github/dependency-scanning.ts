@@ -14,7 +14,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth';
-import { projects } from '../projects';
+import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores';
 import { sendSecurityVulnerabilityWebhook } from '../test-runs';
 import {
   githubConnections,
@@ -189,7 +189,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       pr_dependency_scan_block_on_critical
     } = request.body;
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -255,7 +255,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     const user = request.user as JwtPayload;
     const { projectId } = request.params;
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -294,7 +294,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     const { projectId, prNumber } = request.params;
     const { changed_files } = request.body;
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -502,7 +502,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     const user = request.user as JwtPayload;
     const { projectId, prNumber } = request.params;
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -641,16 +641,15 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     const cvssScores = { CRITICAL: 9.8, HIGH: 8.1, MEDIUM: 5.5, LOW: 3.1 };
 
     const affectedProjects: CVEAlert['affected_projects'] = [];
-    for (const [projectId, project] of projects.entries()) {
-      if (project.organization_id === orgId) {
-        if (Math.random() > 0.5) {
-          affectedProjects.push({
-            project_id: projectId,
-            project_name: project.name,
-            installed_version: `${Math.floor(Math.random() * 5)}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 20)}`,
-            is_direct_dependency: Math.random() > 0.3,
-          });
-        }
+    const orgProjects = await dbListProjects(orgId);
+    for (const project of orgProjects) {
+      if (Math.random() > 0.5) {
+        affectedProjects.push({
+          project_id: project.id,
+          project_name: project.name,
+          installed_version: `${Math.floor(Math.random() * 5)}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 20)}`,
+          is_direct_dependency: Math.random() > 0.3,
+        });
       }
     }
 
@@ -981,7 +980,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
         };
       }
 
-      const project = projects.get(project_id);
+      const project = await dbGetProject(project_id);
       const projectName = project?.name || 'Unknown Project';
 
       // Simulate dependencies with vulnerabilities if not provided

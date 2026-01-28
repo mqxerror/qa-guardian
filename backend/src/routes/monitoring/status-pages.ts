@@ -23,21 +23,33 @@ import {
   CheckResult,
 } from './types';
 import {
-  statusPages,
-  statusPagesBySlug,
+  // Async DB functions for status pages
+  createStatusPage as dbCreateStatusPage,
+  getStatusPage as dbGetStatusPage,
+  getStatusPageBySlug as dbGetStatusPageBySlug,
+  updateStatusPage as dbUpdateStatusPage,
+  deleteStatusPage as dbDeleteStatusPage,
+  listStatusPages as dbListStatusPages,
+  // Async DB functions for checks
+  getUptimeCheck,
+  listUptimeChecks,
+  getCheckResults,
+  getTransactionCheck,
+  getTransactionResults,
+  getPerformanceCheck,
+  getPerformanceResults,
+  getDnsCheck,
+  getDnsResults,
+  getTcpCheck,
+  getTcpResults,
+  getCheckIncidentsAsync,
+  listTransactionChecks,
+  listPerformanceChecks,
+  listDnsChecks,
+  listTcpChecks,
+  // Deprecated Maps still needed for incidents/subscriptions (no DB functions yet)
   statusPageIncidents,
   statusPageSubscriptions,
-  uptimeChecks,
-  checkResults,
-  transactionChecks,
-  transactionResults,
-  performanceChecks,
-  performanceResults,
-  dnsChecks,
-  dnsResults,
-  tcpChecks,
-  tcpResults,
-  checkIncidents,
 } from './stores';
 
 // ================================
@@ -58,33 +70,33 @@ function generateSlug(name: string): string {
 /**
  * Get check name and status information
  */
-function getCheckInfo(
+async function getCheckInfo(
   checkId: string,
   checkType: string
-): { name: string; status: 'up' | 'down' | 'degraded' | 'unknown'; uptime?: number; avgResponseTime?: number } | null {
+): Promise<{ name: string; status: 'up' | 'down' | 'degraded' | 'unknown'; uptime?: number; avgResponseTime?: number } | null> {
   let check: any = null;
   let results: any[] = [];
 
   switch (checkType) {
     case 'uptime':
-      check = uptimeChecks.get(checkId);
-      results = checkResults.get(checkId) || [];
+      check = await getUptimeCheck(checkId);
+      results = await getCheckResults(checkId);
       break;
     case 'transaction':
-      check = transactionChecks.get(checkId);
-      results = transactionResults.get(checkId) || [];
+      check = await getTransactionCheck(checkId);
+      results = await getTransactionResults(checkId);
       break;
     case 'performance':
-      check = performanceChecks.get(checkId);
-      results = performanceResults.get(checkId) || [];
+      check = await getPerformanceCheck(checkId);
+      results = await getPerformanceResults(checkId);
       break;
     case 'dns':
-      check = dnsChecks.get(checkId);
-      results = dnsResults.get(checkId) || [];
+      check = await getDnsCheck(checkId);
+      results = await getDnsResults(checkId);
       break;
     case 'tcp':
-      check = tcpChecks.get(checkId);
-      results = tcpResults.get(checkId) || [];
+      check = await getTcpCheck(checkId);
+      results = await getTcpResults(checkId);
       break;
   }
 
@@ -153,7 +165,7 @@ async function notifyStatusPageSubscribers(
     status?: string;
   }
 ) {
-  const statusPage = statusPages.get(statusPageId);
+  const statusPage = await dbGetStatusPage(statusPageId);
   if (!statusPage) return;
 
   const subscriptions = statusPageSubscriptions.get(statusPageId) || [];
@@ -193,8 +205,8 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const orgId = getOrganizationId(request);
 
-      const orgStatusPages = Array.from(statusPages.values())
-        .filter(sp => sp.organization_id === orgId)
+      const allStatusPages = await dbListStatusPages(orgId);
+      const orgStatusPages = allStatusPages
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       return { status_pages: orgStatusPages };
@@ -233,7 +245,8 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       let slug = body.custom_slug ? generateSlug(body.custom_slug) : generateSlug(body.name);
 
       // Check if slug is already taken
-      if (statusPagesBySlug.has(slug)) {
+      const existingBySlug = await dbGetStatusPageBySlug(slug);
+      if (existingBySlug) {
         // Add a random suffix to make it unique
         slug = `${slug}-${Math.random().toString(36).substring(2, 7)}`;
       }
@@ -258,18 +271,16 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
         updated_at: new Date(),
       };
 
-      statusPages.set(statusPage.id, statusPage);
-      statusPagesBySlug.set(slug, statusPage.id);
+      await dbCreateStatusPage(statusPage);
 
       // Log audit entry
       await logAuditEntry(
         request,
-        orgId,
-        userId,
         'create_status_page',
         'status_page',
         statusPage.id,
-        { name: statusPage.name, slug: statusPage.slug }
+        statusPage.name,
+        { slug: statusPage.slug }
       );
 
       return reply.status(201).send({ status_page: statusPage });
@@ -286,7 +297,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const { pageId } = request.params as { pageId: string };
 
-      const statusPage = statusPages.get(pageId);
+      const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
         return reply.status(404).send({ error: 'Status page not found' });
       }
@@ -307,7 +318,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       const { pageId } = request.params as { pageId: string };
       const body = request.body as Partial<StatusPage>;
 
-      const statusPage = statusPages.get(pageId);
+      const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
         return reply.status(404).send({ error: 'Status page not found' });
       }
@@ -315,13 +326,10 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       // If slug is being changed, validate it
       if (body.slug && body.slug !== statusPage.slug) {
         const newSlug = generateSlug(body.slug);
-        if (statusPagesBySlug.has(newSlug) && statusPagesBySlug.get(newSlug) !== pageId) {
+        const existingBySlug = await dbGetStatusPageBySlug(newSlug);
+        if (existingBySlug && existingBySlug.id !== pageId) {
           return reply.status(400).send({ error: 'Slug is already taken' });
         }
-        // Remove old slug mapping
-        statusPagesBySlug.delete(statusPage.slug);
-        // Add new slug mapping
-        statusPagesBySlug.set(newSlug, pageId);
         statusPage.slug = newSlug;
       }
 
@@ -340,17 +348,15 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       if (body.custom_domain !== undefined) statusPage.custom_domain = body.custom_domain;
 
       statusPage.updated_at = new Date();
-      statusPages.set(pageId, statusPage);
+      await dbUpdateStatusPage(pageId, statusPage);
 
       // Log audit entry
       await logAuditEntry(
         request,
-        orgId,
-        userId,
         'update_status_page',
         'status_page',
         pageId,
-        { name: statusPage.name }
+        statusPage.name
       );
 
       return { status_page: statusPage };
@@ -368,25 +374,21 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       const userId = (request.user as JwtPayload).id;
       const { pageId } = request.params as { pageId: string };
 
-      const statusPage = statusPages.get(pageId);
+      const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
         return reply.status(404).send({ error: 'Status page not found' });
       }
 
-      // Remove slug mapping
-      statusPagesBySlug.delete(statusPage.slug);
-      // Remove status page
-      statusPages.delete(pageId);
+      // Remove status page from DB
+      await dbDeleteStatusPage(pageId);
 
       // Log audit entry
       await logAuditEntry(
         request,
-        orgId,
-        userId,
         'delete_status_page',
         'status_page',
         pageId,
-        { name: statusPage.name }
+        statusPage.name
       );
 
       return { success: true };
@@ -405,38 +407,33 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       const availableChecks: { id: string; type: string; name: string; enabled: boolean }[] = [];
 
       // Uptime checks
-      for (const [id, check] of uptimeChecks) {
-        if (check.organization_id === orgId) {
-          availableChecks.push({ id, type: 'uptime', name: check.name, enabled: check.enabled });
-        }
+      const orgUptimeChecks = await listUptimeChecks(orgId);
+      for (const check of orgUptimeChecks) {
+        availableChecks.push({ id: check.id, type: 'uptime', name: check.name, enabled: check.enabled });
       }
 
       // Transaction checks
-      for (const [id, check] of transactionChecks) {
-        if (check.organization_id === orgId) {
-          availableChecks.push({ id, type: 'transaction', name: check.name, enabled: check.enabled });
-        }
+      const orgTransactionChecks = await listTransactionChecks(orgId);
+      for (const check of orgTransactionChecks) {
+        availableChecks.push({ id: check.id, type: 'transaction', name: check.name, enabled: check.enabled });
       }
 
       // Performance checks
-      for (const [id, check] of performanceChecks) {
-        if (check.organization_id === orgId) {
-          availableChecks.push({ id, type: 'performance', name: check.name, enabled: check.enabled });
-        }
+      const orgPerformanceChecks = await listPerformanceChecks(orgId);
+      for (const check of orgPerformanceChecks) {
+        availableChecks.push({ id: check.id, type: 'performance', name: check.name, enabled: check.enabled });
       }
 
       // DNS checks
-      for (const [id, check] of dnsChecks) {
-        if (check.organization_id === orgId) {
-          availableChecks.push({ id, type: 'dns', name: check.name, enabled: check.enabled });
-        }
+      const orgDnsChecks = await listDnsChecks(orgId);
+      for (const check of orgDnsChecks) {
+        availableChecks.push({ id: check.id, type: 'dns', name: check.name, enabled: check.enabled });
       }
 
       // TCP checks
-      for (const [id, check] of tcpChecks) {
-        if (check.organization_id === orgId) {
-          availableChecks.push({ id, type: 'tcp', name: check.name, enabled: check.enabled });
-        }
+      const orgTcpChecks = await listTcpChecks(orgId);
+      for (const check of orgTcpChecks) {
+        availableChecks.push({ id: check.id, type: 'tcp', name: check.name, enabled: check.enabled });
       }
 
       return { checks: availableChecks };
@@ -457,7 +454,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const { pageId } = request.params as { pageId: string };
 
-      const statusPage = statusPages.get(pageId);
+      const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
         return reply.status(404).send({ error: 'Status page not found' });
       }
@@ -490,7 +487,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
         affected_components?: string[];
       };
 
-      const statusPage = statusPages.get(pageId);
+      const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
         return reply.status(404).send({ error: 'Status page not found' });
       }
@@ -529,12 +526,11 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       // Log audit entry
       await logAuditEntry(
         request,
-        orgId,
-        userId,
         'create_status_incident',
         'status_page_incident',
         incidentId,
-        { title: incident.title, status: incident.status }
+        incident.title,
+        { status: incident.status }
       );
 
       // Notify subscribers about the new incident
@@ -560,7 +556,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const { pageId, incidentId } = request.params as { pageId: string; incidentId: string };
 
-      const statusPage = statusPages.get(pageId);
+      const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
         return reply.status(404).send({ error: 'Status page not found' });
       }
@@ -590,7 +586,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
         message: string;
       };
 
-      const statusPage = statusPages.get(pageId);
+      const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
         return reply.status(404).send({ error: 'Status page not found' });
       }
@@ -630,11 +626,10 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       // Log audit entry
       await logAuditEntry(
         request,
-        orgId,
-        userId,
         'update_status_incident',
         'status_page_incident',
         incidentId,
+        incident.title,
         { status: incident.status, message: body.message.substring(0, 100) }
       );
 
@@ -663,7 +658,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       const userId = (request.user as JwtPayload).id;
       const { pageId, incidentId } = request.params as { pageId: string; incidentId: string };
 
-      const statusPage = statusPages.get(pageId);
+      const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
         return reply.status(404).send({ error: 'Status page not found' });
       }
@@ -680,12 +675,10 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       // Log audit entry
       await logAuditEntry(
         request,
-        orgId,
-        userId,
         'delete_status_incident',
         'status_page_incident',
         incidentId,
-        { title: deletedIncident.title }
+        deletedIncident.title
       );
 
       return { success: true };
@@ -702,23 +695,20 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const { slug } = request.params as { slug: string };
 
-      const pageId = statusPagesBySlug.get(slug);
-      if (!pageId) {
-        return reply.status(404).send({ error: 'Status page not found' });
-      }
-
-      const statusPage = statusPages.get(pageId);
+      const statusPage = await dbGetStatusPageBySlug(slug);
       if (!statusPage) {
         return reply.status(404).send({ error: 'Status page not found' });
       }
+
+      const pageId = statusPage.id;
 
       if (!statusPage.is_public) {
         return reply.status(403).send({ error: 'This status page is private' });
       }
 
       // Build status page data
-      const checksData = statusPage.checks.map(spCheck => {
-        const checkInfo = getCheckInfo(spCheck.check_id, spCheck.check_type);
+      const checksData = await Promise.all(statusPage.checks.map(async (spCheck) => {
+        const checkInfo = await getCheckInfo(spCheck.check_id, spCheck.check_type);
         return {
           id: spCheck.check_id,
           type: spCheck.check_type,
@@ -728,7 +718,8 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
           avg_response_time: statusPage.show_response_time ? checkInfo?.avgResponseTime : undefined,
           order: spCheck.order,
         };
-      }).sort((a, b) => a.order - b.order);
+      }));
+      checksData.sort((a, b) => a.order - b.order);
 
       // Get overall status
       const hasDown = checksData.some(c => c.status === 'down');
@@ -743,14 +734,14 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
 
         // Get automatic incidents from checks
         for (const spCheck of statusPage.checks) {
-          const checkIncidentsList = checkIncidents.get(spCheck.check_id) || [];
-          const recentIncidents = checkIncidentsList
+          const checkIncidentsList = await getCheckIncidentsAsync(spCheck.check_id);
+          const recentIncidents = await Promise.all(checkIncidentsList
             .filter(i => new Date(i.started_at) >= historyStart)
-            .map(i => ({
+            .map(async (i) => ({
               ...i,
-              check_name: getCheckInfo(spCheck.check_id, spCheck.check_type)?.name || 'Unknown',
+              check_name: (await getCheckInfo(spCheck.check_id, spCheck.check_type))?.name || 'Unknown',
               type: 'automatic',
-            }));
+            })));
           incidents.push(...recentIncidents);
         }
 
@@ -809,15 +800,11 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(400).send({ error: 'Invalid email format' });
       }
 
-      const pageId = statusPagesBySlug.get(slug);
-      if (!pageId) {
-        return reply.status(404).send({ error: 'Status page not found' });
-      }
-
-      const statusPage = statusPages.get(pageId);
+      const statusPage = await dbGetStatusPageBySlug(slug);
       if (!statusPage || !statusPage.is_public) {
         return reply.status(404).send({ error: 'Status page not found' });
       }
+      const pageId = statusPage.id;
 
       // Check if already subscribed
       const existingSubscriptions = statusPageSubscriptions.get(pageId) || [];
@@ -895,10 +882,11 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(400).send({ error: 'Verification token is required' });
       }
 
-      const pageId = statusPagesBySlug.get(slug);
-      if (!pageId) {
+      const statusPage = await dbGetStatusPageBySlug(slug);
+      if (!statusPage) {
         return reply.status(404).send({ error: 'Status page not found' });
       }
+      const pageId = statusPage.id;
 
       const subscriptions = statusPageSubscriptions.get(pageId) || [];
       const subscription = subscriptions.find(s => s.verification_token === token);
@@ -919,8 +907,6 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       subscription.verified = true;
       subscription.verified_at = new Date();
       subscription.verification_token = undefined;
-
-      const statusPage = statusPages.get(pageId);
       console.log(`[STATUS PAGE SUBSCRIPTION] Subscription verified:`);
       console.log(`  Email: ${subscription.email}`);
       console.log(`  Status Page: ${statusPage?.name}`);
@@ -944,10 +930,11 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(400).send({ error: 'Unsubscribe token is required' });
       }
 
-      const pageId = statusPagesBySlug.get(slug);
-      if (!pageId) {
+      const statusPage = await dbGetStatusPageBySlug(slug);
+      if (!statusPage) {
         return reply.status(404).send({ error: 'Status page not found' });
       }
+      const pageId = statusPage.id;
 
       const subscriptions = statusPageSubscriptions.get(pageId) || [];
       const subscriptionIndex = subscriptions.findIndex(s => s.unsubscribe_token === token);
@@ -958,8 +945,6 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
 
       const subscription = subscriptions[subscriptionIndex];
       subscriptions.splice(subscriptionIndex, 1);
-
-      const statusPage = statusPages.get(pageId);
       console.log(`[STATUS PAGE SUBSCRIPTION] Unsubscribed:`);
       console.log(`  Email: ${subscription.email}`);
       console.log(`  Status Page: ${statusPage?.name}`);
@@ -978,15 +963,11 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const { slug } = request.params as { slug: string };
 
-      const pageId = statusPagesBySlug.get(slug);
-      if (!pageId) {
-        return reply.status(404).send({ error: 'Status page not found' });
-      }
-
-      const statusPage = statusPages.get(pageId);
+      const statusPage = await dbGetStatusPageBySlug(slug);
       if (!statusPage || !statusPage.is_public) {
         return reply.status(404).send({ error: 'Status page not found' });
       }
+      const pageId = statusPage.id;
 
       const subscriptions = statusPageSubscriptions.get(pageId) || [];
       const verifiedCount = subscriptions.filter(s => s.verified).length;

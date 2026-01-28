@@ -1395,6 +1395,30 @@ export async function getDeletedCheckHistory(checkId: string): Promise<DeletedCh
 }
 
 
+export async function listDeletedCheckHistory(organizationId: string): Promise<DeletedCheckHistory[]> {
+  if (isDatabaseConnected()) {
+    const result = await query<any>(
+      `SELECT * FROM deleted_check_history WHERE organization_id = $1 ORDER BY deleted_at DESC`,
+      [organizationId]
+    );
+    if (result) {
+      return result.rows.map((row: any) => ({
+        check_id: row.check_id,
+        check_name: row.check_name,
+        check_type: row.check_type,
+        organization_id: row.organization_id,
+        deleted_by: row.deleted_by,
+        deleted_at: new Date(row.deleted_at),
+        check_config: typeof row.check_config === 'string' ? JSON.parse(row.check_config) : row.check_config,
+        historical_results_count: row.historical_results_count,
+        last_status: row.last_status,
+      }));
+    }
+    return [];
+  }
+  return [];
+}
+
 // =============================
 // MEMORY STORE ACCESS (for compatibility)
 // =============================

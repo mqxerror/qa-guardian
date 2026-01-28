@@ -13,8 +13,8 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth';
-import { projects } from '../projects';
-import { testSuites, tests } from '../test-suites';
+import { getProject as dbGetProject } from '../projects/stores';
+import { createTestSuite as dbCreateTestSuite, createTest as dbCreateTest } from '../test-suites/stores';
 
 import {
   GitHubConnection,
@@ -179,7 +179,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Verify project exists and belongs to user's organization
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -236,7 +236,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     if (testFiles.length > 0) {
       // Create a test suite for GitHub tests
       const suiteId = `github-${connectionId}`;
-      testSuites.set(suiteId, {
+      await dbCreateTestSuite({
         id: suiteId,
         project_id: projectId,
         organization_id: user.organization_id,
@@ -249,7 +249,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
       // Import test files as tests
       for (const testFile of testFiles) {
         const testId = `gh-${connectionId}-${importedCount}`;
-        tests.set(testId, {
+        await dbCreateTest({
           id: testId,
           suite_id: suiteId,
           organization_id: user.organization_id,
@@ -306,7 +306,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const { projectId } = request.params;
 
     // Verify project exists and user has access
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -361,7 +361,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const { projectId } = request.params;
 
     // Verify project exists and user has access
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -409,7 +409,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const { projectId } = request.params;
 
     // Verify project exists and user has access
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -474,7 +474,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Verify project exists and user has access
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -550,7 +550,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const { projectId } = request.params;
     const { pr_checks_enabled } = request.body;
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -598,7 +598,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const user = request.user as JwtPayload;
     const { projectId } = request.params;
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -653,7 +653,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const { projectId, prNumber } = request.params;
     const { status, description, test_run_id } = request.body;
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -749,7 +749,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const user = request.user as JwtPayload;
     const { projectId, prNumber } = request.params;
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -792,7 +792,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const { projectId } = request.params;
     const { pr_comments_enabled } = request.body;
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -841,7 +841,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const { projectId, prNumber } = request.params;
     const { passed, failed, skipped, test_run_id } = request.body;
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -958,7 +958,7 @@ ${status}
     const user = request.user as JwtPayload;
     const { projectId, prNumber } = request.params;
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project) {
       return reply.status(404).send({
         error: 'Not Found',

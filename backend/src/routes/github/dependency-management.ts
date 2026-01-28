@@ -12,7 +12,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth';
-import { projects } from '../projects';
+import { getProject as dbGetProject } from '../projects/stores';
 
 // ============================================================
 // Feature #777: Dependency Allowlist/Blocklist Types
@@ -801,7 +801,7 @@ export async function dependencyManagementRoutes(app: FastifyInstance): Promise<
     }
 
     // Get project name
-    const project = projects.get(project_id);
+    const project = await dbGetProject(project_id);
     const projectName = project?.name || 'Unknown Project';
 
     // Determine update type
@@ -908,7 +908,7 @@ export async function dependencyManagementRoutes(app: FastifyInstance): Promise<
     }
 
     // Get project name
-    const project = projects.get(project_id);
+    const project = await dbGetProject(project_id);
     const projectName = project?.name || 'demo-project';
 
     // Simulated vulnerable dependencies with available fixes

@@ -15,7 +15,15 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../../middleware/auth';
 import { logAuditEntry } from '../audit-logs';
 import { UptimeCheck, MaintenanceWindow } from './types';
-import { uptimeChecks, maintenanceWindows, checkResults } from './stores';
+import {
+  getUptimeCheck,
+  listUptimeChecks,
+  updateUptimeCheck,
+  getCheckResults,
+  getMaintenanceWindows,
+  createMaintenanceWindow as dbCreateMaintenanceWindow,
+  deleteMaintenanceWindow as dbDeleteMaintenanceWindow,
+} from './stores';
 import { startCheckInterval, stopCheckInterval } from './helpers';
 
 export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
@@ -28,11 +36,11 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({ error: 'Not Found', message: 'Uptime check not found' });
       }
-      const windows = maintenanceWindows.get(checkId) || [];
+      const windows = await getMaintenanceWindows(checkId);
       const now = new Date();
 
       // Separate active and scheduled windows
@@ -85,7 +93,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const { name, start_time, end_time, reason } = request.body;
       const orgId = getOrganizationId(request);
       const userId = (request.user as JwtPayload | ApiKeyPayload).id || 'api-key';
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({ error: 'Not Found', message: 'Uptime check not found' });
       }
@@ -111,9 +119,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
         created_at: new Date(),
       };
 
-      const windows = maintenanceWindows.get(checkId) || [];
-      windows.push(newWindow);
-      maintenanceWindows.set(checkId, windows);
+      await dbCreateMaintenanceWindow(newWindow);
 
       // Log audit entry
       logAuditEntry(
@@ -121,7 +127,8 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
         'monitoring.maintenance.created',
         'maintenance_window',
         newWindow.id,
-        { checkId, name, start_time, end_time, reason }
+        name,
+        { checkId, start_time, end_time, reason }
       );
 
       console.log(`[MONITORING] Maintenance window created: "${name}" for check ${check.name} (${startDate.toISOString()} - ${endDate.toISOString()})`);
@@ -149,7 +156,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const { checkId, windowId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -158,18 +165,17 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const windows = maintenanceWindows.get(checkId) || [];
-      const windowIndex = windows.findIndex(w => w.id === windowId);
+      const windows = await getMaintenanceWindows(checkId);
+      const deletedWindow = windows.find(w => w.id === windowId);
 
-      if (windowIndex === -1) {
+      if (!deletedWindow) {
         return reply.status(404).send({
           error: 'Not Found',
           message: 'Maintenance window not found',
         });
       }
 
-      const deletedWindow = windows.splice(windowIndex, 1)[0];
-      maintenanceWindows.set(checkId, windows);
+      await dbDeleteMaintenanceWindow(windowId);
 
       // Log audit entry
       logAuditEntry(
@@ -177,7 +183,8 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
         'monitoring.maintenance.deleted',
         'maintenance_window',
         windowId,
-        { checkId, name: deletedWindow.name }
+        deletedWindow.name,
+        { checkId }
       );
 
       console.log(`[MONITORING] Maintenance window deleted: "${deletedWindow.name}" for check ${check.name}`);
@@ -238,16 +245,17 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
 
       // Determine which checks to apply the maintenance window to
       let targetChecks: UptimeCheck[] = [];
-      const orgChecks = Array.from(uptimeChecks.values()).filter(c => c.organization_id === orgId);
+      const orgChecks = await listUptimeChecks(orgId);
 
       if (all_checks) {
         // Apply to all checks in the organization
         targetChecks = orgChecks;
       } else if (check_ids && check_ids.length > 0) {
         // Apply to specified check IDs
-        targetChecks = check_ids
-          .map(id => uptimeChecks.get(id))
-          .filter((c): c is UptimeCheck => c !== undefined && c.organization_id === orgId);
+        const checkPromises = check_ids.map(id => getUptimeCheck(id));
+        const resolvedChecks = await Promise.all(checkPromises);
+        targetChecks = resolvedChecks
+          .filter((c): c is UptimeCheck => c !== null && c !== undefined && c.organization_id === orgId);
       } else if (tags && tags.length > 0) {
         // Apply to checks with matching tags
         targetChecks = orgChecks.filter(c =>
@@ -289,9 +297,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
           created_at: new Date(),
         };
 
-        const windows = maintenanceWindows.get(check.id) || [];
-        windows.push(newWindow);
-        maintenanceWindows.set(check.id, windows);
+        await dbCreateMaintenanceWindow(newWindow);
 
         createdWindows.push({
           window_id: newWindow.id,
@@ -306,7 +312,8 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
         'monitoring.maintenance.bulk_created',
         'maintenance_window',
         groupId,
-        { name, check_count: createdWindows.length, start_time, end_time, reason }
+        name,
+        { check_count: createdWindows.length, start_time, end_time, reason }
       );
 
       console.log(`[MONITORING] Bulk maintenance window created: "${name}" for ${createdWindows.length} checks (${startDate.toISOString()} - ${endDate.toISOString()})`);
@@ -342,8 +349,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const query = request.query as { active_only?: string };
 
-      const orgChecks = Array.from(uptimeChecks.values())
-        .filter(c => c.organization_id === orgId);
+      const orgChecks = await listUptimeChecks(orgId);
 
       const now = new Date();
       const allWindows: Array<{
@@ -360,7 +366,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       }> = [];
 
       for (const check of orgChecks) {
-        const windows = maintenanceWindows.get(check.id) || [];
+        const windows = await getMaintenanceWindows(check.id);
         for (const window of windows) {
           const isActive = window.start_time <= now && now < window.end_time;
 
@@ -409,7 +415,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const user = request.user as JwtPayload;
 
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -436,7 +442,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
         ? new Date(Date.now() + duration_hours * 60 * 60 * 1000)
         : undefined;
       check.updated_at = new Date();
-      uptimeChecks.set(checkId, check);
+      await updateUptimeCheck(checkId, check);
 
       // Stop the interval
       stopCheckInterval(checkId);
@@ -474,7 +480,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -503,7 +509,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       check.pause_reason = undefined;
       check.pause_expires_at = undefined;
       check.updated_at = new Date();
-      uptimeChecks.set(checkId, check);
+      await updateUptimeCheck(checkId, check);
 
       // Start the interval
       startCheckInterval(check);
@@ -539,7 +545,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -550,7 +556,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
 
       check.enabled = !check.enabled;
       check.updated_at = new Date();
-      uptimeChecks.set(checkId, check);
+      await updateUptimeCheck(checkId, check);
 
       if (check.enabled) {
         startCheckInterval(check);
@@ -592,7 +598,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const { range = '24h', interval = 'auto' } = request.query;
       const orgId = getOrganizationId(request);
 
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -601,7 +607,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const results = checkResults.get(checkId) || [];
+      const results = await getCheckResults(checkId);
       const now = new Date();
 
       // Calculate time range

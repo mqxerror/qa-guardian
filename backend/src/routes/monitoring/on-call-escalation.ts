@@ -103,12 +103,10 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
       // Log audit entry
       await logAuditEntry(
         request,
-        orgId,
-        userId,
         'create_on_call_schedule',
         'on_call_schedule',
         scheduleId,
-        { name: schedule.name }
+        schedule.name
       );
 
       return reply.status(201).send({
@@ -202,12 +200,10 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
       // Log audit entry
       await logAuditEntry(
         request,
-        orgId,
-        userId,
         'update_on_call_schedule',
         'on_call_schedule',
         scheduleId,
-        { name: schedule.name }
+        schedule.name
       );
 
       return {
@@ -250,11 +246,10 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
       // Log audit entry
       await logAuditEntry(
         request,
-        orgId,
-        userId,
         'rotate_on_call',
         'on_call_schedule',
         scheduleId,
+        schedule.name,
         {
           previous_on_call: previousOnCall?.user_name,
           new_on_call: newOnCall?.user_name
@@ -296,12 +291,10 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
       // Log audit entry
       await logAuditEntry(
         request,
-        orgId,
-        userId,
         'delete_on_call_schedule',
         'on_call_schedule',
         scheduleId,
-        { name: schedule.name }
+        schedule.name
       );
 
       return { success: true };
@@ -430,12 +423,11 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
       // Log audit entry
       await logAuditEntry(
         request,
-        orgId,
-        policy.created_by,
         'create_escalation_policy',
         'escalation_policy',
         policyId,
-        { name: policy.name, levels: policy.levels.length }
+        policy.name,
+        { levels: policy.levels.length }
       );
 
       return reply.status(201).send({
@@ -543,12 +535,10 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
       const userId = user.id;
       await logAuditEntry(
         request,
-        orgId,
-        userId,
         'update_escalation_policy',
         'escalation_policy',
         policyId,
-        { name: policy.name }
+        policy.name
       );
 
       return {
@@ -582,12 +572,10 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
       // Log audit entry
       await logAuditEntry(
         request,
-        orgId,
-        userId,
         'delete_escalation_policy',
         'escalation_policy',
         policyId,
-        { name: policy.name }
+        policy.name
       );
 
       return { success: true };

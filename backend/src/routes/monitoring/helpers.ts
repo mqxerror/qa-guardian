@@ -28,13 +28,21 @@ import {
 } from './types';
 
 import {
-  uptimeChecks,
-  checkResults,
-  maintenanceWindows,
-  checkIncidents,
-  activeIncidents,
-  consecutiveFailures,
+  // Async DB functions
+  getUptimeCheck,
+  getMaintenanceWindows,
+  getConsecutiveFailures,
+  setConsecutiveFailures,
+  addCheckResult,
+  getActiveIncident,
+  setActiveIncident,
+  clearActiveIncident,
+  createIncident,
+  resolveIncident,
+  getCheckIncidentsAsync,
+  // Runtime-only Map (cannot be serialized)
   checkIntervals,
+  // Deprecated Maps (no DB functions yet)
   alertCorrelationConfigs,
   alertCorrelations,
   alertToCorrelation,
@@ -110,8 +118,8 @@ export function evaluateAssertion(
 /**
  * Check if a check is currently in a maintenance window
  */
-export function isInMaintenanceWindow(checkId: string): { inMaintenance: boolean; window?: MaintenanceWindow } {
-  const windows = maintenanceWindows.get(checkId) || [];
+export async function isInMaintenanceWindow(checkId: string): Promise<{ inMaintenance: boolean; window?: MaintenanceWindow }> {
+  const windows = await getMaintenanceWindows(checkId);
   const now = new Date();
 
   for (const window of windows) {
@@ -230,16 +238,16 @@ export async function runCheck(check: UptimeCheck, location: MonitoringLocation)
   }
 
   // Check for maintenance window
-  const maintenanceStatus = isInMaintenanceWindow(check.id);
+  const maintenanceStatus = await isInMaintenanceWindow(check.id);
   if (maintenanceStatus.inMaintenance) {
     console.log(`[MONITORING] Check ${check.name}: In maintenance window "${maintenanceStatus.window?.name}" - suppressing alerts`);
   } else {
     const threshold = check.consecutive_failures_threshold || 1;
-    const currentFailures = consecutiveFailures.get(check.id) || 0;
+    const currentFailures = await getConsecutiveFailures(check.id);
 
     if (result.status === 'down' || result.status === 'degraded') {
       const newFailures = currentFailures + 1;
-      consecutiveFailures.set(check.id, newFailures);
+      await setConsecutiveFailures(check.id, newFailures);
 
       if (newFailures < threshold) {
         result.status = 'up';
@@ -252,20 +260,15 @@ export async function runCheck(check: UptimeCheck, location: MonitoringLocation)
       if (currentFailures > 0) {
         console.log(`[MONITORING] Check ${check.name}: Reset consecutive failures (was ${currentFailures})`);
       }
-      consecutiveFailures.set(check.id, 0);
+      await setConsecutiveFailures(check.id, 0);
     }
   }
 
   // Store the result
-  const existingResults = checkResults.get(check.id) || [];
-  existingResults.unshift(result);
-  if (existingResults.length > 100) {
-    existingResults.pop();
-  }
-  checkResults.set(check.id, existingResults);
+  await addCheckResult(result);
 
   // Track incidents
-  const activeIncident = activeIncidents.get(check.id);
+  const activeIncident = await getActiveIncident(check.id);
 
   if (result.status === 'down' || result.status === 'degraded') {
     if (!activeIncident) {
@@ -277,7 +280,7 @@ export async function runCheck(check: UptimeCheck, location: MonitoringLocation)
         error: result.error,
         affected_locations: [location],
       };
-      activeIncidents.set(check.id, newIncident);
+      await setActiveIncident(check.id, newIncident);
       console.log(`[INCIDENT] Started incident for ${check.name}: ${result.status}`);
     } else {
       if (!activeIncident.affected_locations.includes(location)) {
@@ -286,6 +289,7 @@ export async function runCheck(check: UptimeCheck, location: MonitoringLocation)
       if (activeIncident.status === 'degraded' && result.status === 'down') {
         activeIncident.status = 'down';
       }
+      await setActiveIncident(check.id, activeIncident);
     }
   } else {
     if (activeIncident) {
@@ -293,14 +297,8 @@ export async function runCheck(check: UptimeCheck, location: MonitoringLocation)
       activeIncident.ended_at = endTime;
       activeIncident.duration_seconds = Math.round((endTime.getTime() - activeIncident.started_at.getTime()) / 1000);
 
-      const incidents = checkIncidents.get(check.id) || [];
-      incidents.unshift(activeIncident);
-      if (incidents.length > 50) {
-        incidents.pop();
-      }
-      checkIncidents.set(check.id, incidents);
-
-      activeIncidents.delete(check.id);
+      await resolveIncident(activeIncident.id, endTime);
+      await clearActiveIncident(check.id);
       console.log(`[INCIDENT] Resolved incident for ${check.name} after ${activeIncident.duration_seconds}s`);
     }
   }
@@ -337,8 +335,8 @@ export function startCheckInterval(check: UptimeCheck) {
 
   runCheckFromAllLocations(check);
 
-  const intervalId = setInterval(() => {
-    const currentCheck = uptimeChecks.get(check.id);
+  const intervalId = setInterval(async () => {
+    const currentCheck = await getUptimeCheck(check.id);
     if (currentCheck && currentCheck.enabled) {
       runCheckFromAllLocations(currentCheck);
     } else {

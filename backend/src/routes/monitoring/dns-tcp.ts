@@ -34,10 +34,20 @@ import {
 } from './types';
 
 import {
-  dnsChecks,
-  dnsResults,
-  tcpChecks,
-  tcpResults,
+  createDnsCheck,
+  getDnsCheck,
+  updateDnsCheck,
+  deleteDnsCheck as dbDeleteDnsCheck,
+  listDnsChecks,
+  addDnsResult,
+  getDnsResults,
+  createTcpCheck,
+  getTcpCheck,
+  updateTcpCheck,
+  deleteTcpCheck as dbDeleteTcpCheck,
+  listTcpChecks,
+  addTcpResult,
+  getTcpResults,
 } from './stores';
 
 /**
@@ -54,10 +64,9 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request) => {
       const orgId = getOrganizationId(request);
-      const checks = Array.from(dnsChecks.values())
-        .filter(check => check.organization_id === orgId)
-        .map(check => {
-          const results = dnsResults.get(check.id) || [];
+      const allDnsChecks = await listDnsChecks(orgId);
+      const checks = await Promise.all(allDnsChecks.map(async (check) => {
+          const results = await getDnsResults(check.id);
           const latestResult = results[0];
 
           return {
@@ -69,7 +78,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
             latest_checked_at: latestResult?.checked_at.toISOString(),
             latest_resolved_values: latestResult?.resolved_values || [],
           };
-        });
+        }));
 
       return { checks, total: checks.length };
     }
@@ -150,8 +159,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
         updated_at: new Date(),
       };
 
-      dnsChecks.set(checkId, check);
-      dnsResults.set(checkId, []);
+      await createDnsCheck(check);
 
       logAuditEntry(
         request,
@@ -183,7 +191,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = dnsChecks.get(checkId);
+      const check = await getDnsCheck(checkId);
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -289,10 +297,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
       };
 
       // Store result
-      const results = dnsResults.get(checkId) || [];
-      results.unshift(result);
-      if (results.length > 100) results.pop(); // Keep last 100 results
-      dnsResults.set(checkId, results);
+      await addDnsResult(result);
 
       return {
         message: 'DNS check executed',
@@ -314,7 +319,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = dnsChecks.get(checkId);
+      const check = await getDnsCheck(checkId);
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -322,7 +327,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const results = dnsResults.get(checkId) || [];
+      const results = await getDnsResults(checkId);
 
       return {
         check: {
@@ -361,7 +366,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const updates = request.body;
 
-      const check = dnsChecks.get(checkId);
+      const check = await getDnsCheck(checkId);
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -380,7 +385,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
       if (updates.enabled !== undefined) check.enabled = updates.enabled;
       check.updated_at = new Date();
 
-      dnsChecks.set(checkId, check);
+      await updateDnsCheck(checkId, check);
 
       logAuditEntry(
         request,
@@ -412,7 +417,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = dnsChecks.get(checkId);
+      const check = await getDnsCheck(checkId);
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -420,8 +425,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      dnsChecks.delete(checkId);
-      dnsResults.delete(checkId);
+      await dbDeleteDnsCheck(checkId);
 
       logAuditEntry(
         request,
@@ -448,7 +452,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = dnsChecks.get(checkId);
+      const check = await getDnsCheck(checkId);
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -458,7 +462,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
 
       check.enabled = !check.enabled;
       check.updated_at = new Date();
-      dnsChecks.set(checkId, check);
+      await updateDnsCheck(checkId, check);
 
       logAuditEntry(
         request,
@@ -490,10 +494,9 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request) => {
       const orgId = getOrganizationId(request);
-      const checks = Array.from(tcpChecks.values())
-        .filter(check => check.organization_id === orgId)
-        .map(check => {
-          const results = tcpResults.get(check.id) || [];
+      const allTcpChecks = await listTcpChecks(orgId);
+      const checks = await Promise.all(allTcpChecks.map(async (check) => {
+          const results = await getTcpResults(check.id);
           const latestResult = results[0];
 
           return {
@@ -505,7 +508,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
             latest_response_time: latestResult?.response_time,
             latest_checked_at: latestResult?.checked_at.toISOString(),
           };
-        });
+        }));
 
       return { checks, total: checks.length };
     }
@@ -574,8 +577,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
         updated_at: new Date(),
       };
 
-      tcpChecks.set(checkId, check);
-      tcpResults.set(checkId, []);
+      await createTcpCheck(check);
 
       logAuditEntry(
         request,
@@ -607,7 +609,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = tcpChecks.get(checkId);
+      const check = await getTcpCheck(checkId);
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -675,10 +677,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
       };
 
       // Store result
-      const results = tcpResults.get(checkId) || [];
-      results.unshift(result);
-      if (results.length > 100) results.pop(); // Keep last 100 results
-      tcpResults.set(checkId, results);
+      await addTcpResult(result);
 
       return {
         message: 'TCP check executed',
@@ -700,7 +699,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = tcpChecks.get(checkId);
+      const check = await getTcpCheck(checkId);
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -708,7 +707,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const results = tcpResults.get(checkId) || [];
+      const results = await getTcpResults(checkId);
 
       return {
         check: {
@@ -734,7 +733,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = tcpChecks.get(checkId);
+      const check = await getTcpCheck(checkId);
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -742,8 +741,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      tcpChecks.delete(checkId);
-      tcpResults.delete(checkId);
+      await dbDeleteTcpCheck(checkId);
 
       logAuditEntry(
         request,
@@ -770,7 +768,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = tcpChecks.get(checkId);
+      const check = await getTcpCheck(checkId);
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -780,7 +778,7 @@ export async function dnsTcpRoutes(app: FastifyInstance): Promise<void> {
 
       check.enabled = !check.enabled;
       check.updated_at = new Date();
-      tcpChecks.set(checkId, check);
+      await updateTcpCheck(checkId, check);
 
       logAuditEntry(
         request,

@@ -16,7 +16,20 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../../middleware/auth';
 import { logAuditEntry } from '../audit-logs';
 import { UptimeCheck, CheckResult, Incident, DeletedCheckHistory, MonitoringLocation, UptimeAssertion } from './types';
-import { uptimeChecks, checkResults, checkIncidents, activeIncidents, deletedCheckHistory } from './stores';
+import {
+  getUptimeCheck,
+  listUptimeChecks,
+  createUptimeCheck,
+  updateUptimeCheck,
+  deleteUptimeCheck as dbDeleteUptimeCheck,
+  getCheckResults,
+  getLatestCheckResult,
+  getCheckIncidentsAsync,
+  getActiveIncident,
+  addDeletedCheckHistory,
+  getDeletedCheckHistory,
+  listDeletedCheckHistory,
+} from './stores';
 import { MONITORING_LOCATIONS, runCheckFromAllLocations, startCheckInterval, stopCheckInterval, formatDuration } from './helpers';
 
 export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
@@ -40,16 +53,15 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const orgId = getOrganizationId(request);
       const { enabled, tag, group } = request.query;
-      let checks = Array.from(uptimeChecks.values()).filter(check => check.organization_id === orgId);
+      let checks = await listUptimeChecks(orgId);
       if (enabled !== undefined) {
         checks = checks.filter(check => check.enabled === (enabled === 'true'));
       }
       if (tag) { checks = checks.filter(check => check.tags && check.tags.includes(tag)); }
       if (group) { checks = checks.filter(check => check.group === group); }
       checks.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
-      const checksWithStatus = checks.map(check => {
-        const results = checkResults.get(check.id) || [];
-        const latestResult = results[0];
+      const checksWithStatus = await Promise.all(checks.map(async (check) => {
+        const latestResult = await getLatestCheckResult(check.id);
         return {
           ...check,
           created_at: check.created_at.toISOString(),
@@ -58,11 +70,10 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
           latest_response_time: latestResult?.response_time,
           latest_checked_at: latestResult?.checked_at.toISOString(),
         };
-      });
+      }));
 
       // Get all unique tags and groups for filter options
-      const allChecks = Array.from(uptimeChecks.values())
-        .filter(check => check.organization_id === orgId);
+      const allChecks = await listUptimeChecks(orgId);
       const allTags = [...new Set(allChecks.flatMap(c => c.tags || []))].sort();
       const allGroups = [...new Set(allChecks.map(c => c.group).filter(Boolean))].sort() as string[];
 
@@ -165,7 +176,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
         updated_at: new Date(),
       };
 
-      uptimeChecks.set(check.id, check);
+      await createUptimeCheck(check);
 
       // Start running the check
       startCheckInterval(check);
@@ -201,7 +212,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -210,8 +221,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const results = checkResults.get(checkId) || [];
-      const latestResult = results[0];
+      const latestResult = await getLatestCheckResult(checkId);
 
       return {
         check: {
@@ -254,7 +264,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const updates = request.body;
 
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -290,7 +300,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
         updated_at: new Date(),
       };
 
-      uptimeChecks.set(checkId, updatedCheck);
+      await updateUptimeCheck(checkId, updatedCheck);
 
       // Restart interval if interval changed or enabled status changed
       if (updates.interval !== undefined || updates.enabled !== undefined) {
@@ -335,7 +345,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const user = request.user as JwtPayload;
       const preserveHistory = request.query.preserve_history !== 'false'; // Default true
 
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -349,10 +359,10 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
 
       // Feature #943: Preserve history for audit purposes if requested
       if (preserveHistory) {
-        const results = checkResults.get(checkId) || [];
+        const results = await getCheckResults(checkId);
         const lastResult = results.length > 0 ? results[results.length - 1] : null;
 
-        deletedCheckHistory.set(checkId, {
+        await addDeletedCheckHistory({
           check_id: checkId,
           check_name: check.name,
           check_type: 'uptime',
@@ -380,8 +390,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       }
 
       // Delete check and results
-      uptimeChecks.delete(checkId);
-      checkResults.delete(checkId);
+      await dbDeleteUptimeCheck(checkId);
 
       // Log audit entry
       logAuditEntry(
@@ -408,8 +417,8 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const orgId = getOrganizationId(request);
 
-      const deletedChecks = Array.from(deletedCheckHistory.values())
-        .filter(h => h.organization_id === orgId)
+      const allDeletedHistory = await listDeletedCheckHistory(orgId);
+      const deletedChecks = allDeletedHistory
         .sort((a, b) => b.deleted_at.getTime() - a.deleted_at.getTime())
         .map(h => ({
           ...h,
@@ -433,7 +442,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const history = deletedCheckHistory.get(checkId);
+      const history = await getDeletedCheckHistory(checkId);
 
       if (!history || history.organization_id !== orgId) {
         return reply.status(404).send({
@@ -463,7 +472,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const user = request.user as JwtPayload;
 
-      const originalCheck = uptimeChecks.get(checkId);
+      const originalCheck = await getUptimeCheck(checkId);
 
       if (!originalCheck || originalCheck.organization_id !== orgId) {
         return reply.status(404).send({
@@ -483,7 +492,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
         enabled: false, // Start disabled so user can review before enabling
       };
 
-      uptimeChecks.set(duplicatedCheck.id, duplicatedCheck);
+      await createUptimeCheck(duplicatedCheck);
 
       // Log audit entry
       logAuditEntry(
@@ -535,15 +544,15 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       if (checkIds && checkIds.length > 0) {
         // Select by IDs
         for (const id of checkIds) {
-          const check = uptimeChecks.get(id);
+          const check = await getUptimeCheck(id);
           if (check && check.organization_id === orgId) {
             targetChecks.push(check);
           }
         }
       } else if (group) {
         // Select by group
-        targetChecks = Array.from(uptimeChecks.values())
-          .filter(check => check.organization_id === orgId && check.group === group);
+        const allOrgChecks = await listUptimeChecks(orgId);
+        targetChecks = allOrgChecks.filter(check => check.group === group);
       } else {
         return reply.status(400).send({
           error: 'Bad Request',
@@ -567,7 +576,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
             case 'enable':
               check.enabled = true;
               check.updated_at = new Date();
-              uptimeChecks.set(check.id, check);
+              await updateUptimeCheck(check.id, check);
               startCheckInterval(check);
               results.push({ id: check.id, name: check.name, success: true });
               affectedCount++;
@@ -576,7 +585,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
             case 'disable':
               check.enabled = false;
               check.updated_at = new Date();
-              uptimeChecks.set(check.id, check);
+              await updateUptimeCheck(check.id, check);
               stopCheckInterval(check.id);
               results.push({ id: check.id, name: check.name, success: true });
               affectedCount++;
@@ -584,8 +593,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
 
             case 'delete':
               stopCheckInterval(check.id);
-              uptimeChecks.delete(check.id);
-              checkResults.delete(check.id);
+              await dbDeleteUptimeCheck(check.id);
               results.push({ id: check.id, name: check.name, success: true });
               affectedCount++;
               break;
@@ -634,7 +642,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const { limit = '50', period = '24h', include_metrics = 'true' } = request.query;
       const orgId = getOrganizationId(request);
 
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -643,7 +651,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const results = checkResults.get(checkId) || [];
+      const results = await getCheckResults(checkId);
       const limitNum = parseInt(limit, 10);
       const includeMetrics = include_metrics === 'true';
 
@@ -702,7 +710,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -711,7 +719,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const results = checkResults.get(checkId) || [];
+      const results = await getCheckResults(checkId);
 
       // Group results by location
       const resultsByLocation: Record<string, {
@@ -780,7 +788,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -790,10 +798,10 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       }
 
       // Get closed incidents
-      const closedIncidents = checkIncidents.get(checkId) || [];
+      const closedIncidents = await getCheckIncidentsAsync(checkId);
 
       // Get active incident if any
-      const activeIncident = activeIncidents.get(checkId);
+      const activeIncident = await getActiveIncident(checkId);
 
       // Format incidents for response
       const formatIncident = (incident: Incident) => ({
@@ -832,7 +840,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -841,7 +849,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const results = checkResults.get(checkId) || [];
+      const results = await getCheckResults(checkId);
       const now = new Date();
 
       // Calculate uptime for different time periods
@@ -924,7 +932,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const { checkId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const check = uptimeChecks.get(checkId);
+      const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
         return reply.status(404).send({
@@ -954,8 +962,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const orgId = getOrganizationId(request);
 
-      const checks = Array.from(uptimeChecks.values())
-        .filter(check => check.organization_id === orgId);
+      const checks = await listUptimeChecks(orgId);
 
       let upCount = 0;
       let downCount = 0;
@@ -963,8 +970,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       let unknownCount = 0;
 
       for (const check of checks) {
-        const results = checkResults.get(check.id) || [];
-        const latestResult = results[0];
+        const latestResult = await getLatestCheckResult(check.id);
         if (!latestResult) {
           unknownCount++;
         } else if (latestResult.status === 'up') {

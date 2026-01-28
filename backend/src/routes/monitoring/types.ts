@@ -8,13 +8,7 @@
 // Global monitoring locations
 export type MonitoringLocation = 'us-east' | 'us-west' | 'europe' | 'asia-pacific' | 'australia';
 
-export const MONITORING_LOCATIONS: { id: MonitoringLocation; name: string; region: string; city: string }[] = [
-  { id: 'us-east', name: 'US East', region: 'North America', city: 'Virginia' },
-  { id: 'us-west', name: 'US West', region: 'North America', city: 'Oregon' },
-  { id: 'europe', name: 'Europe', region: 'Europe', city: 'Frankfurt' },
-  { id: 'asia-pacific', name: 'Asia Pacific', region: 'Asia', city: 'Singapore' },
-  { id: 'australia', name: 'Australia', region: 'Oceania', city: 'Sydney' },
-];
+// MONITORING_LOCATIONS is defined in helpers.ts to avoid duplicate exports
 
 // Assertion types for uptime checks
 export interface UptimeAssertion {
