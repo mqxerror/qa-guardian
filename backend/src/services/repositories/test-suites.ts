@@ -554,21 +554,5 @@ export async function getTestsMap(): Promise<Map<string, Test>> {
   return map;
 }
 
-/**
- * Get memory stores for backward compatibility with synchronous code
- * DEPRECATED: These now return empty Maps. Use async functions instead.
- * Will be removed in Feature #2103 when stores.ts is updated.
- */
-export function getMemoryTestSuites(): Map<string, TestSuite> {
-  // NOTE: Memory fallback removed (Feature #2100)
-  // Returns empty Map for backward compatibility until stores.ts is updated (Feature #2103)
-  console.warn('[DEPRECATED] getMemoryTestSuites() returns empty Map - use async getTestSuitesMap() instead');
-  return new Map<string, TestSuite>();
-}
-
-export function getMemoryTests(): Map<string, Test> {
-  // NOTE: Memory fallback removed (Feature #2100)
-  // Returns empty Map for backward compatibility until stores.ts is updated (Feature #2103)
-  console.warn('[DEPRECATED] getMemoryTests() returns empty Map - use async getTestsMap() instead');
-  return new Map<string, Test>();
-}
+// Feature #2101: Removed deprecated getMemoryTestSuites() and getMemoryTests()
+// Use async functions: getTestSuitesMap(), getTestsMap(), or individual CRUD operations
