@@ -3,9 +3,10 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
-import { testSuites, tests } from '../test-suites';
+import { testSuites, tests, getTestSuitesMap, getTestsMap } from '../test-suites';
 import { testRuns } from '../test-runs';
-import { projects } from './stores';
+import { listProjects as dbListProjects } from '../../services/repositories/projects';
+import { Project } from './types';
 
 export async function analyticsRoutes(app: FastifyInstance) {
   // Get dashboard statistics
@@ -15,22 +16,22 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Count active (non-archived) projects for this organization
-    const projectCount = Array.from(projects.values())
-      .filter(p => p.organization_id === orgId && !p.archived)
+    const projectCount = (await dbListProjects(orgId))
+      .filter(p => !p.archived)
       .length;
 
     // Count test suites for this organization
-    const suiteCount = Array.from(testSuites.values())
+    const suiteCount = Array.from(testSuites?.values() || [])
       .filter(s => s.organization_id === orgId)
       .length;
 
     // Count tests for this organization
-    const testCount = Array.from(tests.values())
+    const testCount = Array.from(tests?.values() || [])
       .filter(t => t.organization_id === orgId)
       .length;
 
     // Count test runs for this organization
-    const orgRuns = Array.from(testRuns.values())
+    const orgRuns = Array.from(testRuns?.values() || [])
       .filter(r => r.organization_id === orgId);
     const testRunCount = orgRuns.length;
 
@@ -59,8 +60,13 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get all test runs for this organization
-    const orgRuns = Array.from(testRuns.values())
+    const orgRuns = Array.from(testRuns?.values() || [])
       .filter(r => r.organization_id === orgId && r.results);
+
+    // Pre-fetch projects as a map for lookup
+    const orgProjects = await dbListProjects(orgId);
+    const projectsMap = new Map<string, Project>();
+    for (const p of orgProjects) { projectsMap.set(p.id, p); }
 
     // Track failure count and total runs per test
     const testStats: Map<string, {
@@ -87,7 +93,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
         const suite = testSuites.get(test.suite_id);
         if (!suite) continue;
 
-        const project = projects.get(suite.project_id);
+        const project = projectsMap.get(suite.project_id);
         if (!project) continue;
 
         const existingStats = testStats.get(testId) || {
@@ -132,7 +138,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get all test runs for this organization
-    const orgRuns = Array.from(testRuns.values())
+    const orgRuns = Array.from(testRuns?.values() || [])
       .filter(r => r.organization_id === orgId && r.status !== 'pending' && r.status !== 'running');
 
     // Track stats per browser
@@ -188,23 +194,22 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get all projects for this organization
-    const orgProjects = Array.from(projects.values())
-      .filter(p => p.organization_id === orgId);
+    const orgProjects = (await dbListProjects(orgId));
 
     // Build comparison data for each project
     const projectStats = orgProjects.map(project => {
       // Get suites for this project
-      const projectSuites = Array.from(testSuites.values())
+      const projectSuites = Array.from(testSuites?.values() || [])
         .filter(s => s.project_id === project.id);
 
       const suiteIds = projectSuites.map(s => s.id);
 
       // Get tests for this project's suites
-      const projectTests = Array.from(tests.values())
+      const projectTests = Array.from(tests?.values() || [])
         .filter(t => suiteIds.includes(t.suite_id));
 
       // Get test runs for this project's suites
-      const projectRuns = Array.from(testRuns.values())
+      const projectRuns = Array.from(testRuns?.values() || [])
         .filter(r => suiteIds.includes(r.suite_id) && r.status !== 'pending' && r.status !== 'running');
 
       const passedRuns = projectRuns.filter(r => r.status === 'passed').length;
@@ -249,13 +254,12 @@ export async function analyticsRoutes(app: FastifyInstance) {
     }
 
     // Get all projects for this organization
-    const orgProjects = Array.from(projects.values())
-      .filter(p => p.organization_id === orgId)
+    const orgProjects = (await dbListProjects(orgId))
       .filter(p => !projectIdFilter || p.id === projectIdFilter);
 
     // Get all suite IDs for these projects
     const projectIds = orgProjects.map(p => p.id);
-    const orgSuites = Array.from(testSuites.values())
+    const orgSuites = Array.from(testSuites?.values() || [])
       .filter(s => projectIds.includes(s.project_id));
     const suiteIds = orgSuites.map(s => s.id);
 
@@ -264,7 +268,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
 
-    const relevantRuns = Array.from(testRuns.values())
+    const relevantRuns = Array.from(testRuns?.values() || [])
       .filter(r => suiteIds.includes(r.suite_id))
       .filter(r => r.status !== 'pending' && r.status !== 'running')
       .filter(r => {
@@ -346,13 +350,12 @@ export async function analyticsRoutes(app: FastifyInstance) {
     }
 
     // Get all projects for this organization
-    const orgProjects = Array.from(projects.values())
-      .filter(p => p.organization_id === orgId)
+    const orgProjects = (await dbListProjects(orgId))
       .filter(p => !projectIdFilter || p.id === projectIdFilter);
 
     // Get all suite IDs for these projects
     const projectIds = orgProjects.map(p => p.id);
-    const orgSuites = Array.from(testSuites.values())
+    const orgSuites = Array.from(testSuites?.values() || [])
       .filter(s => projectIds.includes(s.project_id));
     const suiteIds = orgSuites.map(s => s.id);
 
@@ -361,7 +364,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
 
-    const relevantRuns = Array.from(testRuns.values())
+    const relevantRuns = Array.from(testRuns?.values() || [])
       .filter(r => suiteIds.includes(r.suite_id))
       .filter(r => r.test_type === 'accessibility')
       .filter(r => r.status !== 'pending' && r.status !== 'running')
@@ -497,13 +500,13 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const companySize = request.query.company_size || 'mid-market';
 
     // Calculate actual organization metrics from test data
-    const orgProjects = Array.from(projects.values())
-      .filter(p => p.organization_id === orgId && !p.archived);
-    const orgSuites = Array.from(testSuites.values())
+    const orgProjects = (await dbListProjects(orgId))
+      .filter(p => !p.archived);
+    const orgSuites = Array.from(testSuites?.values() || [])
       .filter(s => s.organization_id === orgId);
-    const orgTests = Array.from(tests.values())
+    const orgTests = Array.from(tests?.values() || [])
       .filter(t => t.organization_id === orgId);
-    const orgRuns = Array.from(testRuns.values())
+    const orgRuns = Array.from(testRuns?.values() || [])
       .filter(r => r.organization_id === orgId);
 
     // Calculate real metrics where possible, fallback to realistic estimates
@@ -699,11 +702,11 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get actual organization data
-    const orgProjects = Array.from(projects.values())
-      .filter(p => p.organization_id === orgId && !p.archived);
-    const orgTests = Array.from(tests.values())
+    const orgProjects = (await dbListProjects(orgId))
+      .filter(p => !p.archived);
+    const orgTests = Array.from(tests?.values() || [])
       .filter(t => t.organization_id === orgId);
-    const orgRuns = Array.from(testRuns.values())
+    const orgRuns = Array.from(testRuns?.values() || [])
       .filter(r => r.organization_id === orgId);
 
     // Calculate project-level metrics
@@ -857,11 +860,11 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const showAll = request.query.show_all === 'true';
 
     // Get actual organization data
-    const orgTests = Array.from(tests.values())
+    const orgTests = Array.from(tests?.values() || [])
       .filter(t => t.organization_id === orgId);
-    const orgRuns = Array.from(testRuns.values())
+    const orgRuns = Array.from(testRuns?.values() || [])
       .filter(r => r.organization_id === orgId);
-    const orgSuites = Array.from(testSuites.values())
+    const orgSuites = Array.from(testSuites?.values() || [])
       .filter(s => s.organization_id === orgId);
 
     // Calculate timeframe filter
@@ -1074,11 +1077,11 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get organization data
-    const orgTests = Array.from(tests.values())
+    const orgTests = Array.from(tests?.values() || [])
       .filter(t => t.organization_id === orgId);
-    const orgRuns = Array.from(testRuns.values())
+    const orgRuns = Array.from(testRuns?.values() || [])
       .filter(r => r.organization_id === orgId);
-    const orgSuites = Array.from(testSuites.values())
+    const orgSuites = Array.from(testSuites?.values() || [])
       .filter(s => s.organization_id === orgId);
 
     // Generate team member skills based on test patterns
@@ -1233,9 +1236,9 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get organization data
-    const orgTests = Array.from(tests.values())
+    const orgTests = Array.from(tests?.values() || [])
       .filter(t => t.organization_id === orgId);
-    const orgRuns = Array.from(testRuns.values())
+    const orgRuns = Array.from(testRuns?.values() || [])
       .filter(r => r.organization_id === orgId);
 
     // Calculate learning stats from actual data
@@ -1351,12 +1354,12 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get organization data
-    const orgTests = Array.from(tests.values())
+    const orgTests = Array.from(tests?.values() || [])
       .filter(t => t.organization_id === orgId);
-    const orgRuns = Array.from(testRuns.values())
+    const orgRuns = Array.from(testRuns?.values() || [])
       .filter(r => r.organization_id === orgId)
       .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
-    const orgSuites = Array.from(testSuites.values())
+    const orgSuites = Array.from(testSuites?.values() || [])
       .filter(s => s.organization_id === orgId);
 
     // Generate version numbers based on actual activity
