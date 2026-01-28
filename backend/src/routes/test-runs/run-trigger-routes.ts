@@ -80,7 +80,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       // Use request branch or default to 'main'
       const branchToUse: string = requestBranch || 'main';
 
-      const id = String(Date.now());
+      const id = crypto.randomUUID();
       const run: TestRun = {
         id,
         suite_id: suiteId,
@@ -133,7 +133,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       // Use request branch or default to 'main'
       const branchToUse: string = requestBranch || 'main';
 
-      const id = String(Date.now());
+      const id = crypto.randomUUID();
       const run: TestRun = {
         id,
         suite_id: test.suite_id,

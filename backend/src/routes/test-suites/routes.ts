@@ -107,7 +107,7 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const id = String(Date.now());
+    const id = crypto.randomUUID();
 
     // Determine default browser: use browsers array first element if provided, or browser, or default to chromium
     const defaultBrowser = browsers?.[0] as 'chromium' | 'firefox' | 'webkit' || browser || 'chromium';
@@ -438,7 +438,7 @@ export async function coreRoutes(app: FastifyInstance) {
 
     const { wcag_level, accessibility_rules, include_best_practices, include_experimental, include_pa11y, disable_javascript, a11y_fail_on_any, a11y_fail_on_critical, a11y_fail_on_serious, a11y_fail_on_moderate, a11y_fail_on_minor, a11y_timeout, a11y_wait_for, a11y_wait_selector, a11y_wait_time, a11y_scroll_page, a11y_scroll_behavior } = request.body;
 
-    const id = String(Date.now());
+    const id = crypto.randomUUID();
 
     // Feature #1846: Auto-generate basic steps for E2E tests when no steps provided
     let finalSteps = steps;
@@ -714,7 +714,7 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Create new step
     const newStep: TestStep = {
-      id: String(Date.now()),
+      id: crypto.randomUUID(),
       action,
       selector,
       value,

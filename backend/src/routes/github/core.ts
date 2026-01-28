@@ -213,7 +213,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Create connection
-    const connectionId = String(Date.now());
+    const connectionId = crypto.randomUUID();
     const connection: GitHubConnection = {
       id: connectionId,
       project_id: projectId,

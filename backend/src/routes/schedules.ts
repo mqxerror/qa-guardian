@@ -158,7 +158,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
       });
     }
 
-    const id = String(Date.now());
+    const id = crypto.randomUUID();
 
     // Calculate next run time
     let next_run_at: Date | undefined;
@@ -343,7 +343,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
     }
 
     // Create a test run with schedule_id
-    const runId = String(Date.now());
+    const runId = crypto.randomUUID();
     const run = {
       id: runId,
       suite_id: schedule.suite_id,

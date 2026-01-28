@@ -237,7 +237,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // Create the organization
-    const id = String(Date.now());
+    const id = crypto.randomUUID();
     const organization: Organization = {
       id,
       name: name.trim(),
@@ -337,7 +337,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // Create invitation
-    const invitationId = String(Date.now());
+    const invitationId = crypto.randomUUID();
     const invitation: Invitation = {
       id: invitationId,
       organization_id: id,

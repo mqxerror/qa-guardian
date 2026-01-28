@@ -142,7 +142,7 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    const id = String(Date.now());
+    const id = crypto.randomUUID();
     const slug = trimmedName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
     const projectData: Project = {
@@ -428,7 +428,7 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     const envVar: EnvironmentVariable = {
-      id: String(Date.now()),
+      id: crypto.randomUUID(),
       project_id: id,
       key: trimmedKey,
       value: value,

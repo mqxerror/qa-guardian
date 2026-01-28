@@ -158,7 +158,7 @@ export async function alertChannelRoutes(app: FastifyInstance) {
       });
     }
 
-    const id = String(Date.now());
+    const id = crypto.randomUUID();
     const now = new Date();
 
     const channel: AlertChannel = {

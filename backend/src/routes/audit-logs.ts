@@ -46,7 +46,7 @@ export async function logAuditEntry(
   const orgId = getOrganizationId(request);
 
   const entry: AuditLogEntry = {
-    id: String(Date.now()) + '-' + Math.random().toString(36).substr(2, 9),
+    id: crypto.randomUUID() + '-' + Math.random().toString(36).substr(2, 9),
     organization_id: orgId,
     user_id: user.id,
     user_email: 'type' in user && user.type === 'api_key' ? `API Key (${user.id.slice(0, 8)}...)` : (user as JwtPayload).email,
