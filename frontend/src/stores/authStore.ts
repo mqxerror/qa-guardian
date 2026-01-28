@@ -200,11 +200,36 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'qa-guardian-auth',
-      version: 1,
+      version: 2, // Feature #2098: Bumped to v2 to trigger migration for UUID validation
       partialize: (state) => ({
         token: state.token,
         user: state.user,
       }),
+      // Feature #2098: Migrate function to clear stale state with non-UUID organization_id
+      migrate: (persistedState: any, _version: number) => {
+        // Helper to validate UUID format
+        const isValidUUID = (str: string | undefined): boolean => {
+          if (!str) return false;
+          // Standard UUID pattern (versions 1-5) or zero/nil UUID (for seeded test data)
+          const standardUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+          const zeroUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          return standardUUID.test(str) || zeroUUID.test(str);
+        };
+
+        // Check if persisted state has valid organization_id
+        if (persistedState?.user?.organization_id && !isValidUUID(persistedState.user.organization_id)) {
+          console.log('[AuthStore] Clearing stale auth state with invalid organization_id:', persistedState.user.organization_id);
+          return { token: null, user: null };
+        }
+
+        // Also validate user.id if present
+        if (persistedState?.user?.id && !isValidUUID(persistedState.user.id)) {
+          console.log('[AuthStore] Clearing stale auth state with invalid user.id:', persistedState.user.id);
+          return { token: null, user: null };
+        }
+
+        return persistedState;
+      },
       merge: (persistedState: any, currentState: AuthState) => ({
         ...currentState,
         ...persistedState,
