@@ -1,7 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth';
 import { getTestSuite } from './test-suites';
-import { testRuns, sendScheduleTriggeredWebhook } from './test-runs';
+import { listTestRunsByOrg, createTestRun } from '../services/repositories/test-runs';
+import { sendScheduleTriggeredWebhook } from './test-runs/webhook-events';
 
 // Import repository functions and types (Feature #2092)
 import {
@@ -297,9 +298,10 @@ export async function scheduleRoutes(app: FastifyInstance) {
       });
     }
 
-    // Find all runs that were triggered by this schedule
-    const runs = Array.from(testRuns.values())
-      .filter(r => (r as any).schedule_id === id && r.organization_id === orgId)
+    // Find all runs that were triggered by this schedule (Feature #2117: async DB call)
+    const allRuns = await listTestRunsByOrg(orgId);
+    const runs = allRuns
+      .filter(r => (r as any).schedule_id === id)
       .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
       .map(r => ({
         id: r.id,
@@ -354,7 +356,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
       schedule_id: id, // Link to schedule
     };
 
-    testRuns.set(runId, run as any);
+    await createTestRun(run as any);
 
     // Update schedule metadata via repository
     await updateScheduleRepo(id, {
@@ -363,7 +365,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
     });
 
     // Import and start the test execution
-    const { runTestsForRun } = await import('./test-runs');
+    const { runTestsForRun } = await import('./test-runs.js');
     if (typeof runTestsForRun === 'function') {
       runTestsForRun(runId).catch(console.error);
     }
