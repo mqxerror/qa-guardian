@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { getUserOrganization, organizations, organizationMembers, DEFAULT_ORG_ID } from './organizations';
+import { seedDefaultOrganizations } from '../services/repositories/organizations';
 
 // Feature #2083: Import repository functions for database persistence
 import {
@@ -110,6 +111,7 @@ let seedingComplete = false;
 // Feature #2083: Now uses async repository function
 // Feature #2083: Initialize test users using repository
 async function initTestUsers() {
+  await seedDefaultOrganizations();
   await seedTestUsers();
   seedingComplete = true;
   console.log('[Auth] Test user seeding complete');

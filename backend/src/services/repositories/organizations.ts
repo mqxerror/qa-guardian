@@ -89,36 +89,35 @@ export const DEFAULT_RETRY_STRATEGY_SETTINGS: RetryStrategySettings = {
 };
 
 // ============================================================================
-// NOTE: Memory fallback stores have been REMOVED (Feature #2102)
-// All data is now persisted to PostgreSQL. If the database is not connected,
-// operations will fail gracefully (return null/empty arrays) or throw errors.
-// This ensures data integrity and prevents "not found" errors after server restarts.
+// In-memory fallback stores (used when PostgreSQL is not connected)
+// When database IS connected, these are kept in sync as a cache.
 // ============================================================================
 
-// Export empty Maps with deprecation warnings for backward compatibility
+const memoryOrganizations = new Map<string, Organization>();
+const memoryOrganizationMembers = new Map<string, OrganizationMember[]>();
+const memoryInvitations = new Map<string, Invitation>();
+const memoryAutoQuarantineSettings = new Map<string, AutoQuarantineSettings>();
+const memoryRetryStrategySettings = new Map<string, RetryStrategySettings>();
+
+// Export memory Maps for backward compatibility (used by route files)
 export function getMemoryOrganizations(): Map<string, Organization> {
-  console.warn('[DEPRECATED] getMemoryOrganizations() returns empty Map - use async functions instead');
-  return new Map<string, Organization>();
+  return memoryOrganizations;
 }
 
 export function getMemoryOrganizationMembers(): Map<string, OrganizationMember[]> {
-  console.warn('[DEPRECATED] getMemoryOrganizationMembers() returns empty Map - use async functions instead');
-  return new Map<string, OrganizationMember[]>();
+  return memoryOrganizationMembers;
 }
 
 export function getMemoryInvitations(): Map<string, Invitation> {
-  console.warn('[DEPRECATED] getMemoryInvitations() returns empty Map - use async functions instead');
-  return new Map<string, Invitation>();
+  return memoryInvitations;
 }
 
 export function getMemoryAutoQuarantineSettings(): Map<string, AutoQuarantineSettings> {
-  console.warn('[DEPRECATED] getMemoryAutoQuarantineSettings() returns empty Map - use async functions instead');
-  return new Map<string, AutoQuarantineSettings>();
+  return memoryAutoQuarantineSettings;
 }
 
 export function getMemoryRetryStrategySettings(): Map<string, RetryStrategySettings> {
-  console.warn('[DEPRECATED] getMemoryRetryStrategySettings() returns empty Map - use async functions instead');
-  return new Map<string, RetryStrategySettings>();
+  return memoryRetryStrategySettings;
 }
 
 // ============================================================================
@@ -144,8 +143,11 @@ function rowToOrganization(row: OrganizationRow): Organization {
 }
 
 export async function createOrganization(org: Organization): Promise<Organization> {
+  // Always store in memory for fallback
+  memoryOrganizations.set(org.id, org);
+
   if (!isDatabaseConnected()) {
-    throw new Error('Database connection required - cannot create organization without PostgreSQL');
+    return org;
   }
 
   try {
@@ -164,7 +166,7 @@ export async function createOrganization(org: Organization): Promise<Organizatio
 
 export async function getOrganizationById(id: string): Promise<Organization | null> {
   if (!isDatabaseConnected()) {
-    return null;
+    return memoryOrganizations.get(id) || null;
   }
 
   try {
@@ -262,8 +264,15 @@ export async function listOrganizations(): Promise<Organization[]> {
 // ============================================================================
 
 export async function addOrganizationMember(member: OrganizationMember): Promise<void> {
+  // Always store in memory for fallback
+  const existing = memoryOrganizationMembers.get(member.organization_id) || [];
+  if (!existing.some(m => m.user_id === member.user_id)) {
+    existing.push(member);
+  }
+  memoryOrganizationMembers.set(member.organization_id, existing);
+
   if (!isDatabaseConnected()) {
-    throw new Error('Database connection required - cannot add organization member without PostgreSQL');
+    return;
   }
 
   try {
@@ -309,7 +318,7 @@ export async function removeOrganizationMember(organizationId: string, userId: s
 
 export async function getOrganizationMembers(organizationId: string): Promise<OrganizationMember[]> {
   if (!isDatabaseConnected()) {
-    return [];
+    return memoryOrganizationMembers.get(organizationId) || [];
   }
 
   try {
@@ -350,6 +359,12 @@ export async function updateMemberRole(
 
 export async function getUserOrganization(userId: string): Promise<string | null> {
   if (!isDatabaseConnected()) {
+    // Use in-memory fallback
+    for (const [orgId, members] of memoryOrganizationMembers) {
+      if (members.some(m => m.user_id === userId)) {
+        return orgId;
+      }
+    }
     return null;
   }
 
@@ -686,7 +701,34 @@ export const DEFAULT_USER_IDS = {
  */
 export async function seedDefaultOrganizations(): Promise<void> {
   if (!isDatabaseConnected()) {
-    console.log('[Org Repo] Database not connected - skipping organization seed');
+    console.log('[Org Repo] Database not connected - seeding organizations to memory');
+    // Seed to memory maps so the app works without PostgreSQL
+    memoryOrganizations.set(DEFAULT_ORG_ID, {
+      id: DEFAULT_ORG_ID,
+      name: 'Default Organization',
+      slug: 'default-org',
+      timezone: 'UTC',
+      created_at: new Date(),
+    });
+    memoryOrganizations.set(OTHER_ORG_ID, {
+      id: OTHER_ORG_ID,
+      name: 'Other Organization',
+      slug: 'other-org',
+      timezone: 'UTC',
+      created_at: new Date(),
+    });
+    // Seed members
+    memoryOrganizationMembers.set(DEFAULT_ORG_ID, [
+      { user_id: DEFAULT_USER_IDS.owner, organization_id: DEFAULT_ORG_ID, role: 'owner' },
+      { user_id: DEFAULT_USER_IDS.admin, organization_id: DEFAULT_ORG_ID, role: 'admin' },
+      { user_id: DEFAULT_USER_IDS.developer, organization_id: DEFAULT_ORG_ID, role: 'developer' },
+      { user_id: DEFAULT_USER_IDS.viewer, organization_id: DEFAULT_ORG_ID, role: 'viewer' },
+    ]);
+    memoryOrganizationMembers.set(OTHER_ORG_ID, [
+      { user_id: DEFAULT_USER_IDS.otherOwner, organization_id: OTHER_ORG_ID, role: 'owner' },
+      { user_id: DEFAULT_USER_IDS.owner, organization_id: OTHER_ORG_ID, role: 'admin' },
+    ]);
+    console.log('[Org Repo] Seeded organizations and members to memory');
     return;
   }
 
