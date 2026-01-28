@@ -2,7 +2,9 @@
  * GitHub Repository - Database CRUD operations for GitHub integration module
  *
  * Feature #2087: Migrates in-memory Map stores to PostgreSQL persistence.
- * Provides transparent fallback to in-memory storage when database is not connected.
+ * Feature #2108: Removed all in-memory Map stores (DB-only migration).
+ *   - All memory fallbacks have been removed; database is now required.
+ *   - getMemory*() functions return empty Maps with deprecation warnings.
  *
  * This module handles:
  * - GitHub connections (project <-> repo mapping)
@@ -19,16 +21,6 @@ import {
   PRComment,
   PRDependencyScanResult,
 } from '../../routes/github/types';
-
-// =============================
-// IN-MEMORY STORES (FALLBACK)
-// =============================
-
-const memoryGithubConnections: Map<string, GitHubConnection> = new Map(); // projectId -> connection
-const memoryPRStatusChecks: Map<string, PRStatusCheck[]> = new Map(); // projectId -> status checks
-const memoryPRComments: Map<string, PRComment[]> = new Map(); // projectId -> PR comments
-const memoryPRDependencyScans: Map<string, PRDependencyScanResult[]> = new Map(); // projectId -> scans
-const memoryUserGithubTokens: Map<string, string> = new Map(); // userId -> token
 
 
 // =============================
@@ -62,8 +54,6 @@ export async function createGithubConnection(connection: GitHubConnection): Prom
       return parseGithubConnectionRow(result.rows[0]);
     }
   }
-  // Fallback to memory
-  memoryGithubConnections.set(connection.project_id, connection);
   return connection;
 }
 
@@ -78,7 +68,7 @@ export async function getGithubConnection(projectId: string): Promise<GitHubConn
     }
     return undefined;
   }
-  return memoryGithubConnections.get(projectId);
+  return undefined;
 }
 
 export async function updateGithubConnection(projectId: string, updates: Partial<GitHubConnection>): Promise<GitHubConnection | undefined> {
@@ -112,8 +102,7 @@ export async function updateGithubConnection(projectId: string, updates: Partial
     }
     return undefined;
   }
-  memoryGithubConnections.set(projectId, updated);
-  return updated;
+  return undefined;
 }
 
 export async function deleteGithubConnection(projectId: string): Promise<boolean> {
@@ -124,7 +113,7 @@ export async function deleteGithubConnection(projectId: string): Promise<boolean
     );
     return result !== null && (result.rowCount ?? 0) > 0;
   }
-  return memoryGithubConnections.delete(projectId);
+  return false;
 }
 
 export async function listGithubConnections(organizationId: string): Promise<GitHubConnection[]> {
@@ -138,7 +127,7 @@ export async function listGithubConnections(organizationId: string): Promise<Git
     }
     return [];
   }
-  return Array.from(memoryGithubConnections.values()).filter(c => c.organization_id === organizationId);
+  return [];
 }
 
 function parseGithubConnectionRow(row: any): GitHubConnection {
@@ -187,10 +176,6 @@ export async function addPRStatusCheck(check: PRStatusCheck): Promise<PRStatusCh
       return parsePRStatusCheckRow(result.rows[0]);
     }
   }
-  // Fallback to memory
-  const checks = memoryPRStatusChecks.get(check.project_id) || [];
-  checks.push(check);
-  memoryPRStatusChecks.set(check.project_id, checks);
   return check;
 }
 
@@ -212,14 +197,6 @@ export async function updatePRStatusCheck(checkId: string, updates: Partial<PRSt
     }
     return undefined;
   }
-  // Memory fallback
-  for (const [projectId, checks] of memoryPRStatusChecks.entries()) {
-    const idx = checks.findIndex(c => c.id === checkId);
-    if (idx >= 0) {
-      checks[idx] = { ...checks[idx], ...updates, updated_at: new Date() };
-      return checks[idx];
-    }
-  }
   return undefined;
 }
 
@@ -234,8 +211,7 @@ export async function getPRStatusChecks(projectId: string, limit: number = 100):
     }
     return [];
   }
-  const checks = memoryPRStatusChecks.get(projectId) || [];
-  return checks.slice(-limit).reverse();
+  return [];
 }
 
 export async function getPRStatusChecksByPR(projectId: string, prNumber: number): Promise<PRStatusCheck[]> {
@@ -249,8 +225,7 @@ export async function getPRStatusChecksByPR(projectId: string, prNumber: number)
     }
     return [];
   }
-  const checks = memoryPRStatusChecks.get(projectId) || [];
-  return checks.filter(c => c.pr_number === prNumber);
+  return [];
 }
 
 function parsePRStatusCheckRow(row: any): PRStatusCheck {
@@ -293,10 +268,6 @@ export async function addPRComment(comment: PRComment): Promise<PRComment> {
       return parsePRCommentRow(result.rows[0]);
     }
   }
-  // Fallback to memory
-  const comments = memoryPRComments.get(comment.project_id) || [];
-  comments.push(comment);
-  memoryPRComments.set(comment.project_id, comments);
   return comment;
 }
 
@@ -311,8 +282,7 @@ export async function getPRComments(projectId: string, limit: number = 100): Pro
     }
     return [];
   }
-  const comments = memoryPRComments.get(projectId) || [];
-  return comments.slice(-limit).reverse();
+  return [];
 }
 
 export async function getPRCommentsByPR(projectId: string, prNumber: number): Promise<PRComment[]> {
@@ -326,8 +296,7 @@ export async function getPRCommentsByPR(projectId: string, prNumber: number): Pr
     }
     return [];
   }
-  const comments = memoryPRComments.get(projectId) || [];
-  return comments.filter(c => c.pr_number === prNumber);
+  return [];
 }
 
 function parsePRCommentRow(row: any): PRComment {
@@ -370,10 +339,6 @@ export async function addPRDependencyScan(scan: PRDependencyScanResult): Promise
       return parsePRDependencyScanRow(result.rows[0]);
     }
   }
-  // Fallback to memory
-  const scans = memoryPRDependencyScans.get(scan.project_id) || [];
-  scans.push(scan);
-  memoryPRDependencyScans.set(scan.project_id, scans);
   return scan;
 }
 
@@ -400,14 +365,6 @@ export async function updatePRDependencyScan(scanId: string, updates: Partial<PR
     }
     return undefined;
   }
-  // Memory fallback
-  for (const [projectId, scans] of memoryPRDependencyScans.entries()) {
-    const idx = scans.findIndex(s => s.id === scanId);
-    if (idx >= 0) {
-      scans[idx] = { ...scans[idx], ...updates };
-      return scans[idx];
-    }
-  }
   return undefined;
 }
 
@@ -422,8 +379,7 @@ export async function getPRDependencyScans(projectId: string, limit: number = 10
     }
     return [];
   }
-  const scans = memoryPRDependencyScans.get(projectId) || [];
-  return scans.slice(-limit).reverse();
+  return [];
 }
 
 export async function getPRDependencyScansByPR(projectId: string, prNumber: number): Promise<PRDependencyScanResult[]> {
@@ -437,8 +393,7 @@ export async function getPRDependencyScansByPR(projectId: string, prNumber: numb
     }
     return [];
   }
-  const scans = memoryPRDependencyScans.get(projectId) || [];
-  return scans.filter(s => s.pr_number === prNumber);
+  return [];
 }
 
 function parsePRDependencyScanRow(row: any): PRDependencyScanResult {
@@ -471,7 +426,6 @@ export async function setUserGithubToken(userId: string, token: string): Promise
     );
     return;
   }
-  memoryUserGithubTokens.set(userId, token);
 }
 
 export async function getUserGithubToken(userId: string): Promise<string | undefined> {
@@ -485,7 +439,7 @@ export async function getUserGithubToken(userId: string): Promise<string | undef
     }
     return undefined;
   }
-  return memoryUserGithubTokens.get(userId);
+  return undefined;
 }
 
 export async function deleteUserGithubToken(userId: string): Promise<boolean> {
@@ -496,30 +450,35 @@ export async function deleteUserGithubToken(userId: string): Promise<boolean> {
     );
     return result !== null && (result.rowCount ?? 0) > 0;
   }
-  return memoryUserGithubTokens.delete(userId);
+  return false;
 }
 
 
 // =============================
-// MEMORY STORE ACCESS (for compatibility)
+// DEPRECATED MEMORY STORE ACCESS (for compatibility)
 // =============================
 
 export function getMemoryGithubConnections(): Map<string, GitHubConnection> {
-  return memoryGithubConnections;
+  console.warn('[GitHub Repo] DEPRECATED: getMemoryGithubConnections() - memory maps removed.');
+  return new Map<string, GitHubConnection>();
 }
 
 export function getMemoryPRStatusChecks(): Map<string, PRStatusCheck[]> {
-  return memoryPRStatusChecks;
+  console.warn('[GitHub Repo] DEPRECATED: getMemoryPRStatusChecks() - memory maps removed.');
+  return new Map<string, PRStatusCheck[]>();
 }
 
 export function getMemoryPRComments(): Map<string, PRComment[]> {
-  return memoryPRComments;
+  console.warn('[GitHub Repo] DEPRECATED: getMemoryPRComments() - memory maps removed.');
+  return new Map<string, PRComment[]>();
 }
 
 export function getMemoryPRDependencyScans(): Map<string, PRDependencyScanResult[]> {
-  return memoryPRDependencyScans;
+  console.warn('[GitHub Repo] DEPRECATED: getMemoryPRDependencyScans() - memory maps removed.');
+  return new Map<string, PRDependencyScanResult[]>();
 }
 
 export function getMemoryUserGithubTokens(): Map<string, string> {
-  return memoryUserGithubTokens;
+  console.warn('[GitHub Repo] DEPRECATED: getMemoryUserGithubTokens() - memory maps removed.');
+  return new Map<string, string>();
 }
