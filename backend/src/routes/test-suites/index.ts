@@ -18,10 +18,11 @@ export {
   UpdateTestBody,
 } from './types';
 
-// Re-export stores (both Maps for backward compat and async functions)
+// Re-export stores (Feature #2103: Maps are DEPRECATED and return empty data)
+// Use async functions: getTestSuite(), getTest(), listAllTestSuites(), listAllTests()
 export {
-  testSuites,
-  tests,
+  testSuites,  // DEPRECATED - returns empty Map
+  tests,       // DEPRECATED - returns empty Map
   createTestSuite,
   getTestSuite,
   updateTestSuite,
