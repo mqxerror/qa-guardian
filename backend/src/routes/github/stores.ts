@@ -5,7 +5,10 @@
  * Extracted from github.ts (Feature #1375)
  *
  * Updated for Feature #2087: PostgreSQL migration
- * Now uses repository functions with in-memory fallback
+ * Feature #2106: Map exports are DEPRECATED - use async functions instead.
+ *
+ * WARNING: Map exports may return empty data when database is unavailable.
+ * Use async functions: createGithubConnection(), getGithubConnection(), etc.
  */
 
 import {
@@ -48,8 +51,9 @@ export const setUserGithubToken = githubRepo.setUserGithubToken;
 export const getUserGithubToken = githubRepo.getUserGithubToken;
 export const deleteUserGithubToken = githubRepo.deleteUserGithubToken;
 
-// Backward compatible Map exports (from repository memory stores)
-// These are kept for backward compatibility with existing code that uses Map operations
+// DEPRECATED Map exports (Feature #2106)
+// WARNING: These Maps are DEPRECATED and may return empty data!
+// Use async functions above instead.
 export const githubConnections: Map<string, GitHubConnection> = githubRepo.getMemoryGithubConnections();
 export const prStatusChecks: Map<string, PRStatusCheck[]> = githubRepo.getMemoryPRStatusChecks();
 export const prComments: Map<string, PRComment[]> = githubRepo.getMemoryPRComments();

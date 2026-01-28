@@ -2,11 +2,14 @@
  * Monitoring Stores Module
  *
  * Feature #2086: Migrated to PostgreSQL with in-memory fallback.
+ * Feature #2106: Map exports are DEPRECATED - use async functions instead.
+ *
  * This module now exports both:
  * - Async database functions (preferred for new code)
- * - Memory Maps (for backward compatibility with existing code)
+ * - Memory Maps (DEPRECATED - for backward compatibility only)
  *
- * The repository handles automatic fallback to in-memory when database is unavailable.
+ * WARNING: Map exports return empty data when database is unavailable.
+ * Use async functions instead: createUptimeCheck(), getUptimeCheck(), etc.
  */
 
 import {
@@ -156,9 +159,10 @@ export const getDeletedCheckHistory = monitoringRepo.getDeletedCheckHistory;
 
 
 // =============================
-// BACKWARD COMPATIBLE MAP EXPORTS
-// These point to the repository's in-memory fallback stores
-// Note: For new code, use the async functions above instead
+// DEPRECATED MAP EXPORTS
+// WARNING: These Maps are DEPRECATED and may return empty data!
+// Use async functions above instead: createUptimeCheck(), getUptimeCheck(), etc.
+// These will be removed when all route files are migrated (Feature #2104).
 // =============================
 
 // Uptime checks and results
