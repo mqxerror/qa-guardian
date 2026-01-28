@@ -2,6 +2,7 @@
  * DAST Repository - PostgreSQL persistence for DAST module
  *
  * Feature #2088: Migrate DAST Module to PostgreSQL
+ * Feature #2106: Remove in-memory Map stores (DB-only migration)
  *
  * Provides CRUD operations for:
  * - DAST configurations per project
@@ -10,6 +11,9 @@
  * - OpenAPI specifications
  * - DAST schedules
  * - GraphQL scans
+ *
+ * NOTE: All in-memory fallback stores have been removed.
+ * Database connection is now required for all operations.
  */
 
 import { query, isDatabaseConnected } from '../database';
@@ -22,40 +26,38 @@ import {
   GraphQLScan,
 } from '../../routes/dast/types';
 
-// Memory fallback stores
-const memoryDastConfigs: Map<string, DASTConfig> = new Map();
-const memoryDastScans: Map<string, DASTScanResult[]> = new Map();
-const memoryDastFalsePositives: Map<string, DASTFalsePositive[]> = new Map();
-const memoryOpenApiSpecs: Map<string, OpenAPISpec> = new Map();
-const memoryDastSchedules: Map<string, DASTSchedule> = new Map();
-const memoryGraphqlScans: Map<string, GraphQLScan> = new Map();
-
 // ============================================
-// Memory Store Accessors (for backward compatibility)
+// Memory Store Accessors (DEPRECATED - return empty Maps)
 // ============================================
 
 export function getMemoryDastConfigs(): Map<string, DASTConfig> {
-  return memoryDastConfigs;
+  console.warn('[DAST Repo] DEPRECATED: getMemoryDastConfigs() - memory maps removed.');
+  return new Map<string, DASTConfig>();
 }
 
 export function getMemoryDastScans(): Map<string, DASTScanResult[]> {
-  return memoryDastScans;
+  console.warn('[DAST Repo] DEPRECATED: getMemoryDastScans() - memory maps removed.');
+  return new Map<string, DASTScanResult[]>();
 }
 
 export function getMemoryDastFalsePositives(): Map<string, DASTFalsePositive[]> {
-  return memoryDastFalsePositives;
+  console.warn('[DAST Repo] DEPRECATED: getMemoryDastFalsePositives() - memory maps removed.');
+  return new Map<string, DASTFalsePositive[]>();
 }
 
 export function getMemoryOpenApiSpecs(): Map<string, OpenAPISpec> {
-  return memoryOpenApiSpecs;
+  console.warn('[DAST Repo] DEPRECATED: getMemoryOpenApiSpecs() - memory maps removed.');
+  return new Map<string, OpenAPISpec>();
 }
 
 export function getMemoryDastSchedules(): Map<string, DASTSchedule> {
-  return memoryDastSchedules;
+  console.warn('[DAST Repo] DEPRECATED: getMemoryDastSchedules() - memory maps removed.');
+  return new Map<string, DASTSchedule>();
 }
 
 export function getMemoryGraphqlScans(): Map<string, GraphQLScan> {
-  return memoryGraphqlScans;
+  console.warn('[DAST Repo] DEPRECATED: getMemoryGraphqlScans() - memory maps removed.');
+  return new Map<string, GraphQLScan>();
 }
 
 // ============================================
@@ -73,7 +75,7 @@ export async function getDastConfig(projectId: string): Promise<DASTConfig | nul
     }
     return null;
   }
-  return memoryDastConfigs.get(projectId) || null;
+  return null;
 }
 
 export async function saveDastConfig(projectId: string, config: DASTConfig): Promise<DASTConfig> {
@@ -115,7 +117,6 @@ export async function saveDastConfig(projectId: string, config: DASTConfig): Pro
       return parseDastConfigRow(result.rows[0]);
     }
   }
-  memoryDastConfigs.set(projectId, config);
   return config;
 }
 
@@ -127,7 +128,7 @@ export async function deleteDastConfig(projectId: string): Promise<boolean> {
     );
     return (result?.rowCount ?? 0) > 0;
   }
-  return memoryDastConfigs.delete(projectId);
+  return false;
 }
 
 function parseDastConfigRow(row: any): DASTConfig {
@@ -179,10 +180,6 @@ export async function createDastScan(scan: DASTScanResult): Promise<DASTScanResu
       return parseDastScanRow(result.rows[0]);
     }
   }
-  // Memory fallback
-  const scans = memoryDastScans.get(scan.projectId) || [];
-  scans.push(scan);
-  memoryDastScans.set(scan.projectId, scans);
   return scan;
 }
 
@@ -196,11 +193,6 @@ export async function getDastScan(scanId: string): Promise<DASTScanResult | null
       return parseDastScanRow(result.rows[0]);
     }
     return null;
-  }
-  // Memory fallback - search all projects
-  for (const scans of memoryDastScans.values()) {
-    const scan = scans.find(s => s.id === scanId);
-    if (scan) return scan;
   }
   return null;
 }
@@ -262,15 +254,6 @@ export async function updateDastScan(scanId: string, updates: Partial<DASTScanRe
     }
     return null;
   }
-
-  // Memory fallback
-  for (const [projectId, scans] of memoryDastScans.entries()) {
-    const index = scans.findIndex(s => s.id === scanId);
-    if (index !== -1) {
-      scans[index] = { ...scans[index], ...updates };
-      return scans[index];
-    }
-  }
   return null;
 }
 
@@ -285,7 +268,7 @@ export async function getDastScansByProject(projectId: string): Promise<DASTScan
     }
     return [];
   }
-  return memoryDastScans.get(projectId) || [];
+  return [];
 }
 
 export async function deleteDastScan(scanId: string): Promise<boolean> {
@@ -295,14 +278,6 @@ export async function deleteDastScan(scanId: string): Promise<boolean> {
       [scanId]
     );
     return (result?.rowCount ?? 0) > 0;
-  }
-  // Memory fallback
-  for (const [projectId, scans] of memoryDastScans.entries()) {
-    const index = scans.findIndex(s => s.id === scanId);
-    if (index !== -1) {
-      scans.splice(index, 1);
-      return true;
-    }
   }
   return false;
 }
@@ -352,10 +327,6 @@ export async function addDastFalsePositive(fp: DASTFalsePositive): Promise<DASTF
       return parseFalsePositiveRow(result.rows[0]);
     }
   }
-  // Memory fallback
-  const fps = memoryDastFalsePositives.get(fp.projectId) || [];
-  fps.push(fp);
-  memoryDastFalsePositives.set(fp.projectId, fps);
   return fp;
 }
 
@@ -370,7 +341,7 @@ export async function getDastFalsePositives(projectId: string): Promise<DASTFals
     }
     return [];
   }
-  return memoryDastFalsePositives.get(projectId) || [];
+  return [];
 }
 
 export async function deleteDastFalsePositive(id: string): Promise<boolean> {
@@ -380,14 +351,6 @@ export async function deleteDastFalsePositive(id: string): Promise<boolean> {
       [id]
     );
     return (result?.rowCount ?? 0) > 0;
-  }
-  // Memory fallback
-  for (const [projectId, fps] of memoryDastFalsePositives.entries()) {
-    const index = fps.findIndex(fp => fp.id === id);
-    if (index !== -1) {
-      fps.splice(index, 1);
-      return true;
-    }
   }
   return false;
 }
@@ -405,8 +368,7 @@ export async function checkFalsePositive(projectId: string, pluginId: string, ur
     }
     return null;
   }
-  const fps = memoryDastFalsePositives.get(projectId) || [];
-  return fps.find(fp => fp.pluginId === pluginId && fp.url === url && fp.param === param) || null;
+  return null;
 }
 
 function parseFalsePositiveRow(row: any): DASTFalsePositive {
@@ -455,7 +417,6 @@ export async function saveOpenApiSpec(spec: OpenAPISpec): Promise<OpenAPISpec> {
       return parseOpenApiSpecRow(result.rows[0]);
     }
   }
-  memoryOpenApiSpecs.set(spec.id, spec);
   return spec;
 }
 
@@ -470,7 +431,7 @@ export async function getOpenApiSpec(specId: string): Promise<OpenAPISpec | null
     }
     return null;
   }
-  return memoryOpenApiSpecs.get(specId) || null;
+  return null;
 }
 
 export async function getOpenApiSpecsByProject(projectId: string): Promise<OpenAPISpec[]> {
@@ -484,7 +445,7 @@ export async function getOpenApiSpecsByProject(projectId: string): Promise<OpenA
     }
     return [];
   }
-  return Array.from(memoryOpenApiSpecs.values()).filter(s => s.projectId === projectId);
+  return [];
 }
 
 export async function deleteOpenApiSpec(specId: string): Promise<boolean> {
@@ -495,7 +456,7 @@ export async function deleteOpenApiSpec(specId: string): Promise<boolean> {
     );
     return (result?.rowCount ?? 0) > 0;
   }
-  return memoryOpenApiSpecs.delete(specId);
+  return false;
 }
 
 function parseOpenApiSpecRow(row: any): OpenAPISpec {
@@ -554,7 +515,6 @@ export async function createDastSchedule(schedule: DASTSchedule): Promise<DASTSc
       return parseDastScheduleRow(result.rows[0]);
     }
   }
-  memoryDastSchedules.set(schedule.id, schedule);
   return schedule;
 }
 
@@ -569,7 +529,7 @@ export async function getDastSchedule(scheduleId: string): Promise<DASTSchedule 
     }
     return null;
   }
-  return memoryDastSchedules.get(scheduleId) || null;
+  return null;
 }
 
 export async function getDastSchedulesByProject(projectId: string): Promise<DASTSchedule[]> {
@@ -583,7 +543,7 @@ export async function getDastSchedulesByProject(projectId: string): Promise<DAST
     }
     return [];
   }
-  return Array.from(memoryDastSchedules.values()).filter(s => s.projectId === projectId);
+  return [];
 }
 
 export async function updateDastSchedule(scheduleId: string, updates: Partial<DASTSchedule>): Promise<DASTSchedule | null> {
@@ -667,14 +627,6 @@ export async function updateDastSchedule(scheduleId: string, updates: Partial<DA
     }
     return null;
   }
-
-  // Memory fallback
-  const existing = memoryDastSchedules.get(scheduleId);
-  if (existing) {
-    const updated = { ...existing, ...updates, updatedAt: new Date().toISOString() };
-    memoryDastSchedules.set(scheduleId, updated);
-    return updated;
-  }
   return null;
 }
 
@@ -686,7 +638,7 @@ export async function deleteDastSchedule(scheduleId: string): Promise<boolean> {
     );
     return (result?.rowCount ?? 0) > 0;
   }
-  return memoryDastSchedules.delete(scheduleId);
+  return false;
 }
 
 export async function getEnabledDastSchedules(): Promise<DASTSchedule[]> {
@@ -700,7 +652,7 @@ export async function getEnabledDastSchedules(): Promise<DASTSchedule[]> {
     }
     return [];
   }
-  return Array.from(memoryDastSchedules.values()).filter(s => s.enabled);
+  return [];
 }
 
 function parseDastScheduleRow(row: any): DASTSchedule {
@@ -759,7 +711,6 @@ export async function createGraphqlScan(scan: GraphQLScan): Promise<GraphQLScan>
       return parseGraphqlScanRow(result.rows[0]);
     }
   }
-  memoryGraphqlScans.set(scan.id, scan);
   return scan;
 }
 
@@ -774,7 +725,7 @@ export async function getGraphqlScan(scanId: string): Promise<GraphQLScan | null
     }
     return null;
   }
-  return memoryGraphqlScans.get(scanId) || null;
+  return null;
 }
 
 export async function updateGraphqlScan(scanId: string, updates: Partial<GraphQLScan>): Promise<GraphQLScan | null> {
@@ -830,14 +781,6 @@ export async function updateGraphqlScan(scanId: string, updates: Partial<GraphQL
     }
     return null;
   }
-
-  // Memory fallback
-  const existing = memoryGraphqlScans.get(scanId);
-  if (existing) {
-    const updated = { ...existing, ...updates };
-    memoryGraphqlScans.set(scanId, updated);
-    return updated;
-  }
   return null;
 }
 
@@ -849,7 +792,7 @@ export async function deleteGraphqlScan(scanId: string): Promise<boolean> {
     );
     return (result?.rowCount ?? 0) > 0;
   }
-  return memoryGraphqlScans.delete(scanId);
+  return false;
 }
 
 export async function listGraphqlScans(): Promise<GraphQLScan[]> {
@@ -863,7 +806,7 @@ export async function listGraphqlScans(): Promise<GraphQLScan[]> {
     }
     return [];
   }
-  return Array.from(memoryGraphqlScans.values());
+  return [];
 }
 
 function parseGraphqlScanRow(row: any): GraphQLScan {
