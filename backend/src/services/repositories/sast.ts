@@ -2,6 +2,7 @@
  * SAST Repository - PostgreSQL persistence for SAST module
  *
  * Feature #2089: Migrate SAST Module to PostgreSQL
+ * Feature #2107: Remove in-memory Map stores (DB-only migration)
  *
  * Provides CRUD operations for:
  * - SAST configurations per project
@@ -10,6 +11,9 @@
  * - PR checks
  * - PR comments
  * - Custom secret patterns
+ *
+ * NOTE: All in-memory Map fallbacks have been removed.
+ * Database connection is now required for all operations.
  */
 
 import { query, isDatabaseConnected } from '../database';
@@ -30,40 +34,38 @@ const DEFAULT_SAST_CONFIG: SASTConfig = {
   autoScan: false,
 };
 
-// Memory fallback stores
-const memorySastConfigs: Map<string, SASTConfig> = new Map();
-const memorySastScans: Map<string, SASTScanResult[]> = new Map();
-const memoryFalsePositives: Map<string, FalsePositive[]> = new Map();
-const memorySastPRChecks: Map<string, SASTPRCheck[]> = new Map();
-const memorySastPRComments: Map<string, SASTPRComment[]> = new Map();
-const memorySecretPatterns: Map<string, SecretPattern[]> = new Map();
-
 // ============================================
-// Memory Store Accessors (for backward compatibility)
+// Memory Store Accessors (DEPRECATED - Feature #2107)
 // ============================================
 
 export function getMemorySastConfigs(): Map<string, SASTConfig> {
-  return memorySastConfigs;
+  console.warn('[SAST Repo] DEPRECATED: getMemorySastConfigs() - memory maps removed.');
+  return new Map<string, SASTConfig>();
 }
 
 export function getMemorySastScans(): Map<string, SASTScanResult[]> {
-  return memorySastScans;
+  console.warn('[SAST Repo] DEPRECATED: getMemorySastScans() - memory maps removed.');
+  return new Map<string, SASTScanResult[]>();
 }
 
 export function getMemoryFalsePositives(): Map<string, FalsePositive[]> {
-  return memoryFalsePositives;
+  console.warn('[SAST Repo] DEPRECATED: getMemoryFalsePositives() - memory maps removed.');
+  return new Map<string, FalsePositive[]>();
 }
 
 export function getMemorySastPRChecks(): Map<string, SASTPRCheck[]> {
-  return memorySastPRChecks;
+  console.warn('[SAST Repo] DEPRECATED: getMemorySastPRChecks() - memory maps removed.');
+  return new Map<string, SASTPRCheck[]>();
 }
 
 export function getMemorySastPRComments(): Map<string, SASTPRComment[]> {
-  return memorySastPRComments;
+  console.warn('[SAST Repo] DEPRECATED: getMemorySastPRComments() - memory maps removed.');
+  return new Map<string, SASTPRComment[]>();
 }
 
 export function getMemorySecretPatterns(): Map<string, SecretPattern[]> {
-  return memorySecretPatterns;
+  console.warn('[SAST Repo] DEPRECATED: getMemorySecretPatterns() - memory maps removed.');
+  return new Map<string, SecretPattern[]>();
 }
 
 // ============================================
@@ -81,7 +83,7 @@ export async function getSASTConfig(projectId: string): Promise<SASTConfig> {
     }
     return { ...DEFAULT_SAST_CONFIG };
   }
-  return memorySastConfigs.get(projectId) || { ...DEFAULT_SAST_CONFIG };
+  return { ...DEFAULT_SAST_CONFIG };
 }
 
 export async function updateSASTConfig(projectId: string, config: Partial<SASTConfig>): Promise<SASTConfig> {
@@ -133,7 +135,6 @@ export async function updateSASTConfig(projectId: string, config: Partial<SASTCo
       return parseSastConfigRow(result.rows[0]);
     }
   }
-  memorySastConfigs.set(projectId, updated);
   return updated;
 }
 
@@ -145,7 +146,7 @@ export async function deleteSASTConfig(projectId: string): Promise<boolean> {
     );
     return (result?.rowCount ?? 0) > 0;
   }
-  return memorySastConfigs.delete(projectId);
+  return false;
 }
 
 function parseSastConfigRow(row: any): SASTConfig {
@@ -196,10 +197,6 @@ export async function createSastScan(scan: SASTScanResult): Promise<SASTScanResu
       return parseSastScanRow(result.rows[0]);
     }
   }
-  // Memory fallback
-  const scans = memorySastScans.get(scan.projectId) || [];
-  scans.push(scan);
-  memorySastScans.set(scan.projectId, scans);
   return scan;
 }
 
@@ -213,11 +210,6 @@ export async function getSastScan(scanId: string): Promise<SASTScanResult | null
       return parseSastScanRow(result.rows[0]);
     }
     return null;
-  }
-  // Memory fallback
-  for (const scans of memorySastScans.values()) {
-    const scan = scans.find(s => s.id === scanId);
-    if (scan) return scan;
   }
   return null;
 }
@@ -264,14 +256,6 @@ export async function updateSastScan(scanId: string, updates: Partial<SASTScanRe
     return null;
   }
 
-  // Memory fallback
-  for (const [projectId, scans] of memorySastScans.entries()) {
-    const index = scans.findIndex(s => s.id === scanId);
-    if (index !== -1) {
-      scans[index] = { ...scans[index], ...updates };
-      return scans[index];
-    }
-  }
   return null;
 }
 
@@ -286,7 +270,7 @@ export async function getSastScansByProject(projectId: string): Promise<SASTScan
     }
     return [];
   }
-  return memorySastScans.get(projectId) || [];
+  return [];
 }
 
 export async function deleteSastScan(scanId: string): Promise<boolean> {
@@ -296,14 +280,6 @@ export async function deleteSastScan(scanId: string): Promise<boolean> {
       [scanId]
     );
     return (result?.rowCount ?? 0) > 0;
-  }
-  // Memory fallback
-  for (const [projectId, scans] of memorySastScans.entries()) {
-    const index = scans.findIndex(s => s.id === scanId);
-    if (index !== -1) {
-      scans.splice(index, 1);
-      return true;
-    }
   }
   return false;
 }
@@ -339,7 +315,7 @@ export async function getFalsePositives(projectId: string): Promise<FalsePositiv
     }
     return [];
   }
-  return memoryFalsePositives.get(projectId) || [];
+  return [];
 }
 
 export async function addFalsePositive(projectId: string, fp: FalsePositive): Promise<FalsePositive> {
@@ -365,10 +341,6 @@ export async function addFalsePositive(projectId: string, fp: FalsePositive): Pr
       return parseFalsePositiveRow(result.rows[0]);
     }
   }
-  // Memory fallback
-  const fps = memoryFalsePositives.get(projectId) || [];
-  fps.push(fp);
-  memoryFalsePositives.set(projectId, fps);
   return fp;
 }
 
@@ -380,13 +352,7 @@ export async function removeFalsePositive(projectId: string, fpId: string): Prom
     );
     return (result?.rowCount ?? 0) > 0;
   }
-  // Memory fallback
-  const fps = memoryFalsePositives.get(projectId) || [];
-  const index = fps.findIndex(fp => fp.id === fpId);
-  if (index === -1) return false;
-  fps.splice(index, 1);
-  memoryFalsePositives.set(projectId, fps);
-  return true;
+  return false;
 }
 
 function parseFalsePositiveRow(row: any): FalsePositive {
@@ -439,10 +405,6 @@ export async function createSastPRCheck(check: SASTPRCheck): Promise<SASTPRCheck
       return parseSastPRCheckRow(result.rows[0]);
     }
   }
-  // Memory fallback
-  const checks = memorySastPRChecks.get(check.projectId) || [];
-  checks.push(check);
-  memorySastPRChecks.set(check.projectId, checks);
   return check;
 }
 
@@ -457,7 +419,7 @@ export async function getSastPRChecks(projectId: string): Promise<SASTPRCheck[]>
     }
     return [];
   }
-  return memorySastPRChecks.get(projectId) || [];
+  return [];
 }
 
 export async function updateSastPRCheck(checkId: string, updates: Partial<SASTPRCheck>): Promise<SASTPRCheck | null> {
@@ -506,14 +468,6 @@ export async function updateSastPRCheck(checkId: string, updates: Partial<SASTPR
     return null;
   }
 
-  // Memory fallback
-  for (const [projectId, checks] of memorySastPRChecks.entries()) {
-    const index = checks.findIndex(c => c.id === checkId);
-    if (index !== -1) {
-      checks[index] = { ...checks[index], ...updates, updatedAt: new Date().toISOString() };
-      return checks[index];
-    }
-  }
   return null;
 }
 
@@ -564,10 +518,6 @@ export async function createSastPRComment(comment: SASTPRComment): Promise<SASTP
       return parseSastPRCommentRow(result.rows[0]);
     }
   }
-  // Memory fallback
-  const comments = memorySastPRComments.get(comment.projectId) || [];
-  comments.push(comment);
-  memorySastPRComments.set(comment.projectId, comments);
   return comment;
 }
 
@@ -582,7 +532,7 @@ export async function getSastPRComments(projectId: string): Promise<SASTPRCommen
     }
     return [];
   }
-  return memorySastPRComments.get(projectId) || [];
+  return [];
 }
 
 function parseSastPRCommentRow(row: any): SASTPRComment {
@@ -613,7 +563,7 @@ export async function getSecretPatterns(projectId: string): Promise<SecretPatter
     }
     return [];
   }
-  return memorySecretPatterns.get(projectId) || [];
+  return [];
 }
 
 export async function addSecretPattern(projectId: string, pattern: SecretPattern): Promise<SecretPattern> {
@@ -641,10 +591,6 @@ export async function addSecretPattern(projectId: string, pattern: SecretPattern
       return parseSecretPatternRow(result.rows[0]);
     }
   }
-  // Memory fallback
-  const patterns = memorySecretPatterns.get(projectId) || [];
-  patterns.push(pattern);
-  memorySecretPatterns.set(projectId, patterns);
   return pattern;
 }
 
@@ -695,20 +641,7 @@ export async function updateSecretPattern(projectId: string, patternId: string, 
     return null;
   }
 
-  // Memory fallback
-  const patterns = memorySecretPatterns.get(projectId) || [];
-  const index = patterns.findIndex(p => p.id === patternId);
-  if (index === -1) return null;
-
-  const existingPattern = patterns[index]!;
-  const updatedPattern: SecretPattern = {
-    ...existingPattern,
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  };
-  patterns[index] = updatedPattern;
-  memorySecretPatterns.set(projectId, patterns);
-  return updatedPattern;
+  return null;
 }
 
 export async function removeSecretPattern(projectId: string, patternId: string): Promise<boolean> {
@@ -719,13 +652,7 @@ export async function removeSecretPattern(projectId: string, patternId: string):
     );
     return (result?.rowCount ?? 0) > 0;
   }
-  // Memory fallback
-  const patterns = memorySecretPatterns.get(projectId) || [];
-  const index = patterns.findIndex(p => p.id === patternId);
-  if (index === -1) return false;
-  patterns.splice(index, 1);
-  memorySecretPatterns.set(projectId, patterns);
-  return true;
+  return false;
 }
 
 function parseSecretPatternRow(row: any): SecretPattern {
