@@ -1,13 +1,9 @@
-// In-memory stores for API keys, MCP connections, tool calls, and audit logs
-// Feature #2084: These are now backed by PostgreSQL via the repository layer
+// API Keys Module Data Stores
+// Feature #2084: PostgreSQL-backed via repository layer
+// Feature #2106: Map exports are DEPRECATED - use async functions instead
 
 import { ApiKey, McpConnection, McpToolCall, McpAuditLogEntry } from './types';
 import {
-  getMemoryApiKeys,
-  getMemoryMcpConnections,
-  getMemoryMcpToolCalls,
-  getMemoryMcpAuditLogs,
-  // Export async database functions for consumers to use
   createApiKey as dbCreateApiKey,
   getApiKeyById as dbGetApiKeyById,
   getApiKeyByHash as dbGetApiKeyByHash,
@@ -25,17 +21,36 @@ import {
   getMcpAuditLogs as dbGetMcpAuditLogs,
 } from '../../services/repositories/api-keys';
 
-// In-memory store for API keys (backed by repository)
-export const apiKeys: Map<string, ApiKey> = getMemoryApiKeys();
+// ===== DEPRECATED MAP EXPORTS =====
+// WARNING: These Maps return EMPTY data and are DEPRECATED!
+// Use async functions instead (dbCreateApiKey, dbGetApiKeyById, etc.)
 
-// In-memory store for active MCP connections (backed by repository)
-export const mcpConnections: Map<string, McpConnection> = getMemoryMcpConnections();
+let deprecationWarned = false;
+function warnDeprecation() {
+  if (!deprecationWarned) {
+    console.warn('[DEPRECATED] apiKeys, mcpConnections, etc. Map exports return empty data.');
+    console.warn('[DEPRECATED] Use async db functions: dbCreateApiKey(), dbGetApiKeyById()');
+    deprecationWarned = true;
+  }
+}
 
-// In-memory store for MCP tool call history (keeps last 1000 per org, backed by repository)
-export const mcpToolCalls: Map<string, McpToolCall[]> = getMemoryMcpToolCalls();
+const emptyApiKeysMap = new Map<string, ApiKey>();
+const emptyMcpConnectionsMap = new Map<string, McpConnection>();
+const emptyMcpToolCallsMap = new Map<string, McpToolCall[]>();
+const emptyMcpAuditLogsMap = new Map<string, McpAuditLogEntry[]>();
 
-// In-memory store for MCP audit logs (keeps last 500 per org, backed by repository)
-export const mcpAuditLogs: Map<string, McpAuditLogEntry[]> = getMemoryMcpAuditLogs();
+export const apiKeys: Map<string, ApiKey> = new Proxy(emptyApiKeysMap, {
+  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+});
+export const mcpConnections: Map<string, McpConnection> = new Proxy(emptyMcpConnectionsMap, {
+  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+});
+export const mcpToolCalls: Map<string, McpToolCall[]> = new Proxy(emptyMcpToolCallsMap, {
+  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+});
+export const mcpAuditLogs: Map<string, McpAuditLogEntry[]> = new Proxy(emptyMcpAuditLogsMap, {
+  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+});
 
 // Re-export async database functions for consumers
 export {

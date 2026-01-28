@@ -1,8 +1,10 @@
 // Projects Module Data Stores
 //
 // This module provides data access for projects with database persistence.
-// It maintains backward compatibility with Map-based access while adding
-// async database operations for persistent storage.
+// PostgreSQL is REQUIRED - memory fallback has been removed (Feature #2101).
+//
+// Feature #2106: Map exports are DEPRECATED - they return empty Maps.
+// Use async functions instead: getProject(), listProjects(), etc.
 
 import {
   Project,
@@ -31,22 +33,45 @@ import {
   addProjectEnvVar as dbAddProjectEnvVar,
   getProjectEnvVars as dbGetProjectEnvVars,
   deleteProjectEnvVar as dbDeleteProjectEnvVar,
-  getMemoryProjects,
-  getMemoryProjectMembers,
-  getMemoryProjectEnvVars,
-  getMemoryProjectVisualSettings,
-  getMemoryProjectHealingSettings,
   DEFAULT_PROJECT_VISUAL_SETTINGS as DB_DEFAULT_VISUAL_SETTINGS,
   DEFAULT_PROJECT_HEALING_SETTINGS as DB_DEFAULT_HEALING_SETTINGS,
 } from '../../services/repositories/projects';
 
-// Export memory stores for backward compatibility with synchronous code
-// These are still used by code that hasn't been migrated to async yet
-export const projects: Map<string, Project> = getMemoryProjects();
-export const projectMembers: Map<string, ProjectMember[]> = getMemoryProjectMembers();
-export const projectEnvVars: Map<string, EnvironmentVariable[]> = getMemoryProjectEnvVars();
-export const projectVisualSettings: Map<string, ProjectVisualSettings> = getMemoryProjectVisualSettings();
-export const projectHealingSettings: Map<string, ProjectHealingSettings> = getMemoryProjectHealingSettings();
+// ===== DEPRECATED MAP EXPORTS =====
+// WARNING: These Maps return EMPTY data and are DEPRECATED!
+// Use async functions instead for database access.
+
+let deprecationWarned = false;
+function warnDeprecation() {
+  if (!deprecationWarned) {
+    console.warn('[DEPRECATED] projects, projectMembers, etc. Map exports return empty data.');
+    console.warn('[DEPRECATED] Use async functions: getProject(), listProjects(), getProjectMembers()');
+    deprecationWarned = true;
+  }
+}
+
+// Create empty Maps with Proxy to log deprecation warning
+const emptyProjectsMap = new Map<string, Project>();
+const emptyMembersMap = new Map<string, ProjectMember[]>();
+const emptyEnvVarsMap = new Map<string, EnvironmentVariable[]>();
+const emptyVisualSettingsMap = new Map<string, ProjectVisualSettings>();
+const emptyHealingSettingsMap = new Map<string, ProjectHealingSettings>();
+
+export const projects: Map<string, Project> = new Proxy(emptyProjectsMap, {
+  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+});
+export const projectMembers: Map<string, ProjectMember[]> = new Proxy(emptyMembersMap, {
+  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+});
+export const projectEnvVars: Map<string, EnvironmentVariable[]> = new Proxy(emptyEnvVarsMap, {
+  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+});
+export const projectVisualSettings: Map<string, ProjectVisualSettings> = new Proxy(emptyVisualSettingsMap, {
+  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+});
+export const projectHealingSettings: Map<string, ProjectHealingSettings> = new Proxy(emptyHealingSettingsMap, {
+  get(target, prop) { warnDeprecation(); return Reflect.get(target, prop); }
+});
 
 // Export default settings
 export const DEFAULT_PROJECT_VISUAL_SETTINGS: ProjectVisualSettings = DB_DEFAULT_VISUAL_SETTINGS;
