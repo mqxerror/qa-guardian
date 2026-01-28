@@ -4,7 +4,7 @@
  */
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { projects } from '../projects';
+import { getProject as dbGetProject } from '../projects/stores';
 import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate } from './webhooks';
 import { WebhookLogEntry, webhookLog } from './alerts';
 
@@ -331,7 +331,7 @@ export async function webhookSubscriptionRoutes(app: FastifyInstance) {
 
     // Validate project_id if provided (legacy single project)
     if (project_id) {
-      const project = projects.get(project_id);
+      const project = await dbGetProject(project_id);
       if (!project || project.organization_id !== orgId) {
         return reply.status(400).send({
           error: 'Bad Request',
@@ -345,7 +345,7 @@ export async function webhookSubscriptionRoutes(app: FastifyInstance) {
     if (project_ids && project_ids.length > 0) {
       validatedProjectIds = [];
       for (const pid of project_ids) {
-        const project = projects.get(pid);
+        const project = await dbGetProject(pid);
         if (!project || project.organization_id !== orgId) {
           return reply.status(400).send({
             error: 'Bad Request',
@@ -604,7 +604,7 @@ export async function webhookSubscriptionRoutes(app: FastifyInstance) {
     if (updates.project_ids !== undefined && updates.project_ids !== null && updates.project_ids.length > 0) {
       validatedProjectIds = [];
       for (const pid of updates.project_ids) {
-        const project = projects.get(pid);
+        const project = await dbGetProject(pid);
         if (!project || project.organization_id !== orgId) {
           return reply.status(400).send({
             error: 'Bad Request',

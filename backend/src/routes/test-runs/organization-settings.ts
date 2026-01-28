@@ -14,9 +14,29 @@ import { FastifyInstance } from 'fastify';
 import * as fs from 'fs';
 import * as path from 'path';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { testRuns } from './execution';
+import { testRuns, TestRun } from './execution';
+import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
 import { getTestSuite } from '../test-suites';
-import { projects } from '../projects';
+import { getProject as dbGetProject } from '../projects/stores';
+
+/**
+ * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
+ */
+async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
+  const memRun = testRuns.get(runId);
+  if (memRun) return memRun;
+  return await getTestRun(runId);
+}
+
+/**
+ * Get merged test runs from in-memory (in-flight) + DB for an organization.
+ */
+async function getMergedTestRuns(orgId: string): Promise<TestRun[]> {
+  const dbRuns = await dbListTestRunsByOrg(orgId);
+  const memRuns = Array.from(testRuns.values()).filter(r => r.organization_id === orgId);
+  const seenIds = new Set(memRuns.map(r => r.id));
+  return [...memRuns, ...dbRuns.filter(r => !seenIds.has(r.id))];
+}
 import {
   artifactRetentionSettings,
   TRACES_DIR,
@@ -273,18 +293,17 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
     const retentionDays = artifactRetentionSettings.get(orgId) || 30;
     const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
 
-    // Find old test runs for this organization
+    // Find old test runs for this organization (merge in-memory + DB)
     const oldRuns: string[] = [];
     const preservedRuns: string[] = [];
 
-    for (const [runId, run] of testRuns) {
-      if (run.organization_id === orgId) {
-        const runDate = run.completed_at || run.created_at;
-        if (runDate < cutoffDate) {
-          oldRuns.push(runId);
-        } else {
-          preservedRuns.push(runId);
-        }
+    const allRuns = await getMergedTestRuns(orgId);
+    for (const run of allRuns) {
+      const runDate = run.completed_at || run.created_at;
+      if (runDate < cutoffDate) {
+        oldRuns.push(run.id);
+      } else {
+        preservedRuns.push(run.id);
       }
     }
 
@@ -346,16 +365,15 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
     const retentionDays = artifactRetentionSettings.get(orgId) || 30;
     const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
 
-    // Find and delete old test runs for this organization
+    // Find and delete old test runs for this organization (merge in-memory + DB)
     const deletedRuns: string[] = [];
     const runsToDelete: string[] = [];
 
-    for (const [runId, run] of testRuns) {
-      if (run.organization_id === orgId) {
-        const runDate = run.completed_at || run.created_at;
-        if (runDate < cutoffDate) {
-          runsToDelete.push(runId);
-        }
+    const allRunsForCleanup = await getMergedTestRuns(orgId);
+    for (const run of allRunsForCleanup) {
+      const runDate = run.completed_at || run.created_at;
+      if (runDate < cutoffDate) {
+        runsToDelete.push(run.id);
       }
     }
 
@@ -430,7 +448,7 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
         const parts = file.split('-');
         if (parts.length >= 2 && parts[1]) {
           const runId = parts[1];
-          const run = testRuns.get(runId);
+          const run = await getTestRunWithFallback(runId);
 
           // Only count files for this organization
           if (run && run.organization_id === orgId) {
@@ -444,7 +462,7 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
               const suite = await getTestSuite(run.suite_id);
               if (suite) {
                 const projectId = suite.project_id;
-                const project = projects.get(projectId);
+                const project = await dbGetProject(projectId);
                 const projectName = project?.name || 'Unknown Project';
 
                 const existing = projectStorage.get(projectId) || {

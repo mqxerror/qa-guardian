@@ -15,8 +15,18 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { testRuns, selectorOverrides, healedSelectorHistory, SelectorOverride } from './execution';
+import { testRuns, selectorOverrides, healedSelectorHistory, SelectorOverride, TestRun } from './execution';
+import { getTestRun } from '../../services/repositories/test-runs';
 import { getTest } from '../test-suites';
+
+/**
+ * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
+ */
+async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
+  const memRun = testRuns.get(runId);
+  if (memRun) return memRun;
+  return await getTestRun(runId);
+}
 
 /**
  * Register selector override routes
@@ -35,7 +45,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     const orgId = getOrganizationId(request);
 
     // Get the test run
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test run not found' });
     }
@@ -120,7 +130,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     }
 
     // Get the test run
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test run not found' });
     }
@@ -220,7 +230,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     const orgId = getOrganizationId(request);
 
     // Get the test run
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test run not found' });
     }
@@ -304,7 +314,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     const orgId = getOrganizationId(request);
 
     // Get the test run
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test run not found' });
     }

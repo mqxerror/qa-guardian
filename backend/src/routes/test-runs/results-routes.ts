@@ -19,7 +19,16 @@ import * as crypto from 'crypto';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { getTestSuite } from '../test-suites';
 import { projects } from '../projects';
-import { testRuns } from './execution';
+import { getProject as dbGetProject } from '../projects/stores';
+import { testRuns, TestRun } from './execution';
+import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
+
+// Helper: get test run from Map first, then fall back to DB
+async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
+  const fromMap = testRuns.get(runId);
+  if (fromMap) return fromMap;
+  return await dbGetTestRun(runId) as TestRun | undefined;
+}
 
 // In-memory storage for annotations
 interface Annotation {
@@ -64,7 +73,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
     const fromDate = from_date ? new Date(from_date) : null;
     const toDate = to_date ? new Date(to_date) : null;
 
-    const orgRuns = Array.from(testRuns.values()).filter(run => run.organization_id === orgId);
+    const orgRuns = await dbListTestRunsByOrg(orgId);
 
     interface SearchResult {
       run_id: string;
@@ -95,7 +104,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
       if (suite_id && suite.id !== suite_id) continue;
       if (project_id && suite.project_id !== project_id) continue;
 
-      const project = projects.get(suite.project_id);
+      const project = await dbGetProject(suite.project_id);
       const projectName = project?.name || 'Unknown Project';
 
       if (run.results) {
@@ -198,7 +207,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Get base run
-    const baseRun = testRuns.get(baseRunId);
+    const baseRun = await getTestRunWithFallback(baseRunId);
     if (!baseRun || baseRun.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -207,7 +216,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Get compare run
-    const compareRun = testRuns.get(compareRunId);
+    const compareRun = await getTestRunWithFallback(compareRunId);
     if (!compareRun || compareRun.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -336,7 +345,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
     const { text, type = 'note', priority = 'normal' } = request.body;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -389,7 +398,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
     const { runId, testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -421,7 +430,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
     const { runId, testId, annotationId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -463,7 +472,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
     const { expires_in_hours = 24, include_artifacts = true } = request.body || {};
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -527,7 +536,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
-    const run = testRuns.get(shared.run_id);
+    const run = await getTestRunWithFallback(shared.run_id);
     if (!run) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -544,7 +553,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const suite = await getTestSuite(run.suite_id);
-    const project = suite ? projects.get(suite.project_id) : null;
+    const project = suite ? await dbGetProject(suite.project_id) : null;
 
     return {
       shared_by: 'QA Guardian',
@@ -579,7 +588,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
     const { bottleneck_threshold_ms, include_network } = request.query;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',

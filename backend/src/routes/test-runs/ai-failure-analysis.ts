@@ -17,7 +17,27 @@ import { authenticate, getOrganizationId } from '../../middleware/auth';
 
 // Import from extracted modules
 import { testRuns, TestRun } from './execution';
+import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
 import { testSuites } from '../test-suites';
+
+/**
+ * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
+ */
+async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
+  const memRun = testRuns.get(runId);
+  if (memRun) return memRun;
+  return await getTestRun(runId);
+}
+
+/**
+ * Get merged test runs from in-memory (in-flight) + DB for an organization.
+ */
+async function getMergedTestRuns(orgId: string): Promise<TestRun[]> {
+  const dbRuns = await dbListTestRunsByOrg(orgId);
+  const memRuns = Array.from(testRuns.values()).filter(r => r.organization_id === orgId);
+  const seenIds = new Set(memRuns.map(r => r.id));
+  return [...memRuns, ...dbRuns.filter(r => !seenIds.has(r.id))];
+}
 import {
   generateRelatedCommits,
   generateCommitDetails,
@@ -80,9 +100,10 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
 
     const failures: FailureInfo[] = [];
 
-    for (const [runId, run] of testRuns.entries()) {
-      // Filter by organization
-      if (run.organization_id !== orgId) continue;
+    // Merge in-memory + DB runs for this org
+    const allRuns = await getMergedTestRuns(orgId);
+    for (const run of allRuns) {
+      const runId = run.id;
 
       // Filter by date
       if (new Date(run.created_at) < cutoffDate) continue;
@@ -273,8 +294,10 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
 
     const failures: FailureDetail[] = [];
 
-    for (const [runId, run] of testRuns.entries()) {
-      if (run.organization_id !== orgId) continue;
+    // Merge in-memory + DB runs for this org
+    const allRunsForCluster = await getMergedTestRuns(orgId);
+    for (const run of allRunsForCluster) {
+      const runId = run.id;
       if (new Date(run.created_at) < cutoffDate) continue;
       if (project_id && run.project_id !== project_id) continue;
       if (suite_id && run.suite_id !== suite_id) continue;
@@ -444,7 +467,7 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get the test run
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run) {
       return reply.status(404).send({ error: 'Test run not found' });
     }
@@ -522,7 +545,7 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get the test run
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run) {
       return reply.status(404).send({ error: 'Test run not found' });
     }
@@ -572,7 +595,7 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get the test run
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run) {
       return reply.status(404).send({ error: 'Test run not found' });
     }
@@ -624,7 +647,7 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get the test run
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run) {
       return reply.status(404).send({ error: 'Test run not found' });
     }
@@ -657,7 +680,7 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get the test run
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run) {
       return reply.status(404).send({ error: 'Test run not found' });
     }
@@ -727,7 +750,7 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get the test run
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run) {
       return reply.status(404).send({ error: 'Test run not found' });
     }

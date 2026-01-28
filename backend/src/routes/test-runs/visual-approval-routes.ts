@@ -9,7 +9,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
 import { getTest, getTestSuite } from '../test-suites';
-import { testRuns } from './execution';
+import { testRuns, TestRun } from './execution';
+import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
+
+/**
+ * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
+ */
+async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
+  const memRun = testRuns.get(runId);
+  if (memRun) return memRun;
+  return await getTestRun(runId);
+}
 import {
   BaselineMetadata,
   RejectionMetadata,
@@ -60,7 +70,12 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
 
     // Get the test runs to find the screenshot
     // Filter runs that either have test_id matching, or have results containing this test
-    const allTestRuns = Array.from(testRuns.values()).filter(r =>
+    // Merge in-memory runs (in-flight) with DB runs
+    const dbRuns = await dbListTestRunsByOrg(orgId);
+    const memRuns = Array.from(testRuns.values()).filter(r => r.organization_id === orgId);
+    const seenIds = new Set(memRuns.map(r => r.id));
+    const mergedRuns = [...memRuns, ...dbRuns.filter(r => !seenIds.has(r.id))];
+    const allTestRuns = mergedRuns.filter(r =>
       r.test_id === testId ||
       r.results?.some(result => result.test_id === testId)
     );
@@ -243,7 +258,7 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     }
 
     // Find the target run
-    const targetRun = testRuns.get(runId);
+    const targetRun = await getTestRunWithFallback(runId);
     if (!targetRun || targetRun.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',

@@ -8,6 +8,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
 import { projects } from '../projects';
+import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores';
 import {
   AlertCondition,
   AlertChannelType,
@@ -33,7 +34,7 @@ export async function alertChannelRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Verify project exists and belongs to user's organization
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -92,7 +93,7 @@ export async function alertChannelRoutes(app: FastifyInstance) {
     }
 
     // Verify project exists and belongs to user's organization
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -322,9 +323,8 @@ export async function alertChannelRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Filter logs by organization (via project)
-    const orgProjects = Array.from(projects.values())
-      .filter(p => p.organization_id === orgId)
-      .map(p => p.id);
+    const orgProjectsList = await dbListProjects(orgId);
+    const orgProjects = orgProjectsList.map(p => p.id);
 
     const logs = emailLog
       .filter(log => orgProjects.includes(log.projectId))
@@ -349,9 +349,8 @@ export async function alertChannelRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Filter logs by organization (via project)
-    const orgProjects = Array.from(projects.values())
-      .filter(p => p.organization_id === orgId)
-      .map(p => p.id);
+    const orgProjectsList = await dbListProjects(orgId);
+    const orgProjects = orgProjectsList.map(p => p.id);
 
     const logs = webhookLog
       .filter(log => orgProjects.includes(log.projectId))
@@ -377,9 +376,8 @@ export async function alertChannelRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Filter by organization
-    const orgProjects = Array.from(projects.values())
-      .filter(p => p.organization_id === orgId)
-      .map(p => p.id);
+    const orgProjectsList = await dbListProjects(orgId);
+    const orgProjects = orgProjectsList.map(p => p.id);
 
     // Build unified alert history from both email and webhook logs
     interface AlertHistoryEntry {
@@ -449,12 +447,12 @@ export async function alertChannelRoutes(app: FastifyInstance) {
 
     // Get project names for display
     const projectNames: Record<string, string> = {};
-    orgProjects.forEach(projectId => {
-      const project = projects.get(projectId);
+    for (const projectId of orgProjects) {
+      const project = await dbGetProject(projectId);
       if (project) {
         projectNames[projectId] = project.name;
       }
-    });
+    }
 
     return {
       history: history.slice(0, 50), // Return up to 50 entries

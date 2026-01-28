@@ -6,7 +6,15 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { testRuns, runningBrowsers } from './execution';
+import { testRuns, runningBrowsers, TestRun } from './execution';
+import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
+
+// Helper: get test run from Map first, then fall back to DB
+async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
+  const fromMap = testRuns.get(runId);
+  if (fromMap) return fromMap;
+  return await dbGetTestRun(runId) as TestRun | undefined;
+}
 
 // Type definitions
 interface TestRunParams {

@@ -34,6 +34,7 @@ import {
 import { generatePlaywrightCode } from './utils';
 // Feature #1958: Import testRuns for run metadata on test list
 import { testRuns } from '../test-runs/execution';
+import { listTestRunsBySuite } from '../../services/repositories/test-runs';
 
 export async function coreRoutes(app: FastifyInstance) {
   // List test suites for a project
@@ -251,9 +252,11 @@ export async function coreRoutes(app: FastifyInstance) {
     const testList = await dbListTests(suiteId);
 
     // Feature #1958: Compute run metadata for each test
+    // Feature #2108: Use async DB call instead of Map iteration
+    const suiteRuns = await listTestRunsBySuite(suiteId, orgId);
     const testsWithRunMetadata = testList.map(test => {
-      // Get all runs for this test
-      const testRunsForTest = Array.from(testRuns.values())
+      // Get all runs for this test from the suite runs
+      const testRunsForTest = suiteRuns
         .filter(run => run.test_id === test.id)
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -457,7 +460,7 @@ export async function coreRoutes(app: FastifyInstance) {
       name,
       description,
       test_type,
-      steps: finalSteps.map((s, i) => ({ ...s, id: String(Date.now() + i), order: i })),
+      steps: finalSteps.map((s, i) => ({ ...s, id: s.id || crypto.randomUUID(), order: i })),
       // Accessibility fields
       wcag_level: test_type === 'accessibility' ? (wcag_level ?? 'AA') : undefined, // Default to AA
       accessibility_rules: test_type === 'accessibility' ? accessibility_rules : undefined,
@@ -580,7 +583,7 @@ export async function coreRoutes(app: FastifyInstance) {
     if (updates.name) testUpdates.name = updates.name;
     if (updates.description !== undefined) testUpdates.description = updates.description;
     if (updates.test_type) testUpdates.test_type = updates.test_type;
-    if (updates.steps) testUpdates.steps = updates.steps.map((s, i) => ({ ...s, id: s.id || String(Date.now() + i), order: i }));
+    if (updates.steps) testUpdates.steps = updates.steps.map((s, i) => ({ ...s, id: s.id || crypto.randomUUID(), order: i }));
     if (updates.playwright_code !== undefined) testUpdates.playwright_code = updates.playwright_code;
     if (updates.use_custom_code !== undefined) testUpdates.use_custom_code = updates.use_custom_code;
     // Visual regression fields
@@ -657,7 +660,7 @@ export async function coreRoutes(app: FastifyInstance) {
     // Update the steps with new order
     const newSteps = steps.map((s, i) => ({
       ...s,
-      id: s.id || String(Date.now() + i),
+      id: s.id || crypto.randomUUID(),
       order: i
     }));
 

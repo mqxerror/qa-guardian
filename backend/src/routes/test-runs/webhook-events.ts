@@ -17,7 +17,7 @@
  * - accessibility.issue.found
  */
 
-import { projects } from '../projects';
+import { getProject as dbGetProject } from '../projects/stores';
 import {
   WebhookSubscription,
   webhookSubscriptions,
@@ -186,7 +186,7 @@ export async function sendRunStartedWebhook(
   }
 
   // Get project info
-  const project = projects.get(suite.project_id);
+  const project = await dbGetProject(suite.project_id);
   const projectName = project?.name || 'Unknown Project';
 
   // Build payload for test.run.started event
@@ -266,7 +266,7 @@ export async function sendRunCompletedWebhook(
   }
 
   // Get project info
-  const project = projects.get(suite.project_id);
+  const project = await dbGetProject(suite.project_id);
   const projectName = project?.name || 'Unknown Project';
 
   // Calculate summary statistics
@@ -361,7 +361,7 @@ export async function sendRunFailedWebhook(
   }
 
   // Get project info
-  const project = projects.get(suite.project_id);
+  const project = await dbGetProject(suite.project_id);
   const projectName = project?.name || 'Unknown Project';
 
   // Get failed tests
@@ -450,7 +450,7 @@ export async function sendRunPassedWebhook(
   }
 
   // Get project info
-  const project = projects.get(suite.project_id);
+  const project = await dbGetProject(suite.project_id);
   const projectName = project?.name || 'Unknown Project';
 
   const totalTests = results.length;
@@ -548,7 +548,7 @@ export async function sendVisualDiffWebhook(
   }
 
   // Get project info
-  const project = projects.get(diffData.project_id);
+  const project = await dbGetProject(diffData.project_id);
   const projectName = project?.name || 'Unknown Project';
 
   // Build payload
@@ -654,7 +654,7 @@ export async function sendPerformanceBudgetExceededWebhook(
   }
 
   // Get project info
-  const project = projects.get(perfData.project_id);
+  const project = await dbGetProject(perfData.project_id);
   const projectName = project?.name || 'Unknown Project';
 
   // Build payload
@@ -753,7 +753,7 @@ export async function sendBaselineApprovedWebhook(
   }
 
   // Get project info
-  const project = projects.get(baselineData.project_id);
+  const project = await dbGetProject(baselineData.project_id);
   const projectName = project?.name || 'Unknown Project';
 
   // Build payload
@@ -841,7 +841,7 @@ export async function sendScheduleTriggeredWebhook(
   }
 
   // Get project info
-  const project = projects.get(scheduleData.project_id);
+  const project = await dbGetProject(scheduleData.project_id);
   const projectName = project?.name || 'Unknown Project';
 
   // Build payload
@@ -922,7 +922,7 @@ export async function sendFlakyTestWebhook(
   }
 
   // Get project info
-  const project = projects.get(flakyData.project_id);
+  const project = await dbGetProject(flakyData.project_id);
   const projectName = project?.name || 'Unknown Project';
 
   // Build payload
@@ -1023,7 +1023,7 @@ export async function sendAccessibilityIssueWebhook(
   }
 
   // Get project info
-  const project = projects.get(issueData.project_id);
+  const project = await dbGetProject(issueData.project_id);
   const projectName = issueData.project_name || project?.name || 'Unknown Project';
 
   // Build payload
@@ -1123,7 +1123,7 @@ export async function sendTestCreatedWebhook(
   }
 
   // Get project info
-  const project = projects.get(testData.project_id);
+  const project = await dbGetProject(testData.project_id);
   const projectName = project?.name || 'Unknown Project';
 
   // Build payload

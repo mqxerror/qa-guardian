@@ -7,7 +7,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { projects } from '../projects';
+import { listProjects as dbListProjects } from '../projects/stores';
 import {
   SlackConnection,
   SlackChannel,
@@ -202,9 +202,8 @@ export async function slackIntegrationRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Filter logs by organization (via project)
-    const orgProjects = Array.from(projects.values())
-      .filter(p => p.organization_id === orgId)
-      .map(p => p.id);
+    const orgProjectsList = await dbListProjects(orgId);
+    const orgProjects = orgProjectsList.map(p => p.id);
 
     const logs = slackLog
       .filter(log => orgProjects.includes(log.projectId))

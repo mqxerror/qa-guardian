@@ -15,7 +15,17 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { testRuns, TestRun } from './execution';
+import { getTestRun } from '../../services/repositories/test-runs';
 import { getTestSuite } from '../test-suites';
+
+/**
+ * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
+ */
+async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
+  const memRun = testRuns.get(runId);
+  if (memRun) return memRun;
+  return await getTestRun(runId);
+}
 
 /**
  * Register review and export routes
@@ -32,7 +42,7 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     const userId = (request as any).user?.id;
 
     // Verify run exists and belongs to user's organization
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -87,7 +97,7 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     const orgId = getOrganizationId(request);
 
     // Verify run exists and belongs to user's organization
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -126,7 +136,7 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     const orgId = getOrganizationId(request);
 
     // Verify run exists and belongs to user's organization
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -179,7 +189,7 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     const orgId = getOrganizationId(request);
 
     // Verify run exists and belongs to user's organization
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -413,7 +423,7 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     const includeSteps = request.query.include_steps !== 'false';
     const includeArtifacts = request.query.include_artifacts !== 'false';
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run) {
       return reply.status(404).send({
         error: 'Not Found',

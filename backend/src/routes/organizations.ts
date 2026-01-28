@@ -3,9 +3,19 @@ import bcrypt from 'bcryptjs';
 import { authenticate, requireRoles, JwtPayload, getOrganizationId } from '../middleware/auth';
 import { users } from './auth';
 import { projects } from './projects';
-import { testSuites, tests } from './test-suites';
+import { testSuites, tests } from './test-suites/maps';
 import { testRuns } from './test-runs';
 import { auditLogs } from './audit-logs';
+import {
+  listAllTestSuites as dbListAllTestSuites,
+  listAllTests as dbListAllTests,
+  deleteTestSuite as dbDeleteTestSuiteAsync,
+  deleteTest as dbDeleteTestAsync,
+  getTestSuite as dbGetTestSuiteAsync,
+  getTest as dbGetTestAsync,
+} from './test-suites/stores';
+import { getProject as dbGetProjectAsync, listProjects as dbListProjectsAsync, deleteProject as dbDeleteProjectAsync } from './projects/stores';
+import { listTestRunsByOrg as dbListTestRunsByOrg } from '../services/repositories/test-runs';
 
 // Feature #2085: Import repository functions and types
 import {
@@ -612,8 +622,8 @@ export async function organizationRoutes(app: FastifyInstance) {
       });
     }
 
-    // Cascade delete all organization data
-    // 1. Delete test runs for this organization
+    // Cascade delete all organization data using async DB calls
+    // 1. Delete test runs for this organization (clear from in-memory Map)
     let deletedRuns = 0;
     for (const [runId, run] of testRuns) {
       if (run.organization_id === id) {
@@ -621,37 +631,31 @@ export async function organizationRoutes(app: FastifyInstance) {
         deletedRuns++;
       }
     }
+    // Note: DB-level test run deletion happens via cascade or is handled by project/suite deletion
 
-    // 2. Get counts for logging
-    const orgSuiteIds = new Set(
-      Array.from(testSuites.values())
-        .filter(s => s.organization_id === id)
-        .map(s => s.id)
-    );
+    // 2. Get org suites and tests from DB for counting and deletion
+    const orgSuites = await dbListAllTestSuites(id);
+    const orgTests = await dbListAllTests(id);
 
-    const orgTestIds = new Set(
-      Array.from(tests.values())
-        .filter(t => t.organization_id === id)
-        .map(t => t.id)
-    );
-
-    // 3. Delete tests in organization
-    for (const testId of orgTestIds) {
-      tests.delete(testId);
+    // 3. Delete tests in organization (DB + Map)
+    for (const test of orgTests) {
+      await dbDeleteTestAsync(test.id);
+      tests.delete(test.id);
     }
 
-    // 4. Delete test suites
-    for (const suiteId of orgSuiteIds) {
-      testSuites.delete(suiteId);
+    // 4. Delete test suites (DB + Map)
+    for (const suite of orgSuites) {
+      await dbDeleteTestSuiteAsync(suite.id);
+      testSuites.delete(suite.id);
     }
 
-    // 5. Delete projects and count them
+    // 5. Delete projects (DB + Map)
+    const orgProjects = await dbListProjectsAsync(id);
     let deletedProjects = 0;
-    for (const [projectId, project] of projects) {
-      if (project.organization_id === id) {
-        projects.delete(projectId);
-        deletedProjects++;
-      }
+    for (const project of orgProjects) {
+      await dbDeleteProjectAsync(project.id);
+      projects.delete(project.id);
+      deletedProjects++;
     }
 
     // 6. Delete the organization and members
@@ -660,7 +664,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     organizationMembers.delete(id);
 
     console.log(`\n[ORGANIZATION DELETED] Organization ${id} was deleted by ${jwtUser.email}`);
-    console.log(`  Cascade deleted: ${deletedProjects} projects, ${orgSuiteIds.size} suites, ${orgTestIds.size} tests, ${deletedRuns} runs, ${memberCount} members\n`);
+    console.log(`  Cascade deleted: ${deletedProjects} projects, ${orgSuites.length} suites, ${orgTests.length} tests, ${deletedRuns} runs, ${memberCount} members\n`);
 
     return { message: 'Organization deleted successfully' };
   });
@@ -1179,25 +1183,27 @@ export async function organizationRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
     const settings = await getAutoQuarantineSettings(orgId);
 
-    // Get all tests that were auto-quarantined
-    const autoQuarantinedTests = Array.from(tests.values())
-      .filter(t =>
-        t.organization_id === orgId &&
-        t.quarantined &&
-        (t as { quarantine_reason?: string }).quarantine_reason?.startsWith(settings.quarantine_reason_prefix)
-      )
-      .map(t => {
-        const suite = testSuites.get(t.suite_id);
-        const project = suite ? projects.get(suite.project_id) : null;
-        return {
-          test_id: t.id,
-          test_name: t.name,
-          suite_name: suite?.name || 'Unknown',
-          project_name: project?.name || 'Unknown',
-          quarantine_reason: (t as { quarantine_reason?: string }).quarantine_reason,
-          quarantined_at: (t as { quarantined_at?: Date }).quarantined_at?.toISOString(),
-        };
-      });
+    // Get all tests that were auto-quarantined (using async DB call)
+    const allOrgTests = await dbListAllTests(orgId);
+    const autoQuarantinedTests = await Promise.all(
+      allOrgTests
+        .filter(t =>
+          t.quarantined &&
+          (t as { quarantine_reason?: string }).quarantine_reason?.startsWith(settings.quarantine_reason_prefix)
+        )
+        .map(async t => {
+          const suite = await dbGetTestSuiteAsync(t.suite_id);
+          const project = suite ? await dbGetProjectAsync(suite.project_id) : null;
+          return {
+            test_id: t.id,
+            test_name: t.name,
+            suite_name: suite?.name || 'Unknown',
+            project_name: project?.name || 'Unknown',
+            quarantine_reason: (t as { quarantine_reason?: string }).quarantine_reason,
+            quarantined_at: (t as { quarantined_at?: Date }).quarantined_at?.toISOString(),
+          };
+        })
+    );
 
     return {
       settings,
@@ -1254,8 +1260,8 @@ export async function organizationRoutes(app: FastifyInstance) {
     const { testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    // Find the test
-    const test = tests.get(testId);
+    // Find the test using async DB call
+    const test = await dbGetTestAsync(testId);
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -1295,8 +1301,8 @@ export async function organizationRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
     const settings = await getRetryStrategySettings(orgId);
 
-    // Get all tests with flakiness data
-    const testsArray = Array.from(tests.values()).filter(t => t.organization_id === orgId);
+    // Get all tests with flakiness data using async DB call
+    const testsArray = await dbListAllTests(orgId);
     const allTestsWithRetries = await Promise.all(testsArray.map(async (t) => {
         const flakinessScore = (t as { flakiness_score?: number }).flakiness_score ?? 0;
         const retries = await getRetriesForFlakinessScore(orgId, flakinessScore);
@@ -1310,8 +1316,8 @@ export async function organizationRoutes(app: FastifyInstance) {
           }
         }
 
-        const suite = testSuites.get(t.suite_id);
-        const project = suite ? projects.get(suite.project_id) : null;
+        const suite = await dbGetTestSuiteAsync(t.suite_id);
+        const project = suite ? await dbGetProjectAsync(suite.project_id) : null;
 
         return {
           test_id: t.id,

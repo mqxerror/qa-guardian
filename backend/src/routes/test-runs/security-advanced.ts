@@ -5,7 +5,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { projects } from '../projects';
+import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores';
 
 // ============================================================================
 // Type Definitions
@@ -165,7 +165,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Verify project exists
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -329,7 +329,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Get all projects for this organization
-    const orgProjects = Array.from(projects.values()).filter(p => p.organization_id === orgId);
+    const orgProjects = await dbListProjects(orgId);
 
     // Sample file paths for simulated secrets
     const files = [
@@ -562,7 +562,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     const secretIndex = parseInt(secretIdMatch[2]!, 10);
 
     // Verify project exists and belongs to org
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -677,7 +677,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     const includeDevDeps = include_dev === 'true';
 
     // Verify project exists
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -847,7 +847,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
 
     // If project_id provided, verify ownership
     if (project_id) {
-      const project = projects.get(project_id);
+      const project = await dbGetProject(project_id);
       if (!project || project.organization_id !== orgId) {
         return reply.status(404).send({ error: 'Not Found', message: `Project with ID ${project_id} not found` });
       }
@@ -1171,7 +1171,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     } = request.body;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Not Found', message: `Project with ID ${projectId} not found` });
     }
@@ -1245,7 +1245,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     const body = request.body;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Not Found', message: `Project with ID ${projectId} not found` });
     }
@@ -1286,7 +1286,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Not Found', message: `Project with ID ${projectId} not found` });
     }

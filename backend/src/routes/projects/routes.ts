@@ -3,7 +3,18 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, JwtPayload, ApiKeyPayload, getOrganizationId } from '../../middleware/auth';
-import { testSuites, tests, TestSuite, Test } from '../test-suites';
+import { TestSuite, Test } from '../test-suites';
+import { testSuites, tests } from '../test-suites/maps';
+import {
+  listTestSuites as dbListTestSuitesByProject,
+  listTests as dbListTestsBySuite,
+  deleteTestSuite as dbDeleteTestSuiteAsync,
+  deleteTest as dbDeleteTestAsync,
+  createTestSuite as dbCreateTestSuiteAsync,
+  createTest as dbCreateTestAsync,
+  listAllTestSuites as dbListAllTestSuites,
+} from '../test-suites/stores';
+import { createTestRun as dbCreateTestRunAsync } from '../../services/repositories/test-runs';
 import { logAuditEntry } from '../audit-logs';
 import { Project, CreateProjectBody, ProjectParams, EnvironmentVariable } from './types';
 import {
@@ -264,16 +275,17 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     // Cascade delete: first delete all tests in suites belonging to this project
-    const projectSuites = Array.from(testSuites.values()).filter(s => s.project_id === id);
+    const projectSuites = await dbListTestSuitesByProject(id, project.organization_id);
     for (const suite of projectSuites) {
       // Delete all tests in this suite
-      for (const [testId, test] of tests) {
-        if (test.suite_id === suite.id) {
-          tests.delete(testId);
-        }
+      const suiteTests = await dbListTestsBySuite(suite.id);
+      for (const test of suiteTests) {
+        await dbDeleteTestAsync(test.id);
+        tests.delete(test.id); // Also clear from in-memory Map
       }
       // Delete the suite
-      testSuites.delete(suite.id);
+      await dbDeleteTestSuiteAsync(suite.id);
+      testSuites.delete(suite.id); // Also clear from in-memory Map
     }
 
     // Delete the project from database (falls back to in-memory if DB not available)
@@ -603,13 +615,12 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     // Find or create a "Quick Smoke Tests" suite for this project
-    let smokeSuite = Array.from(testSuites.values()).find(
-      s => s.project_id === id && s.name === 'Quick Smoke Tests'
-    );
+    const projectSuites = await dbListTestSuitesByProject(id, orgId);
+    let smokeSuite = projectSuites.find(s => s.name === 'Quick Smoke Tests');
 
     if (!smokeSuite) {
-      const suiteId = Date.now().toString();
-      smokeSuite = {
+      const suiteId = crypto.randomUUID();
+      const suiteData = {
         id: suiteId,
         project_id: id,
         organization_id: orgId,
@@ -623,11 +634,12 @@ export async function coreRoutes(app: FastifyInstance) {
         created_at: new Date(),
         updated_at: new Date(),
       } as unknown as TestSuite;
-      testSuites.set(suiteId, smokeSuite);
+      smokeSuite = await dbCreateTestSuiteAsync(suiteData);
+      testSuites.set(suiteId, smokeSuite); // Also populate in-memory Map
     }
 
     // Create the smoke test
-    const testId = Date.now().toString();
+    const testId = crypto.randomUUID();
     const hostname = (() => {
       try {
         return new URL(url).hostname;
@@ -636,7 +648,7 @@ export async function coreRoutes(app: FastifyInstance) {
       }
     })();
 
-    const smokeTest = {
+    const smokeTestData = {
       id: testId,
       suite_id: smokeSuite.id,
       organization_id: orgId,
@@ -654,11 +666,12 @@ export async function coreRoutes(app: FastifyInstance) {
       created_at: new Date(),
       updated_at: new Date(),
     } as unknown as Test;
-    tests.set(testId, smokeTest);
+    const smokeTest = await dbCreateTestAsync(smokeTestData);
+    tests.set(testId, smokeTest); // Also populate in-memory Map
 
     // Create and start the test run
-    const runId = (Date.now() + 1).toString(); // +1 to ensure unique ID
-    const testRun = {
+    const runId = crypto.randomUUID();
+    const testRunData = {
       id: runId,
       suite_id: smokeSuite.id,
       test_id: testId,
@@ -673,7 +686,9 @@ export async function coreRoutes(app: FastifyInstance) {
       results: [] as any[],
       error: null as string | null,
     };
-    testRuns.set(runId, testRun as any);
+    // Persist to DB and populate in-memory Map (execution engine reads from Map)
+    await dbCreateTestRunAsync(testRunData as any);
+    testRuns.set(runId, testRunData as any);
 
     // Import and run tests (this will start executing in the background)
     // We need to dynamically import to avoid circular dependency

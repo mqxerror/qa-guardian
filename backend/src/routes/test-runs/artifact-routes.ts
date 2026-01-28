@@ -10,8 +10,17 @@ import archiver from 'archiver';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { getTestSuite, getTestSuitesMap } from '../test-suites';
 import { projects } from '../projects';
+import { getProject as dbGetProject } from '../projects/stores';
 import { TRACES_DIR, VIDEOS_DIR } from './storage';
 import { testRuns, TestRun } from './execution';
+import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
+
+// Helper: get test run from Map first, then fall back to DB
+async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
+  const fromMap = testRuns.get(runId);
+  if (fromMap) return fromMap;
+  return await dbGetTestRun(runId) as TestRun | undefined;
+}
 
 /**
  * Register artifact routes on the Fastify app
@@ -46,7 +55,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const parts = fileName.split('-');
     if (parts.length >= 2 && parts[1]) {
       const runId: string = parts[1];
-      const run = testRuns.get(runId);
+      const run = await getTestRunWithFallback(runId);
       if (run && run.organization_id !== orgId) {
         return reply.status(403).send({
           error: 'Forbidden',
@@ -92,7 +101,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const parts = fileName.split('-');
     if (parts.length >= 2 && parts[1]) {
       const runId: string = parts[1];
-      const run = testRuns.get(runId);
+      const run = await getTestRunWithFallback(runId);
       if (run && run.organization_id !== orgId) {
         return reply.status(403).send({
           error: 'Forbidden',
@@ -147,7 +156,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Verify run exists and belongs to user's organization
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -211,7 +220,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Verify run exists and belongs to user's organization
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -250,7 +259,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const orgId = getOrganizationId(request);
 
     // Verify run exists and belongs to user's organization
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -424,7 +433,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const orgId = getOrganizationId(request);
 
     // Verify run exists and belongs to user's organization
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -590,7 +599,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const { runId, testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -619,7 +628,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const { runId, testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -648,7 +657,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const { runId, testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -677,7 +686,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const { runId, testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -715,7 +724,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const { runId, testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -754,7 +763,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const { runId, testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -794,7 +803,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const format = request.query.format || 'webm';
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -869,7 +878,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const { runId, testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -945,7 +954,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const includeTraces = include_traces !== 'false';
     const returnMetadataOnly = metadata_only === 'true';
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -1133,7 +1142,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const { test_id, artifact_types, older_than_days, dry_run = false } = request.body || {};
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -1361,7 +1370,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     const storageLimitBytes = 10 * 1024 * 1024 * 1024; // 10 GB
 
-    const orgRuns = Array.from(testRuns.values()).filter(run => run.organization_id === orgId);
+    const orgRuns = await dbListTestRunsByOrg(orgId);
 
     const projectStorage = new Map<string, {
       project_id: string;
@@ -1383,7 +1392,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const projectMap = new Map<string, string>();
     for (const [, suite] of (await getTestSuitesMap())) {
       if (suite.organization_id === orgId) {
-        const project = projects.get(suite.project_id);
+        const project = await dbGetProject(suite.project_id);
         if (project) {
           projectMap.set(suite.project_id, project.name);
         }

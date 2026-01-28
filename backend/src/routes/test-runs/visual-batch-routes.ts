@@ -11,7 +11,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
 import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites';
-import { projects } from '../projects';
+import { getProject as dbGetProject } from '../projects/stores';
 import {
   BaselineMetadata,
   RejectionMetadata,
@@ -24,6 +24,26 @@ import {
 
 // Import testRuns store from execution module
 import { testRuns, TestRun } from './execution';
+import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
+
+/**
+ * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
+ */
+async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
+  const memRun = testRuns.get(runId);
+  if (memRun) return memRun;
+  return await getTestRun(runId);
+}
+
+/**
+ * Get merged test runs from in-memory (in-flight) + DB for an organization.
+ */
+async function getMergedTestRuns(orgId: string): Promise<TestRun[]> {
+  const dbRuns = await dbListTestRunsByOrg(orgId);
+  const memRuns = Array.from(testRuns.values()).filter(r => r.organization_id === orgId);
+  const seenIds = new Set(memRuns.map(r => r.id));
+  return [...memRuns, ...dbRuns.filter(r => !seenIds.has(r.id))];
+}
 
 // Types for route parameters
 interface PendingQueryParams {
@@ -89,8 +109,10 @@ export async function visualBatchRoutes(app: FastifyInstance) {
       viewport?: string;
     }> = [];
 
-    // Iterate through all test runs
-    for (const [runId, run] of testRuns) {
+    // Iterate through all test runs (merged in-memory + DB)
+    const allRuns = await getMergedTestRuns(orgId);
+    for (const run of allRuns) {
+      const runId = run.id;
       if (run.organization_id !== orgId) continue;
       if (run.status !== 'failed') continue; // Only look at failed runs
       if (!run.results) continue;
@@ -111,7 +133,7 @@ export async function visualBatchRoutes(app: FastifyInstance) {
           if (project_id && suite?.project_id !== project_id) continue;
 
           // Get project info
-          const project = suite?.project_id ? projects.get(suite.project_id) : undefined;
+          const project = suite?.project_id ? await dbGetProject(suite.project_id) : undefined;
 
           // Check if already rejected
           const rejection = getRejectionMetadata(runId, result.test_id, 'single');
@@ -159,7 +181,9 @@ export async function visualBatchRoutes(app: FastifyInstance) {
     let count = 0;
 
     // Count test runs with visual regression tests that have diff_detected status
-    for (const [runId, run] of testRuns) {
+    const allRunsForCount = await getMergedTestRuns(orgId);
+    for (const run of allRunsForCount) {
+      const runId = run.id;
       if (run.organization_id !== orgId) continue;
       if (run.status !== 'failed') continue;
       if (!run.results) continue;
@@ -293,8 +317,8 @@ export async function visualBatchRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
     let deletedCount = 0;
 
-    // Delete all mock runs for this org
-    for (const [runId, run] of testRuns) {
+    // Delete all mock runs for this org (only from in-memory, mock runs are transient)
+    for (const [runId, run] of testRuns.entries()) {
       if (run.organization_id === orgId && runId.startsWith('mock-visual-run-')) {
         testRuns.delete(runId);
         deletedCount++;
@@ -337,7 +361,7 @@ export async function visualBatchRoutes(app: FastifyInstance) {
         }
 
         // Find the target run
-        const targetRun = testRuns.get(runId);
+        const targetRun = await getTestRunWithFallback(runId);
         if (!targetRun || targetRun.organization_id !== orgId) {
           results.push({ runId, testId, success: false, error: 'Test run not found' });
           continue;
@@ -457,7 +481,7 @@ export async function visualBatchRoutes(app: FastifyInstance) {
         }
 
         // Find the target run
-        const targetRun = testRuns.get(runId);
+        const targetRun = await getTestRunWithFallback(runId);
         if (!targetRun || targetRun.organization_id !== orgId) {
           results.push({ runId, testId, success: false, error: 'Test run not found' });
           continue;

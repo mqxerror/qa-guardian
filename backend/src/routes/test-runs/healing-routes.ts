@@ -28,7 +28,17 @@ import {
   getHealingHistory,
   getHealingStats,
 } from './healing';
-import { testRuns } from './execution';
+import { testRuns, TestRun } from './execution';
+import { getTestRun } from '../../services/repositories/test-runs';
+
+/**
+ * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
+ */
+async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
+  const memRun = testRuns.get(runId);
+  if (memRun) return memRun;
+  return await getTestRun(runId);
+}
 
 // Reference for healing event history - import from healing module
 const healingEventHistory = new Map<string, any[]>();
@@ -281,7 +291,7 @@ export async function healingRoutes(app: FastifyInstance) {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',

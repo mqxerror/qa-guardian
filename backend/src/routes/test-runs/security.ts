@@ -15,7 +15,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { projects } from '../projects';
+import { getProject as dbGetProject } from '../projects/stores';
 
 // ============================================================================
 // Type Definitions
@@ -292,7 +292,7 @@ export async function securityRoutes(app: FastifyInstance) {
     const user = (request as any).user;
 
     // Validate project exists
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -922,7 +922,7 @@ export async function securityRoutes(app: FastifyInstance) {
     const includeDevDeps = include_dev !== 'false';
 
     // Verify project exists
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -1079,7 +1079,7 @@ export async function securityRoutes(app: FastifyInstance) {
     const { include_history } = request.query;
     const orgId = getOrganizationId(request);
 
-    const project = projects.get(projectId);
+    const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',

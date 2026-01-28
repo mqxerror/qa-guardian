@@ -8,6 +8,14 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites';
 import { testRuns, runningBrowsers, TestRun, BrowserType, TestRunResult } from './execution';
+import { getTestRun as dbGetTestRun, listTestRunsBySuite as dbListTestRunsBySuite, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
+
+// Helper: get test run from Map first, then fall back to DB
+async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
+  const fromMap = testRuns.get(runId);
+  if (fromMap) return fromMap;
+  return await dbGetTestRun(runId) as TestRun | undefined;
+}
 
 // Type definitions for route params
 interface TestRunParams {
@@ -57,7 +65,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -90,7 +98,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
     const { status, page = 1, limit = 50 } = request.query;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -145,7 +153,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
     const { runId, resultIndex } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -194,7 +202,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -226,7 +234,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -318,9 +326,9 @@ export async function runCoreRoutes(app: FastifyInstance) {
       });
     }
 
-    const runs = Array.from(testRuns.values())
-      .filter(r => r.suite_id === suiteId && r.organization_id === orgId)
-      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+    const allSuiteRuns = await dbListTestRunsBySuite(suiteId, orgId);
+    const runs = allSuiteRuns
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .map(r => ({
         id: r.id,
         suite_id: r.suite_id,
@@ -362,16 +370,16 @@ export async function runCoreRoutes(app: FastifyInstance) {
 
     // Feature #1984: Include batch runs that contain results for this test
     // Check both direct test_id match (single test run) AND results array for suite runs
-    const runs = Array.from(testRuns.values())
+    const allOrgRuns = await dbListTestRunsByOrg(orgId);
+    const runs = allOrgRuns
       .filter(r => {
-        if (r.organization_id !== orgId) return false;
         // Direct single-test run
         if (r.test_id === testId) return true;
         // Suite/batch run that includes this test in results
         if (r.results && r.results.some(result => result.test_id === testId)) return true;
         return false;
       })
-      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .map(r => {
         // For suite runs, extract only the result for this specific test
         const testResult = r.test_id === testId
@@ -409,8 +417,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
     const { limit = 50, status, suite_id, project_id } = request.query;
     const orgId = getOrganizationId(request);
 
-    let runs = Array.from(testRuns.values())
-      .filter(r => r.organization_id === orgId);
+    let runs = await dbListTestRunsByOrg(orgId);
 
     // Filter by status if specified
     if (status) {
@@ -432,7 +439,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
     }
 
     // Sort by created_at descending (most recent first)
-    runs = runs.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+    runs = runs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     // Apply limit
     runs = runs.slice(0, limit);

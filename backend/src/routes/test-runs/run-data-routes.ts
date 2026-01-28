@@ -8,7 +8,15 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { getTest, getTestSuite, getTestsMap } from '../test-suites';
 import { projectEnvVars } from '../projects';
-import { testRuns } from './execution';
+import { testRuns, TestRun } from './execution';
+import { getTestRun as dbGetTestRun } from '../../services/repositories/test-runs';
+
+// Helper: get test run from Map first, then fall back to DB
+async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
+  const fromMap = testRuns.get(runId);
+  if (fromMap) return fromMap;
+  return await dbGetTestRun(runId) as TestRun | undefined;
+}
 
 // Type definitions
 interface TestRunParams {
@@ -42,7 +50,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
     const { level = 'all', limit = 100, offset = 0 } = request.query;
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -123,7 +131,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     const { runId, testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -208,7 +216,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     const { runId, testId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -301,8 +309,8 @@ export async function runDataRoutes(app: FastifyInstance) {
       });
     }
 
-    const baseRun = testRuns.get(baseRunId);
-    const compareRun = testRuns.get(compareRunId);
+    const baseRun = await getTestRunWithFallback(baseRunId);
+    const compareRun = await getTestRunWithFallback(compareRunId);
 
     if (!baseRun || baseRun.organization_id !== orgId) {
       return reply.status(404).send({
@@ -455,7 +463,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -563,7 +571,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
     const { env_vars, merge = true } = request.body || {};
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -642,7 +650,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -717,7 +725,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
     const { keys } = request.body || {};
 
-    const run = testRuns.get(runId);
+    const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -790,8 +798,8 @@ export async function runDataRoutes(app: FastifyInstance) {
     }
 
     // Get both test runs
-    const baseRun = testRuns.get(baseRunId);
-    const compareRun = testRuns.get(compareRunId);
+    const baseRun = await getTestRunWithFallback(baseRunId);
+    const compareRun = await getTestRunWithFallback(compareRunId);
 
     if (!baseRun || baseRun.organization_id !== orgId) {
       return reply.status(404).send({
