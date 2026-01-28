@@ -994,8 +994,7 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_flaky_tests_project ON flaky_tests(project_id);
     CREATE INDEX IF NOT EXISTS idx_schedules_project ON schedules(project_id);
     CREATE INDEX IF NOT EXISTS idx_webhooks_organization ON webhooks(organization_id);
-    CREATE INDEX IF NOT EXISTS idx_audit_logs_organization ON audit_logs(organization_id);
-    CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC);
+    -- Note: audit_logs indexes moved to after table creation (see line ~1180)
     CREATE INDEX IF NOT EXISTS idx_mcp_connections_organization ON mcp_connections(organization_id);
     CREATE INDEX IF NOT EXISTS idx_mcp_connections_api_key ON mcp_connections(api_key_id);
     CREATE INDEX IF NOT EXISTS idx_mcp_connections_activity ON mcp_connections(last_activity_at);
