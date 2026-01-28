@@ -1,11 +1,7 @@
 /**
  * AI Test Generator Module - Data Stores
- * Feature #1499: Add test generation history and versioning
- * Feature #2090: PostgreSQL migration
- * Feature #2106: Map exports are DEPRECATED - use async functions instead.
- *
- * WARNING: Map exports may return empty data when database is unavailable.
- * Use async functions: createAiGeneratedTest(), getAiGeneratedTest(), etc.
+ * Feature #2114: Proxy/getMemory Map exports REMOVED. Only async DB functions exported.
+ * Empty Maps kept for backward compatibility until route migration.
  */
 
 import { AIGeneratedTest, ApprovalStatus } from './types';
@@ -40,12 +36,10 @@ export const getVersionChainKey = aiTestGenRepo.getVersionChainKey;
 export const indexTest = aiTestGenRepo.indexTest;
 export const updateApprovalStatusIndex = aiTestGenRepo.updateApprovalStatusIndex;
 
-// DEPRECATED Map exports (Feature #2106)
-// WARNING: These Maps are DEPRECATED and may return empty data!
-// Use async functions above instead.
-export const aiGeneratedTests: Map<string, AIGeneratedTest> = aiTestGenRepo.getMemoryAiGeneratedTests();
-export const testsByUser: Map<string, Set<string>> = aiTestGenRepo.getMemoryTestsByUser();
-export const testsByOrganization: Map<string, Set<string>> = aiTestGenRepo.getMemoryTestsByOrganization();
-export const testsByProject: Map<string, Set<string>> = aiTestGenRepo.getMemoryTestsByProject();
-export const versionChains: Map<string, string[]> = aiTestGenRepo.getMemoryVersionChains();
-export const testsByApprovalStatus: Map<ApprovalStatus, Set<string>> = aiTestGenRepo.getMemoryTestsByApprovalStatus();
+// DEPRECATED: Empty Map exports for backward compatibility until route migration (#2119)
+export const aiGeneratedTests = new Map<string, AIGeneratedTest>();
+export const testsByUser = new Map<string, Set<string>>();
+export const testsByOrganization = new Map<string, Set<string>>();
+export const testsByProject = new Map<string, Set<string>>();
+export const versionChains = new Map<string, string[]>();
+export const testsByApprovalStatus = new Map<ApprovalStatus, Set<string>>();

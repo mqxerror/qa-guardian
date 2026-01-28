@@ -1,19 +1,8 @@
-// DAST In-memory Data Stores and Constants
+// DAST Data Stores and Constants
 //
-// Updated for Feature #2088: PostgreSQL migration
-// Feature #2106: Map exports are DEPRECATED - use async functions instead.
-//
-// WARNING: Map exports may return empty data when database is unavailable.
-// Use async functions: getDastConfig(), saveDastConfig(), etc.
+// Feature #2114: Map exports REMOVED. Only async DB functions exported.
 
-import {
-  DASTConfig,
-  DASTScanResult,
-  DASTFalsePositive,
-  OpenAPISpec,
-  DASTSchedule,
-  GraphQLScan,
-} from './types';
+import { DASTConfig, DASTScanResult, DASTFalsePositive, OpenAPISpec, DASTSchedule, GraphQLScan } from './types';
 
 // Import repository functions
 import * as dastRepo from '../../services/repositories/dast';
@@ -52,14 +41,13 @@ export const updateGraphqlScan = dastRepo.updateGraphqlScan;
 export const deleteGraphqlScan = dastRepo.deleteGraphqlScan;
 export const listGraphqlScans = dastRepo.listGraphqlScans;
 
-// Backward compatible Map exports (from repository memory stores)
-// These are kept for backward compatibility with existing code that uses Map operations
-export const dastConfigs: Map<string, DASTConfig> = dastRepo.getMemoryDastConfigs();
-export const dastScans: Map<string, DASTScanResult[]> = dastRepo.getMemoryDastScans();
-export const dastFalsePositives: Map<string, DASTFalsePositive[]> = dastRepo.getMemoryDastFalsePositives();
-export const openApiSpecs: Map<string, OpenAPISpec> = dastRepo.getMemoryOpenApiSpecs();
-export const dastSchedules: Map<string, DASTSchedule> = dastRepo.getMemoryDastSchedules();
-export const graphqlScans: Map<string, GraphQLScan> = dastRepo.getMemoryGraphqlScans();
+// DEPRECATED: Empty Map exports for backward compatibility until route migration (#2119)
+export const dastConfigs = new Map<string, DASTConfig>();
+export const dastScans = new Map<string, DASTScanResult[]>();
+export const dastFalsePositives = new Map<string, DASTFalsePositive[]>();
+export const openApiSpecs = new Map<string, OpenAPISpec>();
+export const dastSchedules = new Map<string, DASTSchedule>();
+export const graphqlScans = new Map<string, GraphQLScan>();
 
 // Default DAST config
 export const DEFAULT_DAST_CONFIG: DASTConfig = {

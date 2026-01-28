@@ -18,11 +18,8 @@ export {
   UpdateTestBody,
 } from './types';
 
-// Re-export stores (Feature #2103: Maps are DEPRECATED and return empty data)
-// Use async functions: getTestSuite(), getTest(), listAllTestSuites(), listAllTests()
+// Re-export stores (Feature #2111: Proxy Map exports removed, async functions only)
 export {
-  testSuites,  // DEPRECATED - returns empty Map
-  tests,       // DEPRECATED - returns empty Map
   createTestSuite,
   getTestSuite,
   updateTestSuite,
@@ -38,6 +35,12 @@ export {
   getTestSuitesMap,
   getTestsMap,
 } from './stores';
+
+// DEPRECATED: Empty Map exports for backward compatibility until route migration (#2115)
+// These return empty Maps - consumers must migrate to async DB functions
+import { TestSuite, Test } from './types';
+export const testSuites = new Map<string, TestSuite>();
+export const tests = new Map<string, Test>();
 
 // Re-export utility functions
 export { generatePlaywrightCode, stepToPlaywrightCode } from './utils';

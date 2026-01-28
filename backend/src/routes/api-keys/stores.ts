@@ -1,8 +1,7 @@
 // API Keys Module Data Stores
 // Feature #2084: PostgreSQL-backed via repository layer
-// Feature #2106: Map exports are DEPRECATED - use async functions instead
+// Feature #2113: Proxy Map exports REMOVED. Only async DB functions exported.
 
-import { ApiKey, McpConnection, McpToolCall, McpAuditLogEntry } from './types';
 import {
   createApiKey as dbCreateApiKey,
   getApiKeyById as dbGetApiKeyById,
@@ -21,38 +20,9 @@ import {
   getMcpAuditLogs as dbGetMcpAuditLogs,
 } from '../../services/repositories/api-keys';
 
-// ===== DEPRECATED MAP EXPORTS =====
-// WARNING: These Maps return EMPTY data and are DEPRECATED!
-// Use async functions instead (dbCreateApiKey, dbGetApiKeyById, etc.)
+// ===== ASYNC DATABASE FUNCTIONS =====
+// All data access goes through these async functions
 
-let deprecationWarned = false;
-function warnDeprecation() {
-  if (!deprecationWarned) {
-    console.warn('[DEPRECATED] apiKeys, mcpConnections, etc. Map exports return empty data.');
-    console.warn('[DEPRECATED] Use async db functions: dbCreateApiKey(), dbGetApiKeyById()');
-    deprecationWarned = true;
-  }
-}
-
-const emptyApiKeysMap = new Map<string, ApiKey>();
-const emptyMcpConnectionsMap = new Map<string, McpConnection>();
-const emptyMcpToolCallsMap = new Map<string, McpToolCall[]>();
-const emptyMcpAuditLogsMap = new Map<string, McpAuditLogEntry[]>();
-
-export const apiKeys: Map<string, ApiKey> = new Proxy(emptyApiKeysMap, {
-  get(target, prop) { warnDeprecation(); const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val; }
-});
-export const mcpConnections: Map<string, McpConnection> = new Proxy(emptyMcpConnectionsMap, {
-  get(target, prop) { warnDeprecation(); const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val; }
-});
-export const mcpToolCalls: Map<string, McpToolCall[]> = new Proxy(emptyMcpToolCallsMap, {
-  get(target, prop) { warnDeprecation(); const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val; }
-});
-export const mcpAuditLogs: Map<string, McpAuditLogEntry[]> = new Proxy(emptyMcpAuditLogsMap, {
-  get(target, prop) { warnDeprecation(); const val = Reflect.get(target, prop); return typeof val === "function" ? val.bind(target) : val; }
-});
-
-// Re-export async database functions for consumers
 export {
   dbCreateApiKey,
   dbGetApiKeyById,

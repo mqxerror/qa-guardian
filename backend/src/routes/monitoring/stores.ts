@@ -2,49 +2,11 @@
  * Monitoring Stores Module
  *
  * Feature #2086: Migrated to PostgreSQL with in-memory fallback.
- * Feature #2106: Map exports are DEPRECATED - use async functions instead.
+ * Feature #2114: Map exports REMOVED. Only async DB functions exported.
+ * Exception: checkIntervals Map kept (NodeJS.Timeout cannot be serialized to DB)
  *
- * This module now exports both:
- * - Async database functions (preferred for new code)
- * - Memory Maps (DEPRECATED - for backward compatibility only)
- *
- * WARNING: Map exports return empty data when database is unavailable.
- * Use async functions instead: createUptimeCheck(), getUptimeCheck(), etc.
+ * All data access must use async functions: createUptimeCheck(), getUptimeCheck(), etc.
  */
-
-import {
-  UptimeCheck,
-  CheckResult,
-  TransactionCheck,
-  TransactionResult,
-  PerformanceCheck,
-  PerformanceResult,
-  MaintenanceWindow,
-  Incident,
-  WebhookCheck,
-  WebhookEvent,
-  DnsCheck,
-  DnsCheckResult,
-  TcpCheck,
-  TcpCheckResult,
-  MonitoringSettings,
-  StatusPage,
-  StatusPageIncident,
-  StatusPageSubscription,
-  OnCallSchedule,
-  EscalationPolicy,
-  DeletedCheckHistory,
-  AlertGroupingRule,
-  AlertGroup,
-  AlertRoutingRule,
-  AlertRoutingLog,
-  AlertRateLimitConfig,
-  AlertRateLimitState,
-  AlertCorrelationConfig,
-  AlertCorrelation,
-  AlertRunbook,
-  ManagedIncident,
-} from './types';
 
 // Import repository for database operations
 import * as monitoringRepo from '../../services/repositories/monitoring';
@@ -159,91 +121,64 @@ export const getDeletedCheckHistory = monitoringRepo.getDeletedCheckHistory;
 
 
 // =============================
-// DEPRECATED MAP EXPORTS
-// WARNING: These Maps are DEPRECATED and may return empty data!
-// Use async functions above instead: createUptimeCheck(), getUptimeCheck(), etc.
-// These will be removed when all route files are migrated (Feature #2104).
+// RUNTIME-ONLY MAP (cannot be serialized to DB)
 // =============================
-
-// Uptime checks and results
-export const uptimeChecks: Map<string, UptimeCheck> = monitoringRepo.getMemoryUptimeChecks();
-export const checkResults: Map<string, CheckResult[]> = monitoringRepo.getMemoryCheckResults();
-
-// Transaction checks and results
-export const transactionChecks: Map<string, TransactionCheck> = monitoringRepo.getMemoryTransactionChecks();
-export const transactionResults: Map<string, TransactionResult[]> = monitoringRepo.getMemoryTransactionResults();
-
-// Performance checks and results
-export const performanceChecks: Map<string, PerformanceCheck> = monitoringRepo.getMemoryPerformanceChecks();
-export const performanceResults: Map<string, PerformanceResult[]> = monitoringRepo.getMemoryPerformanceResults();
-
-// Maintenance windows: checkId -> windows
-export const maintenanceWindows: Map<string, MaintenanceWindow[]> = monitoringRepo.getMemoryMaintenanceWindows();
-
-// Incidents: checkId -> incidents (closed ones)
-export const checkIncidents: Map<string, Incident[]> = monitoringRepo.getMemoryCheckIncidents();
-
-// Active incidents: checkId -> incident (ongoing)
-export const activeIncidents: Map<string, Incident> = monitoringRepo.getMemoryActiveIncidents();
-
-// Consecutive failures tracking: checkId -> count
-export const consecutiveFailures: Map<string, number> = monitoringRepo.getMemoryConsecutiveFailures();
 
 // Check intervals for cleanup: checkId -> NodeJS.Timeout
 // NOTE: This MUST stay in-memory - NodeJS.Timeout cannot be serialized to database
 export const checkIntervals: Map<string, NodeJS.Timeout> = new Map();
 
-// Webhook checks and events
-export const webhookChecks: Map<string, WebhookCheck> = monitoringRepo.getMemoryWebhookChecks();
-export const webhookEvents: Map<string, WebhookEvent[]> = monitoringRepo.getMemoryWebhookEvents();
-export const webhookTokenMap: Map<string, string> = monitoringRepo.getMemoryWebhookTokenMap();
+// =============================
+// DEPRECATED: Empty Map exports for backward compatibility
+// These return empty Maps - consumers must migrate to async DB functions (#2118)
+// No Proxy wrappers, no getMemory*() calls - just plain empty Maps
+// =============================
+import {
+  UptimeCheck, CheckResult, TransactionCheck, TransactionResult,
+  PerformanceCheck, PerformanceResult, MaintenanceWindow, Incident,
+  WebhookCheck, WebhookEvent, DnsCheck, DnsCheckResult, TcpCheck, TcpCheckResult,
+  MonitoringSettings, StatusPage, StatusPageIncident, StatusPageSubscription,
+  OnCallSchedule, EscalationPolicy, DeletedCheckHistory,
+  AlertGroupingRule, AlertGroup, AlertRoutingRule, AlertRoutingLog,
+  AlertRateLimitConfig, AlertRateLimitState,
+  AlertCorrelationConfig, AlertCorrelation, AlertRunbook,
+  ManagedIncident,
+} from './types';
 
-// DNS checks and results
-export const dnsChecks: Map<string, DnsCheck> = monitoringRepo.getMemoryDnsChecks();
-export const dnsResults: Map<string, DnsCheckResult[]> = monitoringRepo.getMemoryDnsResults();
-
-// TCP checks and results
-export const tcpChecks: Map<string, TcpCheck> = monitoringRepo.getMemoryTcpChecks();
-export const tcpResults: Map<string, TcpCheckResult[]> = monitoringRepo.getMemoryTcpResults();
-
-// Organization monitoring settings
-export const monitoringSettings: Map<string, MonitoringSettings> = monitoringRepo.getMemoryMonitoringSettings();
-
-// Status pages
-export const statusPages: Map<string, StatusPage> = monitoringRepo.getMemoryStatusPages();
-export const statusPagesBySlug: Map<string, string> = monitoringRepo.getMemoryStatusPagesBySlug();
-export const statusPageIncidents: Map<string, StatusPageIncident[]> = monitoringRepo.getMemoryStatusPageIncidents();
-export const statusPageSubscriptions: Map<string, StatusPageSubscription[]> = monitoringRepo.getMemoryStatusPageSubscriptions();
-
-// On-call schedules
-export const onCallSchedules: Map<string, OnCallSchedule> = monitoringRepo.getMemoryOnCallSchedules();
-
-// Escalation policies
-export const escalationPolicies: Map<string, EscalationPolicy> = monitoringRepo.getMemoryEscalationPolicies();
-
-// Feature #943: Deleted check history storage for audit purposes
-export const deletedCheckHistory: Map<string, DeletedCheckHistory> = monitoringRepo.getMemoryDeletedCheckHistory();
-
-// Alert grouping
-export const alertGroupingRules: Map<string, AlertGroupingRule> = monitoringRepo.getMemoryAlertGroupingRules();
-export const alertGroups: Map<string, AlertGroup> = monitoringRepo.getMemoryAlertGroups();
-
-// Alert routing
-export const alertRoutingRules: Map<string, AlertRoutingRule> = monitoringRepo.getMemoryAlertRoutingRules();
-export const alertRoutingLogs: Map<string, AlertRoutingLog[]> = monitoringRepo.getMemoryAlertRoutingLogs();
-
-// Alert rate limiting
-export const alertRateLimitConfigs: Map<string, AlertRateLimitConfig> = monitoringRepo.getMemoryAlertRateLimitConfigs();
-export const alertRateLimitStates: Map<string, AlertRateLimitState> = monitoringRepo.getMemoryAlertRateLimitStates();
-
-// Alert correlation
-export const alertCorrelationConfigs: Map<string, AlertCorrelationConfig> = monitoringRepo.getMemoryAlertCorrelationConfigs();
-export const alertCorrelations: Map<string, AlertCorrelation> = monitoringRepo.getMemoryAlertCorrelations();
-export const alertToCorrelation: Map<string, string> = monitoringRepo.getMemoryAlertToCorrelation();
-
-// Alert runbooks
-export const alertRunbooks: Map<string, AlertRunbook> = monitoringRepo.getMemoryAlertRunbooks();
-
-// Managed incidents
-export const managedIncidents: Map<string, ManagedIncident> = monitoringRepo.getMemoryManagedIncidents();
-export const incidentsByOrg: Map<string, string[]> = monitoringRepo.getMemoryIncidentsByOrg();
+export const uptimeChecks = new Map<string, UptimeCheck>();
+export const checkResults = new Map<string, CheckResult[]>();
+export const transactionChecks = new Map<string, TransactionCheck>();
+export const transactionResults = new Map<string, TransactionResult[]>();
+export const performanceChecks = new Map<string, PerformanceCheck>();
+export const performanceResults = new Map<string, PerformanceResult[]>();
+export const maintenanceWindows = new Map<string, MaintenanceWindow[]>();
+export const checkIncidents = new Map<string, Incident[]>();
+export const activeIncidents = new Map<string, Incident>();
+export const consecutiveFailures = new Map<string, number>();
+export const webhookChecks = new Map<string, WebhookCheck>();
+export const webhookEvents = new Map<string, WebhookEvent[]>();
+export const webhookTokenMap = new Map<string, string>();
+export const dnsChecks = new Map<string, DnsCheck>();
+export const dnsResults = new Map<string, DnsCheckResult[]>();
+export const tcpChecks = new Map<string, TcpCheck>();
+export const tcpResults = new Map<string, TcpCheckResult[]>();
+export const monitoringSettings = new Map<string, MonitoringSettings>();
+export const statusPages = new Map<string, StatusPage>();
+export const statusPagesBySlug = new Map<string, string>();
+export const statusPageIncidents = new Map<string, StatusPageIncident[]>();
+export const statusPageSubscriptions = new Map<string, StatusPageSubscription[]>();
+export const onCallSchedules = new Map<string, OnCallSchedule>();
+export const escalationPolicies = new Map<string, EscalationPolicy>();
+export const deletedCheckHistory = new Map<string, DeletedCheckHistory>();
+export const alertGroupingRules = new Map<string, AlertGroupingRule>();
+export const alertGroups = new Map<string, AlertGroup>();
+export const alertRoutingRules = new Map<string, AlertRoutingRule>();
+export const alertRoutingLogs = new Map<string, AlertRoutingLog[]>();
+export const alertRateLimitConfigs = new Map<string, AlertRateLimitConfig>();
+export const alertRateLimitStates = new Map<string, AlertRateLimitState>();
+export const alertCorrelationConfigs = new Map<string, AlertCorrelationConfig>();
+export const alertCorrelations = new Map<string, AlertCorrelation>();
+export const alertToCorrelation = new Map<string, string>();
+export const alertRunbooks = new Map<string, AlertRunbook>();
+export const managedIncidents = new Map<string, ManagedIncident>();
+export const incidentsByOrg = new Map<string, string[]>();

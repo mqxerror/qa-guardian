@@ -1,14 +1,8 @@
 /**
  * SAST Module Stores
  *
- * In-memory data stores for SAST integration data.
- * Extracted from sast.ts (Feature #1376)
- *
- * Updated for Feature #2089: PostgreSQL migration
- * Feature #2106: Map exports are DEPRECATED - use async functions instead.
- *
- * WARNING: Map exports may return empty data when database is unavailable.
- * Use async functions: getSASTConfig(), updateSASTConfig(), etc.
+ * Feature #2114: Map exports REMOVED. Only async DB functions exported.
+ * Static constants (config defaults, rulesets, pattern templates) kept.
  */
 
 import {
@@ -52,14 +46,13 @@ export const addSecretPattern = sastRepo.addSecretPattern;
 export const updateSecretPattern = sastRepo.updateSecretPattern;
 export const removeSecretPattern = sastRepo.removeSecretPattern;
 
-// Backward compatible Map exports (from repository memory stores)
-// These are kept for backward compatibility with existing code that uses Map operations
-export const sastConfigs: Map<string, SASTConfig> = sastRepo.getMemorySastConfigs();
-export const sastScans: Map<string, SASTScanResult[]> = sastRepo.getMemorySastScans();
-export const falsePositives: Map<string, FalsePositive[]> = sastRepo.getMemoryFalsePositives();
-export const sastPRChecks: Map<string, SASTPRCheck[]> = sastRepo.getMemorySastPRChecks();
-export const sastPRComments: Map<string, SASTPRComment[]> = sastRepo.getMemorySastPRComments();
-export const secretPatterns: Map<string, SecretPattern[]> = sastRepo.getMemorySecretPatterns();
+// DEPRECATED: Empty Map exports for backward compatibility until route migration (#2119)
+export const sastConfigs = new Map<string, SASTConfig>();
+export const sastScans = new Map<string, SASTScanResult[]>();
+export const falsePositives = new Map<string, FalsePositive[]>();
+export const sastPRChecks = new Map<string, SASTPRCheck[]>();
+export const sastPRComments = new Map<string, SASTPRComment[]>();
+export const secretPatterns = new Map<string, SecretPattern[]>();
 
 // Default SAST config
 export const DEFAULT_SAST_CONFIG: SASTConfig = {

@@ -9,8 +9,31 @@ import { registerMcpRoutes } from './mcp-routes';
 // Re-export all types
 export * from './types';
 
-// Re-export stores
-export { apiKeys, mcpConnections, mcpToolCalls, mcpAuditLogs } from './stores';
+// Re-export async DB functions from stores
+export {
+  dbCreateApiKey,
+  dbGetApiKeyById,
+  dbGetApiKeyByHash,
+  dbListApiKeysByOrg,
+  dbUpdateApiKey,
+  dbRevokeApiKey,
+  dbCreateMcpConnection,
+  dbGetMcpConnection,
+  dbUpdateMcpConnectionActivity,
+  dbDeleteMcpConnection,
+  dbCleanupStaleMcpConnections,
+  dbCreateMcpToolCall,
+  dbGetMcpToolCallsByOrg,
+  dbCreateMcpAuditLog,
+  dbGetMcpAuditLogs,
+} from './stores';
+
+// DEPRECATED: Empty Map exports for backward compatibility until route migration (#2120)
+import { ApiKey, McpConnection, McpToolCall, McpAuditLogEntry } from './types';
+export const apiKeys = new Map<string, ApiKey>();
+export const mcpConnections = new Map<string, McpConnection>();
+export const mcpToolCalls = new Map<string, McpToolCall[]>();
+export const mcpAuditLogs = new Map<string, McpAuditLogEntry[]>();
 
 // Re-export utilities
 export { generateApiKey, formatDuration } from './utils';

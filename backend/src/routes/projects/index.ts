@@ -16,14 +16,18 @@ export {
 
 // Re-export stores and constants
 export {
-  projects,
-  projectMembers,
-  projectEnvVars,
-  projectVisualSettings,
-  projectHealingSettings,
   DEFAULT_PROJECT_VISUAL_SETTINGS,
   DEFAULT_PROJECT_HEALING_SETTINGS,
 } from './stores';
+
+// DEPRECATED: Empty Map exports for backward compatibility until route migration (#2116)
+// These return empty Maps - consumers must migrate to async DB functions
+import { Project, ProjectMember, EnvironmentVariable, ProjectVisualSettings, ProjectHealingSettings } from './types';
+export const projects = new Map<string, Project>();
+export const projectMembers = new Map<string, ProjectMember[]>();
+export const projectEnvVars = new Map<string, EnvironmentVariable[]>();
+export const projectVisualSettings = new Map<string, ProjectVisualSettings>();
+export const projectHealingSettings = new Map<string, ProjectHealingSettings>();
 
 // Re-export utility functions
 export {

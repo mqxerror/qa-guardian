@@ -1,14 +1,8 @@
 /**
  * GitHub Module Stores
  *
- * In-memory data stores for GitHub integration data.
- * Extracted from github.ts (Feature #1375)
- *
- * Updated for Feature #2087: PostgreSQL migration
- * Feature #2106: Map exports are DEPRECATED - use async functions instead.
- *
- * WARNING: Map exports may return empty data when database is unavailable.
- * Use async functions: createGithubConnection(), getGithubConnection(), etc.
+ * Feature #2114: Map exports REMOVED. Only async DB functions exported.
+ * Demo data (repos, PRs, test files) kept as static constants.
  */
 
 import {
@@ -51,14 +45,12 @@ export const setUserGithubToken = githubRepo.setUserGithubToken;
 export const getUserGithubToken = githubRepo.getUserGithubToken;
 export const deleteUserGithubToken = githubRepo.deleteUserGithubToken;
 
-// DEPRECATED Map exports (Feature #2106)
-// WARNING: These Maps are DEPRECATED and may return empty data!
-// Use async functions above instead.
-export const githubConnections: Map<string, GitHubConnection> = githubRepo.getMemoryGithubConnections();
-export const prStatusChecks: Map<string, PRStatusCheck[]> = githubRepo.getMemoryPRStatusChecks();
-export const prComments: Map<string, PRComment[]> = githubRepo.getMemoryPRComments();
-export const prDependencyScans: Map<string, PRDependencyScanResult[]> = githubRepo.getMemoryPRDependencyScans();
-export const userGithubTokens: Map<string, string> = githubRepo.getMemoryUserGithubTokens();
+// DEPRECATED: Empty Map exports for backward compatibility until route migration (#2119)
+export const githubConnections = new Map<string, GitHubConnection>();
+export const prStatusChecks = new Map<string, PRStatusCheck[]>();
+export const prComments = new Map<string, PRComment[]>();
+export const prDependencyScans = new Map<string, PRDependencyScanResult[]>();
+export const userGithubTokens = new Map<string, string>();
 
 // Simulated open PRs for demo repos (static data, kept in-memory)
 export const demoPullRequests: Record<string, DemoPullRequest[]> = {
