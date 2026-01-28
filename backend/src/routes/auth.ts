@@ -170,7 +170,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     // Get user's organization
-    const organizationId = getUserOrganization(user.id);
+    const organizationId = await getUserOrganization(user.id);
 
     // If user is not a member of any organization, deny login
     if (!organizationId) {
@@ -366,7 +366,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     // Get organization_id from JWT token or look it up
-    const organizationId = decoded.organization_id || getUserOrganization(user.id);
+    const organizationId = decoded.organization_id || await getUserOrganization(user.id);
 
     return {
       user: {
@@ -432,7 +432,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     // Get user's organization
-    const organizationId = getUserOrganization(user.id);
+    const organizationId = await getUserOrganization(user.id);
 
     // Generate JWT token that expires in 2 seconds (for testing)
     const token = app.jwt.sign(

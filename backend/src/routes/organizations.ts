@@ -56,8 +56,19 @@ export const getRetriesForFlakinessScore = repoGetRetriesForFlakinessScore;
 export const getAutoQuarantineSettings = repoGetAutoQuarantineSettings;
 export const setAutoQuarantineSettings = repoSetAutoQuarantineSettings;
 
-// Helper function to get user's first organization
-export function getUserOrganization(userId: string): string | null {
+// Import async DB functions for user organization lookup
+import {
+  getUserOrganization as dbGetUserOrganization,
+  getUserOrganizations as dbGetUserOrganizations,
+} from '../services/repositories/organizations';
+
+// Feature #2117: Async DB-backed organization lookup
+export async function getUserOrganization(userId: string): Promise<string | null> {
+  // Try async DB first
+  const result = await dbGetUserOrganization(userId);
+  if (result) return result;
+
+  // Fallback to in-memory for backward compatibility
   for (const [orgId, members] of organizationMembers) {
     if (members.some(m => m.user_id === userId)) {
       return orgId;
@@ -66,10 +77,20 @@ export function getUserOrganization(userId: string): string | null {
   return null;
 }
 
-// Helper function to get all organizations a user belongs to
-export function getUserOrganizations(userId: string): Array<{ organization_id: string; role: string; organization: Organization | undefined }> {
-  const userOrgs: Array<{ organization_id: string; role: string; organization: Organization | undefined }> = [];
+// Feature #2117: Async DB-backed organization list
+export async function getUserOrganizations(userId: string): Promise<Array<{ organization_id: string; role: string; organization: Organization | undefined }>> {
+  // Try async DB first
+  const dbResult = await dbGetUserOrganizations(userId);
+  if (dbResult && dbResult.length > 0) {
+    return dbResult.map(r => ({
+      organization_id: r.organization_id,
+      role: r.role,
+      organization: organizations.get(r.organization_id),
+    }));
+  }
 
+  // Fallback to in-memory
+  const userOrgs: Array<{ organization_id: string; role: string; organization: Organization | undefined }> = [];
   for (const [orgId, members] of organizationMembers) {
     const membership = members.find(m => m.user_id === userId);
     if (membership) {
@@ -80,7 +101,6 @@ export function getUserOrganizations(userId: string): Array<{ organization_id: s
       });
     }
   }
-
   return userOrgs;
 }
 
@@ -113,7 +133,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     preHandler: [authenticate],
   }, async (request) => {
     const user = request.user as JwtPayload;
-    const userOrgs = getUserOrganizations(user.id);
+    const userOrgs = await getUserOrganizations(user.id);
 
     return {
       organizations: userOrgs.map(org => ({
@@ -142,7 +162,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // Check if user belongs to the target organization
-    const userOrgs = getUserOrganizations(user.id);
+    const userOrgs = await getUserOrganizations(user.id);
     const targetOrg = userOrgs.find(o => o.organization_id === organization_id);
 
     if (!targetOrg) {
