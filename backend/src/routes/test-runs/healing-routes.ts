@@ -314,7 +314,7 @@ export async function healingRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
     const userId = user?.email || user?.id;
 
-    const result = applyHealedSelector(healingId, userId);
+    const result = await applyHealedSelector(healingId, userId);
     if (!result.success) {
       return reply.status(404).send({
         error: 'Error',

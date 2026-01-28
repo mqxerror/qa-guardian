@@ -16,7 +16,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
 import { testRuns, selectorOverrides, healedSelectorHistory, SelectorOverride } from './execution';
-import { tests } from '../test-suites';
+import { getTest } from '../test-suites';
 
 /**
  * Register selector override routes
@@ -178,7 +178,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     // If apply_to_test is true, also update the test definition
     let testUpdated = false;
     if (apply_to_test) {
-      const test = tests.get(testId);
+      const test = await getTest(testId);
       if (test) {
         const testStep = test.steps.find((s: any) => s.id === stepId);
         if (testStep) {
@@ -261,7 +261,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     // If apply_to_test is true, update the test definition with the healed selector
     let testUpdated = false;
     if (apply_to_test) {
-      const test = tests.get(testId);
+      const test = await getTest(testId);
       if (test) {
         const testStep = test.steps.find((s: any) => s.id === stepId);
         if (testStep) {
@@ -401,7 +401,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     const orgId = getOrganizationId(request);
 
     // Check if test exists and belongs to the organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
     }
@@ -435,7 +435,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     const orgId = getOrganizationId(request);
 
     // Check if test exists and belongs to the organization
-    const test = tests.get(testId);
+    const test = await getTest(testId);
     if (!test) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
     }

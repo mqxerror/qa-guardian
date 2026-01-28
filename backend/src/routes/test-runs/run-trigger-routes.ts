@@ -11,7 +11,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, getOrganizationId } from '../../middleware/auth';
-import { tests, testSuites } from '../test-suites';
+import { getTestSuite, getTest, listTests } from '../test-suites';
 import { testRuns, BrowserType } from './execution';
 
 // Type definitions for route params/body
@@ -58,7 +58,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       const orgId = getOrganizationId(request);
 
       // Verify suite exists
-      const suite = testSuites.get(suiteId);
+      const suite = await getTestSuite(suiteId);
       if (!suite || suite.organization_id !== orgId) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -67,7 +67,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       }
 
       // Check if there are tests in the suite
-      const suiteTests = Array.from(tests.values()).filter(t => t.suite_id === suiteId);
+      const suiteTests = await listTests(suiteId);
       if (suiteTests.length === 0) {
         return reply.status(400).send({
           error: 'Bad Request',
@@ -119,7 +119,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       const orgId = getOrganizationId(request);
 
       // Verify test exists
-      const test = tests.get(testId);
+      const test = await getTest(testId);
       if (!test || test.organization_id !== orgId) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -128,7 +128,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       }
 
       // Get suite to determine default browser
-      const suite = testSuites.get(test.suite_id);
+      const suite = await getTestSuite(test.suite_id);
       const browserToUse: BrowserType = requestBrowser || suite?.browser || 'chromium';
       // Use request branch or default to 'main'
       const branchToUse: string = requestBranch || 'main';

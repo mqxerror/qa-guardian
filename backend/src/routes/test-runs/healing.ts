@@ -6,7 +6,7 @@
  */
 
 import { Server as SocketIOServer } from 'socket.io';
-import { tests } from '../test-suites';
+import { getTest, updateTest } from '../test-suites';
 import { getProjectHealingSettings } from '../projects';
 
 // Socket.IO reference (set from test-runs.ts)
@@ -294,10 +294,10 @@ export function recordSuccessfulHeal(
 }
 
 // Feature #1057: Apply healed selector to test definition
-export function applyHealedSelector(
+export async function applyHealedSelector(
   healingId: string,
   userId?: string
-): { success: boolean; error?: string } {
+): Promise<{ success: boolean; error?: string }> {
   const record = pendingHealingUpdates.get(healingId);
   if (!record) {
     return { success: false, error: 'Healing record not found' };
@@ -307,7 +307,7 @@ export function applyHealedSelector(
     return { success: false, error: `Healing already ${record.status}` };
   }
 
-  const test = tests.get(record.testId);
+  const test = await getTest(record.testId);
   if (!test) {
     return { success: false, error: 'Test not found' };
   }
@@ -338,8 +338,8 @@ export function applyHealedSelector(
   // Update the step's selector
   step.selector = record.healedSelector;
 
-  // Update the test
-  tests.set(record.testId, test);
+  // Update the test in database
+  await updateTest(record.testId, { steps: test.steps });
 
   // Update record status
   record.status = 'applied';

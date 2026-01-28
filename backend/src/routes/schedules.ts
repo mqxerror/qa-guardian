@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth';
-import { testSuites } from './test-suites';
+import { getTestSuite } from './test-suites';
 import { testRuns, sendScheduleTriggeredWebhook } from './test-runs';
 
 // Import repository functions and types (Feature #2092)
@@ -142,7 +142,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
     }
 
     // Verify suite exists and belongs to organization
-    const suite = testSuites.get(suite_id);
+    const suite = await getTestSuite(suite_id);
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -369,7 +369,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
     }
 
     // Feature #1312: Emit schedule.triggered webhook
-    const suite = testSuites.get(schedule.suite_id);
+    const suite = await getTestSuite(schedule.suite_id);
     if (suite) {
       // Determine trigger type
       const triggerType = schedule.cron_expression ? 'cron' : (schedule.run_at ? 'one_time' : 'manual');

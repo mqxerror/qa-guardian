@@ -3,9 +3,8 @@
 // This module provides data access for test suites and tests with database persistence.
 // PostgreSQL is REQUIRED - memory fallback has been removed (Feature #2100).
 //
-// Feature #2103: Deprecated Map exports are kept for backward compatibility but
-// return empty Maps. These will be removed in Feature #2106 when all route files
-// have been migrated to use async functions.
+// Feature #2103: Map exports are DEPRECATED - they return empty Maps.
+// Use async functions instead: getTestSuite(), getTest(), listAllTestSuites(), listAllTests()
 
 import { TestSuite, Test } from './types';
 
@@ -28,25 +27,23 @@ import {
 } from '../../services/repositories/test-suites';
 
 // ===== DEPRECATED MAP EXPORTS =====
-// WARNING: These Maps are EMPTY and DEPRECATED!
-// They return empty Maps for backward compatibility during migration.
-// Use async functions instead: getTestSuite(), listAllTestSuites(), getTest(), listAllTests()
-// These exports will be REMOVED in Feature #2106.
+// WARNING: These Maps return EMPTY data and are DEPRECATED!
+// Use async functions instead for database access.
+// These will be removed when all route files are migrated (Feature #2104).
 
 let deprecationWarned = false;
 function warnDeprecation() {
   if (!deprecationWarned) {
-    console.warn('[DEPRECATED] testSuites and tests Map exports are deprecated and return empty data.');
-    console.warn('[DEPRECATED] Use async functions instead: getTestSuite(), listAllTestSuites(), getTest(), listAllTests()');
+    console.warn('[DEPRECATED] testSuites and tests Map exports return empty data.');
+    console.warn('[DEPRECATED] Use async functions: getTestSuite(), getTest(), listAllTestSuites(), listAllTests()');
     deprecationWarned = true;
   }
 }
 
-// Create empty Maps with deprecation warning
+// Create empty Maps with Proxy to log deprecation warning
 const emptyTestSuitesMap = new Map<string, TestSuite>();
 const emptyTestsMap = new Map<string, Test>();
 
-// Wrap with proxy to log deprecation warning on first access
 export const testSuites: Map<string, TestSuite> = new Proxy(emptyTestSuitesMap, {
   get(target, prop) {
     warnDeprecation();
@@ -62,7 +59,7 @@ export const tests: Map<string, Test> = new Proxy(emptyTestsMap, {
 });
 
 // ===== ASYNC DATABASE FUNCTIONS =====
-// Use these functions for all new code
+// Use these functions for all data access
 
 // Test Suites CRUD
 export const createTestSuite = dbCreateTestSuite;
@@ -80,5 +77,5 @@ export const deleteTest = dbDeleteTest;
 export const listTests = dbListTests;
 export const listAllTests = dbListAllTests;
 
-// Async Map accessors for backward compatibility
+// Async Map accessors (return Promise<Map>)
 export { getTestSuitesMap, getTestsMap };
