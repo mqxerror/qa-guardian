@@ -4,7 +4,9 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
 import { testSuites, tests, getTestSuitesMap, getTestsMap } from '../test-suites';
+import { getTest, getTestSuite } from '../test-suites/stores';
 import { testRuns } from '../test-runs';
+import { listTestRunsByOrg } from '../../services/repositories/test-runs';
 import { listProjects as dbListProjects } from '../../services/repositories/projects';
 import { Project } from './types';
 
@@ -87,10 +89,10 @@ export async function analyticsRoutes(app: FastifyInstance) {
 
       for (const result of run.results) {
         const testId = result.test_id;
-        const test = tests.get(testId);
+        const test = await getTest(testId);
         if (!test) continue;
 
-        const suite = testSuites.get(test.suite_id);
+        const suite = await getTestSuite(test.suite_id);
         if (!suite) continue;
 
         const project = projectsMap.get(suite.project_id);
@@ -783,8 +785,18 @@ export async function analyticsRoutes(app: FastifyInstance) {
     });
 
     // Generate project health insights
-    const projectInsights = orgProjects.map((project, idx) => {
-      const projectRuns = orgRuns.filter(r => r.suite_id && testSuites.get(r.suite_id)?.project_id === project.id);
+    const projectInsights = await Promise.all(orgProjects.map(async (project, idx) => {
+      // Filter runs by project - pre-fetch suite data
+      const projectRunsList: typeof orgRuns = [];
+      for (const r of orgRuns) {
+        if (r.suite_id) {
+          const s = await getTestSuite(r.suite_id);
+          if (s?.project_id === project.id) {
+            projectRunsList.push(r);
+          }
+        }
+      }
+      const projectRuns = projectRunsList;
       const projectFailures = projectRuns.filter(r => r.status === 'failed');
       const failureCount = projectFailures.length || Math.floor(Math.random() * 30) + 5;
 
@@ -817,7 +829,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
         related_projects: relatedProjects.length > 0 ? relatedProjects : [],
         health_score: healthScore,
       };
-    });
+    }));
 
     // Feature #2010: Return empty array when no real projects exist (no demo data)
     // Demo data has been removed to ensure fresh installs show proper empty states
@@ -893,8 +905,8 @@ export async function analyticsRoutes(app: FastifyInstance) {
     // Developer insights: Your tests status
     if (userRole === 'developer' || userRole === 'admin' || userRole === 'owner' || showAll) {
       // Generate test status based on real runs
-      const testStatuses = recentRuns.slice(0, 5).map((run, idx) => {
-        const suite = testSuites.get(run.suite_id);
+      const testStatuses = await Promise.all(recentRuns.slice(0, 5).map(async (run, idx) => {
+        const suite = await getTestSuite(run.suite_id);
         const statuses = ['passed', 'failed', 'passed', 'passed', 'flaky'] as const;
         const status = statuses[idx % statuses.length];
         const lastRuns = ['10 min ago', '25 min ago', '1 hour ago', '2 hours ago', '3 hours ago'];
@@ -905,7 +917,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
           suite: suite?.name || 'Default Suite',
           lastRun: lastRuns[idx % lastRuns.length],
         };
-      });
+      }));
 
       // Ensure we have at least some tests
       if (testStatuses.length === 0) {
