@@ -2,6 +2,7 @@
  * AI Test Generator Repository - PostgreSQL persistence
  *
  * Feature #2090: Migrate AI Test Generator Module to PostgreSQL
+ * Feature #2109: Remove in-memory Map stores (DB-only migration)
  *
  * Provides CRUD operations for:
  * - AI-generated tests with version tracking
@@ -10,49 +11,54 @@
  *
  * Secondary indexes (testsByUser, testsByOrganization, etc.) are replaced
  * with SQL WHERE clauses.
+ *
+ * All in-memory Map fallbacks have been removed. This module now requires
+ * a PostgreSQL database connection to function.
  */
 
 import { query, isDatabaseConnected } from '../database';
 import { AIGeneratedTest, ApprovalStatus, ApprovalInfo } from '../../routes/ai-test-generator/types';
 
-// Memory fallback stores
-const memoryAiGeneratedTests: Map<string, AIGeneratedTest> = new Map();
-const memoryTestsByUser: Map<string, Set<string>> = new Map();
-const memoryTestsByOrganization: Map<string, Set<string>> = new Map();
-const memoryTestsByProject: Map<string, Set<string>> = new Map();
-const memoryVersionChains: Map<string, string[]> = new Map();
-const memoryTestsByApprovalStatus: Map<ApprovalStatus, Set<string>> = new Map([
-  ['pending', new Set()],
-  ['approved', new Set()],
-  ['rejected', new Set()],
-]);
-
 // ============================================
-// Memory Store Accessors (for backward compatibility)
+// Deprecated Memory Store Accessors
+// These return empty Maps for backward compatibility.
+// Callers should migrate to the async DB functions.
 // ============================================
 
+/** @deprecated Feature #2109 - memory stores removed. Returns empty Map. Use async DB functions instead. */
 export function getMemoryAiGeneratedTests(): Map<string, AIGeneratedTest> {
-  return memoryAiGeneratedTests;
+  console.warn('DEPRECATED: getMemoryAiGeneratedTests() - in-memory stores removed in Feature #2109. Use async DB functions.');
+  return new Map();
 }
 
+/** @deprecated Feature #2109 - memory stores removed. Returns empty Map. Use async DB functions instead. */
 export function getMemoryTestsByUser(): Map<string, Set<string>> {
-  return memoryTestsByUser;
+  console.warn('DEPRECATED: getMemoryTestsByUser() - in-memory stores removed in Feature #2109. Use async DB functions.');
+  return new Map();
 }
 
+/** @deprecated Feature #2109 - memory stores removed. Returns empty Map. Use async DB functions instead. */
 export function getMemoryTestsByOrganization(): Map<string, Set<string>> {
-  return memoryTestsByOrganization;
+  console.warn('DEPRECATED: getMemoryTestsByOrganization() - in-memory stores removed in Feature #2109. Use async DB functions.');
+  return new Map();
 }
 
+/** @deprecated Feature #2109 - memory stores removed. Returns empty Map. Use async DB functions instead. */
 export function getMemoryTestsByProject(): Map<string, Set<string>> {
-  return memoryTestsByProject;
+  console.warn('DEPRECATED: getMemoryTestsByProject() - in-memory stores removed in Feature #2109. Use async DB functions.');
+  return new Map();
 }
 
+/** @deprecated Feature #2109 - memory stores removed. Returns empty Map. Use async DB functions instead. */
 export function getMemoryVersionChains(): Map<string, string[]> {
-  return memoryVersionChains;
+  console.warn('DEPRECATED: getMemoryVersionChains() - in-memory stores removed in Feature #2109. Use async DB functions.');
+  return new Map();
 }
 
+/** @deprecated Feature #2109 - memory stores removed. Returns empty Map. Use async DB functions instead. */
 export function getMemoryTestsByApprovalStatus(): Map<ApprovalStatus, Set<string>> {
-  return memoryTestsByApprovalStatus;
+  console.warn('DEPRECATED: getMemoryTestsByApprovalStatus() - in-memory stores removed in Feature #2109. Use async DB functions.');
+  return new Map();
 }
 
 // ============================================
@@ -108,53 +114,6 @@ function parseAiGeneratedTestRow(row: any): AIGeneratedTest {
 }
 
 // ============================================
-// Memory Index Functions (for fallback)
-// ============================================
-
-function indexTestInMemory(test: AIGeneratedTest): void {
-  // Add to main store
-  memoryAiGeneratedTests.set(test.id, test);
-
-  // Add to user index
-  if (!memoryTestsByUser.has(test.user_id)) {
-    memoryTestsByUser.set(test.user_id, new Set());
-  }
-  memoryTestsByUser.get(test.user_id)!.add(test.id);
-
-  // Add to organization index
-  if (test.organization_id) {
-    if (!memoryTestsByOrganization.has(test.organization_id)) {
-      memoryTestsByOrganization.set(test.organization_id, new Set());
-    }
-    memoryTestsByOrganization.get(test.organization_id)!.add(test.id);
-  }
-
-  // Add to project index
-  if (test.project_id) {
-    if (!memoryTestsByProject.has(test.project_id)) {
-      memoryTestsByProject.set(test.project_id, new Set());
-    }
-    memoryTestsByProject.get(test.project_id)!.add(test.id);
-  }
-
-  // Add to version chain
-  const chainKey = getVersionChainKey(test.user_id, test.description);
-  if (!memoryVersionChains.has(chainKey)) {
-    memoryVersionChains.set(chainKey, []);
-  }
-  memoryVersionChains.get(chainKey)!.push(test.id);
-
-  // Add to approval status index
-  const status = test.approval?.status || 'pending';
-  memoryTestsByApprovalStatus.get(status)!.add(test.id);
-}
-
-function updateApprovalStatusIndexInMemory(testId: string, oldStatus: ApprovalStatus, newStatus: ApprovalStatus): void {
-  memoryTestsByApprovalStatus.get(oldStatus)?.delete(testId);
-  memoryTestsByApprovalStatus.get(newStatus)!.add(testId);
-}
-
-// ============================================
 // AI Generated Test CRUD Operations
 // ============================================
 
@@ -195,8 +154,7 @@ export async function createAiGeneratedTest(test: AIGeneratedTest): Promise<AIGe
       return parseAiGeneratedTestRow(result.rows[0]);
     }
   }
-  // Memory fallback
-  indexTestInMemory(test);
+  // No DB connection - return the test object as-is (no memory fallback)
   return test;
 }
 
@@ -211,7 +169,7 @@ export async function getAiGeneratedTest(testId: string): Promise<AIGeneratedTes
     }
     return null;
   }
-  return memoryAiGeneratedTests.get(testId) || null;
+  return null;
 }
 
 export async function updateAiGeneratedTest(
@@ -275,26 +233,8 @@ export async function updateAiGeneratedTest(
     return null;
   }
 
-  // Memory fallback
-  const existing = memoryAiGeneratedTests.get(testId);
-  if (!existing) return null;
-
-  // Track approval status change for index update
-  const oldStatus = existing.approval?.status || 'pending';
-  const newStatus = updates.approval?.status || oldStatus;
-
-  const updated: AIGeneratedTest = {
-    ...existing,
-    ...updates,
-    updated_at: new Date(),
-  };
-  memoryAiGeneratedTests.set(testId, updated);
-
-  if (oldStatus !== newStatus) {
-    updateApprovalStatusIndexInMemory(testId, oldStatus, newStatus);
-  }
-
-  return updated;
+  // No DB connection - no memory fallback
+  return null;
 }
 
 export async function deleteAiGeneratedTest(testId: string): Promise<boolean> {
@@ -305,22 +245,8 @@ export async function deleteAiGeneratedTest(testId: string): Promise<boolean> {
     );
     return (result?.rowCount ?? 0) > 0;
   }
-  // Memory fallback - need to remove from all indexes
-  const test = memoryAiGeneratedTests.get(testId);
-  if (!test) return false;
-
-  memoryAiGeneratedTests.delete(testId);
-  memoryTestsByUser.get(test.user_id)?.delete(testId);
-  if (test.organization_id) {
-    memoryTestsByOrganization.get(test.organization_id)?.delete(testId);
-  }
-  if (test.project_id) {
-    memoryTestsByProject.get(test.project_id)?.delete(testId);
-  }
-  const status = test.approval?.status || 'pending';
-  memoryTestsByApprovalStatus.get(status)?.delete(testId);
-
-  return true;
+  // No DB connection - no memory fallback
+  return false;
 }
 
 // ============================================
@@ -338,14 +264,8 @@ export async function getTestsByUser(userId: string): Promise<AIGeneratedTest[]>
     }
     return [];
   }
-  // Memory fallback
-  const testIds = memoryTestsByUser.get(userId);
-  if (!testIds) return [];
-
-  return Array.from(testIds)
-    .map(id => memoryAiGeneratedTests.get(id)!)
-    .filter(Boolean)
-    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+  // No DB connection - no memory fallback
+  return [];
 }
 
 export async function getTestsByOrganization(organizationId: string): Promise<AIGeneratedTest[]> {
@@ -359,14 +279,8 @@ export async function getTestsByOrganization(organizationId: string): Promise<AI
     }
     return [];
   }
-  // Memory fallback
-  const testIds = memoryTestsByOrganization.get(organizationId);
-  if (!testIds) return [];
-
-  return Array.from(testIds)
-    .map(id => memoryAiGeneratedTests.get(id)!)
-    .filter(Boolean)
-    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+  // No DB connection - no memory fallback
+  return [];
 }
 
 export async function getTestsByProjectId(projectId: string): Promise<AIGeneratedTest[]> {
@@ -380,14 +294,8 @@ export async function getTestsByProjectId(projectId: string): Promise<AIGenerate
     }
     return [];
   }
-  // Memory fallback
-  const testIds = memoryTestsByProject.get(projectId);
-  if (!testIds) return [];
-
-  return Array.from(testIds)
-    .map(id => memoryAiGeneratedTests.get(id)!)
-    .filter(Boolean)
-    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+  // No DB connection - no memory fallback
+  return [];
 }
 
 export async function getTestsByApprovalStatus(status: ApprovalStatus): Promise<AIGeneratedTest[]> {
@@ -401,14 +309,8 @@ export async function getTestsByApprovalStatus(status: ApprovalStatus): Promise<
     }
     return [];
   }
-  // Memory fallback
-  const testIds = memoryTestsByApprovalStatus.get(status);
-  if (!testIds) return [];
-
-  return Array.from(testIds)
-    .map(id => memoryAiGeneratedTests.get(id)!)
-    .filter(Boolean)
-    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+  // No DB connection - no memory fallback
+  return [];
 }
 
 // ============================================
@@ -429,15 +331,8 @@ export async function getVersionChain(userId: string, description: string): Prom
     }
     return [];
   }
-  // Memory fallback
-  const chainKey = getVersionChainKey(userId, description);
-  const testIds = memoryVersionChains.get(chainKey);
-  if (!testIds) return [];
-
-  return testIds
-    .map(id => memoryAiGeneratedTests.get(id)!)
-    .filter(Boolean)
-    .sort((a, b) => a.version - b.version);
+  // No DB connection - no memory fallback
+  return [];
 }
 
 export async function getLatestVersion(userId: string, description: string): Promise<number> {
@@ -452,10 +347,8 @@ export async function getLatestVersion(userId: string, description: string): Pro
     }
     return 0;
   }
-  // Memory fallback
-  const chain = await getVersionChain(userId, description);
-  if (chain.length === 0) return 0;
-  return Math.max(...chain.map(t => t.version));
+  // No DB connection - no memory fallback
+  return 0;
 }
 
 // ============================================
@@ -514,26 +407,8 @@ export async function getGenerationHistory(
     return { items, total };
   }
 
-  // Memory fallback
-  let tests = Array.from(memoryAiGeneratedTests.values())
-    .filter(t => t.user_id === userId);
-
-  if (project_id) {
-    tests = tests.filter(t => t.project_id === project_id);
-  }
-  if (description_search) {
-    const search = description_search.toLowerCase();
-    tests = tests.filter(t => t.description.toLowerCase().includes(search));
-  }
-  if (approval_status) {
-    tests = tests.filter(t => t.approval?.status === approval_status);
-  }
-
-  tests.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
-  const total = tests.length;
-  const items = tests.slice(offset, offset + limit);
-
-  return { items, total };
+  // No DB connection - no memory fallback
+  return { items: [], total: 0 };
 }
 
 // ============================================
@@ -547,7 +422,8 @@ export async function getPendingReviewCount(): Promise<number> {
     );
     return parseInt(result?.rows[0]?.count || '0', 10);
   }
-  return memoryTestsByApprovalStatus.get('pending')?.size || 0;
+  // No DB connection - no memory fallback
+  return 0;
 }
 
 export async function getRecentlyReviewed(limit: number = 10): Promise<AIGeneratedTest[]> {
@@ -564,19 +440,8 @@ export async function getRecentlyReviewed(limit: number = 10): Promise<AIGenerat
     }
     return [];
   }
-  // Memory fallback
-  const approved = Array.from(memoryTestsByApprovalStatus.get('approved') || []);
-  const rejected = Array.from(memoryTestsByApprovalStatus.get('rejected') || []);
-  const allReviewed = [...approved, ...rejected]
-    .map(id => memoryAiGeneratedTests.get(id)!)
-    .filter(Boolean)
-    .sort((a, b) => {
-      const aTime = a.approval?.reviewed_at ? new Date(a.approval.reviewed_at).getTime() : 0;
-      const bTime = b.approval?.reviewed_at ? new Date(b.approval.reviewed_at).getTime() : 0;
-      return bTime - aTime;
-    });
-
-  return allReviewed.slice(0, limit);
+  // No DB connection - no memory fallback
+  return [];
 }
 
 // ============================================
@@ -627,7 +492,7 @@ export async function rejectTest(
 
 /**
  * Add a test to all relevant indexes (for backward compatibility)
- * This is a wrapper that creates the test in DB or memory
+ * This is a wrapper that creates the test in DB
  */
 export async function indexTest(test: AIGeneratedTest): Promise<void> {
   await createAiGeneratedTest(test);
