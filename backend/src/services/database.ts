@@ -90,6 +90,15 @@ async function initializeSchema(): Promise<void> {
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
 
+    -- Organization Members table (Feature #2100)
+    CREATE TABLE IF NOT EXISTS organization_members (
+      user_id UUID NOT NULL,
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      PRIMARY KEY (user_id, organization_id)
+    );
+
     -- Users table
     CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -119,6 +128,28 @@ async function initializeSchema(): Promise<void> {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       UNIQUE(organization_id, slug)
+    );
+
+    -- Project Members table (Feature #2100)
+    CREATE TABLE IF NOT EXISTS project_members (
+      project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      role VARCHAR(50) NOT NULL,
+      added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      added_by UUID,
+      PRIMARY KEY (project_id, user_id)
+    );
+
+    -- Project Environment Variables table (Feature #2100)
+    CREATE TABLE IF NOT EXISTS project_env_vars (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+      key VARCHAR(255) NOT NULL,
+      value TEXT NOT NULL,
+      is_secret BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(project_id, key)
     );
 
     -- Test Suites table
