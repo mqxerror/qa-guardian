@@ -1,19 +1,13 @@
 /**
  * Organizations Repository for PostgreSQL
  *
- * This repository provides database persistence for organizations, members,
- * invitations, and organization settings.
- *
- * PostgreSQL is REQUIRED - memory fallback has been fully removed.
- * When database is not connected, operations will:
- * - CREATE: throw error (data would be lost)
- * - READ: return null/empty arrays/default settings
- * - UPDATE: return null/current settings
- * - DELETE: return false
+ * Dual-mode: PostgreSQL when available, in-memory fallback for dev without DB.
+ * Memory maps restored to support no-DB development mode.
  *
  * Feature #2085: Original PostgreSQL migration
  * Feature #2102: Remove memory Maps fallback
  * Feature #2103: Full DB-only cleanup - removed all memory Maps and isDatabaseConnected guards
+ * Restored: Memory maps re-added for no-DB dev mode
  */
 
 import { query, isDatabaseConnected } from '../database';
@@ -90,39 +84,33 @@ export const DEFAULT_RETRY_STRATEGY_SETTINGS: RetryStrategySettings = {
 };
 
 // ============================================================================
-// Memory Maps REMOVED (Feature #2103) - PostgreSQL is the only data store.
-// getMemory* functions return empty Maps with deprecation warnings for
-// backward compatibility with route files that still import them.
+// Memory Maps (restored for no-DB dev mode fallback)
 // ============================================================================
 
-/** @deprecated Memory maps removed in Feature #2103. Use async repository functions instead. */
+const memoryOrganizations: Map<string, Organization> = new Map();
+const memoryOrganizationMembers: Map<string, OrganizationMember[]> = new Map();
+const memoryInvitations: Map<string, Invitation> = new Map();
+const memoryAutoQuarantineSettings: Map<string, AutoQuarantineSettings> = new Map();
+const memoryRetryStrategySettings: Map<string, RetryStrategySettings> = new Map();
+
 export function getMemoryOrganizations(): Map<string, Organization> {
-  console.warn('[Org Repo] DEPRECATED: getMemoryOrganizations() - memory maps removed. Use async repository functions.');
-  return new Map<string, Organization>();
+  return memoryOrganizations;
 }
 
-/** @deprecated Memory maps removed in Feature #2103. Use async repository functions instead. */
 export function getMemoryOrganizationMembers(): Map<string, OrganizationMember[]> {
-  console.warn('[Org Repo] DEPRECATED: getMemoryOrganizationMembers() - memory maps removed. Use async repository functions.');
-  return new Map<string, OrganizationMember[]>();
+  return memoryOrganizationMembers;
 }
 
-/** @deprecated Memory maps removed in Feature #2103. Use async repository functions instead. */
 export function getMemoryInvitations(): Map<string, Invitation> {
-  console.warn('[Org Repo] DEPRECATED: getMemoryInvitations() - memory maps removed. Use async repository functions.');
-  return new Map<string, Invitation>();
+  return memoryInvitations;
 }
 
-/** @deprecated Memory maps removed in Feature #2103. Use async repository functions instead. */
 export function getMemoryAutoQuarantineSettings(): Map<string, AutoQuarantineSettings> {
-  console.warn('[Org Repo] DEPRECATED: getMemoryAutoQuarantineSettings() - memory maps removed. Use async repository functions.');
-  return new Map<string, AutoQuarantineSettings>();
+  return memoryAutoQuarantineSettings;
 }
 
-/** @deprecated Memory maps removed in Feature #2103. Use async repository functions instead. */
 export function getMemoryRetryStrategySettings(): Map<string, RetryStrategySettings> {
-  console.warn('[Org Repo] DEPRECATED: getMemoryRetryStrategySettings() - memory maps removed. Use async repository functions.');
-  return new Map<string, RetryStrategySettings>();
+  return memoryRetryStrategySettings;
 }
 
 // ============================================================================
@@ -148,8 +136,10 @@ function rowToOrganization(row: OrganizationRow): Organization {
 }
 
 export async function createOrganization(org: Organization): Promise<Organization> {
+  // Always store in memory
+  memoryOrganizations.set(org.id, org);
   if (!isDatabaseConnected()) {
-    throw new Error('Database connection required - cannot create organization without PostgreSQL');
+    return org;
   }
 
   try {
@@ -167,9 +157,7 @@ export async function createOrganization(org: Organization): Promise<Organizatio
 }
 
 export async function getOrganizationById(id: string): Promise<Organization | null> {
-  if (!isDatabaseConnected()) {
-    return null;
-  }
+  if (!isDatabaseConnected()) return memoryOrganizations.get(id) || null;
 
   try {
     const result = await query<OrganizationRow>(
@@ -188,6 +176,9 @@ export async function getOrganizationById(id: string): Promise<Organization | nu
 
 export async function getOrganizationBySlug(slug: string): Promise<Organization | null> {
   if (!isDatabaseConnected()) {
+    for (const org of memoryOrganizations.values()) {
+      if (org.slug === slug) return org;
+    }
     return null;
   }
 
@@ -208,7 +199,11 @@ export async function getOrganizationBySlug(slug: string): Promise<Organization 
 
 export async function updateOrganization(id: string, updates: Partial<Organization>): Promise<Organization | null> {
   if (!isDatabaseConnected()) {
-    return null;
+    const existing = memoryOrganizations.get(id);
+    if (!existing) return null;
+    const updated = { ...existing, ...updates };
+    memoryOrganizations.set(id, updated);
+    return updated;
   }
 
   const existing = await getOrganizationById(id);
@@ -229,8 +224,10 @@ export async function updateOrganization(id: string, updates: Partial<Organizati
 }
 
 export async function deleteOrganization(id: string): Promise<boolean> {
+  memoryOrganizations.delete(id);
+  memoryOrganizationMembers.delete(id);
   if (!isDatabaseConnected()) {
-    return false;
+    return true;
   }
 
   try {
@@ -244,7 +241,7 @@ export async function deleteOrganization(id: string): Promise<boolean> {
 
 export async function listOrganizations(): Promise<Organization[]> {
   if (!isDatabaseConnected()) {
-    return [];
+    return Array.from(memoryOrganizations.values());
   }
 
   try {
@@ -266,8 +263,12 @@ export async function listOrganizations(): Promise<Organization[]> {
 // ============================================================================
 
 export async function addOrganizationMember(member: OrganizationMember): Promise<void> {
+  // Always store in memory
+  const members = memoryOrganizationMembers.get(member.organization_id) || [];
+  members.push(member);
+  memoryOrganizationMembers.set(member.organization_id, members);
   if (!isDatabaseConnected()) {
-    throw new Error('Database connection required - cannot add organization member without PostgreSQL');
+    return;
   }
 
   try {
@@ -295,8 +296,13 @@ export async function addOrganizationMember(member: OrganizationMember): Promise
 }
 
 export async function removeOrganizationMember(organizationId: string, userId: string): Promise<boolean> {
+  const memMembers = memoryOrganizationMembers.get(organizationId);
+  if (memMembers) {
+    const idx = memMembers.findIndex(m => m.user_id === userId);
+    if (idx !== -1) memMembers.splice(idx, 1);
+  }
   if (!isDatabaseConnected()) {
-    return false;
+    return true;
   }
 
   try {
@@ -312,9 +318,7 @@ export async function removeOrganizationMember(organizationId: string, userId: s
 }
 
 export async function getOrganizationMembers(organizationId: string): Promise<OrganizationMember[]> {
-  if (!isDatabaseConnected()) {
-    return [];
-  }
+  if (!isDatabaseConnected()) return memoryOrganizationMembers.get(organizationId) || [];
 
   try {
     const result = await query<OrganizationMember>(
@@ -336,8 +340,13 @@ export async function updateMemberRole(
   userId: string,
   role: OrganizationMember['role']
 ): Promise<boolean> {
+  const memMembers = memoryOrganizationMembers.get(organizationId);
+  if (memMembers) {
+    const member = memMembers.find(m => m.user_id === userId);
+    if (member) member.role = role;
+  }
   if (!isDatabaseConnected()) {
-    return false;
+    return true;
   }
 
   try {
@@ -354,6 +363,9 @@ export async function updateMemberRole(
 
 export async function getUserOrganization(userId: string): Promise<string | null> {
   if (!isDatabaseConnected()) {
+    for (const [orgId, members] of memoryOrganizationMembers) {
+      if (members.some(m => m.user_id === userId)) return orgId;
+    }
     return null;
   }
 
@@ -378,7 +390,18 @@ export async function getUserOrganizations(userId: string): Promise<Array<{
   organization: Organization | undefined;
 }>> {
   if (!isDatabaseConnected()) {
-    return [];
+    const userOrgs: Array<{ organization_id: string; role: string; organization: Organization | undefined }> = [];
+    for (const [orgId, members] of memoryOrganizationMembers) {
+      const member = members.find(m => m.user_id === userId);
+      if (member) {
+        userOrgs.push({
+          organization_id: orgId,
+          role: member.role,
+          organization: memoryOrganizations.get(orgId),
+        });
+      }
+    }
+    return userOrgs;
   }
 
   try {
@@ -417,8 +440,9 @@ export async function getUserOrganizations(userId: string): Promise<Array<{
 // ============================================================================
 
 export async function createInvitation(invitation: Invitation): Promise<Invitation> {
+  memoryInvitations.set(invitation.id, invitation);
   if (!isDatabaseConnected()) {
-    throw new Error('Database connection required - cannot create invitation without PostgreSQL');
+    return invitation;
   }
 
   try {
@@ -445,7 +469,7 @@ export async function createInvitation(invitation: Invitation): Promise<Invitati
 
 export async function getInvitationById(id: string): Promise<Invitation | null> {
   if (!isDatabaseConnected()) {
-    return null;
+    return memoryInvitations.get(id) || null;
   }
 
   try {
@@ -470,7 +494,7 @@ export async function getInvitationById(id: string): Promise<Invitation | null> 
 
 export async function getInvitationsByOrg(organizationId: string): Promise<Invitation[]> {
   if (!isDatabaseConnected()) {
-    return [];
+    return Array.from(memoryInvitations.values()).filter(i => i.organization_id === organizationId);
   }
 
   try {
@@ -493,8 +517,12 @@ export async function getInvitationsByOrg(organizationId: string): Promise<Invit
 }
 
 export async function updateInvitation(id: string, updates: Partial<Invitation>): Promise<Invitation | null> {
+  const memInv = memoryInvitations.get(id);
+  if (memInv) {
+    memoryInvitations.set(id, { ...memInv, ...updates });
+  }
   if (!isDatabaseConnected()) {
-    return null;
+    return memoryInvitations.get(id) || null;
   }
 
   const existing = await getInvitationById(id);
@@ -517,8 +545,9 @@ export async function updateInvitation(id: string, updates: Partial<Invitation>)
 }
 
 export async function deleteInvitation(id: string): Promise<boolean> {
+  memoryInvitations.delete(id);
   if (!isDatabaseConnected()) {
-    return false;
+    return true;
   }
 
   try {
@@ -532,12 +561,11 @@ export async function deleteInvitation(id: string): Promise<boolean> {
 
 // ============================================================================
 // Auto-Quarantine Settings Functions
-// Note: These are async but fall back to defaults when DB not connected (Feature #2102)
 // ============================================================================
 
 export async function getAutoQuarantineSettings(organizationId: string): Promise<AutoQuarantineSettings> {
   if (!isDatabaseConnected()) {
-    return { ...DEFAULT_AUTO_QUARANTINE_SETTINGS };
+    return memoryAutoQuarantineSettings.get(organizationId) || { ...DEFAULT_AUTO_QUARANTINE_SETTINGS };
   }
 
   try {
@@ -567,8 +595,9 @@ export async function setAutoQuarantineSettings(
     min_runs: Math.max(2, settings.min_runs ?? current.min_runs),
   };
 
+  memoryAutoQuarantineSettings.set(organizationId, updated);
   if (!isDatabaseConnected()) {
-    return updated; // Return computed value but don't persist
+    return updated;
   }
 
   try {
@@ -585,12 +614,11 @@ export async function setAutoQuarantineSettings(
 
 // ============================================================================
 // Retry Strategy Settings Functions
-// Note: These are async but fall back to defaults when DB not connected (Feature #2102)
 // ============================================================================
 
 export async function getRetryStrategySettings(organizationId: string): Promise<RetryStrategySettings> {
   if (!isDatabaseConnected()) {
-    return {
+    return memoryRetryStrategySettings.get(organizationId) || {
       ...DEFAULT_RETRY_STRATEGY_SETTINGS,
       rules: [...DEFAULT_RETRY_STRATEGY_SETTINGS.rules],
     };
@@ -634,8 +662,9 @@ export async function setRetryStrategySettings(
     rules: settings.rules ?? current.rules,
   };
 
+  memoryRetryStrategySettings.set(organizationId, updated);
   if (!isDatabaseConnected()) {
-    return updated; // Return computed value but don't persist
+    return updated;
   }
 
   try {
@@ -684,18 +713,10 @@ export const DEFAULT_USER_IDS = {
 };
 
 /**
- * Seed default organizations and members to PostgreSQL.
- * This function is async and REQUIRES database to be connected.
- * If database is not connected, it logs a warning and returns.
- *
- * Feature #2103: Removed memory seeding - PostgreSQL only.
+ * Seed default organizations and members.
+ * Works in both DB and no-DB modes via memory fallback.
  */
 export async function seedDefaultOrganizations(): Promise<void> {
-  if (!isDatabaseConnected()) {
-    console.warn('[Org Repo] Database not connected - cannot seed organizations. Will seed when DB connects.');
-    return;
-  }
-
   try {
     // Seed default organizations
     const defaultOrg = await getOrganizationById(DEFAULT_ORG_ID);

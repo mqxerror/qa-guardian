@@ -1,14 +1,9 @@
 /**
  * Auth Repository
  * Feature #2083: Migrate Auth module to PostgreSQL database
- * Feature #2104: Full DB-only cleanup - removed all memory Maps and isDatabaseConnected guards
  *
- * PostgreSQL is REQUIRED - memory fallback has been fully removed.
- * When database is not connected, operations will:
- * - CREATE: throw error (data would be lost)
- * - READ: return undefined/empty arrays
- * - UPDATE: return undefined
- * - DELETE: return false
+ * Dual-mode: PostgreSQL when available, in-memory fallback for dev without DB.
+ * Memory maps restored to support no-DB development mode.
  */
 
 import { query, isDatabaseConnected } from '../database';
@@ -48,11 +43,14 @@ export interface ResetToken {
 }
 
 // ============================================================================
-// Memory Maps REMOVED (Feature #2104) - PostgreSQL is the only data store.
-// Token blacklist kept in-memory as a runtime cache (cleared on restart).
+// Memory Maps (fallback for no-DB dev mode)
+// PostgreSQL is primary when available; memory fallback when not.
 // ============================================================================
 
+const memoryUsers: Map<string, User> = new Map();
 const memoryTokenBlacklist: Set<string> = new Set();
+const memoryUserSessions: Map<string, Session[]> = new Map();
+const memoryResetTokens: Map<string, ResetToken> = new Map();
 
 // ============================================================================
 // Helper Functions
@@ -98,8 +96,11 @@ function rowToSession(row: any): Session {
  * Create a new user
  */
 export async function createUser(user: User): Promise<User> {
+  // Always store in memory for fallback
+  memoryUsers.set(user.email, user);
+
   if (!isDatabaseConnected()) {
-    throw new Error('Database connection required - cannot create user without PostgreSQL');
+    return user;
   }
 
   try {
@@ -134,7 +135,7 @@ export async function createUser(user: User): Promise<User> {
  */
 export async function getUserByEmail(email: string): Promise<User | undefined> {
   if (!isDatabaseConnected()) {
-    return undefined;
+    return memoryUsers.get(email);
   }
 
   try {
@@ -157,6 +158,7 @@ export async function getUserByEmail(email: string): Promise<User | undefined> {
  */
 export async function getUserById(id: string): Promise<User | undefined> {
   if (!isDatabaseConnected()) {
+    for (const user of memoryUsers.values()) { if (user.id === id) return user; }
     return undefined;
   }
 
@@ -179,8 +181,10 @@ export async function getUserById(id: string): Promise<User | undefined> {
  * Update a user
  */
 export async function updateUser(email: string, updates: Partial<User>): Promise<User | undefined> {
+  const existing = memoryUsers.get(email);
+  if (existing) { memoryUsers.set(email, { ...existing, ...updates }); }
   if (!isDatabaseConnected()) {
-    return undefined;
+    return memoryUsers.get(email);
   }
 
   try {
@@ -227,7 +231,7 @@ export async function updateUser(email: string, updates: Partial<User>): Promise
  */
 export async function userExists(email: string): Promise<boolean> {
   if (!isDatabaseConnected()) {
-    return false;
+    return memoryUsers.has(email);
   }
 
   try {
@@ -250,7 +254,7 @@ export async function userExists(email: string): Promise<boolean> {
  */
 export async function getUserCount(): Promise<number> {
   if (!isDatabaseConnected()) {
-    return 0;
+    return memoryUsers.size;
   }
 
   try {
@@ -315,8 +319,13 @@ export async function isTokenBlacklisted(token: string): Promise<boolean> {
  * Create a new session
  */
 export async function createSession(session: Session): Promise<Session> {
+  // Add to memory
+  const sessions = memoryUserSessions.get(session.user_id) || [];
+  sessions.push(session);
+  memoryUserSessions.set(session.user_id, sessions);
+
   if (!isDatabaseConnected()) {
-    throw new Error('Database connection required - cannot create session without PostgreSQL');
+    return session;
   }
 
   try {
@@ -347,7 +356,7 @@ export async function createSession(session: Session): Promise<Session> {
  */
 export async function getUserSessions(userId: string): Promise<Session[]> {
   if (!isDatabaseConnected()) {
-    return [];
+    return memoryUserSessions.get(userId) || [];
   }
 
   try {
@@ -369,6 +378,11 @@ export async function getUserSessions(userId: string): Promise<Session[]> {
  * Update session last active time
  */
 export async function updateSessionLastActive(sessionId: string): Promise<void> {
+  // Update in memory
+  for (const [userId, sessions] of memoryUserSessions.entries()) {
+    const session = sessions.find(s => s.id === sessionId);
+    if (session) { session.last_active = new Date(); break; }
+  }
   if (!isDatabaseConnected()) {
     return;
   }
@@ -387,8 +401,14 @@ export async function updateSessionLastActive(sessionId: string): Promise<void> 
  * Delete a session
  */
 export async function deleteSession(sessionId: string, userId: string): Promise<boolean> {
+  // Remove from memory
+  const memSessions = memoryUserSessions.get(userId);
+  if (memSessions) {
+    const idx = memSessions.findIndex(s => s.id === sessionId);
+    if (idx !== -1) memSessions.splice(idx, 1);
+  }
   if (!isDatabaseConnected()) {
-    return false;
+    return true;
   }
 
   try {
@@ -408,8 +428,16 @@ export async function deleteSession(sessionId: string, userId: string): Promise<
  * Delete all sessions for a user except current
  */
 export async function deleteOtherSessions(userId: string, currentSessionId: string): Promise<number> {
+  // Remove from memory
+  const memSessions = memoryUserSessions.get(userId);
+  let deletedCount = 0;
+  if (memSessions) {
+    const newSessions = memSessions.filter(s => s.id === currentSessionId);
+    deletedCount = memSessions.length - newSessions.length;
+    memoryUserSessions.set(userId, newSessions);
+  }
   if (!isDatabaseConnected()) {
-    return 0;
+    return deletedCount;
   }
 
   try {
@@ -435,8 +463,9 @@ export async function deleteOtherSessions(userId: string, currentSessionId: stri
  * Create a password reset token
  */
 export async function createResetToken(resetToken: ResetToken): Promise<ResetToken> {
+  memoryResetTokens.set(resetToken.token, resetToken);
   if (!isDatabaseConnected()) {
-    throw new Error('Database connection required - cannot create reset token without PostgreSQL');
+    return resetToken;
   }
 
   try {
@@ -463,7 +492,7 @@ export async function createResetToken(resetToken: ResetToken): Promise<ResetTok
  */
 export async function getResetToken(token: string): Promise<ResetToken | undefined> {
   if (!isDatabaseConnected()) {
-    return undefined;
+    return memoryResetTokens.get(token);
   }
 
   try {
@@ -491,6 +520,8 @@ export async function getResetToken(token: string): Promise<ResetToken | undefin
  * Mark a reset token as used
  */
 export async function markResetTokenUsed(token: string): Promise<void> {
+  const memToken = memoryResetTokens.get(token);
+  if (memToken) { memToken.used = true; }
   if (!isDatabaseConnected()) {
     return;
   }
@@ -561,14 +592,9 @@ export const DEFAULT_USER_IDS = {
 
 /**
  * Seed test users (for development)
- * Feature #2104: Requires PostgreSQL - skips seeding when DB not connected
+ * Works in both DB and no-DB modes via memory fallback.
  */
 export async function seedTestUsers(): Promise<void> {
-  if (!isDatabaseConnected()) {
-    console.warn('[AuthRepo] Database not connected - cannot seed test users. Will seed when DB connects.');
-    return;
-  }
-
   const testUsers = [
     {
       id: DEFAULT_USER_IDS.owner,
@@ -625,29 +651,22 @@ export async function seedTestUsers(): Promise<void> {
 }
 
 // ============================================================================
-// Memory Store Accessors (deprecated - Feature #2104)
-// Return empty collections for backward compatibility with route files.
-// Token blacklist is the only runtime cache that remains.
+// Memory Store Accessors
+// Return shared memory maps for route files that import them at module load.
 // ============================================================================
 
-/** @deprecated Memory maps removed in Feature #2104. Use async repository functions instead. */
 export function getMemoryUsers(): Map<string, User> {
-  console.warn('[AuthRepo] DEPRECATED: getMemoryUsers() - memory maps removed. Use async repository functions.');
-  return new Map<string, User>();
+  return memoryUsers;
 }
 
 export function getMemoryTokenBlacklist(): Set<string> {
-  return memoryTokenBlacklist; // Runtime cache, not deprecated
+  return memoryTokenBlacklist; // Runtime cache
 }
 
-/** @deprecated Memory maps removed in Feature #2104. Use async repository functions instead. */
 export function getMemoryUserSessions(): Map<string, Session[]> {
-  console.warn('[AuthRepo] DEPRECATED: getMemoryUserSessions() - memory maps removed. Use async repository functions.');
-  return new Map<string, Session[]>();
+  return memoryUserSessions;
 }
 
-/** @deprecated Memory maps removed in Feature #2104. Use async repository functions instead. */
 export function getMemoryResetTokens(): Map<string, ResetToken> {
-  console.warn('[AuthRepo] DEPRECATED: getMemoryResetTokens() - memory maps removed. Use async repository functions.');
-  return new Map<string, ResetToken>();
+  return memoryResetTokens;
 }

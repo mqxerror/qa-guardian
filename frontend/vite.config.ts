@@ -15,7 +15,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         // Feature #1924: Configure proxy to handle long-running AI requests properly
         timeout: 60000, // 60 second timeout for proxied requests

@@ -19,8 +19,8 @@ let pool: Pool | null = null;
 // Connection state tracking
 let isConnected = false;
 let connectionAttempts = 0;
-const MAX_CONNECTION_ATTEMPTS = 5;
-const RETRY_DELAY_MS = 2000;
+const MAX_CONNECTION_ATTEMPTS = 2;
+const RETRY_DELAY_MS = 1000;
 
 /**
  * Initialize the database connection pool
