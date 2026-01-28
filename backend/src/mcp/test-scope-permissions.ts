@@ -10,20 +10,20 @@
 
 import * as http from 'http';
 import * as crypto from 'crypto';
-import { apiKeys } from '../routes/api-keys';
+import { dbCreateApiKey, dbRevokeApiKey } from '../routes/api-keys/stores';
 
 // Test configuration
 const BACKEND_PORT = 3001;
 const TEST_ORG_ID = 'test-org-scope-permissions';
 
-// Helper to create an API key directly in memory
-function createTestApiKey(name: string, scopes: string[]): string {
+// Helper to create an API key via async DB call
+async function createTestApiKey(name: string, scopes: string[]): Promise<string> {
   const randomBytes = crypto.randomBytes(32);
   const key = `qg_${randomBytes.toString('base64url')}`;
   const hash = crypto.createHash('sha256').update(key).digest('hex');
   const prefix = `qg_${key.substring(3, 11)}...`;
 
-  apiKeys.set(`test-${name}`, {
+  await dbCreateApiKey({
     id: `test-${name}`,
     organization_id: TEST_ORG_ID,
     name,
@@ -39,6 +39,9 @@ function createTestApiKey(name: string, scopes: string[]): string {
 
   return key;
 }
+
+// Track created test key IDs for cleanup
+const createdTestKeyIds: string[] = [];
 
 // Helper to call MCP validate endpoint
 async function validateKey(apiKey: string, requiredScope: string = 'mcp'): Promise<{ valid: boolean; scopes?: string[]; error?: string }> {
@@ -94,12 +97,18 @@ async function runTests() {
   // Create test API keys
   console.log('Creating test API keys...\n');
 
-  const readOnlyKey = createTestApiKey('read-only-test', ['read']);
-  const mcpReadKey = createTestApiKey('mcp-read-test', ['mcp:read']);
-  const mcpWriteKey = createTestApiKey('mcp-write-test', ['mcp:write']);
-  const mcpExecuteKey = createTestApiKey('mcp-execute-test', ['mcp:execute']);
-  const mcpFullKey = createTestApiKey('mcp-full-test', ['mcp']);
-  const adminKey = createTestApiKey('admin-test', ['admin']);
+  const readOnlyKey = await createTestApiKey('read-only-test', ['read']);
+  createdTestKeyIds.push('test-read-only-test');
+  const mcpReadKey = await createTestApiKey('mcp-read-test', ['mcp:read']);
+  createdTestKeyIds.push('test-mcp-read-test');
+  const mcpWriteKey = await createTestApiKey('mcp-write-test', ['mcp:write']);
+  createdTestKeyIds.push('test-mcp-write-test');
+  const mcpExecuteKey = await createTestApiKey('mcp-execute-test', ['mcp:execute']);
+  createdTestKeyIds.push('test-mcp-execute-test');
+  const mcpFullKey = await createTestApiKey('mcp-full-test', ['mcp']);
+  createdTestKeyIds.push('test-mcp-full-test');
+  const adminKey = await createTestApiKey('admin-test', ['admin']);
+  createdTestKeyIds.push('test-admin-test');
 
   // Test 1: read-only key should be rejected for MCP access
   console.log('Test 1: read-only scope should be rejected for MCP');
@@ -205,11 +214,10 @@ async function runTests() {
   console.log('='.repeat(60));
 
   // Cleanup test keys
-  for (const [id] of apiKeys) {
-    if (id.startsWith('test-')) {
-      apiKeys.delete(id);
-    }
+  for (const id of createdTestKeyIds) {
+    await dbRevokeApiKey(id);
   }
+  createdTestKeyIds.length = 0;
 
   return failed === 0;
 }
