@@ -573,41 +573,50 @@ export async function cleanupExpiredData(): Promise<{ tokens: number; sessions: 
 // Seed Functions
 // ============================================================================
 
+// Default user UUIDs (must match organizations.ts DEFAULT_USER_IDS)
+export const DEFAULT_USER_IDS = {
+  owner: '00000000-0000-0000-0000-000000000011',
+  admin: '00000000-0000-0000-0000-000000000012',
+  developer: '00000000-0000-0000-0000-000000000013',
+  viewer: '00000000-0000-0000-0000-000000000014',
+  otherOwner: '00000000-0000-0000-0000-000000000015',
+};
+
 /**
  * Seed test users (for development)
  */
 export async function seedTestUsers(): Promise<void> {
   const testUsers = [
     {
-      id: '1',
+      id: DEFAULT_USER_IDS.owner,
       email: 'owner@example.com',
       password: 'Owner123!',
       name: 'Test Owner',
       role: 'owner' as const,
     },
     {
-      id: '2',
+      id: DEFAULT_USER_IDS.admin,
       email: 'admin@example.com',
       password: 'Admin123!',
       name: 'Test Admin',
       role: 'admin' as const,
     },
     {
-      id: '3',
+      id: DEFAULT_USER_IDS.developer,
       email: 'developer@example.com',
       password: 'Developer123!',
       name: 'Test Developer',
       role: 'developer' as const,
     },
     {
-      id: '4',
+      id: DEFAULT_USER_IDS.viewer,
       email: 'viewer@example.com',
       password: 'Viewer123!',
       name: 'Test Viewer',
       role: 'viewer' as const,
     },
     {
-      id: '5',
+      id: DEFAULT_USER_IDS.otherOwner,
       email: 'otherowner@example.com',
       password: 'Other123!',
       name: 'Other Org Owner',

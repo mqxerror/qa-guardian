@@ -508,11 +508,24 @@ export function getRetriesForFlakinessScore(organizationId: string, flakinessSco
 // Seed Functions
 // ============================================================================
 
+// Default organization UUIDs (consistent across restarts)
+export const DEFAULT_ORG_ID = '00000000-0000-0000-0000-000000000001';
+export const OTHER_ORG_ID = '00000000-0000-0000-0000-000000000002';
+
+// Default user UUIDs (must match auth.ts seedTestUsers)
+export const DEFAULT_USER_IDS = {
+  owner: '00000000-0000-0000-0000-000000000011',
+  admin: '00000000-0000-0000-0000-000000000012',
+  developer: '00000000-0000-0000-0000-000000000013',
+  viewer: '00000000-0000-0000-0000-000000000014',
+  otherOwner: '00000000-0000-0000-0000-000000000015',
+};
+
 export function seedDefaultOrganizations(): void {
   // Seed default organizations
-  if (!memoryOrganizations.has('1')) {
-    memoryOrganizations.set('1', {
-      id: '1',
+  if (!memoryOrganizations.has(DEFAULT_ORG_ID)) {
+    memoryOrganizations.set(DEFAULT_ORG_ID, {
+      id: DEFAULT_ORG_ID,
       name: 'Default Organization',
       slug: 'default-org',
       timezone: 'UTC',
@@ -520,9 +533,9 @@ export function seedDefaultOrganizations(): void {
     });
   }
 
-  if (!memoryOrganizations.has('2')) {
-    memoryOrganizations.set('2', {
-      id: '2',
+  if (!memoryOrganizations.has(OTHER_ORG_ID)) {
+    memoryOrganizations.set(OTHER_ORG_ID, {
+      id: OTHER_ORG_ID,
       name: 'Other Organization',
       slug: 'other-org',
       timezone: 'UTC',
@@ -531,19 +544,19 @@ export function seedDefaultOrganizations(): void {
   }
 
   // Seed default members
-  if (!memoryOrganizationMembers.has('1')) {
-    memoryOrganizationMembers.set('1', [
-      { user_id: '1', organization_id: '1', role: 'owner' },
-      { user_id: '2', organization_id: '1', role: 'admin' },
-      { user_id: '3', organization_id: '1', role: 'developer' },
-      { user_id: '4', organization_id: '1', role: 'viewer' },
+  if (!memoryOrganizationMembers.has(DEFAULT_ORG_ID)) {
+    memoryOrganizationMembers.set(DEFAULT_ORG_ID, [
+      { user_id: DEFAULT_USER_IDS.owner, organization_id: DEFAULT_ORG_ID, role: 'owner' },
+      { user_id: DEFAULT_USER_IDS.admin, organization_id: DEFAULT_ORG_ID, role: 'admin' },
+      { user_id: DEFAULT_USER_IDS.developer, organization_id: DEFAULT_ORG_ID, role: 'developer' },
+      { user_id: DEFAULT_USER_IDS.viewer, organization_id: DEFAULT_ORG_ID, role: 'viewer' },
     ]);
   }
 
-  if (!memoryOrganizationMembers.has('2')) {
-    memoryOrganizationMembers.set('2', [
-      { user_id: '5', organization_id: '2', role: 'owner' },
-      { user_id: '1', organization_id: '2', role: 'admin' },
+  if (!memoryOrganizationMembers.has(OTHER_ORG_ID)) {
+    memoryOrganizationMembers.set(OTHER_ORG_ID, [
+      { user_id: DEFAULT_USER_IDS.otherOwner, organization_id: OTHER_ORG_ID, role: 'owner' },
+      { user_id: DEFAULT_USER_IDS.owner, organization_id: OTHER_ORG_ID, role: 'admin' },
     ]);
   }
 }

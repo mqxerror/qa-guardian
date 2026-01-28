@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import bcrypt from 'bcryptjs';
-import { getUserOrganization, organizations, organizationMembers } from './organizations';
+import { getUserOrganization, organizations, organizationMembers, DEFAULT_ORG_ID } from './organizations';
 
 // Feature #2083: Import repository functions for database persistence
 import {
@@ -415,7 +415,7 @@ export async function authRoutes(app: FastifyInstance) {
         id: user.id,
         email: user.email,
         role: user.role,
-        organization_id: organizationId || '1',
+        organization_id: organizationId || DEFAULT_ORG_ID,
       },
       { expiresIn: '2s' }
     );

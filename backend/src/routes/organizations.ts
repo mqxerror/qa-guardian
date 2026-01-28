@@ -17,6 +17,9 @@ import {
   RetryStrategyRule,
   DEFAULT_AUTO_QUARANTINE_SETTINGS,
   DEFAULT_RETRY_STRATEGY_SETTINGS,
+  DEFAULT_ORG_ID,
+  OTHER_ORG_ID,
+  DEFAULT_USER_IDS,
   getMemoryOrganizations,
   getMemoryOrganizationMembers,
   getMemoryInvitations,
@@ -32,8 +35,8 @@ import {
 // Re-export types for backward compatibility
 export type { AutoQuarantineSettings, RetryStrategySettings, RetryStrategyRule };
 
-// Re-export default settings
-export { DEFAULT_AUTO_QUARANTINE_SETTINGS, DEFAULT_RETRY_STRATEGY_SETTINGS };
+// Re-export default settings and UUID constants
+export { DEFAULT_AUTO_QUARANTINE_SETTINGS, DEFAULT_RETRY_STRATEGY_SETTINGS, DEFAULT_ORG_ID, OTHER_ORG_ID, DEFAULT_USER_IDS };
 
 // In-memory stores (backed by repository)
 export const organizations: Map<string, Organization> = getMemoryOrganizations();
