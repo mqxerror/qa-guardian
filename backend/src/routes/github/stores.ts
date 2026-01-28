@@ -21,7 +21,7 @@ import * as githubRepo from '../../services/repositories/github';
 // Re-export repository functions for database access
 export const createGithubConnection = githubRepo.createGithubConnection;
 export const getGithubConnection = githubRepo.getGithubConnection;
-export const getGithubConnectionByRepo = githubRepo.getGithubConnectionByRepo;
+// getGithubConnectionByRepo: not yet implemented in repository layer
 export const updateGithubConnection = githubRepo.updateGithubConnection;
 export const deleteGithubConnection = githubRepo.deleteGithubConnection;
 export const listGithubConnections = githubRepo.listGithubConnections;
@@ -30,7 +30,7 @@ export const addPRStatusCheck = githubRepo.addPRStatusCheck;
 export const updatePRStatusCheck = githubRepo.updatePRStatusCheck;
 export const getPRStatusChecks = githubRepo.getPRStatusChecks;
 export const getPRStatusChecksByPR = githubRepo.getPRStatusChecksByPR;
-export const getPRStatusCheckBySha = githubRepo.getPRStatusCheckBySha;
+// getPRStatusCheckBySha: not yet implemented in repository layer
 
 export const addPRComment = githubRepo.addPRComment;
 export const getPRComments = githubRepo.getPRComments;

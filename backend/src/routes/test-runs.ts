@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, getOrganizationId, JwtPayload } from '../middleware/auth';
 import { getTestSuite, getTest, listTests, updateTest, IgnoreRegion } from './test-suites';
-import { projectEnvVars, getProjectVisualSettings, getProjectHealingSettings } from './projects';
+import { getProjectEnvVars, getProjectVisualSettings, getProjectHealingSettings } from './projects';
 import { getProject } from './projects/stores';
 import { getTestRun } from '../services/repositories/test-runs';
 import { chromium, firefox, webkit, Browser, Page, BrowserContext } from 'playwright';
@@ -686,7 +686,7 @@ export async function runTestsForRun(runId: string) {
 
     // Get project environment variables (unmasked for test execution)
     const projectId = suite?.project_id;
-    const envVarsArray = projectId ? projectEnvVars.get(projectId) || [] : [];
+    const envVarsArray = projectId ? (await getProjectEnvVars(projectId)) || [] : [];
     const envVars: Record<string, string> = {};
     for (const envVar of envVarsArray) {
       // For test execution, we use the actual values (not masked)
@@ -770,11 +770,12 @@ export async function runTestsForRun(runId: string) {
     }
 
     // Determine overall status (only if not cancelled or cancelling)
-    if (run.status !== 'cancelled' && run.status !== 'cancelling') {
+    const runStatus = run.status as string;
+    if (runStatus !== 'cancelled' && runStatus !== 'cancelling') {
       const hasFailure = results.some(r => r.status === 'failed');
       const hasError = results.some(r => r.status === 'error');
       run.status = hasError ? 'error' : hasFailure ? 'failed' : 'passed';
-    } else if (run.status === 'cancelling') {
+    } else if (runStatus === 'cancelling') {
       // Transition from 'cancelling' to 'cancelled'
       run.status = 'cancelled';
       console.log(`[CANCELLED] Test run ${runId} transitioned from 'cancelling' to 'cancelled'`);

@@ -146,7 +146,7 @@ import {
 } from './accessibility-helpers';
 
 import { getTestSuite, IgnoreRegion } from '../test-suites';
-import { projects, getProjectVisualSettings, getProjectHealingSettings } from '../projects';
+import { getProject, getProjectVisualSettings, getProjectHealingSettings } from '../projects';
 
 // Import extracted test type executors
 import { executeVisualTest, VisualTestConfig } from './visual-test-executor';
@@ -628,8 +628,8 @@ async function executeTest(
                   // Feature #1055: Only auto-apply healing if confidence >= threshold
                   // Feature #1062: Use project-specific threshold
                   // Feature #1063: Only use enabled healing strategies
-                  const projectAutoHealThreshold = getAutoHealThreshold(healingProjectId);
-                  const enabledStrategies = getEnabledStrategies(healingProjectId);
+                  const projectAutoHealThreshold = await getAutoHealThreshold(healingProjectId);
+                  const enabledStrategies = await getEnabledStrategies(healingProjectId);
                   console.log(`[HEALING] Using project ${healingProjectId} threshold: ${projectAutoHealThreshold}, enabled strategies: ${enabledStrategies.join(', ')}`);
                   const altSelectors = (step as any).selectorStrategies?.filter((s: any) => s.selector !== step.selector) || [];
                   let healed = false;
@@ -637,7 +637,7 @@ async function executeTest(
                     // Skip visual-match strategy in this loop - try it last
                     if (alt.strategy === 'visual-match') continue;
                     // Feature #1063: Skip if strategy is disabled for this project
-                    if (!isHealingStrategyEnabled(healingProjectId, alt.strategy)) {
+                    if (!(await isHealingStrategyEnabled(healingProjectId, alt.strategy))) {
                       console.log(`[HEALING] Skipping ${alt.strategy} (strategy disabled for project)`);
                       continue;
                     }
@@ -663,7 +663,7 @@ async function executeTest(
 
                   // Feature #1054: Try visual matching as last resort
                   // Feature #1063: Only try if visual_match strategy is enabled
-                  if (!healed && isHealingStrategyEnabled(healingProjectId, 'visual-match')) {
+                  if (!healed && (await isHealingStrategyEnabled(healingProjectId, 'visual-match'))) {
                     const visualFingerprint = (step as any).visualFingerprint;
                     if (visualFingerprint) {
                       console.log(`[HEALING] All selectors failed or below threshold, attempting visual matching...`);
@@ -767,8 +767,8 @@ async function executeTest(
                   // Feature #1055: Only auto-apply healing if confidence >= threshold
                   // Feature #1062: Use project-specific threshold
                   // Feature #1063: Only use enabled healing strategies
-                  const fillProjectThreshold = getAutoHealThreshold(fillHealingProjectId);
-                  const fillEnabledStrategies = getEnabledStrategies(fillHealingProjectId);
+                  const fillProjectThreshold = await getAutoHealThreshold(fillHealingProjectId);
+                  const fillEnabledStrategies = await getEnabledStrategies(fillHealingProjectId);
                   console.log(`[HEALING] Using project ${fillHealingProjectId} threshold for fill: ${fillProjectThreshold}, enabled strategies: ${fillEnabledStrategies.join(', ')}`);
                   const fillAltSelectors = (step as any).selectorStrategies?.filter((s: any) => s.selector !== step.selector) || [];
                   let fillHealed = false;
@@ -776,7 +776,7 @@ async function executeTest(
                     // Skip visual-match strategy in this loop - try it last
                     if (alt.strategy === 'visual-match') continue;
                     // Feature #1063: Skip if strategy is disabled for this project
-                    if (!isHealingStrategyEnabled(fillHealingProjectId, alt.strategy)) {
+                    if (!(await isHealingStrategyEnabled(fillHealingProjectId, alt.strategy))) {
                       console.log(`[HEALING] Skipping ${alt.strategy} (strategy disabled for project)`);
                       continue;
                     }
@@ -802,7 +802,7 @@ async function executeTest(
 
                   // Feature #1054: Try visual matching as last resort for fill
                   // Feature #1063: Only try if visual_match strategy is enabled
-                  if (!fillHealed && isHealingStrategyEnabled(fillHealingProjectId, 'visual-match')) {
+                  if (!fillHealed && (await isHealingStrategyEnabled(fillHealingProjectId, 'visual-match'))) {
                     const fillVisualFingerprint = (step as any).visualFingerprint;
                     if (fillVisualFingerprint) {
                       console.log(`[HEALING] All selectors failed or below threshold, attempting visual matching for fill...`);

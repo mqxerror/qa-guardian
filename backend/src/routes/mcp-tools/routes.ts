@@ -887,7 +887,7 @@ Tool fails → Continue anyway → Report "completed successfully" ❌`;
         // Feature #1924: Check if we've exceeded maximum execution time
         const elapsedTime = Date.now() - startTime;
         if (elapsedTime > MAX_EXECUTION_TIME_MS) {
-          logger.warn(`Chat request exceeded maximum execution time (${elapsedTime}ms > ${MAX_EXECUTION_TIME_MS}ms)`);
+          logger.info(`Chat request exceeded maximum execution time (${elapsedTime}ms > ${MAX_EXECUTION_TIME_MS}ms)`);
           return reply.status(504).send({
             success: false,
             error: 'AI analysis timed out. The request took too long to process. Please try again.',

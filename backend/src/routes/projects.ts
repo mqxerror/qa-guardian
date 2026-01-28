@@ -12,15 +12,14 @@ export {
   ProjectParams,
 } from './projects/types';
 
-// Re-export stores and constants
+// Re-export stores and constants (Maps removed in Feature #2112, only constants and async functions)
 export {
-  projects,
-  projectMembers,
-  projectEnvVars,
-  projectVisualSettings,
-  projectHealingSettings,
   DEFAULT_PROJECT_VISUAL_SETTINGS,
   DEFAULT_PROJECT_HEALING_SETTINGS,
+  getProject,
+  listProjects,
+  getProjectMembers,
+  getProjectEnvVars,
 } from './projects/stores';
 
 // Re-export utility functions

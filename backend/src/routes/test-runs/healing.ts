@@ -22,14 +22,14 @@ const DEFAULT_AUTO_HEAL_CONFIDENCE_THRESHOLD = parseFloat(process.env.AUTO_HEAL_
 console.log(`[Healing] Default auto-heal confidence threshold: ${DEFAULT_AUTO_HEAL_CONFIDENCE_THRESHOLD}`);
 
 // Feature #1062: Helper to get auto-heal threshold for a project
-export function getAutoHealThreshold(projectId: string): number {
-  const settings = getProjectHealingSettings(projectId);
+export async function getAutoHealThreshold(projectId: string): Promise<number> {
+  const settings = await getProjectHealingSettings(projectId);
   return settings.auto_heal_confidence_threshold ?? DEFAULT_AUTO_HEAL_CONFIDENCE_THRESHOLD;
 }
 
 // Feature #1063: Helper to check if a healing strategy is enabled for a project
-export function isHealingStrategyEnabled(projectId: string, strategy: string): boolean {
-  const settings = getProjectHealingSettings(projectId);
+export async function isHealingStrategyEnabled(projectId: string, strategy: string): Promise<boolean> {
+  const settings = await getProjectHealingSettings(projectId);
   // Map healing selector strategy names to project setting names
   const strategyMapping: Record<string, string[]> = {
     'id': ['selector_fallback'],
@@ -50,8 +50,8 @@ export function isHealingStrategyEnabled(projectId: string, strategy: string): b
 }
 
 // Feature #1063: Get enabled healing strategies for logging
-export function getEnabledStrategies(projectId: string): string[] {
-  const settings = getProjectHealingSettings(projectId);
+export async function getEnabledStrategies(projectId: string): Promise<string[]> {
+  const settings = await getProjectHealingSettings(projectId);
   return settings.healing_strategies;
 }
 

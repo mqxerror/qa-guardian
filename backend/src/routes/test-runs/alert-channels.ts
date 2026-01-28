@@ -7,7 +7,6 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { projects } from '../projects';
 import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores';
 import {
   AlertCondition,

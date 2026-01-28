@@ -18,7 +18,7 @@ import { authenticate, getOrganizationId } from '../../middleware/auth';
 // Import from extracted modules
 import { testRuns, TestRun } from './execution';
 import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
-import { testSuites } from '../test-suites';
+// testSuites Map removed in Feature #2110 - use async DB functions instead
 
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.

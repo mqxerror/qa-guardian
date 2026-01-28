@@ -18,9 +18,6 @@ import { createTestRun as dbCreateTestRunAsync } from '../../services/repositori
 import { logAuditEntry } from '../audit-logs';
 import { Project, CreateProjectBody, ProjectParams, EnvironmentVariable } from './types';
 import {
-  projects,
-  projectMembers,
-  projectEnvVars,
   createProject as dbCreateProject,
   getProject as dbGetProject,
   updateProject as dbUpdateProject,

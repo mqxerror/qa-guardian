@@ -2,8 +2,8 @@ import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { authenticate, requireRoles, JwtPayload, getOrganizationId } from '../middleware/auth';
 import { users } from './auth';
-import { projects } from './projects';
-import { testSuites, tests } from './test-suites/maps';
+// projects Map removed in Feature #2110 - using async DB functions
+// testSuites/tests Maps removed in Feature #2110 - using async DB functions
 import { testRuns } from './test-runs';
 import { auditLogs } from './audit-logs';
 import {
@@ -640,13 +640,11 @@ export async function organizationRoutes(app: FastifyInstance) {
     // 3. Delete tests in organization (DB + Map)
     for (const test of orgTests) {
       await dbDeleteTestAsync(test.id);
-      tests.delete(test.id);
     }
 
     // 4. Delete test suites (DB + Map)
     for (const suite of orgSuites) {
       await dbDeleteTestSuiteAsync(suite.id);
-      testSuites.delete(suite.id);
     }
 
     // 5. Delete projects (DB + Map)
@@ -654,7 +652,6 @@ export async function organizationRoutes(app: FastifyInstance) {
     let deletedProjects = 0;
     for (const project of orgProjects) {
       await dbDeleteProjectAsync(project.id);
-      projects.delete(project.id);
       deletedProjects++;
     }
 

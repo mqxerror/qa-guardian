@@ -323,9 +323,9 @@ const quarantineTest: ToolHandler = async (args, context) => {
   }
 
   try {
-    const result = await context.callApi(`/api/v1/tests/${testId}/quarantine`, {}, {
+    const result = await context.callApi(`/api/v1/tests/${testId}/quarantine`, {
       method: 'POST',
-      body: JSON.stringify({ reason }),
+      body: { reason },
     }) as {
       test_id?: string;
       test_name?: string;
@@ -376,7 +376,7 @@ const unquarantineTest: ToolHandler = async (args, context) => {
   }
 
   try {
-    const result = await context.callApi(`/api/v1/tests/${testId}/unquarantine`, {}, {
+    const result = await context.callApi(`/api/v1/tests/${testId}/unquarantine`, {
       method: 'POST',
     }) as {
       test_id?: string;

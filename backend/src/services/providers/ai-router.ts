@@ -268,7 +268,7 @@ export class AIRouter implements IAIProvider {
     const event: FailoverEvent = {
       timestamp: new Date().toISOString(),
       primaryProvider: this.config.primary,
-      fallbackProvider: this.config.fallback || 'none',
+      fallbackProvider: this.config.fallback || 'none' as any,
       reason,
       errorType,
       originalError,

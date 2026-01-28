@@ -873,7 +873,7 @@ export async function executeVisualTest(
 
           // Get threshold configuration
           const suite = test.suite_id ? await getTestSuite(test.suite_id) : undefined;
-          const projectSettings = suite ? getProjectVisualSettings(suite.project_id) : null;
+          const projectSettings = suite ? await getProjectVisualSettings(suite.project_id) : null;
 
           const thresholdMode = test.diff_threshold_mode ??
             (projectSettings?.default_diff_threshold_mode ?? 'percentage');

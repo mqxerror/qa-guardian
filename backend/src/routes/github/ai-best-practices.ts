@@ -109,7 +109,7 @@ export async function aiBestPracticesRoutes(app: FastifyInstance): Promise<void>
 
       return response;
     } catch (error) {
-      app.log.error('Failed to generate best practices analysis:', error);
+      app.log.error('Failed to generate best practices analysis: ' + (error instanceof Error ? error.message : String(error)));
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to generate best practices analysis',
@@ -131,7 +131,7 @@ async function generateProjectMetrics(orgId: string): Promise<ProjectMetrics[]> 
   // In production, this would fetch from test_runs, test_suites, etc.
   const timestamp = Date.now();
 
-  return [
+  const projects: ProjectMetrics[] = [
     {
       id: `proj_${timestamp}_1`,
       name: 'Core API Services',
@@ -220,7 +220,8 @@ async function generateProjectMetrics(orgId: string): Promise<ProjectMetrics[]> 
       test_count: 85 + Math.floor(Math.random() * 30),
       maintainability_score: 28 + Math.floor(Math.random() * 18),
     },
-  ].map(p => ({
+  ];
+  return projects.map(p => ({
     ...p,
     pass_rate: Math.round(p.pass_rate * 10) / 10,
     avg_test_duration: Math.round(p.avg_test_duration * 10) / 10,

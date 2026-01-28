@@ -51,7 +51,7 @@ export async function getMcpAnalytics(orgId: string, since?: Date): Promise<{
   avg_response_time_ms: number;
   recent_calls: McpToolCall[];
 }> {
-  const filteredCalls = await dbGetMcpToolCallsByOrg(orgId, { since, limit: 1000 });
+  const filteredCalls = await dbGetMcpToolCallsByOrg(orgId, since);
 
   const totalCalls = filteredCalls.length;
   const successfulCalls = filteredCalls.filter(c => c.success).length;

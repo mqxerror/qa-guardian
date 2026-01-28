@@ -289,15 +289,15 @@ export async function authRoutes(app: FastifyInstance) {
       id: orgId,
       name: orgName,
       slug: orgName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+      timezone: 'UTC',
       created_at: new Date(),
-      updated_at: new Date(),
     });
 
     // Add user as owner of the organization
     organizationMembers.set(orgId, [{
       user_id: user.id,
+      organization_id: orgId,
       role: 'owner',
-      joined_at: new Date(),
     }]);
 
     // Update user role to owner since they own their organization

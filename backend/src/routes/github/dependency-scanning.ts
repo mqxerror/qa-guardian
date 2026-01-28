@@ -15,7 +15,10 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth';
 import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores';
-import { sendSecurityVulnerabilityWebhook } from '../test-runs';
+// TODO: sendSecurityVulnerabilityWebhook not yet implemented in test-runs module
+async function sendSecurityVulnerabilityWebhook(..._args: unknown[]): Promise<void> {
+  console.log('[WEBHOOK] sendSecurityVulnerabilityWebhook: stub - not yet implemented');
+}
 import {
   githubConnections,
   prStatusChecks,

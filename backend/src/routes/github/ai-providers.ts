@@ -1054,7 +1054,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
 
         if (shouldFallback && config.fallback_provider !== 'none') {
           useFallback = true;
-          fallbackReason = primaryResult.reason;
+          fallbackReason = primaryResult.reason as typeof fallbackReason;
           fallbackAttempted = true;
           updateCircuitBreaker(cbKey, false, config.circuit_breaker);
         } else {

@@ -18,7 +18,6 @@ import { FastifyInstance } from 'fastify';
 import * as crypto from 'crypto';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { getTestSuite } from '../test-suites';
-import { projects } from '../projects';
 import { getProject as dbGetProject } from '../projects/stores';
 import { testRuns, TestRun } from './execution';
 import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';

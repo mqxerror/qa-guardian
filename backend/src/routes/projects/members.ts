@@ -103,7 +103,7 @@ export async function memberRoutes(app: FastifyInstance) {
       }
 
       // Add the new member
-      const newMember = await addProjectMember(projectId, {
+      const newMember = await addProjectMember({
         project_id: projectId,
         user_id,
         role,
@@ -230,7 +230,7 @@ export async function memberRoutes(app: FastifyInstance) {
       const oldRole = member.role;
       // Update role: remove and re-add with new role
       await removeProjectMember(projectId, memberId);
-      await addProjectMember(projectId, {
+      await addProjectMember({
         ...member,
         role,
       });

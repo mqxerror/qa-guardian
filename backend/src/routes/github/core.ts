@@ -255,16 +255,17 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
           organization_id: user.organization_id,
           name: testFile.name.replace(/\.(spec|test)\.ts$/, ''),
           description: `Imported from ${testFile.path}`,
+          test_type: 'e2e',
+          status: 'active',
           steps: [
             {
-              type: 'github_file',
+              id: `step-${testId}-0`,
               action: 'run',
               selector: testFile.path,
               value: fullName,
+              order: 0,
             }
           ],
-          tags: ['github', 'imported', testFile.type],
-          is_active: true,
           created_at: new Date(),
           updated_at: new Date(),
         });

@@ -7,7 +7,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { getTest, getTestSuite, getTestsMap } from '../test-suites';
-import { projectEnvVars } from '../projects';
+import { getProjectEnvVars } from '../projects';
 import { testRuns, TestRun } from './execution';
 import { getTestRun as dbGetTestRun } from '../../services/repositories/test-runs';
 
@@ -625,7 +625,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     // Get the suite and project env vars for the response
     const suite = await getTestSuite(run.suite_id);
     const projectId = (suite as any)?.project_id;
-    const projectEnvVarsArray = projectId ? projectEnvVars.get(projectId) || [] : [];
+    const projectEnvVarsArray = projectId ? (await getProjectEnvVars(projectId)) || [] : [];
 
     return {
       run_id: runId,
@@ -661,7 +661,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     // Get the suite and project env vars
     const suite = await getTestSuite(run.suite_id);
     const projectId = (suite as any)?.project_id;
-    const projectEnvVarsArray = projectId ? projectEnvVars.get(projectId) || [] : [];
+    const projectEnvVarsArray = projectId ? (await getProjectEnvVars(projectId)) || [] : [];
 
     // Build merged view of env vars (with masking for sensitive project vars)
     const projectVars: Record<string, { value: string; masked: boolean; source: 'project' }> = {};

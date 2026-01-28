@@ -9,7 +9,6 @@ import * as path from 'path';
 import archiver from 'archiver';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { getTestSuite, getTestSuitesMap } from '../test-suites';
-import { projects } from '../projects';
 import { getProject as dbGetProject } from '../projects/stores';
 import { TRACES_DIR, VIDEOS_DIR } from './storage';
 import { testRuns, TestRun } from './execution';
