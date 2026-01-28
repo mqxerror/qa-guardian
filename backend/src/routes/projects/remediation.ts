@@ -3,9 +3,9 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
-import { testSuites, tests } from '../test-suites';
-import { testRuns } from '../test-runs';
-import { projects } from './maps';
+import { getProject } from './stores';
+import { getTest, getTestSuite } from '../test-suites/stores';
+import { listTestRunsByOrg } from '../../services/repositories/test-runs';
 
 // Remediation suggestion interface
 interface RemediationSuggestion {
@@ -39,25 +39,25 @@ export async function remediationRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
     const includeCodeExamples = include_code_examples === 'true';
 
-    // Verify test exists and belongs to org
-    const test = tests.get(testId);
+    // Verify test exists and belongs to org (async DB calls)
+    const test = await getTest(testId);
     if (!test) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
     }
 
-    const suite = testSuites.get(test.suite_id);
+    const suite = await getTestSuite(test.suite_id);
     if (!suite) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test suite not found' });
     }
 
-    const project = projects.get(suite.project_id);
+    const project = await getProject(suite.project_id);
     if (!project || project.organization_id !== orgId) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test not found in your organization' });
     }
 
-    // Get flakiness data for this test
-    const orgRuns = Array.from(testRuns.values())
-      .filter(r => r.organization_id === orgId && r.results);
+    // Get flakiness data for this test (async DB call)
+    const allOrgRuns = await listTestRunsByOrg(orgId);
+    const orgRuns = allOrgRuns.filter(r => r.results);
 
     // Analyze test runs for this specific test
     let passCount = 0;
