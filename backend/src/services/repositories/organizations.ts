@@ -2,10 +2,17 @@
  * Organizations Repository for PostgreSQL
  *
  * This repository provides database persistence for organizations, members,
- * invitations, and organization settings. Falls back to in-memory storage
- * when database is unavailable.
+ * invitations, and organization settings.
  *
- * Feature #2085: Migrate Organizations Module to PostgreSQL
+ * PostgreSQL is REQUIRED - memory fallback has been removed (Feature #2102).
+ * When database is not connected, operations will:
+ * - CREATE: throw error (data would be lost)
+ * - READ: return null/empty arrays/default settings
+ * - UPDATE: return null/current settings
+ * - DELETE: return false
+ *
+ * Feature #2085: Original PostgreSQL migration
+ * Feature #2102: Remove memory Maps fallback
  */
 
 import { query, isDatabaseConnected } from '../database';
@@ -82,34 +89,36 @@ export const DEFAULT_RETRY_STRATEGY_SETTINGS: RetryStrategySettings = {
 };
 
 // ============================================================================
-// In-memory fallback stores
+// NOTE: Memory fallback stores have been REMOVED (Feature #2102)
+// All data is now persisted to PostgreSQL. If the database is not connected,
+// operations will fail gracefully (return null/empty arrays) or throw errors.
+// This ensures data integrity and prevents "not found" errors after server restarts.
 // ============================================================================
 
-const memoryOrganizations: Map<string, Organization> = new Map();
-const memoryOrganizationMembers: Map<string, OrganizationMember[]> = new Map();
-const memoryInvitations: Map<string, Invitation> = new Map();
-const memoryAutoQuarantineSettings: Map<string, AutoQuarantineSettings> = new Map();
-const memoryRetryStrategySettings: Map<string, RetryStrategySettings> = new Map();
-
-// Export memory stores for compatibility
+// Export empty Maps with deprecation warnings for backward compatibility
 export function getMemoryOrganizations(): Map<string, Organization> {
-  return memoryOrganizations;
+  console.warn('[DEPRECATED] getMemoryOrganizations() returns empty Map - use async functions instead');
+  return new Map<string, Organization>();
 }
 
 export function getMemoryOrganizationMembers(): Map<string, OrganizationMember[]> {
-  return memoryOrganizationMembers;
+  console.warn('[DEPRECATED] getMemoryOrganizationMembers() returns empty Map - use async functions instead');
+  return new Map<string, OrganizationMember[]>();
 }
 
 export function getMemoryInvitations(): Map<string, Invitation> {
-  return memoryInvitations;
+  console.warn('[DEPRECATED] getMemoryInvitations() returns empty Map - use async functions instead');
+  return new Map<string, Invitation>();
 }
 
 export function getMemoryAutoQuarantineSettings(): Map<string, AutoQuarantineSettings> {
-  return memoryAutoQuarantineSettings;
+  console.warn('[DEPRECATED] getMemoryAutoQuarantineSettings() returns empty Map - use async functions instead');
+  return new Map<string, AutoQuarantineSettings>();
 }
 
 export function getMemoryRetryStrategySettings(): Map<string, RetryStrategySettings> {
-  return memoryRetryStrategySettings;
+  console.warn('[DEPRECATED] getMemoryRetryStrategySettings() returns empty Map - use async functions instead');
+  return new Map<string, RetryStrategySettings>();
 }
 
 // ============================================================================
@@ -135,137 +144,117 @@ function rowToOrganization(row: OrganizationRow): Organization {
 }
 
 export async function createOrganization(org: Organization): Promise<Organization> {
-  memoryOrganizations.set(org.id, org);
-
-  if (isDatabaseConnected()) {
-    try {
-      await query(
-        `INSERT INTO organizations (id, name, slug, settings, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, NOW())
-         ON CONFLICT (id) DO UPDATE SET name = $2, slug = $3, settings = $4, updated_at = NOW()`,
-        [org.id, org.name, org.slug, JSON.stringify({ timezone: org.timezone }), org.created_at]
-      );
-    } catch (error) {
-      console.error('[Org Repo] Failed to create organization:', error);
-    }
+  if (!isDatabaseConnected()) {
+    throw new Error('Database connection required - cannot create organization without PostgreSQL');
   }
 
-  return org;
+  try {
+    await query(
+      `INSERT INTO organizations (id, name, slug, settings, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
+       ON CONFLICT (id) DO UPDATE SET name = $2, slug = $3, settings = $4, updated_at = NOW()`,
+      [org.id, org.name, org.slug, JSON.stringify({ timezone: org.timezone }), org.created_at]
+    );
+    return org;
+  } catch (error) {
+    console.error('[Org Repo] Failed to create organization:', error);
+    throw error;
+  }
 }
 
 export async function getOrganizationById(id: string): Promise<Organization | null> {
-  const memOrg = memoryOrganizations.get(id);
-  if (memOrg) return memOrg;
+  if (!isDatabaseConnected()) {
+    return null;
+  }
 
-  if (isDatabaseConnected()) {
-    try {
-      const result = await query<OrganizationRow>(
-        `SELECT id, name, slug, settings->>'timezone' as timezone, created_at FROM organizations WHERE id = $1`,
-        [id]
-      );
-      if (result && result.rows.length > 0) {
-        const org = rowToOrganization(result.rows[0]);
-        memoryOrganizations.set(id, org);
-        return org;
-      }
-    } catch (error) {
-      console.error('[Org Repo] Failed to get organization:', error);
+  try {
+    const result = await query<OrganizationRow>(
+      `SELECT id, name, slug, settings->>'timezone' as timezone, created_at FROM organizations WHERE id = $1`,
+      [id]
+    );
+    if (result && result.rows.length > 0) {
+      return rowToOrganization(result.rows[0]);
     }
+  } catch (error) {
+    console.error('[Org Repo] Failed to get organization:', error);
   }
 
   return null;
 }
 
 export async function getOrganizationBySlug(slug: string): Promise<Organization | null> {
-  // Try memory first
-  for (const [, org] of memoryOrganizations) {
-    if (org.slug === slug) return org;
+  if (!isDatabaseConnected()) {
+    return null;
   }
 
-  if (isDatabaseConnected()) {
-    try {
-      const result = await query<OrganizationRow>(
-        `SELECT id, name, slug, settings->>'timezone' as timezone, created_at FROM organizations WHERE slug = $1`,
-        [slug]
-      );
-      if (result && result.rows.length > 0) {
-        const org = rowToOrganization(result.rows[0]);
-        memoryOrganizations.set(org.id, org);
-        return org;
-      }
-    } catch (error) {
-      console.error('[Org Repo] Failed to get organization by slug:', error);
+  try {
+    const result = await query<OrganizationRow>(
+      `SELECT id, name, slug, settings->>'timezone' as timezone, created_at FROM organizations WHERE slug = $1`,
+      [slug]
+    );
+    if (result && result.rows.length > 0) {
+      return rowToOrganization(result.rows[0]);
     }
+  } catch (error) {
+    console.error('[Org Repo] Failed to get organization by slug:', error);
   }
 
   return null;
 }
 
 export async function updateOrganization(id: string, updates: Partial<Organization>): Promise<Organization | null> {
-  const existing = memoryOrganizations.get(id) || await getOrganizationById(id);
+  if (!isDatabaseConnected()) {
+    return null;
+  }
+
+  const existing = await getOrganizationById(id);
   if (!existing) return null;
 
   const updated = { ...existing, ...updates };
-  memoryOrganizations.set(id, updated);
 
-  if (isDatabaseConnected()) {
-    try {
-      await query(
-        `UPDATE organizations SET name = $2, slug = $3, settings = $4, updated_at = NOW() WHERE id = $1`,
-        [id, updated.name, updated.slug, JSON.stringify({ timezone: updated.timezone })]
-      );
-    } catch (error) {
-      console.error('[Org Repo] Failed to update organization:', error);
-    }
+  try {
+    await query(
+      `UPDATE organizations SET name = $2, slug = $3, settings = $4, updated_at = NOW() WHERE id = $1`,
+      [id, updated.name, updated.slug, JSON.stringify({ timezone: updated.timezone })]
+    );
+    return updated;
+  } catch (error) {
+    console.error('[Org Repo] Failed to update organization:', error);
+    return null;
   }
-
-  return updated;
 }
 
 export async function deleteOrganization(id: string): Promise<boolean> {
-  memoryOrganizations.delete(id);
-  memoryOrganizationMembers.delete(id);
-  memoryAutoQuarantineSettings.delete(id);
-  memoryRetryStrategySettings.delete(id);
-
-  // Delete related invitations
-  for (const [invId, inv] of memoryInvitations) {
-    if (inv.organization_id === id) {
-      memoryInvitations.delete(invId);
-    }
+  if (!isDatabaseConnected()) {
+    return false;
   }
 
-  if (isDatabaseConnected()) {
-    try {
-      await query('DELETE FROM organizations WHERE id = $1', [id]);
-    } catch (error) {
-      console.error('[Org Repo] Failed to delete organization:', error);
-    }
+  try {
+    const result = await query('DELETE FROM organizations WHERE id = $1', [id]);
+    return result !== null && (result.rowCount ?? 0) > 0;
+  } catch (error) {
+    console.error('[Org Repo] Failed to delete organization:', error);
+    return false;
   }
-
-  return true;
 }
 
 export async function listOrganizations(): Promise<Organization[]> {
-  if (isDatabaseConnected()) {
-    try {
-      const result = await query<OrganizationRow>(
-        `SELECT id, name, slug, settings->>'timezone' as timezone, created_at FROM organizations ORDER BY created_at`
-      );
-      if (result) {
-        const orgs = result.rows.map(rowToOrganization);
-        // Update memory cache
-        for (const org of orgs) {
-          memoryOrganizations.set(org.id, org);
-        }
-        return orgs;
-      }
-    } catch (error) {
-      console.error('[Org Repo] Failed to list organizations:', error);
-    }
+  if (!isDatabaseConnected()) {
+    return [];
   }
 
-  return Array.from(memoryOrganizations.values());
+  try {
+    const result = await query<OrganizationRow>(
+      `SELECT id, name, slug, settings->>'timezone' as timezone, created_at FROM organizations ORDER BY created_at`
+    );
+    if (result) {
+      return result.rows.map(rowToOrganization);
+    }
+  } catch (error) {
+    console.error('[Org Repo] Failed to list organizations:', error);
+  }
+
+  return [];
 }
 
 // ============================================================================
@@ -273,39 +262,69 @@ export async function listOrganizations(): Promise<Organization[]> {
 // ============================================================================
 
 export async function addOrganizationMember(member: OrganizationMember): Promise<void> {
-  const members = memoryOrganizationMembers.get(member.organization_id) || [];
-  const existingIndex = members.findIndex(m => m.user_id === member.user_id);
-  if (existingIndex >= 0) {
-    members[existingIndex] = member;
-  } else {
-    members.push(member);
+  if (!isDatabaseConnected()) {
+    throw new Error('Database connection required - cannot add organization member without PostgreSQL');
   }
-  memoryOrganizationMembers.set(member.organization_id, members);
 
-  if (isDatabaseConnected()) {
-    try {
-      // This would require a separate organization_members table
-      // For now, we'll use the users table's organization_id field
-      // or a separate join table
-    } catch (error) {
-      console.error('[Org Repo] Failed to add organization member:', error);
-    }
+  try {
+    // Ensure the organization_members table exists
+    await query(`
+      CREATE TABLE IF NOT EXISTS organization_members (
+        user_id UUID NOT NULL,
+        organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+        role VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        PRIMARY KEY (user_id, organization_id)
+      )
+    `);
+
+    await query(
+      `INSERT INTO organization_members (user_id, organization_id, role)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, organization_id) DO UPDATE SET role = $3`,
+      [member.user_id, member.organization_id, member.role]
+    );
+  } catch (error) {
+    console.error('[Org Repo] Failed to add organization member:', error);
+    throw error;
   }
 }
 
 export async function removeOrganizationMember(organizationId: string, userId: string): Promise<boolean> {
-  const members = memoryOrganizationMembers.get(organizationId) || [];
-  const index = members.findIndex(m => m.user_id === userId);
-  if (index === -1) return false;
+  if (!isDatabaseConnected()) {
+    return false;
+  }
 
-  members.splice(index, 1);
-  memoryOrganizationMembers.set(organizationId, members);
-
-  return true;
+  try {
+    const result = await query(
+      `DELETE FROM organization_members WHERE organization_id = $1 AND user_id = $2`,
+      [organizationId, userId]
+    );
+    return result !== null && (result.rowCount ?? 0) > 0;
+  } catch (error) {
+    console.error('[Org Repo] Failed to remove organization member:', error);
+    return false;
+  }
 }
 
 export async function getOrganizationMembers(organizationId: string): Promise<OrganizationMember[]> {
-  return memoryOrganizationMembers.get(organizationId) || [];
+  if (!isDatabaseConnected()) {
+    return [];
+  }
+
+  try {
+    const result = await query<OrganizationMember>(
+      `SELECT user_id, organization_id, role FROM organization_members WHERE organization_id = $1`,
+      [organizationId]
+    );
+    if (result) {
+      return result.rows;
+    }
+  } catch (error) {
+    console.error('[Org Repo] Failed to get organization members:', error);
+  }
+
+  return [];
 }
 
 export async function updateMemberRole(
@@ -313,22 +332,39 @@ export async function updateMemberRole(
   userId: string,
   role: OrganizationMember['role']
 ): Promise<boolean> {
-  const members = memoryOrganizationMembers.get(organizationId) || [];
-  const member = members.find(m => m.user_id === userId);
-  if (!member) return false;
+  if (!isDatabaseConnected()) {
+    return false;
+  }
 
-  member.role = role;
-  memoryOrganizationMembers.set(organizationId, members);
-
-  return true;
+  try {
+    const result = await query(
+      `UPDATE organization_members SET role = $3 WHERE organization_id = $1 AND user_id = $2`,
+      [organizationId, userId, role]
+    );
+    return result !== null && (result.rowCount ?? 0) > 0;
+  } catch (error) {
+    console.error('[Org Repo] Failed to update member role:', error);
+    return false;
+  }
 }
 
 export async function getUserOrganization(userId: string): Promise<string | null> {
-  for (const [orgId, members] of memoryOrganizationMembers) {
-    if (members.some(m => m.user_id === userId)) {
-      return orgId;
-    }
+  if (!isDatabaseConnected()) {
+    return null;
   }
+
+  try {
+    const result = await query<{ organization_id: string }>(
+      `SELECT organization_id FROM organization_members WHERE user_id = $1 LIMIT 1`,
+      [userId]
+    );
+    if (result && result.rows.length > 0) {
+      return result.rows[0].organization_id;
+    }
+  } catch (error) {
+    console.error('[Org Repo] Failed to get user organization:', error);
+  }
+
   return null;
 }
 
@@ -337,24 +373,39 @@ export async function getUserOrganizations(userId: string): Promise<Array<{
   role: string;
   organization: Organization | undefined;
 }>> {
-  const userOrgs: Array<{
-    organization_id: string;
-    role: string;
-    organization: Organization | undefined;
-  }> = [];
-
-  for (const [orgId, members] of memoryOrganizationMembers) {
-    const membership = members.find(m => m.user_id === userId);
-    if (membership) {
-      userOrgs.push({
-        organization_id: orgId,
-        role: membership.role,
-        organization: memoryOrganizations.get(orgId),
-      });
-    }
+  if (!isDatabaseConnected()) {
+    return [];
   }
 
-  return userOrgs;
+  try {
+    const result = await query<{ organization_id: string; role: string }>(
+      `SELECT organization_id, role FROM organization_members WHERE user_id = $1`,
+      [userId]
+    );
+
+    if (result && result.rows.length > 0) {
+      const userOrgs: Array<{
+        organization_id: string;
+        role: string;
+        organization: Organization | undefined;
+      }> = [];
+
+      for (const row of result.rows) {
+        const org = await getOrganizationById(row.organization_id);
+        userOrgs.push({
+          organization_id: row.organization_id,
+          role: row.role,
+          organization: org || undefined,
+        });
+      }
+
+      return userOrgs;
+    }
+  } catch (error) {
+    console.error('[Org Repo] Failed to get user organizations:', error);
+  }
+
+  return [];
 }
 
 // ============================================================================
@@ -362,118 +413,212 @@ export async function getUserOrganizations(userId: string): Promise<Array<{
 // ============================================================================
 
 export async function createInvitation(invitation: Invitation): Promise<Invitation> {
-  memoryInvitations.set(invitation.id, invitation);
-
-  if (isDatabaseConnected()) {
-    try {
-      await query(
-        `INSERT INTO invitations (id, organization_id, email, role, invited_by, token_hash, expires_at, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          invitation.id,
-          invitation.organization_id,
-          invitation.email,
-          invitation.role,
-          invitation.invited_by,
-          invitation.id, // Using id as token_hash for simplicity
-          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days expiry
-          invitation.created_at,
-        ]
-      );
-    } catch (error) {
-      console.error('[Org Repo] Failed to create invitation:', error);
-    }
+  if (!isDatabaseConnected()) {
+    throw new Error('Database connection required - cannot create invitation without PostgreSQL');
   }
 
-  return invitation;
+  try {
+    await query(
+      `INSERT INTO invitations (id, organization_id, email, role, invited_by, token_hash, expires_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        invitation.id,
+        invitation.organization_id,
+        invitation.email,
+        invitation.role,
+        invitation.invited_by,
+        invitation.id, // Using id as token_hash for simplicity
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days expiry
+        invitation.created_at,
+      ]
+    );
+    return invitation;
+  } catch (error) {
+    console.error('[Org Repo] Failed to create invitation:', error);
+    throw error;
+  }
 }
 
 export async function getInvitationById(id: string): Promise<Invitation | null> {
-  return memoryInvitations.get(id) || null;
+  if (!isDatabaseConnected()) {
+    return null;
+  }
+
+  try {
+    const result = await query<Invitation>(
+      `SELECT * FROM invitations WHERE id = $1`,
+      [id]
+    );
+    if (result && result.rows.length > 0) {
+      const row = result.rows[0];
+      return {
+        ...row,
+        created_at: new Date(row.created_at),
+        accepted_at: row.accepted_at ? new Date(row.accepted_at) : undefined,
+      };
+    }
+  } catch (error) {
+    console.error('[Org Repo] Failed to get invitation:', error);
+  }
+
+  return null;
 }
 
 export async function getInvitationsByOrg(organizationId: string): Promise<Invitation[]> {
-  return Array.from(memoryInvitations.values()).filter(
-    inv => inv.organization_id === organizationId
-  );
+  if (!isDatabaseConnected()) {
+    return [];
+  }
+
+  try {
+    const result = await query<Invitation>(
+      `SELECT * FROM invitations WHERE organization_id = $1`,
+      [organizationId]
+    );
+    if (result) {
+      return result.rows.map(row => ({
+        ...row,
+        created_at: new Date(row.created_at),
+        accepted_at: row.accepted_at ? new Date(row.accepted_at) : undefined,
+      }));
+    }
+  } catch (error) {
+    console.error('[Org Repo] Failed to get invitations by org:', error);
+  }
+
+  return [];
 }
 
 export async function updateInvitation(id: string, updates: Partial<Invitation>): Promise<Invitation | null> {
-  const existing = memoryInvitations.get(id);
+  if (!isDatabaseConnected()) {
+    return null;
+  }
+
+  const existing = await getInvitationById(id);
   if (!existing) return null;
 
   const updated = { ...existing, ...updates };
-  memoryInvitations.set(id, updated);
 
-  if (isDatabaseConnected()) {
-    try {
-      if (updates.status === 'accepted') {
-        await query(
-          `UPDATE invitations SET accepted_at = $2 WHERE id = $1`,
-          [id, updates.accepted_at || new Date()]
-        );
-      }
-    } catch (error) {
-      console.error('[Org Repo] Failed to update invitation:', error);
+  try {
+    if (updates.status === 'accepted') {
+      await query(
+        `UPDATE invitations SET accepted_at = $2 WHERE id = $1`,
+        [id, updates.accepted_at || new Date()]
+      );
     }
+    return updated;
+  } catch (error) {
+    console.error('[Org Repo] Failed to update invitation:', error);
+    return null;
   }
-
-  return updated;
 }
 
 export async function deleteInvitation(id: string): Promise<boolean> {
-  const deleted = memoryInvitations.delete(id);
-
-  if (isDatabaseConnected()) {
-    try {
-      await query('DELETE FROM invitations WHERE id = $1', [id]);
-    } catch (error) {
-      console.error('[Org Repo] Failed to delete invitation:', error);
-    }
+  if (!isDatabaseConnected()) {
+    return false;
   }
 
-  return deleted;
+  try {
+    const result = await query('DELETE FROM invitations WHERE id = $1', [id]);
+    return result !== null && (result.rowCount ?? 0) > 0;
+  } catch (error) {
+    console.error('[Org Repo] Failed to delete invitation:', error);
+    return false;
+  }
 }
 
 // ============================================================================
 // Auto-Quarantine Settings Functions
+// Note: These are async but fall back to defaults when DB not connected (Feature #2102)
 // ============================================================================
 
-export function getAutoQuarantineSettings(organizationId: string): AutoQuarantineSettings {
-  return memoryAutoQuarantineSettings.get(organizationId) || { ...DEFAULT_AUTO_QUARANTINE_SETTINGS };
+export async function getAutoQuarantineSettings(organizationId: string): Promise<AutoQuarantineSettings> {
+  if (!isDatabaseConnected()) {
+    return { ...DEFAULT_AUTO_QUARANTINE_SETTINGS };
+  }
+
+  try {
+    const result = await query<{ auto_quarantine_settings: AutoQuarantineSettings }>(
+      `SELECT settings->'auto_quarantine' as auto_quarantine_settings FROM organizations WHERE id = $1`,
+      [organizationId]
+    );
+    if (result && result.rows[0]?.auto_quarantine_settings) {
+      return { ...DEFAULT_AUTO_QUARANTINE_SETTINGS, ...result.rows[0].auto_quarantine_settings };
+    }
+  } catch (error) {
+    console.error('[Org Repo] Failed to get auto-quarantine settings:', error);
+  }
+
+  return { ...DEFAULT_AUTO_QUARANTINE_SETTINGS };
 }
 
-export function setAutoQuarantineSettings(
+export async function setAutoQuarantineSettings(
   organizationId: string,
   settings: Partial<AutoQuarantineSettings>
-): AutoQuarantineSettings {
-  const current = getAutoQuarantineSettings(organizationId);
+): Promise<AutoQuarantineSettings> {
+  const current = await getAutoQuarantineSettings(organizationId);
   const updated: AutoQuarantineSettings = {
     ...current,
     ...settings,
     threshold: Math.max(0, Math.min(1, settings.threshold ?? current.threshold)),
     min_runs: Math.max(2, settings.min_runs ?? current.min_runs),
   };
-  memoryAutoQuarantineSettings.set(organizationId, updated);
+
+  if (!isDatabaseConnected()) {
+    return updated; // Return computed value but don't persist
+  }
+
+  try {
+    await query(
+      `UPDATE organizations SET settings = jsonb_set(COALESCE(settings, '{}'), '{auto_quarantine}', $2::jsonb) WHERE id = $1`,
+      [organizationId, JSON.stringify(updated)]
+    );
+  } catch (error) {
+    console.error('[Org Repo] Failed to set auto-quarantine settings:', error);
+  }
+
   return updated;
 }
 
 // ============================================================================
 // Retry Strategy Settings Functions
+// Note: These are async but fall back to defaults when DB not connected (Feature #2102)
 // ============================================================================
 
-export function getRetryStrategySettings(organizationId: string): RetryStrategySettings {
-  return memoryRetryStrategySettings.get(organizationId) || {
+export async function getRetryStrategySettings(organizationId: string): Promise<RetryStrategySettings> {
+  if (!isDatabaseConnected()) {
+    return {
+      ...DEFAULT_RETRY_STRATEGY_SETTINGS,
+      rules: [...DEFAULT_RETRY_STRATEGY_SETTINGS.rules],
+    };
+  }
+
+  try {
+    const result = await query<{ retry_strategy_settings: RetryStrategySettings }>(
+      `SELECT settings->'retry_strategy' as retry_strategy_settings FROM organizations WHERE id = $1`,
+      [organizationId]
+    );
+    if (result && result.rows[0]?.retry_strategy_settings) {
+      return {
+        ...DEFAULT_RETRY_STRATEGY_SETTINGS,
+        ...result.rows[0].retry_strategy_settings,
+        rules: result.rows[0].retry_strategy_settings.rules || [...DEFAULT_RETRY_STRATEGY_SETTINGS.rules],
+      };
+    }
+  } catch (error) {
+    console.error('[Org Repo] Failed to get retry strategy settings:', error);
+  }
+
+  return {
     ...DEFAULT_RETRY_STRATEGY_SETTINGS,
     rules: [...DEFAULT_RETRY_STRATEGY_SETTINGS.rules],
   };
 }
 
-export function setRetryStrategySettings(
+export async function setRetryStrategySettings(
   organizationId: string,
   settings: Partial<RetryStrategySettings>
-): RetryStrategySettings {
-  const current = getRetryStrategySettings(organizationId);
+): Promise<RetryStrategySettings> {
+  const current = await getRetryStrategySettings(organizationId);
   const updated: RetryStrategySettings = {
     ...current,
     ...settings,
@@ -484,12 +629,25 @@ export function setRetryStrategySettings(
     )),
     rules: settings.rules ?? current.rules,
   };
-  memoryRetryStrategySettings.set(organizationId, updated);
+
+  if (!isDatabaseConnected()) {
+    return updated; // Return computed value but don't persist
+  }
+
+  try {
+    await query(
+      `UPDATE organizations SET settings = jsonb_set(COALESCE(settings, '{}'), '{retry_strategy}', $2::jsonb) WHERE id = $1`,
+      [organizationId, JSON.stringify(updated)]
+    );
+  } catch (error) {
+    console.error('[Org Repo] Failed to set retry strategy settings:', error);
+  }
+
   return updated;
 }
 
-export function getRetriesForFlakinessScore(organizationId: string, flakinessScore: number): number {
-  const settings = getRetryStrategySettings(organizationId);
+export async function getRetriesForFlakinessScore(organizationId: string, flakinessScore: number): Promise<number> {
+  const settings = await getRetryStrategySettings(organizationId);
 
   if (!settings.enabled) {
     return settings.default_retries;
@@ -521,45 +679,64 @@ export const DEFAULT_USER_IDS = {
   otherOwner: '00000000-0000-0000-0000-000000000015',
 };
 
-export function seedDefaultOrganizations(): void {
-  // Seed default organizations
-  if (!memoryOrganizations.has(DEFAULT_ORG_ID)) {
-    memoryOrganizations.set(DEFAULT_ORG_ID, {
-      id: DEFAULT_ORG_ID,
-      name: 'Default Organization',
-      slug: 'default-org',
-      timezone: 'UTC',
-      created_at: new Date(),
-    });
+/**
+ * Seed default organizations and members to the database.
+ * This function is async and should be called after database is connected.
+ * If database is not connected, it does nothing (seed will happen when DB connects).
+ */
+export async function seedDefaultOrganizations(): Promise<void> {
+  if (!isDatabaseConnected()) {
+    console.log('[Org Repo] Database not connected - skipping organization seed');
+    return;
   }
 
-  if (!memoryOrganizations.has(OTHER_ORG_ID)) {
-    memoryOrganizations.set(OTHER_ORG_ID, {
-      id: OTHER_ORG_ID,
-      name: 'Other Organization',
-      slug: 'other-org',
-      timezone: 'UTC',
-      created_at: new Date(),
-    });
-  }
+  try {
+    // Seed default organizations
+    const defaultOrg = await getOrganizationById(DEFAULT_ORG_ID);
+    if (!defaultOrg) {
+      await createOrganization({
+        id: DEFAULT_ORG_ID,
+        name: 'Default Organization',
+        slug: 'default-org',
+        timezone: 'UTC',
+        created_at: new Date(),
+      });
+      console.log('[Org Repo] Created Default Organization');
+    }
 
-  // Seed default members
-  if (!memoryOrganizationMembers.has(DEFAULT_ORG_ID)) {
-    memoryOrganizationMembers.set(DEFAULT_ORG_ID, [
-      { user_id: DEFAULT_USER_IDS.owner, organization_id: DEFAULT_ORG_ID, role: 'owner' },
-      { user_id: DEFAULT_USER_IDS.admin, organization_id: DEFAULT_ORG_ID, role: 'admin' },
-      { user_id: DEFAULT_USER_IDS.developer, organization_id: DEFAULT_ORG_ID, role: 'developer' },
-      { user_id: DEFAULT_USER_IDS.viewer, organization_id: DEFAULT_ORG_ID, role: 'viewer' },
-    ]);
-  }
+    const otherOrg = await getOrganizationById(OTHER_ORG_ID);
+    if (!otherOrg) {
+      await createOrganization({
+        id: OTHER_ORG_ID,
+        name: 'Other Organization',
+        slug: 'other-org',
+        timezone: 'UTC',
+        created_at: new Date(),
+      });
+      console.log('[Org Repo] Created Other Organization');
+    }
 
-  if (!memoryOrganizationMembers.has(OTHER_ORG_ID)) {
-    memoryOrganizationMembers.set(OTHER_ORG_ID, [
-      { user_id: DEFAULT_USER_IDS.otherOwner, organization_id: OTHER_ORG_ID, role: 'owner' },
-      { user_id: DEFAULT_USER_IDS.owner, organization_id: OTHER_ORG_ID, role: 'admin' },
-    ]);
+    // Seed default members for DEFAULT_ORG
+    const defaultOrgMembers = await getOrganizationMembers(DEFAULT_ORG_ID);
+    if (defaultOrgMembers.length === 0) {
+      await addOrganizationMember({ user_id: DEFAULT_USER_IDS.owner, organization_id: DEFAULT_ORG_ID, role: 'owner' });
+      await addOrganizationMember({ user_id: DEFAULT_USER_IDS.admin, organization_id: DEFAULT_ORG_ID, role: 'admin' });
+      await addOrganizationMember({ user_id: DEFAULT_USER_IDS.developer, organization_id: DEFAULT_ORG_ID, role: 'developer' });
+      await addOrganizationMember({ user_id: DEFAULT_USER_IDS.viewer, organization_id: DEFAULT_ORG_ID, role: 'viewer' });
+      console.log('[Org Repo] Created Default Organization members');
+    }
+
+    // Seed default members for OTHER_ORG
+    const otherOrgMembers = await getOrganizationMembers(OTHER_ORG_ID);
+    if (otherOrgMembers.length === 0) {
+      await addOrganizationMember({ user_id: DEFAULT_USER_IDS.otherOwner, organization_id: OTHER_ORG_ID, role: 'owner' });
+      await addOrganizationMember({ user_id: DEFAULT_USER_IDS.owner, organization_id: OTHER_ORG_ID, role: 'admin' });
+      console.log('[Org Repo] Created Other Organization members');
+    }
+  } catch (error) {
+    console.error('[Org Repo] Failed to seed organizations:', error);
   }
 }
 
-// Initialize seed data
-seedDefaultOrganizations();
+// NOTE: Removed auto-seed on module load (Feature #2102)
+// seedDefaultOrganizations() should be called explicitly after database is connected

@@ -948,7 +948,7 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
   }, async (request) => {
     const orgId = getOrganizationId(request);
     const user = request.user as JwtPayload;
-    const settings = getAutoQuarantineSettings(orgId);
+    const settings = await getAutoQuarantineSettings(orgId);
 
     // If auto-quarantine is disabled, return early
     if (!settings.enabled) {

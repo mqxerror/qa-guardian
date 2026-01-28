@@ -1125,7 +1125,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     preHandler: [authenticate],
   }, async (request) => {
     const orgId = getOrganizationId(request);
-    const settings = getAutoQuarantineSettings(orgId);
+    const settings = await getAutoQuarantineSettings(orgId);
 
     return {
       settings,
@@ -1143,7 +1143,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
     const updates = request.body;
 
-    const settings = setAutoQuarantineSettings(orgId, updates);
+    const settings = await setAutoQuarantineSettings(orgId, updates);
 
     return {
       message: 'Auto-quarantine settings updated successfully',
@@ -1157,7 +1157,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     preHandler: [authenticate],
   }, async (request) => {
     const orgId = getOrganizationId(request);
-    const settings = getAutoQuarantineSettings(orgId);
+    const settings = await getAutoQuarantineSettings(orgId);
 
     // Get all tests that were auto-quarantined
     const autoQuarantinedTests = Array.from(tests.values())
@@ -1198,7 +1198,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     preHandler: [authenticate],
   }, async (request) => {
     const orgId = getOrganizationId(request);
-    const settings = getRetryStrategySettings(orgId);
+    const settings = await getRetryStrategySettings(orgId);
 
     return {
       settings,
@@ -1216,7 +1216,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
     const updates = request.body;
 
-    const settings = setRetryStrategySettings(orgId, updates);
+    const settings = await setRetryStrategySettings(orgId, updates);
 
     return {
       message: 'Retry strategy settings updated successfully',
@@ -1245,8 +1245,8 @@ export async function organizationRoutes(app: FastifyInstance) {
 
     // Get the test's flakiness score (use 0 if not available)
     const flakinessScore = (test as { flakiness_score?: number }).flakiness_score ?? 0;
-    const retries = getRetriesForFlakinessScore(orgId, flakinessScore);
-    const settings = getRetryStrategySettings(orgId);
+    const retries = await getRetriesForFlakinessScore(orgId, flakinessScore);
+    const settings = await getRetryStrategySettings(orgId);
 
     // Find which rule was applied
     let appliedRule: RetryStrategyRule | null = null;
@@ -1273,14 +1273,13 @@ export async function organizationRoutes(app: FastifyInstance) {
     preHandler: [authenticate],
   }, async (request) => {
     const orgId = getOrganizationId(request);
-    const settings = getRetryStrategySettings(orgId);
+    const settings = await getRetryStrategySettings(orgId);
 
     // Get all tests with flakiness data
-    const testsWithRetries = Array.from(tests.values())
-      .filter(t => t.organization_id === orgId)
-      .map(t => {
+    const testsArray = Array.from(tests.values()).filter(t => t.organization_id === orgId);
+    const allTestsWithRetries = await Promise.all(testsArray.map(async (t) => {
         const flakinessScore = (t as { flakiness_score?: number }).flakiness_score ?? 0;
-        const retries = getRetriesForFlakinessScore(orgId, flakinessScore);
+        const retries = await getRetriesForFlakinessScore(orgId, flakinessScore);
 
         // Find which rule was applied
         let appliedRule: string = 'default';
@@ -1305,7 +1304,10 @@ export async function organizationRoutes(app: FastifyInstance) {
           applied_rule: appliedRule,
           severity: flakinessScore >= 0.6 ? 'high' : flakinessScore >= 0.3 ? 'medium' : 'low',
         };
-      })
+      }));
+
+    // Filter and sort after Promise.all completes
+    const testsWithRetries = allTestsWithRetries
       .filter(t => t.flakiness_score > 0) // Only include tests with flakiness data
       .sort((a, b) => b.flakiness_score - a.flakiness_score);
 
