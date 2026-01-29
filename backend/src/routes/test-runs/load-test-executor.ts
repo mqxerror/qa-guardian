@@ -99,7 +99,7 @@ interface K6Summary {
     [key: string]: any;
   };
   root_group?: {
-    checks?: Array<{ name: string; passes: number; fails: number }>;
+    checks?: Record<string, { name: string; passes: number; fails: number }>;
   };
 }
 
@@ -322,14 +322,14 @@ function convertK6SummaryToResults(
       received_rate: metrics.data_received?.rate || 0,
       sent_rate: metrics.data_sent?.rate || 0,
     },
-    checks: summary.root_group?.checks?.map(c => ({
+    checks: Object.values(summary.root_group?.checks || {}).map((c: any) => ({
       name: c.name,
       passes: c.passes,
       fails: c.fails,
       success_rate: c.passes + c.fails > 0
         ? ((c.passes / (c.passes + c.fails)) * 100).toFixed(2)
         : '100.00',
-    })) || [],
+    })),
     execution_mode: 'real_k6',
   };
 }
