@@ -25,6 +25,7 @@ import { monitoringRoutes } from './routes/monitoring';
 import aiTestGeneratorRoutes from './routes/ai-test-generator';
 import mcpToolsRoutes from './routes/mcp-tools';
 import { reportsRoutes } from './routes/reports'; // Feature #1732
+import { servicesStatusRoutes, setServicesSocketIO } from './routes/services-status'; // Feature #2127
 
 // Socket.IO server instance (will be initialized after server starts)
 let io: SocketIOServer | null = null;
@@ -157,6 +158,7 @@ async function registerPlugins() {
   await app.register(aiTestGeneratorRoutes, { prefix: '/api/v1/ai' });
   await app.register(mcpToolsRoutes, { prefix: '/api/v1/mcp' });
   await app.register(reportsRoutes); // Feature #1732
+  await app.register(servicesStatusRoutes); // Feature #2127
 
   // Global error handler - don't expose stack traces to clients
   app.setErrorHandler((error, request, reply) => {
@@ -351,8 +353,9 @@ async function start() {
       });
     });
 
-    // Share Socket.IO instance with test-runs module
+    // Share Socket.IO instance with test-runs module and services status
     setSocketIO(io);
+    setServicesSocketIO(io);
 
     // Check AI provider status for MCP features
     const kieApiKey = process.env.KIE_API_KEY;
