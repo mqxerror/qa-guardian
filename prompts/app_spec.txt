@@ -26,7 +26,7 @@
     <note>Added 68 MCP Chat tool test features (1615-1682) for Playwright agent to test all MCP tools with real AI via MCP Chat interface</note>
   </progress_summary>
 
-  <recent_changes date="2026-01-23">
+  <recent_changes date="2026-01-29">
     <change>Phase 8: AI Provider Infrastructure - Major progress</change>
     <change>Added AIRouter with Kie.ai (primary) + Anthropic (fallback) failover</change>
     <change>Added reinitializeFromEnv() for late dotenv loading</change>
@@ -41,6 +41,8 @@
     <change>Multi-turn tool execution loop for chained operations (up to 5 turns)</change>
     <change>Added 68 MCP Chat tool test features (IDs 1615-1682) for Playwright agent testing</change>
     <change>Features cover ALL major MCP tool categories: Projects, Test Suites, Execution, Analytics, Visual Regression, Security, Performance, Load Testing, Monitoring, AI Generation, etc.</change>
+    <change>Bug fixes: token_hash VARCHAR(255)->TEXT for JWT tokens, k6 checks object->array parsing, null-safe .toFixed() on lighthouse metrics, persist test runs to PostgreSQL (features #2123-#2126)</change>
+    <change>Phase 9: Platform Services Dashboard - New /services page showing all service health, capabilities matrix, Docker container status (features #2127-#2131)</change>
   </recent_changes>
 
   <phases>
@@ -165,6 +167,45 @@
         <item name="github.ts" status="pending">Split 8,181 lines into 4 modules</item>
         <item name="sast.ts" status="pending">Split 5,771 lines into 4 modules</item>
       </sub_status>
+    </phase>
+    <phase number="11" status="pending">
+      <name>Platform Services Dashboard</name>
+      <description>New /services page showing all platform services health status, capability matrix, and Docker container info. Operators can see at a glance which tools are running, what each tool supports, and what is implemented vs planned.</description>
+      <sub_status>
+        <item name="Services Status API" status="pending">Backend endpoint returning health of all services (Feature #2127)</item>
+        <item name="Services Dashboard Page" status="pending">Frontend page with card grid grouped by category (Feature #2128)</item>
+        <item name="Capability Matrix" status="pending">Per-service expandable detail showing implemented vs planned features (Feature #2129)</item>
+        <item name="Health Monitoring" status="pending">Auto-refresh, history dots, status change notifications (Feature #2130)</item>
+        <item name="Docker Container Status" status="pending">Show container runtime state, uptime, ports, image version (Feature #2131)</item>
+      </sub_status>
+      <services_inventory>
+        <group name="Infrastructure">
+          <service name="PostgreSQL" status="implemented">Primary database, health via pg_isready</service>
+          <service name="Redis" status="implemented">Cache and message queue, health via PING</service>
+          <service name="MinIO" status="implemented">S3-compatible object storage for artifacts</service>
+        </group>
+        <group name="Testing Tools">
+          <service name="Playwright" status="implemented">E2E browser automation: screenshots, video, traces, healing, visual regression, multi-browser</service>
+          <service name="k6" status="simulated">Load testing: load/stress/spike/soak/breakpoint tests. Script generation works, CLI execution simulated</service>
+          <service name="Lighthouse" status="simulated">Performance auditing: FCP, LCP, CLS, TBT, INP, TTFB, Speed Index. Audit collection simulated</service>
+          <service name="Accessibility (axe-core)" status="implemented">WCAG 2.1 compliance scanning</service>
+        </group>
+        <group name="Security Scanners">
+          <service name="SAST - Gitleaks" status="implemented">Secret detection with CLI integration</service>
+          <service name="SAST - Semgrep" status="simulated">Code pattern matching, YAML rules support, execution simulated</service>
+          <service name="DAST - ZAP" status="simulated">Web vulnerability scanning, realistic alerts generated, real ZAP not integrated</service>
+          <service name="DAST - GraphQL" status="implemented">GraphQL introspection and operation scanning</service>
+        </group>
+        <group name="AI and Integration">
+          <service name="Anthropic (Claude)" status="implemented">AI test generation, RCA, healing. Models: Haiku, Sonnet, Opus</service>
+          <service name="Kie.ai" status="implemented">Cost-optimized Anthropic wrapper, 70% savings</service>
+          <service name="GitHub OAuth" status="implemented">PR integration, dependency scanning, auto-PRs</service>
+          <service name="MCP Server" status="implemented">170+ tools via Model Context Protocol</service>
+        </group>
+        <group name="Real-Time">
+          <service name="Socket.IO" status="implemented">WebSocket for live test updates, alerts, artifacts</service>
+        </group>
+      </services_inventory>
     </phase>
   </phases>
 

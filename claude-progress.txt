@@ -29346,3 +29346,37 @@ They are tracked here and in features.db to maintain a single source of truth.
 2. Verify performance results page renders metrics correctly
 3. Run a test, verify it appears in run history after completion
 4. Verify run details page persists after navigating away and back
+
+
+=== Feature Planning Session 2026-01-29 (Features #2127-#2131) ===
+Progress: 60/65 (92.3%) - 5 new features added for Platform Services Dashboard
+
+### New Features Added (Phase 11: Platform Services Dashboard)
+
+**#2127 (P1): Create Services Status API endpoint**
+- Backend GET /api/v1/services/status
+- Health check all services: PostgreSQL, Redis, MinIO, Playwright, k6, Lighthouse, SAST, DAST, AI providers, GitHub, MCP, Socket.IO
+- Return status, latency, version, capability matrix per service
+
+**#2128 (P2): Create Services Dashboard page - layout and navigation**
+- New /services page with card grid grouped by category
+- 5 groups: Infrastructure, Testing Tools, Security Scanners, AI & Integration, Real-Time
+- Status badges, overall health summary, sidebar link
+
+**#2129 (P3): Service detail cards with capabilities matrix**
+- Expandable detail per service showing all supported features
+- Icons: green check (implemented), yellow bolt (simulated), gray (planned), red x (not implemented)
+- Config hints (env vars), version info, latency
+
+**#2130 (P4): Service health monitoring with auto-refresh and history**
+- 30s auto-refresh, manual refresh button
+- Last 10 health check status dots in card footer
+- Toast notifications on status change
+
+**#2131 (P5): Docker container status integration**
+- docker compose ps info: container status, uptime, ports, image version
+- Graceful degradation if Docker not available
+
+### Spec Updated
+- Added Phase 11 to app_spec.txt with full services inventory
+- Each service documented with implementation status (implemented/simulated/planned)
