@@ -27,6 +27,11 @@ interface ServiceCapability {
   status: 'implemented' | 'simulated' | 'planned' | 'not_available';
 }
 
+interface ServiceDetail {
+  label: string;
+  value: string;
+}
+
 interface ServiceInfo {
   name: string;
   category: string;
@@ -37,6 +42,7 @@ interface ServiceInfo {
   error?: string;
   capabilities: ServiceCapability[];
   config_hints?: string[];
+  details?: ServiceDetail[];
 }
 
 // Helper: time an async operation
@@ -252,6 +258,12 @@ async function checkPlaywright(): Promise<ServiceInfo> {
         { name: 'Network Interception', status: 'implemented' },
         { name: 'Test Recording', status: 'implemented' },
       ],
+      details: [
+        { label: 'Supported Browsers', value: 'Chromium, Firefox, WebKit' },
+        { label: 'Output Formats', value: 'HTML, JSON, JUnit XML' },
+        { label: 'Mobile Emulation', value: 'iPhone, iPad, Android devices' },
+        { label: 'Trace Collection', value: 'Enabled (screenshots, DOM snapshots)' },
+      ],
     };
   } catch {
     return {
@@ -294,6 +306,11 @@ async function checkK6(): Promise<ServiceInfo> {
         { name: 'Soak Testing', status: 'implemented' },
         { name: 'Custom Scenarios', status: 'implemented' },
         { name: 'Thresholds', status: 'implemented' },
+      ],
+      details: [
+        { label: 'Execution', value: 'Real CLI execution via k6 binary' },
+        { label: 'Output Formats', value: 'JSON summary, CSV, InfluxDB' },
+        { label: 'Protocols', value: 'HTTP/1.1, HTTP/2, WebSocket, gRPC' },
       ],
     };
   } catch {
@@ -498,6 +515,12 @@ async function checkAIProviders(): Promise<ServiceInfo[]> {
       { name: 'Code Analysis', status: kieKey ? 'implemented' : 'not_available' },
     ],
     config_hints: ['KIE_API_KEY'],
+    details: [
+      { label: 'Provider', value: 'Kie.ai (Primary)' },
+      { label: 'Models', value: 'kie-1 (default)' },
+      { label: 'Role', value: 'Primary AI provider with failover' },
+      { label: 'API Key', value: kieKey ? 'Configured' : 'Not set' },
+    ],
   });
 
   // Anthropic
@@ -517,6 +540,12 @@ async function checkAIProviders(): Promise<ServiceInfo[]> {
       { name: 'Code Analysis', status: anthropicKey ? 'implemented' : 'not_available' },
     ],
     config_hints: ['ANTHROPIC_API_KEY'],
+    details: [
+      { label: 'Provider', value: 'Anthropic (Fallback)' },
+      { label: 'Models', value: 'Claude 3.5 Sonnet, Claude 3 Haiku' },
+      { label: 'Role', value: 'Fallback AI provider' },
+      { label: 'API Key', value: anthropicKey ? 'Configured' : 'Not set' },
+    ],
   });
 
   return services;

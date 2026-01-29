@@ -20,6 +20,7 @@ interface ServiceInfo {
   error?: string;
   capabilities: ServiceCapability[];
   config_hints?: string[];
+  details?: { label: string; value: string }[];
 }
 
 interface ServicesResponse {
@@ -110,6 +111,17 @@ function ServiceCard({ service }: { service: ServiceInfo }) {
               );
             })}
           </ul>
+          {service.details && service.details.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Details</p>
+              {service.details.map((d) => (
+                <div key={d.label} className="flex items-start gap-1 text-xs mb-0.5">
+                  <span className="text-gray-500 dark:text-gray-400 min-w-[100px]">{d.label}:</span>
+                  <span className="text-gray-700 dark:text-gray-300">{d.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
           {service.config_hints && service.config_hints.length > 0 && (
             <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
               <p className="text-xs text-gray-400 dark:text-gray-500">
@@ -117,6 +129,9 @@ function ServiceCard({ service }: { service: ServiceInfo }) {
               </p>
             </div>
           )}
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+            Checked: {new Date(service.last_checked).toLocaleTimeString()}
+          </p>
         </div>
       )}
     </div>
