@@ -1,7 +1,7 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 60/60 features passing (100.0%)**
+- **Progress: 61/65 features passing (93.8%)**
 - **Last Updated**: 2026-01-29
 - **Note**: Features 2123-2126 added via manual hotfix session (tracked below)
 
@@ -29380,3 +29380,27 @@ Progress: 60/65 (92.3%) - 5 new features added for Platform Services Dashboard
 ### Spec Updated
 - Added Phase 11 to app_spec.txt with full services inventory
 - Each service documented with implementation status (implemented/simulated/planned)
+
+
+=== Session 2026-01-29 - Services Status API ===
+Progress: 61/65 (93.8%)
+
+### Fixes
+- Fixed frontend vite proxy target: was pointing to port 3000, changed to port 3001 (frontend/vite.config.ts)
+
+### Feature #2127: Create Services Status API endpoint (PASSED)
+- Created backend/src/routes/services-status.ts with GET /api/v1/services/status
+- Health checks for all 14 platform services across 5 categories
+- Each service returns name, category, status, latency_ms, version, last_checked, capabilities, config_hints
+- Status values: healthy, degraded, unavailable, not_configured
+- Capability matrix with implemented, simulated, planned, not_available per feature
+- Auth required (401 for unauthenticated requests)
+- Concurrent health checks via Promise.all for performance
+- Socket.IO reference shared via module-level setter pattern
+- TypeScript zero compilation errors
+- Commit: a5f2cc2
+
+### Next Session Should
+1. Implement Feature #2128 Services Dashboard page layout and navigation
+2. Implement Feature #2129 Service detail cards with capabilities matrix
+3. Continue with remaining Platform Services features
