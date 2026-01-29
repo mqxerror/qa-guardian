@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import crypto from 'crypto';
-import { tokenBlacklist } from '../routes/auth';
+// Feature #2116: Use async DB call instead of synchronous Map
+import { dbIsTokenBlacklisted } from '../routes/auth';
 import { apiKeys } from '../routes/api-keys';
 
 // Internal service token for service-to-service communication (MCP -> Backend)
@@ -105,10 +106,10 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
   try {
     await request.jwtVerify();
 
-    // Check if token is blacklisted (logged out)
+    // Feature #2116: Check if token is blacklisted using async DB call
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      if (tokenBlacklist.has(token)) {
+      if (await dbIsTokenBlacklisted(token)) {
         return reply.status(401).send({
           error: 'Unauthorized',
           message: 'Token has been invalidated',

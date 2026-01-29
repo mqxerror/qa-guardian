@@ -1,7 +1,9 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { authenticate, requireRoles, JwtPayload, getOrganizationId } from '../middleware/auth';
-import { users } from './auth';
+// Feature #2116: Use async DB calls instead of synchronous Map
+import { dbGetUserByEmail } from './auth';
+import { getUserById as dbGetUserById } from '../services/repositories/auth';
 // projects Map removed in Feature #2110 - using async DB functions
 // testSuites/tests Maps removed in Feature #2110 - using async DB functions
 import { testRuns } from './test-runs';
@@ -270,25 +272,19 @@ export async function organizationRoutes(app: FastifyInstance) {
     const { id } = request.params;
     const memberRecords = await repoGetOrganizationMembers(id);
 
-    // Enrich with user details
-    const members = memberRecords.map(member => {
-      // Find user by ID
-      let userDetails = null;
-      for (const [, user] of users) {
-        if (user.id === member.user_id) {
-          userDetails = {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-          };
-          break;
-        }
-      }
+    // Feature #2116: Enrich with user details using async DB calls
+    const members = await Promise.all(memberRecords.map(async (member) => {
+      const user = await dbGetUserById(member.user_id);
+      const userDetails = user ? {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      } : null;
       return {
         ...member,
         ...userDetails,
       };
-    });
+    }));
 
     return { members };
   });
@@ -568,8 +564,8 @@ export async function organizationRoutes(app: FastifyInstance) {
       });
     }
 
-    // Get user from database to verify password
-    const user = users.get(jwtUser.email);
+    // Feature #2116: Get user using async DB call
+    const user = await dbGetUserByEmail(jwtUser.email);
     if (!user) {
       return reply.status(401).send({
         error: 'Unauthorized',
@@ -798,8 +794,8 @@ export async function organizationRoutes(app: FastifyInstance) {
         });
       }
 
-      // Verify password
-      const currentUser = users.get(jwtUser.email);
+      // Feature #2116: Verify password using async DB call
+      const currentUser = await dbGetUserByEmail(jwtUser.email);
       if (!currentUser) {
         return reply.status(404).send({
           error: 'Not Found',
@@ -850,13 +846,9 @@ export async function organizationRoutes(app: FastifyInstance) {
       await repoUpdateMemberRole(id, jwtUser.id, 'admin');
 
       // Get new owner details for response
-      let newOwnerEmail = '';
-      for (const [, user] of users) {
-        if (user.id === new_owner_id) {
-          newOwnerEmail = user.email;
-          break;
-        }
-      }
+      // Feature #2116: Use async DB call instead of iterating Map
+      const newOwnerUser = await dbGetUserById(new_owner_id);
+      const newOwnerEmail = newOwnerUser?.email || '';
 
       console.log(`\n[OWNERSHIP TRANSFERRED] Organization ${id} ownership transferred from ${oldOwnerEmail} to ${newOwnerEmail}\n`);
 
@@ -927,19 +919,17 @@ export async function organizationRoutes(app: FastifyInstance) {
       // Get organization members
       const memberRecords = await repoGetOrganizationMembers(orgId);
 
-      // Build member details map
+      // Feature #2116: Build member details map using async DB calls
       const memberDetails = new Map<string, { id: string; name: string; email: string; role: string }>();
       for (const member of memberRecords) {
-        for (const [, user] of users) {
-          if (user.id === member.user_id) {
-            memberDetails.set(member.user_id, {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              role: member.role,
-            });
-            break;
-          }
+        const user = await dbGetUserById(member.user_id);
+        if (user) {
+          memberDetails.set(member.user_id, {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: member.role,
+          });
         }
       }
 

@@ -7,7 +7,7 @@ import {
   addOrganizationMember as repoAddOrganizationMember,
 } from '../services/repositories/organizations';
 
-// Feature #2083: Import repository functions for database persistence
+// Feature #2116: Import only async repository functions (no getMemory* calls)
 import {
   User,
   Session,
@@ -27,20 +27,14 @@ import {
   getResetToken as dbGetResetToken,
   markResetTokenUsed as dbMarkResetTokenUsed,
   seedTestUsers,
-  getMemoryUsers,
-  getMemoryTokenBlacklist,
-  getMemoryUserSessions,
-  getMemoryResetTokens,
 } from '../services/repositories/auth';
 
 // Re-export types for backward compatibility
 export type { User, Session, ResetToken };
 
-// Feature #2083: These Maps are now backed by the repository's memory stores
-// They provide backward compatibility for synchronous code
-export const users: Map<string, User> = getMemoryUsers();
-export const tokenBlacklist: Set<string> = getMemoryTokenBlacklist();
-export const userSessions: Map<string, Session[]> = getMemoryUserSessions();
+// Feature #2116: Export async accessors instead of synchronous Maps
+// Other files that need user/token data should use these async functions
+export { dbGetUserByEmail, dbIsTokenBlacklisted, dbGetUserSessions };
 
 // Helper function to parse user agent into device/browser info
 function parseUserAgent(userAgent: string | undefined): { device: string; browser: string } {
@@ -81,8 +75,8 @@ function parseUserAgent(userAgent: string | undefined): { device: string; browse
   return { device, browser };
 }
 
-// Helper function to create a session for a user
-function createSession(userId: string, token: string, request: FastifyRequest): Session {
+// Feature #2116: Helper function to create a session using async DB calls
+async function createSessionForUser(userId: string, token: string, request: FastifyRequest): Promise<Session> {
   const { device, browser } = parseUserAgent(request.headers['user-agent']);
   const ip = request.ip || request.headers['x-forwarded-for']?.toString() || 'Unknown';
 
@@ -97,16 +91,13 @@ function createSession(userId: string, token: string, request: FastifyRequest): 
     created_at: new Date(),
   };
 
-  // Add to user's sessions
-  const sessions = userSessions.get(userId) || [];
-  sessions.push(session);
-  userSessions.set(userId, sessions);
+  // Feature #2116: Use async DB call instead of Map
+  await dbCreateSession(session);
 
   return session;
 }
 
-// Feature #2083: resetTokens Map backed by repository memory store
-export const resetTokens: Map<string, ResetToken> = getMemoryResetTokens();
+// Feature #2116: resetTokens now accessed via async dbGetResetToken/dbCreateResetToken
 
 // Feature #2099: Seeding completion guard to prevent race conditions
 let seedingComplete = false;
@@ -155,7 +146,8 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    const user = users.get(email);
+    // Feature #2116: Use async DB call instead of Map
+    const user = await dbGetUserByEmail(email);
 
     if (!user) {
       return reply.status(401).send({
@@ -195,8 +187,8 @@ export async function authRoutes(app: FastifyInstance) {
       { expiresIn: '7d' }
     );
 
-    // Create a session for this login
-    const session = createSession(user.id, token, request);
+    // Feature #2116: Create session using async DB call
+    const session = await createSessionForUser(user.id, token, request);
 
     return {
       token,
@@ -261,8 +253,9 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    // Check if user already exists
-    if (users.has(email)) {
+    // Feature #2116: Check if user already exists using async DB call
+    const existingUser = await dbUserExists(email);
+    if (existingUser) {
       return reply.status(409).send({
         error: 'Conflict',
         message: 'User with this email already exists',
@@ -283,7 +276,8 @@ export async function authRoutes(app: FastifyInstance) {
       created_at: new Date(),
     };
 
-    users.set(email, user);
+    // Feature #2116: Use async DB call instead of Map
+    await dbCreateUser(user);
 
     // Create a default organization for the new user
     // Feature #2095: Use proper UUID format instead of timestamp string
@@ -306,7 +300,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     // Update user role to owner since they own their organization
     user.role = 'owner';
-    users.set(email, user);
+    await dbUpdateUser(email, { role: 'owner' });
 
     // Generate JWT token with 7 day expiration
     const token = app.jwt.sign(
@@ -319,8 +313,8 @@ export async function authRoutes(app: FastifyInstance) {
       { expiresIn: '7d' }
     );
 
-    // Create a session for this registration
-    const session = createSession(user.id, token, request);
+    // Feature #2116: Create session using async DB call
+    const session = await createSessionForUser(user.id, token, request);
 
     return reply.status(201).send({
       token,
@@ -342,11 +336,11 @@ export async function authRoutes(app: FastifyInstance) {
         try {
           await request.jwtVerify();
 
-          // Check if token is blacklisted (logged out)
+          // Feature #2116: Check if token is blacklisted using async DB call
           const authHeader = request.headers.authorization;
           if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
-            if (tokenBlacklist.has(token)) {
+            if (await dbIsTokenBlacklisted(token)) {
               return reply.status(401).send({
                 error: 'Unauthorized',
                 message: 'Token has been invalidated',
@@ -363,7 +357,8 @@ export async function authRoutes(app: FastifyInstance) {
     ],
   }, async (request) => {
     const decoded = request.user as { id: string; email: string; role: string; organization_id?: string };
-    const user = users.get(decoded.email);
+    // Feature #2116: Use async DB call instead of Map
+    const user = await dbGetUserByEmail(decoded.email);
 
     if (!user) {
       throw { statusCode: 404, message: 'User not found' };
@@ -397,11 +392,11 @@ export async function authRoutes(app: FastifyInstance) {
       },
     ],
   }, async (request) => {
-    // Get token from Authorization header
+    // Feature #2116: Use async DB call to blacklist token
     const authHeader = request.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      tokenBlacklist.add(token);
+      await dbBlacklistToken(token);
     }
     return { message: 'Logged out successfully' };
   });
@@ -417,7 +412,8 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    const user = users.get(email);
+    // Feature #2116: Use async DB call instead of Map
+    const user = await dbGetUserByEmail(email);
 
     if (!user) {
       return reply.status(401).send({
@@ -477,11 +473,11 @@ export async function authRoutes(app: FastifyInstance) {
     // This prevents email enumeration attacks
     const token = crypto.randomUUID() + '-' + crypto.randomUUID();
 
-    // Only store and log if user exists (but don't reveal this to the client)
-    const user = users.get(email);
+    // Feature #2116: Use async DB call instead of Map
+    const user = await dbGetUserByEmail(email);
     if (user) {
-      // Store the reset token
-      resetTokens.set(token, {
+      // Store the reset token using async DB call
+      await dbCreateResetToken({
         email: email,
         token: token,
         createdAt: new Date(),
@@ -545,8 +541,8 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    // Find the reset token
-    const resetToken = resetTokens.get(token);
+    // Feature #2116: Find the reset token using async DB call
+    const resetToken = await dbGetResetToken(token);
 
     if (!resetToken) {
       return reply.status(400).send({
@@ -573,8 +569,8 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    // Get the user
-    const user = users.get(resetToken.email);
+    // Feature #2116: Get the user using async DB call
+    const user = await dbGetUserByEmail(resetToken.email);
     if (!user) {
       return reply.status(400).send({
         error: 'Bad Request',
@@ -582,13 +578,12 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    // Update the password
-    user.password_hash = await bcrypt.hash(password, 10);
-    users.set(resetToken.email, user);
+    // Feature #2116: Update the password using async DB call
+    const newPasswordHash = await bcrypt.hash(password, 10);
+    await dbUpdateUser(resetToken.email, { password_hash: newPasswordHash });
 
-    // Mark token as used
-    resetToken.used = true;
-    resetTokens.set(token, resetToken);
+    // Feature #2116: Mark token as used using async DB call
+    await dbMarkResetTokenUsed(token);
 
     console.log(`\n[PASSWORD RESET] Password successfully reset for: ${user.email}\n`);
 
@@ -605,10 +600,11 @@ export async function authRoutes(app: FastifyInstance) {
       async (request: FastifyRequest, reply: FastifyReply) => {
         try {
           await request.jwtVerify();
+          // Feature #2116: Use async DB call for token blacklist check
           const authHeader = request.headers.authorization;
           if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
-            if (tokenBlacklist.has(token)) {
+            if (await dbIsTokenBlacklisted(token)) {
               return reply.status(401).send({
                 error: 'Unauthorized',
                 message: 'Token has been invalidated',
@@ -625,16 +621,18 @@ export async function authRoutes(app: FastifyInstance) {
     ],
   }, async (request) => {
     const decoded = request.user as { id: string };
-    const sessions = userSessions.get(decoded.id) || [];
+    // Feature #2116: Use async DB call instead of Map
+    const sessions = await dbGetUserSessions(decoded.id);
 
     // Get current token to identify current session
     const authHeader = request.headers.authorization;
     const currentToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
 
-    // Filter out sessions that have been blacklisted and mark current session
-    const activeSessions = sessions
-      .filter(session => !tokenBlacklist.has(session.token))
-      .map(session => ({
+    // Feature #2116: Filter out blacklisted sessions using async check
+    const activeSessionPromises = sessions.map(async (session) => {
+      const isBlacklisted = await dbIsTokenBlacklisted(session.token);
+      if (isBlacklisted) return null;
+      return {
         id: session.id,
         device: session.device,
         browser: session.browser,
@@ -642,7 +640,10 @@ export async function authRoutes(app: FastifyInstance) {
         last_active: session.last_active,
         created_at: session.created_at,
         is_current: session.token === currentToken,
-      }));
+      };
+    });
+    const results = await Promise.all(activeSessionPromises);
+    const activeSessions = results.filter(s => s !== null);
 
     return { sessions: activeSessions };
   });
@@ -653,10 +654,11 @@ export async function authRoutes(app: FastifyInstance) {
       async (request: FastifyRequest, reply: FastifyReply) => {
         try {
           await request.jwtVerify();
+          // Feature #2116: Use async DB call for token blacklist check
           const authHeader = request.headers.authorization;
           if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
-            if (tokenBlacklist.has(token)) {
+            if (await dbIsTokenBlacklisted(token)) {
               return reply.status(401).send({
                 error: 'Unauthorized',
                 message: 'Token has been invalidated',
@@ -674,7 +676,8 @@ export async function authRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const decoded = request.user as { id: string };
     const { sessionId } = request.params;
-    const sessions = userSessions.get(decoded.id) || [];
+    // Feature #2116: Use async DB call instead of Map
+    const sessions = await dbGetUserSessions(decoded.id);
 
     // Find the session to invalidate
     const session = sessions.find(s => s.id === sessionId);
@@ -685,12 +688,11 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    // Add the session's token to the blacklist
-    tokenBlacklist.add(session.token);
+    // Feature #2116: Add the session's token to the blacklist using async DB call
+    await dbBlacklistToken(session.token);
 
-    // Remove session from the list
-    const updatedSessions = sessions.filter(s => s.id !== sessionId);
-    userSessions.set(decoded.id, updatedSessions);
+    // Feature #2116: Remove session from DB
+    await dbDeleteSession(sessionId, decoded.id);
 
     return { message: 'Session invalidated successfully' };
   });
@@ -701,10 +703,11 @@ export async function authRoutes(app: FastifyInstance) {
       async (request: FastifyRequest, reply: FastifyReply) => {
         try {
           await request.jwtVerify();
+          // Feature #2116: Use async DB call for token blacklist check
           const authHeader = request.headers.authorization;
           if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
-            if (tokenBlacklist.has(token)) {
+            if (await dbIsTokenBlacklisted(token)) {
               return reply.status(401).send({
                 error: 'Unauthorized',
                 message: 'Token has been invalidated',
@@ -721,24 +724,32 @@ export async function authRoutes(app: FastifyInstance) {
     ],
   }, async (request) => {
     const decoded = request.user as { id: string };
-    const sessions = userSessions.get(decoded.id) || [];
+    // Feature #2116: Use async DB call instead of Map
+    const sessions = await dbGetUserSessions(decoded.id);
 
     // Get current token
     const authHeader = request.headers.authorization;
     const currentToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
 
-    // Add all session tokens except current to the blacklist
-    let invalidatedCount = 0;
-    sessions.forEach(session => {
-      if (session.token !== currentToken && !tokenBlacklist.has(session.token)) {
-        tokenBlacklist.add(session.token);
-        invalidatedCount++;
-      }
-    });
+    // Feature #2116: Find current session ID for deleteOtherSessions
+    const currentSession = sessions.find(s => s.token === currentToken);
 
-    // Keep only the current session
-    const updatedSessions = sessions.filter(s => s.token === currentToken);
-    userSessions.set(decoded.id, updatedSessions);
+    // Blacklist all other session tokens
+    let invalidatedCount = 0;
+    for (const session of sessions) {
+      if (session.token !== currentToken) {
+        const isAlreadyBlacklisted = await dbIsTokenBlacklisted(session.token);
+        if (!isAlreadyBlacklisted) {
+          await dbBlacklistToken(session.token);
+          invalidatedCount++;
+        }
+      }
+    }
+
+    // Feature #2116: Delete other sessions from DB
+    if (currentSession) {
+      await dbDeleteOtherSessions(decoded.id, currentSession.id);
+    }
 
     return {
       message: `Logged out ${invalidatedCount} other session(s) successfully`,
