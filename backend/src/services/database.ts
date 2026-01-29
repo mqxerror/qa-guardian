@@ -277,7 +277,7 @@ async function initializeSchema(): Promise<void> {
     CREATE TABLE IF NOT EXISTS sessions (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-      token_hash VARCHAR(255) NOT NULL,
+      token_hash TEXT NOT NULL,
       device VARCHAR(100),
       browser VARCHAR(100),
       ip_address VARCHAR(45),
@@ -289,7 +289,7 @@ async function initializeSchema(): Promise<void> {
     -- Token Blacklist table (Feature #2083: Invalidated JWT tokens)
     CREATE TABLE IF NOT EXISTS token_blacklist (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-      token_hash VARCHAR(255) UNIQUE NOT NULL,
+      token_hash TEXT UNIQUE NOT NULL,
       expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
@@ -297,7 +297,7 @@ async function initializeSchema(): Promise<void> {
     -- Reset Tokens table (Feature #2083: Password reset tokens)
     CREATE TABLE IF NOT EXISTS reset_tokens (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-      token_hash VARCHAR(255) UNIQUE NOT NULL,
+      token_hash TEXT UNIQUE NOT NULL,
       user_email VARCHAR(255) NOT NULL,
       expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
       used_at TIMESTAMP WITH TIME ZONE,
@@ -311,7 +311,7 @@ async function initializeSchema(): Promise<void> {
       email VARCHAR(255) NOT NULL,
       role VARCHAR(50) NOT NULL,
       invited_by UUID,
-      token_hash VARCHAR(255) UNIQUE NOT NULL,
+      token_hash TEXT UNIQUE NOT NULL,
       expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
       accepted_at TIMESTAMP WITH TIME ZONE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
