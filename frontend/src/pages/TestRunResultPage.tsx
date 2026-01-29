@@ -1892,7 +1892,7 @@ export default function TestRunResultPage() {
       }
       if (metrics.cls !== undefined) {
         const clsStatus = metrics.cls <= 0.1 ? 'good' : metrics.cls <= 0.25 ? 'warning' : 'bad';
-        addMetricRow('Cumulative Layout Shift (CLS)', metrics.cls.toFixed(3), clsStatus);
+        addMetricRow('Cumulative Layout Shift (CLS)', (metrics.cls ?? 0).toFixed(3), clsStatus);
       }
       if (metrics.tbt !== undefined) {
         const tbtStatus = metrics.tbt <= 200 ? 'good' : metrics.tbt <= 600 ? 'warning' : 'bad';
@@ -5938,19 +5938,19 @@ Format your response with clear sections using **bold headers** and code blocks 
                               <div className="grid grid-cols-4 gap-2 mt-3 text-sm">
                                 {step.lighthouse.metrics.lcp && (
                                   <div className="p-2 bg-muted/50 rounded">
-                                    <div className="font-medium">{(step.lighthouse.metrics.lcp / 1000).toFixed(2)}s</div>
+                                    <div className="font-medium">{((step.lighthouse.metrics.lcp ?? 0) / 1000).toFixed(2)}s</div>
                                     <div className="text-xs text-muted-foreground">LCP</div>
                                   </div>
                                 )}
-                                {step.lighthouse.metrics.fcp && (
+                                {step.lighthouse.metrics.fcp != null && (
                                   <div className="p-2 bg-muted/50 rounded">
-                                    <div className="font-medium">{(step.lighthouse.metrics.fcp / 1000).toFixed(2)}s</div>
+                                    <div className="font-medium">{((step.lighthouse.metrics.fcp ?? 0) / 1000).toFixed(2)}s</div>
                                     <div className="text-xs text-muted-foreground">FCP</div>
                                   </div>
                                 )}
                                 {step.lighthouse.metrics.cls !== undefined && (
                                   <div className="p-2 bg-muted/50 rounded">
-                                    <div className="font-medium">{step.lighthouse.metrics.cls.toFixed(3)}</div>
+                                    <div className="font-medium">{(step.lighthouse.metrics.cls ?? 0).toFixed(3)}</div>
                                     <div className="text-xs text-muted-foreground">CLS</div>
                                   </div>
                                 )}

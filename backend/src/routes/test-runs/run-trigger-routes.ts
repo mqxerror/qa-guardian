@@ -12,7 +12,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, getOrganizationId } from '../../middleware/auth';
 import { getTestSuite, getTest, listTests } from '../test-suites';
-import { testRuns, BrowserType } from './execution';
+import { testRuns, BrowserType, createTestRun as dbCreateTestRun } from './execution';
 
 // Type definitions for route params/body
 interface RunParams {
@@ -93,6 +93,11 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
 
       testRuns.set(id, run as any);
 
+      // Persist to database so the run appears in history and survives server restarts
+      dbCreateTestRun(run as any).catch(err =>
+        console.error('[RunTrigger] Failed to persist test run to database:', err)
+      );
+
       // Start test execution asynchronously
       runTestsForRun(id).catch(console.error);
 
@@ -146,6 +151,11 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       };
 
       testRuns.set(id, run as any);
+
+      // Persist to database so the run appears in history and survives server restarts
+      dbCreateTestRun(run as any).catch(err =>
+        console.error('[RunTrigger] Failed to persist test run to database:', err)
+      );
 
       // Start test execution asynchronously
       runTestsForRun(id).catch(console.error);

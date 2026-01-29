@@ -3,7 +3,7 @@ import { authenticate, requireScopes, getOrganizationId, JwtPayload } from '../m
 import { getTestSuite, getTest, listTests, updateTest, IgnoreRegion } from './test-suites';
 import { getProjectEnvVars, getProjectVisualSettings, getProjectHealingSettings } from './projects';
 import { getProject } from './projects/stores';
-import { getTestRun } from '../services/repositories/test-runs';
+import { getTestRun, updateTestRun as dbUpdateTestRun } from '../services/repositories/test-runs';
 import { chromium, firefox, webkit, Browser, Page, BrowserContext } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -542,6 +542,11 @@ export async function runTestsForRun(runId: string) {
   run.started_at = new Date();
   testRuns.set(runId, run);
 
+  // Persist running status to database
+  dbUpdateTestRun(runId, { status: 'running', started_at: run.started_at }).catch(err =>
+    console.error('[RunStart] Failed to persist running status to database:', err)
+  );
+
   // Emit run started event
   emitRunEvent(runId, orgId, 'run-start', {
     status: 'running',
@@ -812,6 +817,21 @@ export async function runTestsForRun(runId: string) {
       await browser.close().catch(() => {});
     }
     testRuns.set(runId, run);
+
+    // Persist completed run to database so it survives server restarts
+    // and appears in history queries (Bug fix: runs were only in-memory)
+    dbUpdateTestRun(runId, {
+      status: run.status,
+      started_at: run.started_at,
+      completed_at: run.completed_at,
+      duration_ms: run.duration_ms,
+      results: run.results,
+      error: run.error,
+      test_type: run.test_type,
+      accessibility_results: run.accessibility_results,
+    }).catch(err =>
+      console.error('[RunComplete] Failed to persist completed run to database:', err)
+    );
 
     // Emit run complete event
     const testName = testsToRun.length === 1 ? testsToRun[0].name : `${testsToRun.length} tests`;

@@ -7,7 +7,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { testRuns, runningBrowsers, TestRun } from './execution';
-import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
+import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg, updateTestRun as dbUpdateTestRun } from '../../services/repositories/test-runs';
 
 // Helper: get test run from Map first, then fall back to DB
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
@@ -145,6 +145,17 @@ export async function runControlRoutes(app: FastifyInstance) {
       }
 
       testRuns.set(runId, updatedRun);
+
+      // Persist cancelled status to database
+      dbUpdateTestRun(runId, {
+        status: 'cancelled',
+        completed_at: updatedRun.completed_at,
+        duration_ms: updatedRun.duration_ms,
+        results: updatedRun.results,
+      }).catch(err =>
+        console.error('[Cancel] Failed to persist cancelled run to database:', err)
+      );
+
       console.log(`[CANCEL] Test run ${runId} status changed to 'cancelled' (saved ${save_partial_results ? partialResultsCount : 0} partial results)`);
 
       // Emit cancellation complete event

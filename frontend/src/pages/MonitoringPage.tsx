@@ -5494,20 +5494,20 @@ function MonitoringPage() {
                             <h4 className="text-sm font-medium text-foreground mb-2">Core Web Vitals</h4>
                             <div className="grid grid-cols-3 gap-2 text-center">
                               <div className="p-2 rounded bg-muted/30">
-                                <div className={`text-lg font-bold ${getMetricColor('lcp', performanceResults[0].metrics.lcp)}`}>
-                                  {(performanceResults[0].metrics.lcp / 1000).toFixed(1)}s
+                                <div className={`text-lg font-bold ${getMetricColor('lcp', performanceResults[0].metrics?.lcp ?? 0)}`}>
+                                  {((performanceResults[0].metrics?.lcp ?? 0) / 1000).toFixed(1)}s
                                 </div>
                                 <div className="text-xs text-muted-foreground">LCP</div>
                               </div>
                               <div className="p-2 rounded bg-muted/30">
-                                <div className={`text-lg font-bold ${getMetricColor('fid', performanceResults[0].metrics.fid)}`}>
-                                  {performanceResults[0].metrics.fid}ms
+                                <div className={`text-lg font-bold ${getMetricColor('fid', performanceResults[0].metrics?.fid ?? 0)}`}>
+                                  {performanceResults[0].metrics?.fid ?? 0}ms
                                 </div>
                                 <div className="text-xs text-muted-foreground">FID</div>
                               </div>
                               <div className="p-2 rounded bg-muted/30">
-                                <div className={`text-lg font-bold ${getMetricColor('cls', performanceResults[0].metrics.cls)}`}>
-                                  {performanceResults[0].metrics.cls.toFixed(2)}
+                                <div className={`text-lg font-bold ${getMetricColor('cls', performanceResults[0].metrics?.cls ?? 0)}`}>
+                                  {(performanceResults[0].metrics?.cls ?? 0).toFixed(2)}
                                 </div>
                                 <div className="text-xs text-muted-foreground">CLS</div>
                               </div>
@@ -5520,39 +5520,39 @@ function MonitoringPage() {
                             <dl className="space-y-1 text-xs">
                               <div className="flex justify-between">
                                 <dt className="text-muted-foreground">TTFB</dt>
-                                <dd className={getMetricColor('ttfb', performanceResults[0].metrics.ttfb)}>
-                                  {performanceResults[0].metrics.ttfb}ms
+                                <dd className={getMetricColor('ttfb', performanceResults[0].metrics?.ttfb ?? 0)}>
+                                  {performanceResults[0].metrics?.ttfb ?? 0}ms
                                 </dd>
                               </div>
                               <div className="flex justify-between">
                                 <dt className="text-muted-foreground">FCP</dt>
-                                <dd className={getMetricColor('fcp', performanceResults[0].metrics.fcp)}>
-                                  {performanceResults[0].metrics.fcp}ms
+                                <dd className={getMetricColor('fcp', performanceResults[0].metrics?.fcp ?? 0)}>
+                                  {performanceResults[0].metrics?.fcp ?? 0}ms
                                 </dd>
                               </div>
                               <div className="flex justify-between">
                                 <dt className="text-muted-foreground">TTI</dt>
-                                <dd>{performanceResults[0].metrics.tti}ms</dd>
+                                <dd>{performanceResults[0].metrics?.tti ?? 0}ms</dd>
                               </div>
                               <div className="flex justify-between">
                                 <dt className="text-muted-foreground">TBT</dt>
-                                <dd>{performanceResults[0].metrics.tbt}ms</dd>
+                                <dd>{performanceResults[0].metrics?.tbt ?? 0}ms</dd>
                               </div>
                               <div className="flex justify-between">
                                 <dt className="text-muted-foreground">Speed Index</dt>
-                                <dd>{performanceResults[0].metrics.si}</dd>
+                                <dd>{performanceResults[0].metrics?.si ?? 0}</dd>
                               </div>
                               <div className="flex justify-between">
                                 <dt className="text-muted-foreground">Page Size</dt>
-                                <dd>{(performanceResults[0].metrics.total_size / 1024).toFixed(1)}MB</dd>
+                                <dd>{((performanceResults[0].metrics?.total_size ?? 0) / 1024).toFixed(1)}MB</dd>
                               </div>
                               <div className="flex justify-between">
                                 <dt className="text-muted-foreground">Requests</dt>
-                                <dd>{performanceResults[0].metrics.request_count}</dd>
+                                <dd>{performanceResults[0].metrics?.request_count ?? 0}</dd>
                               </div>
                               <div className="flex justify-between">
                                 <dt className="text-muted-foreground">DOM Elements</dt>
-                                <dd>{performanceResults[0].metrics.dom_elements}</dd>
+                                <dd>{performanceResults[0].metrics?.dom_elements ?? 0}</dd>
                               </div>
                             </dl>
                           </div>

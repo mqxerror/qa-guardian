@@ -8034,27 +8034,27 @@ export default function () {
     <div class="metrics">
       <div class="metric">
         <div class="metric-label">Largest Contentful Paint (LCP)</div>
-        <div class="metric-value ${lh.metrics.largestContentfulPaint <= 2500 ? 'good' : lh.metrics.largestContentfulPaint <= 4000 ? 'average' : 'poor'}">${lh.metrics.largestContentfulPaint >= 1000 ? (lh.metrics.largestContentfulPaint/1000).toFixed(1) + 's' : lh.metrics.largestContentfulPaint + 'ms'}</div>
+        <div class="metric-value ${(lh.metrics.largestContentfulPaint ?? 0) <= 2500 ? 'good' : (lh.metrics.largestContentfulPaint ?? 0) <= 4000 ? 'average' : 'poor'}">${(lh.metrics.largestContentfulPaint ?? 0) >= 1000 ? ((lh.metrics.largestContentfulPaint ?? 0)/1000).toFixed(1) + 's' : (lh.metrics.largestContentfulPaint ?? 0) + 'ms'}</div>
       </div>
       <div class="metric">
         <div class="metric-label">First Contentful Paint (FCP)</div>
-        <div class="metric-value ${lh.metrics.firstContentfulPaint <= 1800 ? 'good' : lh.metrics.firstContentfulPaint <= 3000 ? 'average' : 'poor'}">${lh.metrics.firstContentfulPaint >= 1000 ? (lh.metrics.firstContentfulPaint/1000).toFixed(1) + 's' : lh.metrics.firstContentfulPaint + 'ms'}</div>
+        <div class="metric-value ${(lh.metrics.firstContentfulPaint ?? 0) <= 1800 ? 'good' : (lh.metrics.firstContentfulPaint ?? 0) <= 3000 ? 'average' : 'poor'}">${(lh.metrics.firstContentfulPaint ?? 0) >= 1000 ? ((lh.metrics.firstContentfulPaint ?? 0)/1000).toFixed(1) + 's' : (lh.metrics.firstContentfulPaint ?? 0) + 'ms'}</div>
       </div>
       <div class="metric">
         <div class="metric-label">Speed Index</div>
-        <div class="metric-value ${lh.metrics.speedIndex <= 3400 ? 'good' : lh.metrics.speedIndex <= 5800 ? 'average' : 'poor'}">${lh.metrics.speedIndex >= 1000 ? (lh.metrics.speedIndex/1000).toFixed(1) + 's' : lh.metrics.speedIndex + 'ms'}</div>
+        <div class="metric-value ${(lh.metrics.speedIndex ?? 0) <= 3400 ? 'good' : (lh.metrics.speedIndex ?? 0) <= 5800 ? 'average' : 'poor'}">${(lh.metrics.speedIndex ?? 0) >= 1000 ? ((lh.metrics.speedIndex ?? 0)/1000).toFixed(1) + 's' : (lh.metrics.speedIndex ?? 0) + 'ms'}</div>
       </div>
       <div class="metric">
         <div class="metric-label">Time to Interactive (TTI)</div>
-        <div class="metric-value ${lh.metrics.timeToInteractive <= 3800 ? 'good' : lh.metrics.timeToInteractive <= 7300 ? 'average' : 'poor'}">${lh.metrics.timeToInteractive >= 1000 ? (lh.metrics.timeToInteractive/1000).toFixed(1) + 's' : lh.metrics.timeToInteractive + 'ms'}</div>
+        <div class="metric-value ${(lh.metrics.timeToInteractive ?? 0) <= 3800 ? 'good' : (lh.metrics.timeToInteractive ?? 0) <= 7300 ? 'average' : 'poor'}">${(lh.metrics.timeToInteractive ?? 0) >= 1000 ? ((lh.metrics.timeToInteractive ?? 0)/1000).toFixed(1) + 's' : (lh.metrics.timeToInteractive ?? 0) + 'ms'}</div>
       </div>
       <div class="metric">
         <div class="metric-label">Total Blocking Time (TBT)</div>
-        <div class="metric-value ${lh.metrics.totalBlockingTime <= 200 ? 'good' : lh.metrics.totalBlockingTime <= 600 ? 'average' : 'poor'}">${lh.metrics.totalBlockingTime}ms</div>
+        <div class="metric-value ${(lh.metrics.totalBlockingTime ?? 0) <= 200 ? 'good' : (lh.metrics.totalBlockingTime ?? 0) <= 600 ? 'average' : 'poor'}">${lh.metrics.totalBlockingTime ?? 0}ms</div>
       </div>
       <div class="metric">
         <div class="metric-label">Cumulative Layout Shift (CLS)</div>
-        <div class="metric-value ${lh.metrics.cumulativeLayoutShift <= 0.1 ? 'good' : lh.metrics.cumulativeLayoutShift <= 0.25 ? 'average' : 'poor'}">${lh.metrics.cumulativeLayoutShift.toFixed(3)}</div>
+        <div class="metric-value ${(lh.metrics.cumulativeLayoutShift ?? 0) <= 0.1 ? 'good' : (lh.metrics.cumulativeLayoutShift ?? 0) <= 0.25 ? 'average' : 'poor'}">${(lh.metrics.cumulativeLayoutShift ?? 0).toFixed(3)}</div>
       </div>
     </div>
     <div class="footer">
@@ -8262,56 +8262,56 @@ export default function () {
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                                       <div className="p-2 rounded bg-background border border-border">
                                         <div className="text-xs text-muted-foreground">Largest Contentful Paint (LCP)</div>
-                                        <div className={`text-sm font-semibold ${lh.metrics.largestContentfulPaint <= 2500 ? 'text-green-600' : lh.metrics.largestContentfulPaint <= 4000 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                          {formatMs(lh.metrics.largestContentfulPaint)}
+                                        <div className={`text-sm font-semibold ${(lh.metrics.largestContentfulPaint ?? 0) <= 2500 ? 'text-green-600' : (lh.metrics.largestContentfulPaint ?? 0) <= 4000 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {formatMs(lh.metrics.largestContentfulPaint ?? 0)}
                                         </div>
-                                        <div className={`text-xs ${lh.metrics.largestContentfulPaint <= 2500 ? 'text-green-600' : lh.metrics.largestContentfulPaint <= 4000 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                          {lh.metrics.largestContentfulPaint <= 2500 ? 'Good' : lh.metrics.largestContentfulPaint <= 4000 ? 'Needs Improvement' : 'Poor'}
+                                        <div className={`text-xs ${(lh.metrics.largestContentfulPaint ?? 0) <= 2500 ? 'text-green-600' : (lh.metrics.largestContentfulPaint ?? 0) <= 4000 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {(lh.metrics.largestContentfulPaint ?? 0) <= 2500 ? 'Good' : (lh.metrics.largestContentfulPaint ?? 0) <= 4000 ? 'Needs Improvement' : 'Poor'}
                                         </div>
                                       </div>
                                       <div className="p-2 rounded bg-background border border-border">
                                         <div className="text-xs text-muted-foreground">First Contentful Paint (FCP)</div>
-                                        <div className={`text-sm font-semibold ${lh.metrics.firstContentfulPaint <= 1800 ? 'text-green-600' : lh.metrics.firstContentfulPaint <= 3000 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                          {formatMs(lh.metrics.firstContentfulPaint)}
+                                        <div className={`text-sm font-semibold ${(lh.metrics.firstContentfulPaint ?? 0) <= 1800 ? 'text-green-600' : (lh.metrics.firstContentfulPaint ?? 0) <= 3000 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {formatMs(lh.metrics.firstContentfulPaint ?? 0)}
                                         </div>
-                                        <div className={`text-xs ${lh.metrics.firstContentfulPaint <= 1800 ? 'text-green-600' : lh.metrics.firstContentfulPaint <= 3000 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                          {lh.metrics.firstContentfulPaint <= 1800 ? 'Good' : lh.metrics.firstContentfulPaint <= 3000 ? 'Needs Improvement' : 'Poor'}
+                                        <div className={`text-xs ${(lh.metrics.firstContentfulPaint ?? 0) <= 1800 ? 'text-green-600' : (lh.metrics.firstContentfulPaint ?? 0) <= 3000 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {(lh.metrics.firstContentfulPaint ?? 0) <= 1800 ? 'Good' : (lh.metrics.firstContentfulPaint ?? 0) <= 3000 ? 'Needs Improvement' : 'Poor'}
                                         </div>
                                       </div>
                                       <div className="p-2 rounded bg-background border border-border">
                                         <div className="text-xs text-muted-foreground">Speed Index</div>
-                                        <div className={`text-sm font-semibold ${lh.metrics.speedIndex <= 3400 ? 'text-green-600' : lh.metrics.speedIndex <= 5800 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                          {formatMs(lh.metrics.speedIndex)}
+                                        <div className={`text-sm font-semibold ${(lh.metrics.speedIndex ?? 0) <= 3400 ? 'text-green-600' : (lh.metrics.speedIndex ?? 0) <= 5800 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {formatMs(lh.metrics.speedIndex ?? 0)}
                                         </div>
-                                        <div className={`text-xs ${lh.metrics.speedIndex <= 3400 ? 'text-green-600' : lh.metrics.speedIndex <= 5800 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                          {lh.metrics.speedIndex <= 3400 ? 'Good' : lh.metrics.speedIndex <= 5800 ? 'Needs Improvement' : 'Poor'}
+                                        <div className={`text-xs ${(lh.metrics.speedIndex ?? 0) <= 3400 ? 'text-green-600' : (lh.metrics.speedIndex ?? 0) <= 5800 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {(lh.metrics.speedIndex ?? 0) <= 3400 ? 'Good' : (lh.metrics.speedIndex ?? 0) <= 5800 ? 'Needs Improvement' : 'Poor'}
                                         </div>
                                       </div>
                                       <div className="p-2 rounded bg-background border border-border">
                                         <div className="text-xs text-muted-foreground">Time to Interactive (TTI)</div>
-                                        <div className={`text-sm font-semibold ${lh.metrics.timeToInteractive <= 3800 ? 'text-green-600' : lh.metrics.timeToInteractive <= 7300 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                          {formatMs(lh.metrics.timeToInteractive)}
+                                        <div className={`text-sm font-semibold ${(lh.metrics.timeToInteractive ?? 0) <= 3800 ? 'text-green-600' : (lh.metrics.timeToInteractive ?? 0) <= 7300 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {formatMs(lh.metrics.timeToInteractive ?? 0)}
                                         </div>
-                                        <div className={`text-xs ${lh.metrics.timeToInteractive <= 3800 ? 'text-green-600' : lh.metrics.timeToInteractive <= 7300 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                          {lh.metrics.timeToInteractive <= 3800 ? 'Good' : lh.metrics.timeToInteractive <= 7300 ? 'Needs Improvement' : 'Poor'}
+                                        <div className={`text-xs ${(lh.metrics.timeToInteractive ?? 0) <= 3800 ? 'text-green-600' : (lh.metrics.timeToInteractive ?? 0) <= 7300 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {(lh.metrics.timeToInteractive ?? 0) <= 3800 ? 'Good' : (lh.metrics.timeToInteractive ?? 0) <= 7300 ? 'Needs Improvement' : 'Poor'}
                                         </div>
                                       </div>
                                       <div className="p-2 rounded bg-background border border-border">
                                         <div className="text-xs text-muted-foreground">Total Blocking Time (TBT)</div>
-                                        <div className={`text-sm font-semibold ${lh.metrics.totalBlockingTime <= 200 ? 'text-green-600' : lh.metrics.totalBlockingTime <= 600 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                          {formatMs(lh.metrics.totalBlockingTime)}
+                                        <div className={`text-sm font-semibold ${(lh.metrics.totalBlockingTime ?? 0) <= 200 ? 'text-green-600' : (lh.metrics.totalBlockingTime ?? 0) <= 600 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {formatMs(lh.metrics.totalBlockingTime ?? 0)}
                                         </div>
-                                        <div className={`text-xs ${lh.metrics.totalBlockingTime <= 200 ? 'text-green-600' : lh.metrics.totalBlockingTime <= 600 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                          {lh.metrics.totalBlockingTime <= 200 ? 'Good' : lh.metrics.totalBlockingTime <= 600 ? 'Needs Improvement' : 'Poor'}
+                                        <div className={`text-xs ${(lh.metrics.totalBlockingTime ?? 0) <= 200 ? 'text-green-600' : (lh.metrics.totalBlockingTime ?? 0) <= 600 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {(lh.metrics.totalBlockingTime ?? 0) <= 200 ? 'Good' : (lh.metrics.totalBlockingTime ?? 0) <= 600 ? 'Needs Improvement' : 'Poor'}
                                         </div>
                                       </div>
                                       <div className="p-2 rounded bg-background border border-border">
                                         <div className="text-xs text-muted-foreground">Cumulative Layout Shift (CLS)</div>
-                                        <div className={`text-sm font-semibold ${lh.metrics.cumulativeLayoutShift <= 0.1 ? 'text-green-600' : lh.metrics.cumulativeLayoutShift <= 0.25 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                          {lh.metrics.cumulativeLayoutShift.toFixed(3)}
+                                        <div className={`text-sm font-semibold ${(lh.metrics.cumulativeLayoutShift ?? 0) <= 0.1 ? 'text-green-600' : (lh.metrics.cumulativeLayoutShift ?? 0) <= 0.25 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {(lh.metrics.cumulativeLayoutShift ?? 0).toFixed(3)}
                                         </div>
-                                        <div className={`text-xs ${lh.metrics.cumulativeLayoutShift <= 0.1 ? 'text-green-600' : lh.metrics.cumulativeLayoutShift <= 0.25 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                          {lh.metrics.cumulativeLayoutShift <= 0.1 ? 'Good' : lh.metrics.cumulativeLayoutShift <= 0.25 ? 'Needs Improvement' : 'Poor'}
+                                        <div className={`text-xs ${(lh.metrics.cumulativeLayoutShift ?? 0) <= 0.1 ? 'text-green-600' : (lh.metrics.cumulativeLayoutShift ?? 0) <= 0.25 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {(lh.metrics.cumulativeLayoutShift ?? 0) <= 0.1 ? 'Good' : (lh.metrics.cumulativeLayoutShift ?? 0) <= 0.25 ? 'Needs Improvement' : 'Poor'}
                                         </div>
                                       </div>
                                       {lh.metrics.interactionToNextPaint && (
@@ -8440,8 +8440,8 @@ export default function () {
                               if (lh?.metrics) {
                                 cwvData[cwvData.length - 1] = {
                                   ...cwvData[cwvData.length - 1],
-                                  lcp: lh.metrics.largestContentfulPaint,
-                                  cls: lh.metrics.cumulativeLayoutShift,
+                                  lcp: lh.metrics.largestContentfulPaint ?? 0,
+                                  cls: lh.metrics.cumulativeLayoutShift ?? 0,
                                   inp: lh.metrics.interactionToNextPaint || 150,
                                 };
                               }
@@ -8533,8 +8533,8 @@ export default function () {
                                 accessibility: Math.max(0, Math.min(100, lh.accessibility + Math.floor((Math.random() - 0.3) * 10))),
                                 bestPractices: Math.max(0, Math.min(100, lh.bestPractices + Math.floor((Math.random() - 0.5) * 15))),
                                 seo: Math.max(0, Math.min(100, lh.seo + Math.floor((Math.random() - 0.3) * 8))),
-                                lcp: Math.round(lh.metrics.largestContentfulPaint * (Math.random() * 0.4 + 0.8)),
-                                cls: parseFloat((lh.metrics.cumulativeLayoutShift * (Math.random() * 0.4 + 0.8)).toFixed(3)),
+                                lcp: Math.round((lh.metrics.largestContentfulPaint ?? 0) * (Math.random() * 0.4 + 0.8)),
+                                cls: parseFloat(((lh.metrics.cumulativeLayoutShift ?? 0) * (Math.random() * 0.4 + 0.8)).toFixed(3)),
                                 inp: Math.round((lh.metrics.interactionToNextPaint || 150) * (Math.random() * 0.4 + 0.8)),
                               };
                               const getDelta = (current: number, previous: number, higherIsBetter: boolean = true) => {
@@ -8567,8 +8567,8 @@ export default function () {
                                       <div className="flex justify-between"><span>Best Practices</span><span className="font-semibold">{lh.bestPractices}</span></div>
                                       <div className="flex justify-between"><span>SEO</span><span className="font-semibold">{lh.seo}</span></div>
                                       <div className="border-t border-border pt-1.5 mt-1.5">
-                                        <div className="flex justify-between"><span>LCP</span><span className="font-semibold">{lh.metrics.largestContentfulPaint >= 1000 ? `${(lh.metrics.largestContentfulPaint/1000).toFixed(1)}s` : `${lh.metrics.largestContentfulPaint}ms`}</span></div>
-                                        <div className="flex justify-between"><span>CLS</span><span className="font-semibold">{lh.metrics.cumulativeLayoutShift.toFixed(3)}</span></div>
+                                        <div className="flex justify-between"><span>LCP</span><span className="font-semibold">{(lh.metrics.largestContentfulPaint ?? 0) >= 1000 ? `${((lh.metrics.largestContentfulPaint ?? 0)/1000).toFixed(1)}s` : `${lh.metrics.largestContentfulPaint ?? 0}ms`}</span></div>
+                                        <div className="flex justify-between"><span>CLS</span><span className="font-semibold">{(lh.metrics.cumulativeLayoutShift ?? 0).toFixed(3)}</span></div>
                                         <div className="flex justify-between"><span>INP</span><span className="font-semibold">{lh.metrics.interactionToNextPaint || 150}ms</span></div>
                                       </div>
                                     </div>
@@ -8584,8 +8584,8 @@ export default function () {
                                       <div className="flex justify-between"><span>{previousRun.bestPractices}</span>{renderDelta(lh.bestPractices, previousRun.bestPractices, true)}</div>
                                       <div className="flex justify-between"><span>{previousRun.seo}</span>{renderDelta(lh.seo, previousRun.seo, true)}</div>
                                       <div className="border-t border-border pt-1.5 mt-1.5">
-                                        <div className="flex justify-between"><span>{previousRun.lcp >= 1000 ? `${(previousRun.lcp/1000).toFixed(1)}s` : `${previousRun.lcp}ms`}</span>{renderDelta(lh.metrics.largestContentfulPaint, previousRun.lcp, false, 'ms')}</div>
-                                        <div className="flex justify-between"><span>{previousRun.cls.toFixed(3)}</span>{renderDelta(lh.metrics.cumulativeLayoutShift, previousRun.cls, false)}</div>
+                                        <div className="flex justify-between"><span>{previousRun.lcp >= 1000 ? `${(previousRun.lcp/1000).toFixed(1)}s` : `${previousRun.lcp}ms`}</span>{renderDelta(lh.metrics.largestContentfulPaint ?? 0, previousRun.lcp, false, 'ms')}</div>
+                                        <div className="flex justify-between"><span>{previousRun.cls.toFixed(3)}</span>{renderDelta(lh.metrics.cumulativeLayoutShift ?? 0, previousRun.cls, false)}</div>
                                         <div className="flex justify-between"><span>{previousRun.inp}ms</span>{renderDelta(lh.metrics.interactionToNextPaint || 150, previousRun.inp, false, 'ms')}</div>
                                       </div>
                                     </div>
