@@ -20,16 +20,6 @@ export {
   DEFAULT_PROJECT_HEALING_SETTINGS,
 } from './stores';
 
-// DEPRECATED: Re-export empty Maps from ./maps for backward compatibility (Feature #2100)
-// Maps are in a separate file to break circular dependencies (index.ts → route files → index.ts)
-export {
-  projects,
-  projectMembers,
-  projectEnvVars,
-  projectVisualSettings,
-  projectHealingSettings,
-} from './maps';
-
 // Re-export utility functions
 export {
   getProjectVisualSettings,

@@ -602,24 +602,5 @@ export async function listHealedSelectorHistory(testId: string): Promise<HealedS
   return [];
 }
 
-// ============================================================================
-// Deprecated Memory Store Accessors (for backward compatibility)
-// ============================================================================
-
-/** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
-export function getMemoryTestRuns(): Map<string, TestRun> {
-  console.warn('[DEPRECATED] getMemoryTestRuns() called - memory stores removed in Feature #2110. Use DB queries instead.');
-  return new Map();
-}
-
-/** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
-export function getMemorySelectorOverrides(): Map<string, SelectorOverride> {
-  console.warn('[DEPRECATED] getMemorySelectorOverrides() called - memory stores removed in Feature #2110. Use DB queries instead.');
-  return new Map();
-}
-
-/** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
-export function getMemoryHealedSelectorHistory(): Map<string, HealedSelectorEntry> {
-  console.warn('[DEPRECATED] getMemoryHealedSelectorHistory() called - memory stores removed in Feature #2110. Use DB queries instead.');
-  return new Map();
-}
+// Memory store accessors removed in Feature #2121
+// All data access is now through async DB functions above

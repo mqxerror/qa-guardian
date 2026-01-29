@@ -393,18 +393,15 @@ import {
   upsertHealedSelectorEntry as dbUpsertHealedSelectorEntry,
   getHealedSelectorEntry as dbGetHealedSelectorEntry,
   listHealedSelectorHistory as dbListHealedSelectorHistory,
-  getMemoryTestRuns,
-  getMemorySelectorOverrides,
-  getMemoryHealedSelectorHistory,
 } from '../../services/repositories/test-runs';
 
 /**
- * Store for all test runs
+ * Store for in-flight test runs (active/running state only)
  * Key: runId
- * NOTE: This Map is kept for backward compatibility and fast synchronous access during test execution.
+ * NOTE: This Map holds only in-flight test state for fast synchronous access during execution.
  * Use the db* functions above for persistent storage operations.
  */
-export const testRuns: Map<string, TestRun> = getMemoryTestRuns();
+export const testRuns: Map<string, TestRun> = new Map();
 
 /**
  * Track running browsers for cancellation and pause
@@ -414,18 +411,18 @@ export const testRuns: Map<string, TestRun> = getMemoryTestRuns();
 export const runningBrowsers: Map<string, BrowserState> = new Map();
 
 /**
- * Store for manual selector overrides
+ * Store for manual selector overrides (in-memory cache)
  * Key format: `${testId}-${stepId}`
- * NOTE: This Map is kept for backward compatibility. Use db* functions for persistent operations.
+ * NOTE: Use db* functions for persistent operations.
  */
-export const selectorOverrides: Map<string, SelectorOverride> = getMemorySelectorOverrides();
+export const selectorOverrides: Map<string, SelectorOverride> = new Map();
 
 /**
- * Store for healed selector history
+ * Store for healed selector history (in-memory cache)
  * Key format: `${testId}-${stepId}`
- * NOTE: This Map is kept for backward compatibility. Use db* functions for persistent operations.
+ * NOTE: Use db* functions for persistent operations.
  */
-export const healedSelectorHistory: Map<string, HealedSelectorEntry> = getMemoryHealedSelectorHistory();
+export const healedSelectorHistory: Map<string, HealedSelectorEntry> = new Map();
 
 // ============================================================================
 // Export Database Repository Functions
