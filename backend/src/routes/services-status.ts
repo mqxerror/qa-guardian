@@ -241,7 +241,7 @@ async function checkPlaywright(): Promise<ServiceInfo> {
       category: 'Testing Tools',
       status: available ? 'healthy' : 'unavailable',
       latency_ms: null,
-      version: available ? version : null,
+      version: available ? version.replace(/^Version\s+/i, '') : null,
       last_checked,
       capabilities: [
         { name: 'E2E Testing', status: 'implemented' },

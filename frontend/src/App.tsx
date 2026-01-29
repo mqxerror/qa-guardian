@@ -22,7 +22,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { getErrorMessage, isNetworkError, isOffline } from './utils/errorHandling';
 import jsPDF from 'jspdf';
 // Feature #1357: Extracted pages for code quality compliance (400 line limit)
-import { NotFoundPage, HomePage, LoginPage, RegisterPage, DashboardPage, ProjectsPage, ForgotPasswordPage, ResetPasswordPage, CreateOrganizationPage, AcceptInvitationPage, SchedulesPage, ScheduleDetailsPage, AIActionPage, BillingPage, ApiKeysPage, MCPToolsPage, PublicStatusPage, SharedTestRunPage, OrganizationMembersPage, AuditLogsPage, WebhookConfigurationPage, DASTComparisonPage, DASTGraphQLPage, TrivyDependencyScanPage, NpmAuditPage, CVEDatabasePage, LicenseCompliancePage, ContainerScanPage, DependencyPolicyPage, AutoPRPage, DependencyAgePage, MultiLanguageDependencyPage, VulnerabilityHistoryPage, ExploitabilityAnalysisPage, ScanCachingPage, KieAIProviderPage, AnthropicProviderPage, DependencyAlertsPage, MCPChatPage, AIRunComparisonPage, MCPAnalyticsPage, MCPPlaygroundPage, SecurityDashboardPage, OrganizationInsightsPage, BestPracticesPage, TestImprovementAnalyzerPage, IndustryBenchmarkPage, ReleaseNotesPage, PersonalizedInsightsPage, TeamSkillGapsPage, AILearningPage, TestDocumentationPage, ProviderHealthPage, AICostTrackingPage, AIUsageAnalyticsDashboard, AIThinkingDemoPage, AIThinkingIndicator, AIThinkingSpinner, AIConfidenceDemoPage, AIConfidenceIndicator, AIConfidenceBadge, AIConfidenceCard, FlakyTestsDashboardPage, VisualReviewPage, AnalyticsPage, MonitoringPage, AIRouterPage, ProjectDetailPage, OrganizationSettingsPage, TestSuitePage, TestDetailPage, TestRunResultPage, AITestGeneratorPage, AITestReviewPage, AIAgentWorkspacePage, ReportPage, SettingsPage, SuiteRunHistoryPage, ProjectRunHistoryPage, RunHistoryPage } from './pages';
+import { NotFoundPage, HomePage, LoginPage, RegisterPage, DashboardPage, ProjectsPage, ForgotPasswordPage, ResetPasswordPage, CreateOrganizationPage, AcceptInvitationPage, SchedulesPage, ScheduleDetailsPage, AIActionPage, BillingPage, ApiKeysPage, MCPToolsPage, PublicStatusPage, SharedTestRunPage, OrganizationMembersPage, AuditLogsPage, WebhookConfigurationPage, DASTComparisonPage, DASTGraphQLPage, TrivyDependencyScanPage, NpmAuditPage, CVEDatabasePage, LicenseCompliancePage, ContainerScanPage, DependencyPolicyPage, AutoPRPage, DependencyAgePage, MultiLanguageDependencyPage, VulnerabilityHistoryPage, ExploitabilityAnalysisPage, ScanCachingPage, KieAIProviderPage, AnthropicProviderPage, DependencyAlertsPage, MCPChatPage, AIRunComparisonPage, MCPAnalyticsPage, MCPPlaygroundPage, SecurityDashboardPage, OrganizationInsightsPage, BestPracticesPage, TestImprovementAnalyzerPage, IndustryBenchmarkPage, ReleaseNotesPage, PersonalizedInsightsPage, TeamSkillGapsPage, AILearningPage, TestDocumentationPage, ProviderHealthPage, AICostTrackingPage, AIUsageAnalyticsDashboard, AIThinkingDemoPage, AIThinkingIndicator, AIThinkingSpinner, AIConfidenceDemoPage, AIConfidenceIndicator, AIConfidenceBadge, AIConfidenceCard, FlakyTestsDashboardPage, VisualReviewPage, AnalyticsPage, MonitoringPage, AIRouterPage, ProjectDetailPage, OrganizationSettingsPage, TestSuitePage, TestDetailPage, TestRunResultPage, AITestGeneratorPage, AITestReviewPage, AIAgentWorkspacePage, ReportPage, SettingsPage, SuiteRunHistoryPage, ProjectRunHistoryPage, RunHistoryPage, ServicesPage } from './pages';
 
 // Feature #756: DASTComparisonPage extracted to ./pages/DASTComparisonPage.tsx
 // Feature #758: DASTGraphQLPage extracted to ./pages/DASTGraphQLPage.tsx
@@ -1489,6 +1489,16 @@ function App() {
           element={
             <ProtectedRoute>
               <ReportPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Feature #2128: Platform Services Dashboard */}
+        <Route
+          path="/services"
+          element={
+            <ProtectedRoute>
+              <ServicesPage />
             </ProtectedRoute>
           }
         />

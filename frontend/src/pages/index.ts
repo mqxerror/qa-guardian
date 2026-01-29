@@ -76,6 +76,7 @@ export { SettingsPage } from './SettingsPage'; // Feature #1832: Unified Setting
 export { SuiteRunHistoryPage } from './SuiteRunHistoryPage'; // Feature #1851: Suite run history
 export { ProjectRunHistoryPage } from './ProjectRunHistoryPage'; // Feature #1852: Project run history
 export { RunHistoryPage } from './RunHistoryPage'; // Feature #1855: Global run history
+export { ServicesPage } from './ServicesPage'; // Feature #2128: Platform Services Dashboard
 
 // All major pages have been extracted from App.tsx
 // Feature #1441: Split App.tsx into logical modules - COMPLETE
