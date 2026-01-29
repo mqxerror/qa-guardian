@@ -11,13 +11,19 @@
  * Run with: npx tsx src/mcp/handlers/test-ai-analysis-handler.ts
  */
 
-import { handlers } from './ai-analysis.js';
+import { handlers as _handlers } from './ai-analysis.js';
+import { HandlerContext } from './types.js';
+
+// Cast handlers for test usage (handler return types are unknown, tests need .success)
+const handlers = _handlers as Record<string, (args: Record<string, unknown>, ctx: HandlerContext) => Promise<any>>;
 
 // Mock context for testing
-const mockContext = {
+const mockContext: HandlerContext = {
   log: (message: string) => console.log(`  [Context] ${message}`),
   apiKey: 'test-key',
-  scopes: ['read', 'execute'],
+  apiUrl: 'http://localhost:3000',
+  callApi: async () => ({}),
+  callApiPublic: async () => ({}),
 };
 
 async function testAiAnalysisHandler() {
@@ -37,7 +43,7 @@ async function testAiAnalysisHandler() {
     include_code_fix: true,
     include_root_cause: true,
     verbosity: 'standard',
-  }, mockContext);
+  }, mockContext) as any;
 
   console.log(`  - success: ${timeoutResult.success}`);
   if (timeoutResult.success) {
@@ -66,7 +72,7 @@ async function testAiAnalysisHandler() {
     error_message: 'Error: No element found for selector: [data-testid="submit-btn"]',
     test_name: 'Form Submit Test',
     include_root_cause: true,
-  }, mockContext);
+  }, mockContext) as any;
 
   console.log(`  - success: ${notFoundResult.success}`);
   if (notFoundResult.success) {
@@ -81,7 +87,7 @@ async function testAiAnalysisHandler() {
     error_message: 'expect(received).toEqual(expected) - Expected: "Welcome, John" - Received: "Welcome, Guest"',
     test_name: 'User Greeting Test',
     verbosity: 'detailed',
-  }, mockContext);
+  }, mockContext) as any;
 
   console.log(`  - success: ${assertionResult.success}`);
   if (assertionResult.success) {
@@ -92,7 +98,7 @@ async function testAiAnalysisHandler() {
 
   // Step 4: Test without required error_message
   console.log('\nStep 4: Testing without error_message (should fail)...');
-  const errorResult = await explainTestFailureAi({}, mockContext);
+  const errorResult = await explainTestFailureAi({}, mockContext) as any;
 
   console.log(`  - success: ${errorResult.success}`);
   console.log(`  - error: ${(errorResult as any).error}`);
@@ -114,7 +120,7 @@ test('login flow', async ({ page }) => {
     focus_area: 'all',
     include_code_examples: true,
     max_suggestions: 5,
-  }, mockContext);
+  }, mockContext) as any;
 
   console.log(`  - success: ${improvementResult.success}`);
   if (improvementResult.success) {
@@ -144,7 +150,7 @@ test('login flow', async ({ page }) => {
   const templateResult = await suggestTestImprovements({
     test_code: 'test("example", async () => { await page.click(".btn"); });',
     use_real_ai: false,
-  }, mockContext);
+  }, mockContext) as any;
 
   console.log(`  - success: ${templateResult.success}`);
   if (templateResult.success) {

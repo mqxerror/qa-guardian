@@ -129,7 +129,7 @@ async function testApiVersioning(): Promise<void> {
   await new Promise(resolve => setTimeout(resolve, 2000));
 
   // Verify v2 response (no deprecation warning)
-  const v2Response = responses.get(3) as { result?: { _apiVersion?: { status?: string } } };
+  const v2Response = responses.get(3) as { result?: { _apiVersion?: { status?: string; deprecationWarning?: string } } };
   if (v2Response) {
     console.log('✓ v2 request completed');
     const apiVersion = v2Response.result?._apiVersion;

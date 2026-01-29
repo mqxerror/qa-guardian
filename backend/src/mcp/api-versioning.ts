@@ -12,7 +12,7 @@
 /**
  * Status of an API version
  */
-export type APIVersionStatus = 'current' | 'deprecated' | 'sunset';
+export type APIVersionStatus = 'current' | 'stable' | 'deprecated' | 'sunset';
 
 /**
  * Information about an API version
@@ -23,6 +23,8 @@ export interface APIVersionInfo {
   deprecationDate?: string; // ISO date when deprecated
   sunsetDate?: string; // ISO date when it will be removed
   deprecationMessage?: string;
+  released?: string; // ISO date when released
+  features?: string[]; // List of features in this version
 }
 
 // ============================================================================

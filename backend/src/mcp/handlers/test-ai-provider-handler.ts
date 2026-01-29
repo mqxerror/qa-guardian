@@ -12,12 +12,15 @@
  */
 
 import { getAiProviderStatus, getAiCostReport, switchAiProvider } from './ai-provider.js';
+import { HandlerContext } from './types.js';
 
 // Mock context for testing
-const mockContext = {
+const mockContext: HandlerContext = {
   log: (message: string) => console.log(`  [Context] ${message}`),
   apiKey: 'test-key',
-  scopes: ['read', 'execute'],
+  apiUrl: 'http://localhost:3000',
+  callApi: async () => ({}),
+  callApiPublic: async () => ({}),
 };
 
 async function testAiProviderHandler() {
@@ -25,7 +28,7 @@ async function testAiProviderHandler() {
 
   // Step 1: Test getAiProviderStatus with default options
   console.log('Step 1: Testing getAiProviderStatus (default options)...');
-  const statusResult = await getAiProviderStatus({}, mockContext);
+  const statusResult = await getAiProviderStatus({}, mockContext) as any;
 
   console.log(`  - success: ${statusResult.success}`);
   if (statusResult.success) {
@@ -79,7 +82,7 @@ async function testAiProviderHandler() {
   console.log('\nStep 2: Testing getAiProviderStatus (with health metrics)...');
   const healthResult = await getAiProviderStatus({
     include_health_metrics: true,
-  }, mockContext);
+  }, mockContext) as any;
 
   if (healthResult.success) {
     const metrics = (healthResult as any).health_metrics;
@@ -102,7 +105,7 @@ async function testAiProviderHandler() {
     include_savings: true,
     include_budget_status: true,
     include_token_breakdown: true,
-  }, mockContext);
+  }, mockContext) as any;
 
   console.log(`  - success: ${costResult.success}`);
   if (costResult.success) {
@@ -155,7 +158,7 @@ async function testAiProviderHandler() {
     provider: 'anthropic',
     reason: 'Testing MCP handler',
     reset_circuit_breaker: true,
-  }, mockContext);
+  }, mockContext) as any;
 
   console.log(`  - success: ${switchResult.success}`);
   if (switchResult.success) {
@@ -173,7 +176,7 @@ async function testAiProviderHandler() {
   const switchBackResult = await switchAiProvider({
     provider: 'kie',
     reason: 'Switching back for testing',
-  }, mockContext);
+  }, mockContext) as any;
 
   console.log(`  - success: ${switchBackResult.success}`);
   if (switchBackResult.success) {
@@ -185,7 +188,7 @@ async function testAiProviderHandler() {
   console.log('\nStep 6: Testing switchAiProvider (invalid provider)...');
   const invalidResult = await switchAiProvider({
     provider: 'invalid-provider',
-  }, mockContext);
+  }, mockContext) as any;
 
   console.log(`  - success: ${invalidResult.success}`);
   console.log(`  - error: ${(invalidResult as any).error}`);

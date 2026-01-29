@@ -11,13 +11,19 @@
  * Run with: npx tsx src/mcp/handlers/test-ai-generation-handler.ts
  */
 
-import { handlers } from './ai-generation.js';
+import { handlers as _handlers } from './ai-generation.js';
+import { HandlerContext } from './types.js';
+
+// Cast handlers to any for test usage (handler return types are unknown, tests need .success)
+const handlers = _handlers as Record<string, (args: Record<string, unknown>, ctx: HandlerContext) => Promise<any>>;
 
 // Mock context for testing
-const mockContext = {
+const mockContext: HandlerContext = {
   log: (message: string) => console.log(`  [Context] ${message}`),
   apiKey: 'test-key',
-  scopes: ['read', 'execute'],
+  apiUrl: 'http://localhost:3000',
+  callApi: async () => ({}),
+  callApiPublic: async () => ({}),
 };
 
 async function testAiGenerationHandler() {
