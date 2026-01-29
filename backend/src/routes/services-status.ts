@@ -32,6 +32,14 @@ interface ServiceDetail {
   value: string;
 }
 
+interface ContainerInfo {
+  container_name: string;
+  container_status: string; // e.g. "running", "exited", "restarting"
+  uptime: string; // e.g. "Up 2 hours"
+  ports: string; // e.g. "0.0.0.0:5432->5432/tcp"
+  image: string; // e.g. "postgres:16-alpine"
+}
+
 interface ServiceInfo {
   name: string;
   category: string;
@@ -43,6 +51,7 @@ interface ServiceInfo {
   capabilities: ServiceCapability[];
   config_hints?: string[];
   details?: ServiceDetail[];
+  container?: ContainerInfo | null;
 }
 
 // Helper: time an async operation
@@ -612,6 +621,79 @@ function checkSocketIO(io: any): ServiceInfo {
   };
 }
 
+// ========== Docker Container Status ==========
+
+// Map container name patterns to service names
+const CONTAINER_SERVICE_MAP: Record<string, string> = {
+  'postgres': 'PostgreSQL',
+  'pg': 'PostgreSQL',
+  'redis': 'Redis',
+  'minio': 'MinIO / S3',
+  's3': 'MinIO / S3',
+  'playwright': 'Playwright',
+  'k6': 'k6',
+  'lighthouse': 'Lighthouse',
+  'gitleaks': 'Gitleaks',
+  'semgrep': 'Semgrep',
+  'zap': 'OWASP ZAP',
+  'owasp': 'OWASP ZAP',
+  'backend': 'MCP Server',
+  'socketio': 'Socket.IO',
+  'socket': 'Socket.IO',
+};
+
+function matchContainerToService(containerName: string): string | null {
+  const lower = containerName.toLowerCase();
+  for (const [pattern, serviceName] of Object.entries(CONTAINER_SERVICE_MAP)) {
+    if (lower.includes(pattern)) return serviceName;
+  }
+  return null;
+}
+
+interface DockerContainer {
+  ID: string;
+  Names: string;
+  Image: string;
+  Status: string;
+  Ports: string;
+  State: string;
+  CreatedAt: string;
+}
+
+async function getDockerContainers(): Promise<Map<string, ContainerInfo>> {
+  const containerMap = new Map<string, ContainerInfo>();
+  try {
+    // Try docker ps with JSON format
+    const { stdout } = await runCommand(
+      'docker ps -a --format "{{json .}}" 2>/dev/null',
+      8000
+    );
+    if (!stdout || stdout.trim().length === 0) return containerMap;
+
+    const lines = stdout.trim().split('\n').filter(l => l.trim().length > 0);
+    for (const line of lines) {
+      try {
+        const container: DockerContainer = JSON.parse(line);
+        const serviceName = matchContainerToService(container.Names || container.ID);
+        if (serviceName) {
+          containerMap.set(serviceName, {
+            container_name: container.Names || container.ID,
+            container_status: (container.State || 'unknown').toLowerCase(),
+            uptime: container.Status || 'unknown',
+            ports: container.Ports || '',
+            image: container.Image || 'unknown',
+          });
+        }
+      } catch {
+        // skip malformed JSON lines
+      }
+    }
+  } catch {
+    // Docker not available - gracefully return empty map
+  }
+  return containerMap;
+}
+
 // ========== Route Registration ==========
 
 export async function servicesStatusRoutes(fastify: FastifyInstance) {
@@ -639,7 +721,7 @@ export async function servicesStatusRoutes(fastify: FastifyInstance) {
       },
     },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
-    // Run all health checks concurrently for speed
+    // Run all health checks and Docker status concurrently for speed
     const [
       postgres,
       redis,
@@ -652,6 +734,7 @@ export async function servicesStatusRoutes(fastify: FastifyInstance) {
       zap,
       aiProviders,
       socketIO,
+      dockerContainers,
     ] = await Promise.all([
       checkPostgres(),
       checkRedis(),
@@ -664,6 +747,7 @@ export async function servicesStatusRoutes(fastify: FastifyInstance) {
       checkZAP(),
       checkAIProviders(),
       Promise.resolve(checkSocketIO(socketIORef)),
+      getDockerContainers(),
     ]);
 
     const github = checkGitHubOAuth();
@@ -684,6 +768,11 @@ export async function servicesStatusRoutes(fastify: FastifyInstance) {
       mcp,
       socketIO,
     ];
+
+    // Attach Docker container info to each service
+    for (const service of allServices) {
+      service.container = dockerContainers.get(service.name) || null;
+    }
 
     const healthy_count = allServices.filter(s => s.status === 'healthy').length;
     const degraded_count = allServices.filter(s => s.status === 'degraded').length;

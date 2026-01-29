@@ -12,6 +12,14 @@ interface ServiceCapability {
   status: 'implemented' | 'simulated' | 'planned' | 'not_available';
 }
 
+interface ContainerInfo {
+  container_name: string;
+  container_status: string;
+  uptime: string;
+  ports: string;
+  image: string;
+}
+
 interface ServiceInfo {
   name: string;
   category: string;
@@ -23,6 +31,7 @@ interface ServiceInfo {
   capabilities: ServiceCapability[];
   config_hints?: string[];
   details?: { label: string; value: string }[];
+  container?: ContainerInfo | null;
 }
 
 interface ServicesResponse {
@@ -113,6 +122,37 @@ function ServiceCard({ service, history }: { service: ServiceInfo; history: Heal
         <p className="text-xs text-red-500 dark:text-red-400 mb-2 truncate" title={service.error}>
           {service.error}
         </p>
+      )}
+
+      {/* Docker container info */}
+      {service.container ? (
+        <div className="mb-2 p-2 bg-gray-50 dark:bg-gray-900/40 rounded border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-xs">🐳</span>
+            <span className={`inline-block w-1.5 h-1.5 rounded-full ${
+              service.container.container_status === 'running' ? 'bg-green-500' :
+              service.container.container_status === 'restarting' ? 'bg-yellow-500' : 'bg-red-500'
+            }`} />
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 capitalize">
+              {service.container.container_status}
+            </span>
+            <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-auto">{service.container.uptime}</span>
+          </div>
+          <div className="text-[10px] text-gray-500 dark:text-gray-400 space-y-0.5">
+            <div className="truncate" title={service.container.image}>
+              <span className="text-gray-400">Image:</span> {service.container.image}
+            </div>
+            {service.container.ports && (
+              <div className="truncate" title={service.container.ports}>
+                <span className="text-gray-400">Ports:</span> {service.container.ports}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="mb-2 text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
+          <span>🐳</span> No container
+        </div>
       )}
 
       <button
