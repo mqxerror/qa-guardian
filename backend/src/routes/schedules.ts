@@ -4,10 +4,9 @@ import { getTestSuite } from './test-suites';
 import { listTestRunsByOrg, createTestRun } from '../services/repositories/test-runs';
 import { sendScheduleTriggeredWebhook } from './test-runs/webhook-events';
 
-// Import repository functions and types (Feature #2092)
+// Feature #2117: Import only async repository functions (no getMemory* calls)
 import {
   Schedule,
-  getMemorySchedules,
   createSchedule as createScheduleRepo,
   getSchedule as getScheduleRepo,
   updateSchedule as updateScheduleRepo,
@@ -55,8 +54,7 @@ function calculateNextRun(cronExpression: string, timezone: string): Date | unde
   return next;
 }
 
-// In-memory stores (now backed by repository - Feature #2092)
-export const schedules: Map<string, Schedule> = getMemorySchedules();
+// Feature #2117: Map removed — all access now through async repository functions
 
 interface CreateScheduleBody {
   suite_id: string;

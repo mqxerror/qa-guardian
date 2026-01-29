@@ -1,10 +1,9 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../middleware/auth';
 
-// Import repository functions and types (Feature #2093)
+// Feature #2119: Import only async repository functions (no getMemory* calls)
 import {
   AuditLogEntry,
-  getMemoryAuditLogs,
   createAuditLog,
   listAuditLogs as listAuditLogsRepo,
   getUniqueActions,
@@ -14,8 +13,9 @@ import {
 // Re-export interface for backward compatibility
 export { AuditLogEntry };
 
-// In-memory audit log store (now backed by repository - Feature #2093)
-export const auditLogs: Map<string, AuditLogEntry> = getMemoryAuditLogs();
+// Feature #2119: Map removed — all access now through async repository functions
+// Re-export listAuditLogsRepo for other files that need audit log data
+export { listAuditLogsRepo };
 
 // Helper to extract IP address from request
 function getClientIp(request: FastifyRequest): string {

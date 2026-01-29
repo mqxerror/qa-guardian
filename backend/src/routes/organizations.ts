@@ -7,7 +7,7 @@ import { getUserById as dbGetUserById } from '../services/repositories/auth';
 // projects Map removed in Feature #2110 - using async DB functions
 // testSuites/tests Maps removed in Feature #2110 - using async DB functions
 import { testRuns } from './test-runs';
-import { auditLogs } from './audit-logs';
+import { listAuditLogsRepo } from './audit-logs';
 import {
   listAllTestSuites as dbListAllTestSuites,
   listAllTests as dbListAllTests,
@@ -933,15 +933,15 @@ export async function organizationRoutes(app: FastifyInstance) {
         }
       }
 
-      // Get audit logs for this organization in the period
-      const currentPeriodLogs = Array.from(auditLogs.values()).filter(
-        log => log.organization_id === orgId && log.created_at >= cutoffDate
+      // Feature #2119: Get audit logs for this organization using async DB call
+      const { logs: allOrgLogs } = await listAuditLogsRepo(orgId, { limit: 10000 });
+      const currentPeriodLogs = allOrgLogs.filter(
+        log => log.created_at >= cutoffDate
       );
 
       const previousPeriodLogs = includeTrends
-        ? Array.from(auditLogs.values()).filter(
-            log => log.organization_id === orgId &&
-                   log.created_at >= previousCutoffDate &&
+        ? allOrgLogs.filter(
+            log => log.created_at >= previousCutoffDate &&
                    log.created_at < cutoffDate
           )
         : [];
