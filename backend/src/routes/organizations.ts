@@ -17,7 +17,7 @@ import {
 import { getProject as dbGetProjectAsync, listProjects as dbListProjectsAsync, deleteProject as dbDeleteProjectAsync } from './projects/stores';
 import { listTestRunsByOrg as dbListTestRunsByOrg } from '../services/repositories/test-runs';
 
-// Feature #2085: Import repository functions and types
+// Feature #2109: Fully migrated to async DB calls - no more in-memory Maps
 import {
   Organization,
   OrganizationMember,
@@ -30,11 +30,21 @@ import {
   DEFAULT_ORG_ID,
   OTHER_ORG_ID,
   DEFAULT_USER_IDS,
-  getMemoryOrganizations,
-  getMemoryOrganizationMembers,
-  getMemoryInvitations,
-  getMemoryAutoQuarantineSettings,
-  getMemoryRetryStrategySettings,
+  createOrganization as repoCreateOrganization,
+  getOrganizationById as repoGetOrganizationById,
+  getOrganizationBySlug as repoGetOrganizationBySlug,
+  updateOrganization as repoUpdateOrganization,
+  deleteOrganization as repoDeleteOrganization,
+  listOrganizations as repoListOrganizations,
+  addOrganizationMember as repoAddOrganizationMember,
+  removeOrganizationMember as repoRemoveOrganizationMember,
+  getOrganizationMembers as repoGetOrganizationMembers,
+  updateMemberRole as repoUpdateMemberRole,
+  createInvitation as repoCreateInvitation,
+  getInvitationById as repoGetInvitationById,
+  getInvitationsByOrg as repoGetInvitationsByOrg,
+  updateInvitation as repoUpdateInvitation,
+  deleteInvitation as repoDeleteInvitation,
   getAutoQuarantineSettings as repoGetAutoQuarantineSettings,
   setAutoQuarantineSettings as repoSetAutoQuarantineSettings,
   getRetryStrategySettings as repoGetRetryStrategySettings,
@@ -47,17 +57,6 @@ export type { AutoQuarantineSettings, RetryStrategySettings, RetryStrategyRule }
 
 // Re-export default settings and UUID constants
 export { DEFAULT_AUTO_QUARANTINE_SETTINGS, DEFAULT_RETRY_STRATEGY_SETTINGS, DEFAULT_ORG_ID, OTHER_ORG_ID, DEFAULT_USER_IDS };
-
-// In-memory stores (backed by repository)
-export const organizations: Map<string, Organization> = getMemoryOrganizations();
-export const organizationMembers: Map<string, OrganizationMember[]> = getMemoryOrganizationMembers();
-export const invitations: Map<string, Invitation> = getMemoryInvitations();
-
-// Feature #1104: Store for auto-quarantine settings per organization (backed by repository)
-export const autoQuarantineSettings: Map<string, AutoQuarantineSettings> = getMemoryAutoQuarantineSettings();
-
-// Feature #1105: Store for retry strategy settings per organization (backed by repository)
-export const retryStrategySettings: Map<string, RetryStrategySettings> = getMemoryRetryStrategySettings();
 
 // Re-export helper functions from repository
 export const getRetryStrategySettings = repoGetRetryStrategySettings;
@@ -72,46 +71,23 @@ import {
   getUserOrganizations as dbGetUserOrganizations,
 } from '../services/repositories/organizations';
 
-// Feature #2117: Async DB-backed organization lookup
+// Feature #2109: Fully async DB-backed organization lookup
 export async function getUserOrganization(userId: string): Promise<string | null> {
-  // Try async DB first
-  const result = await dbGetUserOrganization(userId);
-  if (result) return result;
-
-  // Fallback to in-memory for backward compatibility
-  for (const [orgId, members] of organizationMembers) {
-    if (members.some(m => m.user_id === userId)) {
-      return orgId;
-    }
-  }
-  return null;
+  return await dbGetUserOrganization(userId);
 }
 
-// Feature #2117: Async DB-backed organization list
+// Feature #2109: Fully async DB-backed organization list
 export async function getUserOrganizations(userId: string): Promise<Array<{ organization_id: string; role: string; organization: Organization | undefined }>> {
-  // Try async DB first
   const dbResult = await dbGetUserOrganizations(userId);
   if (dbResult && dbResult.length > 0) {
-    return dbResult.map(r => ({
+    const orgs = await Promise.all(dbResult.map(async r => ({
       organization_id: r.organization_id,
       role: r.role,
-      organization: organizations.get(r.organization_id),
-    }));
+      organization: (await repoGetOrganizationById(r.organization_id)) || undefined,
+    })));
+    return orgs;
   }
-
-  // Fallback to in-memory
-  const userOrgs: Array<{ organization_id: string; role: string; organization: Organization | undefined }> = [];
-  for (const [orgId, members] of organizationMembers) {
-    const membership = members.find(m => m.user_id === userId);
-    if (membership) {
-      userOrgs.push({
-        organization_id: orgId,
-        role: membership.role,
-        organization: organizations.get(orgId),
-      });
-    }
-  }
-  return userOrgs;
+  return [];
 }
 
 interface InvitationBody {
@@ -237,13 +213,12 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // Check for duplicate slug
-    for (const org of organizations.values()) {
-      if (org.slug === slug) {
-        return reply.status(409).send({
-          error: 'Conflict',
-          message: 'An organization with this slug already exists',
-        });
-      }
+    const existingOrg = await repoGetOrganizationBySlug(slug);
+    if (existingOrg) {
+      return reply.status(409).send({
+        error: 'Conflict',
+        message: 'An organization with this slug already exists',
+      });
     }
 
     // Create the organization
@@ -256,12 +231,14 @@ export async function organizationRoutes(app: FastifyInstance) {
       created_at: new Date(),
     };
 
-    organizations.set(id, organization);
+    await repoCreateOrganization(organization);
 
     // Add the creating user as owner
-    organizationMembers.set(id, [
-      { user_id: user.id, organization_id: id, role: 'owner' },
-    ]);
+    await repoAddOrganizationMember({
+      user_id: user.id,
+      organization_id: id,
+      role: 'owner',
+    });
 
     return reply.status(201).send({
       organization,
@@ -274,7 +251,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { id } = request.params;
-    const org = organizations.get(id);
+    const org = await repoGetOrganizationById(id);
 
     if (!org) {
       return reply.status(404).send({
@@ -291,7 +268,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { id } = request.params;
-    const memberRecords = organizationMembers.get(id) || [];
+    const memberRecords = await repoGetOrganizationMembers(id);
 
     // Enrich with user details
     const members = memberRecords.map(member => {
@@ -339,7 +316,8 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // Check if organization exists
-    if (!organizations.has(id)) {
+    const orgExists = await repoGetOrganizationById(id);
+    if (!orgExists) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Organization not found',
@@ -358,7 +336,7 @@ export async function organizationRoutes(app: FastifyInstance) {
       status: 'pending',
     };
 
-    invitations.set(invitationId, invitation);
+    await repoCreateInvitation(invitation);
 
     // Log to console (email would be sent in production)
     console.log(`
@@ -388,8 +366,7 @@ export async function organizationRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const { id } = request.params;
 
-    const orgInvitations = Array.from(invitations.values())
-      .filter(inv => inv.organization_id === id);
+    const orgInvitations = await repoGetInvitationsByOrg(id);
 
     return { invitations: orgInvitations };
   });
@@ -400,14 +377,15 @@ export async function organizationRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const { inviteId } = request.params;
 
-    if (!invitations.has(inviteId)) {
+    const invToDelete = await repoGetInvitationById(inviteId);
+    if (!invToDelete) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Invitation not found',
       });
     }
 
-    invitations.delete(inviteId);
+    await repoDeleteInvitation(inviteId);
 
     return { message: 'Invitation deleted successfully' };
   });
@@ -416,7 +394,7 @@ export async function organizationRoutes(app: FastifyInstance) {
   app.get<{ Params: { inviteId: string } }>('/api/v1/invitations/:inviteId', async (request, reply) => {
     const { inviteId } = request.params;
 
-    const invitation = invitations.get(inviteId);
+    const invitation = await repoGetInvitationById(inviteId);
     if (!invitation) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -434,7 +412,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // Get organization details
-    const org = organizations.get(invitation.organization_id);
+    const org = await repoGetOrganizationById(invitation.organization_id);
 
     return {
       invitation: {
@@ -458,7 +436,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     const { inviteId } = request.params;
     const user = request.user as JwtPayload;
 
-    const invitation = invitations.get(inviteId);
+    const invitation = await repoGetInvitationById(inviteId);
     if (!invitation) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -484,7 +462,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // Check if organization still exists
-    const org = organizations.get(invitation.organization_id);
+    const org = await repoGetOrganizationById(invitation.organization_id);
     if (!org) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -493,14 +471,15 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // Check if user is already a member
-    const members = organizationMembers.get(invitation.organization_id) || [];
+    const members = await repoGetOrganizationMembers(invitation.organization_id);
     const existingMember = members.find(m => m.user_id === user.id);
     if (existingMember) {
       // Mark invitation as accepted but don't add duplicate member
-      invitation.status = 'accepted';
-      invitation.accepted_at = new Date();
-      invitation.accepted_by = user.id;
-      invitations.set(inviteId, invitation);
+      await repoUpdateInvitation(inviteId, {
+        status: 'accepted',
+        accepted_at: new Date(),
+        accepted_by: user.id,
+      });
 
       return {
         message: 'You are already a member of this organization',
@@ -514,18 +493,18 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // Add user to organization with invited role
-    members.push({
+    await repoAddOrganizationMember({
       user_id: user.id,
       organization_id: invitation.organization_id,
       role: invitation.role,
     });
-    organizationMembers.set(invitation.organization_id, members);
 
     // Mark invitation as accepted
-    invitation.status = 'accepted';
-    invitation.accepted_at = new Date();
-    invitation.accepted_by = user.id;
-    invitations.set(inviteId, invitation);
+    await repoUpdateInvitation(inviteId, {
+      status: 'accepted',
+      accepted_at: new Date(),
+      accepted_by: user.id,
+    });
 
     console.log(`
 ====================================
@@ -555,7 +534,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     const { id } = request.params;
     const updates = request.body;
 
-    const org = organizations.get(id);
+    const org = await repoGetOrganizationById(id);
     if (!org) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -564,12 +543,13 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // Update allowed fields
-    if (updates.name) org.name = updates.name;
-    if (updates.timezone) org.timezone = updates.timezone;
+    const updateFields: Partial<Organization> = {};
+    if (updates.name) updateFields.name = updates.name;
+    if (updates.timezone) updateFields.timezone = updates.timezone;
 
-    organizations.set(id, org);
+    const updatedOrg = await repoUpdateOrganization(id, updateFields);
 
-    return { organization: org };
+    return { organization: updatedOrg || org };
   });
 
   // Delete organization (requires owner role only AND password confirmation)
@@ -607,7 +587,8 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // Check if organization exists
-    if (!organizations.has(id)) {
+    const orgToDelete = await repoGetOrganizationById(id);
+    if (!orgToDelete) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Organization not found',
@@ -631,23 +612,22 @@ export async function organizationRoutes(app: FastifyInstance) {
         deletedRuns++;
       }
     }
-    // Note: DB-level test run deletion happens via cascade or is handled by project/suite deletion
 
     // 2. Get org suites and tests from DB for counting and deletion
     const orgSuites = await dbListAllTestSuites(id);
     const orgTests = await dbListAllTests(id);
 
-    // 3. Delete tests in organization (DB + Map)
+    // 3. Delete tests in organization (DB)
     for (const test of orgTests) {
       await dbDeleteTestAsync(test.id);
     }
 
-    // 4. Delete test suites (DB + Map)
+    // 4. Delete test suites (DB)
     for (const suite of orgSuites) {
       await dbDeleteTestSuiteAsync(suite.id);
     }
 
-    // 5. Delete projects (DB + Map)
+    // 5. Delete projects (DB)
     const orgProjects = await dbListProjectsAsync(id);
     let deletedProjects = 0;
     for (const project of orgProjects) {
@@ -656,9 +636,9 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // 6. Delete the organization and members
-    const memberCount = (organizationMembers.get(id) || []).length;
-    organizations.delete(id);
-    organizationMembers.delete(id);
+    const membersList = await repoGetOrganizationMembers(id);
+    const memberCount = membersList.length;
+    await repoDeleteOrganization(id);
 
     console.log(`\n[ORGANIZATION DELETED] Organization ${id} was deleted by ${jwtUser.email}`);
     console.log(`  Cascade deleted: ${deletedProjects} projects, ${orgSuites.length} suites, ${orgTests.length} tests, ${deletedRuns} runs, ${memberCount} members\n`);
@@ -674,7 +654,8 @@ export async function organizationRoutes(app: FastifyInstance) {
     const jwtUser = request.user as JwtPayload;
 
     // Check if organization exists
-    if (!organizations.has(id)) {
+    const orgForRemove = await repoGetOrganizationById(id);
+    if (!orgForRemove) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Organization not found',
@@ -682,18 +663,16 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // Get current members
-    const members = organizationMembers.get(id) || [];
+    const members = await repoGetOrganizationMembers(id);
 
     // Find the member to remove
-    const memberIndex = members.findIndex(m => m.user_id === memberId);
-    if (memberIndex === -1) {
+    const memberToRemove = members.find(m => m.user_id === memberId);
+    if (!memberToRemove) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Member not found in organization',
       });
     }
-
-    const memberToRemove = members[memberIndex];
 
     // Cannot remove the owner
     if (memberToRemove.role === 'owner') {
@@ -712,8 +691,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     }
 
     // Remove the member
-    members.splice(memberIndex, 1);
-    organizationMembers.set(id, members);
+    await repoRemoveOrganizationMember(id, memberId);
 
     console.log(`\n[MEMBER REMOVED] User ${memberId} removed from organization ${id} by ${jwtUser.email}\n`);
 
@@ -740,7 +718,8 @@ export async function organizationRoutes(app: FastifyInstance) {
       }
 
       // Check if organization exists
-      if (!organizations.has(id)) {
+      const orgForUpdate = await repoGetOrganizationById(id);
+      if (!orgForUpdate) {
         return reply.status(404).send({
           error: 'Not Found',
           message: 'Organization not found',
@@ -748,18 +727,16 @@ export async function organizationRoutes(app: FastifyInstance) {
       }
 
       // Get current members
-      const members = organizationMembers.get(id) || [];
+      const members = await repoGetOrganizationMembers(id);
 
       // Find the member to update
-      const memberIndex = members.findIndex(m => m.user_id === memberId);
-      if (memberIndex === -1) {
+      const memberToUpdate = members.find(m => m.user_id === memberId);
+      if (!memberToUpdate) {
         return reply.status(404).send({
           error: 'Not Found',
           message: 'Member not found in organization',
         });
       }
-
-      const memberToUpdate = members[memberIndex];
 
       // Cannot change the owner's role
       if (memberToUpdate.role === 'owner') {
@@ -779,8 +756,7 @@ export async function organizationRoutes(app: FastifyInstance) {
 
       // Update the role
       const oldRole = memberToUpdate.role;
-      members[memberIndex].role = role;
-      organizationMembers.set(id, members);
+      await repoUpdateMemberRole(id, memberId, role);
 
       console.log(`\n[ROLE UPDATED] User ${memberId} role changed from ${oldRole} to ${role} by ${jwtUser.email}\n`);
 
@@ -814,7 +790,8 @@ export async function organizationRoutes(app: FastifyInstance) {
       }
 
       // Check if organization exists
-      if (!organizations.has(id)) {
+      const orgForTransfer = await repoGetOrganizationById(id);
+      if (!orgForTransfer) {
         return reply.status(404).send({
           error: 'Not Found',
           message: 'Organization not found',
@@ -839,11 +816,11 @@ export async function organizationRoutes(app: FastifyInstance) {
       }
 
       // Get current members
-      const members = organizationMembers.get(id) || [];
+      const members = await repoGetOrganizationMembers(id);
 
       // Find the new owner in members
-      const newOwnerIndex = members.findIndex(m => m.user_id === new_owner_id);
-      if (newOwnerIndex === -1) {
+      const newOwner = members.find(m => m.user_id === new_owner_id);
+      if (!newOwner) {
         return reply.status(404).send({
           error: 'Not Found',
           message: 'New owner must be a member of the organization',
@@ -851,8 +828,8 @@ export async function organizationRoutes(app: FastifyInstance) {
       }
 
       // Find current owner
-      const currentOwnerIndex = members.findIndex(m => m.user_id === jwtUser.id);
-      if (currentOwnerIndex === -1) {
+      const currentOwner = members.find(m => m.user_id === jwtUser.id);
+      if (!currentOwner) {
         return reply.status(400).send({
           error: 'Bad Request',
           message: 'Current owner not found in organization',
@@ -869,9 +846,8 @@ export async function organizationRoutes(app: FastifyInstance) {
 
       // Transfer ownership
       const oldOwnerEmail = jwtUser.email;
-      members[newOwnerIndex].role = 'owner';
-      members[currentOwnerIndex].role = 'admin';
-      organizationMembers.set(id, members);
+      await repoUpdateMemberRole(id, new_owner_id, 'owner');
+      await repoUpdateMemberRole(id, jwtUser.id, 'admin');
 
       // Get new owner details for response
       let newOwnerEmail = '';
@@ -949,7 +925,7 @@ export async function organizationRoutes(app: FastifyInstance) {
       const previousCutoffDate = new Date(Date.now() - periodMs * 2);
 
       // Get organization members
-      const memberRecords = organizationMembers.get(orgId) || [];
+      const memberRecords = await repoGetOrganizationMembers(orgId);
 
       // Build member details map
       const memberDetails = new Map<string, { id: string; name: string; email: string; role: string }>();

@@ -1,7 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import bcrypt from 'bcryptjs';
-import { getUserOrganization, organizations, organizationMembers, DEFAULT_ORG_ID } from './organizations';
-import { seedDefaultOrganizations } from '../services/repositories/organizations';
+import { getUserOrganization, DEFAULT_ORG_ID } from './organizations';
+import {
+  seedDefaultOrganizations,
+  createOrganization as repoCreateOrganization,
+  addOrganizationMember as repoAddOrganizationMember,
+} from '../services/repositories/organizations';
 
 // Feature #2083: Import repository functions for database persistence
 import {
@@ -285,7 +289,7 @@ export async function authRoutes(app: FastifyInstance) {
     // Feature #2095: Use proper UUID format instead of timestamp string
     const orgId = crypto.randomUUID();
     const orgName = `${name}'s Organization`;
-    organizations.set(orgId, {
+    await repoCreateOrganization({
       id: orgId,
       name: orgName,
       slug: orgName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
@@ -294,11 +298,11 @@ export async function authRoutes(app: FastifyInstance) {
     });
 
     // Add user as owner of the organization
-    organizationMembers.set(orgId, [{
+    await repoAddOrganizationMember({
       user_id: user.id,
       organization_id: orgId,
       role: 'owner',
-    }]);
+    });
 
     // Update user role to owner since they own their organization
     user.role = 'owner';
