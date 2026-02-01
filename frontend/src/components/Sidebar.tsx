@@ -1134,8 +1134,7 @@ export function Sidebar() {
   const securityMenuItems: MenuItemConfig[] = [
     { path: '/security', icon: <SecurityIcon />, label: 'Dashboard', visibility: 'qa' },
     { path: '/security/dast-compare', icon: <DASTIcon />, label: 'DAST Scanning', visibility: 'qa' },
-    { path: '/security/trivy', icon: <DependenciesIcon />, label: 'Dependencies', visibility: 'qa' },
-    { path: '/security/containers', icon: <ContainerScanIcon />, label: 'Container Scan', visibility: 'qa' },
+    // Dependencies and Container Scan removed - mock pages replaced with "Coming Soon" placeholders
   ];
 
   // Feature #1503: AI & MCP group menu items
