@@ -35,6 +35,18 @@ RUN curl -fsSL https://dl.k6.io/key.gpg | gpg --dearmor -o /usr/share/keyrings/k
     && apt-get update && apt-get install -y k6 \
     && rm -rf /var/lib/apt/lists/*
 
+# Install gitleaks for secret detection
+RUN curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz \
+    -o /tmp/gitleaks.tar.gz \
+    && tar xzf /tmp/gitleaks.tar.gz -C /usr/local/bin/ gitleaks \
+    && chmod +x /usr/local/bin/gitleaks \
+    && rm /tmp/gitleaks.tar.gz
+
+# Install semgrep for SAST scanning
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip \
+    && pip3 install --break-system-packages semgrep \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy package files

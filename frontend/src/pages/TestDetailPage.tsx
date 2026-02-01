@@ -2889,51 +2889,42 @@ export default function () {
   useEffect(() => {
     const fetchTest = async () => {
       try {
-        // Fetch test
-        const testResponse = await fetch(`/api/v1/tests/${testId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        // Fetch test and runs in parallel (both only need testId)
+        const [testResponse, runsResponse] = await Promise.all([
+          fetch(`/api/v1/tests/${testId}`, { headers }),
+          fetch(`/api/v1/tests/${testId}/runs`, { headers }),
+        ]);
 
         if (!testResponse.ok) {
           setError('Test not found');
           return;
         }
 
-        const testData = await testResponse.json();
+        const [testData, runsData] = await Promise.all([
+          testResponse.json(),
+          runsResponse.ok ? runsResponse.json() : { runs: [] },
+        ]);
+
         setTest(testData.test);
+        if (runsData.runs) setRuns(runsData.runs);
 
-        // Fetch suite
-        const suiteResponse = await fetch(`/api/v1/suites/${testData.test.suite_id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (suiteResponse.ok) {
-          const suiteData = await suiteResponse.json();
-          setSuite(suiteData.suite);
+        // Fetch suite and project in parallel (suite needs suite_id from test)
+        if (testData.test.suite_id) {
+          const suiteResponse = await fetch(`/api/v1/suites/${testData.test.suite_id}`, { headers });
+          if (suiteResponse.ok) {
+            const suiteData = await suiteResponse.json();
+            setSuite(suiteData.suite);
 
-          // Fetch project
-          const projectResponse = await fetch(`/api/v1/projects/${suiteData.suite.project_id}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          if (projectResponse.ok) {
-            const projectData = await projectResponse.json();
-            setProject(projectData.project);
+            if (suiteData.suite.project_id) {
+              const projectResponse = await fetch(`/api/v1/projects/${suiteData.suite.project_id}`, { headers });
+              if (projectResponse.ok) {
+                const projectData = await projectResponse.json();
+                setProject(projectData.project);
+              }
+            }
           }
-        }
-        // Fetch runs
-        const runsResponse = await fetch(`/api/v1/tests/${testId}/runs`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (runsResponse.ok) {
-          const runsData = await runsResponse.json();
-          setRuns(runsData.runs);
         }
       } catch (err) {
         setError('Failed to load test');

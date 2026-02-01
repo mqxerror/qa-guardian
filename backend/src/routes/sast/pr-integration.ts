@@ -44,13 +44,62 @@ type RunSemgrepScanFn = (
 ) => Promise<SASTFinding[]>;
 
 /**
- * Default mock Semgrep scan function
- * Used when no scan function is provided
+ * Default Semgrep scan function using the real Semgrep CLI.
+ * Used when no scan function is explicitly provided.
  */
-const defaultSemgrepScan: RunSemgrepScanFn = async (_projectId, _repoPath, _config) => {
-  // Return empty findings by default
-  // In production, this would be replaced with actual Semgrep integration
-  return [];
+const defaultSemgrepScan: RunSemgrepScanFn = async (_projectId, repoPath, _config) => {
+  const { execFile } = require('child_process');
+  const { promisify } = require('util');
+  const execFileAsync = promisify(execFile);
+
+  function parseOutput(stdout: string): SASTFinding[] {
+    const results = JSON.parse(stdout);
+    return (results.results || []).map((r: any) => ({
+      id: `finding_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      ruleId: r.check_id,
+      ruleName: r.check_id.split('.').pop() || r.check_id,
+      severity: mapSeverity(r.extra?.severity),
+      category: r.extra?.metadata?.category || 'security',
+      message: r.extra?.message || r.check_id,
+      filePath: r.path,
+      line: r.start?.line,
+      column: r.start?.col,
+      endLine: r.end?.line,
+      endColumn: r.end?.col,
+      snippet: r.extra?.lines || '',
+      cweId: Array.isArray(r.extra?.metadata?.cwe) ? r.extra.metadata.cwe[0] : r.extra?.metadata?.cwe,
+      owaspCategory: Array.isArray(r.extra?.metadata?.owasp) ? r.extra.metadata.owasp[0] : r.extra?.metadata?.owasp,
+      suggestion: r.extra?.fix || undefined,
+    }));
+  }
+
+  function mapSeverity(s?: string): SASTFinding['severity'] {
+    switch (s?.toUpperCase()) {
+      case 'ERROR': return 'CRITICAL';
+      case 'WARNING': return 'HIGH';
+      case 'INFO': return 'MEDIUM';
+      default: return 'LOW';
+    }
+  }
+
+  try {
+    const { stdout } = await execFileAsync('semgrep', [
+      'scan', '--json', '--quiet', '--config', 'auto', repoPath,
+    ], { timeout: 120000, maxBuffer: 50 * 1024 * 1024 });
+
+    return parseOutput(stdout);
+  } catch (err: any) {
+    if (err.code === 'ENOENT') {
+      throw new Error('Semgrep is not installed. Install with: pip install semgrep');
+    }
+    // Semgrep exits with code 1 when findings exist -- parse stdout anyway
+    if (err.stdout) {
+      try {
+        return parseOutput(err.stdout);
+      } catch { /* fall through */ }
+    }
+    throw new Error(`Semgrep scan failed: ${err.message}`);
+  }
 };
 
 /**

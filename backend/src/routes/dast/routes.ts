@@ -33,7 +33,7 @@ import {
   generateCronExpression,
   calculateDASTNextRun,
 } from './utils';
-import { simulateZAPScan, parseOpenAPISpec, getOpenAPISpec } from './scanner';
+import { runZAPScan, parseOpenAPISpec, getOpenAPISpec } from './scanner';
 import { generateHTMLReport, generateJSONReport, generatePDFReport } from './reports';
 import {
   startGraphQLScan,
@@ -165,7 +165,7 @@ export async function dastRoutes(app: FastifyInstance) {
       });
     }
 
-    const scan = await simulateZAPScan(projectId, targetUrl, scanProfile, config.authConfig, config.contextConfig);
+    const scan = await runZAPScan(projectId, targetUrl, scanProfile, config.authConfig, config.contextConfig);
 
     logAuditEntry(
       request,

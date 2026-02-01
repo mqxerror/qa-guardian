@@ -30,13 +30,10 @@ export {
 
 // Scanner Functions
 export {
-  simulateZAPScan,
+  runZAPScan,
   parseOpenAPISpec,
   getOpenAPISpec,
 } from './scanner';
-
-// Alert Generation
-export { generateSimulatedAlerts } from './alerts';
 
 // Report Generation
 export {

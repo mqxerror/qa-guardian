@@ -55,8 +55,30 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      zap:
+        condition: service_healthy
     networks:
       - qa-network
+
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    container_name: qa-guardian-zap
+    command: >
+      zap.sh -daemon -host 0.0.0.0 -port 8080
+      -config api.disablekey=true
+      -config api.addrs.addr.name=.*
+      -config api.addrs.addr.regex=true
+    ports:
+      - "8080:8080"
+    networks:
+      - qa-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/JSON/core/view/version/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   frontend:
     build:

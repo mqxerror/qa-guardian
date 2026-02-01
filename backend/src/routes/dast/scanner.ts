@@ -1,13 +1,16 @@
-// DAST Scanner Simulation Functions
+// DAST Scanner - Real OWASP ZAP Integration
 
+import http from 'http';
 import {
   DASTScanResult,
+  DASTAlert,
   DASTConfig,
   OpenAPISpec,
   OpenAPIEndpoint,
 } from './types';
 import {
   createDastScan,
+  updateDastScan,
   getDastFalsePositives,
   getOpenApiSpecsByProject,
   saveDastConfig,
@@ -17,15 +20,74 @@ import {
   getDASTConfig,
   isUrlInScope,
 } from './utils';
-import { generateSimulatedAlerts } from './alerts';
 
-// Get OpenAPI spec for a project (async)
+/** Base URL for the ZAP daemon API. Defaults to the Docker service name. */
+const ZAP_BASE_URL = process.env.ZAP_API_URL || 'http://zap:8080';
+
+/** Maximum time to wait for the spider phase (seconds). */
+const SPIDER_TIMEOUT_SECONDS = 120;
+
+/** Maximum time to wait for the active scan phase (seconds). */
+const ACTIVE_SCAN_TIMEOUT_SECONDS = 300;
+
+/** Polling interval for spider status (ms). */
+const SPIDER_POLL_INTERVAL_MS = 2000;
+
+/** Polling interval for active scan status (ms). */
+const ACTIVE_SCAN_POLL_INTERVAL_MS = 5000;
+
+/** Passive scan settle time for baseline scans (ms). */
+const PASSIVE_SCAN_SETTLE_MS = 5000;
+
+// ---------------------------------------------------------------------------
+// ZAP REST API helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Send a GET request to the ZAP REST API and parse the JSON response.
+ * Throws a descriptive error if ZAP is unreachable or returns invalid data.
+ */
+async function zapGet(path: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const url = `${ZAP_BASE_URL}${path}`;
+    const req = http.get(url, { timeout: 10_000 }, (res) => {
+      let data = '';
+      res.on('data', (chunk: string) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch {
+          reject(new Error(`Invalid JSON response from ZAP at ${url}: ${data.substring(0, 200)}`));
+        }
+      });
+    });
+
+    req.on('error', (err: Error) => {
+      reject(new Error(
+        `Failed to connect to ZAP at ${ZAP_BASE_URL}. ` +
+        `Ensure the ZAP Docker service is running and reachable. ` +
+        `Original error: ${err.message}`
+      ));
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error(`Request to ZAP timed out: ${url}`));
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// OpenAPI helpers (unchanged)
+// ---------------------------------------------------------------------------
+
+/** Retrieve the first OpenAPI spec associated with a project. */
 export async function getOpenAPISpec(projectId: string): Promise<OpenAPISpec | undefined> {
   const specs = await getOpenApiSpecsByProject(projectId);
   return specs.length > 0 ? specs[0] : undefined;
 }
 
-// Parse OpenAPI specification
+/** Parse an OpenAPI JSON document and extract endpoint definitions. */
 export function parseOpenAPISpec(content: string): { info: any; endpoints: OpenAPIEndpoint[] } {
   const spec = JSON.parse(content);
 
@@ -91,32 +153,46 @@ export function parseOpenAPISpec(content: string): { info: any; endpoints: OpenA
     throw new Error('No API endpoints found in the specification');
   }
 
-  return {
-    info: spec.info,
-    endpoints,
-  };
+  return { info: spec.info, endpoints };
 }
 
-// Simulate OWASP ZAP scan
-export async function simulateZAPScan(
+// ---------------------------------------------------------------------------
+// Real ZAP scan orchestration
+// ---------------------------------------------------------------------------
+
+/**
+ * Run a real OWASP ZAP scan against the target URL.
+ *
+ * Phases:
+ *   1. Spider the target to discover URLs.
+ *   2. For non-baseline profiles, run an active scan.
+ *      For baseline profiles, wait briefly for passive rules.
+ *   3. Fetch real alerts from ZAP.
+ *
+ * The function creates the scan record in the database, then kicks off the
+ * scan asynchronously (so the HTTP handler can return 202 immediately).
+ * Progress is persisted via updateDastScan so polling endpoints see updates.
+ */
+export async function runZAPScan(
   projectId: string,
   targetUrl: string,
   scanProfile: 'baseline' | 'full' | 'api',
   authConfig?: DASTConfig['authConfig'],
-  contextConfig?: DASTConfig['contextConfig']
+  contextConfig?: DASTConfig['contextConfig'],
 ): Promise<DASTScanResult> {
   const scanId = generateId();
 
-  // Determine scan duration based on profile (simulated time, not real time)
-  const totalDuration = scanProfile === 'baseline' ? 120 : scanProfile === 'api' ? 480 : 3600;
-  const targetUrls = scanProfile === 'baseline' ? Math.floor(Math.random() * 30) + 10
-                   : scanProfile === 'api' ? Math.floor(Math.random() * 20) + 15
-                   : Math.floor(Math.random() * 200) + 150;
-  const targetRequests = scanProfile === 'baseline' ? Math.floor(Math.random() * 300) + 100
-                       : scanProfile === 'api' ? Math.floor(Math.random() * 400) + 300
-                       : Math.floor(Math.random() * 5000) + 3000;
+  // Verify ZAP connectivity before creating the scan record
+  try {
+    await zapGet('/JSON/core/view/version/');
+  } catch (err: any) {
+    throw new Error(
+      `ZAP is not reachable at ${ZAP_BASE_URL}. ` +
+      `Cannot start DAST scan. ${err.message}`
+    );
+  }
 
-  // Create initial scan result with progress
+  // Create the initial scan record
   const scan: DASTScanResult = {
     id: scanId,
     projectId,
@@ -137,124 +213,194 @@ export async function simulateZAPScan(
     },
     progress: {
       phase: 'spider',
-      phaseDescription: 'Discovering URLs...',
+      phaseDescription: 'Connecting to ZAP and starting spider...',
       percentage: 0,
       urlsDiscovered: 0,
       urlsScanned: 0,
       alertsFound: 0,
-      estimatedTimeRemaining: totalDuration,
+      estimatedTimeRemaining: scanProfile === 'baseline' ? 30 : 120,
       currentUrl: targetUrl,
     },
   };
 
-  // Store scan via async DB
   await createDastScan(scan);
 
-  // Generate all alerts upfront (to add incrementally)
-  const allAlerts = generateSimulatedAlerts(targetUrl, scanProfile, authConfig);
-  const filteredAlerts = allAlerts.filter(alert =>
-    isUrlInScope(alert.url, contextConfig?.includeUrls, contextConfig?.excludeUrls)
-  );
-
-  // Simulate real-time progress updates (faster for demo: 500ms intervals over 5 seconds)
-  const totalSteps = 10;  // 10 progress updates
-  const stepInterval = 500;  // 500ms between updates
-  let currentStep = 0;
-
-  const progressInterval = setInterval(() => {
-    currentStep++;
-    const progressPercent = (currentStep / totalSteps) * 100;
-
-    // Determine current phase
-    let phase: 'spider' | 'active_scan' | 'passive_scan' | 'analyzing' | 'complete';
-    let phaseDescription: string;
-
-    if (progressPercent < 20) {
-      phase = 'spider';
-      phaseDescription = 'Discovering URLs and site structure...';
-    } else if (progressPercent < 50) {
-      phase = 'passive_scan';
-      phaseDescription = 'Performing passive security checks...';
-    } else if (progressPercent < 85) {
-      phase = 'active_scan';
-      phaseDescription = 'Running active vulnerability tests...';
-    } else {
-      phase = 'analyzing';
-      phaseDescription = 'Analyzing results and generating report...';
-    }
-
-    // Calculate incremental values
-    const urlsDiscovered = Math.floor((progressPercent / 100) * targetUrls * 1.2);
-    const urlsScanned = Math.floor((progressPercent / 100) * targetUrls);
-    const requestsSent = Math.floor((progressPercent / 100) * targetRequests);
-    const alertsToShow = Math.floor((progressPercent / 100) * filteredAlerts.length);
-    const elapsedSimulated = Math.floor((progressPercent / 100) * totalDuration);
-    const remainingSimulated = totalDuration - elapsedSimulated;
-
-    // Update progress
-    scan.progress = {
-      phase,
-      phaseDescription,
-      percentage: Math.round(progressPercent),
-      urlsDiscovered,
-      urlsScanned,
-      alertsFound: alertsToShow,
-      estimatedTimeRemaining: remainingSimulated,
-      currentUrl: filteredAlerts[alertsToShow - 1]?.url || targetUrl,
-    };
-
-    // Update statistics
-    scan.statistics = {
-      urlsScanned,
-      requestsSent,
-      duration: elapsedSimulated,
-    };
-
-    // Add alerts incrementally
-    scan.alerts = filteredAlerts.slice(0, alertsToShow);
-
-    // Update summary based on current alerts
-    const currentAlerts = scan.alerts.filter(a => !a.isFalsePositive);
-    scan.summary = {
-      total: currentAlerts.length,
-      byRisk: {
-        high: currentAlerts.filter(a => a.risk === 'High').length,
-        medium: currentAlerts.filter(a => a.risk === 'Medium').length,
-        low: currentAlerts.filter(a => a.risk === 'Low').length,
-        informational: currentAlerts.filter(a => a.risk === 'Informational').length,
-      },
-      byConfidence: {
-        high: currentAlerts.filter(a => a.confidence === 'High').length,
-        medium: currentAlerts.filter(a => a.confidence === 'Medium').length,
-        low: currentAlerts.filter(a => a.confidence === 'Low').length,
-      },
-    };
-
-    // Check if complete
-    if (currentStep >= totalSteps) {
-      clearInterval(progressInterval);
-      completeScan(scan, projectId, filteredAlerts, allAlerts, contextConfig, targetUrls, targetRequests, totalDuration, scanProfile);
-    }
-  }, stepInterval);
+  // Run the actual scan asynchronously so the caller gets the initial record
+  // immediately (HTTP 202). Errors are captured on the scan record.
+  executeZAPScan(scan, projectId, targetUrl, scanProfile, authConfig, contextConfig)
+    .catch((err) => {
+      console.error(`[DAST] Scan ${scanId} failed:`, err);
+      scan.status = 'failed';
+      scan.error = err.message || 'Unknown error during ZAP scan';
+      scan.completedAt = new Date().toISOString();
+      updateDastScan(scan.id, scan).catch((e) =>
+        console.error(`[DAST] Failed to persist error state for scan ${scanId}:`, e)
+      );
+    });
 
   return scan;
 }
 
-// Complete the scan with final results (async for DB calls)
-async function completeScan(
+/**
+ * Core scan execution logic. This runs asynchronously after the scan record
+ * has been persisted so the HTTP handler can respond immediately.
+ */
+async function executeZAPScan(
   scan: DASTScanResult,
   projectId: string,
-  filteredAlerts: any[],
-  allAlerts: any[],
-  contextConfig: DASTConfig['contextConfig'] | undefined,
-  targetUrls: number,
-  targetRequests: number,
-  totalDuration: number,
-  scanProfile: 'baseline' | 'full' | 'api'
+  targetUrl: string,
+  scanProfile: 'baseline' | 'full' | 'api',
+  authConfig?: DASTConfig['authConfig'],
+  contextConfig?: DASTConfig['contextConfig'],
 ): Promise<void> {
-  const urlsFilteredOut = allAlerts.length - filteredAlerts.length;
+  const startTime = Date.now();
 
-  // Store scope config used for this scan
+  // ------------------------------------------------------------------
+  // Phase 1: Spider
+  // ------------------------------------------------------------------
+  scan.progress = {
+    phase: 'spider',
+    phaseDescription: 'Spidering target to discover URLs...',
+    percentage: 5,
+    urlsDiscovered: 0,
+    urlsScanned: 0,
+    alertsFound: 0,
+    currentUrl: targetUrl,
+  };
+  await updateDastScan(scan.id, scan);
+
+  const maxChildren = scanProfile === 'baseline' ? 5 : 10;
+  const spiderResult = await zapGet(
+    `/JSON/spider/action/scan/?url=${encodeURIComponent(targetUrl)}&maxChildren=${maxChildren}&recurse=true`
+  );
+  const spiderId = spiderResult.scan;
+
+  // Poll spider progress
+  const spiderMaxIterations = Math.ceil(SPIDER_TIMEOUT_SECONDS / (SPIDER_POLL_INTERVAL_MS / 1000));
+  for (let i = 0; i < spiderMaxIterations; i++) {
+    const status = await zapGet(`/JSON/spider/view/status/?scanId=${spiderId}`);
+    const spiderProgress = parseInt(status.status, 10) || 0;
+
+    // Scale spider progress to 0-25% of total
+    const overallPercent = Math.round((spiderProgress / 100) * 25);
+    scan.progress = {
+      phase: 'spider',
+      phaseDescription: `Spidering target... ${spiderProgress}% complete`,
+      percentage: overallPercent,
+      urlsDiscovered: 0, // ZAP doesn't expose this during spider easily
+      urlsScanned: 0,
+      alertsFound: 0,
+      currentUrl: targetUrl,
+    };
+    await updateDastScan(scan.id, scan);
+
+    if (spiderProgress >= 100) break;
+    await delay(SPIDER_POLL_INTERVAL_MS);
+  }
+
+  // ------------------------------------------------------------------
+  // Phase 2: Active scan or passive settle
+  // ------------------------------------------------------------------
+  if (scanProfile !== 'baseline') {
+    // Active scan for 'full' and 'api' profiles
+    scan.progress = {
+      phase: 'active_scan',
+      phaseDescription: 'Starting active vulnerability scan...',
+      percentage: 30,
+      urlsDiscovered: 0,
+      urlsScanned: 0,
+      alertsFound: 0,
+      currentUrl: targetUrl,
+    };
+    await updateDastScan(scan.id, scan);
+
+    const activeScanResult = await zapGet(
+      `/JSON/ascan/action/scan/?url=${encodeURIComponent(targetUrl)}&recurse=true`
+    );
+    const activeScanId = activeScanResult.scan;
+
+    // Poll active scan progress
+    const activeMaxIterations = Math.ceil(
+      ACTIVE_SCAN_TIMEOUT_SECONDS / (ACTIVE_SCAN_POLL_INTERVAL_MS / 1000)
+    );
+    for (let i = 0; i < activeMaxIterations; i++) {
+      const status = await zapGet(`/JSON/ascan/view/status/?scanId=${activeScanId}`);
+      const activeProgress = parseInt(status.status, 10) || 0;
+
+      // Scale active scan progress to 30-85% of total
+      const overallPercent = 30 + Math.round((activeProgress / 100) * 55);
+      scan.progress = {
+        phase: 'active_scan',
+        phaseDescription: `Active scan in progress... ${activeProgress}% complete`,
+        percentage: overallPercent,
+        urlsDiscovered: 0,
+        urlsScanned: 0,
+        alertsFound: 0,
+        currentUrl: targetUrl,
+      };
+      await updateDastScan(scan.id, scan);
+
+      if (activeProgress >= 100) break;
+      await delay(ACTIVE_SCAN_POLL_INTERVAL_MS);
+    }
+  } else {
+    // Baseline: rely on passive scan rules; give ZAP a moment to process
+    scan.progress = {
+      phase: 'passive_scan',
+      phaseDescription: 'Waiting for passive scan rules to complete...',
+      percentage: 50,
+      urlsDiscovered: 0,
+      urlsScanned: 0,
+      alertsFound: 0,
+      currentUrl: targetUrl,
+    };
+    await updateDastScan(scan.id, scan);
+    await delay(PASSIVE_SCAN_SETTLE_MS);
+  }
+
+  // ------------------------------------------------------------------
+  // Phase 3: Retrieve alerts
+  // ------------------------------------------------------------------
+  scan.progress = {
+    phase: 'analyzing',
+    phaseDescription: 'Retrieving scan results from ZAP...',
+    percentage: 90,
+    urlsDiscovered: 0,
+    urlsScanned: 0,
+    alertsFound: 0,
+    currentUrl: targetUrl,
+  };
+  await updateDastScan(scan.id, scan);
+
+  const alertsResult = await zapGet(
+    `/JSON/alert/view/alerts/?baseurl=${encodeURIComponent(targetUrl)}&start=0&count=500`
+  );
+
+  const rawAlerts: DASTAlert[] = (alertsResult.alerts || []).map((a: any) => ({
+    id: a.id || generateId(),
+    pluginId: a.pluginid || '',
+    name: a.alert || a.name || 'Unknown Alert',
+    risk: mapZAPRisk(a.risk),
+    confidence: mapZAPConfidence(a.confidence),
+    description: a.description || '',
+    url: a.url || targetUrl,
+    method: a.method || 'GET',
+    param: a.param || undefined,
+    attack: a.attack || undefined,
+    evidence: a.evidence || undefined,
+    solution: a.solution || '',
+    reference: a.reference || undefined,
+    cweId: a.cweid ? parseInt(a.cweid, 10) : undefined,
+    wascId: a.wascid ? parseInt(a.wascid, 10) : undefined,
+  }));
+
+  // Apply scope filtering if configured
+  const filteredAlerts = rawAlerts.filter((alert) =>
+    isUrlInScope(alert.url, contextConfig?.includeUrls, contextConfig?.excludeUrls)
+  );
+  const urlsFilteredOut = rawAlerts.length - filteredAlerts.length;
+
+  // Store scope config if filtering was applied
   if (contextConfig?.includeUrls?.length || contextConfig?.excludeUrls?.length) {
     scan.scopeConfig = {
       includeUrls: contextConfig.includeUrls,
@@ -263,59 +409,68 @@ async function completeScan(
     };
   }
 
-  // Get false positives for this project via async DB
-  const fps = await getDastFalsePositives(projectId);
-
   // Mark known false positives
-  filteredAlerts.forEach(alert => {
-    const isFP = fps.some(fp =>
-      fp.pluginId === alert.pluginId &&
-      fp.url === alert.url &&
-      (!fp.param || fp.param === alert.param)
+  const fps = await getDastFalsePositives(projectId);
+  filteredAlerts.forEach((alert) => {
+    const isFP = fps.some(
+      (fp) =>
+        fp.pluginId === alert.pluginId &&
+        fp.url === alert.url &&
+        (!fp.param || fp.param === alert.param)
     );
     if (isFP) {
       alert.isFalsePositive = true;
     }
   });
 
-  // Update scan result to completed
+  // ------------------------------------------------------------------
+  // Phase 4: Finalize scan record
+  // ------------------------------------------------------------------
+  const nonFP = filteredAlerts.filter((a) => !a.isFalsePositive);
+  const durationSeconds = Math.round((Date.now() - startTime) / 1000);
+
+  // Get spider results count for statistics
+  let urlsScannedCount = 0;
+  try {
+    const spiderResults = await zapGet(`/JSON/spider/view/results/?scanId=${spiderId}`);
+    urlsScannedCount = Array.isArray(spiderResults.results) ? spiderResults.results.length : 0;
+  } catch {
+    // Non-critical; default to 0
+  }
+
   scan.status = 'completed';
   scan.completedAt = new Date().toISOString();
   scan.alerts = filteredAlerts;
   scan.summary = {
-    total: filteredAlerts.filter(a => !a.isFalsePositive).length,
+    total: nonFP.length,
     byRisk: {
-      high: filteredAlerts.filter(a => !a.isFalsePositive && a.risk === 'High').length,
-      medium: filteredAlerts.filter(a => !a.isFalsePositive && a.risk === 'Medium').length,
-      low: filteredAlerts.filter(a => !a.isFalsePositive && a.risk === 'Low').length,
-      informational: filteredAlerts.filter(a => !a.isFalsePositive && a.risk === 'Informational').length,
+      high: nonFP.filter((a) => a.risk === 'High').length,
+      medium: nonFP.filter((a) => a.risk === 'Medium').length,
+      low: nonFP.filter((a) => a.risk === 'Low').length,
+      informational: nonFP.filter((a) => a.risk === 'Informational').length,
     },
     byConfidence: {
-      high: filteredAlerts.filter(a => !a.isFalsePositive && a.confidence === 'High').length,
-      medium: filteredAlerts.filter(a => !a.isFalsePositive && a.confidence === 'Medium').length,
-      low: filteredAlerts.filter(a => !a.isFalsePositive && a.confidence === 'Low').length,
+      high: nonFP.filter((a) => a.confidence === 'High').length,
+      medium: nonFP.filter((a) => a.confidence === 'Medium').length,
+      low: nonFP.filter((a) => a.confidence === 'Low').length,
     },
   };
-
-  // Final statistics
   scan.statistics = {
-    urlsScanned: targetUrls,
-    requestsSent: targetRequests,
-    duration: totalDuration,
+    urlsScanned: urlsScannedCount,
+    requestsSent: 0, // ZAP does not expose a simple request count via API
+    duration: durationSeconds,
   };
-
-  // Update progress to complete
   scan.progress = {
     phase: 'complete',
     phaseDescription: 'Scan completed',
     percentage: 100,
-    urlsDiscovered: Math.floor(targetUrls * 1.2),
-    urlsScanned: targetUrls,
+    urlsDiscovered: urlsScannedCount,
+    urlsScanned: urlsScannedCount,
     alertsFound: filteredAlerts.length,
     estimatedTimeRemaining: 0,
   };
 
-  // For API scans, add endpoint testing information
+  // For API scans, attach endpoint testing information
   if (scanProfile === 'api') {
     const spec = await getOpenAPISpec(projectId);
     if (spec && spec.endpoints.length > 0) {
@@ -323,47 +478,54 @@ async function completeScan(
         total: spec.endpoints.length,
         tested: spec.endpoints.length,
         endpoints: spec.endpoints.map((ep) => {
-          const endpointAlerts = filteredAlerts.filter(a =>
-            a.url.includes(ep.path.replace(/\{[^}]+\}/g, '')) ||
-            a.method === ep.method
+          const endpointAlerts = filteredAlerts.filter(
+            (a) =>
+              a.url.includes(ep.path.replace(/\{[^}]+\}/g, '')) ||
+              a.method === ep.method
           );
           return {
             path: ep.path,
             method: ep.method,
             status: 'tested' as const,
-            alertCount: Math.min(endpointAlerts.length, 2),
+            alertCount: endpointAlerts.length,
           };
         }),
-      };
-    } else {
-      const simulatedEndpoints = [
-        { path: '/api/v1/users', method: 'GET' },
-        { path: '/api/v1/users', method: 'POST' },
-        { path: '/api/v1/users/{id}', method: 'GET' },
-        { path: '/api/v1/users/{id}', method: 'PUT' },
-        { path: '/api/v1/users/{id}', method: 'DELETE' },
-        { path: '/api/v1/auth/login', method: 'POST' },
-        { path: '/api/v1/auth/logout', method: 'POST' },
-        { path: '/api/v1/orders', method: 'GET' },
-        { path: '/api/v1/orders', method: 'POST' },
-        { path: '/api/v1/products', method: 'GET' },
-      ];
-      scan.endpointsTested = {
-        total: simulatedEndpoints.length,
-        tested: simulatedEndpoints.length,
-        endpoints: simulatedEndpoints.map((ep, idx) => ({
-          path: ep.path,
-          method: ep.method,
-          status: 'tested' as const,
-          alertCount: idx < filteredAlerts.length ? 1 : 0,
-        })),
       };
     }
   }
 
-  // Update config with last scan info via async DB
+  // Persist completed scan
+  await updateDastScan(scan.id, scan);
+
+  // Update config with last scan info
   const config = await getDASTConfig(projectId);
   config.lastScanAt = scan.completedAt;
   config.lastScanStatus = 'completed';
   await saveDastConfig(projectId, config);
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Map ZAP risk string (e.g. "High", "3") to the DASTRisk union type. */
+function mapZAPRisk(risk: string): 'High' | 'Medium' | 'Low' | 'Informational' {
+  const normalized = (risk || '').toLowerCase();
+  if (normalized === 'high' || normalized === '3') return 'High';
+  if (normalized === 'medium' || normalized === '2') return 'Medium';
+  if (normalized === 'low' || normalized === '1') return 'Low';
+  return 'Informational';
+}
+
+/** Map ZAP confidence string to the DASTConfidence union type. */
+function mapZAPConfidence(confidence: string): 'High' | 'Medium' | 'Low' {
+  const normalized = (confidence || '').toLowerCase();
+  if (normalized === 'high' || normalized === '3') return 'High';
+  if (normalized === 'medium' || normalized === '2') return 'Medium';
+  return 'Low';
+}
+
+/** Promise-based delay. */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

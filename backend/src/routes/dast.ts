@@ -48,15 +48,10 @@ export {
 
 export {
   // Scanner Functions
-  simulateZAPScan,
+  runZAPScan,
   parseOpenAPISpec,
   getOpenAPISpec,
 } from './dast/scanner';
-
-export {
-  // Alert Generation
-  generateSimulatedAlerts,
-} from './dast/alerts';
 
 export {
   // Report Generation

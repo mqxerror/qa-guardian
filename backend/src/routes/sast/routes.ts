@@ -35,254 +35,145 @@ import {
 } from './stores';
 
 /**
- * Simulate Semgrep scan (in production, would call actual Semgrep CLI)
+ * Run a real Semgrep CLI scan against a target directory.
+ * Parses JSON output and maps results to SASTFinding format.
  */
 async function runSemgrepScan(
   projectId: string,
   repoPath: string,
   config: SASTConfig
 ): Promise<SASTFinding[]> {
-  // In production, would execute:
-  // semgrep --config=p/security-audit --json --output=results.json /path/to/repo
+  const { execFile } = require('child_process');
+  const { promisify } = require('util');
+  const execFileAsync = promisify(execFile);
 
-  // For development, simulate findings based on config
-  const simulatedFindings: SASTFinding[] = [];
+  // Map ruleset config to Semgrep config strings
+  const rulesetMap: Record<string, string> = {
+    default: 'auto',
+    security: 'p/security-audit',
+    custom: 'auto',
+  };
+  const rulesets: string[] = [rulesetMap[config.ruleset] || 'auto'];
 
-  // Simulate findings for demonstration
-  if (config.ruleset === 'security' || config.ruleset === 'default' || config.ruleset === 'custom') {
-    simulatedFindings.push(
-      {
-        id: generateId(),
-        ruleId: 'javascript.express.security.audit.xss.mustache-escape',
-        ruleName: 'Potential XSS via unescaped output',
-        severity: 'CRITICAL',
-        category: 'security',
-        message: 'User input is rendered without proper escaping, potentially allowing XSS attacks.',
-        filePath: 'src/components/UserInput.tsx',
-        line: 42,
-        column: 10,
-        snippet: 'dangerouslySetInnerHTML={{ __html: userContent }}',
-        cweId: 'CWE-79',
-        owaspCategory: 'A7:2017-Cross-Site Scripting (XSS)',
-        suggestion: 'Use a sanitization library like DOMPurify before rendering user content.',
-        remediation: {
-          summary: 'Sanitize user-supplied HTML content before rendering to prevent XSS attacks.',
-          steps: [
-            'Install DOMPurify: npm install dompurify @types/dompurify',
-            'Import DOMPurify at the top of your file',
-            'Wrap user content with DOMPurify.sanitize() before rendering',
-            'Consider using a Content Security Policy (CSP) header as defense-in-depth',
-            'Test sanitization with common XSS payloads'
-          ],
-          secureCodeExample: {
-            before: 'dangerouslySetInnerHTML={{ __html: userContent }}',
-            after: `import DOMPurify from 'dompurify';
-
-// Sanitize before rendering
-const sanitizedContent = DOMPurify.sanitize(userContent);
-<div dangerouslySetInnerHTML={{ __html: sanitizedContent }} />`,
-            language: 'typescript'
-          },
-          references: [
-            { title: 'OWASP XSS Prevention Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html' },
-            { title: 'DOMPurify Documentation', url: 'https://github.com/cure53/DOMPurify' },
-            { title: 'CWE-79: Improper Neutralization of Input', url: 'https://cwe.mitre.org/data/definitions/79.html' }
-          ]
-        }
-      },
-      {
-        id: generateId(),
-        ruleId: 'javascript.express.security.audit.sqli',
-        ruleName: 'Potential SQL Injection',
-        severity: 'CRITICAL',
-        category: 'security',
-        message: 'User-controlled data is used in SQL query without proper parameterization.',
-        filePath: 'src/api/users.ts',
-        line: 87,
-        column: 5,
-        snippet: 'db.query(`SELECT * FROM users WHERE id = ${userId}`)',
-        cweId: 'CWE-89',
-        owaspCategory: 'A1:2017-Injection',
-        suggestion: 'Use parameterized queries: db.query("SELECT * FROM users WHERE id = $1", [userId])',
-        remediation: {
-          summary: 'Replace string interpolation with parameterized queries to prevent SQL injection attacks.',
-          steps: [
-            'Replace template literals with parameterized query syntax',
-            'Use $1, $2, etc. as placeholders for user-supplied values',
-            'Pass values as an array in the second argument',
-            'Validate and sanitize user input before use',
-            'Consider using an ORM like Prisma or TypeORM for safer queries'
-          ],
-          secureCodeExample: {
-            before: 'db.query(`SELECT * FROM users WHERE id = ${userId}`)',
-            after: `// Use parameterized queries
-const result = await db.query(
-  'SELECT * FROM users WHERE id = $1',
-  [userId]
-);
-
-// Or use an ORM
-const user = await prisma.user.findUnique({
-  where: { id: userId }
-});`,
-            language: 'typescript'
-          },
-          references: [
-            { title: 'OWASP SQL Injection Prevention Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html' },
-            { title: 'CWE-89: SQL Injection', url: 'https://cwe.mitre.org/data/definitions/89.html' },
-            { title: 'Node-postgres Parameterized Queries', url: 'https://node-postgres.com/features/queries#parameterized-query' }
-          ]
-        }
-      },
-      {
-        id: generateId(),
-        ruleId: 'javascript.jwt.security.audit.jwt-hardcoded',
-        ruleName: 'Hardcoded JWT Secret',
-        severity: 'HIGH',
-        category: 'security',
-        message: 'JWT secret is hardcoded in the source code.',
-        filePath: 'src/auth/jwt.ts',
-        line: 15,
-        column: 20,
-        snippet: 'const JWT_SECRET = "my-secret-key-123"',
-        cweId: 'CWE-798',
-        owaspCategory: 'A3:2017-Sensitive Data Exposure',
-        suggestion: 'Store secrets in environment variables or a secrets manager.',
-        remediation: {
-          summary: 'Move JWT secrets to environment variables and use a secrets manager in production.',
-          steps: [
-            'Add JWT_SECRET to your .env file (never commit this file)',
-            'Update your code to read from process.env.JWT_SECRET',
-            'Add JWT_SECRET to .env.example with a placeholder value',
-            'Generate a strong random secret (at least 256 bits)',
-            'In production, use a secrets manager like AWS Secrets Manager or HashiCorp Vault'
-          ],
-          secureCodeExample: {
-            before: 'const JWT_SECRET = "my-secret-key-123"',
-            after: `// Read from environment variable
-const JWT_SECRET = process.env.JWT_SECRET;
-
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required');
-}
-
-// Use a strong random secret (generate with: openssl rand -base64 32)`,
-            language: 'typescript'
-          },
-          references: [
-            { title: 'OWASP Cryptographic Storage Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html' },
-            { title: 'CWE-798: Hard-coded Credentials', url: 'https://cwe.mitre.org/data/definitions/798.html' },
-            { title: 'dotenv Documentation', url: 'https://github.com/motdotla/dotenv' }
-          ]
-        }
-      }
-    );
+  // Build Semgrep CLI arguments
+  const args = ['scan', '--json', '--quiet'];
+  for (const ruleset of rulesets) {
+    args.push('--config', ruleset);
   }
 
-  // Add broken authentication finding
-  simulatedFindings.push({
-    id: generateId(),
-    ruleId: 'javascript.express.security.audit.broken-auth',
-    ruleName: 'Broken Authentication',
-    severity: 'HIGH',
-    category: 'security',
-    message: 'Authentication uses weak comparison that can be bypassed. Using == instead of secure comparison.',
-    filePath: 'src/auth/login.ts',
-    line: 25,
-    column: 8,
-    snippet: 'if (user.password == inputPassword) { /* vulnerable */ }',
-    cweId: 'CWE-287',
-    owaspCategory: 'A2:2017-Broken Authentication',
-    suggestion: 'Use bcrypt.compare() or similar secure password comparison. Never compare passwords directly.',
-  });
-
-  // Add more warning-level findings
-  simulatedFindings.push(
-    {
-      id: generateId(),
-      ruleId: 'javascript.lang.security.audit.path-traversal',
-      ruleName: 'Potential Path Traversal',
-      severity: 'MEDIUM',
-      category: 'security',
-      message: 'User input used in file path without validation.',
-      filePath: 'src/api/files.ts',
-      line: 33,
-      column: 15,
-      snippet: 'const filePath = path.join(uploadDir, req.params.filename)',
-      cweId: 'CWE-22',
-      owaspCategory: 'A5:2017-Broken Access Control',
-      suggestion: 'Validate and sanitize the filename to prevent directory traversal attacks.',
-    },
-    {
-      id: generateId(),
-      ruleId: 'javascript.express.security.insecure-cookie',
-      ruleName: 'Insecure Cookie Configuration',
-      severity: 'MEDIUM',
-      category: 'security',
-      message: 'Cookie is set without secure flag.',
-      filePath: 'src/middleware/session.ts',
-      line: 22,
-      column: 5,
-      snippet: 'res.cookie("session", token, { httpOnly: true })',
-      cweId: 'CWE-614',
-      suggestion: 'Add secure: true and sameSite: "strict" to cookie options.',
-    }
-  );
-
-  // Add info-level finding
-  simulatedFindings.push({
-    id: generateId(),
-    ruleId: 'javascript.lang.best-practice.no-console',
-    ruleName: 'Console statement in production code',
-    severity: 'LOW',
-    category: 'best-practice',
-    message: 'Console statements should be removed in production code.',
-    filePath: 'src/utils/debug.ts',
-    line: 5,
-    column: 1,
-    snippet: 'console.log("Debug:", data)',
-    suggestion: 'Use a proper logging library with log levels.',
-  });
-
-  // Process custom rules and add simulated findings
+  // Add custom YAML rules as inline config if present
   if (config.customRulesYaml && config.customRulesYaml.length > 0) {
     for (const customRule of config.customRulesYaml) {
       if (!customRule.enabled) continue;
-
-      // Simulate finding from custom rule
-      // In production, the YAML would be passed to Semgrep CLI
-      simulatedFindings.push({
-        id: generateId(),
-        ruleId: `custom.${customRule.id}`,
-        ruleName: customRule.name,
-        severity: 'MEDIUM',  // Default severity for custom rules
-        category: 'custom',
-        message: `Custom rule "${customRule.name}" detected a potential issue.`,
-        filePath: 'src/custom/detected.ts',
-        line: Math.floor(Math.random() * 100) + 1,
-        column: 1,
-        snippet: '// Code matching custom pattern',
-        suggestion: 'Review the code and apply organization-specific remediation.',
-      });
+      // Pass custom YAML rule content via --config flag
+      args.push('--config', customRule.yaml);
     }
   }
 
-  // Filter by severity threshold
-  const severityOrder: Record<SASTSeverity, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
-  const threshold = severityOrder[config.severityThreshold];
+  // Exclude paths if configured
+  if (config.excludePaths && config.excludePaths.length > 0) {
+    for (const excludePath of config.excludePaths) {
+      args.push('--exclude', excludePath);
+    }
+  }
 
-  const filteredByThreshold = simulatedFindings.filter(f => severityOrder[f.severity] >= threshold);
+  args.push(repoPath);
 
-  // Mark findings that are false positives
-  const projectFPs = await getFalsePositives(projectId);
-  return filteredByThreshold.map(finding => {
-    const isFP = projectFPs.some(fp =>
-      fp.ruleId === finding.ruleId &&
-      fp.filePath === finding.filePath &&
-      fp.line === finding.line
-    );
-    return { ...finding, isFalsePositive: isFP };
-  });
+  /**
+   * Parse Semgrep JSON stdout into SASTFinding array
+   */
+  function parseSemgrepOutput(stdout: string): SASTFinding[] {
+    const results = JSON.parse(stdout);
+    return (results.results || []).map((r: any) => ({
+      id: generateId(),
+      ruleId: r.check_id,
+      ruleName: r.check_id.split('.').pop() || r.check_id,
+      severity: mapSemgrepSeverity(r.extra?.severity),
+      category: r.extra?.metadata?.category || 'security',
+      message: r.extra?.message || r.check_id,
+      filePath: r.path,
+      line: r.start?.line,
+      column: r.start?.col,
+      endLine: r.end?.line,
+      endColumn: r.end?.col,
+      snippet: r.extra?.lines || '',
+      cweId: Array.isArray(r.extra?.metadata?.cwe) ? r.extra.metadata.cwe[0] : r.extra?.metadata?.cwe,
+      owaspCategory: Array.isArray(r.extra?.metadata?.owasp) ? r.extra.metadata.owasp[0] : r.extra?.metadata?.owasp,
+      suggestion: r.extra?.fix || undefined,
+    }));
+  }
+
+  try {
+    const { stdout } = await execFileAsync('semgrep', args, {
+      timeout: 120000, // 2 minute timeout
+      maxBuffer: 50 * 1024 * 1024, // 50MB buffer
+    });
+
+    const findings = parseSemgrepOutput(stdout);
+
+    // Filter by severity threshold
+    const severityOrder: Record<SASTSeverity, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+    const threshold = severityOrder[config.severityThreshold];
+    const filteredByThreshold = findings.filter(f => severityOrder[f.severity] >= threshold);
+
+    // Mark findings that are false positives
+    const projectFPs = await getFalsePositives(projectId);
+    return filteredByThreshold.map(finding => {
+      const isFP = projectFPs.some(fp =>
+        fp.ruleId === finding.ruleId &&
+        fp.filePath === finding.filePath &&
+        fp.line === finding.line
+      );
+      return { ...finding, isFalsePositive: isFP };
+    });
+  } catch (err: any) {
+    // If semgrep binary is not installed
+    if (err.code === 'ENOENT') {
+      throw new Error('Semgrep is not installed. Install with: pip install semgrep');
+    }
+
+    // Semgrep exits with code 1 when findings exist -- parse stdout anyway
+    if (err.stdout) {
+      try {
+        const findings = parseSemgrepOutput(err.stdout);
+
+        const severityOrder: Record<SASTSeverity, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+        const threshold = severityOrder[config.severityThreshold];
+        const filteredByThreshold = findings.filter(f => severityOrder[f.severity] >= threshold);
+
+        const projectFPs = await getFalsePositives(projectId);
+        return filteredByThreshold.map(finding => {
+          const isFP = projectFPs.some(fp =>
+            fp.ruleId === finding.ruleId &&
+            fp.filePath === finding.filePath &&
+            fp.line === finding.line
+          );
+          return { ...finding, isFalsePositive: isFP };
+        });
+      } catch {
+        // stdout was not valid JSON, fall through to generic error
+      }
+    }
+
+    throw new Error(`Semgrep scan failed: ${err.message}`);
+  }
+}
+
+/**
+ * Map Semgrep severity strings to our SASTSeverity type.
+ * Semgrep uses ERROR/WARNING/INFO; we map to CRITICAL/HIGH/MEDIUM/LOW.
+ */
+function mapSemgrepSeverity(semgrepSeverity?: string): SASTSeverity {
+  switch (semgrepSeverity?.toUpperCase()) {
+    case 'ERROR':
+      return 'CRITICAL';
+    case 'WARNING':
+      return 'HIGH';
+    case 'INFO':
+      return 'MEDIUM';
+    default:
+      return 'LOW';
+  }
 }
 
 /**
