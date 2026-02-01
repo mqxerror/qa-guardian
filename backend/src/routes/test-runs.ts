@@ -389,10 +389,7 @@ import {
   detectNonHtmlContent,
   detectLoginPage,
   detectMixedContent,
-  generateLighthouseMetrics,
-  generateLighthouseOpportunities,
-  generateLighthouseDiagnostics,
-  generateLighthousePassedAudits,
+  runRealLighthouseAudit,
   classifyLighthouseError,
   generateLighthouseErrorMessage,
 } from './test-runs/lighthouse-executor';

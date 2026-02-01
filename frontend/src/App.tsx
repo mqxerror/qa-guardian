@@ -1,6 +1,6 @@
 // QA Guardian Frontend - Updated for DAST
 import { Routes, Route, Link, useNavigate, useLocation, useParams, useSearchParams, Navigate } from 'react-router-dom';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { lazy, Suspense, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RoleProtectedRoute } from './components/RoleProtectedRoute';
 import { Navigation } from './components/Navigation';
@@ -22,7 +22,92 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { getErrorMessage, isNetworkError, isOffline } from './utils/errorHandling';
 import jsPDF from 'jspdf';
 // Feature #1357: Extracted pages for code quality compliance (400 line limit)
-import { NotFoundPage, HomePage, LoginPage, RegisterPage, DashboardPage, ProjectsPage, ForgotPasswordPage, ResetPasswordPage, CreateOrganizationPage, AcceptInvitationPage, SchedulesPage, ScheduleDetailsPage, AIActionPage, BillingPage, ApiKeysPage, MCPToolsPage, PublicStatusPage, SharedTestRunPage, OrganizationMembersPage, AuditLogsPage, WebhookConfigurationPage, DASTComparisonPage, DASTGraphQLPage, TrivyDependencyScanPage, NpmAuditPage, CVEDatabasePage, LicenseCompliancePage, ContainerScanPage, DependencyPolicyPage, AutoPRPage, DependencyAgePage, MultiLanguageDependencyPage, VulnerabilityHistoryPage, ExploitabilityAnalysisPage, ScanCachingPage, KieAIProviderPage, AnthropicProviderPage, DependencyAlertsPage, MCPChatPage, AIRunComparisonPage, MCPAnalyticsPage, MCPPlaygroundPage, SecurityDashboardPage, OrganizationInsightsPage, BestPracticesPage, TestImprovementAnalyzerPage, IndustryBenchmarkPage, ReleaseNotesPage, PersonalizedInsightsPage, TeamSkillGapsPage, AILearningPage, TestDocumentationPage, ProviderHealthPage, AICostTrackingPage, AIUsageAnalyticsDashboard, AIThinkingDemoPage, AIThinkingIndicator, AIThinkingSpinner, AIConfidenceDemoPage, AIConfidenceIndicator, AIConfidenceBadge, AIConfidenceCard, FlakyTestsDashboardPage, VisualReviewPage, AnalyticsPage, MonitoringPage, AIRouterPage, ProjectDetailPage, OrganizationSettingsPage, TestSuitePage, TestDetailPage, TestRunResultPage, AITestGeneratorPage, AITestReviewPage, AIAgentWorkspacePage, ReportPage, SettingsPage, SuiteRunHistoryPage, ProjectRunHistoryPage, RunHistoryPage, ServicesPage } from './pages';
+// Eager imports: most-visited pages loaded in the main bundle
+import { NotFoundPage } from './pages/NotFoundPage';
+import { HomePage } from './pages/HomePage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
+
+// Lazy imports: all other pages loaded on-demand via code splitting
+const ProjectsPage = lazy(() => import('./pages/ProjectsPage').then(m => ({ default: m.ProjectsPage })));
+const CreateOrganizationPage = lazy(() => import('./pages/CreateOrganizationPage').then(m => ({ default: m.CreateOrganizationPage })));
+const AcceptInvitationPage = lazy(() => import('./pages/AcceptInvitationPage').then(m => ({ default: m.AcceptInvitationPage })));
+const SchedulesPage = lazy(() => import('./pages/SchedulesPage').then(m => ({ default: m.SchedulesPage })));
+const ScheduleDetailsPage = lazy(() => import('./pages/ScheduleDetailsPage').then(m => ({ default: m.ScheduleDetailsPage })));
+const AIActionPage = lazy(() => import('./pages/AIActionPage').then(m => ({ default: m.AIActionPage })));
+const BillingPage = lazy(() => import('./pages/BillingPage').then(m => ({ default: m.BillingPage })));
+const ApiKeysPage = lazy(() => import('./pages/ApiKeysPage').then(m => ({ default: m.ApiKeysPage })));
+const MCPToolsPage = lazy(() => import('./pages/MCPToolsPage').then(m => ({ default: m.MCPToolsPage })));
+const PublicStatusPage = lazy(() => import('./pages/PublicStatusPage').then(m => ({ default: m.PublicStatusPage })));
+const SharedTestRunPage = lazy(() => import('./pages/SharedTestRunPage'));
+const OrganizationMembersPage = lazy(() => import('./pages/OrganizationMembersPage').then(m => ({ default: m.OrganizationMembersPage })));
+const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })));
+const WebhookConfigurationPage = lazy(() => import('./pages/WebhookConfigurationPage').then(m => ({ default: m.WebhookConfigurationPage })));
+const DASTComparisonPage = lazy(() => import('./pages/DASTComparisonPage').then(m => ({ default: m.DASTComparisonPage })));
+const DASTGraphQLPage = lazy(() => import('./pages/DASTGraphQLPage').then(m => ({ default: m.DASTGraphQLPage })));
+const TrivyDependencyScanPage = lazy(() => import('./pages/TrivyDependencyScanPage').then(m => ({ default: m.TrivyDependencyScanPage })));
+const NpmAuditPage = lazy(() => import('./pages/NpmAuditPage').then(m => ({ default: m.NpmAuditPage })));
+const CVEDatabasePage = lazy(() => import('./pages/CVEDatabasePage').then(m => ({ default: m.CVEDatabasePage })));
+const LicenseCompliancePage = lazy(() => import('./pages/LicenseCompliancePage').then(m => ({ default: m.LicenseCompliancePage })));
+const ContainerScanPage = lazy(() => import('./pages/ContainerScanPage').then(m => ({ default: m.ContainerScanPage })));
+const DependencyPolicyPage = lazy(() => import('./pages/DependencyPolicyPage').then(m => ({ default: m.DependencyPolicyPage })));
+const AutoPRPage = lazy(() => import('./pages/AutoPRPage').then(m => ({ default: m.AutoPRPage })));
+const DependencyAgePage = lazy(() => import('./pages/DependencyAgePage').then(m => ({ default: m.DependencyAgePage })));
+const MultiLanguageDependencyPage = lazy(() => import('./pages/MultiLanguageDependencyPage').then(m => ({ default: m.MultiLanguageDependencyPage })));
+const VulnerabilityHistoryPage = lazy(() => import('./pages/VulnerabilityHistoryPage').then(m => ({ default: m.VulnerabilityHistoryPage })));
+const ExploitabilityAnalysisPage = lazy(() => import('./pages/ExploitabilityAnalysisPage').then(m => ({ default: m.ExploitabilityAnalysisPage })));
+const ScanCachingPage = lazy(() => import('./pages/ScanCachingPage').then(m => ({ default: m.ScanCachingPage })));
+const KieAIProviderPage = lazy(() => import('./pages/KieAIProviderPage').then(m => ({ default: m.KieAIProviderPage })));
+const AnthropicProviderPage = lazy(() => import('./pages/AnthropicProviderPage').then(m => ({ default: m.AnthropicProviderPage })));
+const DependencyAlertsPage = lazy(() => import('./pages/DependencyAlertsPage').then(m => ({ default: m.DependencyAlertsPage })));
+const MCPChatPage = lazy(() => import('./pages/MCPChatPage').then(m => ({ default: m.MCPChatPage })));
+const AIRunComparisonPage = lazy(() => import('./pages/AIRunComparisonPage').then(m => ({ default: m.AIRunComparisonPage })));
+const MCPAnalyticsPage = lazy(() => import('./pages/MCPAnalyticsPage').then(m => ({ default: m.MCPAnalyticsPage })));
+const MCPPlaygroundPage = lazy(() => import('./pages/MCPPlaygroundPage').then(m => ({ default: m.MCPPlaygroundPage })));
+const SecurityDashboardPage = lazy(() => import('./pages/SecurityDashboardPage').then(m => ({ default: m.SecurityDashboardPage })));
+const OrganizationInsightsPage = lazy(() => import('./pages/OrganizationInsightsPage').then(m => ({ default: m.OrganizationInsightsPage })));
+const BestPracticesPage = lazy(() => import('./pages/BestPracticesPage').then(m => ({ default: m.BestPracticesPage })));
+const TestImprovementAnalyzerPage = lazy(() => import('./pages/TestImprovementAnalyzerPage').then(m => ({ default: m.TestImprovementAnalyzerPage })));
+const IndustryBenchmarkPage = lazy(() => import('./pages/IndustryBenchmarkPage').then(m => ({ default: m.IndustryBenchmarkPage })));
+const ReleaseNotesPage = lazy(() => import('./pages/ReleaseNotesPage').then(m => ({ default: m.ReleaseNotesPage })));
+const PersonalizedInsightsPage = lazy(() => import('./pages/PersonalizedInsightsPage').then(m => ({ default: m.PersonalizedInsightsPage })));
+const TeamSkillGapsPage = lazy(() => import('./pages/TeamSkillGapsPage').then(m => ({ default: m.TeamSkillGapsPage })));
+const AILearningPage = lazy(() => import('./pages/AILearningPage').then(m => ({ default: m.AILearningPage })));
+const TestDocumentationPage = lazy(() => import('./pages/TestDocumentationPage').then(m => ({ default: m.TestDocumentationPage })));
+const ProviderHealthPage = lazy(() => import('./pages/ProviderHealthPage').then(m => ({ default: m.ProviderHealthPage })));
+const AICostTrackingPage = lazy(() => import('./pages/AICostTrackingPage').then(m => ({ default: m.AICostTrackingPage })));
+const AIUsageAnalyticsDashboard = lazy(() => import('./pages/AIUsageAnalyticsDashboard').then(m => ({ default: m.AIUsageAnalyticsDashboard })));
+const AIThinkingDemoPage = lazy(() => import('./pages/AIThinkingDemoPage').then(m => ({ default: m.AIThinkingDemoPage })));
+const AIConfidenceDemoPage = lazy(() => import('./pages/AIConfidenceDemoPage').then(m => ({ default: m.AIConfidenceDemoPage })));
+const FlakyTestsDashboardPage = lazy(() => import('./pages/FlakyTestsDashboardPage').then(m => ({ default: m.FlakyTestsDashboardPage })));
+const VisualReviewPage = lazy(() => import('./pages/VisualReviewPage'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
+const MonitoringPage = lazy(() => import('./pages/MonitoringPage').then(m => ({ default: m.MonitoringPage })));
+const AIRouterPage = lazy(() => import('./pages/AIRouterPage').then(m => ({ default: m.AIRouterPage })));
+const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage').then(m => ({ default: m.ProjectDetailPage })));
+const OrganizationSettingsPage = lazy(() => import('./pages/OrganizationSettingsPage'));
+const TestSuitePage = lazy(() => import('./pages/TestSuitePage').then(m => ({ default: m.TestSuitePage })));
+const TestDetailPage = lazy(() => import('./pages/TestDetailPage').then(m => ({ default: m.TestDetailPage })));
+const TestRunResultPage = lazy(() => import('./pages/TestRunResultPage'));
+const AITestGeneratorPage = lazy(() => import('./pages/AITestGeneratorPage').then(m => ({ default: m.AITestGeneratorPage })));
+const AITestReviewPage = lazy(() => import('./pages/AITestReviewPage').then(m => ({ default: m.AITestReviewPage })));
+const AIAgentWorkspacePage = lazy(() => import('./pages/AIAgentWorkspacePage').then(m => ({ default: m.AIAgentWorkspacePage })));
+const ReportPage = lazy(() => import('./pages/ReportPage').then(m => ({ default: m.ReportPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const SuiteRunHistoryPage = lazy(() => import('./pages/SuiteRunHistoryPage').then(m => ({ default: m.SuiteRunHistoryPage })));
+const ProjectRunHistoryPage = lazy(() => import('./pages/ProjectRunHistoryPage').then(m => ({ default: m.ProjectRunHistoryPage })));
+const RunHistoryPage = lazy(() => import('./pages/RunHistoryPage').then(m => ({ default: m.RunHistoryPage })));
+const ServicesPage = lazy(() => import('./pages/ServicesPage').then(m => ({ default: m.ServicesPage })));
+
+// Loading fallback for lazy-loaded pages
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+  </div>
+);
 
 // Feature #756: DASTComparisonPage extracted to ./pages/DASTComparisonPage.tsx
 // Feature #758: DASTGraphQLPage extracted to ./pages/DASTGraphQLPage.tsx
@@ -1031,6 +1116,7 @@ function App() {
       <QAChatWidget />
       <AICommandPalette />
       {/* Feature #1420: AI Suggestions sidebar removed */}
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<HomePage />} />
@@ -1506,6 +1592,7 @@ function App() {
         {/* 404 Not Found */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </Suspense>
     </div>
   );
 }

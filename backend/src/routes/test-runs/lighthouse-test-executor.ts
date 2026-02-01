@@ -30,10 +30,7 @@ import {
   detectNonHtmlContent,
   detectLoginPage,
   detectMixedContent,
-  generateLighthouseMetrics,
-  generateLighthouseOpportunities,
-  generateLighthouseDiagnostics,
-  generateLighthousePassedAudits,
+  runRealLighthouseAudit,
 } from './lighthouse-executor';
 
 /**
@@ -161,9 +158,11 @@ export async function executeLighthouseTest(
 
     // Navigate to target URL
     const response = await page.goto(test.target_url, {
-      waitUntil: 'networkidle',
-      timeout: test.audit_timeout || 30000,
+      waitUntil: 'domcontentloaded',
+      timeout: 60000,
     });
+    // Allow async content to settle before auditing
+    await page.waitForTimeout(2000);
 
     // Stop filmstrip capture and wait for it to finish
     filmstripCaptureActive = false;
@@ -215,25 +214,19 @@ export async function executeLighthouseTest(
       phase: 'auditing',
     });
 
-    // Simulate Lighthouse audit time
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Run real Lighthouse CLI audit against the target URL
+    const devicePreset = test.device_preset || 'desktop';
+    const auditTimeout = test.audit_timeout || 60000;
+    const audit = await runRealLighthouseAudit(test.target_url, devicePreset, auditTimeout);
 
-    // Generate simulated Lighthouse metrics
-    const metrics = generateLighthouseMetrics(test.device_preset || 'desktop');
-    const opportunities = generateLighthouseOpportunities();
-    const diagnostics = generateLighthouseDiagnostics();
-    const passedAudits = generateLighthousePassedAudits();
-
-    // Calculate performance score (simplified scoring)
-    const fcpScore = metrics.firstContentfulPaint < 1800 ? 1 : metrics.firstContentfulPaint < 3000 ? 0.5 : 0;
-    const lcpScore = metrics.largestContentfulPaint < 2500 ? 1 : metrics.largestContentfulPaint < 4000 ? 0.5 : 0;
-    const clsScore = metrics.cumulativeLayoutShift < 0.1 ? 1 : metrics.cumulativeLayoutShift < 0.25 ? 0.5 : 0;
-    const tbtScore = metrics.totalBlockingTime < 200 ? 1 : metrics.totalBlockingTime < 600 ? 0.5 : 0;
-    const siScore = metrics.speedIndex < 3400 ? 1 : metrics.speedIndex < 5800 ? 0.5 : 0;
-    const performanceScore = Math.floor((fcpScore + lcpScore + clsScore + tbtScore + siScore) / 5 * 100);
+    const { scores, metrics, opportunities, diagnostics, passedAudits } = audit;
+    const performanceScore = scores.performance;
 
     lighthouseResults = {
       performance_score: performanceScore,
+      accessibility_score: scores.accessibility,
+      best_practices_score: scores.bestPractices,
+      seo_score: scores.seo,
       metrics: {
         first_contentful_paint: metrics.firstContentfulPaint,
         largest_contentful_paint: metrics.largestContentfulPaint,
@@ -243,11 +236,11 @@ export async function executeLighthouseTest(
       },
       opportunities,
       diagnostics,
-      passed_audits: passedAudits.length,
-      device_preset: test.device_preset || 'desktop',
+      passed_audits: passedAudits,
+      device_preset: devicePreset,
     };
 
-    // Check thresholds
+    // Check thresholds against real scores
     const performanceThreshold = test.performance_threshold || 80;
     if (performanceScore < performanceThreshold) {
       testStatus = 'failed';
@@ -256,12 +249,12 @@ export async function executeLighthouseTest(
 
     if (test.lcp_threshold && metrics.largestContentfulPaint > test.lcp_threshold) {
       testStatus = 'failed';
-      testError = `LCP ${metrics.largestContentfulPaint}ms exceeds threshold ${test.lcp_threshold}ms`;
+      testError = `LCP ${Math.round(metrics.largestContentfulPaint)}ms exceeds threshold ${test.lcp_threshold}ms`;
     }
 
     if (test.cls_threshold && metrics.cumulativeLayoutShift > test.cls_threshold) {
       testStatus = 'failed';
-      testError = `CLS ${metrics.cumulativeLayoutShift} exceeds threshold ${test.cls_threshold}`;
+      testError = `CLS ${metrics.cumulativeLayoutShift.toFixed(3)} exceeds threshold ${test.cls_threshold}`;
     }
 
     // Emit progress
@@ -308,7 +301,7 @@ export async function executeLighthouseTest(
       performanceScore,
     });
 
-    // Feature #1966: Include lighthouse metrics in step result for frontend display
+    // Feature #1966: Include real lighthouse metrics in step result for frontend display
     stepResults.push({
       id: 'lighthouse_audit',
       action: 'lighthouse_audit',
@@ -318,9 +311,9 @@ export async function executeLighthouseTest(
       error: testError,
       lighthouse: lighthouseResults ? {
         performance: lighthouseResults.performance_score,
-        accessibility: Math.floor(Math.random() * 15) + 85, // Simulated accessibility score (85-100)
-        bestPractices: Math.floor(Math.random() * 15) + 85, // Simulated best practices score (85-100)
-        seo: Math.floor(Math.random() * 10) + 90, // Simulated SEO score (90-100)
+        accessibility: lighthouseResults.accessibility_score,
+        bestPractices: lighthouseResults.best_practices_score,
+        seo: lighthouseResults.seo_score,
         url: test.target_url,
         device: lighthouseResults.device_preset || 'desktop',
         metrics: {
@@ -329,9 +322,8 @@ export async function executeLighthouseTest(
           cls: lighthouseResults.metrics?.cumulative_layout_shift,
           tbt: lighthouseResults.metrics?.total_blocking_time,
           si: lighthouseResults.metrics?.speed_index,
-          fid: Math.floor(Math.random() * 50) + 10, // Simulated FID (10-60ms)
-          ttfb: Math.floor(Math.random() * 200) + 100, // Simulated TTFB (100-300ms)
-          tti: (lighthouseResults.metrics?.largest_contentful_paint || 2500) + Math.floor(Math.random() * 500), // TTI slightly after LCP
+          ttfb: metrics.timeToFirstByte,
+          tti: metrics.timeToInteractive,
         },
         opportunities: lighthouseResults.opportunities,
         diagnostics: lighthouseResults.diagnostics,

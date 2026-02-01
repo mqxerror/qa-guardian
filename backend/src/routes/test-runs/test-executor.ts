@@ -12,6 +12,7 @@
  */
 
 import { Browser, BrowserContext, Page, chromium, firefox, webkit } from 'playwright';
+import { AxeBuilder } from '@axe-core/playwright';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PNG } from 'pngjs';
@@ -129,20 +130,15 @@ import {
   detectNonHtmlContent,
   detectLoginPage,
   detectMixedContent,
-  generateLighthouseMetrics,
-  generateLighthouseOpportunities,
-  generateLighthouseDiagnostics,
-  generateLighthousePassedAudits,
+  runRealLighthouseAudit,
   classifyLighthouseError,
   generateLighthouseErrorMessage,
 } from './lighthouse-executor';
 
 import {
-  generateSimulatedViolations,
   calculateA11yScore,
   countViolationsByImpact,
   checkA11yThresholds,
-  buildTestEngineInfo,
 } from './accessibility-helpers';
 
 import { getTestSuite, IgnoreRegion } from '../test-suites';
@@ -937,7 +933,7 @@ async function executeTest(
             }
             break;
           case 'accessibility_check':
-            // Run accessibility scan at this step in the E2E test
+            // Run real axe-core accessibility scan at this step in the E2E test
             const a11yStepConfig = {
               wcagLevel: (step as any).a11y_wcag_level || 'AA',
               failOnAny: (step as any).a11y_fail_on_any === true,
@@ -951,42 +947,31 @@ async function executeTest(
             const a11yScreenshot = await page.screenshot();
             screenshot_base64 = a11yScreenshot.toString('base64');
 
-            // Simulate axe-core scan delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Generate simulated accessibility violations
-            const stepViolationTypes = [
-              { id: 'color-contrast', impact: 'serious' as const, description: 'Elements must have sufficient color contrast', wcagTags: ['wcag2aa', 'wcag143'] },
-              { id: 'image-alt', impact: 'critical' as const, description: 'Images must have alternate text', wcagTags: ['wcag2a', 'wcag111'] },
-              { id: 'button-name', impact: 'critical' as const, description: 'Buttons must have discernible text', wcagTags: ['wcag2a', 'wcag412'] },
-              { id: 'link-name', impact: 'serious' as const, description: 'Links must have discernible text', wcagTags: ['wcag2a', 'wcag412'] },
-              { id: 'label', impact: 'critical' as const, description: 'Form elements must have labels', wcagTags: ['wcag2a', 'wcag412'] },
-              { id: 'heading-order', impact: 'moderate' as const, description: 'Heading levels should only increase by one', wcagTags: ['best-practice'] },
-              { id: 'focus-visible', impact: 'serious' as const, description: 'Elements should have visible focus indicators', wcagTags: ['wcag2aa', 'wcag247'] },
-            ];
-
-            const stepViolations: Array<{
-              id: string;
-              impact: 'critical' | 'serious' | 'moderate' | 'minor';
-              description: string;
-              wcagTags: string[];
-              nodes: Array<{ html: string; target: string[] }>;
-            }> = [];
-
-            // Generate 0-3 random violations
-            const numStepViolations = Math.floor(Math.random() * 4);
-            for (let v = 0; v < numStepViolations; v++) {
-              const violationType = stepViolationTypes[Math.floor(Math.random() * stepViolationTypes.length)];
-              if (violationType && !stepViolations.find(sv => sv.id === violationType.id)) {
-                stepViolations.push({
-                  id: violationType.id,
-                  impact: violationType.impact,
-                  description: violationType.description,
-                  wcagTags: violationType.wcagTags,
-                  nodes: [{ html: '<div class="element">Sample</div>', target: ['.element'] }],
-                });
-              }
+            // Build WCAG tags for this step's scan
+            const stepAxeTags: string[] = ['wcag2a', 'wcag21a'];
+            if (a11yStepConfig.wcagLevel === 'AA' || a11yStepConfig.wcagLevel === 'AAA') {
+              stepAxeTags.push('wcag2aa', 'wcag21aa');
             }
+            if (a11yStepConfig.wcagLevel === 'AAA') {
+              stepAxeTags.push('wcag2aaa', 'wcag21aaa');
+            }
+
+            // Run real axe-core scan
+            const stepAxeResults = await new AxeBuilder({ page })
+              .withTags(stepAxeTags)
+              .analyze();
+
+            // Map real violations to the expected format
+            const stepViolations = stepAxeResults.violations.map(v => ({
+              id: v.id,
+              impact: (v.impact || 'minor') as 'critical' | 'serious' | 'moderate' | 'minor',
+              description: v.description,
+              wcagTags: v.tags,
+              nodes: v.nodes.map(n => ({
+                html: n.html,
+                target: n.target as string[],
+              })),
+            }));
 
             // Determine if step should fail based on configuration
             const criticalOrSeriousViolations = stepViolations.filter(v => v.impact === 'critical' || v.impact === 'serious').length;

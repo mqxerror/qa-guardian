@@ -8,6 +8,7 @@
 // Import types from execution module
 import { NetworkRequest, StepResult } from './execution';
 import { Page } from 'playwright';
+import { execFile } from 'child_process';
 
 // ============================================================================
 // Types
@@ -437,73 +438,205 @@ export function detectMixedContent(
   };
 }
 
+// ============================================================================
+// Real Lighthouse CLI Execution
+// ============================================================================
+
 /**
- * Generate simulated Lighthouse metrics
+ * Result from a real Lighthouse CLI audit
  */
-export function generateLighthouseMetrics(devicePreset: 'mobile' | 'desktop'): LighthouseMetrics {
+export interface RealLighthouseAuditResult {
+  scores: {
+    performance: number;
+    accessibility: number;
+    bestPractices: number;
+    seo: number;
+  };
+  metrics: LighthouseMetrics;
+  opportunities: LighthouseOpportunity[];
+  diagnostics: LighthouseDiagnostic[];
+  passedAudits: LighthousePassedAudit[];
+}
+
+/**
+ * Run a real Lighthouse audit via the CLI.
+ *
+ * Spawns the lighthouse binary with --output=json, parses the resulting
+ * Lighthouse Report (LHR), and extracts scores, metrics, opportunities,
+ * diagnostics, and passed audits.
+ *
+ * @param url - The URL to audit
+ * @param device - 'mobile' or 'desktop'
+ * @param timeoutMs - Maximum time to wait for lighthouse (default 60000ms)
+ * @returns Parsed audit results
+ * @throws Error if the lighthouse process fails or returns invalid JSON
+ */
+export async function runRealLighthouseAudit(
+  url: string,
+  device: 'mobile' | 'desktop',
+  timeoutMs: number = 60000,
+): Promise<RealLighthouseAuditResult> {
+  const args = [
+    url,
+    '--output=json',
+    '--chrome-flags=--headless --no-sandbox --disable-gpu',
+    '--quiet',
+  ];
+
+  if (device === 'mobile') {
+    args.push('--preset=perf', '--emulated-form-factor=mobile');
+  } else {
+    args.push('--emulated-form-factor=desktop');
+  }
+
+  const lhrJson = await new Promise<string>((resolve, reject) => {
+    const child = execFile('lighthouse', args, {
+      maxBuffer: 50 * 1024 * 1024, // 50 MB -- LHR JSON can be large
+      timeout: timeoutMs,
+      env: { ...process.env },
+    }, (error, stdout, stderr) => {
+      if (error) {
+        const stderrSnippet = stderr ? stderr.slice(0, 500) : '';
+        reject(new Error(
+          `Lighthouse CLI failed (code ${error.code ?? 'unknown'}): ${error.message}` +
+          (stderrSnippet ? `\nstderr: ${stderrSnippet}` : '')
+        ));
+        return;
+      }
+      if (!stdout || stdout.trim().length === 0) {
+        reject(new Error('Lighthouse CLI produced no output'));
+        return;
+      }
+      resolve(stdout);
+    });
+
+    // Safety: kill the process if it somehow exceeds timeout without execFile handling it
+    const safetyTimer = setTimeout(() => {
+      child.kill('SIGKILL');
+    }, timeoutMs + 5000);
+    child.on('exit', () => clearTimeout(safetyTimer));
+  });
+
+  let lhr: any;
+  try {
+    lhr = JSON.parse(lhrJson);
+  } catch {
+    throw new Error(
+      `Lighthouse CLI returned invalid JSON. First 200 chars: ${lhrJson.slice(0, 200)}`
+    );
+  }
+
+  // Validate that we have the expected LHR structure
+  if (!lhr.categories || !lhr.audits) {
+    throw new Error(
+      'Lighthouse output is missing expected fields (categories, audits). ' +
+      'The lighthouse binary may have returned a non-LHR response.'
+    );
+  }
+
+  const scores = extractScores(lhr);
+  const metrics = extractMetrics(lhr);
+  const opportunities = extractOpportunities(lhr);
+  const diagnostics = extractDiagnostics(lhr);
+  const passedAudits = extractPassedAudits(lhr);
+
+  return { scores, metrics, opportunities, diagnostics, passedAudits };
+}
+
+/**
+ * Extract category scores from the Lighthouse report.
+ * Lighthouse scores are 0-1 floats; we convert to 0-100 integers.
+ */
+function extractScores(lhr: any): RealLighthouseAuditResult['scores'] {
+  const cat = lhr.categories;
   return {
-    firstContentfulPaint: devicePreset === 'mobile' ? 2400 + Math.floor(Math.random() * 800) : 1200 + Math.floor(Math.random() * 400),
-    speedIndex: devicePreset === 'mobile' ? 3500 + Math.floor(Math.random() * 1000) : 2000 + Math.floor(Math.random() * 500),
-    largestContentfulPaint: devicePreset === 'mobile' ? 3000 + Math.floor(Math.random() * 1200) : 1800 + Math.floor(Math.random() * 600),
-    timeToInteractive: devicePreset === 'mobile' ? 4500 + Math.floor(Math.random() * 1500) : 2500 + Math.floor(Math.random() * 700),
-    totalBlockingTime: devicePreset === 'mobile' ? 250 + Math.floor(Math.random() * 150) : 100 + Math.floor(Math.random() * 80),
-    cumulativeLayoutShift: Math.random() * 0.15,
-    interactionToNextPaint: devicePreset === 'mobile' ? 300 + Math.floor(Math.random() * 200) : 150 + Math.floor(Math.random() * 100),
-    timeToFirstByte: devicePreset === 'mobile' ? 600 + Math.floor(Math.random() * 300) : 200 + Math.floor(Math.random() * 150),
+    performance: Math.round((cat.performance?.score ?? 0) * 100),
+    accessibility: Math.round((cat.accessibility?.score ?? 0) * 100),
+    bestPractices: Math.round((cat['best-practices']?.score ?? 0) * 100),
+    seo: Math.round((cat.seo?.score ?? 0) * 100),
   };
 }
 
 /**
- * Generate Lighthouse opportunities (simulated)
+ * Extract core web vitals and timing metrics from the Lighthouse report.
+ * Numeric values are in milliseconds (except CLS which is unitless).
  */
-export function generateLighthouseOpportunities(): LighthouseOpportunity[] {
-  const allOpportunities: LighthouseOpportunity[] = [
-    { id: 'render-blocking-resources', title: 'Eliminate render-blocking resources', savings: 1200 + Math.floor(Math.random() * 800), description: 'Resources are blocking the first paint of your page. Consider delivering critical JS/CSS inline and deferring all non-critical JS/styles.' },
-    { id: 'unused-css-rules', title: 'Remove unused CSS', savings: 300 + Math.floor(Math.random() * 400), description: 'Reduce unused rules from stylesheets and defer CSS not used for above-the-fold content to decrease bytes consumed by network activity.' },
-    { id: 'unused-javascript', title: 'Reduce unused JavaScript', savings: 500 + Math.floor(Math.random() * 600), description: 'Reduce unused JavaScript and defer loading scripts until they are required to decrease bytes consumed by network activity.' },
-    { id: 'modern-image-formats', title: 'Serve images in next-gen formats', savings: 800 + Math.floor(Math.random() * 700), description: 'Image formats like WebP and AVIF often provide better compression than PNG or JPEG, which means faster downloads and less data consumption.' },
-    { id: 'efficiently-encode-images', title: 'Efficiently encode images', savings: 400 + Math.floor(Math.random() * 500), description: 'Optimized images load faster and consume less cellular data.' },
-  ];
-
-  return allOpportunities.filter(() => Math.random() > 0.3);
+function extractMetrics(lhr: any): LighthouseMetrics {
+  const audits = lhr.audits;
+  return {
+    firstContentfulPaint: audits['first-contentful-paint']?.numericValue ?? 0,
+    speedIndex: audits['speed-index']?.numericValue ?? 0,
+    largestContentfulPaint: audits['largest-contentful-paint']?.numericValue ?? 0,
+    timeToInteractive: audits['interactive']?.numericValue ?? 0,
+    totalBlockingTime: audits['total-blocking-time']?.numericValue ?? 0,
+    cumulativeLayoutShift: audits['cumulative-layout-shift']?.numericValue ?? 0,
+    interactionToNextPaint: audits['interaction-to-next-paint']?.numericValue ?? 0,
+    timeToFirstByte: audits['server-response-time']?.numericValue ?? 0,
+  };
 }
 
 /**
- * Generate Lighthouse diagnostics (simulated)
+ * Extract performance opportunities from Lighthouse audits.
+ * Opportunities are audits with details.type === 'opportunity' and positive savings.
  */
-export function generateLighthouseDiagnostics(): LighthouseDiagnostic[] {
-  const allDiagnostics: LighthouseDiagnostic[] = [
-    { id: 'largest-contentful-paint-element', title: 'Largest Contentful Paint element', description: 'This is the largest contentful element painted within the viewport. Learn more about the LCP element.' },
-    { id: 'dom-size', title: 'Avoid an excessive DOM size', description: 'A large DOM will increase memory usage, cause longer style calculations, and produce costly layout reflows.' },
-    { id: 'third-party-facades', title: 'Lazy load third-party resources with facades', description: 'Some third-party embeds can be lazy loaded. Consider replacing them with a facade until they are required.' },
-    { id: 'font-display', title: 'Ensure text remains visible during webfont load', description: 'Leverage the font-display CSS feature to ensure text is user-visible while webfonts are loading.' },
-  ];
-
-  return allDiagnostics.filter(() => Math.random() > 0.4);
+function extractOpportunities(lhr: any): LighthouseOpportunity[] {
+  const opportunities: LighthouseOpportunity[] = [];
+  for (const [id, audit] of Object.entries<any>(lhr.audits)) {
+    if (
+      audit.details?.type === 'opportunity' &&
+      audit.details?.overallSavingsMs > 0
+    ) {
+      opportunities.push({
+        id,
+        title: audit.title ?? id,
+        savings: Math.round(audit.details.overallSavingsMs),
+        description: audit.description ?? '',
+      });
+    }
+  }
+  // Sort by savings descending so the biggest wins appear first
+  opportunities.sort((a, b) => b.savings - a.savings);
+  return opportunities;
 }
 
 /**
- * Generate Lighthouse passed audits (simulated)
+ * Extract diagnostics from Lighthouse audits.
+ * Diagnostics are audits with details.type === 'table' and a score below 1.
  */
-export function generateLighthousePassedAudits(): LighthousePassedAudit[] {
-  const allPassedAudits: LighthousePassedAudit[] = [
-    { id: 'viewport', title: 'Has a <meta name="viewport"> tag with width or initial-scale', description: 'A <meta name="viewport"> tag optimizes your app for mobile screen sizes.' },
-    { id: 'document-title', title: 'Document has a <title> element', description: 'The title gives screen reader users an overview of the page, and search engine users rely on it heavily to determine if a page is relevant to their search.' },
-    { id: 'html-has-lang', title: '<html> element has a [lang] attribute', description: 'If a page doesn\'t specify a lang attribute, a screen reader assumes that the page is in the default language that the user chose when setting up the screen reader.' },
-    { id: 'meta-description', title: 'Document has a meta description', description: 'Meta descriptions may be included in search results to concisely summarize page content.' },
-    { id: 'http-status-code', title: 'Page has successful HTTP status code', description: 'Pages with unsuccessful HTTP status codes may not be indexed properly.' },
-    { id: 'link-text', title: 'Links have descriptive text', description: 'Descriptive link text helps search engines understand your content.' },
-    { id: 'crawlable-anchors', title: 'Links are crawlable', description: 'Search engines may use href attributes on links to crawl websites.' },
-    { id: 'is-on-https', title: 'Uses HTTPS', description: 'HTTPS encrypts data sent between the browser and the server.' },
-    { id: 'charset', title: 'Properly defines charset', description: 'A character encoding declaration is required. It can be done with a <meta> tag in the first 1024 bytes of the HTML or in the Content-Type HTTP response header.' },
-    { id: 'doctype', title: 'Page has the HTML doctype', description: 'Specifying a doctype prevents the browser from switching to quirks-mode.' },
-    { id: 'no-document-write', title: 'Avoids document.write()', description: 'For users on slow connections, external scripts dynamically injected via document.write() can delay page load by tens of seconds.' },
-    { id: 'js-libraries', title: 'Detected JavaScript libraries', description: 'All front-end JavaScript libraries detected on the page.' },
-    { id: 'deprecations', title: 'Avoids deprecated APIs', description: 'Deprecated APIs will eventually be removed from the browser.' },
-    { id: 'errors-in-console', title: 'No browser errors logged to the console', description: 'Errors logged to the console indicate unresolved problems.' },
-  ];
+function extractDiagnostics(lhr: any): LighthouseDiagnostic[] {
+  const diagnostics: LighthouseDiagnostic[] = [];
+  for (const [id, audit] of Object.entries<any>(lhr.audits)) {
+    if (
+      audit.details?.type === 'table' &&
+      typeof audit.score === 'number' &&
+      audit.score < 1
+    ) {
+      diagnostics.push({
+        id,
+        title: audit.title ?? id,
+        description: audit.description ?? '',
+      });
+    }
+  }
+  return diagnostics;
+}
 
-  return allPassedAudits.filter(() => Math.random() > 0.3);
+/**
+ * Extract passed audits from Lighthouse audits.
+ * Passed audits are those with a score of exactly 1.
+ */
+function extractPassedAudits(lhr: any): LighthousePassedAudit[] {
+  const passed: LighthousePassedAudit[] = [];
+  for (const [id, audit] of Object.entries<any>(lhr.audits)) {
+    if (audit.score === 1) {
+      passed.push({
+        id,
+        title: audit.title ?? id,
+        description: audit.description ?? '',
+      });
+    }
+  }
+  return passed;
 }
 
 /**

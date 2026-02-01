@@ -12,6 +12,7 @@
  */
 
 import { Page, Browser } from 'playwright';
+import { AxeBuilder } from '@axe-core/playwright';
 
 import {
   StepResult,
@@ -19,11 +20,9 @@ import {
 
 import {
   A11yViolation,
-  generateSimulatedViolations,
   calculateA11yScore,
   countViolationsByImpact,
   checkA11yThresholds,
-  buildTestEngineInfo,
 } from './accessibility-helpers';
 
 /**
@@ -98,7 +97,9 @@ export async function executeAccessibilityTest(
     });
 
     // Navigate to target URL
-    await page.goto(test.target_url, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(test.target_url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    // Allow async content to settle before scanning
+    await page.waitForTimeout(2000);
 
     // Get DOM size for progress estimation
     const domSize = await page.evaluate(() => {
@@ -119,7 +120,7 @@ export async function executeAccessibilityTest(
       });
     }
 
-    // Simulate axe-core scan
+    // Configure axe-core scan
     const wcagLevel = test.wcag_level || 'AA';
     const includeBestPractices = test.include_best_practices !== false;
     const includeExperimental = test.include_experimental === true;
@@ -137,23 +138,51 @@ export async function executeAccessibilityTest(
       phase: 'scanning',
     });
 
-    // Simulate scan time based on DOM size
-    const scanDelay = isLargeDom ? 3000 : 2000;
-    await new Promise(resolve => setTimeout(resolve, Math.min(scanDelay, 1000)));
+    // Build axe-core WCAG tags based on configured level
+    const axeTags: string[] = ['wcag2a', 'wcag21a'];
+    if (wcagLevel === 'AA' || wcagLevel === 'AAA') {
+      axeTags.push('wcag2aa', 'wcag21aa');
+    }
+    if (wcagLevel === 'AAA') {
+      axeTags.push('wcag2aaa', 'wcag21aaa');
+    }
+    if (includeBestPractices) {
+      axeTags.push('best-practice');
+    }
+    if (includeExperimental) {
+      axeTags.push('experimental');
+    }
 
-    // Generate simulated violations
-    const baseViolationCount = Math.floor(Math.random() * 5);
-    const violations = generateSimulatedViolations(baseViolationCount, {
-      includeBestPractices,
-      includePa11y,
-    });
+    // Run real axe-core scan via @axe-core/playwright
+    const axeResults = await new AxeBuilder({ page })
+      .withTags(axeTags)
+      .analyze();
+
+    // Map real axe-core results to the format the app expects
+    const violations: A11yViolation[] = axeResults.violations.map(v => ({
+      id: v.id,
+      impact: (v.impact || 'minor') as A11yViolation['impact'],
+      description: v.description,
+      help: v.help,
+      helpUrl: v.helpUrl,
+      wcagTags: v.tags,
+      nodes: v.nodes.map(n => ({
+        html: n.html,
+        target: n.target as string[],
+        failureSummary: n.failureSummary,
+      })),
+      source: 'axe-core' as const,
+    }));
 
     // Calculate impact counts
     const impactCounts = countViolationsByImpact(violations);
 
-    // Calculate accessibility score (pass count is estimate based on DOM size)
-    const passesCount = Math.floor(domSize * 0.1);
+    // Use real passes count from axe-core results
+    const passesCount = axeResults.passes.length;
     const a11yScore = calculateA11yScore(violations, passesCount);
+
+    // Use the real axe-core engine version from the results
+    const axeVersion = axeResults.testEngine.version;
 
     // Build results
     a11yResults = {
@@ -162,10 +191,13 @@ export async function executeAccessibilityTest(
       violation_counts: impactCounts,
       wcag_level: wcagLevel,
       total_elements_scanned: domSize,
-      test_engines: buildTestEngineInfo(includePa11y),
+      test_engines: {
+        name: 'axe-core',
+        version: axeVersion,
+      },
       javascript_disabled: javascriptDisabled,
-      passes: [],
-      incomplete: [],
+      passes: axeResults.passes.map(p => ({ id: p.id, description: p.description })),
+      incomplete: axeResults.incomplete.map(i => ({ id: i.id, description: i.description })),
     };
 
     // Check thresholds
@@ -232,7 +264,7 @@ export async function executeAccessibilityTest(
         violations: violations,
         passes: passesCount,
         wcagLevel: wcagLevel,
-        axeVersion: '4.8.3',
+        axeVersion: axeVersion,
         score: a11yScore,
       },
     });

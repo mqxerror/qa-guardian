@@ -195,21 +195,7 @@ export interface A11yScanResults {
 // Violation Type Definitions
 // ============================================================================
 
-/**
- * Standard axe-core violation types
- */
-export const AXE_VIOLATION_TYPES: A11yViolationType[] = [
-  { id: 'color-contrast', impact: 'serious', description: 'Elements must have sufficient color contrast', help: 'Ensure the contrast ratio between foreground and background colors meets WCAG 2 AA requirements', wcagTags: ['wcag2aa', 'wcag143'] },
-  { id: 'image-alt', impact: 'critical', description: 'Images must have alternate text', help: 'Ensures <img> elements have alternate text or a role of none or presentation', wcagTags: ['wcag2a', 'wcag111'] },
-  { id: 'button-name', impact: 'critical', description: 'Buttons must have discernible text', help: 'Ensures buttons have discernible text', wcagTags: ['wcag2a', 'wcag412'] },
-  { id: 'link-name', impact: 'serious', description: 'Links must have discernible text', help: 'Ensures links have discernible text', wcagTags: ['wcag2a', 'wcag412'] },
-  { id: 'label', impact: 'critical', description: 'Form elements must have labels', help: 'Ensures every form element has a label', wcagTags: ['wcag2a', 'wcag412'] },
-  { id: 'aria-required-attr', impact: 'critical', description: 'Required ARIA attributes must be provided', help: 'Ensures elements with ARIA roles have required attributes', wcagTags: ['wcag2a', 'wcag412'] },
-  { id: 'html-lang-valid', impact: 'serious', description: 'HTML must have a valid lang attribute', help: 'Ensures the lang attribute is valid', wcagTags: ['wcag2a', 'wcag311'] },
-  { id: 'heading-order', impact: 'moderate', description: 'Heading levels should only increase by one', help: 'Ensures headings are in logical order', wcagTags: ['best-practice'] },
-  { id: 'landmark-one-main', impact: 'moderate', description: 'Page should contain one main landmark', help: 'Document should have one main landmark', wcagTags: ['best-practice'] },
-  { id: 'focus-visible', impact: 'serious', description: 'Elements should have visible focus indicators', help: 'Ensures interactive elements have visible focus', wcagTags: ['wcag2aa', 'wcag247'] },
-];
+// AXE_VIOLATION_TYPES removed: real axe-core results are now used instead of simulated violations
 
 /**
  * Pa11y-specific violation types (complementary to axe-core)
@@ -259,128 +245,7 @@ export const A11Y_PASS_CATEGORIES = [
 // Helper Functions
 // ============================================================================
 
-/**
- * Generate random accessibility violations for simulation
- */
-export function generateSimulatedViolations(
-  baseCount: number,
-  config: {
-    includeBestPractices: boolean;
-    includePa11y: boolean;
-    shadowDomInfo?: ShadowDomInfo;
-    iframeInfo?: IframeInfo;
-  }
-): A11yViolation[] {
-  const violations: A11yViolation[] = [];
-
-  // Add random axe-core violations
-  for (let i = 0; i < baseCount; i++) {
-    const violationType = AXE_VIOLATION_TYPES[Math.floor(Math.random() * AXE_VIOLATION_TYPES.length)];
-    if (!violationType) continue;
-    // Skip if violation is best-practice and not included
-    if (violationType.wcagTags?.includes('best-practice') && !config.includeBestPractices) continue;
-    // Skip if already added
-    if (violations.find(v => v.id === violationType.id)) continue;
-
-    violations.push({
-      ...violationType,
-      id: violationType.id ?? 'unknown',
-      helpUrl: `https://dequeuniversity.com/rules/axe/4.4/${violationType.id ?? 'unknown'}`,
-      nodes: [
-        {
-          html: `<div class="example-element">Example element</div>`,
-          target: ['div.example-element'],
-        },
-      ],
-      source: 'axe-core',
-    });
-  }
-
-  // Add Pa11y violations if enabled
-  if (config.includePa11y) {
-    const pa11yViolationCount = Math.floor(Math.random() * 3);
-    for (let i = 0; i < pa11yViolationCount; i++) {
-      const violationType = PA11Y_VIOLATION_TYPES[Math.floor(Math.random() * PA11Y_VIOLATION_TYPES.length)];
-      if (!violationType) continue;
-      if (violations.find(v => v.id === violationType.id)) continue;
-
-      violations.push({
-        ...violationType,
-        id: violationType.id ?? 'unknown',
-        helpUrl: `https://squizlabs.github.io/HTML_CodeSniffer/Standards/WCAG2/`,
-        nodes: [
-          {
-            html: `<nav class="example-nav">Navigation content</nav>`,
-            target: ['nav.example-nav'],
-          },
-        ],
-        source: 'pa11y',
-      });
-    }
-  }
-
-  // Add Shadow DOM-specific violations if Shadow DOM elements were found
-  if (config.shadowDomInfo && config.shadowDomInfo.openShadowRoots.length > 0) {
-    for (const shadowRoot of config.shadowDomInfo.openShadowRoots) {
-      if (Math.random() > 0.5) {
-        const violationType = SHADOW_DOM_VIOLATION_TYPES[Math.floor(Math.random() * SHADOW_DOM_VIOLATION_TYPES.length)];
-        if (!violationType) continue;
-        const existingViolation = violations.find(v => v.id === violationType.id);
-
-        if (existingViolation) {
-          existingViolation.nodes.push({
-            html: `<div class="shadow-element">Shadow DOM content</div>`,
-            target: [`${shadowRoot.hostSelector} >>> .shadow-element`],
-            shadowHost: shadowRoot.hostSelector,
-            inShadowDom: true,
-          });
-        } else {
-          violations.push({
-            ...violationType,
-            helpUrl: `https://dequeuniversity.com/rules/axe/4.4/${(violationType.id ?? 'unknown').replace('shadow-dom-', '')}`,
-            nodes: [
-              {
-                html: `<div class="shadow-element">Shadow DOM content</div>`,
-                target: [`${shadowRoot.hostSelector} >>> .shadow-element`],
-                shadowHost: shadowRoot.hostSelector,
-                inShadowDom: true,
-              },
-            ],
-            source: 'axe-core',
-            inShadowDom: true,
-          });
-        }
-      }
-    }
-  }
-
-  // Add iframe violations if cross-origin iframes found
-  if (config.iframeInfo && config.iframeInfo.crossOriginIframes.length > 0) {
-    const iframeViolationCount = Math.floor(Math.random() * 2);
-    for (let i = 0; i < iframeViolationCount; i++) {
-      const violationType = IFRAME_VIOLATION_TYPES[Math.floor(Math.random() * IFRAME_VIOLATION_TYPES.length)];
-      if (!violationType) continue;
-      if (violations.find(v => v.id === violationType.id)) continue;
-
-      const iframe = config.iframeInfo.crossOriginIframes[Math.floor(Math.random() * config.iframeInfo.crossOriginIframes.length)];
-      if (!iframe) continue;
-      violations.push({
-        ...violationType,
-        id: violationType.id ?? 'unknown',
-        helpUrl: `https://dequeuniversity.com/rules/axe/4.4/${violationType.id ?? 'unknown'}`,
-        nodes: [
-          {
-            html: `<iframe src="${iframe.src}" title="${iframe.title || 'Untitled'}"></iframe>`,
-            target: [iframe.selector],
-          },
-        ],
-        source: 'axe-core',
-      });
-    }
-  }
-
-  return violations;
-}
+// generateSimulatedViolations() removed: real axe-core scanning is now used
 
 /**
  * Calculate accessibility score based on violations

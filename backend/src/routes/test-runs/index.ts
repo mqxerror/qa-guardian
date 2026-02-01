@@ -671,10 +671,7 @@ export {
   detectNonHtmlContent,
   detectLoginPage,
   detectMixedContent,
-  generateLighthouseMetrics,
-  generateLighthouseOpportunities,
-  generateLighthouseDiagnostics,
-  generateLighthousePassedAudits,
+  runRealLighthouseAudit,
   classifyLighthouseError,
   generateLighthouseErrorMessage,
 } from './lighthouse-executor';
@@ -691,13 +688,11 @@ export {
   A11yConfig,
   A11yScanResults,
   // Constants
-  AXE_VIOLATION_TYPES,
   PA11Y_VIOLATION_TYPES,
   SHADOW_DOM_VIOLATION_TYPES,
   IFRAME_VIOLATION_TYPES,
   A11Y_PASS_CATEGORIES,
   // Functions
-  generateSimulatedViolations,
   calculateA11yScore,
   countViolationsByImpact,
   checkA11yThresholds,

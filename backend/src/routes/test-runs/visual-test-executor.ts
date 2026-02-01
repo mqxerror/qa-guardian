@@ -551,7 +551,9 @@ export async function executeVisualTest(
     }
 
     // Navigate to the target URL
-    const response = await page.goto(test.target_url, { waitUntil: 'networkidle', timeout: 30000 });
+    const response = await page.goto(test.target_url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    // Allow lazy-loaded content and async renders to settle before capturing
+    await page.waitForTimeout(3000);
     const navigateDuration = Date.now() - visualStepStart;
 
     // Check for HTTP error responses
