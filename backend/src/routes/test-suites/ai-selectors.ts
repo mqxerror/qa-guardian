@@ -35,45 +35,87 @@ interface AISuggestSelectorsBody {
   max_results?: number; // Max number of suggestions (default: 50)
 }
 
-// Feature #1139: Generate mock analyzed elements for demonstration
-// In production, this would parse actual HTML from the URL
-function generateMockAnalyzedElements(url?: string, html?: string): AnalyzedElement[] {
+// Feature #1139: Fetch and parse real HTML to extract interactive elements
+async function fetchAndAnalyzeElements(url?: string, html?: string): Promise<AnalyzedElement[]> {
+  let htmlContent = html || '';
+
+  // Fetch HTML from URL if provided
+  if (url && !html) {
+    try {
+      const response = await fetch(url, {
+        headers: { 'User-Agent': 'QA-Guardian-Selector-Analyzer/1.0' },
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!response.ok) {
+        console.warn(`[AI SELECTOR] Failed to fetch ${url}: ${response.status}`);
+        return [];
+      }
+      htmlContent = await response.text();
+    } catch (err: any) {
+      console.warn(`[AI SELECTOR] Error fetching ${url}: ${err.message}`);
+      return [];
+    }
+  }
+
+  if (!htmlContent) return [];
+
+  return parseHTMLElements(htmlContent);
+}
+
+// Parse HTML string to extract interactive elements using regex
+// (lightweight alternative to cheerio dependency)
+function parseHTMLElements(html: string): AnalyzedElement[] {
   const elements: AnalyzedElement[] = [];
+  const interactiveTags = ['input', 'button', 'a', 'select', 'textarea', 'label'];
 
-  // Common interactive elements found in web applications
-  const commonElements: AnalyzedElement[] = [
-    // Login form elements
-    { tag: 'input', attributes: { type: 'email', 'data-testid': 'email-input', name: 'email', placeholder: 'Enter your email' }, role: 'textbox' },
-    { tag: 'input', attributes: { type: 'password', 'data-testid': 'password-input', name: 'password', placeholder: 'Enter password' }, role: 'textbox' },
-    { tag: 'button', attributes: { type: 'submit', 'data-testid': 'login-button', 'aria-label': 'Sign in' }, text: 'Login', role: 'button' },
+  // Match self-closing and open tags for interactive elements
+  const tagPattern = new RegExp(
+    `<(${interactiveTags.join('|')})\\b([^>]*)(?:/>|>([^<]*)</)`,
+    'gi'
+  );
 
-    // Navigation elements
-    { tag: 'a', attributes: { href: '/dashboard', 'aria-label': 'Go to dashboard' }, text: 'Dashboard', role: 'link' },
-    { tag: 'a', attributes: { href: '/settings', 'data-testid': 'settings-link' }, text: 'Settings', role: 'link' },
-    { tag: 'button', attributes: { 'aria-label': 'Open menu', 'aria-expanded': 'false' }, role: 'button' },
+  let match;
+  while ((match = tagPattern.exec(html)) !== null) {
+    const tag = match[1].toLowerCase();
+    const attrString = match[2] || '';
+    const textContent = (match[3] || '').trim();
 
-    // Form elements
-    { tag: 'input', attributes: { type: 'text', name: 'search', placeholder: 'Search...' }, role: 'searchbox' },
-    { tag: 'select', attributes: { name: 'category', id: 'category-select' }, role: 'combobox' },
-    { tag: 'textarea', attributes: { name: 'description', 'data-testid': 'description-field', rows: '4' }, role: 'textbox' },
-    { tag: 'input', attributes: { type: 'checkbox', name: 'remember', id: 'remember-me' }, role: 'checkbox' },
+    // Parse attributes
+    const attributes: Record<string, string> = {};
+    const attrPattern = /(\w[\w-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|(\S+)))?/g;
+    let attrMatch;
+    while ((attrMatch = attrPattern.exec(attrString)) !== null) {
+      const name = attrMatch[1];
+      const value = attrMatch[2] ?? attrMatch[3] ?? attrMatch[4] ?? '';
+      attributes[name] = value;
+    }
 
-    // Action buttons
-    { tag: 'button', attributes: { 'data-testid': 'save-button', 'aria-label': 'Save changes' }, text: 'Save', role: 'button' },
-    { tag: 'button', attributes: { 'data-testid': 'cancel-button' }, text: 'Cancel', role: 'button' },
-    { tag: 'button', attributes: { 'aria-label': 'Delete item', class: 'btn-danger' }, text: 'Delete', role: 'button' },
-    { tag: 'button', attributes: { type: 'submit', class: 'primary-btn submit-form' }, text: 'Submit', role: 'button' },
+    // Determine role from tag/attributes
+    let role: string | undefined;
+    if (tag === 'button') role = 'button';
+    else if (tag === 'a') role = 'link';
+    else if (tag === 'select') role = 'combobox';
+    else if (tag === 'textarea') role = 'textbox';
+    else if (tag === 'input') {
+      const type = attributes.type || 'text';
+      if (type === 'checkbox') role = 'checkbox';
+      else if (type === 'radio') role = 'radio';
+      else if (type === 'search') role = 'searchbox';
+      else role = 'textbox';
+    }
+    // Override with explicit role attribute
+    if (attributes.role) role = attributes.role;
 
-    // Elements without good test attributes (to show warnings)
-    { tag: 'div', attributes: { class: 'card-item clickable', onclick: 'handleClick()' }, text: 'Click me' },
-    { tag: 'span', attributes: { class: 'icon close-btn' }, text: '×' },
-  ];
+    elements.push({
+      tag,
+      attributes,
+      text: textContent || undefined,
+      role,
+    });
 
-  // Add common elements
-  elements.push(...commonElements);
+    if (elements.length >= 200) break; // Safety limit
+  }
 
-  // If HTML was provided, we could parse it here
-  // For now, we just return the common elements
   return elements;
 }
 
@@ -252,9 +294,8 @@ export async function aiSelectorsRoutes(app: FastifyInstance) {
 
     console.log(`[AI SELECTOR SUGGESTION] Analyzing ${url || 'provided HTML'} for optimal selectors`);
 
-    // Simulated HTML analysis - in production this would crawl the URL or parse provided HTML
-    // For now, we generate mock elements based on common patterns
-    const analyzedElements: AnalyzedElement[] = generateMockAnalyzedElements(url, html);
+    // Fetch and parse real HTML from URL or provided HTML string
+    const analyzedElements: AnalyzedElement[] = await fetchAndAnalyzeElements(url, html);
 
     // Generate selector suggestions for each element
     const suggestions: SuggestedSelector[] = [];
