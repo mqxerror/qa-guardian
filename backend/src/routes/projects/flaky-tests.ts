@@ -538,8 +538,8 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
       duration_ms: r.duration_ms,
     }));
 
-    // Simulate code changes correlation (in production this would come from git)
-    // Feature #1101: Find potential correlated commits
+    // Feature #1101: Code changes correlation
+    // In production this would come from git integration - returns empty until configured
     const code_changes: Array<{
       date: string;
       commit_id: string;
@@ -547,26 +547,6 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
       author: string;
       files_changed: string[];
     }> = [];
-
-    // If flakiness started, generate a simulated "suspicious commit" around that time
-    if (flakiness_started) {
-      const flakinessDate = new Date(flakiness_started);
-      // Create a simulated commit 1-2 days before flakiness started
-      const commitDate = new Date(flakinessDate);
-      commitDate.setDate(commitDate.getDate() - 1);
-
-      code_changes.push({
-        date: commitDate.toISOString().split('T')[0] || '',
-        commit_id: 'abc' + Math.random().toString(36).substring(2, 8),
-        message: 'Refactored test dependencies and updated selectors',
-        author: 'developer@example.com',
-        files_changed: [
-          `tests/${test.name.toLowerCase().replace(/\s+/g, '-')}.spec.ts`,
-          'src/components/LoginForm.tsx',
-          'src/utils/api.ts',
-        ],
-      });
-    }
 
     // Calculate overall stats
     const total_runs = testRunData.length;

@@ -9780,7 +9780,7 @@ export default function () {
                 )}
 
                 {/* Code Changes Correlation */}
-                {flakinessTrend.code_changes.length > 0 && flakinessTrend.summary.flakiness_started && (
+                {flakinessTrend.code_changes.length > 0 && flakinessTrend.summary.flakiness_started ? (
                   <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
                     <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-2 flex items-center gap-2">
                       <span>⚠️</span> Potential Related Code Changes
@@ -9806,6 +9806,15 @@ export default function () {
                         </div>
                       </div>
                     ))}
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-2">
+                      <span>🔗</span> Code Changes Correlation
+                    </h3>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      Git integration not configured. Connect your repository to see commits correlated with flakiness.
+                    </p>
                   </div>
                 )}
 
