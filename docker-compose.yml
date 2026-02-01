@@ -69,7 +69,7 @@ services:
       -config api.addrs.addr.name=.*
       -config api.addrs.addr.regex=true
     ports:
-      - "8080:8080"
+      - "8090:8080"
     networks:
       - qa-network
     restart: unless-stopped
