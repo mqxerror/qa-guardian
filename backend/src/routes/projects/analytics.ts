@@ -532,8 +532,8 @@ export async function analyticsRoutes(app: FastifyInstance) {
       { metric: 'Mean Time to Test Recovery', your_value: Math.max(0.5, 5 - orgRuns.length * 0.2), industry_avg: 4, industry_top10: 0.5, unit: 'hours', higher_is_better: false, category: 'reliability' },
       { metric: 'Test-to-Code Ratio', your_value: Math.round((totalTests / Math.max(1, orgProjects.length * 50)) * 10) / 10 || 1.2, industry_avg: 0.8, industry_top10: 2.5, unit: ':1', higher_is_better: true, category: 'quality' },
       { metric: 'CI Pipeline Success Rate', your_value: Math.min(95, passRate + 2), industry_avg: 75, industry_top10: 95, unit: '%', higher_is_better: true, category: 'quality' },
-      { metric: 'Accessibility Compliance', your_value: Math.round(70 + Math.random() * 20), industry_avg: 60, industry_top10: 98, unit: '%', higher_is_better: true, category: 'quality' },
-      { metric: 'Security Scan Coverage', your_value: Math.round(60 + Math.random() * 20), industry_avg: 50, industry_top10: 95, unit: '%', higher_is_better: true, category: 'coverage' },
+      { metric: 'Accessibility Compliance', your_value: 0, industry_avg: 60, industry_top10: 98, unit: '%', higher_is_better: true, category: 'quality' },
+      { metric: 'Security Scan Coverage', your_value: 0, industry_avg: 50, industry_top10: 95, unit: '%', higher_is_better: true, category: 'coverage' },
     ];
 
     // Calculate percentiles for each metric
@@ -542,7 +542,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
       if (b.higher_is_better) {
         const range = b.industry_top10 - b.industry_avg;
         if (b.your_value >= b.industry_top10) {
-          percentile = 90 + Math.random() * 8;
+          percentile = 95;
         } else if (b.your_value >= b.industry_avg) {
           percentile = 50 + ((b.your_value - b.industry_avg) / range) * 40;
         } else {
@@ -550,7 +550,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
         }
       } else {
         if (b.your_value <= b.industry_top10) {
-          percentile = 90 + Math.random() * 8;
+          percentile = 95;
         } else if (b.your_value <= b.industry_avg) {
           percentile = 50 + ((b.industry_avg - b.your_value) / (b.industry_avg - b.industry_top10)) * 40;
         } else {
@@ -718,16 +718,16 @@ export async function analyticsRoutes(app: FastifyInstance) {
     ];
 
     // Generate patterns based on actual project count and failure data
-    const patterns = patternCategories.slice(0, Math.min(5, Math.max(2, Math.floor(failedRuns.length / 5)))).map((pc, idx) => {
-      const affectedCount = Math.min(projectNames.length, Math.floor(Math.random() * 3) + 2);
-      const shuffledProjects = [...projectNames].sort(() => Math.random() - 0.5);
-      const affectedProjects = shuffledProjects.slice(0, affectedCount);
+    // Only show patterns when there are real failures to analyze
+    const patterns = failedRuns.length === 0 ? [] : patternCategories.slice(0, Math.min(5, Math.max(2, Math.floor(failedRuns.length / 5)))).map((pc, idx) => {
+      const affectedCount = Math.min(projectNames.length, 2 + (idx % 2));
+      const affectedProjects = projectNames.slice(0, affectedCount);
       if (affectedProjects.length === 0) affectedProjects.push('Default Project');
 
-      const occurrences = Math.max(5, Math.floor(failedRuns.length * (0.2 + Math.random() * 0.3)));
+      const occurrences = Math.max(5, Math.floor(failedRuns.length * 0.3));
       const now = new Date();
       const firstSeen = new Date(now.getTime() - (7 + idx * 2) * 24 * 60 * 60 * 1000);
-      const lastSeen = new Date(now.getTime() - Math.floor(Math.random() * 2) * 24 * 60 * 60 * 1000);
+      const lastSeen = new Date(now.getTime() - idx * 24 * 60 * 60 * 1000);
 
       const severities = ['critical', 'high', 'medium', 'low'] as const;
       const severity = severities[Math.min(idx, severities.length - 1)];
@@ -742,7 +742,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
         last_seen: lastSeen.toISOString().split('T')[0],
         severity,
         category: pc.category,
-        confidence: 0.75 + Math.random() * 0.2,
+        confidence: 0.85,
       };
     });
 
@@ -755,13 +755,9 @@ export async function analyticsRoutes(app: FastifyInstance) {
       { type: 'Schema Migration', desc: 'Add deprecation handling middleware', fix: 'Implemented @deprecated directive handler with fallback' },
     ];
 
-    const solutions = solutionTypes.slice(0, Math.min(5, patterns.length + 1)).map((st, idx) => {
-      const shuffledProjects = [...projectNames].sort(() => Math.random() - 0.5);
-      const sourceProject = shuffledProjects[0] || 'Source Project';
-      const targetProjects = shuffledProjects.slice(1, Math.min(3, shuffledProjects.length)) || ['Target Project'];
-
-      const statuses = ['suggested', 'suggested', 'suggested', 'applied'] as const;
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
+    const solutions = patterns.length === 0 ? [] : solutionTypes.slice(0, Math.min(5, patterns.length + 1)).map((st, idx) => {
+      const sourceProject = projectNames[0] || 'Source Project';
+      const targetProjects = projectNames.slice(1, 3);
 
       return {
         id: String(idx + 1),
@@ -770,10 +766,10 @@ export async function analyticsRoutes(app: FastifyInstance) {
         solution_type: st.type,
         description: st.desc,
         original_fix: st.fix,
-        applicability_score: 80 + Math.floor(Math.random() * 15),
-        estimated_impact: 15 + Math.floor(Math.random() * 30),
-        affected_tests: Math.max(5, Math.floor(orgTests.length * (0.05 + Math.random() * 0.1))),
-        status,
+        applicability_score: 85,
+        estimated_impact: 25,
+        affected_tests: Math.max(5, Math.floor(orgTests.length * 0.08)),
+        status: 'suggested' as const,
       };
     });
 
@@ -791,11 +787,11 @@ export async function analyticsRoutes(app: FastifyInstance) {
       }
       const projectRuns = projectRunsList;
       const projectFailures = projectRuns.filter(r => r.status === 'failed');
-      const failureCount = projectFailures.length || Math.floor(Math.random() * 30) + 5;
+      const failureCount = projectFailures.length || 0;
 
       // Pick random patterns from the generated patterns
       const commonPatterns = patterns
-        .filter(p => p.affected_projects.includes(project.name) || Math.random() > 0.6)
+        .filter(p => p.affected_projects.includes(project.name))
         .slice(0, Math.min(2, patterns.length))
         .map(p => p.pattern_name.split(' ').slice(0, 2).join(' '));
 
@@ -805,7 +801,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
         .filter(p => patterns.some(pat =>
           pat.affected_projects.includes(project.name) &&
           pat.affected_projects.includes(p.name)
-        ) || Math.random() > 0.5)
+        ))
         .slice(0, 2)
         .map(p => p.name);
 
@@ -956,7 +952,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
 
       // Personalized recommendation
       const recommendations = [
-        `Consider adding tests for the new validation functions. Current coverage is ${60 + Math.floor(Math.random() * 20)}%.`,
+        `Consider adding tests for the new validation functions to improve coverage.`,
         `Your recent changes to the auth module have high test coverage. Great work!`,
         `The API endpoint tests you modified show stable results. No action needed.`,
         `Consider refactoring the flaky test in ${orgSuites[0]?.name || 'Auth Suite'} to improve reliability.`,
@@ -968,7 +964,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
         priority: 'medium',
         title: 'Suggested Actions',
         description: 'AI-powered recommendations for your work',
-        data: { recommendation: recommendations[Math.floor(Math.random() * recommendations.length)] },
+        data: { recommendation: recommendations[0] },
         timestamp,
         forRoles: ['developer', 'admin', 'owner'],
       });
@@ -1006,7 +1002,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
 
       // Flaky tests alert
       const flakyTests = orgSuites.slice(0, 3).map((suite, idx) => {
-        const flakyCount = Math.floor(Math.random() * 8) + 2;
+        const flakyCount = 0; // No real flaky data without DB query
         return {
           name: `test_${suite.name.toLowerCase().replace(/\s+/g, '_')}_${idx + 1}`,
           status: 'flaky' as const,
@@ -1046,7 +1042,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
         priority: 'medium',
         title: 'Team Recommendations',
         description: 'AI-powered suggestions for improving team testing',
-        data: { recommendation: teamRecommendations[Math.floor(Math.random() * teamRecommendations.length)] },
+        data: { recommendation: teamRecommendations[0] },
         timestamp,
         forRoles: ['admin', 'owner'],
       });
@@ -1101,9 +1097,9 @@ export async function analyticsRoutes(app: FastifyInstance) {
         const testsWritten = expertise === 'expert' ? Math.floor(totalTests * 0.4) :
                             expertise === 'proficient' ? Math.floor(totalTests * 0.25) :
                             expertise === 'learning' ? Math.floor(totalTests * 0.1) : 0;
-        const passRate = expertise === 'expert' ? 94 + Math.floor(Math.random() * 4) :
-                        expertise === 'proficient' ? 88 + Math.floor(Math.random() * 6) :
-                        expertise === 'learning' ? 78 + Math.floor(Math.random() * 10) : 0;
+        const passRate = expertise === 'expert' ? 96 :
+                        expertise === 'proficient' ? 91 :
+                        expertise === 'learning' ? 83 : 0;
 
         return { type, testsWritten, passRate, expertise };
       });
@@ -1191,7 +1187,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
       role: m.role,
       ownedTests: m.totalTests,
       ownershipPercentage: Math.round((m.totalTests / totalTestCount) * 100),
-      suites: orgSuites.slice(0, 3).map(s => ({ name: s.name, testCount: Math.floor(m.totalTests * (0.2 + Math.random() * 0.3)) })),
+      suites: orgSuites.slice(0, 3).map(s => ({ name: s.name, testCount: Math.floor(m.totalTests * 0.33) })),
       recentActivity: m.totalTests > 150 ? 'high' : m.totalTests > 80 ? 'medium' : 'low',
       busFactor: m.totalTests > totalTestCount * 0.4 ? 'critical' : m.totalTests > totalTestCount * 0.25 ? 'warning' : 'healthy',
     })).sort((a, b) => b.ownershipPercentage - a.ownershipPercentage);
@@ -1250,7 +1246,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
       workflowsIdentified,
       suggestionsGenerated,
       timeSaved: `${Math.floor(suggestionsGenerated * 0.5)} hrs`,
-      modelAccuracy: 85 + Math.floor(Math.random() * 10),
+      modelAccuracy: 90,
     };
 
     // Generate workflows based on usage patterns
