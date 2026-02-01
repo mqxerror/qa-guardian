@@ -132,82 +132,84 @@ export async function isInMaintenanceWindow(checkId: string): Promise<{ inMainte
 }
 
 /**
- * Simulate running a check from a specific location
+ * Run a real HTTP check against the monitored URL
  */
 export async function runCheck(check: UptimeCheck, location: MonitoringLocation): Promise<CheckResult> {
-  // Simulate location-based latency variations
-  const locationLatency: Record<MonitoringLocation, number> = {
-    'us-east': 0,
-    'us-west': 50,
-    'europe': 100,
-    'asia-pacific': 150,
-    'australia': 200,
-  };
-
-  const baseLatency = locationLatency[location] || 0;
-
   const result: CheckResult = {
     id: `result-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     check_id: check.id,
     location,
     status: 'up',
-    response_time: Math.floor(Math.random() * 500) + 50 + baseLatency,
-    status_code: check.expected_status,
+    response_time: 0,
+    status_code: 0,
     checked_at: new Date(),
   };
 
-  // Simulate a response body
-  const simulatedResponseBody = JSON.stringify({
-    status: 'ok',
-    message: 'Health check passed',
-    timestamp: new Date().toISOString(),
-    service: 'api-gateway',
-    version: '1.0.0',
-  });
+  let responseBody = '';
+  let responseHeaders: Record<string, string> = {};
 
-  // Simulate response headers
-  const simulatedResponseHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'X-Request-Id': `req-${Date.now()}`,
-    'X-Response-Time': `${result.response_time}ms`,
-    'Cache-Control': 'no-cache',
-    'Server': 'QA-Guardian/1.0',
-  };
+  try {
+    const startTime = performance.now();
+    const response = await fetch(check.url, {
+      method: (check as any).method || 'GET',
+      headers: (check as any).headers || {},
+      signal: AbortSignal.timeout(check.timeout || 30000),
+      redirect: 'follow',
+    });
+    result.response_time = Math.round(performance.now() - startTime);
+    result.status_code = response.status;
 
-  // Simulate SSL certificate info for HTTPS URLs
-  if (check.url.startsWith('https://')) {
-    const daysUntilExpiry = Math.floor(Math.random() * 360) + 5;
-    const validFrom = new Date();
-    validFrom.setDate(validFrom.getDate() - 365);
-    const validTo = new Date();
-    validTo.setDate(validTo.getDate() + daysUntilExpiry);
+    // Collect response headers
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value;
+    });
 
-    result.ssl_info = {
-      valid: true,
-      issuer: "Let's Encrypt Authority X3",
-      subject: new URL(check.url).hostname,
-      valid_from: validFrom,
-      valid_to: validTo,
-      days_until_expiry: daysUntilExpiry,
-      fingerprint: `SHA256:${Math.random().toString(36).substring(2, 18).toUpperCase()}`,
-    };
+    // Read response body (limited to 10KB for assertions)
+    responseBody = await response.text().then(t => t.slice(0, 10240)).catch(() => '');
 
-    const warningDays = check.ssl_expiry_warning_days || 30;
-    if (daysUntilExpiry <= warningDays && result.status !== 'down') {
+    // Determine status based on actual response
+    if (response.status === check.expected_status) {
+      result.status = 'up';
+    } else if (response.status >= 500) {
+      result.status = 'down';
+      result.error = `Server error: HTTP ${response.status}`;
+    } else if (response.status >= 400) {
       result.status = 'degraded';
-      result.error = `SSL certificate expires in ${daysUntilExpiry} days (warning threshold: ${warningDays} days)`;
+      result.error = `Client error: HTTP ${response.status}`;
+    } else {
+      result.status = 'up';
+    }
+
+    // Check if response time exceeds threshold (degraded if > 2x expected)
+    if (result.response_time > (check.timeout || 30000) * 0.5 && result.status === 'up') {
+      result.status = 'degraded';
+      result.error = `Slow response: ${result.response_time}ms`;
+    }
+
+  } catch (err: any) {
+    result.response_time = check.timeout || 30000;
+    result.status = 'down';
+    result.status_code = 0;
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+      result.error = `Connection timeout after ${check.timeout || 30000}ms`;
+    } else {
+      result.error = `Connection failed: ${err.message || 'Unknown error'}`;
     }
   }
 
-  // Simulate occasional failures (10% chance)
-  if (Math.random() < 0.1) {
-    result.status = 'down';
-    result.status_code = 500;
-    result.error = 'Connection timeout';
-    result.response_time = check.timeout;
-  } else if (Math.random() < 0.15) {
-    result.status = 'degraded';
-    result.response_time = Math.floor(Math.random() * 2000) + 1000 + baseLatency;
+  // SSL info not available from fetch API - mark as unavailable for HTTPS
+  // Real SSL checks would need a TLS library (tls.connect)
+  if (check.url.startsWith('https://') && result.status !== 'down') {
+    // SSL is implicitly valid if fetch succeeded over HTTPS
+    result.ssl_info = {
+      valid: true,
+      issuer: 'Unknown (fetch API does not expose certificate details)',
+      subject: new URL(check.url).hostname,
+      valid_from: new Date(),
+      valid_to: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // placeholder
+      days_until_expiry: 365, // placeholder - real check needs tls.connect
+      fingerprint: 'N/A',
+    };
   }
 
   // Evaluate assertions if configured
@@ -217,7 +219,7 @@ export async function runCheck(check: UptimeCheck, location: MonitoringLocation)
     let failed = 0;
 
     for (const assertion of check.assertions) {
-      const assertResult = evaluateAssertion(assertion, result.response_time, result.status_code, simulatedResponseBody, simulatedResponseHeaders);
+      const assertResult = evaluateAssertion(assertion, result.response_time, result.status_code, responseBody, responseHeaders);
       assertionResults.push(assertResult);
       if (assertResult.passed) {
         passed++;
