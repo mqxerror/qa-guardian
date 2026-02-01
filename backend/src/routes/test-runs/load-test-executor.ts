@@ -28,6 +28,8 @@ import {
   simulatedK6ResourceExhaustion,
 } from './test-simulation';
 
+import { formatBytes } from './storage';
+
 import {
   detectCircularImports,
   validateK6ScriptImports,
@@ -289,6 +291,10 @@ function convertK6SummaryToResults(
   const failedRate = metrics.http_req_failed?.value || 0;
   const failedRequests = Math.floor(totalRequests * failedRate);
 
+  const receivedBytes = metrics.data_received?.count || 0;
+  const sentBytes = metrics.data_sent?.count || 0;
+  const totalDataTransferred = receivedBytes + sentBytes;
+
   return {
     summary: {
       total_requests: totalRequests,
@@ -297,6 +303,8 @@ function convertK6SummaryToResults(
       requests_per_second: metrics.http_reqs?.rate?.toFixed(2) || '0',
       iterations: metrics.iterations?.count || 0,
       iterations_per_second: metrics.iterations?.rate?.toFixed(2) || '0',
+      data_transferred: totalDataTransferred,
+      data_transferred_formatted: formatBytes(totalDataTransferred),
     },
     response_times: {
       min: Math.floor(metrics.http_req_duration?.min || 0),
@@ -317,8 +325,8 @@ function convertK6SummaryToResults(
       ramp_up: test.ramp_up_time || 5,
     },
     data_transfer: {
-      received_bytes: metrics.data_received?.count || 0,
-      sent_bytes: metrics.data_sent?.count || 0,
+      received_bytes: receivedBytes,
+      sent_bytes: sentBytes,
       received_rate: metrics.data_received?.rate || 0,
       sent_rate: metrics.data_sent?.rate || 0,
     },
@@ -353,12 +361,20 @@ function generateSimulatedResults(
   const p95ResponseTime = Math.floor(avgResponseTime * (1.5 + Math.random() * 0.5));
   const p99ResponseTime = Math.floor(p95ResponseTime * (1.2 + Math.random() * 0.3));
 
+  // Simulate realistic data transfer based on request count
+  // Average ~2KB received per request, ~500B sent per request
+  const receivedBytes = totalRequests * (1800 + Math.floor(Math.random() * 800));
+  const sentBytes = totalRequests * (400 + Math.floor(Math.random() * 200));
+  const totalDataTransferred = receivedBytes + sentBytes;
+
   const results: any = {
     summary: {
       total_requests: totalRequests,
       failed_requests: failedRequests,
       success_rate: ((totalRequests - failedRequests) / totalRequests * 100).toFixed(2),
       requests_per_second: (totalRequests / duration).toFixed(2),
+      data_transferred: totalDataTransferred,
+      data_transferred_formatted: formatBytes(totalDataTransferred),
     },
     response_times: {
       min: Math.floor(avgResponseTime * 0.3),
@@ -375,6 +391,12 @@ function generateSimulatedResults(
       configured: duration,
       actual: duration + rampUpTime + 5,
       ramp_up: rampUpTime,
+    },
+    data_transfer: {
+      received_bytes: receivedBytes,
+      sent_bytes: sentBytes,
+      received_rate: Math.floor(receivedBytes / duration),
+      sent_rate: Math.floor(sentBytes / duration),
     },
     custom_metrics: generateCustomMetricValues(customMetrics, totalRequests),
     execution_mode: 'simulated',
