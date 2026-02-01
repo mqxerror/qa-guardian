@@ -752,169 +752,20 @@ export function extractSelector(
   return undefined;
 }
 
-// Helper to generate simulated console logs based on error type
+// Placeholder for console logs - returns empty array when no real data available
+// In production, real console logs are captured during test execution
 export function generateSimulatedConsoleLogs(
-  errorMessage: string,
-  now: Date
+  _errorMessage: string,
+  _now: Date
 ): Array<{ level: 'error' | 'warning' | 'info' | 'log'; message: string; timestamp: string; source?: string }> {
-  const logs: Array<{ level: 'error' | 'warning' | 'info' | 'log'; message: string; timestamp: string; source?: string }> = [];
-
-  // Always add the error that caused the failure
-  logs.push({
-    level: 'error',
-    message: errorMessage,
-    timestamp: new Date(now.getTime() - 100).toISOString(),
-    source: 'test',
-  });
-
-  // Add contextual logs based on error type
-  if (/network|fetch|ECONNREFUSED|connection/i.test(errorMessage)) {
-    logs.unshift({
-      level: 'warning',
-      message: 'Slow network detected, request taking longer than expected',
-      timestamp: new Date(now.getTime() - 3000).toISOString(),
-      source: 'network',
-    });
-    logs.unshift({
-      level: 'info',
-      message: 'Initiating API request to /api/v1/users',
-      timestamp: new Date(now.getTime() - 3500).toISOString(),
-      source: 'app',
-    });
-    logs.push({
-      level: 'error',
-      message: 'Failed to fetch: Network request failed',
-      timestamp: new Date(now.getTime() - 50).toISOString(),
-      source: 'network',
-    });
-  } else if (/timeout|timed out/i.test(errorMessage)) {
-    logs.unshift({
-      level: 'warning',
-      message: 'Operation taking longer than expected',
-      timestamp: new Date(now.getTime() - 5000).toISOString(),
-      source: 'test',
-    });
-    logs.unshift({
-      level: 'info',
-      message: 'Waiting for element to be visible',
-      timestamp: new Date(now.getTime() - 30000).toISOString(),
-      source: 'playwright',
-    });
-  } else if (/element|selector|locator/i.test(errorMessage)) {
-    logs.unshift({
-      level: 'warning',
-      message: 'Element selector may be incorrect or element not rendered',
-      timestamp: new Date(now.getTime() - 500).toISOString(),
-      source: 'test',
-    });
-    logs.unshift({
-      level: 'info',
-      message: 'Page loaded successfully',
-      timestamp: new Date(now.getTime() - 2000).toISOString(),
-      source: 'navigation',
-    });
-  } else if (/null|undefined|TypeError/i.test(errorMessage)) {
-    logs.unshift({
-      level: 'warning',
-      message: 'Received unexpected data format from API',
-      timestamp: new Date(now.getTime() - 200).toISOString(),
-      source: 'api',
-    });
-    logs.push({
-      level: 'error',
-      message: 'Cannot read property of undefined',
-      timestamp: new Date(now.getTime() - 50).toISOString(),
-      source: 'app',
-    });
-  }
-
-  // Add some general context logs
-  logs.unshift({
-    level: 'info',
-    message: 'Test started: ' + now.toISOString(),
-    timestamp: new Date(now.getTime() - 60000).toISOString(),
-    source: 'test-runner',
-  });
-
-  return logs;
+  return [];
 }
 
-// Helper to generate simulated network requests
+// Placeholder for network requests - returns empty array when no real data available
+// In production, real network requests are captured during test execution
 export function generateSimulatedNetworkRequests(
-  errorMessage: string,
-  now: Date
+  _errorMessage: string,
+  _now: Date
 ): Array<{ method: string; url: string; status: number; status_text: string; duration_ms: number; failed: boolean; error?: string }> {
-  const requests = [];
-
-  // Add initial page load request
-  requests.push({
-    method: 'GET',
-    url: 'https://app.example.com/dashboard',
-    status: 200,
-    status_text: 'OK',
-    duration_ms: 245,
-    failed: false,
-  });
-
-  // Add static assets
-  requests.push({
-    method: 'GET',
-    url: 'https://app.example.com/static/app.js',
-    status: 200,
-    status_text: 'OK',
-    duration_ms: 89,
-    failed: false,
-  });
-
-  // Add API calls based on error type
-  if (/network|fetch|ECONNREFUSED|connection/i.test(errorMessage)) {
-    requests.push({
-      method: 'GET',
-      url: 'https://api.example.com/v1/users',
-      status: 0,
-      status_text: 'Connection Refused',
-      duration_ms: 5023,
-      failed: true,
-      error: 'net::ERR_CONNECTION_REFUSED',
-    });
-    requests.push({
-      method: 'POST',
-      url: 'https://api.example.com/v1/data',
-      status: 0,
-      status_text: 'Network Error',
-      duration_ms: 30000,
-      failed: true,
-      error: 'Request timed out',
-    });
-  } else if (/timeout/i.test(errorMessage)) {
-    requests.push({
-      method: 'GET',
-      url: 'https://api.example.com/v1/slow-endpoint',
-      status: 0,
-      status_text: 'Timeout',
-      duration_ms: 30000,
-      failed: true,
-      error: 'Request exceeded timeout of 30000ms',
-    });
-  } else {
-    // Normal successful API calls
-    requests.push({
-      method: 'GET',
-      url: 'https://api.example.com/v1/config',
-      status: 200,
-      status_text: 'OK',
-      duration_ms: 156,
-      failed: false,
-    });
-    requests.push({
-      method: 'GET',
-      url: 'https://api.example.com/v1/users/me',
-      status: 200,
-      status_text: 'OK',
-      duration_ms: 203,
-      failed: false,
-    });
-  }
-
-  return requests;
+  return [];
 }

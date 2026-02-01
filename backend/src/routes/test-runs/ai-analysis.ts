@@ -1267,112 +1267,20 @@ export interface EvidenceArtifacts {
   };
 }
 
-// Helper to generate simulated console logs based on error type
+// Console logs and network requests are now returned as empty arrays
+// when no real data is captured. Real data comes from test execution.
 function generateSimulatedConsoleLogs(
-  errorMessage: string,
-  now: Date
+  _errorMessage: string,
+  _now: Date
 ): Array<{ level: 'error' | 'warning' | 'info' | 'log'; message: string; timestamp: string; source?: string }> {
-  const logs: Array<{ level: 'error' | 'warning' | 'info' | 'log'; message: string; timestamp: string; source?: string }> = [];
-
-  // Always add the error that caused the failure
-  logs.push({
-    level: 'error',
-    message: errorMessage,
-    timestamp: new Date(now.getTime() - 100).toISOString(),
-    source: 'test',
-  });
-
-  // Add contextual logs based on error type
-  if (/network|fetch|ECONNREFUSED|connection/i.test(errorMessage)) {
-    logs.unshift({
-      level: 'warning',
-      message: 'Slow network detected, request taking longer than expected',
-      timestamp: new Date(now.getTime() - 3000).toISOString(),
-      source: 'network',
-    });
-    logs.unshift({
-      level: 'info',
-      message: 'Initiating API request to /api/v1/users',
-      timestamp: new Date(now.getTime() - 3500).toISOString(),
-      source: 'app',
-    });
-  } else if (/timeout|timed out/i.test(errorMessage)) {
-    logs.unshift({
-      level: 'warning',
-      message: 'Operation taking longer than expected',
-      timestamp: new Date(now.getTime() - 5000).toISOString(),
-      source: 'test',
-    });
-  } else if (/element|selector|locator/i.test(errorMessage)) {
-    logs.unshift({
-      level: 'warning',
-      message: 'Element selector may be incorrect or element not rendered',
-      timestamp: new Date(now.getTime() - 500).toISOString(),
-      source: 'test',
-    });
-  }
-
-  // Add some general context logs
-  logs.unshift({
-    level: 'info',
-    message: 'Test started: ' + now.toISOString(),
-    timestamp: new Date(now.getTime() - 60000).toISOString(),
-    source: 'test-runner',
-  });
-
-  return logs;
+  return [];
 }
 
-// Helper to generate simulated network requests
 function generateSimulatedNetworkRequests(
-  errorMessage: string,
+  _errorMessage: string,
   _now: Date
 ): Array<{ method: string; url: string; status: number; status_text: string; duration_ms: number; failed: boolean; error?: string }> {
-  const requests = [];
-
-  // Add initial page load request
-  requests.push({
-    method: 'GET',
-    url: 'https://app.example.com/dashboard',
-    status: 200,
-    status_text: 'OK',
-    duration_ms: 245,
-    failed: false,
-  });
-
-  // Add API calls based on error type
-  if (/network|fetch|ECONNREFUSED|connection/i.test(errorMessage)) {
-    requests.push({
-      method: 'GET',
-      url: 'https://api.example.com/v1/users',
-      status: 0,
-      status_text: 'Connection Refused',
-      duration_ms: 5023,
-      failed: true,
-      error: 'net::ERR_CONNECTION_REFUSED',
-    });
-  } else if (/timeout/i.test(errorMessage)) {
-    requests.push({
-      method: 'GET',
-      url: 'https://api.example.com/v1/slow-endpoint',
-      status: 0,
-      status_text: 'Timeout',
-      duration_ms: 30000,
-      failed: true,
-      error: 'Request exceeded timeout of 30000ms',
-    });
-  } else {
-    requests.push({
-      method: 'GET',
-      url: 'https://api.example.com/v1/config',
-      status: 200,
-      status_text: 'OK',
-      duration_ms: 156,
-      failed: false,
-    });
-  }
-
-  return requests;
+  return [];
 }
 
 // Helper to parse stack trace from error message
@@ -1478,7 +1386,7 @@ export function generateEvidenceArtifacts(
       : 'No screenshot available - consider enabling screenshot capture on failure',
   };
 
-  // Generate console log evidence (simulated if not available)
+  // Console log evidence - uses real data when available, empty otherwise
   const hasRealConsoleLogs = testResult.console_logs && testResult.console_logs.length > 0;
   const consoleLogEntries = hasRealConsoleLogs
     ? testResult.console_logs!.map(log => ({
@@ -1487,22 +1395,22 @@ export function generateEvidenceArtifacts(
         timestamp: log.timestamp || now.toISOString(),
         source: 'page',
       }))
-    : generateSimulatedConsoleLogs(errorMessage, now);
+    : [];
 
   const consoleLogsEvidence = {
-    available: true,
+    available: consoleLogEntries.length > 0,
     entries: consoleLogEntries,
     total_errors: consoleLogEntries.filter(e => e.level === 'error').length,
     total_warnings: consoleLogEntries.filter(e => e.level === 'warning').length,
   };
 
-  // Generate network request evidence (simulated)
-  const networkRequests = generateSimulatedNetworkRequests(errorMessage, now);
+  // Network request evidence - empty until real network capture is configured
+  const networkRequests: Array<{ method: string; url: string; status: number; status_text: string; duration_ms: number; failed: boolean; error?: string }> = [];
   const networkEvidence = {
-    available: true,
+    available: false,
     requests: networkRequests,
-    total_requests: networkRequests.length,
-    failed_requests: networkRequests.filter(r => r.failed).length,
+    total_requests: 0,
+    failed_requests: 0,
   };
 
   // Generate stack trace evidence

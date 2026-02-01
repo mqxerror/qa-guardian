@@ -20,8 +20,6 @@ import {
   HistoricalPatternMatch,
   AffectedTest,
   CrossTestCorrelation,
-  generateSimulatedConsoleLogs,
-  generateSimulatedNetworkRequests,
   parseStackTrace,
   extractSelector,
 } from './root-cause-helpers';
@@ -436,7 +434,7 @@ export function generateEvidenceArtifacts(
       : 'No screenshot available - consider enabling screenshot capture on failure',
   };
 
-  // Generate console log evidence (simulated if not available)
+  // Console log evidence - uses real data when available, empty otherwise
   const hasRealConsoleLogs = testResult.console_logs && testResult.console_logs.length > 0;
   const consoleLogEntries = hasRealConsoleLogs
     ? testResult.console_logs!.map(log => ({
@@ -445,22 +443,22 @@ export function generateEvidenceArtifacts(
         timestamp: log.timestamp || now.toISOString(),
         source: 'page',
       }))
-    : generateSimulatedConsoleLogs(errorMessage, now);
+    : [];
 
   const consoleLogsEvidence = {
-    available: true, // Always show console logs section
+    available: consoleLogEntries.length > 0,
     entries: consoleLogEntries,
     total_errors: consoleLogEntries.filter(e => e.level === 'error').length,
     total_warnings: consoleLogEntries.filter(e => e.level === 'warning').length,
   };
 
-  // Generate network request evidence (simulated)
-  const networkRequests = generateSimulatedNetworkRequests(errorMessage, now);
+  // Network request evidence - empty until real network capture is configured
+  const networkRequests: Array<{ method: string; url: string; status: number; status_text: string; duration_ms: number; failed: boolean; error?: string }> = [];
   const networkEvidence = {
-    available: true,
+    available: false,
     requests: networkRequests,
-    total_requests: networkRequests.length,
-    failed_requests: networkRequests.filter(r => r.failed).length,
+    total_requests: 0,
+    failed_requests: 0,
   };
 
   // Generate stack trace evidence
