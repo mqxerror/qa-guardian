@@ -1473,21 +1473,11 @@ function MonitoringPage() {
   const [perfDevice, setPerfDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [isSubmittingPerf, setIsSubmittingPerf] = useState(false);
 
-  // Fetch DNS checks
+  // DNS monitoring removed - infrastructure monitoring, not QA testing
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const fetchDnsChecks = useCallback(async () => {
-    if (!token) return;
-    try {
-      const response = await fetch('/api/v1/monitoring/dns', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDnsChecks(data.checks || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch DNS checks:', error);
-    }
-  }, [token]);
+    // DNS monitoring has been removed
+  }, []);
 
   // Fetch DNS results
   const fetchDnsResults = useCallback(async (checkId: string) => {
@@ -1615,21 +1605,11 @@ function MonitoringPage() {
     setDnsInterval(60);
   };
 
-  // Fetch TCP checks
+  // TCP monitoring removed - infrastructure monitoring, not QA testing
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const fetchTcpChecks = useCallback(async () => {
-    if (!token) return;
-    try {
-      const response = await fetch('/api/v1/monitoring/tcp', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTcpChecks(data.checks || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch TCP checks:', error);
-    }
-  }, [token]);
+    // TCP monitoring has been removed
+  }, []);
 
   // Fetch TCP results
   const fetchTcpResults = useCallback(async (checkId: string) => {
@@ -4247,26 +4227,7 @@ function MonitoringPage() {
             >
               Webhooks ({webhookChecks.length})
             </button>
-            <button
-              onClick={() => setActiveTab('dns')}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'dns'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              DNS ({dnsChecks.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('tcp')}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'tcp'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              TCP ({tcpChecks.length})
-            </button>
+            {/* DNS and TCP tabs removed - infrastructure monitoring, not QA testing */}
             <button
               onClick={() => {
                 setActiveTab('settings');
@@ -5778,8 +5739,8 @@ function MonitoringPage() {
           </>
         )}
 
-        {/* DNS Tab Content */}
-        {activeTab === 'dns' && (
+        {/* DNS Tab Content - REMOVED (infrastructure monitoring, not QA testing) */}
+        {false && activeTab === 'dns' && (
           <>
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
@@ -5966,8 +5927,8 @@ function MonitoringPage() {
           </>
         )}
 
-        {/* TCP Tab Content */}
-        {activeTab === 'tcp' && (
+        {/* TCP Tab Content - REMOVED (infrastructure monitoring, not QA testing) */}
+        {false && activeTab === 'tcp' && (
           <>
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
@@ -6234,8 +6195,7 @@ function MonitoringPage() {
                             { name: 'Transactions', data: retentionStats.stats.transaction, icon: '🔄' },
                             { name: 'Performance', data: retentionStats.stats.performance, icon: '⚡' },
                             { name: 'Webhooks', data: retentionStats.stats.webhook, icon: '🔗' },
-                            { name: 'DNS Checks', data: retentionStats.stats.dns, icon: '🌍' },
-                            { name: 'TCP Checks', data: retentionStats.stats.tcp, icon: '🔌' },
+                            /* DNS and TCP removed - infrastructure monitoring, not QA testing */
                           ].map(({ name, data, icon }) => (
                             <tr key={name} className="hover:bg-muted/30">
                               <td className="px-4 py-3 font-medium text-foreground">
