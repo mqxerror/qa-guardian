@@ -1,8 +1,43 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 73/73 features passing (100%)**
+- **Progress: 77/83 features passing (92.8%)**
 - **Last Updated**: 2026-02-01
+
+=== Cleanup Session 2026-02-01 (Features #2140-#2143) ===
+Progress: 77/83 (92.8%) - Removed fake/mock data from multiple features
+
+### Feature #2140: Remove fake flaky test code changes block (PASSED)
+- Removed simulated git commit correlation from flaky-tests.ts
+- No more fabricated commit hashes (abc*), messages, authors
+- Frontend shows "Git integration not configured" when empty
+- Commit: acbe8e9
+
+### Feature #2141: Remove fabricated root cause console logs and network requests (PASSED)
+- Removed generateSimulatedConsoleLogs (~85 lines of fabricated logs)
+- Removed generateSimulatedNetworkRequests (~78 lines of fake requests to example.com)
+- Removed duplicates from ai-analysis.ts (~105 lines)
+- Updated call sites to return empty arrays, set available=false
+- Commit: f5dd978
+
+### Feature #2142: Remove DNS/TCP monitoring pages and routes (PASSED)
+- Replaced backend dns-tcp.ts (802 lines) with stub returning 410 Gone
+- Removed DNS/TCP tab buttons from MonitoringPage
+- Made fetch functions no-ops to prevent console errors
+- DNS/TCP was infrastructure monitoring, not QA testing
+- Commit: 990473d
+
+### Feature #2143: Remove Container Scan, npm Audit, Trivy mock pages (PASSED)
+- Replaced ContainerScanPage.tsx (614 lines mock) with Coming Soon placeholder
+- Replaced NpmAuditPage.tsx (618 lines mock) with Coming Soon placeholder
+- Replaced TrivyDependencyScanPage.tsx (1060 lines mock) with Coming Soon placeholder
+- Removed Dependencies and Container Scan from sidebar navigation
+- Total mock code removed: ~2,292 lines
+- Commit: af4c84b
+
+### Next Session Should
+1. Continue with remaining 6 cleanup features
+2. PostgreSQL is NOT running - some features that need DB may need to be skipped
 - **Note**: ALL simulated test tools replaced with real implementations. Zero Math.random() in production code.
 
 ## Session #163 (2026-02-01)
