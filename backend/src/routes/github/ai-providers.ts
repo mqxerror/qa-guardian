@@ -306,22 +306,97 @@ function calculateKieAICost(
   };
 }
 
-function generateMockAIResponse(prompt: string): string {
-  const responses = [
-    `Based on my analysis of "${prompt.slice(0, 50)}...", here are my recommendations:\n\n1. Consider implementing automated test coverage analysis\n2. Add regression tests for critical paths\n3. Enable continuous monitoring for early detection\n\nThis approach should help improve your overall code quality by approximately 35%.`,
-    `I've analyzed the request and here's what I found:\n\n**Key Findings:**\n- The test suite has good coverage but some edge cases are missing\n- Performance tests should be added for API endpoints\n- Consider adding contract tests for service boundaries\n\n**Recommended Actions:**\n1. Add edge case tests for null/undefined inputs\n2. Implement load testing for endpoints handling >100 RPS\n3. Set up API contract validation`,
-    `Looking at this from a QA perspective:\n\n- Good test structure observed\n- Some flaky tests detected - recommend stabilization\n- Coverage gaps in error handling paths\n\n**Suggested Improvements:**\n- Implement retry logic with exponential backoff\n- Add explicit waits instead of implicit timeouts\n- Use data-testid attributes for more stable selectors`,
-  ];
-  return responses[Math.floor(Math.random() * responses.length)];
+/**
+ * Attempt to call Kie.ai API. Returns error message if not configured.
+ */
+async function callKieAI(
+  apiEndpoint: string,
+  apiKey: string,
+  model: string,
+  messages: Array<{ role: string; content: string }>,
+  maxTokens: number,
+  temperature: number,
+): Promise<{ content: string; inputTokens: number; outputTokens: number; thinkingTokens: number } | { error: string }> {
+  if (!apiKey || apiKey.includes('***')) {
+    return { error: 'Kie.ai API key not configured. Please set a valid API key in Settings > AI Providers.' };
+  }
+
+  try {
+    const response = await fetch(`${apiEndpoint}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature }),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => '');
+      return { error: `Kie.ai API error (${response.status}): ${errorBody || response.statusText}` };
+    }
+
+    const data = await response.json() as any;
+    return {
+      content: data.choices?.[0]?.message?.content || 'No response content',
+      inputTokens: data.usage?.prompt_tokens || 0,
+      outputTokens: data.usage?.completion_tokens || 0,
+      thinkingTokens: data.usage?.thinking_tokens || 0,
+    };
+  } catch (err: any) {
+    return { error: `Kie.ai API call failed: ${err.message || 'Unknown error'}` };
+  }
 }
 
-function generateAnthropicResponse(prompt: string): string {
-  const responses = [
-    `I've analyzed your request regarding "${prompt.slice(0, 40)}...".\n\n**Analysis Summary:**\nBased on the context provided, here are my findings and recommendations:\n\n1. **Current State Assessment**: The test infrastructure shows solid foundations with room for optimization.\n\n2. **Identified Improvements**:\n   - Enhance error boundary testing\n   - Add more integration test coverage\n   - Implement performance benchmarks\n\n3. **Next Steps**: Consider implementing a phased rollout of these improvements, starting with the most impactful changes.`,
-    `Thank you for your query. Here's a comprehensive response:\n\n**Key Observations:**\n- Test coverage is at acceptable levels\n- Some areas need attention for edge cases\n- Performance tests could be more thorough\n\n**Recommendations:**\n1. Implement contract testing for API boundaries\n2. Add chaos engineering tests for resilience\n3. Set up automated regression detection\n\n**Expected Outcome:** These changes should reduce bug escape rate by approximately 40%.`,
-    `I understand you're looking for guidance on this matter.\n\n**Executive Summary:**\nThe current testing strategy is solid but has opportunities for enhancement.\n\n**Detailed Analysis:**\n\n1. **Strengths**\n   - Good unit test coverage\n   - CI/CD integration working well\n   - Test data management is organized\n\n2. **Areas for Improvement**\n   - End-to-end test stability\n   - Visual regression coverage\n   - API contract validation\n\nI recommend prioritizing the stability improvements first for maximum impact.`,
-  ];
-  return responses[Math.floor(Math.random() * responses.length)];
+/**
+ * Attempt to call Anthropic API directly. Returns error message if not configured.
+ */
+async function callAnthropicDirect(
+  apiKey: string,
+  apiVersion: string,
+  model: string,
+  messages: Array<{ role: string; content: string }>,
+  system: string | undefined,
+  maxTokens: number,
+  temperature: number,
+): Promise<{ content: string; inputTokens: number; outputTokens: number } | { error: string }> {
+  if (!apiKey || apiKey.includes('***')) {
+    return { error: 'Anthropic API key not configured. Please set a valid API key in Settings > AI Providers.' };
+  }
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': apiVersion || '2024-01-01',
+      },
+      body: JSON.stringify({
+        model,
+        messages: messages.map(m => ({ role: m.role === 'system' ? 'user' : m.role, content: m.content })),
+        ...(system ? { system } : {}),
+        max_tokens: maxTokens,
+        temperature,
+      }),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => '');
+      return { error: `Anthropic API error (${response.status}): ${errorBody || response.statusText}` };
+    }
+
+    const data = await response.json() as any;
+    return {
+      content: data.content?.[0]?.text || 'No response content',
+      inputTokens: data.usage?.input_tokens || 0,
+      outputTokens: data.usage?.output_tokens || 0,
+    };
+  } catch (err: any) {
+    return { error: `Anthropic API call failed: ${err.message || 'Unknown error'}` };
+  }
 }
 
 // =====================================================
@@ -406,18 +481,28 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const testStartTime = Date.now();
-    await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
+    const result = await callKieAI(
+      config.api_endpoint,
+      config.api_key,
+      config.model,
+      [{ role: 'user', content: 'Hello, this is a connection test. Reply with OK.' }],
+      50,
+      0,
+    );
+
+    if ('error' in result) {
+      return {
+        success: false,
+        latency_ms: Date.now() - testStartTime,
+        error: result.error,
+      };
+    }
 
     return {
       success: true,
       latency_ms: Date.now() - testStartTime,
       api_status: 'healthy',
       model_available: true,
-      rate_limit: {
-        requests_remaining: 9850,
-        tokens_remaining: 4_500_000,
-        reset_at: new Date(Date.now() + 3600000).toISOString(),
-      },
     };
   });
 
@@ -434,11 +519,23 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const startTime = Date.now();
-    await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500));
 
-    const inputTokens = chatRequest.messages.reduce((sum, m) => sum + Math.ceil(m.content.length / 4), 0);
-    const outputTokens = 200 + Math.floor(Math.random() * 300);
-    const thinkingTokens = chatRequest.model.includes('thinking') ? Math.floor(outputTokens * 0.5) : 0;
+    const result = await callKieAI(
+      config.api_endpoint,
+      config.api_key,
+      chatRequest.model || config.model,
+      chatRequest.messages,
+      chatRequest.max_tokens || config.max_tokens,
+      chatRequest.temperature ?? config.temperature,
+    );
+
+    if ('error' in result) {
+      return { error: result.error };
+    }
+
+    const inputTokens = result.inputTokens;
+    const outputTokens = result.outputTokens;
+    const thinkingTokens = result.thinkingTokens;
 
     const costSavings = calculateKieAICost(inputTokens, outputTokens, thinkingTokens);
 
@@ -450,7 +547,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
         index: 0,
         message: {
           role: 'assistant',
-          content: generateMockAIResponse(chatRequest.messages[chatRequest.messages.length - 1]?.content || ''),
+          content: result.content,
         },
         finish_reason: 'stop',
       }],
@@ -666,16 +763,23 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const testStartTime = Date.now();
-    await new Promise(resolve => setTimeout(resolve, 150 + Math.random() * 250));
+    const result = await callAnthropicDirect(
+      config.api_key,
+      config.api_version,
+      config.model,
+      [{ role: 'user', content: 'Hello, this is a connection test. Reply with OK.' }],
+      undefined,
+      50,
+      0,
+    );
 
-    const rateLimitInfo: AnthropicRateLimitInfo = {
-      requests_remaining: 9500,
-      requests_limit: 10000,
-      tokens_remaining: 9_000_000,
-      tokens_limit: 10_000_000,
-      reset_at: new Date(Date.now() + 60000).toISOString(),
-    };
-    anthropicRateLimits.set(orgId, rateLimitInfo);
+    if ('error' in result) {
+      return {
+        success: false,
+        latency_ms: Date.now() - testStartTime,
+        error: result.error,
+      };
+    }
 
     return {
       success: true,
@@ -683,7 +787,6 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
       api_status: 'healthy',
       api_version: config.api_version,
       models_available: Object.keys(ANTHROPIC_PRICING),
-      rate_limit: rateLimitInfo,
     };
   });
 
@@ -700,25 +803,24 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const startTime = Date.now();
-    const isRateLimited = Math.random() < 0.05;
 
-    if (isRateLimited && config.rate_limit_handling === 'fail') {
-      updateAnthropicStats(orgId, null, Date.now() - startTime, true, true);
-      return {
-        error: 'Rate limited',
-        retry_after_ms: config.retry_delay_ms,
-      };
+    const result = await callAnthropicDirect(
+      config.api_key,
+      config.api_version,
+      chatRequest.model || config.model,
+      chatRequest.messages,
+      chatRequest.system,
+      chatRequest.max_tokens || config.max_tokens,
+      chatRequest.temperature ?? config.temperature,
+    );
+
+    if ('error' in result) {
+      updateAnthropicStats(orgId, null, Date.now() - startTime, true, false);
+      return { error: result.error };
     }
 
-    if (isRateLimited && config.rate_limit_handling === 'retry') {
-      await new Promise(resolve => setTimeout(resolve, config.retry_delay_ms));
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 400));
-
-    const inputTokens = chatRequest.messages.reduce((sum, m) => sum + Math.ceil(m.content.length / 4), 0)
-      + (chatRequest.system ? Math.ceil(chatRequest.system.length / 4) : 0);
-    const outputTokens = 150 + Math.floor(Math.random() * 250);
+    const inputTokens = result.inputTokens;
+    const outputTokens = result.outputTokens;
 
     const pricing = ANTHROPIC_PRICING[chatRequest.model || config.model] || ANTHROPIC_PRICING['claude-sonnet-4'];
 
@@ -732,7 +834,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
       model: chatRequest.model || config.model,
       content: [{
         type: 'text',
-        text: generateAnthropicResponse(chatRequest.messages[chatRequest.messages.length - 1]?.content || ''),
+        text: result.content,
       }],
       stop_reason: 'end_turn',
       stop_sequence: null,
@@ -748,7 +850,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
       response_time_ms: Date.now() - startTime,
     };
 
-    updateAnthropicStats(orgId, response, response.response_time_ms, false, isRateLimited);
+    updateAnthropicStats(orgId, response, response.response_time_ms, false, false);
 
     let history = anthropicChatHistory.get(orgId) || [];
     history.push(response);
@@ -1040,7 +1142,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
     let fallbackAttempted = false;
 
     if (!useFallback) {
-      const primaryResult = await simulateProviderCall(config.primary_provider, messages, config.timeout_ms);
+      const primaryResult = await callProvider(config.primary_provider, messages, config.timeout_ms);
 
       if (primaryResult.success) {
         response = primaryResult.response;
@@ -1069,7 +1171,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
 
     if (useFallback && config.fallback_provider !== 'none') {
       providerUsed = config.fallback_provider;
-      const fallbackResult = await simulateProviderCall(config.fallback_provider, messages, config.timeout_ms);
+      const fallbackResult = await callProvider(config.fallback_provider, messages, config.timeout_ms);
 
       if (fallbackResult.success) {
         response = fallbackResult.response;
@@ -1239,7 +1341,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
       };
     }
 
-    const fallbackResult = await simulateProviderCall(config.fallback_provider, [
+    const fallbackResult = await callProvider(config.fallback_provider, [
       { role: 'user', content: 'Test failover message' },
     ], config.timeout_ms);
 
@@ -1257,46 +1359,63 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
     };
   });
 
-  // Helper to simulate provider call
-  async function simulateProviderCall(
+  // Helper to call a provider
+  async function callProvider(
     provider: string,
     messages: Array<{ role: string; content: string }>,
-    timeoutMs: number
+    _timeoutMs: number
   ): Promise<{ success: boolean; response?: any; reason?: string; error?: string }> {
-    await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
+    const orgId = 'org-001';
 
-    const failureChance = Math.random();
-    if (failureChance < 0.1) {
-      return { success: false, reason: 'timeout', error: 'Request timed out' };
-    }
-    if (failureChance < 0.15) {
-      return { success: false, reason: 'rate_limit', error: 'Rate limit exceeded' };
-    }
-    if (failureChance < 0.2) {
-      return { success: false, reason: 'error', error: 'Provider error' };
-    }
-
-    const inputTokens = messages.reduce((sum, m) => sum + Math.ceil(m.content.length / 4), 0);
-    const outputTokens = 200 + Math.floor(Math.random() * 200);
-
-    return {
-      success: true,
-      response: {
-        id: `${provider}-${Date.now()}`,
-        provider,
-        model: provider === 'kie' ? 'claude-opus-4.5-thinking' : 'claude-sonnet-4',
-        content: `Response from ${provider}: Based on your query, here are my recommendations...`,
-        usage: {
-          input_tokens: inputTokens,
-          output_tokens: outputTokens,
-          total_tokens: inputTokens + outputTokens,
+    if (provider === 'kie') {
+      const config = kieAIConfigs.get(orgId);
+      if (!config || !config.api_key || config.api_key.includes('***')) {
+        return { success: false, reason: 'error', error: 'Kie.ai API key not configured' };
+      }
+      const result = await callKieAI(config.api_endpoint, config.api_key, config.model, messages, config.max_tokens, config.temperature);
+      if ('error' in result) {
+        const reason = result.error.includes('timeout') ? 'timeout' : result.error.includes('429') ? 'rate_limit' : 'error';
+        return { success: false, reason, error: result.error };
+      }
+      return {
+        success: true,
+        response: {
+          id: `kie-${Date.now()}`,
+          provider: 'kie',
+          model: config.model,
+          content: result.content,
+          usage: { input_tokens: result.inputTokens, output_tokens: result.outputTokens, total_tokens: result.inputTokens + result.outputTokens },
+          cost: {
+            input_cost: (result.inputTokens / 1_000_000) * KIE_AI_PRICING.input_cost_per_million,
+            output_cost: (result.outputTokens / 1_000_000) * KIE_AI_PRICING.output_cost_per_million,
+          },
         },
-        cost: {
-          input_cost: (inputTokens / 1_000_000) * (provider === 'kie' ? 1.50 : 3.00),
-          output_cost: (outputTokens / 1_000_000) * (provider === 'kie' ? 7.50 : 15.00),
+      };
+    } else {
+      const config = anthropicConfigs.get(orgId);
+      if (!config || !config.api_key || config.api_key.includes('***')) {
+        return { success: false, reason: 'error', error: 'Anthropic API key not configured' };
+      }
+      const result = await callAnthropicDirect(config.api_key, config.api_version, config.model, messages, undefined, config.max_tokens, config.temperature);
+      if ('error' in result) {
+        const reason = result.error.includes('timeout') ? 'timeout' : result.error.includes('429') ? 'rate_limit' : 'error';
+        return { success: false, reason, error: result.error };
+      }
+      return {
+        success: true,
+        response: {
+          id: `anthropic-${Date.now()}`,
+          provider: 'anthropic',
+          model: config.model,
+          content: result.content,
+          usage: { input_tokens: result.inputTokens, output_tokens: result.outputTokens, total_tokens: result.inputTokens + result.outputTokens },
+          cost: {
+            input_cost: (result.inputTokens / 1_000_000) * (ANTHROPIC_PRICING[config.model]?.input_cost_per_million || 3.00),
+            output_cost: (result.outputTokens / 1_000_000) * (ANTHROPIC_PRICING[config.model]?.output_cost_per_million || 15.00),
+          },
         },
-      },
-    };
+      };
+    }
   }
 
   // Helper to update circuit breaker state
