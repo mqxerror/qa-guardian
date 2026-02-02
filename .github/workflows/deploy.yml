@@ -176,11 +176,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Build Frontend Image
+      # Build Frontend Image (context is repo root so Dockerfile can access dokploy/nginx.conf)
       - name: Build and push frontend image
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend
+          context: .
           file: ./dokploy/Dockerfile.frontend
           push: true
           tags: |

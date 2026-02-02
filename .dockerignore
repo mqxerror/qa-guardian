@@ -1,0 +1,32 @@
+# Root .dockerignore - used when building with repo root as context
+# Currently only the frontend Dockerfile uses root context
+
+# Exclude backend (not needed for frontend build)
+backend/node_modules
+backend/dist
+
+# Exclude frontend build artifacts and deps (rebuilt in Docker)
+frontend/node_modules
+frontend/dist
+
+# Exclude packages
+packages/*/node_modules
+packages/*/dist
+
+# Git
+.git
+.gitignore
+
+# IDE and OS
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs and temp files
+*.log

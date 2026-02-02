@@ -4,13 +4,13 @@
 # Multi-stage build that bakes in production environment variables
 # and serves static files via nginx with reverse proxy to backend
 #
-# Build with production URLs:
+# Build with production URLs (context must be repo root for nginx.conf access):
 #   docker build -f dokploy/Dockerfile.frontend \
 #     --build-arg VITE_API_URL=https://qa.pixelcraftedmedia.com \
 #     --build-arg VITE_API_BASE_URL=https://qa.pixelcraftedmedia.com \
 #     --build-arg VITE_SOCKET_URL=https://qa.pixelcraftedmedia.com \
 #     --build-arg VITE_MCP_URL=https://qa.pixelcraftedmedia.com/mcp \
-#     -t qa-guardian-frontend:latest ./frontend
+#     -t qa-guardian-frontend:latest .
 #
 # Run: docker run -p 80:80 qa-guardian-frontend:latest
 # =============================================================================
@@ -37,14 +37,14 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
 ENV VITE_MCP_URL=$VITE_MCP_URL
 
-# Copy package files
-COPY package*.json ./
+# Copy package files (from frontend/ since context is repo root)
+COPY frontend/package*.json ./
 
 # Install dependencies
 RUN npm ci
 
 # Copy source code
-COPY . .
+COPY frontend/ .
 
 # Build production bundle
 ENV NODE_ENV=production
