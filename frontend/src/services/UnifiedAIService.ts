@@ -11,7 +11,7 @@
  */
 
 // API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://qa.pixelcraftedmedia.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 // Types for AI responses
 export interface AIMetadata {

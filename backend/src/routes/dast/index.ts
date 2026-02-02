@@ -35,6 +35,12 @@ export {
   getOpenAPISpec,
 } from './scanner';
 
+// Lightweight Scanner (fallback when ZAP/Docker unavailable)
+export {
+  runLightweightScan,
+  isZAPAvailable,
+} from './lightweight-scanner';
+
 // Report Generation
 export {
   generateHTMLReport,

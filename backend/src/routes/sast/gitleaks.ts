@@ -272,14 +272,14 @@ function createTempGitleaksConfig(patterns: SecretPattern[]): string | null {
 /**
  * Check if Gitleaks CLI is available on the system
  */
-function checkGitleaksAvailability(): GitleaksVersionInfo {
+export function checkGitleaksAvailability(): GitleaksVersionInfo {
   if (gitleaksVersionCache) {
     return gitleaksVersionCache;
   }
 
   try {
     // Try common gitleaks binary locations
-    const possiblePaths = ['gitleaks', '/usr/local/bin/gitleaks', '/usr/bin/gitleaks'];
+    const possiblePaths = ['gitleaks', '/opt/homebrew/bin/gitleaks', '/usr/local/bin/gitleaks', '/usr/bin/gitleaks'];
 
     for (const gitleaksPath of possiblePaths) {
       try {
@@ -318,7 +318,7 @@ function checkGitleaksAvailability(): GitleaksVersionInfo {
  * Run Gitleaks CLI scan on a repository path
  * Feature #1558: Added support for custom secret patterns via --config flag
  */
-async function runGitleaksScan(
+export async function runGitleaksScan(
   repoPath: string,
   options: {
     fullHistory?: boolean;
@@ -363,55 +363,93 @@ async function runGitleaksScan(
       args.push('--no-git');
     }
 
-    // Add exclude paths
-    for (const excludePath of excludePaths) {
-      args.push('--exclude-path', excludePath);
+    // Create temporary config with allowlist for exclude paths (v8 doesn't support --exclude-path)
+    // Only create exclude config if no custom config was already provided
+    let tempExcludeConfig: string | null = null;
+    if (excludePaths.length > 0 && !tempConfigFile) {
+      tempExcludeConfig = path.join(os.tmpdir(), `gitleaks-exclude-${Date.now()}.toml`);
+      const pathPatterns = excludePaths.map(p => {
+        // Escape for TOML regex and match the directory anywhere in path
+        const escaped = p.replace(/\/$/, '').replace(/\./g, '\\.');
+        return `  '''${escaped}'''`;
+      }).join(',\n');
+      const excludeConfig = `[extend]
+useDefault = true
+
+[allowlist]
+description = "QA Guardian scan exclusions"
+paths = [
+${pathPatterns}
+]
+`;
+      fs.writeFileSync(tempExcludeConfig, excludeConfig, 'utf-8');
+      args.push('--config', tempExcludeConfig);
+      console.log(`[Gitleaks] Using exclude config: ${tempExcludeConfig} with ${excludePaths.length} patterns`);
     }
 
     // Run gitleaks with timeout
+    console.log(`[Gitleaks] Running: ${gitleaksPath} ${args.join(' ')}`);
+    console.log(`[Gitleaks] Output file: ${tempOutputFile}`);
+
     await new Promise<void>((resolve, reject) => {
-      const process = spawn(gitleaksPath, args, {
+      const gitleaksProcess = spawn(gitleaksPath, args, {
         timeout,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
 
       let stderr = '';
+      let stdout = '';
 
-      process.stderr?.on('data', (data) => {
+      gitleaksProcess.stdout?.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      gitleaksProcess.stderr?.on('data', (data) => {
         stderr += data.toString();
       });
 
-      process.on('close', (code) => {
-        // Gitleaks returns 0 for no findings, 1 for findings found (with --exit-code 0 it always returns 0)
+      gitleaksProcess.on('close', (code) => {
+        console.log(`[Gitleaks] Process exited with code ${code}`);
+        if (stderr) console.log(`[Gitleaks] stderr: ${stderr.substring(0, 500)}`);
+        if (stdout) console.log(`[Gitleaks] stdout: ${stdout.substring(0, 200)}`);
         resolve();
       });
 
-      process.on('error', (err) => {
+      gitleaksProcess.on('error', (err) => {
         reject(new Error(`Gitleaks process error: ${err.message}`));
       });
 
       // Handle timeout
       setTimeout(() => {
-        process.kill('SIGTERM');
+        gitleaksProcess.kill('SIGTERM');
         reject(new Error('Gitleaks scan timed out'));
       }, timeout);
     });
 
     // Parse JSON output
-    if (fs.existsSync(tempOutputFile)) {
+    const fileExists = fs.existsSync(tempOutputFile);
+    console.log(`[Gitleaks] Output file exists: ${fileExists}`);
+
+    if (fileExists) {
       const rawOutput = fs.readFileSync(tempOutputFile, 'utf-8');
+      console.log(`[Gitleaks] Output file size: ${rawOutput.length} bytes`);
 
       // Clean up temp files
       fs.unlinkSync(tempOutputFile);
       if (tempConfigFile && fs.existsSync(tempConfigFile)) {
         fs.unlinkSync(tempConfigFile);
       }
+      if (tempExcludeConfig && fs.existsSync(tempExcludeConfig)) {
+        fs.unlinkSync(tempExcludeConfig);
+      }
 
       if (!rawOutput.trim()) {
+        console.log('[Gitleaks] Output file is empty - no findings');
         return { success: true, findings: [], commitsScanned: 0 };
       }
 
       const rawFindings: GitleaksRawFinding[] = JSON.parse(rawOutput);
+      console.log(`[Gitleaks] Found ${rawFindings.length} raw findings`);
 
       // Convert to our format
       const findings = rawFindings.map((raw, index) => convertGitleaksFinding(raw, `finding_${Date.now()}_${index}`));
@@ -423,11 +461,15 @@ async function runGitleaksScan(
       };
     }
 
-    // Clean up temp config file even if no output
+    // Clean up temp files even if no output
     if (tempConfigFile && fs.existsSync(tempConfigFile)) {
       fs.unlinkSync(tempConfigFile);
     }
+    if (tempIgnoreFile && fs.existsSync(tempIgnoreFile)) {
+      fs.unlinkSync(tempIgnoreFile);
+    }
 
+    console.log('[Gitleaks] No output file found - no findings');
     return { success: true, findings: [], commitsScanned: 0 };
   } catch (error: any) {
     // Clean up temp files on error
@@ -437,6 +479,9 @@ async function runGitleaksScan(
       }
       if (tempConfigFile && fs.existsSync(tempConfigFile)) {
         fs.unlinkSync(tempConfigFile);
+      }
+      if (tempExcludeConfig && fs.existsSync(tempExcludeConfig)) {
+        fs.unlinkSync(tempExcludeConfig);
       }
     } catch {}
 

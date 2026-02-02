@@ -113,7 +113,10 @@ async function initTestUsers() {
 }
 
 // Initialize test users
-initTestUsers();
+initTestUsers().catch((err) => {
+  console.error('[Auth] Failed to seed test users (non-fatal):', err.message);
+  seedingComplete = true; // Allow app to continue
+});
 
 interface LoginBody {
   email: string;

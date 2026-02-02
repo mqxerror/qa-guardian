@@ -16,6 +16,9 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth';
 import { getProject, listProjects } from '../../services/repositories/projects';
 import { logAuditEntry } from '../audit-logs';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as crypto from 'crypto';
 
 import {
   SASTSeverity,
@@ -29,6 +32,7 @@ import {
   updateSASTConfig,
   createSastScan,
   getSastScan,
+  updateSastScan,
   getSastScansByProject,
   getFalsePositives,
   generateId,
@@ -127,9 +131,10 @@ async function runSemgrepScan(
       return { ...finding, isFalsePositive: isFP };
     });
   } catch (err: any) {
-    // If semgrep binary is not installed
+    // If semgrep binary is not installed, fall back to built-in JS scanner
     if (err.code === 'ENOENT') {
-      throw new Error('Semgrep is not installed. Install with: pip install semgrep');
+      console.log('[SAST] Semgrep not installed, falling back to built-in JS SAST scanner');
+      return runBuiltinSASTScan(projectId, repoPath, config);
     }
 
     // Semgrep exits with code 1 when findings exist -- parse stdout anyway
@@ -174,6 +179,291 @@ function mapSemgrepSeverity(semgrepSeverity?: string): SASTSeverity {
     default:
       return 'LOW';
   }
+}
+
+/**
+ * Built-in JavaScript SAST scanner — used as fallback when Semgrep CLI is not installed.
+ * Scans real source files with regex-based security rules and returns genuine findings.
+ * Each rule maps to a real CWE ID and OWASP category.
+ */
+interface BuiltinRule {
+  id: string;
+  name: string;
+  pattern: RegExp;
+  severity: SASTSeverity;
+  category: string;
+  message: string;
+  cweId: string;
+  owaspCategory: string;
+  suggestion: string;
+  /** File extensions this rule applies to (empty = all) */
+  fileExtensions?: string[];
+}
+
+const BUILTIN_SAST_RULES: BuiltinRule[] = [
+  {
+    id: 'js.security.eval-usage',
+    name: 'eval-usage',
+    pattern: /\beval\s*\(/,
+    severity: 'CRITICAL',
+    category: 'security',
+    message: 'Use of eval() can lead to code injection vulnerabilities. Avoid eval() and use safer alternatives.',
+    cweId: 'CWE-95',
+    owaspCategory: 'A03:2021-Injection',
+    suggestion: 'Replace eval() with JSON.parse(), Function constructor, or a safe expression evaluator.',
+    fileExtensions: ['.js', '.ts', '.jsx', '.tsx'],
+  },
+  {
+    id: 'js.security.hardcoded-secret',
+    name: 'hardcoded-secret',
+    pattern: /(password|secret|api_key|apikey|token|private_key)\s*[:=]\s*['"][^'"]{8,}['"]/i,
+    severity: 'HIGH',
+    category: 'security',
+    message: 'Hardcoded secret or credential detected. Use environment variables or a secrets manager instead.',
+    cweId: 'CWE-798',
+    owaspCategory: 'A07:2021-Identification-and-Authentication-Failures',
+    suggestion: 'Move secrets to environment variables or a vault service like AWS Secrets Manager.',
+    fileExtensions: ['.js', '.ts', '.jsx', '.tsx', '.json', '.env'],
+  },
+  {
+    id: 'js.security.sql-injection',
+    name: 'sql-injection',
+    pattern: /query\s*\(\s*['"`](?:SELECT|INSERT|UPDATE|DELETE|DROP).*\$\{/i,
+    severity: 'CRITICAL',
+    category: 'security',
+    message: 'Possible SQL injection via string interpolation in query. Use parameterized queries instead.',
+    cweId: 'CWE-89',
+    owaspCategory: 'A03:2021-Injection',
+    suggestion: 'Use parameterized queries with $1, $2 placeholders instead of template literals.',
+    fileExtensions: ['.js', '.ts'],
+  },
+  {
+    id: 'js.security.command-injection',
+    name: 'command-injection',
+    pattern: /(?:exec|execSync|spawn|spawnSync)\s*\(\s*(?:`[^`]*\$\{|['"][^'"]*['"]?\s*\+)/,
+    severity: 'CRITICAL',
+    category: 'security',
+    message: 'Possible command injection via dynamic string in child_process call. Validate and sanitize inputs.',
+    cweId: 'CWE-78',
+    owaspCategory: 'A03:2021-Injection',
+    suggestion: 'Use execFile() with an argument array instead of exec() with string concatenation.',
+    fileExtensions: ['.js', '.ts'],
+  },
+  {
+    id: 'js.security.path-traversal',
+    name: 'path-traversal',
+    pattern: /(?:readFile|readFileSync|writeFile|writeFileSync|createReadStream)\s*\([^)]*(?:req\.|request\.|params\.|query\.)/,
+    severity: 'HIGH',
+    category: 'security',
+    message: 'File operation uses user-controlled input. This could lead to path traversal attacks.',
+    cweId: 'CWE-22',
+    owaspCategory: 'A01:2021-Broken-Access-Control',
+    suggestion: 'Validate and sanitize file paths. Use path.resolve() and check against an allowed base directory.',
+    fileExtensions: ['.js', '.ts'],
+  },
+  {
+    id: 'js.security.xss-innerhtml',
+    name: 'xss-innerhtml',
+    pattern: /(?:innerHTML|outerHTML|document\.write)\s*[=(]/,
+    severity: 'HIGH',
+    category: 'security',
+    message: 'Direct DOM manipulation with innerHTML/outerHTML can lead to Cross-Site Scripting (XSS).',
+    cweId: 'CWE-79',
+    owaspCategory: 'A03:2021-Injection',
+    suggestion: 'Use textContent, createElement, or a framework\'s safe rendering methods instead.',
+    fileExtensions: ['.js', '.ts', '.jsx', '.tsx'],
+  },
+  {
+    id: 'js.security.no-csrf-protection',
+    name: 'no-csrf-protection',
+    pattern: /cors\(\s*\{[^}]*origin\s*:\s*(?:true|'\*'|"\*")/,
+    severity: 'MEDIUM',
+    category: 'security',
+    message: 'CORS configured with wildcard or permissive origin. This may expose the API to CSRF attacks.',
+    cweId: 'CWE-352',
+    owaspCategory: 'A01:2021-Broken-Access-Control',
+    suggestion: 'Restrict CORS origin to specific trusted domains and implement CSRF tokens.',
+    fileExtensions: ['.js', '.ts'],
+  },
+  {
+    id: 'js.security.weak-crypto',
+    name: 'weak-crypto',
+    pattern: /createHash\s*\(\s*['"](?:md5|sha1)['"]\s*\)/,
+    severity: 'MEDIUM',
+    category: 'security',
+    message: 'Use of weak cryptographic hash (MD5 or SHA1). These are vulnerable to collision attacks.',
+    cweId: 'CWE-328',
+    owaspCategory: 'A02:2021-Cryptographic-Failures',
+    suggestion: 'Use SHA-256 or SHA-3 for hashing. For passwords, use bcrypt, scrypt, or Argon2.',
+    fileExtensions: ['.js', '.ts'],
+  },
+  {
+    id: 'js.security.insecure-random',
+    name: 'insecure-random',
+    pattern: /Math\.random\(\)/,
+    severity: 'LOW',
+    category: 'security',
+    message: 'Math.random() is not cryptographically secure. Do not use for security-sensitive operations.',
+    cweId: 'CWE-338',
+    owaspCategory: 'A02:2021-Cryptographic-Failures',
+    suggestion: 'Use crypto.randomBytes() or crypto.randomUUID() for security-sensitive random values.',
+    fileExtensions: ['.js', '.ts', '.jsx', '.tsx'],
+  },
+  {
+    id: 'js.security.unvalidated-redirect',
+    name: 'unvalidated-redirect',
+    pattern: /(?:res|response)\.redirect\s*\(\s*(?:req|request)\./,
+    severity: 'MEDIUM',
+    category: 'security',
+    message: 'Redirect uses user-controlled input. This could lead to open redirect vulnerabilities.',
+    cweId: 'CWE-601',
+    owaspCategory: 'A01:2021-Broken-Access-Control',
+    suggestion: 'Validate redirect URLs against an allowlist of trusted destinations.',
+    fileExtensions: ['.js', '.ts'],
+  },
+  {
+    id: 'js.security.jwt-no-verify',
+    name: 'jwt-no-verify',
+    pattern: /jwt\.decode\s*\(/,
+    severity: 'HIGH',
+    category: 'security',
+    message: 'jwt.decode() does not verify the signature. Use jwt.verify() to validate tokens.',
+    cweId: 'CWE-345',
+    owaspCategory: 'A07:2021-Identification-and-Authentication-Failures',
+    suggestion: 'Always use jwt.verify() with a secret/public key to validate JWT tokens.',
+    fileExtensions: ['.js', '.ts'],
+  },
+  {
+    id: 'js.security.sensitive-data-log',
+    name: 'sensitive-data-log',
+    pattern: /console\.log\s*\([^)]*(?:password|token|secret|credential|apiKey|api_key)/i,
+    severity: 'MEDIUM',
+    category: 'security',
+    message: 'Sensitive data may be logged to console. Avoid logging secrets, tokens, or credentials.',
+    cweId: 'CWE-532',
+    owaspCategory: 'A09:2021-Security-Logging-and-Monitoring-Failures',
+    suggestion: 'Remove or redact sensitive data from log statements.',
+    fileExtensions: ['.js', '.ts', '.jsx', '.tsx'],
+  },
+];
+
+/**
+ * Walk a directory recursively, yielding file paths that match given extensions.
+ * Skips node_modules, .git, dist, build, and other non-source directories.
+ */
+function walkSourceFiles(dir: string, extensions: string[], maxFiles = 500): string[] {
+  const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'coverage', '.playwright-mcp', '.features_backups']);
+  const files: string[] = [];
+
+  function walk(currentDir: string) {
+    if (files.length >= maxFiles) return;
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (files.length >= maxFiles) return;
+      if (entry.isDirectory()) {
+        if (!SKIP_DIRS.has(entry.name) && !entry.name.startsWith('.')) {
+          walk(path.join(currentDir, entry.name));
+        }
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name);
+        if (extensions.includes(ext)) {
+          files.push(path.join(currentDir, entry.name));
+        }
+      }
+    }
+  }
+
+  walk(dir);
+  return files;
+}
+
+/**
+ * Run built-in JS SAST scanner against a target directory.
+ * Scans actual source files with regex-based security rules.
+ */
+async function runBuiltinSASTScan(
+  projectId: string,
+  scanPath: string,
+  config: SASTConfig
+): Promise<SASTFinding[]> {
+  const allExtensions = ['.js', '.ts', '.jsx', '.tsx', '.json'];
+  const sourceFiles = walkSourceFiles(scanPath, allExtensions);
+
+  console.log(`[SAST] Built-in scanner: scanning ${sourceFiles.length} files in ${scanPath}`);
+
+  const findings: SASTFinding[] = [];
+
+  for (const filePath of sourceFiles) {
+    let content: string;
+    try {
+      content = fs.readFileSync(filePath, 'utf-8');
+    } catch {
+      continue;
+    }
+
+    const lines = content.split('\n');
+    const relativePath = path.relative(scanPath, filePath);
+
+    // Check if file is in excluded paths
+    if (config.excludePaths?.some(ep => relativePath.startsWith(ep))) {
+      continue;
+    }
+
+    for (const rule of BUILTIN_SAST_RULES) {
+      // Check if rule applies to this file extension
+      if (rule.fileExtensions && rule.fileExtensions.length > 0) {
+        const ext = path.extname(filePath);
+        if (!rule.fileExtensions.includes(ext)) continue;
+      }
+
+      for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+        const line = lines[lineIdx]!;
+        const match = rule.pattern.exec(line);
+        if (match) {
+          findings.push({
+            id: generateId(),
+            ruleId: rule.id,
+            ruleName: rule.name,
+            severity: rule.severity,
+            category: rule.category,
+            message: rule.message,
+            filePath: relativePath,
+            line: lineIdx + 1,
+            column: match.index + 1,
+            endLine: lineIdx + 1,
+            endColumn: match.index + match[0].length + 1,
+            snippet: line.trim(),
+            cweId: rule.cweId,
+            owaspCategory: rule.owaspCategory,
+            suggestion: rule.suggestion,
+          });
+        }
+      }
+    }
+  }
+
+  console.log(`[SAST] Built-in scanner: found ${findings.length} raw findings`);
+
+  // Filter by severity threshold
+  const severityOrder: Record<SASTSeverity, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+  const threshold = severityOrder[config.severityThreshold];
+  const filteredByThreshold = findings.filter(f => severityOrder[f.severity] >= threshold);
+
+  // Mark findings that are false positives
+  const projectFPs = await getFalsePositives(projectId);
+  return filteredByThreshold.map(finding => {
+    const isFP = projectFPs.some(fp =>
+      fp.ruleId === finding.ruleId &&
+      fp.filePath === finding.filePath &&
+      fp.line === finding.line
+    );
+    return { ...finding, isFalsePositive: isFP };
+  });
 }
 
 /**
@@ -283,8 +573,8 @@ export async function coreRoutes(app: FastifyInstance) {
 
     const config = await getSASTConfig(projectId);
 
-    // Create scan record
-    const scanId = generateId();
+    // Create scan record (use UUID for DB compatibility)
+    const scanId = crypto.randomUUID();
     const scan: SASTScanResult = {
       id: scanId,
       projectId,
@@ -305,10 +595,13 @@ export async function coreRoutes(app: FastifyInstance) {
     // Update config with scan status
     await updateSASTConfig(projectId, { lastScanAt: scan.startedAt, lastScanStatus: 'running' });
 
+    // Determine scan path: use SAST_SCAN_PATH env, or the project cwd
+    const scanPath = process.env.SAST_SCAN_PATH || process.cwd();
+
     // Run scan asynchronously
     (async () => {
       try {
-        const findings = await runSemgrepScan(projectId, '/tmp/repo', config);
+        const findings = await runSemgrepScan(projectId, scanPath, config);
 
         // Calculate summary
         const summary = {
@@ -325,19 +618,32 @@ export async function coreRoutes(app: FastifyInstance) {
           }, {} as Record<string, number>),
         };
 
-        // Update scan result
+        // Update scan result in memory and persist to DB
         scan.status = 'completed';
         scan.completedAt = new Date().toISOString();
         scan.findings = findings;
         scan.summary = summary;
 
+        await updateSastScan(scanId, {
+          status: 'completed',
+          completedAt: scan.completedAt,
+          findings,
+          summary,
+        });
         await updateSASTConfig(projectId, { lastScanStatus: 'completed' });
+        console.log(`[SAST] Scan ${scanId} completed: ${findings.length} findings`);
       } catch (error) {
         scan.status = 'failed';
         scan.completedAt = new Date().toISOString();
         scan.error = error instanceof Error ? error.message : 'Unknown error';
 
+        await updateSastScan(scanId, {
+          status: 'failed',
+          completedAt: scan.completedAt,
+          error: scan.error,
+        });
         await updateSASTConfig(projectId, { lastScanStatus: 'failed' });
+        console.error(`[SAST] Scan ${scanId} failed:`, scan.error);
       }
     })();
 

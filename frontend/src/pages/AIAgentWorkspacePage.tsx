@@ -7,7 +7,7 @@ import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 
 // API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://qa.pixelcraftedmedia.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 // Task status types for Kanban
 type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'failed';

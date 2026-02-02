@@ -1,9 +1,11 @@
 // Feature #756: DAST Comparison Between Scans
-// Extracted from App.tsx for code quality compliance
-// Feature #1986: Shows demo/mock data - real DAST comparison integration coming soon
+// Feature #7: Real DAST scanning with lightweight scanner fallback
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { useAuthStore } from '../stores/authStore';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 // Types
 type DASTCompareRisk = 'High' | 'Medium' | 'Low' | 'Informational';
@@ -29,13 +31,25 @@ interface DASTCompareScan {
   id: string;
   targetUrl: string;
   scanProfile: 'baseline' | 'full' | 'api';
-  status: 'completed';
+  status: string;
   startedAt: string;
-  completedAt: string;
+  completedAt?: string;
   alerts: DASTCompareAlert[];
   summary: {
     total: number;
     byRisk: { high: number; medium: number; low: number; informational: number; };
+  };
+  statistics?: {
+    urlsScanned: number;
+    requestsSent: number;
+    duration: number;
+  };
+  progress?: {
+    phase: string;
+    percentage: number;
+    alertsFound: number;
+    urlsScanned: number;
+    phaseDescription: string;
   };
 }
 
@@ -54,63 +68,152 @@ interface DASTComparisonResult {
   };
 }
 
+interface ProjectOption {
+  id: string;
+  name: string;
+}
+
 export function DASTComparisonPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { token } = useAuthStore();
   const [selectedScan1, setSelectedScan1] = useState<string>('');
   const [selectedScan2, setSelectedScan2] = useState<string>('');
   const [comparisonResult, setComparisonResult] = useState<DASTComparisonResult | null>(null);
   const [isComparing, setIsComparing] = useState(false);
   const [activeTab, setActiveTab] = useState<'new' | 'fixed' | 'unchanged'>('new');
 
-  // Mock available scans
-  const availableScans: DASTCompareScan[] = [
-    {
-      id: 'scan_001',
-      targetUrl: 'https://api.example.com',
-      scanProfile: 'full',
-      status: 'completed',
-      startedAt: '2025-01-10T08:00:00Z',
-      completedAt: '2025-01-10T09:30:00Z',
-      alerts: [
-        { id: 'a1', pluginId: '10021', name: 'X-Frame-Options Header Not Set', risk: 'Medium', confidence: 'High', description: 'X-Frame-Options header is not included in the HTTP response to protect against Clickjacking attacks.', url: 'https://api.example.com/login', method: 'GET', solution: 'Add X-Frame-Options header with value DENY or SAMEORIGIN.', cweId: 1021 },
-        { id: 'a2', pluginId: '10038', name: 'Content Security Policy (CSP) Header Not Set', risk: 'Medium', confidence: 'High', description: 'CSP header is not set which helps prevent XSS attacks.', url: 'https://api.example.com/', method: 'GET', solution: 'Implement a Content Security Policy header.', cweId: 693 },
-        { id: 'a3', pluginId: '10096', name: 'Timestamp Disclosure', risk: 'Low', confidence: 'Low', description: 'Server timestamp disclosed in response.', url: 'https://api.example.com/health', method: 'GET', solution: 'Remove timestamps from responses or encrypt them.', cweId: 200 },
-        { id: 'a4', pluginId: '40012', name: 'Cross Site Scripting (Reflected)', risk: 'High', confidence: 'Medium', description: 'Reflected XSS vulnerability found in search parameter.', url: 'https://api.example.com/search?q=test', method: 'GET', param: 'q', attack: '<script>alert(1)</script>', evidence: '<script>alert(1)</script>', solution: 'Sanitize and encode all user inputs.', cweId: 79 },
-        { id: 'a5', pluginId: '90033', name: 'Loosely Scoped Cookie', risk: 'Informational', confidence: 'High', description: 'Cookies set without the Secure flag.', url: 'https://api.example.com/auth', method: 'POST', solution: 'Set Secure flag on all cookies.', cweId: 614 },
-      ],
-      summary: { total: 5, byRisk: { high: 1, medium: 2, low: 1, informational: 1 } },
-    },
-    {
-      id: 'scan_002',
-      targetUrl: 'https://api.example.com',
-      scanProfile: 'full',
-      status: 'completed',
-      startedAt: '2025-01-12T08:00:00Z',
-      completedAt: '2025-01-12T09:45:00Z',
-      alerts: [
-        { id: 'a6', pluginId: '10038', name: 'Content Security Policy (CSP) Header Not Set', risk: 'Medium', confidence: 'High', description: 'CSP header is not set which helps prevent XSS attacks.', url: 'https://api.example.com/', method: 'GET', solution: 'Implement a Content Security Policy header.', cweId: 693 },
-        { id: 'a7', pluginId: '10096', name: 'Timestamp Disclosure', risk: 'Low', confidence: 'Low', description: 'Server timestamp disclosed in response.', url: 'https://api.example.com/health', method: 'GET', solution: 'Remove timestamps from responses or encrypt them.', cweId: 200 },
-        { id: 'a8', pluginId: '90033', name: 'Loosely Scoped Cookie', risk: 'Informational', confidence: 'High', description: 'Cookies set without the Secure flag.', url: 'https://api.example.com/auth', method: 'POST', solution: 'Set Secure flag on all cookies.', cweId: 614 },
-        { id: 'a9', pluginId: '10020', name: 'X-Content-Type-Options Header Missing', risk: 'Low', confidence: 'Medium', description: 'X-Content-Type-Options header is missing.', url: 'https://api.example.com/api/data', method: 'GET', solution: 'Add X-Content-Type-Options header with value nosniff.', cweId: 693 },
-      ],
-      summary: { total: 4, byRisk: { high: 0, medium: 1, low: 2, informational: 1 } },
-    },
-    {
-      id: 'scan_003',
-      targetUrl: 'https://api.example.com',
-      scanProfile: 'api',
-      status: 'completed',
-      startedAt: '2025-01-14T10:00:00Z',
-      completedAt: '2025-01-14T11:15:00Z',
-      alerts: [
-        { id: 'a10', pluginId: '10038', name: 'Content Security Policy (CSP) Header Not Set', risk: 'Medium', confidence: 'High', description: 'CSP header is not set which helps prevent XSS attacks.', url: 'https://api.example.com/', method: 'GET', solution: 'Implement a Content Security Policy header.', cweId: 693 },
-        { id: 'a11', pluginId: '90033', name: 'Loosely Scoped Cookie', risk: 'Informational', confidence: 'High', description: 'Cookies set without the Secure flag.', url: 'https://api.example.com/auth', method: 'POST', solution: 'Set Secure flag on all cookies.', cweId: 614 },
-        { id: 'a12', pluginId: '40018', name: 'SQL Injection', risk: 'High', confidence: 'Medium', description: 'SQL injection vulnerability detected in user_id parameter.', url: 'https://api.example.com/users', method: 'GET', param: 'user_id', attack: "1' OR '1'='1", evidence: 'Database error message disclosed', solution: 'Use parameterized queries and input validation.', cweId: 89 },
-      ],
-      summary: { total: 3, byRisk: { high: 1, medium: 1, low: 0, informational: 1 } },
-    },
-  ];
+  // Real data state
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string>('');
+  const [availableScans, setAvailableScans] = useState<DASTCompareScan[]>([]);
+  const [loadingScans, setLoadingScans] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanTarget, setScanTarget] = useState('http://localhost:3001');
+  const [scanProfile, setScanProfile] = useState<'baseline' | 'full'>('baseline');
+  const [scanProgress, setScanProgress] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+
+  // Load projects
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/projects`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setProjects(data.projects || []);
+          if (data.projects?.length > 0) {
+            setSelectedProject(data.projects[0].id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load projects:', err);
+      }
+    };
+    if (token) loadProjects();
+  }, [token]);
+
+  // Load scans when project changes
+  useEffect(() => {
+    if (!selectedProject) return;
+    loadScans();
+  }, [selectedProject]);
+
+  const loadScans = async () => {
+    if (!selectedProject) return;
+    setLoadingScans(true);
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/projects/${selectedProject}/dast/scans?limit=20`,
+        { headers }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const completedScans = (data.scans || []).filter((s: DASTCompareScan) => s.status === 'completed');
+        setAvailableScans(completedScans);
+      }
+    } catch (err) {
+      console.error('Failed to load scans:', err);
+    } finally {
+      setLoadingScans(false);
+    }
+  };
+
+  // Run a new DAST scan
+  const runNewScan = async () => {
+    if (!selectedProject || !scanTarget) return;
+    setIsScanning(true);
+    setError(null);
+    setScanProgress('Starting scan...');
+
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/projects/${selectedProject}/dast/scans`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ targetUrl: scanTarget, scanProfile }),
+        }
+      );
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || errData.error || 'Failed to start scan');
+      }
+
+      const data = await res.json();
+      setScanProgress(`Scan started (ID: ${data.scan.id.substring(0, 8)}...)`);
+
+      // Poll for completion
+      pollScanStatus(data.scan.id);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setIsScanning(false);
+    }
+  };
+
+  const pollScanStatus = async (scanId: string) => {
+    const maxAttempts = 60; // 5 minutes max
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(r => setTimeout(r, 5000));
+      try {
+        const res = await fetch(
+          `${API_BASE_URL}/api/v1/projects/${selectedProject}/dast/scans/${scanId}`,
+          { headers }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const scan = data.scan;
+
+          if (scan.progress) {
+            setScanProgress(`${scan.progress.phaseDescription} (${scan.progress.percentage}%)`);
+          }
+
+          if (scan.status === 'completed') {
+            setScanProgress(`Scan completed! Found ${scan.alerts?.length || 0} findings.`);
+            setIsScanning(false);
+            loadScans(); // Refresh the scan list
+            return;
+          }
+
+          if (scan.status === 'failed') {
+            setError(`Scan failed: ${scan.error || 'Unknown error'}`);
+            setIsScanning(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Poll error:', err);
+      }
+    }
+    setError('Scan timed out');
+    setIsScanning(false);
+  };
 
   // Load from URL params if present
   useEffect(() => {
@@ -125,19 +228,16 @@ export function DASTComparisonPage() {
 
     setIsComparing(true);
 
-    // Simulate API call
-    await new Promise(r => setTimeout(r, 1500));
-
     const scan1 = availableScans.find(s => s.id === selectedScan1)!;
     const scan2 = availableScans.find(s => s.id === selectedScan2)!;
 
-    // Compare alerts by pluginId and url to determine new/fixed/unchanged
-    const scan1AlertKeys = new Set(scan1.alerts.map(a => `${a.pluginId}-${a.url}`));
-    const scan2AlertKeys = new Set(scan2.alerts.map(a => `${a.pluginId}-${a.url}`));
+    // Compare alerts by pluginId + name to determine new/fixed/unchanged
+    const scan1AlertKeys = new Set(scan1.alerts.map(a => `${a.pluginId}-${a.name}`));
+    const scan2AlertKeys = new Set(scan2.alerts.map(a => `${a.pluginId}-${a.name}`));
 
-    const newFindings = scan2.alerts.filter(a => !scan1AlertKeys.has(`${a.pluginId}-${a.url}`));
-    const fixedFindings = scan1.alerts.filter(a => !scan2AlertKeys.has(`${a.pluginId}-${a.url}`));
-    const unchangedFindings = scan2.alerts.filter(a => scan1AlertKeys.has(`${a.pluginId}-${a.url}`));
+    const newFindings = scan2.alerts.filter(a => !scan1AlertKeys.has(`${a.pluginId}-${a.name}`));
+    const fixedFindings = scan1.alerts.filter(a => !scan2AlertKeys.has(`${a.pluginId}-${a.name}`));
+    const unchangedFindings = scan2.alerts.filter(a => scan1AlertKeys.has(`${a.pluginId}-${a.name}`));
 
     // Calculate risk delta
     const riskDelta = {
@@ -210,6 +310,7 @@ export function DASTComparisonPage() {
         <p><span className="font-medium">URL:</span> {alert.url}</p>
         <p><span className="font-medium">Method:</span> {alert.method}</p>
         {alert.param && <p><span className="font-medium">Parameter:</span> {alert.param}</p>}
+        {alert.evidence && <p><span className="font-medium">Evidence:</span> {alert.evidence}</p>}
       </div>
       <div className="mt-3 pt-3 border-t border-border">
         <p className="text-xs font-medium text-foreground mb-1">Solution:</p>
@@ -221,25 +322,6 @@ export function DASTComparisonPage() {
   return (
     <Layout>
       <div className="p-6 max-w-6xl mx-auto">
-        {/* Feature #1986: Demo Mode Banner */}
-        <div className="rounded-lg border-2 border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 p-4 mb-6">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🚧</span>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-amber-800 dark:text-amber-300">Demo Mode - Mock Data</h3>
-                <span className="px-2 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-xs font-medium rounded-full">
-                  Coming Soon
-                </span>
-              </div>
-              <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-                This feature demonstrates DAST scan comparison with simulated findings.
-                Real ZAP/OWASP integration will be available in a future release.
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -247,86 +329,210 @@ export function DASTComparisonPage() {
               &larr;
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">DAST Scan Comparison</h1>
-              <p className="text-muted-foreground">Compare findings between two security scans</p>
+              <h1 className="text-2xl font-bold text-foreground">DAST Security Scanner</h1>
+              <p className="text-muted-foreground">Run dynamic security scans and compare findings</p>
             </div>
           </div>
         </div>
 
-        {/* Scan Selection */}
+        {/* Run New Scan Section */}
         <div className="rounded-lg border border-border bg-card p-6 mb-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Select Scans to Compare</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Scan 1 (Earlier/Before) */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                First Scan (Before)
-              </label>
-              <select
-                value={selectedScan1}
-                onChange={(e) => setSelectedScan1(e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
-              >
-                <option value="">Select a scan...</option>
-                {availableScans.map((scan) => (
-                  <option key={scan.id} value={scan.id} disabled={scan.id === selectedScan2}>
-                    {new Date(scan.startedAt).toLocaleDateString()} - {scan.scanProfile} scan ({scan.summary.total} findings)
-                  </option>
-                ))}
-              </select>
-              {selectedScan1 && (
-                <div className="mt-2 p-3 rounded bg-muted/30 text-sm">
-                  <p className="font-medium text-foreground">{availableScans.find(s => s.id === selectedScan1)?.targetUrl}</p>
-                  <p className="text-muted-foreground">
-                    {availableScans.find(s => s.id === selectedScan1)?.summary.byRisk.high || 0} High {' '}
-                    {availableScans.find(s => s.id === selectedScan1)?.summary.byRisk.medium || 0} Medium {' '}
-                    {availableScans.find(s => s.id === selectedScan1)?.summary.byRisk.low || 0} Low
-                  </p>
-                </div>
-              )}
-            </div>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Run New DAST Scan</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Scan a target URL for security vulnerabilities. Analyzes security headers, cookie security, information disclosure, CORS policies, and more.
+          </p>
 
-            {/* Scan 2 (Later/After) */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Second Scan (After)
-              </label>
-              <select
-                value={selectedScan2}
-                onChange={(e) => setSelectedScan2(e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
-              >
-                <option value="">Select a scan...</option>
-                {availableScans.map((scan) => (
-                  <option key={scan.id} value={scan.id} disabled={scan.id === selectedScan1}>
-                    {new Date(scan.startedAt).toLocaleDateString()} - {scan.scanProfile} scan ({scan.summary.total} findings)
-                  </option>
-                ))}
-              </select>
-              {selectedScan2 && (
-                <div className="mt-2 p-3 rounded bg-muted/30 text-sm">
-                  <p className="font-medium text-foreground">{availableScans.find(s => s.id === selectedScan2)?.targetUrl}</p>
-                  <p className="text-muted-foreground">
-                    {availableScans.find(s => s.id === selectedScan2)?.summary.byRisk.high || 0} High {' '}
-                    {availableScans.find(s => s.id === selectedScan2)?.summary.byRisk.medium || 0} Medium {' '}
-                    {availableScans.find(s => s.id === selectedScan2)?.summary.byRisk.low || 0} Low
-                  </p>
-                </div>
-              )}
+          {projects.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Project</label>
+                <select
+                  value={selectedProject}
+                  onChange={(e) => setSelectedProject(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                >
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-1">Target URL</label>
+                <input
+                  type="text"
+                  value={scanTarget}
+                  onChange={(e) => setScanTarget(e.target.value)}
+                  placeholder="http://localhost:3001"
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Scan Profile</label>
+                <select
+                  value={scanProfile}
+                  onChange={(e) => setScanProfile(e.target.value as 'baseline' | 'full')}
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                >
+                  <option value="baseline">Baseline (Quick)</option>
+                  <option value="full">Full (Thorough)</option>
+                </select>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="mt-4 flex justify-center">
+          <div className="flex items-center gap-4">
             <button
-              onClick={compareScans}
-              disabled={!selectedScan1 || !selectedScan2 || selectedScan1 === selectedScan2 || isComparing}
-              className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+              onClick={runNewScan}
+              disabled={isScanning || !selectedProject || !scanTarget}
+              className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
             >
-              {isComparing && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-              {isComparing ? 'Comparing...' : 'Compare Scans'}
+              {isScanning && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+              {isScanning ? 'Scanning...' : 'Run DAST Scan'}
             </button>
+            {scanProgress && (
+              <span className="text-sm text-muted-foreground">{scanProgress}</span>
+            )}
           </div>
+
+          {error && (
+            <div className="mt-3 p-3 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            </div>
+          )}
         </div>
+
+        {/* Scan Results Summary */}
+        {availableScans.length > 0 && (
+          <div className="rounded-lg border border-border bg-card p-6 mb-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">
+              Completed Scans ({availableScans.length})
+            </h2>
+            <div className="space-y-3">
+              {availableScans.map((scan) => (
+                <div key={scan.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/20">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        scan.scanProfile === 'full' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' :
+                        scan.scanProfile === 'api' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
+                        'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                      }`}>
+                        {scan.scanProfile}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{scan.targetUrl}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(scan.startedAt).toLocaleString()} &bull; {scan.statistics?.urlsScanned || 0} URLs scanned &bull; {scan.statistics?.duration || 0}s
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {scan.summary.byRisk.high > 0 && (
+                      <span className="px-2 py-0.5 rounded text-xs font-medium text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400">
+                        {scan.summary.byRisk.high} High
+                      </span>
+                    )}
+                    {scan.summary.byRisk.medium > 0 && (
+                      <span className="px-2 py-0.5 rounded text-xs font-medium text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400">
+                        {scan.summary.byRisk.medium} Medium
+                      </span>
+                    )}
+                    {scan.summary.byRisk.low > 0 && (
+                      <span className="px-2 py-0.5 rounded text-xs font-medium text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400">
+                        {scan.summary.byRisk.low} Low
+                      </span>
+                    )}
+                    <span className="text-sm font-bold text-foreground">
+                      {scan.summary.total} total
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Scan Comparison */}
+        {availableScans.length >= 2 && (
+          <div className="rounded-lg border border-border bg-card p-6 mb-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Compare Scans</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  First Scan (Before)
+                </label>
+                <select
+                  value={selectedScan1}
+                  onChange={(e) => setSelectedScan1(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                >
+                  <option value="">Select a scan...</option>
+                  {availableScans.map((scan) => (
+                    <option key={scan.id} value={scan.id} disabled={scan.id === selectedScan2}>
+                      {new Date(scan.startedAt).toLocaleString()} - {scan.scanProfile} ({scan.summary.total} findings)
+                    </option>
+                  ))}
+                </select>
+                {selectedScan1 && (() => {
+                  const scan = availableScans.find(s => s.id === selectedScan1);
+                  return scan ? (
+                    <div className="mt-2 p-3 rounded bg-muted/30 text-sm">
+                      <p className="font-medium text-foreground">{scan.targetUrl}</p>
+                      <p className="text-muted-foreground">
+                        {scan.summary.byRisk.high || 0} High{' '}
+                        {scan.summary.byRisk.medium || 0} Medium{' '}
+                        {scan.summary.byRisk.low || 0} Low
+                      </p>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Second Scan (After)
+                </label>
+                <select
+                  value={selectedScan2}
+                  onChange={(e) => setSelectedScan2(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                >
+                  <option value="">Select a scan...</option>
+                  {availableScans.map((scan) => (
+                    <option key={scan.id} value={scan.id} disabled={scan.id === selectedScan1}>
+                      {new Date(scan.startedAt).toLocaleString()} - {scan.scanProfile} ({scan.summary.total} findings)
+                    </option>
+                  ))}
+                </select>
+                {selectedScan2 && (() => {
+                  const scan = availableScans.find(s => s.id === selectedScan2);
+                  return scan ? (
+                    <div className="mt-2 p-3 rounded bg-muted/30 text-sm">
+                      <p className="font-medium text-foreground">{scan.targetUrl}</p>
+                      <p className="text-muted-foreground">
+                        {scan.summary.byRisk.high || 0} High{' '}
+                        {scan.summary.byRisk.medium || 0} Medium{' '}
+                        {scan.summary.byRisk.low || 0} Low
+                      </p>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={compareScans}
+                disabled={!selectedScan1 || !selectedScan2 || selectedScan1 === selectedScan2 || isComparing}
+                className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+              >
+                {isComparing && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                {isComparing ? 'Comparing...' : 'Compare Scans'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Comparison Results */}
         {comparisonResult && (
@@ -475,14 +681,21 @@ export function DASTComparisonPage() {
           </>
         )}
 
-        {/* Empty State */}
-        {!comparisonResult && !isComparing && (
+        {/* Empty State - No scans yet */}
+        {availableScans.length === 0 && !loadingScans && !isScanning && (
           <div className="rounded-lg border border-dashed border-border bg-muted/20 p-12 text-center">
             <p className="text-4xl mb-4">🔐</p>
-            <p className="text-lg font-medium text-foreground mb-2">Select two scans to compare</p>
-            <p className="text-muted-foreground">
-              Compare DAST scan results to track which vulnerabilities have been fixed, which are new, and which remain unchanged.
+            <p className="text-lg font-medium text-foreground mb-2">No DAST scans yet</p>
+            <p className="text-muted-foreground mb-4">
+              Run your first DAST scan above to analyze your application for security vulnerabilities.
             </p>
+          </div>
+        )}
+
+        {loadingScans && (
+          <div className="text-center py-8 text-muted-foreground">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p>Loading scans...</p>
           </div>
         )}
       </div>

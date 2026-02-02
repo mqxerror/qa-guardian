@@ -6,6 +6,8 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores';
+import { runGitleaksScan, checkGitleaksAvailability } from '../sast/gitleaks';
+import type { GitleaksFinding } from '../sast/gitleaks';
 
 // ============================================================================
 // Type Definitions
@@ -155,7 +157,7 @@ function calculateNextRun(freq: string, dow?: number, tod: string = '02:00'): st
 
 export async function securityAdvancedRoutes(app: FastifyInstance) {
   // ============================================
-  // Feature #927: Get exposed secrets for a project
+  // Feature #927: Get exposed secrets for a project (REAL Gitleaks scanning)
   // ============================================
   app.get<{ Params: { projectId: string }; Querystring: { scan_id?: string; severity?: string; secret_type?: string } }>('/api/v1/security/secrets/:projectId', {
     preHandler: [authenticate],
@@ -173,93 +175,36 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
       });
     }
 
-    // Sample file paths for simulated secrets
-    const files = [
-      { path: 'src/config/database.ts', author: 'john.doe@example.com' },
-      { path: 'src/services/aws-client.ts', author: 'jane.smith@example.com' },
-      { path: '.env.example', author: 'john.doe@example.com' },
-      { path: 'src/utils/auth.ts', author: 'mike.wilson@example.com' },
-      { path: 'scripts/deploy.sh', author: 'jane.smith@example.com' },
-      { path: 'config/production.json', author: 'admin@example.com' },
-      { path: 'test/fixtures/mock-config.ts', author: 'test.user@example.com' },
-    ];
+    // Run real Gitleaks scan on the project repository
+    const repoPath = process.env.GITLEAKS_SCAN_PATH || process.cwd();
+    const scanResult = await runGitleaksScan(repoPath, {
+      fullHistory: false,
+      timeout: 120000, // 2 min timeout for API call
+      excludePaths: ['node_modules/', '.git/', 'vendor/', 'dist/', 'build/', '.playwright-mcp/'],
+    });
 
-    // Generate simulated secrets
-    const detectedSecrets: {
-      id: string;
-      secret_type: string;
-      secret_type_name: string;
-      severity: 'critical' | 'high' | 'medium' | 'low';
-      file_path: string;
-      line_number: number;
-      column_start: number;
-      column_end: number;
-      snippet: string;
-      masked_value: string;
-      first_detected: string;
-      last_seen: string;
-      commit_sha: string;
-      author: string;
-      is_verified: boolean;
-      remediation: string;
-    }[] = [];
-
-    // Generate 5-10 random secrets
-    const numSecrets = 5 + Math.floor(Math.random() * 6);
-    for (let i = 0; i < numSecrets; i++) {
-      const secretDefIndex = Math.floor(Math.random() * secretTypes.length);
-      const secretDef = secretTypes[secretDefIndex]!;
-      const fileIndex = Math.floor(Math.random() * files.length);
-      const file = files[fileIndex]!;
-      const lineNum = 10 + Math.floor(Math.random() * 200);
-      const colStart = 5 + Math.floor(Math.random() * 20);
-      const daysAgo = Math.floor(Math.random() * 90);
-
-      // Generate masked value
-      const maskedLength = 12 + Math.floor(Math.random() * 20);
-      const maskedValue = '*'.repeat(maskedLength);
-
-      // Generate code snippet based on secret type
-      let snippet = '';
-      switch (secretDef.type) {
-        case 'aws_access_key':
-          snippet = `const AWS_ACCESS_KEY = "AKIA${maskedValue.substring(0, 16)}";`;
-          break;
-        case 'github_token':
-          snippet = `GITHUB_TOKEN=ghp_${maskedValue.substring(0, 36)}`;
-          break;
-        case 'password':
-          snippet = `const password = "${maskedValue}";`;
-          break;
-        case 'database_url':
-          snippet = `DATABASE_URL=postgres://user:${maskedValue}@localhost:5432/db`;
-          break;
-        case 'private_key':
-          snippet = `-----BEGIN RSA PRIVATE KEY-----\n${maskedValue}...`;
-          break;
-        default:
-          snippet = `${secretDef.type.toUpperCase()}="${maskedValue}"`;
-      }
-
-      detectedSecrets.push({
+    // Map GitleaksFinding to the format expected by this endpoint
+    const detectedSecrets = scanResult.findings.map((f, i) => {
+      const secretTypeName = f.rule_id.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      return {
         id: `secret-${projectId}-${i + 1}`,
-        secret_type: secretDef.type,
-        secret_type_name: secretDef.name,
-        severity: secretDef.severity,
-        file_path: file.path,
-        line_number: lineNum,
-        column_start: colStart,
-        column_end: colStart + 20,
-        snippet: snippet,
-        masked_value: maskedValue.substring(0, 8) + '...',
-        first_detected: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString(),
-        last_seen: new Date(Date.now() - Math.floor(daysAgo / 2) * 24 * 60 * 60 * 1000).toISOString(),
-        commit_sha: Math.random().toString(16).substring(2, 10),
-        author: file.author,
-        is_verified: Math.random() > 0.3,
-        remediation: `Rotate the ${secretDef.name} and remove from source code. Use environment variables or a secrets manager instead.`,
-      });
-    }
+        secret_type: f.secret_type,
+        secret_type_name: secretTypeName,
+        severity: f.severity,
+        file_path: f.file,
+        line_number: f.line,
+        column_start: f.start_column,
+        column_end: f.end_column,
+        snippet: f.match,
+        masked_value: f.match.substring(0, 8) + '...',
+        first_detected: f.date,
+        last_seen: new Date().toISOString(),
+        commit_sha: f.commit,
+        author: f.author,
+        is_verified: false,
+        remediation: `Rotate this ${secretTypeName} and remove from source code. Use environment variables or a secrets manager instead.`,
+      };
+    });
 
     // Apply filters
     let filteredSecrets = [...detectedSecrets];
@@ -292,13 +237,14 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
       project_name: project.name,
       scan_id: scan_id || `secrets-scan-${Date.now()}`,
       scanned_at: new Date().toISOString(),
+      scanner: checkGitleaksAvailability().available ? 'gitleaks' : 'pattern-matching',
       summary: {
         total_secrets: detectedSecrets.length,
         filtered_count: filteredSecrets.length,
         by_severity: bySeverity,
         by_type: byType,
         affected_files: affectedFiles.length,
-        verified_secrets: detectedSecrets.filter(s => s.is_verified).length,
+        verified_secrets: 0,
       },
       secrets: filteredSecrets,
       affected_files: affectedFiles.map(fp => ({
@@ -319,7 +265,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
   });
 
   // ============================================
-  // Secrets Dashboard Endpoint (aggregates secrets across all projects)
+  // Secrets Dashboard Endpoint (REAL Gitleaks scanning)
   // Frontend expects: SecretsData interface with camelCase fields
   // ============================================
   app.get<{ Querystring: { project?: string; secretType?: string; sortBy?: string; sortOrder?: string } }>('/api/v1/secrets/dashboard', {
@@ -331,31 +277,55 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     // Get all projects for this organization
     const orgProjects = await dbListProjects(orgId);
 
-    // Sample file paths for simulated secrets
-    const files = [
-      { path: 'src/config/database.ts', author: 'john.doe@example.com' },
-      { path: 'src/services/aws-client.ts', author: 'jane.smith@example.com' },
-      { path: '.env.example', author: 'john.doe@example.com' },
-      { path: 'src/utils/auth.ts', author: 'mike.wilson@example.com' },
-      { path: 'scripts/deploy.sh', author: 'jane.smith@example.com' },
-      { path: 'config/production.json', author: 'admin@example.com' },
-    ];
-
-    // Secret categories
-    const secretCategories: Record<string, string> = {
-      aws_access_key: 'Cloud Credentials',
-      aws_secret_key: 'Cloud Credentials',
-      github_token: 'API Tokens',
-      api_key: 'API Tokens',
-      private_key: 'Cryptographic Keys',
-      password: 'Credentials',
-      database_url: 'Connection Strings',
-      jwt_secret: 'Cryptographic Keys',
-      slack_token: 'API Tokens',
-      sendgrid_key: 'API Tokens',
+    // Secret categories mapping from rule IDs
+    const secretCategoryMap: Record<string, string> = {
+      'aws-access-key': 'Cloud Credentials',
+      'aws-secret-key': 'Cloud Credentials',
+      'aws_access_key': 'Cloud Credentials',
+      'aws_secret_key': 'Cloud Credentials',
+      'github-token': 'API Tokens',
+      'github-oauth': 'API Tokens',
+      'github_token': 'API Tokens',
+      'generic-api-key': 'API Tokens',
+      'generic_api_key': 'API Tokens',
+      'api_key': 'API Tokens',
+      'private-key': 'Cryptographic Keys',
+      'private_key': 'Cryptographic Keys',
+      'stripe-key': 'API Tokens',
+      'stripe-test': 'API Tokens',
+      'npm-token': 'API Tokens',
+      'slack-webhook': 'API Tokens',
+      'slack_token': 'API Tokens',
+      'sendgrid_key': 'API Tokens',
+      'generic-secret': 'Credentials',
+      'generic_secret': 'Credentials',
+      'password': 'Credentials',
+      'database_url': 'Connection Strings',
+      'jwt_secret': 'Cryptographic Keys',
     };
 
-    // Generate secrets for each project (DetectedSecret format)
+    function getCategoryForRuleId(ruleId: string): string {
+      const normalized = ruleId.toLowerCase();
+      for (const [key, val] of Object.entries(secretCategoryMap)) {
+        if (normalized.includes(key)) return val;
+      }
+      if (normalized.includes('aws') || normalized.includes('azure') || normalized.includes('gcp')) return 'Cloud Credentials';
+      if (normalized.includes('token') || normalized.includes('key') || normalized.includes('api')) return 'API Tokens';
+      if (normalized.includes('password') || normalized.includes('secret') || normalized.includes('credential')) return 'Credentials';
+      if (normalized.includes('private') || normalized.includes('cert')) return 'Cryptographic Keys';
+      if (normalized.includes('database') || normalized.includes('connection') || normalized.includes('url')) return 'Connection Strings';
+      return 'Other';
+    }
+
+    // Run real Gitleaks scan on the codebase
+    const repoPath = process.env.GITLEAKS_SCAN_PATH || process.cwd();
+    const scanResult = await runGitleaksScan(repoPath, {
+      fullHistory: false,
+      timeout: 120000,
+      excludePaths: ['node_modules/', '.git/', 'vendor/', 'dist/', 'build/', '.playwright-mcp/'],
+    });
+
+    // Map findings to DetectedSecret format (camelCase for frontend)
     interface DetectedSecret {
       id: string;
       projectId: string;
@@ -372,86 +342,43 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
       commitSha?: string;
       commitAuthor?: string;
       status: 'active' | 'resolved' | 'false-positive';
-      resolvedAt?: string;
-      resolvedBy?: string;
       verificationStatus?: 'unverified' | 'active' | 'revoked' | 'unknown';
-      lastVerifiedAt?: string;
-      lastVerifiedBy?: string;
-      verificationError?: string;
     }
 
-    const allSecrets: DetectedSecret[] = [];
+    // Assign findings to projects (use first project as default since secrets come from repo)
+    const defaultProject = orgProjects[0] || { id: 'unknown', name: 'Unknown Project' };
 
-    for (const proj of orgProjects) {
-      // Filter by project if specified
-      if (project && project !== 'all' && proj.id !== project) continue;
+    let allSecrets: DetectedSecret[] = scanResult.findings.map((f, i) => {
+      const secretTypeName = f.rule_id.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const category = getCategoryForRuleId(f.rule_id);
+      return {
+        id: `secret-${defaultProject.id}-${i + 1}`,
+        projectId: defaultProject.id,
+        projectName: defaultProject.name,
+        secretType: f.secret_type,
+        secretTypeName,
+        category,
+        severity: f.severity.toUpperCase() as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW',
+        filePath: f.file,
+        line: f.line,
+        column: f.start_column,
+        snippet: f.match,
+        detectedAt: f.date,
+        commitSha: f.commit,
+        commitAuthor: f.author,
+        status: 'active' as const,
+        verificationStatus: 'unverified' as const,
+      };
+    });
 
-      // Generate 2-5 secrets per project
-      const numSecrets = 2 + Math.floor(Math.random() * 4);
-      for (let i = 0; i < numSecrets; i++) {
-        const secretDefIndex = Math.floor(Math.random() * secretTypes.length);
-        const secretDef = secretTypes[secretDefIndex]!;
+    // Apply project filter
+    if (project && project !== 'all') {
+      allSecrets = allSecrets.filter(s => s.projectId === project);
+    }
 
-        // Filter by secret type if specified
-        if (secretType && secretType !== 'all' && secretDef.type !== secretType) continue;
-
-        const fileIndex = Math.floor(Math.random() * files.length);
-        const file = files[fileIndex]!;
-        const lineNum = 10 + Math.floor(Math.random() * 200);
-        const daysAgo = Math.floor(Math.random() * 90);
-
-        const maskedLength = 12 + Math.floor(Math.random() * 20);
-        const maskedValue = '*'.repeat(maskedLength);
-
-        let snippet = '';
-        switch (secretDef.type) {
-          case 'aws_access_key':
-            snippet = `const AWS_ACCESS_KEY = "AKIA${maskedValue.substring(0, 16)}";`;
-            break;
-          case 'github_token':
-            snippet = `GITHUB_TOKEN=ghp_${maskedValue.substring(0, 36)}`;
-            break;
-          case 'password':
-            snippet = `const password = "${maskedValue}";`;
-            break;
-          case 'database_url':
-            snippet = `DATABASE_URL=postgres://user:${maskedValue}@localhost:5432/db`;
-            break;
-          case 'private_key':
-            snippet = `-----BEGIN RSA PRIVATE KEY-----\n${maskedValue}...`;
-            break;
-          default:
-            snippet = `${secretDef.type.toUpperCase()}="${maskedValue}"`;
-        }
-
-        const detectedAt = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString();
-        const statusRand = Math.random();
-        const status: 'active' | 'resolved' | 'false-positive' = statusRand > 0.7 ? 'resolved' : statusRand > 0.9 ? 'false-positive' : 'active';
-        const verificationRand = Math.random();
-        const verificationStatus: 'unverified' | 'active' | 'revoked' | 'unknown' = verificationRand > 0.6 ? 'active' : verificationRand > 0.3 ? 'unverified' : verificationRand > 0.1 ? 'revoked' : 'unknown';
-
-        allSecrets.push({
-          id: `secret-${proj.id}-${i + 1}`,
-          projectId: proj.id,
-          projectName: proj.name,
-          secretType: secretDef.type,
-          secretTypeName: secretDef.name,
-          category: secretCategories[secretDef.type] || 'Other',
-          severity: secretDef.severity.toUpperCase() as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW',
-          filePath: file.path,
-          line: lineNum,
-          column: 5 + Math.floor(Math.random() * 20),
-          snippet,
-          detectedAt,
-          commitSha: `abc${Math.floor(Math.random() * 1000000).toString(16).padStart(6, '0')}`,
-          commitAuthor: file.author,
-          status,
-          resolvedAt: status === 'resolved' ? new Date().toISOString() : undefined,
-          resolvedBy: status === 'resolved' ? 'security-team@example.com' : undefined,
-          verificationStatus,
-          lastVerifiedAt: verificationStatus !== 'unverified' ? new Date().toISOString() : undefined,
-        });
-      }
+    // Apply secret type filter
+    if (secretType && secretType !== 'all') {
+      allSecrets = allSecrets.filter(s => s.secretType === secretType);
     }
 
     // Sort the results
@@ -459,8 +386,8 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
       let comparison = 0;
       switch (sortBy) {
         case 'severity': {
-          const severityOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
-          comparison = severityOrder[a.severity] - severityOrder[b.severity];
+          const severityOrder: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+          comparison = (severityOrder[a.severity] ?? 3) - (severityOrder[b.severity] ?? 3);
           break;
         }
         case 'project':
@@ -476,7 +403,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
-    // Calculate summary stats (bySeverity uses lowercase keys per frontend interface)
+    // Calculate summary stats
     const bySeverity = {
       critical: sortedSecrets.filter(s => s.severity === 'CRITICAL').length,
       high: sortedSecrets.filter(s => s.severity === 'HIGH').length,
@@ -485,17 +412,20 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     };
 
     // bySecretType - array format per frontend interface
-    const typeCountMap: Record<string, number> = {};
+    const typeCountMap: Record<string, { count: number; severity: string; category: string; name: string }> = {};
     for (const s of sortedSecrets) {
-      typeCountMap[s.secretType] = (typeCountMap[s.secretType] || 0) + 1;
+      if (!typeCountMap[s.secretType]) {
+        typeCountMap[s.secretType] = { count: 0, severity: s.severity, category: s.category, name: s.secretTypeName };
+      }
+      typeCountMap[s.secretType]!.count++;
     }
-    const bySecretType = secretTypes.map(st => ({
-      type: st.type,
-      name: st.name,
-      count: typeCountMap[st.type] || 0,
-      severity: st.severity.toUpperCase(),
-      category: secretCategories[st.type] || 'Other',
-    })).filter(t => t.count > 0);
+    const bySecretType = Object.entries(typeCountMap).map(([type, info]) => ({
+      type,
+      name: info.name,
+      count: info.count,
+      severity: info.severity,
+      category: info.category,
+    }));
 
     // byCategory
     const byCategory: Record<string, number> = {};
@@ -513,13 +443,19 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     }
     const byProject = Object.values(projectCountMap);
 
-    // secretTypes for filters (SecretType format)
-    const secretTypesList = secretTypes.map(st => ({
-      id: st.type,
-      name: st.name,
-      category: secretCategories[st.type] || 'Other',
-      severity: st.severity.toUpperCase() as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW',
-    }));
+    // secretTypes for filters - derive from actual findings
+    const uniqueTypes = new Map<string, { id: string; name: string; category: string; severity: string }>();
+    for (const s of sortedSecrets) {
+      if (!uniqueTypes.has(s.secretType)) {
+        uniqueTypes.set(s.secretType, {
+          id: s.secretType,
+          name: s.secretTypeName,
+          category: s.category,
+          severity: s.severity,
+        });
+      }
+    }
+    const secretTypesList = Array.from(uniqueTypes.values());
 
     return {
       secrets: sortedSecrets,

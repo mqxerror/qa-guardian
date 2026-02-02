@@ -13,7 +13,7 @@ import { create } from 'zustand';
 import { TestType, TestFormData, DEFAULT_FORM_DATA, QuickTestSelection } from '../types';
 
 // API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://qa.pixelcraftedmedia.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 /**
  * Modal section types

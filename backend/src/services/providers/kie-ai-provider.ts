@@ -47,6 +47,24 @@ function contentToString(content: AIMessageContent): string {
     .join('\n');
 }
 
+/**
+ * Map unsupported models to Kie.ai-compatible models.
+ * Kie.ai only supports deepseek-chat, deepseek-coder, deepseek-reasoner,
+ * qwen-turbo, qwen-plus, gpt-4o, gpt-4o-mini via the chat API.
+ * Claude models are NOT available - map them to deepseek-chat.
+ */
+const KIE_SUPPORTED_MODELS = new Set([
+  'deepseek-chat', 'deepseek-coder', 'deepseek-reasoner',
+  'qwen-turbo', 'qwen-plus', 'gpt-4o', 'gpt-4o-mini',
+]);
+
+function mapToKieModel(requestedModel?: string): string | undefined {
+  if (!requestedModel) return undefined; // Let client use its default
+  if (KIE_SUPPORTED_MODELS.has(requestedModel)) return requestedModel;
+  // Map Claude and other unsupported models to deepseek-chat
+  return 'deepseek-chat';
+}
+
 // Health check thresholds
 const LATENCY_THRESHOLDS = {
   healthy: 2000,    // < 2s is healthy
@@ -108,9 +126,9 @@ export class KieAIProvider implements IAIProvider {
       content: contentToString(msg.content),
     }));
 
-    // Convert to Kie.ai options format
+    // Convert to Kie.ai options format, mapping unsupported models
     const kieOptions: KieSendMessageOptions = {
-      model: options.model,
+      model: mapToKieModel(options.model),
       maxTokens: options.maxTokens,
       temperature: options.temperature,
       systemPrompt: options.systemPrompt,
@@ -139,9 +157,9 @@ export class KieAIProvider implements IAIProvider {
       content: contentToString(msg.content),
     }));
 
-    // Convert to Kie.ai options format
+    // Convert to Kie.ai options format, mapping unsupported models
     const kieOptions: KieSendMessageOptions = {
-      model: options.model,
+      model: mapToKieModel(options.model),
       maxTokens: options.maxTokens,
       temperature: options.temperature,
       systemPrompt: options.systemPrompt,
@@ -173,7 +191,7 @@ export class KieAIProvider implements IAIProvider {
     options: AISendMessageOptions = {}
   ): Promise<string> {
     return this.client.ask(question, {
-      model: options.model,
+      model: mapToKieModel(options.model),
       maxTokens: options.maxTokens,
       temperature: options.temperature,
       systemPrompt: options.systemPrompt,

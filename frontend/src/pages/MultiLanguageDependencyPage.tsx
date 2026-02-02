@@ -2,6 +2,7 @@
 // Feature #773: Multi-language Dependency Support
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
 
 // Type definitions for multi-language dependency scanning
 interface LanguageScanConfig {
@@ -59,12 +60,13 @@ interface LanguageScanResult {
 
 export function MultiLanguageDependencyPage() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  const { token } = useAuthStore();
 
   const [config, setConfig] = useState<MultiLanguageScanConfig | null>(null);
   const [dependencies, setDependencies] = useState<Record<string, LanguageDependency[]>>({});
   const [selectedLanguage, setSelectedLanguage] = useState<string>('all');
-  const [selectedProject, setSelectedProject] = useState<string>('proj-1');
+  const [selectedProject, setSelectedProject] = useState<string>('');
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
   const [scanResults, setScanResults] = useState<LanguageScanResult[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -72,7 +74,26 @@ export function MultiLanguageDependencyPage() {
   const [includeTransitive, setIncludeTransitive] = useState(true);
   const [includeDev, setIncludeDev] = useState(false);
 
+  // Load projects list first
   useEffect(() => {
+    if (!token) return;
+    fetch('/api/v1/projects', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        const projectList = Array.isArray(data) ? data : data.projects || [];
+        setProjects(projectList);
+        if (projectList.length > 0 && !selectedProject) {
+          setSelectedProject(projectList[0].id);
+        }
+      })
+      .catch(console.error);
+  }, [token]);
+
+  useEffect(() => {
+    if (!token || !selectedProject) return;
+
     // Load config
     fetch('/api/v1/organization/multi-language/config', {
       headers: { Authorization: `Bearer ${token}` },

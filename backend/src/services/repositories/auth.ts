@@ -637,15 +637,22 @@ export async function seedTestUsers(): Promise<void> {
     const exists = await userExists(userData.email);
     if (!exists) {
       const password_hash = await bcrypt.hash(userData.password, 10);
-      await createUser({
-        id: userData.id,
-        email: userData.email,
-        password_hash,
-        name: userData.name,
-        role: userData.role,
-        email_verified: true,
-        created_at: new Date(),
-      });
+      try {
+        await createUser({
+          id: userData.id,
+          email: userData.email,
+          password_hash,
+          name: userData.name,
+          role: userData.role,
+          email_verified: true,
+          created_at: new Date(),
+        });
+      } catch (error: any) {
+        // Ignore duplicate key errors (user already exists with this id)
+        if (error?.code !== '23505') {
+          throw error;
+        }
+      }
     }
   }
 }

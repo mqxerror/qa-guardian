@@ -21,6 +21,22 @@ import type {
   HealedSelectorEntry,
 } from '../../routes/test-runs/execution';
 
+// In-memory fallback: import the testRuns Map from execution module
+// This allows reads to work even when PostgreSQL is not connected
+let _testRunsMap: Map<string, TestRun> | null = null;
+function getTestRunsMap(): Map<string, TestRun> {
+  if (!_testRunsMap) {
+    try {
+      // Lazy import to avoid circular dependency at module load time
+      const execution = require('../../routes/test-runs/execution');
+      _testRunsMap = execution.testRuns;
+    } catch {
+      _testRunsMap = new Map();
+    }
+  }
+  return _testRunsMap!;
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -155,7 +171,9 @@ export async function createTestRun(run: TestRun): Promise<TestRun> {
     }
   }
 
-  // DB-only: return run as-is if DB unavailable
+  // Fallback: store in in-memory Map when DB unavailable
+  const map = getTestRunsMap();
+  map.set(run.id, run);
   return run;
 }
 
@@ -177,8 +195,9 @@ export async function getTestRun(id: string): Promise<TestRun | undefined> {
     }
   }
 
-  // DB-only: return undefined when DB unavailable
-  return undefined;
+  // Fallback: read from in-memory Map when DB unavailable
+  const map = getTestRunsMap();
+  return map.get(id);
 }
 
 /**
@@ -253,7 +272,14 @@ export async function updateTestRun(id: string, updates: Partial<TestRun>): Prom
     }
   }
 
-  // DB-only: return undefined when DB unavailable
+  // Fallback: update in-memory Map when DB unavailable
+  const map = getTestRunsMap();
+  const existing = map.get(id);
+  if (existing) {
+    const updated = { ...existing, ...updates };
+    map.set(id, updated);
+    return updated;
+  }
   return undefined;
 }
 
@@ -298,8 +324,15 @@ export async function listTestRunsBySuite(suiteId: string, orgId?: string): Prom
     }
   }
 
-  // DB-only: return empty when DB unavailable
-  return [];
+  // Fallback: filter from in-memory Map when DB unavailable
+  const map = getTestRunsMap();
+  const runs: TestRun[] = [];
+  for (const run of map.values()) {
+    if (run.suite_id === suiteId && (!orgId || run.organization_id === orgId)) {
+      runs.push(run);
+    }
+  }
+  return runs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 }
 
 /**
@@ -327,8 +360,15 @@ export async function listTestRunsByProject(projectId: string, orgId?: string): 
     }
   }
 
-  // DB-only: return empty when DB unavailable
-  return [];
+  // Fallback: filter from in-memory Map when DB unavailable
+  const map = getTestRunsMap();
+  const runs: TestRun[] = [];
+  for (const run of map.values()) {
+    if (run.project_id === projectId && (!orgId || run.organization_id === orgId)) {
+      runs.push(run);
+    }
+  }
+  return runs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 }
 
 /**
@@ -354,8 +394,17 @@ export async function listTestRunsByOrg(orgId: string, limit?: number): Promise<
     }
   }
 
-  // DB-only: return empty when DB unavailable
-  return [];
+  // Fallback: filter from in-memory Map when DB unavailable
+  const map = getTestRunsMap();
+  let runs: TestRun[] = [];
+  for (const run of map.values()) {
+    if (run.organization_id === orgId) {
+      runs.push(run);
+    }
+  }
+  runs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  if (limit) runs = runs.slice(0, limit);
+  return runs;
 }
 
 /**
@@ -394,8 +443,20 @@ export async function getRecentTestRuns(
     }
   }
 
-  // DB-only: return empty when DB unavailable
-  return { runs: [], total: 0 };
+  // Fallback: filter from in-memory Map when DB unavailable
+  const map = getTestRunsMap();
+  let runs: TestRun[] = [];
+  for (const run of map.values()) {
+    if (run.organization_id === orgId) {
+      if (!options.status || run.status === options.status) {
+        runs.push(run);
+      }
+    }
+  }
+  runs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const total = runs.length;
+  runs = runs.slice(offset, offset + limit);
+  return { runs, total };
 }
 
 // ============================================================================

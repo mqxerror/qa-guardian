@@ -34,6 +34,7 @@ import {
   calculateDASTNextRun,
 } from './utils';
 import { runZAPScan, parseOpenAPISpec, getOpenAPISpec } from './scanner';
+import { runLightweightScan, isZAPAvailable } from './lightweight-scanner';
 import { generateHTMLReport, generateJSONReport, generatePDFReport } from './reports';
 import {
   startGraphQLScan,
@@ -165,7 +166,16 @@ export async function dastRoutes(app: FastifyInstance) {
       });
     }
 
-    const scan = await runZAPScan(projectId, targetUrl, scanProfile, config.authConfig, config.contextConfig);
+    // Try ZAP first; fallback to lightweight scanner if ZAP is unavailable
+    let scan: DASTScanResult;
+    const zapAvailable = await isZAPAvailable();
+    if (zapAvailable) {
+      console.log(`[DAST] ZAP available — using ZAP scanner for ${targetUrl}`);
+      scan = await runZAPScan(projectId, targetUrl, scanProfile, config.authConfig, config.contextConfig);
+    } else {
+      console.log(`[DAST] ZAP not available — using lightweight scanner for ${targetUrl}`);
+      scan = await runLightweightScan(projectId, targetUrl, scanProfile, config.authConfig, config.contextConfig);
+    }
 
     logAuditEntry(
       request,

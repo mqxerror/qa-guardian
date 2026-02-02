@@ -8,7 +8,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { TestFormData, DEFAULT_FORM_DATA, AICopilotSuggestion, TestType, VIEWPORT_PRESETS, ViewportPreset } from './types';
 
 // API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://qa.pixelcraftedmedia.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 /**
  * Extract URL from natural language text
@@ -593,7 +593,7 @@ export function useTestCreation(suiteId: string, token?: string) {
         }
 
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL || 'https://qa.pixelcraftedmedia.com'}/api/v1/suites/${suiteId}/tests`,
+          `${import.meta.env.VITE_API_URL ?? ''}/api/v1/suites/${suiteId}/tests`,
           {
             method: 'POST',
             headers: {
