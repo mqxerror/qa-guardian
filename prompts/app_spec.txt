@@ -26,23 +26,14 @@
     <note>Added 68 MCP Chat tool test features (1615-1682) for Playwright agent to test all MCP tools with real AI via MCP Chat interface</note>
   </progress_summary>
 
-  <recent_changes date="2026-01-29">
-    <change>Phase 8: AI Provider Infrastructure - Major progress</change>
-    <change>Added AIRouter with Kie.ai (primary) + Anthropic (fallback) failover</change>
-    <change>Added reinitializeFromEnv() for late dotenv loading</change>
-    <change>MCP Chat now executes real tools (create_project, list_projects, etc.)</change>
-    <change>AI status indicator in MCP Chat UI</change>
-    <change>Fixed CORS configuration for frontend (port 5173)</change>
-    <change>Fixed authentication forwarding for tool execution</change>
-    <change>Expanded Claude system prompt with ALL 170+ MCP tools organized by category</change>
-    <change>Claude can now: manage projects, suites, tests, runs, analytics, visual regression, security, accessibility, performance, load testing, monitoring, flaky tests, artifacts, and all AI-powered features</change>
-    <change>Feature #1560: Added AI Agent Workspace page with Kanban-style task board</change>
-    <change>AI Agent Workspace: Real AI execution with quick actions for 7 tool categories (Project, Test Suite, Execution, Analytics, Visual, Security, AI Generation)</change>
-    <change>Multi-turn tool execution loop for chained operations (up to 5 turns)</change>
-    <change>Added 68 MCP Chat tool test features (IDs 1615-1682) for Playwright agent testing</change>
-    <change>Features cover ALL major MCP tool categories: Projects, Test Suites, Execution, Analytics, Visual Regression, Security, Performance, Load Testing, Monitoring, AI Generation, etc.</change>
-    <change>Bug fixes: token_hash VARCHAR(255)->TEXT for JWT tokens, k6 checks object->array parsing, null-safe .toFixed() on lighthouse metrics, persist test runs to PostgreSQL (features #2123-#2126)</change>
-    <change>Phase 9: Platform Services Dashboard - New /services page showing all service health, capabilities matrix, Docker container status (features #2127-#2131)</change>
+  <recent_changes date="2026-02-01">
+    <change>Phase 12: Fake Data Purge and Service Integrity - Remove ALL simulated/mock data from production code paths</change>
+    <change>Features #2132-2139: Replaced simulated Lighthouse, Accessibility, SAST, DAST, Reports with real tool execution</change>
+    <change>Features #2140-2149: Remove remaining fake data - flaky test code changes, root cause fabricated logs, DNS/TCP monitoring, mock frontend pages, fix k6/analytics/AI/monitoring to use real data</change>
+    <change>REMOVED: DNS/TCP monitoring (not QA), Container Scan mock page, npm Audit mock page, Trivy mock page</change>
+    <change>FIXED: AI chat wired to real Kie.ai API, AI selectors parse real HTML, uptime monitoring uses real HTTP checks</change>
+    <change>FIXED: Vulnerability tracking wired to real npm audit, analytics stripped of Math.random() pollution</change>
+    <change>PRINCIPLE: No fake data in production. Show "not configured" or empty state instead of fabricated numbers.</change>
   </recent_changes>
 
   <phases>
