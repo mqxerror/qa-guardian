@@ -532,14 +532,14 @@ export async function runRealLighthouseAudit(
   const args = [
     url,
     '--output=json',
-    '--chrome-flags=--headless --no-sandbox --disable-gpu --disable-dev-shm-usage',
+    '--chrome-flags="--headless --no-sandbox --disable-gpu --disable-dev-shm-usage"',
     '--quiet',
   ];
 
   if (device === 'mobile') {
-    args.push('--preset=perf', '--emulated-form-factor=mobile');
+    args.push('--preset=perf');
   } else {
-    args.push('--emulated-form-factor=desktop');
+    args.push('--preset=desktop');
   }
 
   const lighthouseBin = resolveLighthouseBin();

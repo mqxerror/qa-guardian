@@ -850,7 +850,10 @@ export default function TestRunResultPage() {
     const fetchRunData = async () => {
       if (!runId || !token) return;
 
-      setLoading(true);
+      // Only show loading spinner on initial load, not background refreshes
+      if (!run) {
+        setLoading(true);
+      }
       setError(null);
 
       try {
@@ -4357,6 +4360,59 @@ export default function TestRunResultPage() {
           });
         }
       });
+
+      // Collect per-viewport screenshots for visual tests
+      if (result.viewport_results && Array.isArray(result.viewport_results)) {
+        result.viewport_results.forEach((vr: any, vpIdx: number) => {
+          const vpLabel = vr.viewportLabel || vr.viewportId || `Viewport ${vpIdx + 1}`;
+          const vpDims = vr.width && vr.height ? { width: vr.width, height: vr.height } : undefined;
+
+          if (vr.screenshotBase64 || vr.screenshot_base64) {
+            const imgData = vr.screenshotBase64 || vr.screenshot_base64;
+            items.push({
+              id: `screenshot-${idCounter++}`,
+              url: imgData.startsWith('data:') ? imgData : `data:image/png;base64,${imgData}`,
+              title: `${vpLabel} Current - ${result.test_name}`,
+              type: 'final',
+              testName: result.test_name,
+              testId: result.test_id,
+              testStatus: result.status,
+              testType,
+              viewport: vpDims,
+            });
+          }
+          if (vr.baselineScreenshotBase64 || vr.baseline_screenshot_base64) {
+            const imgData = vr.baselineScreenshotBase64 || vr.baseline_screenshot_base64;
+            items.push({
+              id: `screenshot-${idCounter++}`,
+              url: imgData.startsWith('data:') ? imgData : `data:image/png;base64,${imgData}`,
+              title: `${vpLabel} Baseline - ${result.test_name}`,
+              type: 'baseline',
+              testName: result.test_name,
+              testId: result.test_id,
+              testStatus: result.status,
+              testType,
+              viewport: vpDims,
+            });
+          }
+          if (vr.diffImageBase64 || vr.diff_image_base64) {
+            const imgData = vr.diffImageBase64 || vr.diff_image_base64;
+            const diffPct = vr.diffPercentage ?? vr.diff_percentage;
+            items.push({
+              id: `screenshot-${idCounter++}`,
+              url: imgData.startsWith('data:') ? imgData : `data:image/png;base64,${imgData}`,
+              title: `${vpLabel} Diff${diffPct != null ? ` (${Number(diffPct).toFixed(2)}%)` : ''} - ${result.test_name}`,
+              type: 'diff',
+              testName: result.test_name,
+              testId: result.test_id,
+              testStatus: result.status,
+              testType,
+              diffPercentage: diffPct,
+              viewport: vpDims,
+            });
+          }
+        });
+      }
     });
 
     return items;

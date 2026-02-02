@@ -103,6 +103,7 @@ export async function executeLighthouseTest(
   emitRunEvent(runId, orgId, 'step-start', {
     testId: test.id,
     stepIndex: 0,
+    totalSteps: 1,
     stepId: 'lighthouse_audit',
     action: 'lighthouse_audit',
     value: test.target_url,
@@ -294,6 +295,7 @@ export async function executeLighthouseTest(
     emitRunEvent(runId, orgId, 'step-complete', {
       testId: test.id,
       stepIndex: 0,
+      totalSteps: 1,
       stepId: 'lighthouse_audit',
       status: testStatus === 'passed' ? 'passed' : 'failed',
       duration_ms: Date.now() - lighthouseStepStart,
