@@ -342,6 +342,8 @@ export async function runGitleaksScan(
   // Feature #1558: Generate custom config file if patterns exist
   const tempConfigFile = createTempGitleaksConfig(customPatterns);
 
+  let tempExcludeConfig: string | null = null;
+
   try {
     // Build gitleaks command
     const args: string[] = [
@@ -365,7 +367,6 @@ export async function runGitleaksScan(
 
     // Create temporary config with allowlist for exclude paths (v8 doesn't support --exclude-path)
     // Only create exclude config if no custom config was already provided
-    let tempExcludeConfig: string | null = null;
     if (excludePaths.length > 0 && !tempConfigFile) {
       tempExcludeConfig = path.join(os.tmpdir(), `gitleaks-exclude-${Date.now()}.toml`);
       const pathPatterns = excludePaths.map(p => {
@@ -465,8 +466,8 @@ ${pathPatterns}
     if (tempConfigFile && fs.existsSync(tempConfigFile)) {
       fs.unlinkSync(tempConfigFile);
     }
-    if (tempIgnoreFile && fs.existsSync(tempIgnoreFile)) {
-      fs.unlinkSync(tempIgnoreFile);
+    if (tempExcludeConfig && fs.existsSync(tempExcludeConfig)) {
+      fs.unlinkSync(tempExcludeConfig);
     }
 
     console.log('[Gitleaks] No output file found - no findings');

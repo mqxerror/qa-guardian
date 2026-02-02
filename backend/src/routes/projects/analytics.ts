@@ -790,7 +790,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
         applicability_score: 85,
         estimated_impact: 25,
         affected_tests: Math.max(5, Math.floor(orgTests.length * 0.08)),
-        status: 'suggested' as const,
+        status: 'suggested' as 'suggested' | 'applied' | 'dismissed',
       };
     });
 
