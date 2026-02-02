@@ -636,8 +636,12 @@ export async function runTestsForRun(runId: string) {
         }];
       }
     } else {
-      // Running all tests in suite
-      const suiteTests = await listTests(run.suite_id);
+      // Running all tests in suite (or a subset if test_ids specified for rerun)
+      let suiteTests = await listTests(run.suite_id);
+      if ((run as any).test_ids && Array.isArray((run as any).test_ids)) {
+        const testIdSet = new Set((run as any).test_ids as string[]);
+        suiteTests = suiteTests.filter(t => testIdSet.has(t.id));
+      }
       testsToRun = suiteTests.map(t => ({
           id: t.id,
           name: t.name,

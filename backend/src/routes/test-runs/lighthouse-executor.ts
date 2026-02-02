@@ -9,6 +9,30 @@
 import { NetworkRequest, StepResult } from './execution';
 import { Page } from 'playwright';
 import { execFile } from 'child_process';
+import * as path from 'path';
+import * as fs from 'fs';
+
+/**
+ * Resolve the lighthouse CLI binary path.
+ * Checks local node_modules/.bin first, then common global paths, then falls back to 'lighthouse'.
+ */
+function resolveLighthouseBin(): string {
+  // Try local node_modules/.bin (installed via package.json)
+  const localBin = path.resolve(__dirname, '../../../node_modules/.bin/lighthouse');
+  if (fs.existsSync(localBin)) return localBin;
+
+  // Try common global install paths
+  const globalPaths = [
+    '/usr/local/bin/lighthouse',
+    '/opt/homebrew/bin/lighthouse',
+  ];
+  for (const p of globalPaths) {
+    if (fs.existsSync(p)) return p;
+  }
+
+  // Fall back to PATH resolution
+  return 'lighthouse';
+}
 
 // ============================================================================
 // Types
@@ -489,8 +513,11 @@ export async function runRealLighthouseAudit(
     args.push('--emulated-form-factor=desktop');
   }
 
+  const lighthouseBin = resolveLighthouseBin();
+  console.log(`[Lighthouse] Using binary: ${lighthouseBin}`);
+
   const lhrJson = await new Promise<string>((resolve, reject) => {
-    const child = execFile('lighthouse', args, {
+    const child = execFile(lighthouseBin, args, {
       maxBuffer: 50 * 1024 * 1024, // 50 MB -- LHR JSON can be large
       timeout: timeoutMs,
       env: { ...process.env },

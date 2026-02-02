@@ -28,6 +28,13 @@ interface RunBody {
   branch?: string;
 }
 
+interface RerunBody {
+  suite_id: string;
+  test_ids: string[];
+  browser?: BrowserType;
+  branch?: string;
+}
+
 // Type for TestRun - simplified version for route handlers
 interface TestRun {
   id: string;
@@ -172,6 +179,80 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
           created_at: run.created_at.toISOString(),
         },
         message: 'Test run started successfully',
+      });
+    });
+
+    // Rerun specific tests (e.g. failed tests from a previous run)
+    app.post<{ Body: RerunBody }>('/api/v1/runs/rerun', {
+      preHandler: [authenticate, requireScopes(['execute'])],
+    }, async (request, reply) => {
+      const { suite_id, test_ids, browser: requestBrowser, branch: requestBranch } = request.body || {};
+      const orgId = getOrganizationId(request);
+
+      if (!suite_id || !test_ids || !Array.isArray(test_ids) || test_ids.length === 0) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'suite_id and non-empty test_ids array are required',
+        });
+      }
+
+      // Verify suite exists and belongs to org
+      const suite = await getTestSuite(suite_id);
+      if (!suite || suite.organization_id !== orgId) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Test suite not found',
+        });
+      }
+
+      // Verify at least some tests exist in the suite
+      const suiteTests = await listTests(suite_id);
+      const validTestIds = test_ids.filter(tid => suiteTests.some(t => t.id === tid));
+      if (validTestIds.length === 0) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'None of the provided test_ids belong to the specified suite',
+        });
+      }
+
+      const browserToUse: BrowserType = requestBrowser || suite.browser || 'chromium';
+      const branchToUse: string = requestBranch || 'main';
+
+      const id = crypto.randomUUID();
+      const run: any = {
+        id,
+        suite_id,
+        organization_id: orgId,
+        browser: browserToUse,
+        branch: branchToUse,
+        status: 'pending',
+        created_at: new Date(),
+        test_ids: validTestIds, // Store which tests to rerun
+      };
+
+      testRuns.set(id, run);
+
+      // Persist to database
+      dbCreateTestRun(run).catch(err =>
+        console.error('[RunTrigger] Failed to persist rerun to database:', err)
+      );
+
+      // Start test execution asynchronously
+      runTestsForRun(id).catch(console.error);
+
+      return reply.status(201).send({
+        run_id: id,
+        run: {
+          id,
+          suite_id,
+          organization_id: orgId,
+          browser: browserToUse,
+          branch: branchToUse,
+          status: 'pending',
+          created_at: run.created_at.toISOString(),
+          test_ids: validTestIds,
+        },
+        message: `Rerun started for ${validTestIds.length} test(s)`,
       });
     });
   };

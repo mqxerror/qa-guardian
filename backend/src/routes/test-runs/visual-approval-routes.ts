@@ -232,6 +232,162 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     };
   });
 
+  // Feature #14: Convenience route matching frontend's URL pattern
+  // Frontend calls POST /api/v1/visual/approve-baseline with { test_id, run_id, viewport_id }
+  app.post<{ Body: { test_id: string; run_id?: string; viewport_id?: string } }>('/api/v1/visual/approve-baseline', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { test_id, run_id, viewport_id } = request.body || {};
+
+    if (!test_id) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'test_id is required',
+      });
+    }
+
+    const orgId = getOrganizationId(request);
+    const user = request.user as JwtPayload;
+
+    // Verify test exists and belongs to user's organization
+    const test = await getTest(test_id);
+    if (!test || test.organization_id !== orgId) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Test not found',
+      });
+    }
+
+    // Get the test runs to find the screenshot
+    const dbRuns = await dbListTestRunsByOrg(orgId);
+    const memRuns = Array.from(testRuns.values()).filter(r => r.organization_id === orgId);
+    const seenIds = new Set(memRuns.map(r => r.id));
+    const mergedRuns = [...memRuns, ...dbRuns.filter(r => !seenIds.has(r.id))];
+    const allTestRuns = mergedRuns.filter(r =>
+      r.test_id === test_id ||
+      r.results?.some(result => result.test_id === test_id)
+    );
+
+    // Find the specific run or use the most recent one
+    let targetRun: any;
+    if (run_id) {
+      targetRun = allTestRuns.find(r => r.id === run_id);
+    } else {
+      targetRun = allTestRuns.sort((a, b) => {
+        const aTime = a.started_at ? new Date(a.started_at).getTime() : 0;
+        const bTime = b.started_at ? new Date(b.started_at).getTime() : 0;
+        return bTime - aTime;
+      })[0];
+    }
+
+    if (!targetRun) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'No test run found. Run the test first to generate a screenshot.',
+      });
+    }
+
+    // Find the test result with the screenshot
+    const testResult = targetRun.results?.find((r: any) => r.test_id === test_id);
+    if (!testResult || !testResult.screenshot_base64) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'No screenshot found in the test run result.',
+      });
+    }
+
+    const viewportId = viewport_id || 'single';
+    const branch = 'main';
+
+    // Get current metadata for version tracking
+    const currentMetadata = getBaselineMetadata(test_id, viewportId, branch);
+    const currentVersion = currentMetadata?.version || 0;
+    const newVersion = currentVersion + 1;
+
+    // Save the screenshot as the new baseline
+    const screenshotBuffer = Buffer.from(testResult.screenshot_base64, 'base64');
+    const saveResult = saveBaselineToFile(test_id, screenshotBuffer, viewportId, branch);
+
+    if (!saveResult.success && (saveResult as any).isQuotaExceeded) {
+      return reply.status(507).send({
+        error: 'Storage quota exceeded',
+        message: 'Unable to approve baseline due to storage quota limits.',
+        isQuotaExceeded: true,
+        suggestions: (saveResult as any).suggestions,
+      });
+    }
+
+    const approvedAt = new Date().toISOString();
+    const metadata: BaselineMetadata = {
+      testId: test_id,
+      viewportId,
+      branch,
+      approvedBy: user?.email || 'unknown',
+      approvedByUserId: user?.id || 'unknown',
+      approvedAt,
+      sourceRunId: targetRun.id,
+      createdAt: currentMetadata?.createdAt || approvedAt,
+      createdByUserId: currentMetadata?.createdByUserId || user?.id || 'unknown',
+      createdByUserEmail: currentMetadata?.createdByUserEmail || user?.email || 'unknown',
+      viewport: {
+        width: testResult.viewport_width || (test as any).viewport_width || 1280,
+        height: testResult.viewport_height || (test as any).viewport_height || 720,
+        preset: (test as any).viewport_preset,
+      },
+      browser: {
+        name: targetRun.browser || 'chromium',
+        version: targetRun.browser_version || 'latest',
+      },
+      version: newVersion,
+    };
+    setBaselineMetadata(metadata);
+
+    addBaselineHistoryEntry({
+      testId: test_id,
+      viewportId,
+      branch,
+      approvedBy: user?.email || 'unknown',
+      approvedByUserId: user?.id || 'unknown',
+      approvedAt,
+      sourceRunId: targetRun.id,
+    }, screenshotBuffer);
+
+    console.log(`[Visual] Baseline approved for test ${test_id} branch ${branch} by ${user?.email || 'unknown'} from run ${targetRun.id} (version ${newVersion})`);
+
+    // Send webhook
+    const suite = await getTestSuite((test as any).suite_id);
+    sendBaselineApprovedWebhook(orgId, {
+      test_id,
+      test_name: test.name,
+      suite_id: (test as any).suite_id,
+      suite_name: suite?.name || 'Unknown Suite',
+      project_id: (suite as any)?.project_id || '',
+      run_id: targetRun.id,
+      viewport_id: viewportId,
+      branch,
+      approved_by: user?.email || 'unknown',
+      approved_by_user_id: user?.id || 'unknown',
+      approved_at: approvedAt,
+      version: newVersion,
+      viewport: metadata.viewport,
+      browser: metadata.browser,
+    }).catch(err => {
+      console.error('[WEBHOOK] Failed to send baseline.approved webhook:', err);
+    });
+
+    return {
+      success: true,
+      message: 'New baseline approved successfully',
+      testId: test_id,
+      runId: targetRun.id,
+      viewport: viewportId,
+      branch,
+      approvedAt,
+      approvedBy: user?.email || 'unknown',
+      version: newVersion,
+    };
+  });
+
   // Reject visual changes (mark as regression)
   app.post<{ Params: { testId: string }; Body: { runId: string; viewport?: string; reason?: string } }>('/api/v1/tests/:testId/visual/reject', {
     preHandler: [authenticate],

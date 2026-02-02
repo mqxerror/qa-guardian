@@ -460,7 +460,6 @@ export const VIEWPORT_PRESETS: Record<string, { width: number; height: number; l
   mobile: { width: 375, height: 667, label: 'Mobile (iPhone SE)' },
   tablet: { width: 768, height: 1024, label: 'Tablet (iPad)' },
   desktop: { width: 1920, height: 1080, label: 'Desktop HD' },
-  'desktop-hd': { width: 1920, height: 1080, label: 'Desktop (1080p)' },
 
   // Feature #1920: Real device presets
   // Mobile devices
@@ -477,7 +476,55 @@ export const VIEWPORT_PRESETS: Record<string, { width: number; height: number; l
   'MacBook 13"': { width: 1440, height: 900, label: 'MacBook 13"' },
   'Desktop HD': { width: 1920, height: 1080, label: 'Desktop HD (1080p)' },
   'Desktop 4K': { width: 3840, height: 2160, label: 'Desktop 4K (2160p)' },
+
+  // Feature #16: Frontend viewport picker names (from /api/v1/viewports)
+  // Desktop presets
+  'desktop-hd': { width: 1920, height: 1080, label: 'Desktop HD' },
+  'desktop-large': { width: 1440, height: 900, label: 'Desktop Large' },
+  'desktop-medium': { width: 1280, height: 800, label: 'Desktop Medium' },
+  'desktop-small': { width: 1024, height: 768, label: 'Desktop Small' },
+  'desktop-4k': { width: 3840, height: 2160, label: 'Desktop 4K' },
+  'desktop-ultrawide': { width: 2560, height: 1080, label: 'Desktop Ultrawide' },
+
+  // Tablet presets
+  'tablet-landscape': { width: 1024, height: 768, label: 'Tablet Landscape' },
+  'tablet-portrait': { width: 768, height: 1024, label: 'Tablet Portrait' },
+  'tablet-pro-landscape': { width: 1194, height: 834, label: 'Tablet Pro Landscape' },
+  'tablet-pro-portrait': { width: 834, height: 1194, label: 'Tablet Pro Portrait' },
+  'tablet-mini-landscape': { width: 1024, height: 744, label: 'Tablet Mini Landscape' },
+  'tablet-mini-portrait': { width: 744, height: 1024, label: 'Tablet Mini Portrait' },
+
+  // Mobile presets
+  'mobile-medium': { width: 390, height: 844, label: 'Mobile Medium' },
+  'mobile-large': { width: 430, height: 932, label: 'Mobile Large' },
+  'mobile-small': { width: 375, height: 667, label: 'Mobile Small' },
+  'mobile-android': { width: 412, height: 915, label: 'Mobile Android' },
+  'mobile-android-small': { width: 360, height: 800, label: 'Mobile Android Small' },
+  'mobile-landscape': { width: 844, height: 390, label: 'Mobile Landscape' },
 };
+
+/**
+ * Resolve viewport dimensions from a preset name.
+ * Returns the preset if found, or attempts to parse "WIDTHxHEIGHT" format.
+ * Falls back to desktop-hd dimensions with a warning if nothing matches.
+ */
+export function resolveViewport(name: string): { width: number; height: number; label: string } {
+  const preset = VIEWPORT_PRESETS[name];
+  if (preset) return preset;
+
+  // Try to parse custom "WIDTHxHEIGHT" format (e.g. "1366x768")
+  const customMatch = name.match(/^(\d+)\s*x\s*(\d+)$/i);
+  if (customMatch) {
+    const w = parseInt(customMatch[1], 10);
+    const h = parseInt(customMatch[2], 10);
+    if (w > 0 && h > 0) {
+      return { width: w, height: h, label: `Custom (${w}x${h})` };
+    }
+  }
+
+  console.warn(`[Viewport] Unknown viewport preset "${name}", falling back to desktop-hd (1920x1080)`);
+  return { width: 1920, height: 1080, label: `Unknown (${name})` };
+}
 
 // ============================================================================
 // Browser Launch Functions

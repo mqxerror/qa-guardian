@@ -15,6 +15,7 @@ import { Page, Browser } from 'playwright';
 import {
   StepResult,
   VIEWPORT_PRESETS,
+  resolveViewport,
 } from './execution';
 
 import {
@@ -507,10 +508,8 @@ export async function executeVisualTest(
 
   if (test.multi_viewport && test.viewports && test.viewports.length > 0) {
     for (const vp of test.viewports) {
-      const preset = VIEWPORT_PRESETS[vp];
-      if (preset) {
-        viewportsToCapture.push({ id: `${vp}_${preset.width}x${preset.height}`, ...preset });
-      }
+      const preset = resolveViewport(vp);
+      viewportsToCapture.push({ id: `${vp}_${preset.width}x${preset.height}`, ...preset });
     }
   } else {
     const width = test.viewport_width || 1280;
