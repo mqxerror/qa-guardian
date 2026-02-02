@@ -24,10 +24,11 @@ function isValidUUID(str: string): boolean {
   return standardUUID.test(str) || zeroUUID.test(str);
 }
 
-// NOTE: Memory fallback stores have been REMOVED (Feature #2101)
-// All data is now persisted to PostgreSQL. If the database is not connected,
-// operations will fail gracefully (return undefined/empty arrays) or throw errors.
-// This ensures data integrity and prevents "not found" errors after server restarts.
+// In-memory fallback stores for when PostgreSQL is not available
+// This allows the application to function in development without a database
+const memProjects = new Map<string, Project>();
+const memProjectMembers = new Map<string, ProjectMember[]>();
+const memProjectEnvVars = new Map<string, EnvironmentVariable[]>();
 
 // Default settings
 export const DEFAULT_PROJECT_VISUAL_SETTINGS: ProjectVisualSettings = {
@@ -57,7 +58,10 @@ export async function createProject(project: Project): Promise<Project> {
   }
 
   if (!isDatabaseConnected()) {
-    throw new Error('Database connection required - cannot create project without PostgreSQL');
+    // In-memory fallback for development without PostgreSQL
+    console.log('[Projects] Using in-memory storage for createProject');
+    memProjects.set(project.id, project);
+    return project;
   }
 
   const result = await query<Project>(
@@ -74,7 +78,7 @@ export async function createProject(project: Project): Promise<Project> {
 
 export async function getProject(id: string): Promise<Project | undefined> {
   if (!isDatabaseConnected()) {
-    return undefined;
+    return memProjects.get(id);
   }
 
   const result = await query<Project>(
@@ -94,7 +98,11 @@ export async function getProject(id: string): Promise<Project | undefined> {
 
 export async function updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
   if (!isDatabaseConnected()) {
-    return undefined;
+    const existing = memProjects.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates, updated_at: new Date() };
+    memProjects.set(id, updated);
+    return updated;
   }
 
   const project = await getProject(id);
@@ -127,7 +135,7 @@ export async function updateProject(id: string, updates: Partial<Project>): Prom
 
 export async function deleteProject(id: string): Promise<boolean> {
   if (!isDatabaseConnected()) {
-    return false;
+    return memProjects.delete(id);
   }
 
   const result = await query(
@@ -145,7 +153,7 @@ export async function listProjects(organizationId: string): Promise<Project[]> {
   }
 
   if (!isDatabaseConnected()) {
-    return [];
+    return Array.from(memProjects.values()).filter(p => p.organization_id === organizationId);
   }
 
   const result = await query<Project>(
@@ -171,7 +179,7 @@ export async function getProjectBySlug(organizationId: string, slug: string): Pr
   }
 
   if (!isDatabaseConnected()) {
-    return undefined;
+    return Array.from(memProjects.values()).find(p => p.organization_id === organizationId && p.slug === slug);
   }
 
   const result = await query<Project>(
@@ -197,7 +205,7 @@ export async function getProjectByName(organizationId: string, name: string): Pr
   }
 
   if (!isDatabaseConnected()) {
-    return undefined;
+    return Array.from(memProjects.values()).find(p => p.organization_id === organizationId && p.name.toLowerCase() === name.toLowerCase());
   }
 
   const result = await query<Project>(
@@ -218,7 +226,11 @@ export async function getProjectByName(organizationId: string, name: string): Pr
 
 export async function addProjectMember(member: ProjectMember): Promise<ProjectMember> {
   if (!isDatabaseConnected()) {
-    throw new Error('Database connection required - cannot add project member without PostgreSQL');
+    const existing = memProjectMembers.get(member.project_id) || [];
+    const idx = existing.findIndex(m => m.user_id === member.user_id);
+    if (idx >= 0) existing[idx] = member; else existing.push(member);
+    memProjectMembers.set(member.project_id, existing);
+    return member;
   }
 
   // First ensure the project_members table exists with the correct schema
@@ -244,7 +256,7 @@ export async function addProjectMember(member: ProjectMember): Promise<ProjectMe
 
 export async function getProjectMembers(projectId: string): Promise<ProjectMember[]> {
   if (!isDatabaseConnected()) {
-    return [];
+    return memProjectMembers.get(projectId) || [];
   }
 
   const result = await query<ProjectMember>(
@@ -347,7 +359,11 @@ export async function updateProjectHealingSettings(projectId: string, settings: 
 
 export async function addProjectEnvVar(envVar: EnvironmentVariable): Promise<EnvironmentVariable> {
   if (!isDatabaseConnected()) {
-    throw new Error('Database connection required - cannot add environment variable without PostgreSQL');
+    const existing = memProjectEnvVars.get(envVar.project_id) || [];
+    const idx = existing.findIndex(e => e.key === envVar.key);
+    if (idx >= 0) existing[idx] = envVar; else existing.push(envVar);
+    memProjectEnvVars.set(envVar.project_id, existing);
+    return envVar;
   }
 
   // Ensure table exists
@@ -383,7 +399,7 @@ export async function addProjectEnvVar(envVar: EnvironmentVariable): Promise<Env
 
 export async function getProjectEnvVars(projectId: string): Promise<EnvironmentVariable[]> {
   if (!isDatabaseConnected()) {
-    return [];
+    return memProjectEnvVars.get(projectId) || [];
   }
 
   const result = await query<EnvironmentVariable>(
@@ -402,6 +418,9 @@ export async function getProjectEnvVars(projectId: string): Promise<EnvironmentV
 
 export async function deleteProjectEnvVar(projectId: string, envVarId: string): Promise<boolean> {
   if (!isDatabaseConnected()) {
+    const existing = memProjectEnvVars.get(projectId) || [];
+    const idx = existing.findIndex(e => e.id === envVarId);
+    if (idx >= 0) { existing.splice(idx, 1); memProjectEnvVars.set(projectId, existing); return true; }
     return false;
   }
 
@@ -435,8 +454,8 @@ export async function getProjectsMap(): Promise<Map<string, Project>> {
     }
     return map;
   }
-  // Return empty map when database not connected (Feature #2101)
-  return new Map<string, Project>();
+  // Return in-memory map when database not connected
+  return new Map(memProjects);
 }
 
 // Feature #2102: Removed deprecated getMemory* functions

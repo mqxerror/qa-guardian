@@ -13,16 +13,17 @@
 import { query, isDatabaseConnected } from '../database';
 import { TestSuite, Test } from '../../routes/test-suites/types';
 
-// NOTE: Memory fallback stores have been REMOVED (Feature #2100)
-// All data is now persisted to PostgreSQL. If the database is not connected,
-// operations will fail gracefully (return undefined/empty arrays) or throw errors.
-// This ensures data integrity and prevents "not found" errors after server restarts.
+// In-memory fallback stores for when PostgreSQL is not available
+const memTestSuites = new Map<string, TestSuite>();
+const memTests = new Map<string, Test>();
 
 // ===== TEST SUITES =====
 
 export async function createTestSuite(suite: TestSuite): Promise<TestSuite> {
   if (!isDatabaseConnected()) {
-    throw new Error('Database connection required - cannot create test suite without PostgreSQL');
+    console.log('[TestSuites] Using in-memory storage for createTestSuite');
+    memTestSuites.set(suite.id, suite);
+    return suite;
   }
 
   const result = await query<TestSuite>(
@@ -59,8 +60,7 @@ export async function createTestSuite(suite: TestSuite): Promise<TestSuite> {
 
 export async function getTestSuite(id: string): Promise<TestSuite | undefined> {
   if (!isDatabaseConnected()) {
-    // Return undefined when database not connected (graceful degradation)
-    return undefined;
+    return memTestSuites.get(id);
   }
 
   const result = await query<any>(
@@ -75,7 +75,11 @@ export async function getTestSuite(id: string): Promise<TestSuite | undefined> {
 
 export async function updateTestSuite(id: string, updates: Partial<TestSuite>): Promise<TestSuite | undefined> {
   if (!isDatabaseConnected()) {
-    return undefined;
+    const existing = memTestSuites.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates, updated_at: new Date() };
+    memTestSuites.set(id, updated);
+    return updated;
   }
 
   const existing = await getTestSuite(id);
@@ -120,7 +124,11 @@ export async function updateTestSuite(id: string, updates: Partial<TestSuite>): 
 
 export async function deleteTestSuite(id: string): Promise<boolean> {
   if (!isDatabaseConnected()) {
-    return false;
+    // Delete tests in this suite from memory
+    for (const [testId, test] of memTests.entries()) {
+      if (test.suite_id === id) memTests.delete(testId);
+    }
+    return memTestSuites.delete(id);
   }
 
   // Delete all tests in this suite first (CASCADE should handle this, but being explicit)
@@ -134,7 +142,7 @@ export async function deleteTestSuite(id: string): Promise<boolean> {
 
 export async function listTestSuites(projectId: string, organizationId: string): Promise<TestSuite[]> {
   if (!isDatabaseConnected()) {
-    return [];
+    return Array.from(memTestSuites.values()).filter(s => s.project_id === projectId && s.organization_id === organizationId);
   }
 
   const result = await query<any>(
@@ -152,7 +160,7 @@ export async function listTestSuites(projectId: string, organizationId: string):
 
 export async function listAllTestSuites(organizationId: string): Promise<TestSuite[]> {
   if (!isDatabaseConnected()) {
-    return [];
+    return Array.from(memTestSuites.values()).filter(s => s.organization_id === organizationId);
   }
 
   const result = await query<any>(
@@ -170,7 +178,9 @@ export async function listAllTestSuites(organizationId: string): Promise<TestSui
 
 export async function createTest(test: Test): Promise<Test> {
   if (!isDatabaseConnected()) {
-    throw new Error('Database connection required - cannot create test without PostgreSQL');
+    console.log('[TestSuites] Using in-memory storage for createTest');
+    memTests.set(test.id, test);
+    return test;
   }
 
   // Get the suite to find the project_id
@@ -205,7 +215,7 @@ export async function createTest(test: Test): Promise<Test> {
 
 export async function getTest(id: string): Promise<Test | undefined> {
   if (!isDatabaseConnected()) {
-    return undefined;
+    return memTests.get(id);
   }
 
   const result = await query<any>(
@@ -225,7 +235,11 @@ export async function getTest(id: string): Promise<Test | undefined> {
 
 export async function updateTest(id: string, updates: Partial<Test>): Promise<Test | undefined> {
   if (!isDatabaseConnected()) {
-    return undefined;
+    const existing = memTests.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates, updated_at: new Date() };
+    memTests.set(id, updated);
+    return updated;
   }
 
   const existing = await getTest(id);
@@ -264,7 +278,7 @@ export async function updateTest(id: string, updates: Partial<Test>): Promise<Te
 
 export async function deleteTest(id: string): Promise<boolean> {
   if (!isDatabaseConnected()) {
-    return false;
+    return memTests.delete(id);
   }
 
   const result = await query(
@@ -276,7 +290,7 @@ export async function deleteTest(id: string): Promise<boolean> {
 
 export async function listTests(suiteId: string): Promise<Test[]> {
   if (!isDatabaseConnected()) {
-    return [];
+    return Array.from(memTests.values()).filter(t => t.suite_id === suiteId);
   }
 
   // Get the suite to find the organization_id
@@ -295,7 +309,7 @@ export async function listTests(suiteId: string): Promise<Test[]> {
 
 export async function listAllTests(organizationId: string): Promise<Test[]> {
   if (!isDatabaseConnected()) {
-    return [];
+    return Array.from(memTests.values()).filter(t => t.organization_id === organizationId);
   }
 
   const result = await query<any>(
@@ -515,7 +529,7 @@ export async function getTestSuitesMap(): Promise<Map<string, TestSuite>> {
   const map = new Map<string, TestSuite>();
 
   if (!isDatabaseConnected()) {
-    return map; // Return empty map when database not connected
+    return new Map(memTestSuites);
   }
 
   const result = await query<any>(`SELECT * FROM test_suites ORDER BY created_at DESC`);
@@ -535,7 +549,7 @@ export async function getTestsMap(): Promise<Map<string, Test>> {
   const map = new Map<string, Test>();
 
   if (!isDatabaseConnected()) {
-    return map; // Return empty map when database not connected
+    return new Map(memTests);
   }
 
   const result = await query<any>(
