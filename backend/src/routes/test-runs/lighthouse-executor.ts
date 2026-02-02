@@ -527,7 +527,7 @@ export interface RealLighthouseAuditResult {
 export async function runRealLighthouseAudit(
   url: string,
   device: 'mobile' | 'desktop',
-  timeoutMs: number = 60000,
+  timeoutMs: number = 120000,
 ): Promise<RealLighthouseAuditResult> {
   const args = [
     url,

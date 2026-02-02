@@ -217,7 +217,7 @@ export async function executeLighthouseTest(
 
     // Run real Lighthouse CLI audit against the target URL
     const devicePreset = test.device_preset || 'desktop';
-    const auditTimeout = test.audit_timeout || 60000;
+    const auditTimeout = test.audit_timeout || 120000;
     const audit = await runRealLighthouseAudit(test.target_url, devicePreset, auditTimeout);
 
     const { scores, metrics, opportunities, diagnostics, passedAudits } = audit;
