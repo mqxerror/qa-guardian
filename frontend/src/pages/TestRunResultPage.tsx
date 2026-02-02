@@ -5290,7 +5290,7 @@ Format your response with clear sections using **bold headers** and code blocks 
       <div className="border-b border-border mb-6">
         <nav className="flex gap-1 overflow-x-auto">
           {[
-            { id: 'results', label: 'Results', icon: '🧪', count: run.results.length },
+            { id: 'results', label: 'Results', icon: '🧪', count: run.results?.length || 0 },
             { id: 'timeline', label: 'Timeline', icon: '📋', count: allSteps.length },
             { id: 'screenshots', label: 'Screenshots', icon: '📸', count: screenshots.length },
             { id: 'metrics', label: 'Metrics', icon: '📊', count: performanceResults.length + loadTestResults.length },
@@ -5333,7 +5333,7 @@ Format your response with clear sections using **bold headers** and code blocks 
                 {/* Filter buttons */}
                 <div className="flex rounded-md overflow-hidden border border-border">
                   {([
-                    { id: 'all', label: 'All', count: run.results.length },
+                    { id: 'all', label: 'All', count: run.results?.length || 0 },
                     { id: 'passed', label: 'Passed', count: resultSummary.passed },
                     { id: 'failed', label: 'Failed', count: resultSummary.failed },
                     { id: 'skipped', label: 'Skipped', count: resultSummary.skipped },

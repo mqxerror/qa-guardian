@@ -289,7 +289,15 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
 
     // Find the test result with the screenshot
     const testResult = targetRun.results?.find((r: any) => r.test_id === test_id);
-    if (!testResult || !testResult.screenshot_base64) {
+    // For multi-viewport tests, the screenshot may be in viewportResults
+    let screenshotBase64 = testResult?.screenshot_base64;
+    if (!screenshotBase64 && testResult?.viewportResults) {
+      const vpResult = viewport_id
+        ? testResult.viewportResults.find((v: any) => v.viewportId === viewport_id || v.viewportLabel === viewport_id)
+        : testResult.viewportResults[0];
+      screenshotBase64 = vpResult?.screenshotBase64 || vpResult?.screenshot_base64;
+    }
+    if (!testResult || !screenshotBase64) {
       return reply.status(400).send({
         error: 'Bad Request',
         message: 'No screenshot found in the test run result.',
@@ -305,7 +313,7 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     const newVersion = currentVersion + 1;
 
     // Save the screenshot as the new baseline
-    const screenshotBuffer = Buffer.from(testResult.screenshot_base64, 'base64');
+    const screenshotBuffer = Buffer.from(screenshotBase64, 'base64');
     const saveResult = saveBaselineToFile(test_id, screenshotBuffer, viewportId, branch);
 
     if (!saveResult.success && (saveResult as any).isQuotaExceeded) {
@@ -386,6 +394,29 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
       approvedBy: user?.email || 'unknown',
       version: newVersion,
     };
+  });
+
+  // Convenience route for reject baseline (removes the baseline file)
+  app.post<{ Body: { test_id: string; run_id?: string; viewport_id?: string; reason?: string } }>('/api/v1/visual/reject-baseline', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { test_id, viewport_id, reason } = request.body || {};
+    if (!test_id) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'test_id is required' });
+    }
+    const viewportId = viewport_id || 'single';
+    const branch = 'main';
+    // Remove the baseline file for this test/viewport
+    const baselinePath = getBaselinePath(test_id, viewportId, branch);
+    try {
+      if (fs.existsSync(baselinePath)) {
+        fs.unlinkSync(baselinePath);
+      }
+    } catch (err) {
+      console.error(`[Visual] Failed to delete baseline at ${baselinePath}:`, err);
+    }
+    console.log(`[Visual] Baseline rejected for test ${test_id} viewport ${viewportId}${reason ? ` reason: ${reason}` : ''}`);
+    return reply.status(200).send({ success: true, message: 'Baseline rejected' });
   });
 
   // Reject visual changes (mark as regression)

@@ -13,6 +13,35 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 /**
+ * Resolve the Chromium binary path from Playwright's cache.
+ * The version directory changes with Playwright updates, so we scan dynamically.
+ */
+function resolveChromePath(): string | undefined {
+  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
+
+  const msPlaywrightPaths = [
+    process.env.PLAYWRIGHT_BROWSERS_PATH,
+    '/home/nodejs/.cache/ms-playwright',
+    '/root/.cache/ms-playwright',
+    `${process.env.HOME}/.cache/ms-playwright`,
+  ].filter(Boolean);
+
+  for (const basePath of msPlaywrightPaths) {
+    try {
+      const entries = fs.readdirSync(basePath!);
+      const chromiumDir = entries.find((e: string) => e.startsWith('chromium'));
+      if (chromiumDir) {
+        const chromeBin = path.join(basePath!, chromiumDir, 'chrome-linux64', 'chrome');
+        if (fs.existsSync(chromeBin)) return chromeBin;
+        const chromeBinAlt = path.join(basePath!, chromiumDir, 'chrome-linux', 'chrome');
+        if (fs.existsSync(chromeBinAlt)) return chromeBinAlt;
+      }
+    } catch { /* continue */ }
+  }
+  return undefined;
+}
+
+/**
  * Resolve the lighthouse CLI binary path.
  * Checks local node_modules/.bin first, then common global paths, then falls back to 'lighthouse'.
  */
@@ -520,7 +549,7 @@ export async function runRealLighthouseAudit(
     const child = execFile(lighthouseBin, args, {
       maxBuffer: 50 * 1024 * 1024, // 50 MB -- LHR JSON can be large
       timeout: timeoutMs,
-      env: { ...process.env },
+      env: { ...process.env, CHROME_PATH: resolveChromePath() || process.env.CHROME_PATH || '' },
     }, (error, stdout, stderr) => {
       if (error) {
         const stderrSnippet = stderr ? stderr.slice(0, 500) : '';
