@@ -543,16 +543,22 @@ export async function runRealLighthouseAudit(
   }
 
   const lighthouseBin = resolveLighthouseBin();
+  const chromePath = resolveChromePath() || process.env.CHROME_PATH || '';
   console.log(`[Lighthouse] Using binary: ${lighthouseBin}`);
+  console.log(`[Lighthouse] CHROME_PATH resolved to: ${chromePath || '(empty)'}`);
+  console.log(`[Lighthouse] Args: ${JSON.stringify(args)}`);
 
   const lhrJson = await new Promise<string>((resolve, reject) => {
     const child = execFile(lighthouseBin, args, {
       maxBuffer: 50 * 1024 * 1024, // 50 MB -- LHR JSON can be large
       timeout: timeoutMs,
-      env: { ...process.env, CHROME_PATH: resolveChromePath() || process.env.CHROME_PATH || '' },
+      env: { ...process.env, CHROME_PATH: chromePath },
     }, (error, stdout, stderr) => {
       if (error) {
         const stderrSnippet = stderr ? stderr.slice(0, 500) : '';
+        console.error(`[Lighthouse] CLI error (code ${error.code ?? 'unknown'}): ${error.message}`);
+        if (stderrSnippet) console.error(`[Lighthouse] stderr: ${stderrSnippet}`);
+        if (stdout) console.error(`[Lighthouse] stdout (first 500): ${stdout.slice(0, 500)}`);
         reject(new Error(
           `Lighthouse CLI failed (code ${error.code ?? 'unknown'}): ${error.message}` +
           (stderrSnippet ? `\nstderr: ${stderrSnippet}` : '')
