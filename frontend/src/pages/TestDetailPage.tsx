@@ -2689,26 +2689,36 @@ export default function () {
       }
     };
 
-    // K6 load test progress handler
-    const handleStepProgress = (data: { runId: string; phase: string; progress: number; currentVUs?: number; totalRequests?: number; requestsPerSecond?: number; avgResponseTime?: number; errorRate?: number; p50ResponseTime?: number; p95ResponseTime?: number; p99ResponseTime?: number }) => {
+    // K6 load test progress handler -- only populate k6Metrics for load tests
+    const handleStepProgress = (data: { runId: string; stepId?: string; phase: string; progress: number; currentVUs?: number; totalRequests?: number; requestsPerSecond?: number; avgResponseTime?: number; errorRate?: number; p50ResponseTime?: number; p95ResponseTime?: number; p99ResponseTime?: number }) => {
       console.log('[WebSocket] step-progress event:', data);
       if (data.runId === currentRun.id) {
-        setLiveProgress(prev => prev ? {
-          ...prev,
-          k6Metrics: {
-            phase: data.phase,
-            progress: data.progress,
-            currentVUs: data.currentVUs,
-            totalRequests: data.totalRequests,
-            requestsPerSecond: data.requestsPerSecond,
-            avgResponseTime: data.avgResponseTime,
-            errorRate: data.errorRate,
-            // Response time percentiles (Feature #549)
-            p50ResponseTime: data.p50ResponseTime,
-            p95ResponseTime: data.p95ResponseTime,
-            p99ResponseTime: data.p99ResponseTime,
-          }
-        } : null);
+        // Only show k6 metrics panel for actual load tests (stepId === 'load_test')
+        // Lighthouse and other executors also emit step-progress but with different stepIds
+        if (test?.test_type === 'load' || data.stepId === 'load_test') {
+          setLiveProgress(prev => prev ? {
+            ...prev,
+            k6Metrics: {
+              phase: data.phase,
+              progress: data.progress,
+              currentVUs: data.currentVUs,
+              totalRequests: data.totalRequests,
+              requestsPerSecond: data.requestsPerSecond,
+              avgResponseTime: data.avgResponseTime,
+              errorRate: data.errorRate,
+              // Response time percentiles (Feature #549)
+              p50ResponseTime: data.p50ResponseTime,
+              p95ResponseTime: data.p95ResponseTime,
+              p99ResponseTime: data.p99ResponseTime,
+            }
+          } : null);
+        } else {
+          // For non-load tests, just update the progress bar
+          setLiveProgress(prev => prev ? {
+            ...prev,
+            currentStep: { ...prev.currentStep, action: data.phase },
+          } : null);
+        }
       }
     };
 
@@ -6023,8 +6033,8 @@ export default function () {
                     </div>
                   )}
 
-                  {/* K6 Load Test Real-Time Metrics */}
-                  {liveProgress.k6Metrics && (
+                  {/* K6 Load Test Real-Time Metrics -- only for load tests */}
+                  {liveProgress.k6Metrics && test?.test_type === 'load' && (
                     <div className="mt-4 p-3 rounded-lg bg-blue-100/50 dark:bg-blue-800/30 border border-blue-200 dark:border-blue-700">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
