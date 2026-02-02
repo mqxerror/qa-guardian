@@ -532,7 +532,7 @@ export async function runRealLighthouseAudit(
   const args = [
     url,
     '--output=json',
-    '--chrome-flags=--headless --no-sandbox --disable-gpu',
+    '--chrome-flags=--headless --no-sandbox --disable-gpu --disable-dev-shm-usage',
     '--quiet',
   ];
 

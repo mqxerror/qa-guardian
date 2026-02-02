@@ -10,6 +10,7 @@ import { useOrganizationBrandingStore } from '../stores/organizationBrandingStor
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ComposedChart, Cell, ReferenceLine, ReferenceArea, ReferenceDot } from 'recharts';
 import { jsPDF } from 'jspdf';
 import { io, Socket } from 'socket.io-client';
+import { toast } from '../stores/toastStore';
 
 // Types for run result data
 interface StepResult {
@@ -995,7 +996,7 @@ export default function TestRunResultPage() {
     fetchCompareRun();
   }, [selectedCompareRunId, token]);
 
-  // Feature #1844: WebSocket connection for live updates
+  // Feature #1844: WebSocket connection for live updates + polling fallback
   useEffect(() => {
     if (!runId || !token) return;
 
@@ -1054,19 +1055,44 @@ export default function TestRunResultPage() {
     // Handle run completion
     socket.on('run:complete', (data: { status: string }) => {
       setLiveMode(false);
-      // Refresh the run data
-      window.location.reload();
+      // Refresh the run data by incrementing retryTrigger
+      setRetryTrigger(prev => prev + 1);
     });
 
     // Handle run error
     socket.on('run:error', (data: { error: string }) => {
       setLiveMode(false);
+      // Refresh the run data to show error state
+      setRetryTrigger(prev => prev + 1);
     });
+
+    // Feature #18: Polling fallback - poll every 3 seconds to detect run completion
+    // This handles cases where WebSocket events are missed (e.g., run completes before socket connects)
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/v1/runs/${runId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const status = data.run?.status;
+          if (status !== 'running' && status !== 'pending') {
+            // Run has completed - refresh data and exit live mode
+            setLiveMode(false);
+            setRun(data.run);
+            clearInterval(pollInterval);
+          }
+        }
+      } catch {
+        // Ignore polling errors - WebSocket is primary
+      }
+    }, 3000);
 
     // Cleanup
     return () => {
       socket.disconnect();
       socketRef.current = null;
+      clearInterval(pollInterval);
     };
   }, [runId, token, run?.status]);
 
@@ -2177,11 +2203,17 @@ export default function TestRunResultPage() {
       });
 
       if (response.ok) {
-        // Show success - in real implementation would refresh data
-        console.log(`Baseline approved successfully${viewportId ? ` for viewport: ${viewportId}` : ''}`);
+        // Feature #19: Show success toast and refresh run data
+        toast.success(`Baseline approved${viewportId ? ` for viewport: ${viewportId}` : ''}`);
+        // Refetch run data to reflect the new baseline status
+        setRetryTrigger(prev => prev + 1);
+      } else {
+        const errorData = await response.json().catch(() => null);
+        toast.error(errorData?.error || `Failed to approve baseline (${response.status})`);
       }
     } catch (err) {
       console.error('Failed to approve baseline:', err);
+      toast.error('Failed to approve baseline. Please try again.');
     } finally {
       setApprovalLoading(prev => ({ ...prev, [key]: false }));
     }
@@ -2208,10 +2240,15 @@ export default function TestRunResultPage() {
       });
 
       if (response.ok) {
-        console.log('Marked as regression');
+        toast.warning('Marked as regression');
+        setRetryTrigger(prev => prev + 1);
+      } else {
+        const errorData = await response.json().catch(() => null);
+        toast.error(errorData?.error || `Failed to reject baseline (${response.status})`);
       }
     } catch (err) {
       console.error('Failed to reject baseline:', err);
+      toast.error('Failed to reject baseline. Please try again.');
     } finally {
       setApprovalLoading(prev => ({ ...prev, [key]: false }));
     }
