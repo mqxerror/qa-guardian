@@ -1086,6 +1086,40 @@ async function executeTest(
         totalSteps: test.steps.length,
       });
 
+      // Feature #35: Live screenshot streaming during test execution
+      // Take screenshot after each successful step and emit to clients
+      if (stepStatus === 'passed' && page) {
+        try {
+          // Small delay to let page settle after action
+          await page.waitForTimeout(100);
+          // Take JPEG screenshot with lower quality for faster streaming
+          const stepScreenshot = await page.screenshot({
+            type: 'jpeg',
+            quality: 50,
+            timeout: 5000
+          });
+          const stepScreenshotBase64 = stepScreenshot.toString('base64');
+
+          // Emit step screenshot event for live streaming
+          emitRunEvent(runId, orgId, 'step:screenshot', {
+            testId: test.id,
+            testName: test.name,
+            stepIndex,
+            stepAction: step.action,
+            stepSelector: step.selector,
+            stepValue: step.action === 'fill' || step.action === 'type' ? '[redacted]' : step.value,
+            base64: stepScreenshotBase64,
+            width: test.viewport_width || 1280,
+            height: test.viewport_height || 720,
+            timestamp: Date.now(),
+          });
+          console.log(`[LIVE_SCREENSHOT] Emitted screenshot for step ${stepIndex + 1}/${test.steps.length}: ${step.action}`);
+        } catch (screenshotErr) {
+          // Don't fail the test if screenshot fails - just log and continue
+          console.warn(`[LIVE_SCREENSHOT] Failed to capture screenshot after step ${stepIndex}: ${screenshotErr}`);
+        }
+      }
+
       // Stop execution if step failed
       if (stepStatus === 'failed') {
         // Take screenshot on failure

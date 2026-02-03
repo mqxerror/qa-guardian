@@ -576,6 +576,24 @@ function TestSuitePage() {
   const frameRequestRef = useRef<number | null>(null);
   const pendingFrameRef = useRef<string | null>(null);
 
+  // Feature #35: Live screenshot streaming during test execution
+  const [liveScreenshot, setLiveScreenshot] = useState<{
+    base64: string;
+    testId: string;
+    testName: string;
+    stepIndex: number;
+    stepAction: string;
+    stepSelector?: string;
+    timestamp: number;
+  } | null>(null);
+  const [screenshotHistory, setScreenshotHistory] = useState<Array<{
+    base64: string;
+    stepIndex: number;
+    stepAction: string;
+    timestamp: number;
+  }>>([]);
+  const [expandedScreenshot, setExpandedScreenshot] = useState<string | null>(null);
+
   const canCreateTest = user?.role !== 'viewer';
   const canDeleteSuite = user?.role === 'owner' || user?.role === 'admin';
 
@@ -2854,6 +2872,91 @@ export function teardown(data) {
     return () => clearInterval(pollInterval);
   }, [suiteRunPolling, suiteRun?.id, token]);
 
+  // Feature #35: Live screenshot streaming - connect to Socket.IO when run is active
+  useEffect(() => {
+    if (!suiteRunPolling || !suiteRun?.id) {
+      // Clear screenshots when no run is active
+      setLiveScreenshot(null);
+      setScreenshotHistory([]);
+      return;
+    }
+
+    // Connect to Socket.IO for live screenshot updates
+    // Use backend URL (port 3001) for Socket.IO, not frontend port
+    const socketUrl = import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace('/api/v1', '')
+      : window.location.hostname === 'localhost'
+        ? 'http://localhost:3001'
+        : window.location.origin;
+
+    const screenshotSocket = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 3,
+    });
+
+    screenshotSocket.on('connect', () => {
+      console.log('[LiveScreenshot] Connected, joining run room:', suiteRun.id);
+      screenshotSocket.emit('join-run', suiteRun.id);
+    });
+
+    // Listen for step screenshots
+    screenshotSocket.on('step:screenshot', (data: {
+      runId: string;
+      testId: string;
+      testName: string;
+      stepIndex: number;
+      stepAction: string;
+      stepSelector?: string;
+      stepValue?: string;
+      base64: string;
+      width: number;
+      height: number;
+      timestamp: number;
+    }) => {
+      console.log(`[LiveScreenshot] Received screenshot for step ${data.stepIndex + 1}: ${data.stepAction}`);
+
+      // Update current live screenshot
+      setLiveScreenshot({
+        base64: data.base64,
+        testId: data.testId,
+        testName: data.testName,
+        stepIndex: data.stepIndex,
+        stepAction: data.stepAction,
+        stepSelector: data.stepSelector,
+        timestamp: data.timestamp,
+      });
+
+      // Add to history (keep last 3)
+      setScreenshotHistory(prev => {
+        const newHistory = [
+          ...prev,
+          {
+            base64: data.base64,
+            stepIndex: data.stepIndex,
+            stepAction: data.stepAction,
+            timestamp: data.timestamp,
+          }
+        ].slice(-3); // Keep only last 3
+        return newHistory;
+      });
+    });
+
+    screenshotSocket.on('disconnect', () => {
+      console.log('[LiveScreenshot] Disconnected');
+    });
+
+    screenshotSocket.on('connect_error', (err: Error) => {
+      console.warn('[LiveScreenshot] Connection error:', err.message);
+    });
+
+    return () => {
+      console.log('[LiveScreenshot] Cleaning up socket connection');
+      screenshotSocket.emit('leave-run', suiteRun.id);
+      screenshotSocket.disconnect();
+    };
+  }, [suiteRunPolling, suiteRun?.id]);
+
   if (isLoading) {
     return (
       <Layout>
@@ -3475,6 +3578,96 @@ export function teardown(data) {
                     >
                       {isCancellingSuite ? 'Cancelling...' : 'Cancel'}
                     </button>
+                  </div>
+                )}
+
+                {/* Feature #35: Live Screenshot Panel */}
+                {liveScreenshot && (
+                  <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200 flex items-center gap-2">
+                        <svg className="h-4 w-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Live Screenshot
+                      </h3>
+                      <span className="text-xs text-blue-600 dark:text-blue-400">
+                        {liveScreenshot.testName}
+                      </span>
+                    </div>
+
+                    {/* Step label */}
+                    <div className="mb-2 text-xs text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                      <span className="font-medium">Step {liveScreenshot.stepIndex + 1}:</span>
+                      <span className="font-mono bg-blue-100 dark:bg-blue-800 px-1.5 py-0.5 rounded">
+                        {liveScreenshot.stepAction}
+                      </span>
+                      {liveScreenshot.stepSelector && (
+                        <span className="text-blue-500 dark:text-blue-400 truncate max-w-[200px]" title={liveScreenshot.stepSelector}>
+                          {liveScreenshot.stepSelector}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Main screenshot */}
+                    <div
+                      className="relative rounded-md overflow-hidden border border-blue-200 dark:border-blue-700 cursor-pointer"
+                      onClick={() => setExpandedScreenshot(liveScreenshot.base64)}
+                    >
+                      <img
+                        src={`data:image/jpeg;base64,${liveScreenshot.base64}`}
+                        alt={`Live screenshot - Step ${liveScreenshot.stepIndex + 1}`}
+                        className="w-full max-h-[300px] object-contain bg-gray-100 dark:bg-gray-800"
+                      />
+                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                        </svg>
+                        Click to expand
+                      </div>
+                    </div>
+
+                    {/* Thumbnail history */}
+                    {screenshotHistory.length > 1 && (
+                      <div className="mt-3">
+                        <div className="text-xs text-blue-600 dark:text-blue-400 mb-2">Recent Screenshots</div>
+                        <div className="flex gap-2">
+                          {screenshotHistory.map((screenshot, idx) => (
+                            <button
+                              key={screenshot.timestamp}
+                              onClick={() => setExpandedScreenshot(screenshot.base64)}
+                              className={`relative rounded overflow-hidden border-2 transition-all hover:scale-105 ${
+                                screenshot.timestamp === liveScreenshot.timestamp
+                                  ? 'border-blue-500 ring-2 ring-blue-300'
+                                  : 'border-gray-300 dark:border-gray-600 opacity-70 hover:opacity-100'
+                              }`}
+                            >
+                              <img
+                                src={`data:image/jpeg;base64,${screenshot.base64}`}
+                                alt={`Step ${screenshot.stepIndex + 1}`}
+                                className="w-16 h-12 object-cover"
+                              />
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[9px] px-1 py-0.5 truncate">
+                                {screenshot.stepAction}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Placeholder when no live screenshot yet */}
+                {!liveScreenshot && (
+                  <div className="mt-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 p-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <svg className="h-5 w-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>Screenshots will appear here as tests run...</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -5587,6 +5780,43 @@ export function teardown(data) {
                     'Save Changes'
                   )}
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Feature #35: Expanded Screenshot Modal */}
+        {expandedScreenshot && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setExpandedScreenshot(null)}
+          >
+            <div
+              className="relative max-w-[90vw] max-h-[90vh] bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Screenshot Preview
+                </h3>
+                <button
+                  onClick={() => setExpandedScreenshot(null)}
+                  className="rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-2 overflow-auto max-h-[calc(90vh-60px)]">
+                <img
+                  src={`data:image/jpeg;base64,${expandedScreenshot}`}
+                  alt="Expanded screenshot"
+                  className="max-w-full max-h-full object-contain rounded"
+                />
               </div>
             </div>
           </div>
