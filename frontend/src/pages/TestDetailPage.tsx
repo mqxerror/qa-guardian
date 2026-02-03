@@ -6041,16 +6041,27 @@ export default function () {
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-muted-foreground">
-                        Step {liveProgress.currentStep ? liveProgress.currentStep.index + 1 : 1} of {liveProgress.currentStep?.total || '?'}
+                        {liveProgress.k6Metrics && test?.test_type === 'load'
+                          ? `Load Test: ${liveProgress.k6Metrics.phase === 'ramp_up' ? 'Ramping Up' : liveProgress.k6Metrics.phase === 'steady' ? 'Steady State' : liveProgress.k6Metrics.phase === 'ramp_down' ? 'Ramping Down' : liveProgress.k6Metrics.phase || 'Running'}`
+                          : `Step ${liveProgress.currentStep ? liveProgress.currentStep.index + 1 : 1} of ${liveProgress.currentStep?.total || '?'}`
+                        }
                       </span>
                       <span className="text-sm text-muted-foreground">
-                        {liveProgress.completedTests} / {liveProgress.totalTests} tests
+                        {liveProgress.k6Metrics && test?.test_type === 'load'
+                          ? `${liveProgress.k6Metrics.progress}% complete`
+                          : `${liveProgress.completedTests} / ${liveProgress.totalTests} tests`
+                        }
                       </span>
                     </div>
                     <div className="h-3 bg-muted rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
-                        style={{ width: `${liveProgress.totalTests > 0 ? Math.round((liveProgress.completedTests / liveProgress.totalTests) * 100) : (liveProgress.currentStep ? Math.round(((liveProgress.currentStep.index + 1) / Math.max(liveProgress.currentStep.total, 1)) * 100) : 0)}%` }}
+                        style={{ width: `${liveProgress.k6Metrics && test?.test_type === 'load'
+                          ? liveProgress.k6Metrics.progress
+                          : (liveProgress.totalTests > 0
+                            ? Math.round((liveProgress.completedTests / liveProgress.totalTests) * 100)
+                            : (liveProgress.currentStep ? Math.round(((liveProgress.currentStep.index + 1) / Math.max(liveProgress.currentStep.total, 1)) * 100) : 0)
+                          )}%` }}
                       />
                     </div>
                   </div>
@@ -6066,10 +6077,13 @@ export default function () {
                         Current Step
                       </h3>
                       <div className="space-y-2">
-                        <div className="font-mono text-foreground bg-muted rounded px-3 py-2">
-                          {liveProgress.currentStep?.action || liveProgress.currentTest || 'Initializing...'}
+                        <div className={`${test?.test_type === 'load' ? 'text-foreground' : 'font-mono text-foreground'} bg-muted rounded px-3 py-2`}>
+                          {test?.test_type === 'load'
+                            ? `Load Testing ${test?.target_url || 'target'}`
+                            : (liveProgress.currentStep?.action || liveProgress.currentTest || 'Initializing...')
+                          }
                         </div>
-                        {liveProgress.currentStep && (
+                        {liveProgress.currentStep && test?.test_type !== 'load' && (
                           <div className="text-sm text-muted-foreground">
                             Step {liveProgress.currentStep.index + 1} of {liveProgress.currentStep.total}
                           </div>
@@ -6107,20 +6121,6 @@ export default function () {
                   {/* K6 Load Test Real-Time Metrics -- only for load tests */}
                   {liveProgress.k6Metrics && test?.test_type === 'load' && (
                     <div className="mt-6 p-3 rounded-lg bg-blue-100/50 dark:bg-blue-800/30 border border-blue-200 dark:border-blue-700">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
-                          🚀 Load Test: {liveProgress.k6Metrics.phase === 'ramp_up' ? 'Ramping Up' : liveProgress.k6Metrics.phase === 'steady' ? 'Steady State' : 'Ramping Down'}
-                        </span>
-                        <span className="text-xs text-blue-600 dark:text-blue-400">
-                          {liveProgress.k6Metrics.progress}% complete
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-blue-200 dark:bg-blue-700 rounded-full overflow-hidden mb-3">
-                        <div
-                          className="h-full bg-blue-600 rounded-full transition-all duration-500"
-                          style={{ width: `${liveProgress.k6Metrics.progress}%` }}
-                        />
-                      </div>
                       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
                         <div className="p-2 rounded bg-white/50 dark:bg-gray-800/50">
                           <div className="text-lg font-bold text-blue-700 dark:text-blue-300">

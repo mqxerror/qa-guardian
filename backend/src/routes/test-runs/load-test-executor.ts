@@ -515,6 +515,7 @@ export async function executeLoadTest(
       action: 'k6_load_test',
       value: test.target_url,
       execution_mode: USE_REAL_K6 ? 'real_k6' : 'simulated',
+      totalSteps: 1,
     });
 
     // Get test configuration
@@ -651,6 +652,7 @@ export async function executeLoadTest(
       status: testStatus === 'passed' ? 'passed' : 'failed',
       duration_ms: Date.now() - loadTestStepStart,
       error: testError,
+      totalSteps: 1,
     });
 
     // Feature #1968: Include load test data in step results for UI display
