@@ -592,7 +592,7 @@ async function executeTest(
           case 'click':
             if (step.selector) {
               try {
-                await page.click(step.selector, { timeout: 5000 });
+                await page.click(step.selector, { timeout: 10000 });
               } catch (clickErr: any) {
                 // Feature #1052: Detect element not found and initiate healing
                 if (clickErr.message?.includes('strict mode') || clickErr.message?.includes('not found') ||
@@ -644,7 +644,7 @@ async function executeTest(
                     }
                     try {
                       console.log(`[HEALING] Trying alternate selector: ${alt.selector} (confidence: ${alt.confidence})`);
-                      await page.click(alt.selector, { timeout: 3000 });
+                      await page.click(alt.selector, { timeout: 5000 });
                       console.log(`[HEALING] SUCCESS with ${alt.strategy}: ${alt.selector} - auto-applied (confidence >= ${projectAutoHealThreshold})`);
                       // Feature #1057: Record successful heal for test update
                       recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, alt.selector, alt.strategy, alt.confidence, orgId);
@@ -732,7 +732,7 @@ async function executeTest(
           case 'type':
             if (step.selector && step.value) {
               try {
-                await page.fill(step.selector, step.value, { timeout: 5000 });
+                await page.fill(step.selector, step.value, { timeout: 10000 });
               } catch (fillErr: any) {
                 // Feature #1052: Detect element not found and initiate healing
                 if (fillErr.message?.includes('strict mode') || fillErr.message?.includes('not found') ||
@@ -783,7 +783,7 @@ async function executeTest(
                     }
                     try {
                       console.log(`[HEALING] Trying alternate selector: ${alt.selector} (confidence: ${alt.confidence})`);
-                      await page.fill(alt.selector, step.value!, { timeout: 3000 });
+                      await page.fill(alt.selector, step.value!, { timeout: 5000 });
                       console.log(`[HEALING] SUCCESS with ${alt.strategy}: ${alt.selector} - auto-applied (confidence >= ${fillProjectThreshold})`);
                       // Feature #1057: Record successful fill heal for test update
                       recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, alt.selector, alt.strategy, alt.confidence, orgId);
@@ -873,7 +873,7 @@ async function executeTest(
             break;
           case 'assert_text':
             if (step.value) {
-              await page.waitForSelector(`text=${step.value}`, { timeout: 5000 });
+              await page.waitForSelector(`text=${step.value}`, { timeout: 10000 });
             }
             break;
           case 'screenshot':
