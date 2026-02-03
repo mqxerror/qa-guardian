@@ -542,9 +542,43 @@ function TestSuitePage() {
   const [recordedTestName, setRecordedTestName] = useState('');
   const [recordedTestDescription, setRecordedTestDescription] = useState('');
   const [isSavingRecordedTest, setIsSavingRecordedTest] = useState(false);
+  const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null);
+  const [recordingElapsed, setRecordingElapsed] = useState(0);
+  const [recordingDuration, setRecordingDuration] = useState(0);
 
   const canCreateTest = user?.role !== 'viewer';
   const canDeleteSuite = user?.role === 'owner' || user?.role === 'admin';
+
+  // Recording timer effect
+  useEffect(() => {
+    if (!isRecording || !recordingStartTime) return;
+    const timer = setInterval(() => {
+      setRecordingElapsed(Math.floor((Date.now() - recordingStartTime) / 1000));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isRecording, recordingStartTime]);
+
+  // Helper to format seconds as mm:ss
+  const formatElapsed = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Helper to get action type icon
+  const getActionIcon = (action: string) => {
+    switch (action) {
+      case 'navigate': return '🌐';
+      case 'click': return '👆';
+      case 'fill': case 'type': case 'input': return '⌨️';
+      case 'screenshot': return '📸';
+      case 'assert_text': return '✅';
+      case 'wait': return '⏱️';
+      case 'hover': return '🖱️';
+      case 'select': return '📋';
+      default: return '🔹';
+    }
+  };
 
   // Feature #1065: Edit selector modal state for TestSuitePage
   interface EditSelectorModalState {
@@ -2129,6 +2163,8 @@ export function teardown(data) {
     setIsRecording(true);
     setRecordingStatus('Starting recording session...');
     setRecordedSteps([]);
+    setRecordingStartTime(Date.now());
+    setRecordingElapsed(0);
 
     try {
       const response = await fetch('/api/v1/recording/start', {
@@ -2229,6 +2265,8 @@ export function teardown(data) {
 
       setIsRecording(false);
       setRecordingStatus('');
+      setRecordingDuration(recordingStartTime ? Math.floor((Date.now() - recordingStartTime) / 1000) : 0);
+      setRecordingStartTime(null);
       setShowRecordModal(false);
       setShowReviewModal(true);
       setRecordedTestName(`Recorded Test ${new Date().toLocaleString()}`);
@@ -4316,18 +4354,32 @@ export function teardown(data) {
             }}
           >
             <div
-              className="w-full max-w-lg rounded-lg bg-card p-6 shadow-lg"
+              className={`w-full max-w-xl rounded-xl bg-card p-6 shadow-2xl transition-all duration-300 ${
+                isRecording ? 'border-2 border-blue-500 shadow-blue-500/20' : 'border border-border'
+              }`}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-semibold text-foreground">🎬 Record New Test</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {isRecording
-                  ? 'Interact with the browser window to record test steps. Click actions, type in inputs, and assert text visibility.'
-                  : 'Enter the URL to start recording. A browser window will open where you can perform actions.'}
-              </p>
+              {/* Header */}
+              <div className="flex items-center gap-3">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                  isRecording ? 'bg-red-100' : 'bg-orange-100'
+                }`}>
+                  <span className="text-xl">{isRecording ? '🔴' : '🎬'}</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {isRecording ? 'Recording in Progress' : 'Record New Test'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isRecording
+                      ? 'Interact with the headless browser to capture test steps'
+                      : 'Enter a URL to start recording user interactions'}
+                  </p>
+                </div>
+              </div>
 
               {!isRecording ? (
-                <div className="mt-4 space-y-4">
+                <div className="mt-5 space-y-4">
                   <div>
                     <label htmlFor="record-url" className="block text-sm font-medium text-foreground">
                       Target URL
@@ -4338,101 +4390,127 @@ export function teardown(data) {
                       value={recordTargetUrl}
                       onChange={(e) => setRecordTargetUrl(e.target.value)}
                       placeholder={project?.base_url || 'https://your-site.com'}
-                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={handleCancelRecording}
-                      className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
+                      className="rounded-lg border border-border px-4 py-2 font-medium text-foreground hover:bg-muted transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleStartRecording}
-                      className="rounded-md bg-orange-600 px-4 py-2 font-medium text-white hover:bg-orange-700"
+                      className="rounded-lg bg-gradient-to-r from-orange-500 to-red-500 px-5 py-2 font-medium text-white hover:from-orange-600 hover:to-red-600 transition-all shadow-md hover:shadow-lg"
                     >
-                      Start Recording
+                      ⏺ Start Recording
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="mt-4 space-y-4">
-                  <div className="rounded-md bg-orange-50 p-4 border border-orange-200">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                      </span>
-                      <span className="font-medium text-orange-800">{recordingStatus}</span>
+                <div className="mt-5 space-y-4">
+                  {/* Recording Status Panel */}
+                  <div className="rounded-lg bg-gradient-to-r from-red-50 to-orange-50 p-4 border border-red-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="relative flex h-3.5 w-3.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500"></span>
+                        </span>
+                        <span className="font-semibold text-red-700">REC</span>
+                        <span className="font-mono text-lg font-bold text-red-800 tabular-nums">{formatElapsed(recordingElapsed)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                          {recordedSteps.length} step{recordedSteps.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground truncate">
+                      🌐 {recordTargetUrl}
                     </div>
                   </div>
 
-                  {/* Recorded Steps Preview */}
+                  {/* Action Log */}
                   <div>
-                    <h4 className="text-sm font-medium text-foreground">Recorded Steps ({recordedSteps.length}):</h4>
-                    <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-border bg-muted/30 p-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-semibold text-foreground">Action Log</h4>
+                    </div>
+                    <div className="max-h-56 overflow-y-auto rounded-lg border border-border bg-muted/20 divide-y divide-border">
                       {recordedSteps.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No steps recorded yet...</p>
+                        <div className="p-4 text-center">
+                          <p className="text-sm text-muted-foreground">Waiting for actions...</p>
+                          <p className="text-xs text-muted-foreground mt-1">Interact with the browser window to record steps</p>
+                        </div>
                       ) : (
-                        <ol className="space-y-1 text-sm">
-                          {recordedSteps.map((step, idx) => (
-                            <li key={idx} className="flex items-start gap-2">
-                              <span className="font-mono text-muted-foreground">{idx + 1}.</span>
-                              <span className="font-medium text-blue-600">{step.action}</span>
-                              {step.url && <span className="truncate text-muted-foreground">→ {step.url}</span>}
-                              {step.selector && <span className="truncate text-muted-foreground">→ {step.selector}</span>}
-                              {step.value && <span className="truncate text-green-600">"{step.value}"</span>}
-                              {step.text && <span className="truncate text-green-600">"{step.text}"</span>}
-                            </li>
-                          ))}
-                        </ol>
+                        recordedSteps.map((step, idx) => (
+                          <div key={idx} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/40 transition-colors">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-background border border-border text-sm shrink-0">
+                              {getActionIcon(step.action)}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold uppercase tracking-wider text-blue-600">{step.action}</span>
+                              </div>
+                              <div className="text-xs text-muted-foreground truncate">
+                                {step.url && step.url}
+                                {step.selector && step.selector}
+                                {step.value && `"${step.value}"`}
+                                {step.text && `"${step.text}"`}
+                              </div>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">#{idx + 1}</span>
+                          </div>
+                        ))
                       )}
                     </div>
                   </div>
 
                   {/* Manual Step Buttons */}
                   <div>
-                    <h4 className="text-sm font-medium text-foreground">Add Manual Step:</h4>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Add Manual Step</h4>
+                    <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => {
                           const text = prompt('Enter text to assert is visible:');
                           if (text) handleAddRecordingStep('assert_text', { text });
                         }}
-                        className="rounded-md border border-green-300 bg-green-50 px-3 py-1 text-sm text-green-700 hover:bg-green-100"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
                       >
-                        + Assert Text
+                        ✅ Assert Text
                       </button>
                       <button
                         onClick={() => handleAddRecordingStep('screenshot', {})}
-                        className="rounded-md border border-purple-300 bg-purple-50 px-3 py-1 text-sm text-purple-700 hover:bg-purple-100"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors"
                       >
-                        + Screenshot
+                        📸 Screenshot
                       </button>
                       <button
                         onClick={() => {
                           const ms = prompt('Enter wait time in milliseconds:', '1000');
                           if (ms) handleAddRecordingStep('wait', { value: ms });
                         }}
-                        className="rounded-md border border-gray-300 bg-gray-50 px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 transition-colors"
                       >
-                        + Wait
+                        ⏱️ Wait
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-2">
+                  {/* Actions */}
+                  <div className="flex justify-between items-center pt-2 border-t border-border">
                     <button
                       onClick={handleCancelRecording}
-                      className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
+                      className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleStopRecording}
-                      className="rounded-md bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700"
+                      className="rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-5 py-2 text-sm font-semibold text-white hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
                     >
+                      <span className="inline-block h-3 w-3 rounded-sm bg-white"></span>
                       Stop Recording
                     </button>
                   </div>
@@ -4453,15 +4531,41 @@ export function teardown(data) {
             }}
           >
             <div
-              className="w-full max-w-2xl rounded-lg bg-card p-6 shadow-lg max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-semibold text-foreground">Review Recorded Test</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Review the recorded steps, give your test a name, and save it to the suite.
-              </p>
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
+                  <span className="text-xl">✅</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Review Recorded Test</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Review the recorded steps, give your test a name, and save it to the suite.
+                  </p>
+                </div>
+              </div>
 
-              <div className="mt-4 space-y-4">
+              {/* Recording Summary Stats */}
+              <div className="grid grid-cols-3 gap-3 mb-5">
+                <div className="rounded-lg border border-border bg-muted/30 p-3 text-center">
+                  <div className="text-2xl font-bold text-foreground">{recordedSteps.length}</div>
+                  <div className="text-xs text-muted-foreground">Steps Recorded</div>
+                </div>
+                <div className="rounded-lg border border-border bg-muted/30 p-3 text-center">
+                  <div className="text-2xl font-bold text-foreground">{formatElapsed(recordingDuration)}</div>
+                  <div className="text-xs text-muted-foreground">Duration</div>
+                </div>
+                <div className="rounded-lg border border-border bg-muted/30 p-3 text-center">
+                  <div className="text-2xl font-bold text-foreground">
+                    {new Set(recordedSteps.map(s => s.action)).size}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Action Types</div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
                 <div>
                   <label htmlFor="recorded-test-name" className="block text-sm font-medium text-foreground">
                     Test Name *
@@ -4472,7 +4576,7 @@ export function teardown(data) {
                     value={recordedTestName}
                     onChange={(e) => setRecordedTestName(e.target.value)}
                     placeholder="Enter test name"
-                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
                 </div>
@@ -4487,36 +4591,37 @@ export function teardown(data) {
                     onChange={(e) => setRecordedTestDescription(e.target.value)}
                     placeholder="Optional description"
                     rows={2}
-                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium text-foreground">Recorded Steps ({recordedSteps.length}):</h4>
-                  <div className="mt-2 rounded-md border border-border bg-muted/30 p-3">
-                    <ol className="space-y-2 text-sm">
-                      {recordedSteps.map((step, idx) => (
-                        <li key={idx} className="flex items-start gap-3 p-2 rounded-md bg-background border border-border">
-                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-medium">
-                            {idx + 1}
-                          </span>
-                          <div className="flex-1">
-                            <span className="font-medium text-blue-600">{step.action}</span>
-                            {step.url && <p className="text-muted-foreground mt-0.5">URL: {step.url}</p>}
-                            {step.selector && <p className="text-muted-foreground mt-0.5">Selector: <code className="bg-muted px-1 rounded">{step.selector}</code></p>}
-                            {step.value && <p className="text-green-600 mt-0.5">Value: "{step.value}"</p>}
-                            {step.text && <p className="text-green-600 mt-0.5">Assert: "{step.text}"</p>}
-                          </div>
-                          <button
-                            onClick={() => setRecordedSteps(prev => prev.filter((_, i) => i !== idx))}
-                            className="text-red-500 hover:text-red-700"
-                            title="Remove step"
-                          >
-                            ✕
-                          </button>
-                        </li>
-                      ))}
-                    </ol>
+                  <h4 className="text-sm font-semibold text-foreground mb-2">Test Steps Preview</h4>
+                  <div className="rounded-lg border border-border bg-muted/20 divide-y divide-border max-h-64 overflow-y-auto">
+                    {recordedSteps.map((step, idx) => (
+                      <div key={idx} className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/40 transition-colors group">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-background border border-border text-sm shrink-0">
+                          {getActionIcon(step.action)}
+                        </span>
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-medium shrink-0">
+                          {idx + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-blue-600">{step.action}</span>
+                          {step.url && <p className="text-xs text-muted-foreground truncate mt-0.5">URL: {step.url}</p>}
+                          {step.selector && <p className="text-xs text-muted-foreground truncate mt-0.5">Selector: <code className="bg-muted px-1 rounded">{step.selector}</code></p>}
+                          {step.value && <p className="text-xs text-green-600 mt-0.5">Value: "{step.value}"</p>}
+                          {step.text && <p className="text-xs text-green-600 mt-0.5">Assert: "{step.text}"</p>}
+                        </div>
+                        <button
+                          onClick={() => setRecordedSteps(prev => prev.filter((_, i) => i !== idx))}
+                          className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remove step"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -4528,16 +4633,16 @@ export function teardown(data) {
                       setRecordedTestName('');
                       setRecordedTestDescription('');
                     }}
-                    className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
+                    className="rounded-lg border border-border px-4 py-2 font-medium text-foreground hover:bg-muted transition-colors"
                   >
                     Discard
                   </button>
                   <button
                     onClick={handleSaveRecordedTest}
                     disabled={isSavingRecordedTest || recordedSteps.length === 0 || !recordedTestName.trim()}
-                    className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    className="rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-5 py-2 font-semibold text-white hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none"
                   >
-                    {isSavingRecordedTest ? 'Saving...' : 'Save Test'}
+                    {isSavingRecordedTest ? 'Saving...' : '💾 Save Test'}
                   </button>
                 </div>
               </div>
