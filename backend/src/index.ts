@@ -26,6 +26,7 @@ import aiTestGeneratorRoutes from './routes/ai-test-generator';
 import mcpToolsRoutes from './routes/mcp-tools';
 import { reportsRoutes } from './routes/reports'; // Feature #1732
 import { servicesStatusRoutes, setServicesSocketIO } from './routes/services-status'; // Feature #2127
+import { setRecordingSocketIO } from './routes/test-runs/recording-routes'; // Feature #26: Playwright recording
 
 // Socket.IO server instance (will be initialized after server starts)
 let io: SocketIOServer | null = null;
@@ -353,9 +354,10 @@ async function start() {
       });
     });
 
-    // Share Socket.IO instance with test-runs module and services status
+    // Share Socket.IO instance with test-runs module, services status, and recording
     setSocketIO(io);
     setServicesSocketIO(io);
+    setRecordingSocketIO(io);
 
     // Check AI provider status for MCP features
     const kieApiKey = process.env.KIE_API_KEY;

@@ -11,6 +11,7 @@ import { useToastStore, toast } from '../stores/toastStore';
 import { getErrorMessage, isNetworkError, isOffline } from '../utils/errorHandling';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import jsPDF from 'jspdf';
+import { io, Socket } from 'socket.io-client';
 // Feature #1768: Import UnifiedAIService for AI test generation
 import { UnifiedAIService } from '../services/UnifiedAIService';
 // Feature #1800: Import new CreateTestModal with two-section layout
@@ -546,6 +547,10 @@ function TestSuitePage() {
   const [recordingElapsed, setRecordingElapsed] = useState(0);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [recordingPopup, setRecordingPopup] = useState<Window | null>(null);
+  // Feature #26: Live browser view state
+  const [recordingFrame, setRecordingFrame] = useState<string | null>(null);
+  const recordingSocketRef = useRef<Socket | null>(null);
+  const browserViewRef = useRef<HTMLDivElement | null>(null);
 
   const canCreateTest = user?.role !== 'viewer';
   const canDeleteSuite = user?.role === 'owner' || user?.role === 'admin';
@@ -2146,7 +2151,7 @@ export function teardown(data) {
     }
   };
 
-  // Start recording session
+  // Start recording session - Feature #26: Playwright + Socket.IO streaming
   const handleStartRecording = async () => {
     if (!recordTargetUrl) {
       toast.error('Please enter a target URL');
@@ -2166,6 +2171,7 @@ export function teardown(data) {
     setRecordedSteps([]);
     setRecordingStartTime(Date.now());
     setRecordingElapsed(0);
+    setRecordingFrame(null);
 
     try {
       const response = await fetch('/api/v1/recording/start', {
@@ -2187,21 +2193,41 @@ export function teardown(data) {
 
       const data = await response.json();
       setRecordingSessionId(data.session_id);
-      setRecordingStatus('Recording... Interact with the site in the new tab');
+      setRecordingStatus('Recording... Click on the browser view to interact');
 
       // Add initial navigate step
       setRecordedSteps([{ action: 'navigate', url: recordTargetUrl }]);
 
-      // Start polling for recorded actions
-      pollRecordingActions(data.session_id);
+      // Connect Socket.IO for live streaming - connect directly to backend
+      // In dev, Vite proxy handles /api but not WebSocket, so use backend port directly
+      const socketUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? `http://${window.location.hostname}:3001`
+        : window.location.origin;
+      const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+      recordingSocketRef.current = socket;
 
-      // Open the proxy URL in a new browser tab so the user can interact with the site
-      if (data.proxy_url) {
-        const popup = window.open(data.proxy_url, '_blank');
-        setRecordingPopup(popup);
-      }
+      socket.on('connect', () => {
+        console.log('[Recording] Socket connected:', socket.id);
+        socket.emit('recording:join', { sessionId: data.session_id });
+      });
 
-      toast.success('Recording started! Interact with the site in the new tab.');
+      // Receive live screenshot frames
+      socket.on('recording:frame', (frameData: { base64: string; width: number; height: number }) => {
+        setRecordingFrame(`data:image/jpeg;base64,${frameData.base64}`);
+      });
+
+      // Receive recorded actions
+      socket.on('recording:action', (action: any) => {
+        setRecordedSteps(prev => [...prev, action]);
+      });
+
+      // Handle recording stopped
+      socket.on('recording:stopped', () => {
+        setIsRecording(false);
+        setRecordingStatus('');
+      });
+
+      toast.success('Recording started! Click on the browser view to interact.');
     } catch (err) {
       setIsRecording(false);
       setRecordingStatus('');
@@ -2209,36 +2235,36 @@ export function teardown(data) {
     }
   };
 
-  // Poll for recorded actions from the server
-  const pollRecordingActions = async (sessionId: string) => {
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/v1/recording/${sessionId}/actions`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+  // Handle click on the live browser view
+  const handleBrowserViewClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!recordingSessionId || !recordingSocketRef.current || !browserViewRef.current) return;
+    const rect = browserViewRef.current.getBoundingClientRect();
+    // Scale coordinates to 1280x720 viewport
+    const scaleX = 1280 / rect.width;
+    const scaleY = 720 / rect.height;
+    const x = Math.round((e.clientX - rect.left) * scaleX);
+    const y = Math.round((e.clientY - rect.top) * scaleY);
+    recordingSocketRef.current.emit('recording:click', { sessionId: recordingSessionId, x, y });
+  };
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.actions && data.actions.length > 0) {
-            setRecordedSteps(data.actions);
-          }
-          if (data.status === 'stopped' || data.status === 'error') {
-            clearInterval(pollInterval);
-            if (data.status === 'error') {
-              toast.error('Recording session ended unexpectedly');
-              setIsRecording(false);
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Failed to poll recording actions:', err);
-      }
-    }, 500);
+  // Handle keyboard input on the live browser view
+  const handleBrowserViewKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!recordingSessionId || !recordingSocketRef.current) return;
+    e.preventDefault();
+    const key = e.key;
+    if (key.length === 1) {
+      // Regular character
+      recordingSocketRef.current.emit('recording:type', { sessionId: recordingSessionId, text: key });
+    } else {
+      // Special key (Enter, Tab, Backspace, etc.)
+      recordingSocketRef.current.emit('recording:keypress', { sessionId: recordingSessionId, key });
+    }
+  };
 
-    // Store interval ID for cleanup
-    return pollInterval;
+  // Handle scroll on the live browser view
+  const handleBrowserViewWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (!recordingSessionId || !recordingSocketRef.current) return;
+    recordingSocketRef.current.emit('recording:scroll', { sessionId: recordingSessionId, deltaX: e.deltaX, deltaY: e.deltaY });
   };
 
   // Add a manual step during recording
@@ -2278,7 +2304,14 @@ export function teardown(data) {
       setShowReviewModal(true);
       setRecordedTestName(`Recorded Test ${new Date().toLocaleString()}`);
 
-      // Close the proxy browser tab
+      // Cleanup Socket.IO connection
+      if (recordingSocketRef.current) {
+        recordingSocketRef.current.emit('recording:leave', { sessionId: recordingSessionId });
+        recordingSocketRef.current.disconnect();
+        recordingSocketRef.current = null;
+      }
+      setRecordingFrame(null);
+      // Close the proxy browser tab (legacy)
       if (recordingPopup && !recordingPopup.closed) {
         recordingPopup.close();
       }
@@ -2366,11 +2399,20 @@ export function teardown(data) {
         },
       }).catch(() => {});
     }
-    // Close the proxy browser tab
+    // Cleanup Socket.IO connection
+    if (recordingSocketRef.current) {
+      if (recordingSessionId) {
+        recordingSocketRef.current.emit('recording:leave', { sessionId: recordingSessionId });
+      }
+      recordingSocketRef.current.disconnect();
+      recordingSocketRef.current = null;
+    }
+    // Close the proxy browser tab (legacy)
     if (recordingPopup && !recordingPopup.closed) {
       recordingPopup.close();
     }
     setRecordingPopup(null);
+    setRecordingFrame(null);
     setIsRecording(false);
     setRecordingSessionId(null);
     setRecordedSteps([]);
@@ -4362,7 +4404,7 @@ export function teardown(data) {
           </div>
         )}
 
-        {/* Record New Test Modal */}
+        {/* Record New Test Modal - Feature #26: Live Browser View */}
         {showRecordModal && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -4373,32 +4415,46 @@ export function teardown(data) {
             }}
           >
             <div
-              className={`w-full max-w-xl rounded-xl bg-card p-6 shadow-2xl transition-all duration-300 ${
-                isRecording ? 'border-2 border-blue-500 shadow-blue-500/20' : 'border border-border'
+              className={`w-full rounded-xl bg-card shadow-2xl transition-all duration-300 ${
+                isRecording ? 'max-w-5xl border-2 border-blue-500 shadow-blue-500/20' : 'max-w-xl border border-border'
               }`}
+              style={{ maxHeight: '95vh' }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 p-4 pb-0">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
                   isRecording ? 'bg-red-100' : 'bg-orange-100'
                 }`}>
                   <span className="text-xl">{isRecording ? '🔴' : '🎬'}</span>
                 </div>
-                <div>
+                <div className="flex-1">
                   <h3 className="text-lg font-semibold text-foreground">
                     {isRecording ? 'Recording in Progress' : 'Record New Test'}
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {isRecording
-                      ? 'Interact with the site in the new browser tab - actions are recorded here'
+                      ? 'Click on the live browser view to interact - actions are recorded automatically'
                       : 'Enter a URL to start recording user interactions'}
                   </p>
                 </div>
+                {isRecording && (
+                  <div className="flex items-center gap-3">
+                    <span className="relative flex h-3.5 w-3.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500"></span>
+                    </span>
+                    <span className="font-semibold text-red-700">REC</span>
+                    <span className="font-mono text-lg font-bold text-red-800 tabular-nums">{formatElapsed(recordingElapsed)}</span>
+                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                      {recordedSteps.length} step{recordedSteps.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {!isRecording ? (
-                <div className="mt-5 space-y-4">
+                <div className="p-4 pt-4 space-y-4">
                   <div>
                     <label htmlFor="record-url" className="block text-sm font-medium text-foreground">
                       Target URL
@@ -4428,110 +4484,125 @@ export function teardown(data) {
                   </div>
                 </div>
               ) : (
-                <div className="mt-5 space-y-4">
-                  {/* Recording Status Panel */}
-                  <div className="rounded-lg bg-gradient-to-r from-red-50 to-orange-50 p-4 border border-red-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="relative flex h-3.5 w-3.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500"></span>
-                        </span>
-                        <span className="font-semibold text-red-700">REC</span>
-                        <span className="font-mono text-lg font-bold text-red-800 tabular-nums">{formatElapsed(recordingElapsed)}</span>
+                <div className="p-4 pt-3 flex gap-4" style={{ maxHeight: 'calc(95vh - 80px)' }}>
+                  {/* Left: Live Browser View */}
+                  <div className="flex-1 min-w-0 flex flex-col">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5">
+                        <span className="text-xs">🌐</span>
+                        <span className="text-xs text-muted-foreground truncate max-w-[300px]">{recordTargetUrl}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                          {recordedSteps.length} step{recordedSteps.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
+                      <div className="text-[10px] text-muted-foreground">Click to interact | Type to enter text</div>
                     </div>
-                    <div className="mt-2 text-xs text-muted-foreground truncate">
-                      🌐 {recordTargetUrl}
-                    </div>
-                  </div>
-
-                  {/* Action Log */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-semibold text-foreground">Action Log</h4>
-                    </div>
-                    <div className="max-h-56 overflow-y-auto rounded-lg border border-border bg-muted/20 divide-y divide-border">
-                      {recordedSteps.length === 0 ? (
-                        <div className="p-4 text-center">
-                          <p className="text-sm text-muted-foreground">Waiting for actions...</p>
-                          <p className="text-xs text-muted-foreground mt-1">Click, type, and navigate in the new browser tab</p>
-                        </div>
+                    <div
+                      ref={browserViewRef}
+                      className="relative flex-1 rounded-lg border-2 border-border overflow-hidden bg-gray-900 cursor-crosshair focus:outline-none focus:border-blue-400"
+                      style={{ aspectRatio: '16/9', maxHeight: '500px' }}
+                      tabIndex={0}
+                      onClick={handleBrowserViewClick}
+                      onKeyDown={handleBrowserViewKeyDown}
+                      onWheel={handleBrowserViewWheel}
+                    >
+                      {recordingFrame ? (
+                        <img
+                          src={recordingFrame}
+                          alt="Live browser view"
+                          className="w-full h-full object-contain"
+                          draggable={false}
+                          style={{ pointerEvents: 'none' }}
+                        />
                       ) : (
-                        recordedSteps.map((step, idx) => (
-                          <div key={idx} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/40 transition-colors">
-                            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-background border border-border text-sm shrink-0">
-                              {getActionIcon(step.action)}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-semibold uppercase tracking-wider text-blue-600">{step.action}</span>
-                              </div>
-                              <div className="text-xs text-muted-foreground truncate">
-                                {step.url && step.url}
-                                {step.selector && step.selector}
-                                {step.value && `"${step.value}"`}
-                                {step.text && `"${step.text}"`}
-                              </div>
-                            </div>
-                            <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">#{idx + 1}</span>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-3"></div>
+                            <p className="text-sm text-gray-400">Connecting to browser...</p>
+                            <p className="text-xs text-gray-500 mt-1">Loading {recordTargetUrl}</p>
                           </div>
-                        ))
+                        </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Manual Step Buttons */}
-                  <div>
-                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Add Manual Step</h4>
-                    <div className="flex flex-wrap gap-2">
+                  {/* Right: Action Log + Controls */}
+                  <div className="w-72 flex flex-col shrink-0">
+                    {/* Action Log */}
+                    <div className="flex-1 min-h-0 flex flex-col">
+                      <h4 className="text-sm font-semibold text-foreground mb-2">Action Log</h4>
+                      <div className="flex-1 overflow-y-auto rounded-lg border border-border bg-muted/20 divide-y divide-border" style={{ maxHeight: '340px' }}>
+                        {recordedSteps.length === 0 ? (
+                          <div className="p-4 text-center">
+                            <p className="text-sm text-muted-foreground">Waiting for actions...</p>
+                            <p className="text-xs text-muted-foreground mt-1">Click on the browser view</p>
+                          </div>
+                        ) : (
+                          recordedSteps.map((step, idx) => (
+                            <div key={idx} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted/40 transition-colors">
+                              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-background border border-border text-xs shrink-0">
+                                {getActionIcon(step.action)}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-600">{step.action}</span>
+                                <div className="text-[10px] text-muted-foreground truncate">
+                                  {step.url && step.url}
+                                  {step.selector && step.selector}
+                                  {step.value && `"${step.value}"`}
+                                  {step.text && `"${step.text}"`}
+                                </div>
+                              </div>
+                              <span className="text-[9px] text-muted-foreground tabular-nums shrink-0">#{idx + 1}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Manual Step Buttons */}
+                    <div className="mt-3">
+                      <h4 className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">Add Manual Step</h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          onClick={() => {
+                            const text = prompt('Enter text to assert is visible:');
+                            if (text) handleAddRecordingStep('assert_text', { text });
+                          }}
+                          className="inline-flex items-center gap-1 rounded-md border border-green-200 bg-green-50 px-2 py-1 text-[10px] font-medium text-green-700 hover:bg-green-100 transition-colors"
+                        >
+                          ✅ Assert
+                        </button>
+                        <button
+                          onClick={() => handleAddRecordingStep('screenshot', {})}
+                          className="inline-flex items-center gap-1 rounded-md border border-purple-200 bg-purple-50 px-2 py-1 text-[10px] font-medium text-purple-700 hover:bg-purple-100 transition-colors"
+                        >
+                          📸 Screenshot
+                        </button>
+                        <button
+                          onClick={() => {
+                            const ms = prompt('Enter wait time in milliseconds:', '1000');
+                            if (ms) handleAddRecordingStep('wait', { value: ms });
+                          }}
+                          className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          ⏱️ Wait
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex justify-between items-center pt-3 mt-3 border-t border-border">
                       <button
-                        onClick={() => {
-                          const text = prompt('Enter text to assert is visible:');
-                          if (text) handleAddRecordingStep('assert_text', { text });
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
+                        onClick={handleCancelRecording}
+                        className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
                       >
-                        ✅ Assert Text
+                        Cancel
                       </button>
                       <button
-                        onClick={() => handleAddRecordingStep('screenshot', {})}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors"
+                        onClick={handleStopRecording}
+                        className="rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-4 py-1.5 text-xs font-semibold text-white hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg flex items-center gap-1.5"
                       >
-                        📸 Screenshot
-                      </button>
-                      <button
-                        onClick={() => {
-                          const ms = prompt('Enter wait time in milliseconds:', '1000');
-                          if (ms) handleAddRecordingStep('wait', { value: ms });
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-                      >
-                        ⏱️ Wait
+                        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-white"></span>
+                        Stop Recording
                       </button>
                     </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex justify-between items-center pt-2 border-t border-border">
-                    <button
-                      onClick={handleCancelRecording}
-                      className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleStopRecording}
-                      className="rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-5 py-2 text-sm font-semibold text-white hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
-                    >
-                      <span className="inline-block h-3 w-3 rounded-sm bg-white"></span>
-                      Stop Recording
-                    </button>
                   </div>
                 </div>
               )}
