@@ -587,9 +587,12 @@ function TestSuitePage() {
       case 'fill': case 'type': case 'input': return '⌨️';
       case 'screenshot': return '📸';
       case 'assert_text': return '✅';
+      case 'assert_url': return '🔗';
       case 'wait': return '⏱️';
       case 'hover': return '🖱️';
       case 'select': return '📋';
+      case 'scroll': return '📜';
+      case 'keypress': return '⌨️';
       default: return '🔹';
     }
   };
@@ -2338,7 +2341,17 @@ export function teardown(data) {
 
       const data = await response.json();
       if (data.actions) {
-        setRecordedSteps(data.actions);
+        // Merge backend actions with any manual steps (assert, wait, hover, etc.)
+        // that were added via the frontend UI but not recorded in the backend
+        setRecordedSteps(prev => {
+          const backendActions = data.actions as typeof prev;
+          // Find manual steps that aren't in the backend (they have no timestamp or were added locally)
+          const manualStepTypes = ['assert_text', 'assert_url', 'wait', 'screenshot', 'hover'];
+          const manualSteps = prev.filter(s => manualStepTypes.includes(s.action));
+          // Combine: backend actions first, then manual steps inserted at their original positions
+          // Simple approach: append manual steps after backend actions
+          return [...backendActions, ...manualSteps];
+        });
       }
 
       setIsRecording(false);
@@ -4620,7 +4633,7 @@ export function teardown(data) {
                           </div>
                         ) : (
                           recordedSteps.map((step, idx) => (
-                            <div key={idx} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted/40 transition-colors">
+                            <div key={idx} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted/40 transition-colors group">
                               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-background border border-border text-xs shrink-0">
                                 {getActionIcon(step.action)}
                               </span>
@@ -4634,6 +4647,13 @@ export function teardown(data) {
                                 </div>
                               </div>
                               <span className="text-[9px] text-muted-foreground tabular-nums shrink-0">#{idx + 1}</span>
+                              <button
+                                onClick={() => setRecordedSteps(prev => prev.filter((_, i) => i !== idx))}
+                                className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity text-xs shrink-0"
+                                title="Remove step"
+                              >
+                                ✕
+                              </button>
                             </div>
                           ))
                         )}
@@ -4667,6 +4687,24 @@ export function teardown(data) {
                           className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-medium text-gray-700 hover:bg-gray-100 transition-colors"
                         >
                           ⏱️ Wait
+                        </button>
+                        <button
+                          onClick={() => {
+                            const url = prompt('Enter expected URL pattern:', window.location.href);
+                            if (url) handleAddRecordingStep('assert_url', { value: url });
+                          }}
+                          className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                        >
+                          🔗 Assert URL
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleAddRecordingStep('hover', { selector: 'body', value: 'Hover over element' });
+                            toast.info('Hover step added. Edit the selector in the review modal.');
+                          }}
+                          className="inline-flex items-center gap-1 rounded-md border border-orange-200 bg-orange-50 px-2 py-1 text-[10px] font-medium text-orange-700 hover:bg-orange-100 transition-colors"
+                        >
+                          👆 Hover
                         </button>
                       </div>
                     </div>
@@ -4773,27 +4811,107 @@ export function teardown(data) {
                   <h4 className="text-sm font-semibold text-foreground mb-2">Test Steps Preview</h4>
                   <div className="rounded-lg border border-border bg-muted/20 divide-y divide-border max-h-64 overflow-y-auto">
                     {recordedSteps.map((step, idx) => (
-                      <div key={idx} className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/40 transition-colors group">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-background border border-border text-sm shrink-0">
+                      <div key={idx} className="flex items-start gap-3 px-3 py-2.5 hover:bg-muted/40 transition-colors group">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-background border border-border text-sm shrink-0 mt-0.5">
                           {getActionIcon(step.action)}
                         </span>
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-medium shrink-0">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-medium shrink-0 mt-0.5">
                           {idx + 1}
                         </span>
                         <div className="flex-1 min-w-0">
                           <span className="text-xs font-semibold uppercase tracking-wider text-blue-600">{step.action}</span>
-                          {step.url && <p className="text-xs text-muted-foreground truncate mt-0.5">URL: {step.url}</p>}
-                          {step.selector && <p className="text-xs text-muted-foreground truncate mt-0.5">Selector: <code className="bg-muted px-1 rounded">{step.selector}</code></p>}
-                          {step.value && <p className="text-xs text-green-600 mt-0.5">Value: "{step.value}"</p>}
-                          {step.text && <p className="text-xs text-green-600 mt-0.5">Assert: "{step.text}"</p>}
+                          {step.url && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              URL: <input
+                                type="text"
+                                defaultValue={step.url}
+                                onBlur={(e) => {
+                                  const newSteps = [...recordedSteps];
+                                  newSteps[idx] = { ...newSteps[idx], url: e.target.value };
+                                  setRecordedSteps(newSteps);
+                                }}
+                                className="bg-muted px-1 rounded text-xs w-full border border-transparent hover:border-border focus:border-blue-400 focus:outline-none"
+                              />
+                            </p>
+                          )}
+                          {step.selector && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Selector: <input
+                                type="text"
+                                defaultValue={step.selector}
+                                onBlur={(e) => {
+                                  const newSteps = [...recordedSteps];
+                                  newSteps[idx] = { ...newSteps[idx], selector: e.target.value };
+                                  setRecordedSteps(newSteps);
+                                }}
+                                className="bg-muted px-1 rounded text-xs font-mono w-full border border-transparent hover:border-border focus:border-blue-400 focus:outline-none"
+                              />
+                            </p>
+                          )}
+                          {step.value && (
+                            <p className="text-xs text-green-600 mt-0.5">
+                              Value: <input
+                                type="text"
+                                defaultValue={step.value}
+                                onBlur={(e) => {
+                                  const newSteps = [...recordedSteps];
+                                  newSteps[idx] = { ...newSteps[idx], value: e.target.value };
+                                  setRecordedSteps(newSteps);
+                                }}
+                                className="bg-muted px-1 rounded text-xs w-full border border-transparent hover:border-border focus:border-blue-400 focus:outline-none text-green-700"
+                              />
+                            </p>
+                          )}
+                          {step.text && (
+                            <p className="text-xs text-green-600 mt-0.5">
+                              Assert: <input
+                                type="text"
+                                defaultValue={step.text}
+                                onBlur={(e) => {
+                                  const newSteps = [...recordedSteps];
+                                  newSteps[idx] = { ...newSteps[idx], text: e.target.value };
+                                  setRecordedSteps(newSteps);
+                                }}
+                                className="bg-muted px-1 rounded text-xs w-full border border-transparent hover:border-border focus:border-blue-400 focus:outline-none text-green-700"
+                              />
+                            </p>
+                          )}
                         </div>
-                        <button
-                          onClick={() => setRecordedSteps(prev => prev.filter((_, i) => i !== idx))}
-                          className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Remove step"
-                        >
-                          ✕
-                        </button>
+                        <div className="flex flex-col gap-1 shrink-0 mt-0.5">
+                          {idx > 0 && (
+                            <button
+                              onClick={() => {
+                                const newSteps = [...recordedSteps];
+                                [newSteps[idx - 1], newSteps[idx]] = [newSteps[idx], newSteps[idx - 1]];
+                                setRecordedSteps(newSteps);
+                              }}
+                              className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                              title="Move up"
+                            >
+                              ▲
+                            </button>
+                          )}
+                          {idx < recordedSteps.length - 1 && (
+                            <button
+                              onClick={() => {
+                                const newSteps = [...recordedSteps];
+                                [newSteps[idx], newSteps[idx + 1]] = [newSteps[idx + 1], newSteps[idx]];
+                                setRecordedSteps(newSteps);
+                              }}
+                              className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                              title="Move down"
+                            >
+                              ▼
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setRecordedSteps(prev => prev.filter((_, i) => i !== idx))}
+                            className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                            title="Remove step"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

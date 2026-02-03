@@ -370,7 +370,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       }
     });
 
-    // Handle scroll events
+    // Handle scroll events - now records the action
     socket.on('recording:scroll', async (data: { sessionId: string; deltaX: number; deltaY: number }) => {
       const { sessionId, deltaX, deltaY } = data;
       const session = recordingSessions.get(sessionId);
@@ -379,8 +379,71 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       try {
         await session.page.mouse.wheel(deltaX, deltaY);
         session.dirty = true;
+
+        // Record significant scrolls (debounce small movements)
+        if (Math.abs(deltaY) > 50 || Math.abs(deltaX) > 50) {
+          const action: any = {
+            action: 'scroll',
+            value: JSON.stringify({ x: deltaX, y: deltaY }),
+            timestamp: Date.now(),
+          };
+          session.actions.push(action);
+          socketIO.to(`recording:${sessionId}`).emit('recording:action', action);
+          console.log(`[RECORDER] Scroll delta (${deltaX}, ${deltaY})`);
+        }
       } catch (err) {
         console.error(`[RECORDER] Scroll error:`, err);
+      }
+    });
+
+    // Handle hover events for dropdown menus and hover states
+    socket.on('recording:hover', async (data: { sessionId: string; x: number; y: number }) => {
+      const { sessionId, x, y } = data;
+      const session = recordingSessions.get(sessionId);
+      if (!session || !session.page || session.status !== 'recording') return;
+
+      try {
+        const elementInfo = await session.page.evaluate(generateSelectorScript(x, y)) as any;
+        await session.page.mouse.move(x, y);
+        session.dirty = true;
+
+        const action: any = {
+          action: 'hover',
+          selector: elementInfo?.selector || `hover(${x}, ${y})`,
+          selectorStrategies: elementInfo?.selectorStrategies || [],
+          tagName: elementInfo?.tagName || '',
+          text: elementInfo?.text || '',
+          timestamp: Date.now(),
+        };
+        session.actions.push(action);
+        socketIO.to(`recording:${sessionId}`).emit('recording:action', action);
+        console.log(`[RECORDER] Hover at (${x}, ${y}) -> ${elementInfo?.selector || 'unknown'}`);
+      } catch (err) {
+        console.error(`[RECORDER] Hover error:`, err);
+      }
+    });
+
+    // Handle select/dropdown events
+    socket.on('recording:select', async (data: { sessionId: string; x: number; y: number; value: string }) => {
+      const { sessionId, x, y, value } = data;
+      const session = recordingSessions.get(sessionId);
+      if (!session || !session.page || session.status !== 'recording') return;
+
+      try {
+        const elementInfo = await session.page.evaluate(generateSelectorScript(x, y)) as any;
+
+        const action: any = {
+          action: 'select',
+          selector: elementInfo?.selector || '',
+          value,
+          tagName: 'SELECT',
+          timestamp: Date.now(),
+        };
+        session.actions.push(action);
+        socketIO.to(`recording:${sessionId}`).emit('recording:action', action);
+        console.log(`[RECORDER] Select at (${x}, ${y}) -> ${value}`);
+      } catch (err) {
+        console.error(`[RECORDER] Select error:`, err);
       }
     });
 
