@@ -9,6 +9,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate } from '../../middleware/auth';
+import { DEVICE_PRESETS, getDevicePresetsForApi, getDevicePresetsByCategory } from './device-presets';
 
 // Browser type definitions
 interface BrowserInfo {
@@ -352,6 +353,52 @@ export async function browserViewportRoutes(app: FastifyInstance) {
         mobile_count: viewports.mobile.length,
         total_presets: totalPresets,
         default_viewport: 'desktop-hd',
+      },
+    };
+  });
+
+  // Feature #36: Get device presets for mobile/tablet emulation
+  app.get('/api/v1/device-presets', {
+    preHandler: [authenticate],
+  }, async (_request, _reply) => {
+    const presets = getDevicePresetsForApi();
+    const byCategory = getDevicePresetsByCategory();
+
+    return {
+      presets,
+      categories: {
+        desktop: byCategory.desktop.map(p => ({
+          name: p.name,
+          displayName: p.displayName,
+          viewport: p.viewport,
+        })),
+        laptop: byCategory.laptop.map(p => ({
+          name: p.name,
+          displayName: p.displayName,
+          viewport: p.viewport,
+        })),
+        tablet: byCategory.tablet.map(p => ({
+          name: p.name,
+          displayName: p.displayName,
+          viewport: p.viewport,
+          isMobile: p.isMobile,
+          hasTouch: p.hasTouch,
+        })),
+        mobile: byCategory.mobile.map(p => ({
+          name: p.name,
+          displayName: p.displayName,
+          viewport: p.viewport,
+          isMobile: p.isMobile,
+          hasTouch: p.hasTouch,
+        })),
+      },
+      summary: {
+        total_presets: presets.length,
+        desktop_count: byCategory.desktop.length,
+        laptop_count: byCategory.laptop.length,
+        tablet_count: byCategory.tablet.length,
+        mobile_count: byCategory.mobile.length,
+        default_preset: 'desktop-1280',
       },
     };
   });

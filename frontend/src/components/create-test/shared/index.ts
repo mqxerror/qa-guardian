@@ -18,3 +18,7 @@ export type {
   QuickTestSelection,
   GeneratedTestPreview,
 } from './QuickTestPanel';
+
+// Feature #36: Device selection component
+export { DeviceSelect } from './DeviceSelect';
+export type { default as DeviceSelectDefault } from './DeviceSelect';

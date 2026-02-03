@@ -12,6 +12,8 @@
 
 import React, { useState, useCallback } from 'react';
 import { StepBuilder, type Step } from './StepBuilder';
+import { DeviceSelect } from '../shared/DeviceSelect';
+import { DeviceConfig, DEVICE_PRESETS } from '../../test-modals/types';
 
 /**
  * E2E test configuration state
@@ -26,6 +28,9 @@ export interface E2EConfigState {
   timeout: number;
   retries: number;
   tags: string[];
+  /** Feature #36: Device emulation */
+  deviceEmulationEnabled: boolean;
+  deviceConfig: DeviceConfig;
 }
 
 /**
@@ -55,6 +60,9 @@ const DEFAULT_CONFIG: E2EConfigState = {
   timeout: 30000,
   retries: 0,
   tags: [],
+  // Feature #36: Device emulation defaults
+  deviceEmulationEnabled: false,
+  deviceConfig: { preset: 'desktop-1280' },
 };
 
 /**
@@ -205,6 +213,37 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
           }}
         />
       </FormField>
+
+      {/* Feature #36: Device Emulation */}
+      <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Device Emulation
+          </h4>
+          <label className="inline-flex items-center">
+            <input
+              type="checkbox"
+              checked={config.deviceEmulationEnabled}
+              onChange={(e) => updateField('deviceEmulationEnabled', e.target.checked)}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Enable</span>
+          </label>
+        </div>
+
+        {config.deviceEmulationEnabled && (
+          <DeviceSelect
+            value={config.deviceConfig}
+            onChange={(deviceConfig) => updateField('deviceConfig', deviceConfig)}
+          />
+        )}
+
+        {!config.deviceEmulationEnabled && (
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Enable to run tests on mobile/tablet devices with touch emulation and proper user agents.
+          </p>
+        )}
+      </div>
 
       {/* Advanced Settings */}
       <div className="pt-4 border-t border-gray-200 dark:border-gray-600">

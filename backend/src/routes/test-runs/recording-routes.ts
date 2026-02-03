@@ -14,6 +14,8 @@ import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/au
 import { getTestSuite } from '../test-suites';
 import { chromium, Browser, Page, BrowserContext } from 'playwright';
 import { Server as SocketIOServer, Socket } from 'socket.io';
+// Feature #36: Import device presets for mobile emulation
+import { TestDeviceConfig, resolveDeviceConfig } from './device-presets';
 
 // Max concurrent recording sessions (configurable via env var)
 const MAX_RECORDING_SESSIONS = parseInt(process.env.MAX_RECORDING_SESSIONS || '3', 10);
@@ -61,6 +63,8 @@ interface RecordingSession {
   page: Page | null;
   screenshotInterval: ReturnType<typeof setInterval> | null;
   dirty: boolean; // Flag to track if page content changed
+  // Feature #36: Device emulation config
+  device_config?: TestDeviceConfig;
 }
 
 // Store active recording sessions
@@ -751,11 +755,11 @@ async function cleanupSession(session: RecordingSession) {
 export async function recordingRoutes(app: FastifyInstance) {
   // Start recording session - launches Playwright browser and starts streaming
   app.post<{
-    Body: { target_url: string; suite_id: string };
+    Body: { target_url: string; suite_id: string; device_config?: TestDeviceConfig };
   }>('/api/v1/recording/start', {
     preHandler: [authenticate],
   }, async (request, reply) => {
-    const { target_url, suite_id } = request.body;
+    const { target_url, suite_id, device_config } = request.body;
     const user = request.user as JwtPayload;
     const orgId = getOrganizationId(request);
 
@@ -805,6 +809,8 @@ export async function recordingRoutes(app: FastifyInstance) {
       page: null,
       screenshotInterval: null,
       dirty: true,
+      // Feature #36: Store device config for later reference
+      device_config,
     };
 
     recordingSessions.set(sessionId, session);
@@ -818,10 +824,28 @@ export async function recordingRoutes(app: FastifyInstance) {
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
       });
 
-      const context = await browser.newContext({
-        viewport: { width: 1280, height: 720 },
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      });
+      // Feature #36: Resolve device config for mobile/tablet emulation
+      const resolvedDevice = device_config ? resolveDeviceConfig(device_config) : null;
+
+      // Build context options with optional device emulation
+      const contextOptions: any = {
+        viewport: resolvedDevice
+          ? { width: resolvedDevice.viewport.width, height: resolvedDevice.viewport.height }
+          : { width: 1280, height: 720 },
+        userAgent: resolvedDevice
+          ? resolvedDevice.userAgent
+          : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      };
+
+      // Apply device emulation settings if configured
+      if (resolvedDevice) {
+        contextOptions.deviceScaleFactor = resolvedDevice.deviceScaleFactor;
+        contextOptions.isMobile = resolvedDevice.isMobile;
+        contextOptions.hasTouch = resolvedDevice.hasTouch;
+        console.log(`[RECORDER] Device emulation enabled: ${resolvedDevice.displayName} (${resolvedDevice.viewport.width}x${resolvedDevice.viewport.height}, mobile=${resolvedDevice.isMobile}, touch=${resolvedDevice.hasTouch})`);
+      }
+
+      const context = await browser.newContext(contextOptions);
 
       const page = await context.newPage();
 

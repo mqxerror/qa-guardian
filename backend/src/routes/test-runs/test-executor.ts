@@ -136,6 +136,13 @@ import {
 } from './lighthouse-executor';
 
 import {
+  DeviceConfig,
+  TestDeviceConfig,
+  resolveDeviceConfig,
+  DEVICE_PRESETS,
+} from './device-presets';
+
+import {
   calculateA11yScore,
   countViolationsByImpact,
   checkA11yThresholds,
@@ -170,6 +177,8 @@ export interface ExecuteTestConfig {
   organization_id?: string; // Organization context for visual comparison
   test_type?: 'e2e' | 'visual_regression' | 'lighthouse' | 'load' | 'accessibility';
   device_preset?: 'mobile' | 'desktop';
+  // Feature #36: Full device emulation config
+  device_config?: TestDeviceConfig;
   performance_threshold?: number;
   lcp_threshold?: number;
   cls_threshold?: number;
@@ -272,9 +281,21 @@ async function executeTest(
   });
 
   try {
-    // Determine viewport size (use test-specific or default)
-    const viewportWidth = test.viewport_width || 1280;
-    const viewportHeight = test.viewport_height || 720;
+    // Feature #36: Resolve device config for mobile/tablet emulation
+    const deviceConfig = resolveDeviceConfig(test.device_config);
+
+    // Determine viewport size (use device config, test-specific, or default)
+    const viewportWidth = test.device_config
+      ? deviceConfig.viewport.width
+      : (test.viewport_width || 1280);
+    const viewportHeight = test.device_config
+      ? deviceConfig.viewport.height
+      : (test.viewport_height || 720);
+
+    // Log device emulation info
+    if (test.device_config) {
+      console.log(`[Device Emulation] Running test "${test.name}" with device: ${deviceConfig.displayName} (${viewportWidth}x${viewportHeight}, mobile=${deviceConfig.isMobile}, touch=${deviceConfig.hasTouch})`);
+    }
 
     // Create a new context with tracing and video recording
     // For Lighthouse tests with ignore_ssl_errors enabled, skip HTTPS certificate validation
@@ -283,14 +304,25 @@ async function executeTest(
       console.log(`[Lighthouse] SSL certificate errors will be ignored for test ${test.name} (not recommended for production)`);
     }
 
-    context = await browser.newContext({
+    // Feature #36: Build context options with device emulation
+    const contextOptions: any = {
       recordVideo: {
         dir: VIDEOS_DIR,
         size: { width: viewportWidth, height: viewportHeight },
       },
       viewport: { width: viewportWidth, height: viewportHeight },
       ignoreHTTPSErrors: shouldIgnoreSSL,
-    });
+    };
+
+    // Apply device emulation settings if configured
+    if (test.device_config) {
+      contextOptions.userAgent = deviceConfig.userAgent;
+      contextOptions.deviceScaleFactor = deviceConfig.deviceScaleFactor;
+      contextOptions.isMobile = deviceConfig.isMobile;
+      contextOptions.hasTouch = deviceConfig.hasTouch;
+    }
+
+    context = await browser.newContext(contextOptions);
 
     // Start tracing before any page actions
     await context.tracing.start({ screenshots: true, snapshots: true, sources: true });

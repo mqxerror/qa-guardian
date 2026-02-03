@@ -16,6 +16,9 @@ import { io, Socket } from 'socket.io-client';
 import { UnifiedAIService } from '../services/UnifiedAIService';
 // Feature #1800: Import new CreateTestModal with two-section layout
 import { CreateTestModal } from '../components/create-test';
+// Feature #36: Import device emulation types and component
+import { DeviceConfig, DeviceEmulationPreset, DEVICE_PRESETS } from '../components/test-modals/types';
+import { DeviceSelect } from '../components/create-test/shared/DeviceSelect';
 
 // Feature #1759: Extract URL from user description to avoid using example.com
 // Matches URLs like: mercan.pa, https://mercan.pa, www.example.org, sub.domain.com/path
@@ -529,6 +532,9 @@ function TestSuitePage() {
   // Visual recorder state
   const [showRecordModal, setShowRecordModal] = useState(false);
   const [recordTargetUrl, setRecordTargetUrl] = useState('');
+  // Feature #36: Device emulation for recording
+  const [recordingDeviceEnabled, setRecordingDeviceEnabled] = useState(false);
+  const [recordingDeviceConfig, setRecordingDeviceConfig] = useState<DeviceConfig>({ preset: 'desktop-1280' });
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSessionId, setRecordingSessionId] = useState<string | null>(null);
   const [recordedSteps, setRecordedSteps] = useState<Array<{
@@ -2228,6 +2234,8 @@ export function teardown(data) {
         body: JSON.stringify({
           target_url: recordTargetUrl,
           suite_id: suiteId,
+          // Feature #36: Pass device config for mobile recording
+          device_config: recordingDeviceEnabled ? recordingDeviceConfig : undefined,
         }),
       });
 
@@ -5038,6 +5046,35 @@ export function teardown(data) {
                       className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
+
+                  {/* Feature #36: Device emulation for recording */}
+                  <div className="border-t border-border pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-sm font-medium text-foreground">
+                        Device Emulation
+                      </label>
+                      <label className="inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={recordingDeviceEnabled}
+                          onChange={(e) => setRecordingDeviceEnabled(e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-muted-foreground">Enable</span>
+                      </label>
+                    </div>
+                    {recordingDeviceEnabled ? (
+                      <DeviceSelect
+                        value={recordingDeviceConfig}
+                        onChange={setRecordingDeviceConfig}
+                      />
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Enable to record on mobile/tablet with touch emulation and proper user agents.
+                      </p>
+                    )}
+                  </div>
+
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={handleCancelRecording}
