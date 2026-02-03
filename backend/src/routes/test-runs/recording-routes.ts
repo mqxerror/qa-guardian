@@ -15,6 +15,18 @@ import { getTestSuite } from '../test-suites';
 import { chromium, Browser, Page, BrowserContext } from 'playwright';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 
+// Max concurrent recording sessions (configurable via env var)
+const MAX_RECORDING_SESSIONS = parseInt(process.env.MAX_RECORDING_SESSIONS || '3', 10);
+
+// Session inactivity timeout in ms (5 minutes)
+const SESSION_INACTIVITY_TIMEOUT = 5 * 60 * 1000;
+
+// Grace period for socket disconnect before cleanup (30 seconds)
+const DISCONNECT_GRACE_PERIOD = 30 * 1000;
+
+// Cleanup check interval (30 seconds)
+const CLEANUP_CHECK_INTERVAL = 30 * 1000;
+
 // Recording session interface with Playwright browser references
 interface SelectorStrategy {
   strategy: string;
@@ -43,6 +55,7 @@ interface RecordingSession {
     timestamp: number;
   }>;
   created_at: Date;
+  lastActivity: number; // Timestamp of last activity for timeout detection
   browser: Browser | null;
   context: BrowserContext | null;
   page: Page | null;
@@ -52,6 +65,98 @@ interface RecordingSession {
 
 // Store active recording sessions
 const recordingSessions: Map<string, RecordingSession> = new Map();
+
+// Store grace period timers for disconnected sockets
+const disconnectTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+
+// Track which socket is connected to which recording session
+const socketSessionMap: Map<string, string> = new Map();
+
+// Periodic cleanup interval reference
+let cleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Touch session lastActivity timestamp
+ */
+function touchSession(session: RecordingSession) {
+  session.lastActivity = Date.now();
+}
+
+/**
+ * Start periodic cleanup interval for orphaned sessions
+ */
+function startCleanupInterval() {
+  if (cleanupInterval) return; // Already running
+
+  cleanupInterval = setInterval(async () => {
+    const now = Date.now();
+    for (const [sessionId, session] of recordingSessions.entries()) {
+      if (session.status !== 'recording') continue;
+
+      const inactiveFor = now - session.lastActivity;
+      if (inactiveFor > SESSION_INACTIVITY_TIMEOUT) {
+        console.log(`[RECORDER] Auto-cleaning orphaned session ${sessionId} (inactive for ${Math.round(inactiveFor / 1000)}s)`);
+        session.status = 'stopped';
+        await cleanupSession(session);
+        recordingSessions.delete(sessionId);
+
+        // Also clean up any disconnect timer
+        const timer = disconnectTimers.get(sessionId);
+        if (timer) {
+          clearTimeout(timer);
+          disconnectTimers.delete(sessionId);
+        }
+      }
+    }
+  }, CLEANUP_CHECK_INTERVAL);
+
+  // Don't prevent process exit
+  if (cleanupInterval.unref) {
+    cleanupInterval.unref();
+  }
+
+  console.log('[RECORDER] Started periodic cleanup interval (every 30s, timeout 5min)');
+}
+
+/**
+ * Cleanup ALL active recording sessions (for server shutdown)
+ */
+async function cleanupAllSessions() {
+  console.log(`[RECORDER] Cleaning up all ${recordingSessions.size} active recording sessions...`);
+
+  const cleanupPromises: Promise<void>[] = [];
+  for (const [sessionId, session] of recordingSessions.entries()) {
+    if (session.status === 'recording') {
+      session.status = 'stopped';
+      cleanupPromises.push(cleanupSession(session).then(() => {
+        console.log(`[RECORDER] Cleaned up session ${sessionId} on shutdown`);
+      }));
+    }
+  }
+
+  await Promise.allSettled(cleanupPromises);
+  recordingSessions.clear();
+  disconnectTimers.clear();
+  socketSessionMap.clear();
+
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+  }
+
+  console.log('[RECORDER] All sessions cleaned up');
+}
+
+// Register process signal handlers for graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('[RECORDER] SIGTERM received, cleaning up sessions...');
+  await cleanupAllSessions();
+});
+
+process.on('SIGINT', async () => {
+  console.log('[RECORDER] SIGINT received, cleaning up sessions...');
+  await cleanupAllSessions();
+});
 
 // Socket.IO instance (set from index.ts)
 let io: SocketIOServer | null = null;
@@ -248,19 +353,80 @@ function generateSelectorScript(x: number, y: number): string {
  * Setup Socket.IO event handlers for recording control
  */
 function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
+  // Start the periodic cleanup interval
+  startCleanupInterval();
+
   socketIO.on('connection', (socket: Socket) => {
     // Join recording room
     socket.on('recording:join', (data: { sessionId: string }) => {
       const { sessionId } = data;
       socket.join(`recording:${sessionId}`);
+      socketSessionMap.set(socket.id, sessionId);
       console.log(`[RECORDER] Client ${socket.id} joined recording:${sessionId}`);
+
+      // Cancel any pending disconnect cleanup timer for this session
+      const existingTimer = disconnectTimers.get(sessionId);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+        disconnectTimers.delete(sessionId);
+        console.log(`[RECORDER] Cancelled disconnect cleanup timer for session ${sessionId} (client reconnected)`);
+      }
+
+      // Touch session activity
+      const session = recordingSessions.get(sessionId);
+      if (session) {
+        touchSession(session);
+      }
     });
 
     // Leave recording room
     socket.on('recording:leave', (data: { sessionId: string }) => {
       const { sessionId } = data;
       socket.leave(`recording:${sessionId}`);
+      socketSessionMap.delete(socket.id);
       console.log(`[RECORDER] Client ${socket.id} left recording:${sessionId}`);
+    });
+
+    // Handle socket disconnect - start grace period
+    socket.on('disconnect', () => {
+      const sessionId = socketSessionMap.get(socket.id);
+      socketSessionMap.delete(socket.id);
+
+      if (!sessionId) return;
+
+      const session = recordingSessions.get(sessionId);
+      if (!session || session.status !== 'recording') return;
+
+      // Check if any other sockets are still connected to this session's room
+      const room = socketIO.sockets.adapter.rooms.get(`recording:${sessionId}`);
+      if (room && room.size > 0) {
+        console.log(`[RECORDER] Socket ${socket.id} disconnected, but ${room.size} other client(s) still connected to session ${sessionId}`);
+        return;
+      }
+
+      console.log(`[RECORDER] All clients disconnected from session ${sessionId}. Starting ${DISCONNECT_GRACE_PERIOD / 1000}s grace period...`);
+
+      // Start grace period timer
+      const timer = setTimeout(async () => {
+        disconnectTimers.delete(sessionId);
+        const sess = recordingSessions.get(sessionId);
+        if (!sess || sess.status !== 'recording') return;
+
+        // Check once more if any clients reconnected
+        const currentRoom = socketIO.sockets.adapter.rooms.get(`recording:${sessionId}`);
+        if (currentRoom && currentRoom.size > 0) {
+          console.log(`[RECORDER] Client reconnected to session ${sessionId} during grace period, skipping cleanup`);
+          return;
+        }
+
+        console.log(`[RECORDER] Grace period expired for session ${sessionId}. Auto-cleaning orphaned session.`);
+        sess.status = 'stopped';
+        await cleanupSession(sess);
+        recordingSessions.delete(sessionId);
+        console.log(`[RECORDER] Orphaned session ${sessionId} cleaned up after disconnect`);
+      }, DISCONNECT_GRACE_PERIOD);
+
+      disconnectTimers.set(sessionId, timer);
     });
 
     // Handle click events from frontend
@@ -268,6 +434,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       const { sessionId, x, y } = data;
       const session = recordingSessions.get(sessionId);
       if (!session || !session.page || session.status !== 'recording') return;
+      touchSession(session);
 
       try {
         // Get element info before clicking
@@ -312,6 +479,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       const { sessionId, text } = data;
       const session = recordingSessions.get(sessionId);
       if (!session || !session.page || session.status !== 'recording') return;
+      touchSession(session);
 
       try {
         // Get currently focused element's selector before typing
@@ -353,6 +521,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       const { sessionId, key } = data;
       const session = recordingSessions.get(sessionId);
       if (!session || !session.page || session.status !== 'recording') return;
+      touchSession(session);
 
       try {
         await session.page.keyboard.press(key);
@@ -375,6 +544,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       const { sessionId, deltaX, deltaY } = data;
       const session = recordingSessions.get(sessionId);
       if (!session || !session.page || session.status !== 'recording') return;
+      touchSession(session);
 
       try {
         await session.page.mouse.wheel(deltaX, deltaY);
@@ -401,6 +571,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       const { sessionId, x, y } = data;
       const session = recordingSessions.get(sessionId);
       if (!session || !session.page || session.status !== 'recording') return;
+      touchSession(session);
 
       try {
         const elementInfo = await session.page.evaluate(generateSelectorScript(x, y)) as any;
@@ -428,6 +599,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       const { sessionId, x, y, value } = data;
       const session = recordingSessions.get(sessionId);
       if (!session || !session.page || session.status !== 'recording') return;
+      touchSession(session);
 
       try {
         const elementInfo = await session.page.evaluate(generateSelectorScript(x, y)) as any;
@@ -452,6 +624,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       const { sessionId, url } = data;
       const session = recordingSessions.get(sessionId);
       if (!session || !session.page || session.status !== 'recording') return;
+      touchSession(session);
 
       try {
         await session.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
@@ -585,6 +758,15 @@ export async function recordingRoutes(app: FastifyInstance) {
       });
     }
 
+    // Check max concurrent recording sessions limit
+    const activeSessionCount = Array.from(recordingSessions.values()).filter(s => s.status === 'recording').length;
+    if (activeSessionCount >= MAX_RECORDING_SESSIONS) {
+      return reply.status(429).send({
+        error: 'Too Many Requests',
+        message: `Maximum concurrent recording sessions (${MAX_RECORDING_SESSIONS}) reached. Please stop an existing recording first.`,
+      });
+    }
+
     const sessionId = `rec-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
     // Create recording session
@@ -597,6 +779,7 @@ export async function recordingRoutes(app: FastifyInstance) {
       status: 'recording',
       actions: [{ action: 'navigate', url: target_url, timestamp: Date.now() }],
       created_at: new Date(),
+      lastActivity: Date.now(),
       browser: null,
       context: null,
       page: null,
@@ -789,4 +972,4 @@ export async function recordingRoutes(app: FastifyInstance) {
 }
 
 // Export the recording sessions map for testing/debugging
-export { recordingSessions, RecordingSession };
+export { recordingSessions, RecordingSession, cleanupAllSessions, disconnectTimers, socketSessionMap };
