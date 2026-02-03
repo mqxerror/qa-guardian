@@ -469,6 +469,26 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
         // Emit action to frontend
         socketIO.to(`recording:${sessionId}`).emit('recording:action', action);
         console.log(`[RECORDER] Click at (${x}, ${y}) -> ${elementInfo?.selector || 'unknown'}`);
+
+        // Feature #34: Verify actual clicked element after click (may differ due to navigation/animations)
+        try {
+          const actualElement = await session.page!.evaluate(`
+            (() => {
+              const el = document.elementFromPoint(${x}, ${y});
+              if (!el) return null;
+              return {
+                tagName: el.tagName,
+                text: (el.innerText || '').trim().slice(0, 50),
+                id: el.id || '',
+              };
+            })()
+          `) as { tagName: string; text: string; id: string } | null;
+          socketIO.to(`recording:${sessionId}`).emit('recording:click-result', {
+            x, y,
+            selector: elementInfo?.selector || '',
+            actualElement: actualElement || { tagName: 'unknown', text: '', id: '' },
+          });
+        } catch { /* page may have navigated, skip verification */ }
       } catch (err) {
         console.error(`[RECORDER] Click error:`, err);
       }

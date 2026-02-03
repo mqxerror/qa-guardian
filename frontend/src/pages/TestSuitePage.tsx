@@ -563,6 +563,10 @@ function TestSuitePage() {
   const [reconnectFailed, setReconnectFailed] = useState(false);
   const [staleFrameWarning, setStaleFrameWarning] = useState<'none' | 'waiting' | 'unresponsive'>('none');
   const staleFrameTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Feature #34: Debug overlay and coordinate calibration
+  const [showDebugOverlay, setShowDebugOverlay] = useState(false);
+  const [debugCoords, setDebugCoords] = useState<{ cssX: number; cssY: number; vpX: number; vpY: number } | null>(null);
+  const frameScaleRef = useRef<{ scaleX: number; scaleY: number }>({ scaleX: 1280, scaleY: 720 });
   // Feature #31: Step Templates state
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [stepTemplates, setStepTemplates] = useState<Array<{ id: string; name: string; description?: string; steps: any[]; tags: string[]; created_at: string }>>([]);
@@ -2288,9 +2292,18 @@ export function teardown(data) {
       });
 
       // Receive live screenshot frames with smooth rendering
+      let calibrated = false;
       socket.on('recording:frame', (frameData: { base64: string; width: number; height: number }) => {
         lastFrameTimeRef.current = Date.now();
         setStaleFrameWarning('none'); // Reset stale warning on new frame
+        // Feature #34: Calibration check on first frame
+        if (!calibrated && frameData.width && frameData.height) {
+          frameScaleRef.current = { scaleX: frameData.width, scaleY: frameData.height };
+          if (frameData.width !== 1280 || frameData.height !== 720) {
+            console.warn(`[Recording] Frame dimensions ${frameData.width}x${frameData.height} differ from expected 1280x720 - adjusting scale`);
+          }
+          calibrated = true;
+        }
         // Use requestAnimationFrame for smooth rendering
         pendingFrameRef.current = `data:image/jpeg;base64,${frameData.base64}`;
         if (!frameRequestRef.current) {
@@ -2340,14 +2353,13 @@ export function teardown(data) {
     }
   };
 
-  // Handle click on the live browser view
-  const handleBrowserViewClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!recordingSessionId || !recordingSocketRef.current || !browserViewRef.current) return;
-    // Use the img element for precise coordinate mapping (it shows the actual viewport)
+  // Feature #34: Compute viewport coordinates from a mouse event on the browser viewer
+  const computeViewportCoords = (clientX: number, clientY: number) => {
     const img = browserImgRef.current;
     const container = browserViewRef.current;
+    if (!container) return null;
+    // Always prefer the img element for precise mapping
     const targetRect = img ? img.getBoundingClientRect() : container.getBoundingClientRect();
-    // If using container rect, account for border
     let imgWidth = targetRect.width;
     let imgHeight = targetRect.height;
     let imgLeft = targetRect.left;
@@ -2361,22 +2373,51 @@ export function teardown(data) {
       imgTop += borderH;
     }
     // Position relative to image
-    const relX = e.clientX - imgLeft;
-    const relY = e.clientY - imgTop;
+    const relX = clientX - imgLeft;
+    const relY = clientY - imgTop;
     // Clamp to image bounds
     const clampedX = Math.max(0, Math.min(relX, imgWidth));
     const clampedY = Math.max(0, Math.min(relY, imgHeight));
-    // Scale to 1280x720 viewport
-    const x = Math.round(clampedX * (1280 / imgWidth));
-    const y = Math.round(clampedY * (720 / imgHeight));
-    console.log(`[Recording] Click: css(${Math.round(relX)},${Math.round(relY)}) -> viewport(${x},${y}) img(${Math.round(imgWidth)}x${Math.round(imgHeight)})`);
+    // Scale to actual viewport dimensions (calibrated from frame data)
+    const vpW = frameScaleRef.current.scaleX;
+    const vpH = frameScaleRef.current.scaleY;
+    const x = Math.round(clampedX * (vpW / imgWidth));
+    const y = Math.round(clampedY * (vpH / imgHeight));
+    return { relX, relY, imgWidth, imgHeight, x, y };
+  };
+
+  // Handle click on the live browser view
+  const handleBrowserViewClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!recordingSessionId || !recordingSocketRef.current || !browserViewRef.current) return;
+    const coords = computeViewportCoords(e.clientX, e.clientY);
+    if (!coords) return;
+    const { relX, imgWidth, imgHeight, x, y } = coords;
+    console.log(`[Recording] Click: css(${Math.round(relX)},${Math.round(coords.relY)}) -> viewport(${x},${y}) img(${Math.round(imgWidth)}x${Math.round(imgHeight)}) scale(${frameScaleRef.current.scaleX}x${frameScaleRef.current.scaleY})`);
     recordingSocketRef.current.emit('recording:click', { sessionId: recordingSessionId, x, y });
     // Show click ripple effect at click position relative to container
-    const containerRect = container.getBoundingClientRect();
+    const containerRect = browserViewRef.current.getBoundingClientRect();
     const cssX = e.clientX - containerRect.left;
     const cssY = e.clientY - containerRect.top;
     setClickRipple({ x: cssX, y: cssY, id: Date.now() });
     setTimeout(() => setClickRipple(null), 600);
+  };
+
+  // Feature #34: Handle mouse move for debug overlay coordinate display
+  const handleBrowserViewMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!showDebugOverlay || !browserViewRef.current) return;
+    const coords = computeViewportCoords(e.clientX, e.clientY);
+    if (!coords) return;
+    const containerRect = browserViewRef.current.getBoundingClientRect();
+    setDebugCoords({
+      cssX: e.clientX - containerRect.left,
+      cssY: e.clientY - containerRect.top,
+      vpX: coords.x,
+      vpY: coords.y,
+    });
+  };
+
+  const handleBrowserViewMouseLeave = () => {
+    setDebugCoords(null);
   };
 
   // Handle URL bar navigation
@@ -4837,16 +4878,23 @@ export function teardown(data) {
                           placeholder="Enter URL and press Enter to navigate..."
                         />
                       </div>
+                      <button
+                        onClick={() => setShowDebugOverlay(prev => !prev)}
+                        className={`p-1 rounded text-xs shrink-0 transition-colors ${showDebugOverlay ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+                        title={showDebugOverlay ? 'Hide coordinate debug overlay' : 'Show coordinate debug overlay'}
+                      >🎯</button>
                       <div className="text-[10px] text-muted-foreground shrink-0">Click | Type | Enter=Navigate</div>
                     </div>
                     <div
                       ref={browserViewRef}
-                      className="relative rounded-lg border-2 border-border overflow-hidden bg-gray-900 cursor-crosshair focus:outline-none focus:border-blue-400 w-full"
-                      style={{ aspectRatio: '16/9', maxHeight: '500px', maxWidth: 'calc(500px * 16 / 9)' }}
+                      className="relative rounded-lg border-2 border-border overflow-hidden bg-gray-900 cursor-crosshair focus:outline-none focus:border-blue-400"
+                      style={{ aspectRatio: '16/9', maxHeight: '500px', width: '100%', maxWidth: 'calc(500px * 16 / 9)' }}
                       tabIndex={0}
                       onClick={handleBrowserViewClick}
                       onKeyDown={handleBrowserViewKeyDown}
                       onWheel={handleBrowserViewWheel}
+                      onMouseMove={handleBrowserViewMouseMove}
+                      onMouseLeave={handleBrowserViewMouseLeave}
                     >
                       {recordingFrame ? (
                         <img
@@ -4930,6 +4978,31 @@ export function teardown(data) {
                               ? '⚠️ Browser may be unresponsive — try clicking or navigating'
                               : '⏳ Waiting for frame...'}
                           </div>
+                        </div>
+                      )}
+                      {/* Feature #34: Coordinate debug overlay */}
+                      {showDebugOverlay && recordingFrame && (
+                        <div className="absolute inset-0 pointer-events-none z-20">
+                          {/* Grid lines */}
+                          <svg className="absolute inset-0 w-full h-full opacity-20">
+                            {[...Array(8)].map((_, i) => (
+                              <line key={`v${i}`} x1={`${(i + 1) * 12.5}%`} y1="0" x2={`${(i + 1) * 12.5}%`} y2="100%" stroke="cyan" strokeWidth="0.5" />
+                            ))}
+                            {[...Array(4)].map((_, i) => (
+                              <line key={`h${i}`} x1="0" y1={`${(i + 1) * 20}%`} x2="100%" y2={`${(i + 1) * 20}%`} stroke="cyan" strokeWidth="0.5" />
+                            ))}
+                          </svg>
+                          {/* Crosshair and coordinate readout */}
+                          {debugCoords && (
+                            <>
+                              <div className="absolute bg-cyan-400" style={{ left: debugCoords.cssX, top: 0, width: 1, height: '100%', opacity: 0.5 }} />
+                              <div className="absolute bg-cyan-400" style={{ left: 0, top: debugCoords.cssY, width: '100%', height: 1, opacity: 0.5 }} />
+                              <div className="absolute rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-cyan-300 font-mono whitespace-nowrap"
+                                style={{ left: Math.min(debugCoords.cssX + 10, (browserViewRef.current?.clientWidth || 300) - 120), top: Math.min(debugCoords.cssY + 10, (browserViewRef.current?.clientHeight || 200) - 30) }}>
+                                VP: {debugCoords.vpX},{debugCoords.vpY} | CSS: {Math.round(debugCoords.cssX)},{Math.round(debugCoords.cssY)}
+                              </div>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
