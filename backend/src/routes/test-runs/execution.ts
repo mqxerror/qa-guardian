@@ -108,6 +108,10 @@ export interface StepResult {
   healing_rejected?: boolean; // True if user rejected the AI-healed selector
   rejection_reason?: string; // Reason for rejecting the healed selector
   suggested_selector?: string; // User-suggested alternative selector
+  // Feature #37: Optional step tracking for cookie consent/popup handling
+  optional?: boolean; // True if this was an optional step
+  optionalReason?: 'cookie_consent' | 'popup_dismiss' | 'notification_close' | 'user_marked';
+  skipReason?: string; // Reason for skipping the optional step
   // Feature #1966: Lighthouse performance metrics for performance test steps
   lighthouse?: {
     performance: number;

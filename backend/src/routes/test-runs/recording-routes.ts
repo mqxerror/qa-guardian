@@ -55,6 +55,9 @@ interface RecordingSession {
     name?: string;
     className?: string;
     timestamp: number;
+    // Feature #37: Optional step support for cookie consent handling
+    optional?: boolean;
+    optionalReason?: 'cookie_consent' | 'popup_dismiss' | 'notification_close' | 'user_marked';
   }>;
   created_at: Date;
   lastActivity: number; // Timestamp of last activity for timeout detection
@@ -78,6 +81,77 @@ const socketSessionMap: Map<string, string> = new Map();
 
 // Periodic cleanup interval reference
 let cleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Feature #37: Optional step patterns for cookie consent and popup handling
+ * These patterns match common consent dialogs and popups that may not always appear
+ */
+const OPTIONAL_STEP_PATTERNS = {
+  // Cookie consent patterns
+  cookie_consent: [
+    // Common cookie consent test IDs and classes
+    'button-decline', 'button-accept', 'cookie-accept', 'cookie-decline', 'cookie-close',
+    'gdpr-', 'consent-', 'onetrust-', 'cookiebot-', 'ccpa-', 'cookie-banner',
+    'cookie-notice', 'cookie-policy', 'accept-cookies', 'reject-cookies',
+    'cookie-settings', 'manage-cookies', 'cookie-preferences',
+    // CMP (Consent Management Platform) patterns
+    'cmp-', 'sp_choice', 'didomi', 'trustarc', 'quantcast',
+  ],
+  // Popup/modal dismiss patterns
+  popup_dismiss: [
+    'close-modal', 'dismiss', 'close-popup', 'modal-close', 'popup-close',
+    'close-dialog', 'dialog-close', 'overlay-close', 'close-overlay',
+    'close-btn', 'btn-close', 'dismiss-btn', 'btn-dismiss',
+  ],
+  // Notification dismiss patterns
+  notification_close: [
+    'notification-close', 'alert-dismiss', 'banner-close', 'toast-close',
+    'snackbar-close', 'close-notification', 'dismiss-notification',
+    'close-alert', 'dismiss-alert', 'close-banner', 'dismiss-banner',
+  ],
+};
+
+/**
+ * Feature #37: Detect if a selector/action should be marked as optional
+ * Returns the optional reason if detected, undefined otherwise
+ */
+function detectOptionalStep(
+  selector?: string,
+  text?: string,
+  id?: string,
+  className?: string
+): { optional: boolean; reason: 'cookie_consent' | 'popup_dismiss' | 'notification_close' } | undefined {
+  // Combine all available identifiers for matching
+  const identifiers = [selector, text, id, className].filter(Boolean).map(s => s!.toLowerCase());
+
+  for (const identifier of identifiers) {
+    // Check cookie consent patterns
+    for (const pattern of OPTIONAL_STEP_PATTERNS.cookie_consent) {
+      if (identifier.includes(pattern.toLowerCase())) {
+        console.log(`[RECORDER] Auto-marked optional (cookie_consent): "${identifier}" matched pattern "${pattern}"`);
+        return { optional: true, reason: 'cookie_consent' };
+      }
+    }
+
+    // Check popup dismiss patterns
+    for (const pattern of OPTIONAL_STEP_PATTERNS.popup_dismiss) {
+      if (identifier.includes(pattern.toLowerCase())) {
+        console.log(`[RECORDER] Auto-marked optional (popup_dismiss): "${identifier}" matched pattern "${pattern}"`);
+        return { optional: true, reason: 'popup_dismiss' };
+      }
+    }
+
+    // Check notification close patterns
+    for (const pattern of OPTIONAL_STEP_PATTERNS.notification_close) {
+      if (identifier.includes(pattern.toLowerCase())) {
+        console.log(`[RECORDER] Auto-marked optional (notification_close): "${identifier}" matched pattern "${pattern}"`);
+        return { optional: true, reason: 'notification_close' };
+      }
+    }
+  }
+
+  return undefined;
+}
 
 /**
  * Touch session lastActivity timestamp
@@ -468,6 +542,19 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
           className: elementInfo?.className || '',
           timestamp: Date.now(),
         };
+
+        // Feature #37: Auto-detect if this is a cookie consent or popup dismiss element
+        const optionalResult = detectOptionalStep(
+          elementInfo?.selector,
+          elementInfo?.text,
+          elementInfo?.id,
+          elementInfo?.className
+        );
+        if (optionalResult) {
+          action.optional = true;
+          action.optionalReason = optionalResult.reason;
+        }
+
         session.actions.push(action);
 
         // Emit action to frontend

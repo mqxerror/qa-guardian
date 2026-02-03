@@ -613,7 +613,13 @@ async function executeTest(
         action: step.action,
         selector: step.selector,
         value: step.value,
+        optional: step.optional, // Feature #37: Include optional flag
       });
+
+      // Feature #37: Determine timeout for optional vs required steps
+      // Optional steps use 2s timeout, required steps use 10s
+      const isOptionalStep = step.optional === true;
+      const stepTimeout = isOptionalStep ? 2000 : 10000;
 
       try {
         switch (step.action) {
@@ -624,7 +630,7 @@ async function executeTest(
           case 'click':
             if (step.selector) {
               try {
-                await page.click(step.selector, { timeout: 10000 });
+                await page.click(step.selector, { timeout: stepTimeout });
               } catch (clickErr: any) {
                 // Feature #1052: Detect element not found and initiate healing
                 if (clickErr.message?.includes('strict mode') || clickErr.message?.includes('not found') ||
@@ -750,11 +756,25 @@ async function executeTest(
                   }
 
                   if (!healed) {
+                    // Feature #37: For optional steps, skip instead of failing
+                    if (isOptionalStep) {
+                      console.log(`[OPTIONAL] Step skipped (optional): ${step.selector} not found - ${step.optionalReason || 'user_marked'}`);
+                      stepStatus = 'skipped';
+                      stepError = `Optional element not found: ${step.selector}`;
+                      break; // Exit switch statement without throwing
+                    }
                     // Feature #1059: Track failed heal
                     trackHealingFailure(healingProjectId);
                     throw clickErr;
                   }
                 } else {
+                  // Feature #37: For optional steps, skip instead of failing
+                  if (isOptionalStep) {
+                    console.log(`[OPTIONAL] Step skipped (optional): ${step.selector} not found - ${step.optionalReason || 'user_marked'}`);
+                    stepStatus = 'skipped';
+                    stepError = `Optional element not found: ${step.selector}`;
+                    break; // Exit switch statement without throwing
+                  }
                   throw clickErr;
                 }
               }
@@ -764,7 +784,7 @@ async function executeTest(
           case 'type':
             if (step.selector && step.value) {
               try {
-                await page.fill(step.selector, step.value, { timeout: 10000 });
+                await page.fill(step.selector, step.value, { timeout: stepTimeout });
               } catch (fillErr: any) {
                 // Feature #1052: Detect element not found and initiate healing
                 if (fillErr.message?.includes('strict mode') || fillErr.message?.includes('not found') ||
@@ -890,11 +910,25 @@ async function executeTest(
                   }
 
                   if (!fillHealed) {
+                    // Feature #37: For optional steps, skip instead of failing
+                    if (isOptionalStep) {
+                      console.log(`[OPTIONAL] Step skipped (optional fill): ${step.selector} not found - ${step.optionalReason || 'user_marked'}`);
+                      stepStatus = 'skipped';
+                      stepError = `Optional element not found: ${step.selector}`;
+                      break; // Exit switch statement without throwing
+                    }
                     // Feature #1059: Track failed fill heal
                     trackHealingFailure(fillHealingProjectId);
                     throw fillErr;
                   }
                 } else {
+                  // Feature #37: For optional steps, skip instead of failing
+                  if (isOptionalStep) {
+                    console.log(`[OPTIONAL] Step skipped (optional fill): ${step.selector} not found - ${step.optionalReason || 'user_marked'}`);
+                    stepStatus = 'skipped';
+                    stepError = `Optional element not found: ${step.selector}`;
+                    break; // Exit switch statement without throwing
+                  }
                   throw fillErr;
                 }
               }
@@ -1098,6 +1132,13 @@ async function executeTest(
         duration_ms: Date.now() - stepStart,
         error: stepError,
       };
+
+      // Feature #37: Add optional step metadata if this was a skipped optional step
+      if (isOptionalStep && stepStatus === 'skipped') {
+        (stepResult as any).optional = true;
+        (stepResult as any).optionalReason = step.optionalReason || 'user_marked';
+        (stepResult as any).skipReason = 'Element not present on page';
+      }
 
       // Add accessibility results if this was an accessibility_check step
       if (step.action === 'accessibility_check' && (step as any)._a11yResults) {

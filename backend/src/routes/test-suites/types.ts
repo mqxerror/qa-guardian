@@ -134,6 +134,9 @@ export interface TestStep {
   selector?: string;
   value?: string;
   order: number;
+  // Feature #37: Optional step support for cookie consent and popup handling
+  optional?: boolean; // If true, step is skipped if element not found (2s timeout)
+  optionalReason?: 'cookie_consent' | 'popup_dismiss' | 'notification_close' | 'user_marked';
 }
 
 export interface ProjectParams {

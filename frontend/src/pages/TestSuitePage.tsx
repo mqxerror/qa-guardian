@@ -544,6 +544,9 @@ function TestSuitePage() {
     value?: string;
     url?: string;
     text?: string;
+    // Feature #37: Optional step support for cookie consent handling
+    optional?: boolean;
+    optionalReason?: 'cookie_consent' | 'popup_dismiss' | 'notification_close' | 'user_marked';
   }>>([]);
   const [recordingStatus, setRecordingStatus] = useState<string>('');
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -2571,6 +2574,11 @@ export function teardown(data) {
         // Include selectorStrategies if available (for test healing fallback)
         if (step.selectorStrategies && step.selectorStrategies.length > 0) {
           base.selectorStrategies = step.selectorStrategies;
+        }
+        // Feature #37: Include optional flag for cookie consent/popup handling
+        if (step.optional) {
+          base.optional = true;
+          base.optionalReason = step.optionalReason || 'user_marked';
         }
         switch (step.action) {
           case 'navigate':
@@ -5494,6 +5502,31 @@ export function teardown(data) {
                               />
                             </p>
                           )}
+                          {/* Feature #37: Optional step toggle for cookie consent/popup handling */}
+                          <label className="flex items-center gap-1.5 mt-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={step.optional || false}
+                              onChange={(e) => {
+                                const newSteps = [...recordedSteps];
+                                newSteps[idx] = {
+                                  ...newSteps[idx],
+                                  optional: e.target.checked,
+                                  optionalReason: e.target.checked ? 'user_marked' : undefined,
+                                };
+                                setRecordedSteps(newSteps);
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-3 w-3"
+                            />
+                            <span className="text-xs text-muted-foreground" title="Enable for elements that may not always appear (popups, consent dialogs)">
+                              Optional
+                              {step.optional && step.optionalReason && step.optionalReason !== 'user_marked' && (
+                                <span className="ml-1 px-1 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px]">
+                                  ⚡ {step.optionalReason.replace('_', ' ')}
+                                </span>
+                              )}
+                            </span>
+                          </label>
                         </div>
                         <div className="flex flex-col gap-1 shrink-0 mt-0.5">
                           {idx > 0 && (
