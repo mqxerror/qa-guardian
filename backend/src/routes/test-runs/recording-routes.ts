@@ -63,30 +63,71 @@ export function setRecordingSocketIO(socketIO: SocketIOServer) {
 function generateSelectorScript(x: number, y: number): string {
   return `
     (() => {
-      const el = document.elementFromPoint(${x}, ${y});
+      let el = document.elementFromPoint(${x}, ${y});
       if (!el) return null;
 
-      // Priority: id > data-testid > aria-label > name > text > css
-      if (el.id) return { selector: '#' + el.id, tagName: el.tagName, text: el.innerText?.trim()?.slice(0, 50) || '', id: el.id };
+      // Walk up to find the nearest interactive element
+      const interactive = el.closest('a, button, input, select, textarea, [role="button"], [role="link"], [onclick], label');
+      if (interactive) el = interactive;
 
-      const testId = el.getAttribute('data-testid');
-      if (testId) return { selector: '[data-testid="' + testId + '"]', tagName: el.tagName, text: el.innerText?.trim()?.slice(0, 50) || '' };
+      const tagName = el.tagName || '';
+      const text = el.innerText?.trim()?.slice(0, 50) || '';
 
-      const ariaLabel = el.getAttribute('aria-label');
-      if (ariaLabel) return { selector: '[aria-label="' + ariaLabel + '"]', tagName: el.tagName, text: el.innerText?.trim()?.slice(0, 50) || '' };
-
-      if (el.getAttribute('name')) return { selector: '[name="' + el.getAttribute('name') + '"]', tagName: el.tagName, text: el.innerText?.trim()?.slice(0, 50) || '', name: el.getAttribute('name') };
-
-      // For buttons and links with text
-      if ((el.tagName === 'BUTTON' || el.tagName === 'A') && el.innerText?.trim()) {
-        const text = el.innerText.trim().slice(0, 50);
-        return { selector: el.tagName.toLowerCase() + ':has-text("' + text + '")', tagName: el.tagName, text };
+      // Priority 1: id (skip if it looks auto-generated)
+      if (el.id && !/^[:\\\\d]|--/.test(el.id) && el.id.length < 80) {
+        return { selector: '#' + CSS.escape(el.id), tagName, text, id: el.id };
       }
 
-      // Fallback: tag + class
-      const tag = el.tagName.toLowerCase();
-      const cls = el.className && typeof el.className === 'string' ? el.className.split(' ')[0] : '';
-      return { selector: cls ? tag + '.' + cls : tag, tagName: el.tagName, text: el.innerText?.trim()?.slice(0, 50) || '', className: typeof el.className === 'string' ? el.className : '' };
+      // Priority 2: data-testid
+      const testId = el.getAttribute('data-testid');
+      if (testId) return { selector: '[data-testid="' + testId.replace(/"/g, '\\\\"') + '"]', tagName, text };
+
+      // Priority 3: aria-label
+      const ariaLabel = el.getAttribute('aria-label');
+      if (ariaLabel) return { selector: '[aria-label="' + ariaLabel.replace(/"/g, '\\\\"') + '"]', tagName, text };
+
+      // Priority 4: name attribute (form elements)
+      const name = el.getAttribute('name');
+      if (name) return { selector: '[name="' + name.replace(/"/g, '\\\\"') + '"]', tagName, text, name };
+
+      // Priority 5: role + name for buttons/links
+      const role = el.getAttribute('role');
+      if ((tagName === 'BUTTON' || tagName === 'A' || role === 'button' || role === 'link') && text) {
+        const cleanText = text.replace(/"/g, '\\\\"');
+        return { selector: (role || tagName.toLowerCase()) === 'button' ? 'button:has-text("' + cleanText + '")' : 'a:has-text("' + cleanText + '")', tagName, text };
+      }
+
+      // Priority 6: input by type + placeholder
+      if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
+        const type = el.getAttribute('type') || 'text';
+        const placeholder = el.getAttribute('placeholder');
+        if (placeholder) return { selector: tagName.toLowerCase() + '[placeholder="' + placeholder.replace(/"/g, '\\\\"') + '"]', tagName, text };
+        return { selector: tagName.toLowerCase() + '[type="' + type + '"]', tagName, text };
+      }
+
+      // Priority 7: Build a specific CSS path (up to 3 levels)
+      const parts = [];
+      let current = el;
+      for (let i = 0; i < 3 && current && current !== document.body; i++) {
+        let seg = current.tagName.toLowerCase();
+        if (current.id && !/^[:\\\\d]|--/.test(current.id) && current.id.length < 80) {
+          seg = '#' + CSS.escape(current.id);
+          parts.unshift(seg);
+          break;
+        }
+        const parent = current.parentElement;
+        if (parent) {
+          const siblings = Array.from(parent.children).filter(c => c.tagName === current.tagName);
+          if (siblings.length > 1) {
+            const idx = siblings.indexOf(current) + 1;
+            seg += ':nth-of-type(' + idx + ')';
+          }
+        }
+        parts.unshift(seg);
+        current = parent;
+      }
+      const cssSelector = parts.join(' > ') || tagName.toLowerCase();
+      return { selector: cssSelector, tagName, text, className: typeof el.className === 'string' ? el.className : '' };
     })()
   `;
 }
@@ -152,12 +193,31 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       if (!session || !session.page || session.status !== 'recording') return;
 
       try {
+        // Get currently focused element's selector before typing
+        const focusedInfo = await session.page.evaluate(() => {
+          const el = document.activeElement;
+          if (!el || el === document.body) return null;
+          const tagName = el.tagName || '';
+          if (el.id) return { selector: '#' + CSS.escape(el.id), tagName };
+          const testId = el.getAttribute('data-testid');
+          if (testId) return { selector: '[data-testid="' + testId + '"]', tagName };
+          const name = el.getAttribute('name');
+          if (name) return { selector: '[name="' + name + '"]', tagName };
+          const placeholder = (el as HTMLInputElement).placeholder;
+          if (placeholder) return { selector: tagName.toLowerCase() + '[placeholder="' + placeholder.replace(/"/g, '\\"') + '"]', tagName };
+          const type = el.getAttribute('type');
+          if (type) return { selector: tagName.toLowerCase() + '[type="' + type + '"]', tagName };
+          return { selector: tagName.toLowerCase(), tagName };
+        });
+
         await session.page.keyboard.type(text);
         session.dirty = true;
 
         const action: any = {
           action: 'fill',
+          selector: focusedInfo?.selector || '',
           value: text,
+          tagName: focusedInfo?.tagName || '',
           timestamp: Date.now(),
         };
         session.actions.push(action);

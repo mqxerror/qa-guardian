@@ -4560,7 +4560,7 @@ export function teardown(data) {
                         <img
                           src={recordingFrame}
                           alt="Live browser view"
-                          className="w-full h-full object-contain"
+                          className="w-full h-full"
                           draggable={false}
                           style={{ pointerEvents: 'none' }}
                         />
