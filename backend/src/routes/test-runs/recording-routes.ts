@@ -109,11 +109,38 @@ export async function recordingRoutes(app: FastifyInstance) {
 
     const sessionId = `rec-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
+    // Pre-flight URL check: verify target URL is reachable before launching browser
     try {
-      // Launch browser in headful mode so user can interact
-      const browser = await chromium.launch({
-        headless: false,
-        args: ['--start-maximized'],
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const preflight = await fetch(target_url, {
+        method: 'HEAD',
+        signal: controller.signal,
+        redirect: 'follow',
+      }).catch((fetchErr: any) => {
+        throw new Error(`Target URL is not reachable: ${target_url} (${fetchErr.message})`);
+      });
+      clearTimeout(timeout);
+      // Accept any response (even 4xx/5xx means the server is reachable)
+    } catch (preflightErr: any) {
+      if (preflightErr.message?.includes('Target URL is not reachable')) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: preflightErr.message,
+        });
+      }
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: `Target URL is not reachable: ${target_url}`,
+      });
+    }
+
+    let browser: Browser | null = null;
+    try {
+      // Launch browser in headless mode for Docker/production compatibility
+      browser = await chromium.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
       });
 
       const context = await browser.newContext({
@@ -139,10 +166,7 @@ export async function recordingRoutes(app: FastifyInstance) {
 
       recordingSessions.set(sessionId, session);
 
-      // Navigate to target URL
-      await page.goto(target_url);
-
-      // Inject recording script to capture user actions
+      // Inject recording script BEFORE navigation so first page load is captured
       await page.addInitScript(() => {
         // Create a channel to send actions back to the server
         (window as any).__recordedActions = [];
@@ -258,6 +282,9 @@ export async function recordingRoutes(app: FastifyInstance) {
         }
       });
 
+      // Navigate to target URL AFTER init script injection
+      await page.goto(target_url, { timeout: 30000 });
+
       // Setup listeners to collect recorded actions
       page.on('framenavigated', async (frame) => {
         if (frame === page.mainFrame()) {
@@ -290,9 +317,18 @@ export async function recordingRoutes(app: FastifyInstance) {
       };
     } catch (err) {
       console.error('[RECORDER] Failed to start recording:', err);
+
+      // Clean up browser resources on failure
+      if (browser) {
+        await browser.close().catch(() => {});
+      }
+
+      // Remove session from map if it was added
+      recordingSessions.delete(sessionId);
+
       return reply.status(500).send({
-        error: 'Internal Server Error',
-        message: 'Failed to start recording session',
+        error: 'Recording Error',
+        message: 'Failed to start recording: ' + (err instanceof Error ? err.message : String(err)),
       });
     }
   });
