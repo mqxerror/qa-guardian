@@ -399,6 +399,10 @@ export async function recordingRoutes(app: FastifyInstance) {
               io.to(`recording:${sessionId}`).emit('recording:action', action);
             }
           }
+          // Feature #28: Always emit current URL for URL bar sync
+          if (io) {
+            io.to(`recording:${sessionId}`).emit('recording:url', { sessionId, url });
+          }
         }
       });
 

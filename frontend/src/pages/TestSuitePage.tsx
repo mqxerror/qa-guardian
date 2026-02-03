@@ -551,6 +551,13 @@ function TestSuitePage() {
   const [recordingFrame, setRecordingFrame] = useState<string | null>(null);
   const recordingSocketRef = useRef<Socket | null>(null);
   const browserViewRef = useRef<HTMLDivElement | null>(null);
+  // Feature #28: Polish - URL nav, connection status, click ripple
+  const [recordingCurrentUrl, setRecordingCurrentUrl] = useState('');
+  const [recordingConnected, setRecordingConnected] = useState(false);
+  const [clickRipple, setClickRipple] = useState<{ x: number; y: number; id: number } | null>(null);
+  const lastFrameTimeRef = useRef<number>(0);
+  const frameRequestRef = useRef<number | null>(null);
+  const pendingFrameRef = useRef<string | null>(null);
 
   const canCreateTest = user?.role !== 'viewer';
   const canDeleteSuite = user?.role === 'owner' || user?.role === 'admin';
@@ -2194,6 +2201,7 @@ export function teardown(data) {
       const data = await response.json();
       setRecordingSessionId(data.session_id);
       setRecordingStatus('Recording... Click on the browser view to interact');
+      setRecordingCurrentUrl(recordTargetUrl);
 
       // Add initial navigate step
       setRecordedSteps([{ action: 'navigate', url: recordTargetUrl }]);
@@ -2208,12 +2216,33 @@ export function teardown(data) {
 
       socket.on('connect', () => {
         console.log('[Recording] Socket connected:', socket.id);
+        setRecordingConnected(true);
         socket.emit('recording:join', { sessionId: data.session_id });
       });
 
-      // Receive live screenshot frames
+      socket.on('disconnect', () => {
+        setRecordingConnected(false);
+      });
+
+      // Receive live screenshot frames with smooth rendering
       socket.on('recording:frame', (frameData: { base64: string; width: number; height: number }) => {
-        setRecordingFrame(`data:image/jpeg;base64,${frameData.base64}`);
+        lastFrameTimeRef.current = Date.now();
+        // Use requestAnimationFrame for smooth rendering
+        pendingFrameRef.current = `data:image/jpeg;base64,${frameData.base64}`;
+        if (!frameRequestRef.current) {
+          frameRequestRef.current = requestAnimationFrame(() => {
+            if (pendingFrameRef.current) {
+              setRecordingFrame(pendingFrameRef.current);
+              pendingFrameRef.current = null;
+            }
+            frameRequestRef.current = null;
+          });
+        }
+      });
+
+      // Receive URL updates for URL bar sync
+      socket.on('recording:url', (urlData: { url: string }) => {
+        setRecordingCurrentUrl(urlData.url);
       });
 
       // Receive recorded actions
@@ -2245,6 +2274,21 @@ export function teardown(data) {
     const x = Math.round((e.clientX - rect.left) * scaleX);
     const y = Math.round((e.clientY - rect.top) * scaleY);
     recordingSocketRef.current.emit('recording:click', { sessionId: recordingSessionId, x, y });
+    // Show click ripple effect at click position (in CSS pixels)
+    const cssX = e.clientX - rect.left;
+    const cssY = e.clientY - rect.top;
+    setClickRipple({ x: cssX, y: cssY, id: Date.now() });
+    setTimeout(() => setClickRipple(null), 600);
+  };
+
+  // Handle URL bar navigation
+  const handleUrlBarNavigate = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter' || !recordingSessionId || !recordingSocketRef.current) return;
+    let url = recordingCurrentUrl.trim();
+    if (url && !url.startsWith('http')) url = 'https://' + url;
+    if (url) {
+      recordingSocketRef.current.emit('recording:navigate', { sessionId: recordingSessionId, url });
+    }
   };
 
   // Handle keyboard input on the live browser view
@@ -4487,12 +4531,21 @@ export function teardown(data) {
                 <div className="p-4 pt-3 flex gap-4" style={{ maxHeight: 'calc(95vh - 80px)' }}>
                   {/* Left: Live Browser View */}
                   <div className="flex-1 min-w-0 flex flex-col">
+                    {/* Feature #28: URL bar with navigation + connection status */}
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5">
-                        <span className="text-xs">🌐</span>
-                        <span className="text-xs text-muted-foreground truncate max-w-[300px]">{recordTargetUrl}</span>
+                      <div className={`h-2 w-2 rounded-full shrink-0 ${recordingConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} title={recordingConnected ? 'Connected' : 'Disconnected'} />
+                      <div className="flex items-center gap-1.5 rounded-lg bg-muted px-2 py-1 flex-1 min-w-0">
+                        <span className="text-xs shrink-0">🌐</span>
+                        <input
+                          type="text"
+                          value={recordingCurrentUrl || recordTargetUrl}
+                          onChange={(e) => setRecordingCurrentUrl(e.target.value)}
+                          onKeyDown={handleUrlBarNavigate}
+                          className="text-xs bg-transparent border-none outline-none w-full text-foreground placeholder:text-muted-foreground"
+                          placeholder="Enter URL and press Enter to navigate..."
+                        />
                       </div>
-                      <div className="text-[10px] text-muted-foreground">Click to interact | Type to enter text</div>
+                      <div className="text-[10px] text-muted-foreground shrink-0">Click | Type | Enter=Navigate</div>
                     </div>
                     <div
                       ref={browserViewRef}
@@ -4517,6 +4570,31 @@ export function teardown(data) {
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-3"></div>
                             <p className="text-sm text-gray-400">Connecting to browser...</p>
                             <p className="text-xs text-gray-500 mt-1">Loading {recordTargetUrl}</p>
+                          </div>
+                        </div>
+                      )}
+                      {/* Feature #28: Click ripple feedback */}
+                      {clickRipple && (
+                        <div
+                          key={clickRipple.id}
+                          className="absolute pointer-events-none"
+                          style={{
+                            left: clickRipple.x - 15,
+                            top: clickRipple.y - 15,
+                            width: 30,
+                            height: 30,
+                          }}
+                        >
+                          <div className="w-full h-full rounded-full border-2 border-blue-400 animate-ping opacity-75" />
+                          <div className="absolute inset-0 rounded-full bg-blue-400/30 animate-pulse" />
+                        </div>
+                      )}
+                      {/* Feature #28: Disconnection overlay */}
+                      {!recordingConnected && recordingFrame && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
+                          <div className="text-center">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400 mx-auto mb-2"></div>
+                            <p className="text-sm text-yellow-300 font-medium">Reconnecting...</p>
                           </div>
                         </div>
                       )}
