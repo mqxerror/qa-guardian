@@ -558,6 +558,11 @@ function TestSuitePage() {
   const [recordingConnected, setRecordingConnected] = useState(false);
   const [clickRipple, setClickRipple] = useState<{ x: number; y: number; id: number } | null>(null);
   const lastFrameTimeRef = useRef<number>(0);
+  // Feature #33: Reconnection and stale frame detection state
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const [reconnectFailed, setReconnectFailed] = useState(false);
+  const [staleFrameWarning, setStaleFrameWarning] = useState<'none' | 'waiting' | 'unresponsive'>('none');
+  const staleFrameTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Feature #31: Step Templates state
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [stepTemplates, setStepTemplates] = useState<Array<{ id: string; name: string; description?: string; steps: any[]; tags: string[]; created_at: string }>>([]);
@@ -2222,22 +2227,70 @@ export function teardown(data) {
       const socketUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? `http://${window.location.hostname}:3001`
         : window.location.origin;
-      const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+      // Feature #33: Enable auto-reconnection with progressive delay
+      const socket = io(socketUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+      });
       recordingSocketRef.current = socket;
+
+      // Reset reconnection state
+      setReconnectAttempt(0);
+      setReconnectFailed(false);
+      setStaleFrameWarning('none');
 
       socket.on('connect', () => {
         console.log('[Recording] Socket connected:', socket.id);
         setRecordingConnected(true);
+        setReconnectAttempt(0);
+        setReconnectFailed(false);
+        setStaleFrameWarning('none');
         socket.emit('recording:join', { sessionId: data.session_id });
       });
 
-      socket.on('disconnect', () => {
+      socket.on('disconnect', (reason: string) => {
+        console.log('[Recording] Socket disconnected:', reason);
         setRecordingConnected(false);
+      });
+
+      // Feature #33: Reconnection event handlers
+      socket.io.on('reconnect_attempt' as any, (attempt: number) => {
+        console.log(`[Recording] Reconnection attempt ${attempt}/10`);
+        setReconnectAttempt(attempt);
+      });
+
+      socket.io.on('reconnect' as any, () => {
+        console.log('[Recording] Socket reconnected, rejoining room');
+        setRecordingConnected(true);
+        setReconnectAttempt(0);
+        setReconnectFailed(false);
+        // Re-join the recording room after reconnection
+        socket.emit('recording:join', { sessionId: data.session_id });
+      });
+
+      socket.io.on('reconnect_failed' as any, () => {
+        console.log('[Recording] All reconnection attempts failed');
+        setReconnectFailed(true);
+        setReconnectAttempt(0);
+      });
+
+      // Feature #33: Wrap error handler to prevent React crashes
+      socket.on('connect_error', (err: Error) => {
+        console.warn('[Recording] Socket connection error (handled):', err.message);
+        // Don't throw - just log. React ErrorBoundary won't be triggered.
+      });
+
+      socket.on('error', (err: any) => {
+        console.warn('[Recording] Socket error (handled):', err);
       });
 
       // Receive live screenshot frames with smooth rendering
       socket.on('recording:frame', (frameData: { base64: string; width: number; height: number }) => {
         lastFrameTimeRef.current = Date.now();
+        setStaleFrameWarning('none'); // Reset stale warning on new frame
         // Use requestAnimationFrame for smooth rendering
         pendingFrameRef.current = `data:image/jpeg;base64,${frameData.base64}`;
         if (!frameRequestRef.current) {
@@ -2250,6 +2303,18 @@ export function teardown(data) {
           });
         }
       });
+
+      // Feature #33: Stale frame detection interval
+      if (staleFrameTimerRef.current) clearInterval(staleFrameTimerRef.current);
+      staleFrameTimerRef.current = setInterval(() => {
+        if (!lastFrameTimeRef.current || !recordingSocketRef.current?.connected) return;
+        const elapsed = Date.now() - lastFrameTimeRef.current;
+        if (elapsed > 10000) {
+          setStaleFrameWarning('unresponsive');
+        } else if (elapsed > 3000) {
+          setStaleFrameWarning('waiting');
+        }
+      }, 1000);
 
       // Receive URL updates for URL bar sync
       socket.on('recording:url', (urlData: { url: string }) => {
@@ -2398,6 +2463,14 @@ export function teardown(data) {
         recordingSocketRef.current = null;
       }
       setRecordingFrame(null);
+      // Feature #33: Clean up stale frame timer and reconnection state
+      if (staleFrameTimerRef.current) {
+        clearInterval(staleFrameTimerRef.current);
+        staleFrameTimerRef.current = null;
+      }
+      setStaleFrameWarning('none');
+      setReconnectAttempt(0);
+      setReconnectFailed(false);
       // Close the proxy browser tab (legacy)
       if (recordingPopup && !recordingPopup.closed) {
         recordingPopup.close();
@@ -2611,11 +2684,62 @@ export function teardown(data) {
     }
     setRecordingPopup(null);
     setRecordingFrame(null);
+    // Feature #33: Clean up stale frame timer and reconnection state
+    if (staleFrameTimerRef.current) {
+      clearInterval(staleFrameTimerRef.current);
+      staleFrameTimerRef.current = null;
+    }
+    setStaleFrameWarning('none');
+    setReconnectAttempt(0);
+    setReconnectFailed(false);
     setIsRecording(false);
     setRecordingSessionId(null);
     setRecordedSteps([]);
     setRecordingStatus('');
     setShowRecordModal(false);
+  };
+
+  // Feature #33: Retry connection after all reconnection attempts failed
+  const handleRetryConnection = () => {
+    if (!recordingSocketRef.current || !recordingSessionId) return;
+    setReconnectFailed(false);
+    setReconnectAttempt(0);
+    // Force reconnection by disconnecting and reconnecting
+    recordingSocketRef.current.connect();
+  };
+
+  // Feature #33: Stop & Save on connection loss - save whatever we have
+  const handleStopAndSave = async () => {
+    if (!recordingSessionId) return;
+    try {
+      await fetch(`/api/v1/recording/${recordingSessionId}/stop`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      }).catch(() => {});
+    } catch { /* best effort */ }
+
+    // Clean up socket
+    if (recordingSocketRef.current) {
+      recordingSocketRef.current.disconnect();
+      recordingSocketRef.current = null;
+    }
+    if (staleFrameTimerRef.current) {
+      clearInterval(staleFrameTimerRef.current);
+      staleFrameTimerRef.current = null;
+    }
+
+    setIsRecording(false);
+    setRecordingStatus('');
+    setRecordingDuration(recordingStartTime ? Math.floor((Date.now() - recordingStartTime) / 1000) : 0);
+    setRecordingStartTime(null);
+    setShowRecordModal(false);
+    setShowReviewModal(true);
+    setRecordedTestName(`Recorded Test ${new Date().toLocaleString()}`);
+    setRecordingFrame(null);
+    setStaleFrameWarning('none');
+    setReconnectAttempt(0);
+    setReconnectFailed(false);
+    toast.success('Recording saved with steps captured so far.');
   };
 
   // Export tests to JSON file
@@ -4701,7 +4825,7 @@ export function teardown(data) {
                   <div className="flex-1 min-w-0 flex flex-col">
                     {/* Feature #28: URL bar with navigation + connection status */}
                     <div className="flex items-center gap-2 mb-2">
-                      <div className={`h-2 w-2 rounded-full shrink-0 ${recordingConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} title={recordingConnected ? 'Connected' : 'Disconnected'} />
+                      <div className={`h-2 w-2 rounded-full shrink-0 ${recordingConnected ? 'bg-green-500' : reconnectFailed ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'}`} title={recordingConnected ? 'Connected' : reconnectFailed ? 'Connection Lost' : reconnectAttempt > 0 ? `Reconnecting (${reconnectAttempt}/10)` : 'Disconnected'} />
                       <div className="flex items-center gap-1.5 rounded-lg bg-muted px-2 py-1 flex-1 min-w-0">
                         <span className="text-xs shrink-0">🌐</span>
                         <input
@@ -4758,12 +4882,53 @@ export function teardown(data) {
                           <div className="absolute inset-0 rounded-full bg-blue-400/30 animate-pulse" />
                         </div>
                       )}
-                      {/* Feature #28: Disconnection overlay */}
+                      {/* Feature #33: Enhanced disconnection/reconnection overlay */}
                       {!recordingConnected && recordingFrame && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
-                          <div className="text-center">
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400 mx-auto mb-2"></div>
-                            <p className="text-sm text-yellow-300 font-medium">Reconnecting...</p>
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-10">
+                          <div className="text-center px-4">
+                            {reconnectFailed ? (
+                              <>
+                                <div className="text-3xl mb-2">❌</div>
+                                <p className="text-sm text-red-300 font-medium mb-1">Connection Lost</p>
+                                <p className="text-xs text-gray-400 mb-3">All reconnection attempts failed</p>
+                                <div className="flex gap-2 justify-center">
+                                  <button
+                                    onClick={handleRetryConnection}
+                                    className="px-3 py-1.5 text-xs rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                                  >
+                                    🔄 Retry
+                                  </button>
+                                  <button
+                                    onClick={handleStopAndSave}
+                                    className="px-3 py-1.5 text-xs rounded-md bg-orange-600 hover:bg-orange-700 text-white transition-colors"
+                                  >
+                                    💾 Stop & Save
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400 mx-auto mb-2"></div>
+                                <p className="text-sm text-yellow-300 font-medium">Reconnecting...</p>
+                                {reconnectAttempt > 0 && (
+                                  <p className="text-xs text-gray-400 mt-1">Attempt {reconnectAttempt}/10</p>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {/* Feature #33: Stale frame warning overlay */}
+                      {recordingConnected && staleFrameWarning !== 'none' && recordingFrame && (
+                        <div className="absolute bottom-2 left-2 right-2 z-10">
+                          <div className={`rounded-md px-3 py-1.5 text-xs text-center ${
+                            staleFrameWarning === 'unresponsive'
+                              ? 'bg-red-900/80 text-red-200'
+                              : 'bg-yellow-900/80 text-yellow-200'
+                          }`}>
+                            {staleFrameWarning === 'unresponsive'
+                              ? '⚠️ Browser may be unresponsive — try clicking or navigating'
+                              : '⏳ Waiting for frame...'}
                           </div>
                         </div>
                       )}
