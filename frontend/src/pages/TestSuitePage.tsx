@@ -552,6 +552,7 @@ function TestSuitePage() {
   const [recordingFrame, setRecordingFrame] = useState<string | null>(null);
   const recordingSocketRef = useRef<Socket | null>(null);
   const browserViewRef = useRef<HTMLDivElement | null>(null);
+  const browserImgRef = useRef<HTMLImageElement | null>(null);
   // Feature #28: Polish - URL nav, connection status, click ripple
   const [recordingCurrentUrl, setRecordingCurrentUrl] = useState('');
   const [recordingConnected, setRecordingConnected] = useState(false);
@@ -2277,16 +2278,38 @@ export function teardown(data) {
   // Handle click on the live browser view
   const handleBrowserViewClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!recordingSessionId || !recordingSocketRef.current || !browserViewRef.current) return;
-    const rect = browserViewRef.current.getBoundingClientRect();
-    // Scale coordinates to 1280x720 viewport
-    const scaleX = 1280 / rect.width;
-    const scaleY = 720 / rect.height;
-    const x = Math.round((e.clientX - rect.left) * scaleX);
-    const y = Math.round((e.clientY - rect.top) * scaleY);
+    // Use the img element for precise coordinate mapping (it shows the actual viewport)
+    const img = browserImgRef.current;
+    const container = browserViewRef.current;
+    const targetRect = img ? img.getBoundingClientRect() : container.getBoundingClientRect();
+    // If using container rect, account for border
+    let imgWidth = targetRect.width;
+    let imgHeight = targetRect.height;
+    let imgLeft = targetRect.left;
+    let imgTop = targetRect.top;
+    if (!img) {
+      const borderW = parseFloat(getComputedStyle(container).borderLeftWidth) || 0;
+      const borderH = parseFloat(getComputedStyle(container).borderTopWidth) || 0;
+      imgWidth -= borderW * 2;
+      imgHeight -= borderH * 2;
+      imgLeft += borderW;
+      imgTop += borderH;
+    }
+    // Position relative to image
+    const relX = e.clientX - imgLeft;
+    const relY = e.clientY - imgTop;
+    // Clamp to image bounds
+    const clampedX = Math.max(0, Math.min(relX, imgWidth));
+    const clampedY = Math.max(0, Math.min(relY, imgHeight));
+    // Scale to 1280x720 viewport
+    const x = Math.round(clampedX * (1280 / imgWidth));
+    const y = Math.round(clampedY * (720 / imgHeight));
+    console.log(`[Recording] Click: css(${Math.round(relX)},${Math.round(relY)}) -> viewport(${x},${y}) img(${Math.round(imgWidth)}x${Math.round(imgHeight)})`);
     recordingSocketRef.current.emit('recording:click', { sessionId: recordingSessionId, x, y });
-    // Show click ripple effect at click position (in CSS pixels)
-    const cssX = e.clientX - rect.left;
-    const cssY = e.clientY - rect.top;
+    // Show click ripple effect at click position relative to container
+    const containerRect = container.getBoundingClientRect();
+    const cssX = e.clientX - containerRect.left;
+    const cssY = e.clientY - containerRect.top;
     setClickRipple({ x: cssX, y: cssY, id: Date.now() });
     setTimeout(() => setClickRipple(null), 600);
   };
@@ -4605,7 +4628,7 @@ export function teardown(data) {
           >
             <div
               className={`w-full rounded-xl bg-card shadow-2xl transition-all duration-300 ${
-                isRecording ? 'max-w-5xl border-2 border-blue-500 shadow-blue-500/20' : 'max-w-xl border border-border'
+                isRecording ? 'max-w-7xl border-2 border-blue-500 shadow-blue-500/20' : 'max-w-xl border border-border'
               }`}
               style={{ maxHeight: '95vh' }}
               onClick={(e) => e.stopPropagation()}
@@ -4694,8 +4717,8 @@ export function teardown(data) {
                     </div>
                     <div
                       ref={browserViewRef}
-                      className="relative flex-1 rounded-lg border-2 border-border overflow-hidden bg-gray-900 cursor-crosshair focus:outline-none focus:border-blue-400"
-                      style={{ aspectRatio: '16/9', maxHeight: '500px' }}
+                      className="relative rounded-lg border-2 border-border overflow-hidden bg-gray-900 cursor-crosshair focus:outline-none focus:border-blue-400 w-full"
+                      style={{ aspectRatio: '16/9', maxHeight: '500px', maxWidth: 'calc(500px * 16 / 9)' }}
                       tabIndex={0}
                       onClick={handleBrowserViewClick}
                       onKeyDown={handleBrowserViewKeyDown}
@@ -4703,11 +4726,12 @@ export function teardown(data) {
                     >
                       {recordingFrame ? (
                         <img
+                          ref={browserImgRef}
                           src={recordingFrame}
                           alt="Live browser view"
                           className="w-full h-full"
                           draggable={false}
-                          style={{ pointerEvents: 'none' }}
+                          style={{ pointerEvents: 'none', objectFit: 'fill' }}
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
