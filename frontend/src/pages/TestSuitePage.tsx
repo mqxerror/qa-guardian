@@ -557,6 +557,12 @@ function TestSuitePage() {
   const [recordingConnected, setRecordingConnected] = useState(false);
   const [clickRipple, setClickRipple] = useState<{ x: number; y: number; id: number } | null>(null);
   const lastFrameTimeRef = useRef<number>(0);
+  // Feature #31: Step Templates state
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [stepTemplates, setStepTemplates] = useState<Array<{ id: string; name: string; description?: string; steps: any[]; tags: string[]; created_at: string }>>([]);
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [insertTemplateForTest, setInsertTemplateForTest] = useState<string | null>(null);
   const frameRequestRef = useRef<number | null>(null);
   const pendingFrameRef = useRef<string | null>(null);
 
@@ -2451,6 +2457,112 @@ export function teardown(data) {
     }
   };
 
+  // Feature #31: Save recorded steps as a reusable template
+  const handleSaveAsTemplate = async () => {
+    if (!templateName.trim()) {
+      toast.error('Please enter a template name');
+      return;
+    }
+    if (recordedSteps.length === 0) {
+      toast.error('No steps to save as template');
+      return;
+    }
+    setIsSavingTemplate(true);
+    try {
+      const steps = recordedSteps.map((step, i) => ({
+        action: step.action,
+        selector: step.selector,
+        value: step.value || step.url || step.text,
+        order: i,
+      }));
+      const response = await fetch('/api/v1/step-templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: templateName.trim(),
+          description: `Template from recorded steps`,
+          steps,
+          suite_id: suiteId,
+        }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to save template');
+      }
+      toast.success(`Template "${templateName}" saved!`);
+      setTemplateName('');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save template');
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
+  // Feature #31: Load templates list
+  const loadStepTemplates = async () => {
+    try {
+      const response = await fetch(`/api/v1/step-templates?suite_id=${suiteId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStepTemplates(data.templates || []);
+      }
+    } catch (err) {
+      console.error('Failed to load templates:', err);
+    }
+  };
+
+  // Feature #31: Insert template steps into an existing test
+  const handleInsertTemplate = async (testId: string, template: { steps: any[] }) => {
+    try {
+      const response = await fetch(`/api/v1/tests/${testId}/append-steps`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ steps: template.steps }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to insert template');
+      }
+      toast.success('Template steps inserted into test');
+      setShowTemplateModal(false);
+      setInsertTemplateForTest(null);
+      // Refresh tests
+      const refreshResponse = await fetch(`/api/v1/suites/${suiteId}/tests`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (refreshResponse.ok) {
+        const data = await refreshResponse.json();
+        setTests(data.tests);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to insert template');
+    }
+  };
+
+  // Feature #31: Delete a step template
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      const response = await fetch(`/api/v1/step-templates/${templateId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        setStepTemplates(prev => prev.filter(t => t.id !== templateId));
+        toast.success('Template deleted');
+      }
+    } catch (err) {
+      toast.error('Failed to delete template');
+    }
+  };
+
   // Cancel recording
   const handleCancelRecording = () => {
     if (recordingSessionId) {
@@ -3948,6 +4060,20 @@ export function teardown(data) {
                             </svg>
                             Duplicate
                           </button>
+                          <button
+                            onClick={() => {
+                              setOpenActionsDropdown(null);
+                              setInsertTemplateForTest(test.id);
+                              setShowTemplateModal(true);
+                              loadStepTemplates();
+                            }}
+                            className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                            </svg>
+                            Insert Template
+                          </button>
                           <div className="border-t border-border my-1" />
                           <button
                             onClick={() => {
@@ -4917,6 +5043,27 @@ export function teardown(data) {
                   </div>
                 </div>
 
+                {/* Feature #31: Save as Template */}
+                <div className="rounded-lg border border-dashed border-purple-300 bg-purple-50/50 dark:bg-purple-900/10 p-3">
+                  <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-2">📋 Save as Reusable Template</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={templateName}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                      placeholder="Template name..."
+                      className="flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-purple-400"
+                    />
+                    <button
+                      onClick={handleSaveAsTemplate}
+                      disabled={isSavingTemplate || !templateName.trim() || recordedSteps.length === 0}
+                      className="rounded-md bg-purple-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-600 disabled:opacity-50 transition-colors whitespace-nowrap"
+                    >
+                      {isSavingTemplate ? 'Saving...' : '📋 Save Template'}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex justify-end gap-2 pt-4 border-t border-border">
                   <button
                     onClick={() => {
@@ -4937,6 +5084,94 @@ export function teardown(data) {
                     {isSavingRecordedTest ? 'Saving...' : '💾 Save Test'}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Feature #31: Insert Template Modal */}
+        {showTemplateModal && insertTemplateForTest && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowTemplateModal(false);
+                setInsertTemplateForTest(null);
+              }
+            }}
+          >
+            <div
+              className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-2xl max-h-[80vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                  <span className="text-xl">📋</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Insert Template</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Choose a step template to append to this test.
+                  </p>
+                </div>
+              </div>
+
+              {stepTemplates.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-lg mb-1">No templates yet</p>
+                  <p className="text-sm">Save steps as a template during recording to see them here.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {stepTemplates.map((tpl) => (
+                    <div
+                      key={tpl.id}
+                      className="rounded-lg border border-border p-3 hover:bg-muted/40 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-medium text-sm text-foreground">{tpl.name}</h4>
+                        <span className="text-xs text-muted-foreground">{tpl.steps.length} steps</span>
+                      </div>
+                      {tpl.description && (
+                        <p className="text-xs text-muted-foreground mb-2">{tpl.description}</p>
+                      )}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                        {tpl.steps.slice(0, 3).map((s: any, i: number) => (
+                          <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-xs">
+                            {s.action}
+                          </span>
+                        ))}
+                        {tpl.steps.length > 3 && <span>+{tpl.steps.length - 3} more</span>}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleInsertTemplate(insertTemplateForTest!, tpl)}
+                          className="rounded-md bg-purple-500 px-3 py-1 text-xs font-medium text-white hover:bg-purple-600 transition-colors"
+                        >
+                          Insert Steps
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTemplate(tpl.id)}
+                          className="rounded-md border border-red-200 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex justify-end pt-4 mt-4 border-t border-border">
+                <button
+                  onClick={() => {
+                    setShowTemplateModal(false);
+                    setInsertTemplateForTest(null);
+                  }}
+                  className="rounded-lg border border-border px-4 py-2 font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

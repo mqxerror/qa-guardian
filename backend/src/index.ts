@@ -27,6 +27,7 @@ import mcpToolsRoutes from './routes/mcp-tools';
 import { reportsRoutes } from './routes/reports'; // Feature #1732
 import { servicesStatusRoutes, setServicesSocketIO } from './routes/services-status'; // Feature #2127
 import { setRecordingSocketIO } from './routes/test-runs/recording-routes'; // Feature #26: Playwright recording
+import { stepTemplateRoutes } from './routes/step-templates'; // Feature #31: Reusable Step Templates
 
 // Socket.IO server instance (will be initialized after server starts)
 let io: SocketIOServer | null = null;
@@ -160,6 +161,7 @@ async function registerPlugins() {
   await app.register(mcpToolsRoutes, { prefix: '/api/v1/mcp' });
   await app.register(reportsRoutes); // Feature #1732
   await app.register(servicesStatusRoutes); // Feature #2127
+  await app.register(stepTemplateRoutes); // Feature #31: Reusable Step Templates
 
   // Global error handler - don't expose stack traces to clients
   app.setErrorHandler((error, request, reply) => {

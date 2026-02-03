@@ -1222,6 +1222,26 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_audit_logs_resource_type ON audit_logs(resource_type);
     CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
+
+    -- Step Templates table (Feature #31: Reusable Step Templates)
+    CREATE TABLE IF NOT EXISTS step_templates (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      suite_id UUID REFERENCES test_suites(id) ON DELETE SET NULL,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      steps JSONB NOT NULL DEFAULT '[]',
+      tags TEXT[] DEFAULT '{}',
+      created_by VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Step Templates indexes (Feature #31)
+    CREATE INDEX IF NOT EXISTS idx_step_templates_organization ON step_templates(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_step_templates_suite ON step_templates(suite_id);
+    CREATE INDEX IF NOT EXISTS idx_step_templates_created ON step_templates(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_step_templates_name ON step_templates(name);
   `;
 
   try {
