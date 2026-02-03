@@ -534,6 +534,7 @@ function TestSuitePage() {
   const [recordedSteps, setRecordedSteps] = useState<Array<{
     action: string;
     selector?: string;
+    selectorStrategies?: Array<{ strategy: string; selector: string; confidence: number }>;
     value?: string;
     url?: string;
     text?: string;
@@ -2382,20 +2383,25 @@ export function teardown(data) {
     setIsSavingRecordedTest(true);
 
     try {
-      // Convert recorded steps to test step format
+      // Convert recorded steps to test step format (including selector strategies for healing)
       const steps = recordedSteps.map(step => {
+        const base: any = {};
+        // Include selectorStrategies if available (for test healing fallback)
+        if (step.selectorStrategies && step.selectorStrategies.length > 0) {
+          base.selectorStrategies = step.selectorStrategies;
+        }
         switch (step.action) {
           case 'navigate':
-            return { action: 'navigate', value: step.url };
+            return { ...base, action: 'navigate', value: step.url };
           case 'click':
-            return { action: 'click', selector: step.selector };
+            return { ...base, action: 'click', selector: step.selector };
           case 'fill':
           case 'type':
-            return { action: step.action, selector: step.selector, value: step.value };
+            return { ...base, action: step.action, selector: step.selector, value: step.value };
           case 'assert_text':
-            return { action: 'assert_text', value: step.text };
+            return { ...base, action: 'assert_text', value: step.text };
           default:
-            return { action: step.action, selector: step.selector, value: step.value };
+            return { ...base, action: step.action, selector: step.selector, value: step.value };
         }
       });
 
