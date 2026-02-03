@@ -2,22 +2,25 @@
  * Recording Routes Module
  * Feature #1356: Extracted from test-runs.ts for code quality
  *
- * Visual Test Recorder endpoints for capturing user interactions
- * and generating test scripts from browser sessions.
+ * Proxy-based Visual Test Recorder:
+ * Instead of launching a headless browser (which users can't interact with),
+ * this uses a reverse proxy approach. The target site is proxied through the
+ * backend with a recording script injected into HTML responses. Users interact
+ * with the site in their own browser via a new tab.
  */
 
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
 import { getTestSuite } from '../test-suites';
-import { chromium, Browser, Page, BrowserContext } from 'playwright';
 
-// Recording session interface
+// Recording session interface - no browser references needed
 interface RecordingSession {
   id: string;
   organization_id: string;
   user_id: string;
   suite_id: string;
   target_url: string;
+  target_origin: string;
   status: 'recording' | 'stopped' | 'error';
   actions: Array<{
     action: string;
@@ -31,54 +34,178 @@ interface RecordingSession {
     className?: string;
     timestamp: number;
   }>;
-  browser: Browser | null;
-  context: BrowserContext | null;
-  page: Page | null;
   created_at: Date;
+  // Store cookies from proxied responses for session continuity
+  cookies: Record<string, string>;
 }
 
 // Store active recording sessions
 const recordingSessions: Map<string, RecordingSession> = new Map();
 
-// Generate unique CSS selector for an element
-function generateSelector(element: any): string {
-  // Try to use id first
-  if (element.id) {
-    return `#${element.id}`;
+/**
+ * Generate the recording script to inject into proxied HTML pages.
+ * This script captures user interactions and sends them to the backend.
+ */
+function generateRecordingScript(sessionId: string, apiBase: string, proxyBase: string, targetOrigin: string): string {
+  return `
+<script data-qa-recorder="true">
+(function() {
+  'use strict';
+  var SESSION_ID = ${JSON.stringify(sessionId)};
+  var API_BASE = ${JSON.stringify(apiBase)};
+  var PROXY_BASE = ${JSON.stringify(proxyBase)};
+  var TARGET_ORIGIN = ${JSON.stringify(targetOrigin)};
+
+  // Debounce helper
+  var inputTimers = {};
+
+  // Send action to backend
+  function sendAction(action) {
+    try {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', API_BASE + '/api/v1/recording/' + SESSION_ID + '/action', true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.send(JSON.stringify(action));
+    } catch(e) { console.error('[QA Recorder] Failed to send action:', e); }
   }
-  // Try to use data-testid
-  if (element.dataset?.testid) {
-    return `[data-testid="${element.dataset.testid}"]`;
-  }
-  // Try to use aria-label
-  if (element.ariaLabel) {
-    return `[aria-label="${element.ariaLabel}"]`;
-  }
-  // Try to use name attribute for form elements
-  if (element.name) {
-    return `[name="${element.name}"]`;
-  }
-  // Try to use text content for buttons/links
-  if (element.tagName === 'BUTTON' || element.tagName === 'A') {
-    const text = element.innerText?.trim().slice(0, 50);
-    if (text) {
-      return `${element.tagName.toLowerCase()}:has-text("${text}")`;
+
+  // Generate a CSS selector for an element
+  function generateSelector(el) {
+    if (!el || !el.tagName) return '';
+    if (el.id) return '#' + el.id;
+    if (el.getAttribute && el.getAttribute('data-testid')) return '[data-testid="' + el.getAttribute('data-testid') + '"]';
+    if (el.getAttribute && el.getAttribute('aria-label')) return '[aria-label="' + el.getAttribute('aria-label') + '"]';
+    if (el.name) return '[name="' + el.name + '"]';
+    if ((el.tagName === 'BUTTON' || el.tagName === 'A') && el.innerText) {
+      var text = el.innerText.trim().slice(0, 50);
+      if (text) return el.tagName.toLowerCase() + ':has-text("' + text + '")';
     }
+    var tag = el.tagName.toLowerCase();
+    var cls = el.className && typeof el.className === 'string' ? el.className.split(' ')[0] : '';
+    return cls ? tag + '.' + cls : tag;
   }
-  // Fallback to tag with class
-  const tag = element.tagName?.toLowerCase() || 'div';
-  const className = element.className?.split(' ')[0];
-  if (className) {
-    return `${tag}.${className}`;
+
+  // Resolve a URL to absolute
+  function resolveUrl(href) {
+    if (!href) return '';
+    try {
+      return new URL(href, window.location.href).href;
+    } catch(e) { return href; }
   }
-  return tag;
+
+  // Convert an absolute URL to the proxy URL
+  function toProxyUrl(absoluteUrl) {
+    return PROXY_BASE + '?url=' + encodeURIComponent(absoluteUrl);
+  }
+
+  // Capture click events
+  document.addEventListener('click', function(e) {
+    var target = e.target;
+    // Walk up to find the actual clickable element
+    var clickable = target.closest ? target.closest('a, button, [role="button"], input[type="submit"], input[type="button"]') : target;
+    var el = clickable || target;
+
+    var rect = el.getBoundingClientRect ? el.getBoundingClientRect() : {};
+    sendAction({
+      type: 'click',
+      selector: generateSelector(el),
+      tagName: el.tagName,
+      id: el.id || undefined,
+      className: (typeof el.className === 'string' ? el.className : '') || undefined,
+      text: el.innerText ? el.innerText.trim().slice(0, 50) : undefined,
+      position: { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) },
+      timestamp: Date.now()
+    });
+
+    // Intercept link navigation to route through proxy
+    var link = target.closest ? target.closest('a[href]') : null;
+    if (link && link.href) {
+      var href = resolveUrl(link.getAttribute('href'));
+      // Only proxy same-origin or target-origin links
+      if (href && (href.startsWith(TARGET_ORIGIN) || href.startsWith(window.location.origin))) {
+        // Convert back to target URL if it's a proxy URL
+        var targetUrl = href;
+        if (href.indexOf(PROXY_BASE) === 0) {
+          var params = new URL(href).searchParams;
+          targetUrl = params.get('url') || href;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        sendAction({ type: 'navigate', url: targetUrl, timestamp: Date.now() });
+        window.location.href = toProxyUrl(targetUrl);
+        return;
+      }
+      // External links - record but allow default behavior
+      if (href.startsWith('http')) {
+        e.preventDefault();
+        e.stopPropagation();
+        sendAction({ type: 'navigate', url: href, timestamp: Date.now() });
+        window.location.href = toProxyUrl(href);
+      }
+    }
+  }, true);
+
+  // Capture input/fill events (debounced)
+  document.addEventListener('input', function(e) {
+    var target = e.target;
+    var id = target.id || target.name || 'anon';
+    clearTimeout(inputTimers[id]);
+    inputTimers[id] = setTimeout(function() {
+      sendAction({
+        type: 'fill',
+        selector: generateSelector(target),
+        value: target.value,
+        tagName: target.tagName,
+        id: target.id || undefined,
+        name: target.name || undefined,
+        timestamp: Date.now()
+      });
+    }, 500);
+  }, true);
+
+  // Capture form submissions
+  document.addEventListener('submit', function(e) {
+    var form = e.target;
+    var action = form.action ? resolveUrl(form.action) : window.location.href;
+    sendAction({
+      type: 'submit',
+      selector: generateSelector(form),
+      url: action,
+      tagName: 'FORM',
+      timestamp: Date.now()
+    });
+    // For GET forms, intercept and proxy
+    if (!form.method || form.method.toUpperCase() === 'GET') {
+      e.preventDefault();
+      var formData = new FormData(form);
+      var params = new URLSearchParams(formData).toString();
+      var targetUrl = action + (action.includes('?') ? '&' : '?') + params;
+      sendAction({ type: 'navigate', url: targetUrl, timestamp: Date.now() });
+      window.location.href = toProxyUrl(targetUrl);
+    }
+    // POST forms - let them submit naturally (they'll break out of proxy, but that's acceptable for MVP)
+  }, true);
+
+  // Show recording indicator overlay
+  var indicator = document.createElement('div');
+  indicator.id = 'qa-recorder-indicator';
+  indicator.innerHTML = '<div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:12px;height:12px;background:red;border-radius:50%;animation:qa-rec-pulse 1s ease-in-out infinite;"></span><span>QA Guardian Recording</span></div>';
+  indicator.style.cssText = 'position:fixed;top:12px;right:12px;z-index:2147483647;background:rgba(0,0,0,0.85);color:white;padding:8px 16px;border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,0.3);cursor:default;user-select:none;';
+  var style = document.createElement('style');
+  style.textContent = '@keyframes qa-rec-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }';
+  document.head.appendChild(style);
+  document.body.appendChild(indicator);
+
+  console.log('[QA Recorder] Recording active for session: ' + SESSION_ID);
+})();
+</script>`;
 }
 
 /**
  * Register recording routes
  */
 export async function recordingRoutes(app: FastifyInstance) {
-  // Start recording session
+  // Start recording session - creates session and returns proxy URL
   app.post<{
     Body: { target_url: string; suite_id: string };
   }>('/api/v1/recording/start', {
@@ -98,8 +225,9 @@ export async function recordingRoutes(app: FastifyInstance) {
     }
 
     // Validate URL
+    let parsedUrl: URL;
     try {
-      new URL(target_url);
+      parsedUrl = new URL(target_url);
     } catch {
       return reply.status(400).send({
         error: 'Bad Request',
@@ -109,11 +237,11 @@ export async function recordingRoutes(app: FastifyInstance) {
 
     const sessionId = `rec-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
-    // Pre-flight URL check: verify target URL is reachable before launching browser
+    // Pre-flight URL check: verify target URL is reachable
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);
-      const preflight = await fetch(target_url, {
+      await fetch(target_url, {
         method: 'HEAD',
         signal: controller.signal,
         redirect: 'follow',
@@ -121,219 +249,224 @@ export async function recordingRoutes(app: FastifyInstance) {
         throw new Error(`Target URL is not reachable: ${target_url} (${fetchErr.message})`);
       });
       clearTimeout(timeout);
-      // Accept any response (even 4xx/5xx means the server is reachable)
     } catch (preflightErr: any) {
-      if (preflightErr.message?.includes('Target URL is not reachable')) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: preflightErr.message,
-        });
-      }
       return reply.status(400).send({
         error: 'Bad Request',
-        message: `Target URL is not reachable: ${target_url}`,
+        message: preflightErr.message?.includes('Target URL is not reachable')
+          ? preflightErr.message
+          : `Target URL is not reachable: ${target_url}`,
       });
     }
 
-    let browser: Browser | null = null;
+    // Create recording session (no browser launch!)
+    const session: RecordingSession = {
+      id: sessionId,
+      organization_id: orgId,
+      user_id: user.id,
+      suite_id,
+      target_url,
+      target_origin: parsedUrl.origin,
+      status: 'recording',
+      actions: [{ action: 'navigate', url: target_url, timestamp: Date.now() }],
+      created_at: new Date(),
+      cookies: {},
+    };
+
+    recordingSessions.set(sessionId, session);
+
+    // Build the proxy URL that the frontend will open in a new tab
+    const protocol = request.headers['x-forwarded-proto'] || request.protocol || 'http';
+    const host = request.headers['x-forwarded-host'] || request.headers.host || 'localhost';
+    const proxyUrl = `${protocol}://${host}/api/v1/recording/${sessionId}/browse?url=${encodeURIComponent(target_url)}`;
+
+    console.log(`[RECORDER] Started proxy recording session ${sessionId} for URL: ${target_url}`);
+
+    return {
+      session_id: sessionId,
+      proxy_url: proxyUrl,
+      message: 'Recording started. Open the proxy URL in a new tab to interact with the site.',
+    };
+  });
+
+  // Proxy browse endpoint - serves the target site with recording script injected
+  app.get<{
+    Params: { sessionId: string };
+    Querystring: { url: string };
+  }>('/api/v1/recording/:sessionId/browse', async (request, reply) => {
+    const { sessionId } = request.params;
+    const targetUrl = request.query.url;
+
+    const session = recordingSessions.get(sessionId);
+    if (!session) {
+      return reply.status(404).send('<html><body><h1>Recording session not found</h1><p>This recording session has expired or does not exist.</p></body></html>');
+    }
+
+    if (session.status !== 'recording') {
+      return reply.status(400).send('<html><body><h1>Recording stopped</h1><p>This recording session has ended. You can close this tab.</p></body></html>');
+    }
+
+    if (!targetUrl) {
+      return reply.status(400).send('<html><body><h1>Missing URL</h1><p>No target URL specified.</p></body></html>');
+    }
+
     try {
-      // Launch browser in headless mode for Docker/production compatibility
-      browser = await chromium.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-      });
+      // Build cookie header from stored cookies
+      const cookieHeader = Object.entries(session.cookies)
+        .map(([k, v]) => `${k}=${v}`)
+        .join('; ');
 
-      const context = await browser.newContext({
-        viewport: null, // Use full window
-      });
-
-      const page = await context.newPage();
-
-      // Create recording session
-      const session: RecordingSession = {
-        id: sessionId,
-        organization_id: orgId,
-        user_id: user.id,
-        suite_id,
-        target_url,
-        status: 'recording',
-        actions: [{ action: 'navigate', url: target_url, timestamp: Date.now() }],
-        browser,
-        context,
-        page,
-        created_at: new Date(),
+      // Fetch the target URL
+      const fetchHeaders: Record<string, string> = {
+        'User-Agent': request.headers['user-agent'] || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': request.headers.accept as string || 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': request.headers['accept-language'] as string || 'en-US,en;q=0.9',
       };
-
-      recordingSessions.set(sessionId, session);
-
-      // Inject recording script BEFORE navigation so first page load is captured
-      await page.addInitScript(() => {
-        // Create a channel to send actions back to the server
-        (window as any).__recordedActions = [];
-
-        // Capture click events
-        document.addEventListener('click', (e) => {
-          const target = e.target as HTMLElement;
-          const rect = target.getBoundingClientRect();
-          const action = {
-            type: 'click',
-            selector: generateElementSelector(target),
-            tagName: target.tagName,
-            id: target.id,
-            className: target.className,
-            text: target.innerText?.trim().slice(0, 50),
-            ariaLabel: target.getAttribute('aria-label'),
-            dataTestId: target.getAttribute('data-testid'),
-            xpath: generateXPath(target),
-            cssSelector: generateCssSelector(target),
-            position: { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) },
-            timestamp: Date.now(),
-          };
-          (window as any).__recordedActions.push(action);
-          console.log('[RECORDER] Click:', action);
-        }, true);
-
-        // Capture input events (debounced)
-        let inputTimer: any = null;
-        document.addEventListener('input', (e) => {
-          const target = e.target as HTMLInputElement;
-          clearTimeout(inputTimer);
-          inputTimer = setTimeout(() => {
-            const rect = target.getBoundingClientRect();
-            const action = {
-              type: 'fill',
-              selector: generateElementSelector(target),
-              value: target.value,
-              tagName: target.tagName,
-              id: target.id,
-              name: target.name,
-              className: target.className,
-              ariaLabel: target.getAttribute('aria-label'),
-              dataTestId: target.getAttribute('data-testid'),
-              xpath: generateXPath(target),
-              cssSelector: generateCssSelector(target),
-              position: { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) },
-              timestamp: Date.now(),
-            };
-            (window as any).__recordedActions.push(action);
-            console.log('[RECORDER] Fill:', action);
-          }, 500);
-        }, true);
-
-        // Helper function to generate selector
-        function generateElementSelector(el: HTMLElement): string {
-          if (el.id) return `#${el.id}`;
-          if (el.getAttribute('data-testid')) return `[data-testid="${el.getAttribute('data-testid')}"]`;
-          if (el.getAttribute('aria-label')) return `[aria-label="${el.getAttribute('aria-label')}"]`;
-          if ((el as HTMLInputElement).name) return `[name="${(el as HTMLInputElement).name}"]`;
-          if ((el.tagName === 'BUTTON' || el.tagName === 'A') && el.innerText?.trim()) {
-            return `${el.tagName.toLowerCase()}:has-text("${el.innerText.trim().slice(0, 50)}")`;
-          }
-          const tag = el.tagName.toLowerCase();
-          const cls = el.className?.split(' ')[0];
-          return cls ? `${tag}.${cls}` : tag;
-        }
-
-        // Feature #1049: Generate XPath for element
-        function generateXPath(el: HTMLElement): string {
-          const parts: string[] = [];
-          let current: HTMLElement | null = el;
-          while (current && current.nodeType === Node.ELEMENT_NODE) {
-            let index = 1;
-            let sibling = current.previousElementSibling;
-            while (sibling) {
-              if (sibling.tagName === current.tagName) index++;
-              sibling = sibling.previousElementSibling;
-            }
-            const tag = current.tagName.toLowerCase();
-            parts.unshift(index > 1 ? `${tag}[${index}]` : tag);
-            current = current.parentElement;
-          }
-          return '/' + parts.join('/');
-        }
-
-        // Feature #1049: Generate CSS selector for element
-        function generateCssSelector(el: HTMLElement): string {
-          if (el.id) return `#${el.id}`;
-          const parts: string[] = [];
-          let current: HTMLElement | null = el;
-          while (current && current.nodeType === Node.ELEMENT_NODE && current.tagName !== 'HTML') {
-            let selector = current.tagName.toLowerCase();
-            if (current.id) {
-              selector = `#${current.id}`;
-              parts.unshift(selector);
-              break;
-            }
-            if (current.className) {
-              const classes = current.className.split(' ').filter(c => c.trim()).slice(0, 2);
-              if (classes.length) selector += '.' + classes.join('.');
-            }
-            let index = 1;
-            let sibling = current.previousElementSibling;
-            while (sibling) {
-              if (sibling.tagName === current.tagName) index++;
-              sibling = sibling.previousElementSibling;
-            }
-            if (index > 1) selector += `:nth-of-type(${index})`;
-            parts.unshift(selector);
-            current = current.parentElement;
-          }
-          return parts.join(' > ');
-        }
-      });
-
-      // Navigate to target URL AFTER init script injection
-      await page.goto(target_url, { timeout: 30000 });
-
-      // Setup listeners to collect recorded actions
-      page.on('framenavigated', async (frame) => {
-        if (frame === page.mainFrame()) {
-          const url = frame.url();
-          const session = recordingSessions.get(sessionId);
-          if (session && session.status === 'recording') {
-            // Don't add duplicate navigate events
-            const lastAction = session.actions[session.actions.length - 1];
-            if (lastAction?.action !== 'navigate' || lastAction.url !== url) {
-              session.actions.push({ action: 'navigate', url, timestamp: Date.now() });
-            }
-          }
-        }
-      });
-
-      // Handle browser disconnect
-      browser.on('disconnected', () => {
-        console.log(`[RECORDER] Browser disconnected for session ${sessionId}`);
-        const session = recordingSessions.get(sessionId);
-        if (session) {
-          session.status = 'stopped';
-        }
-      });
-
-      console.log(`[RECORDER] Started recording session ${sessionId} for URL: ${target_url}`);
-
-      return {
-        session_id: sessionId,
-        message: 'Recording started. Interact with the browser to record actions.',
-      };
-    } catch (err) {
-      console.error('[RECORDER] Failed to start recording:', err);
-
-      // Clean up browser resources on failure
-      if (browser) {
-        await browser.close().catch(() => {});
+      if (cookieHeader) {
+        fetchHeaders['Cookie'] = cookieHeader;
       }
 
-      // Remove session from map if it was added
-      recordingSessions.delete(sessionId);
-
-      return reply.status(500).send({
-        error: 'Recording Error',
-        message: 'Failed to start recording: ' + (err instanceof Error ? err.message : String(err)),
+      const response = await fetch(targetUrl, {
+        headers: fetchHeaders,
+        redirect: 'follow',
       });
+
+      // Store any Set-Cookie headers
+      const setCookies = response.headers.getSetCookie?.() || [];
+      for (const cookie of setCookies) {
+        const [nameVal] = cookie.split(';');
+        const [name, ...valParts] = nameVal.split('=');
+        if (name && valParts.length > 0) {
+          session.cookies[name.trim()] = valParts.join('=').trim();
+        }
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+
+      // For non-HTML content, pipe through directly
+      if (!contentType.includes('text/html')) {
+        // Set appropriate headers
+        reply.header('Content-Type', contentType);
+        const cacheControl = response.headers.get('cache-control');
+        if (cacheControl) reply.header('Cache-Control', cacheControl);
+
+        const buffer = Buffer.from(await response.arrayBuffer());
+        return reply.send(buffer);
+      }
+
+      // For HTML content: inject recording script
+      let html = await response.text();
+
+      // Determine the base URL for resolving relative resources
+      const parsedTarget = new URL(targetUrl);
+      const baseUrl = parsedTarget.origin + parsedTarget.pathname.replace(/\/[^/]*$/, '/');
+
+      // Build the proxy base for the recording script
+      const protocol = request.headers['x-forwarded-proto'] || request.protocol || 'http';
+      const host = request.headers['x-forwarded-host'] || request.headers.host || 'localhost';
+      const apiBase = `${protocol}://${host}`;
+      const proxyBase = `${apiBase}/api/v1/recording/${sessionId}/browse`;
+
+      // Add <base> tag for resolving relative resource URLs (CSS, JS, images)
+      // This makes relative URLs load directly from the target site
+      if (!html.includes('<base')) {
+        html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${baseUrl}">`);
+      }
+
+      // Strip Content-Security-Policy so our recording script can execute
+      // (we'll set relaxed headers on the response)
+
+      // Inject the recording script before </body> or at end of HTML
+      const recordingScript = generateRecordingScript(sessionId, apiBase, proxyBase, parsedTarget.origin);
+      if (html.includes('</body>')) {
+        html = html.replace('</body>', recordingScript + '</body>');
+      } else {
+        html += recordingScript;
+      }
+
+      // Send modified HTML with relaxed security headers
+      reply.header('Content-Type', 'text/html; charset=utf-8');
+      // Remove CSP and frame restrictions so recording script works
+      reply.header('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
+      reply.header('X-Frame-Options', 'ALLOWALL');
+      reply.removeHeader('X-Content-Type-Options');
+
+      return reply.send(html);
+    } catch (err) {
+      console.error(`[RECORDER] Proxy error for session ${sessionId}:`, err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      return reply.status(502).send(
+        `<html><body>
+          <h1>Failed to load page</h1>
+          <p>Could not fetch the target URL: ${targetUrl}</p>
+          <p>Error: ${errorMessage}</p>
+          <p><a href="javascript:history.back()">Go back</a></p>
+        </body></html>`
+      );
     }
   });
 
-  // Get recording session actions
+  // Receive actions from injected recording script (no auth - sessionId is the token)
+  app.post<{
+    Params: { sessionId: string };
+    Body: {
+      type: string;
+      selector?: string;
+      value?: string;
+      url?: string;
+      text?: string;
+      tagName?: string;
+      id?: string;
+      name?: string;
+      className?: string;
+      position?: { x: number; y: number };
+      timestamp: number;
+    };
+  }>('/api/v1/recording/:sessionId/action', async (request, reply) => {
+    const { sessionId } = request.params;
+    const actionData = request.body;
+
+    const session = recordingSessions.get(sessionId);
+    if (!session) {
+      return reply.status(404).send({ error: 'Session not found' });
+    }
+
+    if (session.status !== 'recording') {
+      return reply.status(400).send({ error: 'Session is not recording' });
+    }
+
+    // Add action to session
+    session.actions.push({
+      action: actionData.type,
+      selector: actionData.selector,
+      value: actionData.value,
+      url: actionData.url,
+      text: actionData.text,
+      tagName: actionData.tagName,
+      id: actionData.id,
+      name: actionData.name,
+      className: actionData.className,
+      timestamp: actionData.timestamp || Date.now(),
+    });
+
+    // Allow CORS from the proxy page
+    reply.header('Access-Control-Allow-Origin', '*');
+    reply.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    reply.header('Access-Control-Allow-Headers', 'Content-Type');
+
+    return { ok: true, count: session.actions.length };
+  });
+
+  // CORS preflight for action endpoint
+  app.options<{
+    Params: { sessionId: string };
+  }>('/api/v1/recording/:sessionId/action', async (request, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*');
+    reply.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    reply.header('Access-Control-Allow-Headers', 'Content-Type');
+    return reply.status(204).send();
+  });
+
+  // Get recording session actions (polled by frontend)
   app.get<{
     Params: { sessionId: string };
   }>('/api/v1/recording/:sessionId/actions', {
@@ -390,209 +523,16 @@ export async function recordingRoutes(app: FastifyInstance) {
       });
     }
 
-    try {
-      // Collect any remaining actions from the page before closing
-      if (session.page) {
-        try {
-          const pageActions = await session.page.evaluate(() => {
-            const actions = (window as any).__recordedActions || [];
-            (window as any).__recordedActions = [];
-            return actions;
-          });
+    session.status = 'stopped';
 
-          for (const action of pageActions) {
-            session.actions.push({
-              action: action.type,
-              selector: action.selector,
-              value: action.value,
-              text: action.text,
-              timestamp: action.timestamp,
-            });
-          }
-        } catch (err) {
-          // Page may have closed
-        }
-      }
+    console.log(`[RECORDER] Stopped recording session ${sessionId}. Actions: ${session.actions.length}`);
 
-      // Close browser
-      if (session.browser) {
-        await session.browser.close();
-      }
-
-      session.status = 'stopped';
-      session.browser = null;
-      session.context = null;
-      session.page = null;
-
-      console.log(`[RECORDER] Stopped recording session ${sessionId}. Actions: ${session.actions.length}`);
-
-      return {
-        session_id: sessionId,
-        status: 'stopped',
-        actions: session.actions,
-        message: `Recording stopped. Captured ${session.actions.length} action(s).`,
-      };
-    } catch (err) {
-      console.error('[RECORDER] Error stopping session:', err);
-      session.status = 'error';
-      return reply.status(500).send({
-        error: 'Internal Server Error',
-        message: 'Failed to stop recording session',
-      });
-    }
-  });
-
-  // Perform a click action in the recording session (for testing/automation)
-  app.post<{
-    Params: { sessionId: string };
-    Body: { selector: string };
-  }>('/api/v1/recording/:sessionId/perform-click', {
-    preHandler: [authenticate],
-  }, async (request, reply) => {
-    const { sessionId } = request.params;
-    const { selector } = request.body;
-    const orgId = getOrganizationId(request);
-
-    const session = recordingSessions.get(sessionId);
-    if (!session) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Recording session not found',
-      });
-    }
-
-    // Verify organization ownership
-    if (session.organization_id !== orgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this recording session',
-      });
-    }
-
-    if (session.status !== 'recording' || !session.page) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Recording session is not active',
-      });
-    }
-
-    try {
-      // Get element info before clicking
-      const elementInfo = await session.page.evaluate((sel: string) => {
-        const el = document.querySelector(sel) as HTMLElement;
-        if (!el) return null;
-        return {
-          tagName: el.tagName.toLowerCase(),
-          id: el.id || undefined,
-          className: el.className || undefined,
-          text: el.innerText?.trim().slice(0, 50) || undefined,
-        };
-      }, selector);
-
-      // Perform the click on the page
-      await session.page.click(selector, { timeout: 5000 });
-
-      // Manually add the click action to the session's actions array
-      session.actions.push({
-        action: 'click',
-        selector: selector,
-        tagName: elementInfo?.tagName,
-        id: elementInfo?.id,
-        className: elementInfo?.className,
-        text: elementInfo?.text,
-        timestamp: Date.now(),
-      });
-
-      console.log(`[RECORDER] Performed click on "${selector}" in session ${sessionId}`);
-
-      return {
-        success: true,
-        message: `Clicked element: ${selector}`,
-      };
-    } catch (err) {
-      console.error('[RECORDER] Failed to perform click:', err);
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Failed to click element: ${(err as Error).message}`,
-      });
-    }
-  });
-
-  // Perform a fill/type action in the recording session (for testing/automation)
-  app.post<{
-    Params: { sessionId: string };
-    Body: { selector: string; text: string };
-  }>('/api/v1/recording/:sessionId/perform-fill', {
-    preHandler: [authenticate],
-  }, async (request, reply) => {
-    const { sessionId } = request.params;
-    const { selector, text } = request.body;
-    const orgId = getOrganizationId(request);
-
-    const session = recordingSessions.get(sessionId);
-    if (!session) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Recording session not found',
-      });
-    }
-
-    // Verify organization ownership
-    if (session.organization_id !== orgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this recording session',
-      });
-    }
-
-    if (session.status !== 'recording' || !session.page) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Recording session is not active',
-      });
-    }
-
-    try {
-      // Get element info before filling
-      const elementInfo = await session.page.evaluate((sel: string) => {
-        const el = document.querySelector(sel) as HTMLInputElement;
-        if (!el) return null;
-        return {
-          tagName: el.tagName.toLowerCase(),
-          id: el.id || undefined,
-          name: el.name || undefined,
-          type: el.type || undefined,
-          placeholder: el.placeholder || undefined,
-        };
-      }, selector);
-
-      // Perform the fill on the page
-      await session.page.fill(selector, text, { timeout: 5000 });
-
-      // Manually add the fill action to the session's actions array
-      session.actions.push({
-        action: 'fill',
-        selector: selector,
-        value: text,
-        tagName: elementInfo?.tagName,
-        id: elementInfo?.id,
-        name: elementInfo?.name,
-        timestamp: Date.now(),
-      });
-
-      console.log(`[RECORDER] Performed fill on "${selector}" with text "${text}" in session ${sessionId}`);
-
-      return {
-        success: true,
-        message: `Filled element: ${selector} with text: ${text}`,
-      };
-    } catch (err) {
-      console.error('[RECORDER] Failed to perform fill:', err);
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Failed to fill element: ${(err as Error).message}`,
-      });
-    }
+    return {
+      session_id: sessionId,
+      status: 'stopped',
+      actions: session.actions,
+      message: `Recording stopped. Captured ${session.actions.length} action(s).`,
+    };
   });
 }
 

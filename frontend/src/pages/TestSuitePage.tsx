@@ -545,6 +545,7 @@ function TestSuitePage() {
   const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null);
   const [recordingElapsed, setRecordingElapsed] = useState(0);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [recordingPopup, setRecordingPopup] = useState<Window | null>(null);
 
   const canCreateTest = user?.role !== 'viewer';
   const canDeleteSuite = user?.role === 'owner' || user?.role === 'admin';
@@ -2186,7 +2187,7 @@ export function teardown(data) {
 
       const data = await response.json();
       setRecordingSessionId(data.session_id);
-      setRecordingStatus('Recording... Perform actions in the browser window');
+      setRecordingStatus('Recording... Interact with the site in the new tab');
 
       // Add initial navigate step
       setRecordedSteps([{ action: 'navigate', url: recordTargetUrl }]);
@@ -2194,7 +2195,13 @@ export function teardown(data) {
       // Start polling for recorded actions
       pollRecordingActions(data.session_id);
 
-      toast.success('Recording started! A browser window has opened.');
+      // Open the proxy URL in a new browser tab so the user can interact with the site
+      if (data.proxy_url) {
+        const popup = window.open(data.proxy_url, '_blank');
+        setRecordingPopup(popup);
+      }
+
+      toast.success('Recording started! Interact with the site in the new tab.');
     } catch (err) {
       setIsRecording(false);
       setRecordingStatus('');
@@ -2270,6 +2277,13 @@ export function teardown(data) {
       setShowRecordModal(false);
       setShowReviewModal(true);
       setRecordedTestName(`Recorded Test ${new Date().toLocaleString()}`);
+
+      // Close the proxy browser tab
+      if (recordingPopup && !recordingPopup.closed) {
+        recordingPopup.close();
+      }
+      setRecordingPopup(null);
+
       toast.success('Recording stopped! Review your recorded steps.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to stop recording');
@@ -2352,6 +2366,11 @@ export function teardown(data) {
         },
       }).catch(() => {});
     }
+    // Close the proxy browser tab
+    if (recordingPopup && !recordingPopup.closed) {
+      recordingPopup.close();
+    }
+    setRecordingPopup(null);
     setIsRecording(false);
     setRecordingSessionId(null);
     setRecordedSteps([]);
@@ -4372,7 +4391,7 @@ export function teardown(data) {
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {isRecording
-                      ? 'Interact with the headless browser to capture test steps'
+                      ? 'Interact with the site in the new browser tab - actions are recorded here'
                       : 'Enter a URL to start recording user interactions'}
                   </p>
                 </div>
@@ -4441,7 +4460,7 @@ export function teardown(data) {
                       {recordedSteps.length === 0 ? (
                         <div className="p-4 text-center">
                           <p className="text-sm text-muted-foreground">Waiting for actions...</p>
-                          <p className="text-xs text-muted-foreground mt-1">Interact with the browser window to record steps</p>
+                          <p className="text-xs text-muted-foreground mt-1">Click, type, and navigate in the new browser tab</p>
                         </div>
                       ) : (
                         recordedSteps.map((step, idx) => (
