@@ -22,14 +22,20 @@ const DEFAULT_AUTO_HEAL_CONFIDENCE_THRESHOLD = parseFloat(process.env.AUTO_HEAL_
 console.log(`[Healing] Default auto-heal confidence threshold: ${DEFAULT_AUTO_HEAL_CONFIDENCE_THRESHOLD}`);
 
 // Feature #1062: Helper to get auto-heal threshold for a project
-export async function getAutoHealThreshold(projectId: string): Promise<number> {
+export async function getAutoHealThreshold(projectId: string | null): Promise<number> {
+  if (!projectId) return DEFAULT_AUTO_HEAL_CONFIDENCE_THRESHOLD;
   const settings = await getProjectHealingSettings(projectId);
   return settings.auto_heal_confidence_threshold ?? DEFAULT_AUTO_HEAL_CONFIDENCE_THRESHOLD;
 }
 
+// Default healing strategies when no project ID is available
+const DEFAULT_HEALING_STRATEGIES = ['selector_fallback', 'visual_match', 'text_match', 'attribute_match'];
+
 // Feature #1063: Helper to check if a healing strategy is enabled for a project
-export async function isHealingStrategyEnabled(projectId: string, strategy: string): Promise<boolean> {
-  const settings = await getProjectHealingSettings(projectId);
+export async function isHealingStrategyEnabled(projectId: string | null, strategy: string): Promise<boolean> {
+  const strategies = projectId
+    ? (await getProjectHealingSettings(projectId)).healing_strategies
+    : DEFAULT_HEALING_STRATEGIES;
   // Map healing selector strategy names to project setting names
   const strategyMapping: Record<string, string[]> = {
     'id': ['selector_fallback'],
@@ -46,11 +52,12 @@ export async function isHealingStrategyEnabled(projectId: string, strategy: stri
 
   const requiredStrategies = strategyMapping[strategy] || [strategy];
   // Strategy is enabled if ANY of the required setting strategies are enabled
-  return requiredStrategies.some(s => settings.healing_strategies.includes(s));
+  return requiredStrategies.some(s => strategies.includes(s));
 }
 
 // Feature #1063: Get enabled healing strategies for logging
-export async function getEnabledStrategies(projectId: string): Promise<string[]> {
+export async function getEnabledStrategies(projectId: string | null): Promise<string[]> {
+  if (!projectId) return DEFAULT_HEALING_STRATEGIES;
   const settings = await getProjectHealingSettings(projectId);
   return settings.healing_strategies;
 }
@@ -409,16 +416,17 @@ const healingStats: HealingStats = {
 };
 
 // Feature #1059: Track healing attempt (called when healing is initiated)
-export function trackHealingAttempt(projectId: string): void {
+export function trackHealingAttempt(projectId: string | null): void {
   healingStats.totalAttempts++;
-  if (!healingStats.byProject[projectId]) {
-    healingStats.byProject[projectId] = { attempts: 0, successes: 0, failures: 0 };
+  const key = projectId || 'unknown';
+  if (!healingStats.byProject[key]) {
+    healingStats.byProject[key] = { attempts: 0, successes: 0, failures: 0 };
   }
-  healingStats.byProject[projectId].attempts++;
+  healingStats.byProject[key].attempts++;
 }
 
 // Feature #1059: Track successful heal
-export function trackHealingSuccess(projectId: string, strategy: string): void {
+export function trackHealingSuccess(projectId: string | null, strategy: string): void {
   healingStats.successfulHeals++;
 
   if (!healingStats.byStrategy[strategy]) {
@@ -427,20 +435,22 @@ export function trackHealingSuccess(projectId: string, strategy: string): void {
   healingStats.byStrategy[strategy].attempts++;
   healingStats.byStrategy[strategy].successes++;
 
-  if (!healingStats.byProject[projectId]) {
-    healingStats.byProject[projectId] = { attempts: 0, successes: 0, failures: 0 };
+  const key = projectId || 'unknown';
+  if (!healingStats.byProject[key]) {
+    healingStats.byProject[key] = { attempts: 0, successes: 0, failures: 0 };
   }
-  healingStats.byProject[projectId].successes++;
+  healingStats.byProject[key].successes++;
 }
 
 // Feature #1059: Track failed heal
-export function trackHealingFailure(projectId: string): void {
+export function trackHealingFailure(projectId: string | null): void {
   healingStats.failedHeals++;
 
-  if (!healingStats.byProject[projectId]) {
-    healingStats.byProject[projectId] = { attempts: 0, successes: 0, failures: 0 };
+  const key = projectId || 'unknown';
+  if (!healingStats.byProject[key]) {
+    healingStats.byProject[key] = { attempts: 0, successes: 0, failures: 0 };
   }
-  healingStats.byProject[projectId].failures++;
+  healingStats.byProject[key].failures++;
 }
 
 // Feature #1059: Get healing statistics

@@ -601,7 +601,7 @@ async function executeTest(
 
                   // Feature #1059: Get project ID for stats tracking
                   const healingSuite = test.suite_id ? await getTestSuite(test.suite_id) : undefined;
-                  const healingProjectId = healingSuite?.project_id || 'unknown';
+                  const healingProjectId = healingSuite?.project_id || null;
 
                   // Feature #1059: Track healing attempt
                   trackHealingAttempt(healingProjectId);
@@ -741,7 +741,7 @@ async function executeTest(
 
                   // Feature #1059: Get project ID for stats tracking
                   const fillHealingSuite = test.suite_id ? await getTestSuite(test.suite_id) : undefined;
-                  const fillHealingProjectId = fillHealingSuite?.project_id || 'unknown';
+                  const fillHealingProjectId = fillHealingSuite?.project_id || null;
 
                   // Feature #1059: Track healing attempt
                   trackHealingAttempt(fillHealingProjectId);
