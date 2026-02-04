@@ -78,6 +78,8 @@ import {
   computeCodeDiff,
   calculateTestConfidence,
   validateTestName,
+  // Feature #50: Recording Hook
+  useRecordingState,
 } from '../components/suite-detail';
 
 // Removed inline type definitions and utility functions - now imported from suite-detail module (Feature #50)
