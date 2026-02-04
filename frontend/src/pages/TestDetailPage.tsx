@@ -65,6 +65,7 @@ import {
   TestExplanation,
   QuickScheduleModal,
   ViewCodeTab,
+  K6ScriptTab,
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
