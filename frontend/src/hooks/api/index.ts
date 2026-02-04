@@ -87,3 +87,15 @@ export {
   type DashboardStats,
   type RecentRun,
 } from './useDashboard';
+
+// Analytics hooks (Feature #72)
+export {
+  useFailingTests,
+  useBrowserStats,
+  useProjectComparison,
+  useFlakyTests,
+  usePassRateTrends,
+  useAccessibilityTrends,
+  useFailureClusters,
+  analyticsKeys,
+} from './useAnalytics';

@@ -1,12 +1,23 @@
 // Feature #1441: AnalyticsPage extracted from App.tsx (~5,650 lines)
 // Lines 8740-14390: Analytics dashboard with failure clusters, trends, and AI analysis
+// Feature #72: Migrated to React Query for caching
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+// Feature #72: Import React Query hooks for caching
+import {
+  useFailingTests,
+  useBrowserStats,
+  useProjectComparison,
+  useFlakyTests,
+  usePassRateTrends,
+  useAccessibilityTrends,
+  useFailureClusters,
+} from '../hooks/api/useAnalytics';
 
 // Interface for failing tests
 interface FailingTest {
@@ -640,157 +651,29 @@ interface LLMRootCauseResponse {
 export function AnalyticsPage() {
   const { token } = useAuthStore();
   const navigate = useNavigate();
-  const [failingTests, setFailingTests] = useState<FailingTest[]>([]);
-  const [browserStats, setBrowserStats] = useState<BrowserStats[]>([]);
-  const [projectStats, setProjectStats] = useState<ProjectComparisonStats[]>([]);
-  const [flakyTests, setFlakyTests] = useState<FlakyTest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isBrowserStatsLoading, setIsBrowserStatsLoading] = useState(true);
-  const [isProjectStatsLoading, setIsProjectStatsLoading] = useState(true);
-  const [isFlakyTestsLoading, setIsFlakyTestsLoading] = useState(true);
 
-  // Pass rate trends state
-  const [trendData, setTrendData] = useState<TrendDataPoint[]>([]);
-  const [trendSummary, setTrendSummary] = useState<TrendSummary | null>(null);
+  // Pass rate trends state - only need to track user selection
   const [trendDays, setTrendDays] = useState<7 | 30>(7);
-  const [isTrendsLoading, setIsTrendsLoading] = useState(true);
-
-  // Accessibility trends state
-  const [a11yTrendData, setA11yTrendData] = useState<AccessibilityTrendDataPoint[]>([]);
-  const [a11yTrendSummary, setA11yTrendSummary] = useState<AccessibilityTrendSummary | null>(null);
+  // Accessibility trends state - only need to track user selection
   const [a11yTrendDays, setA11yTrendDays] = useState<7 | 30>(7);
-  const [isA11yTrendsLoading, setIsA11yTrendsLoading] = useState(true);
 
-  // Feature #1537: Anomaly Detection state removed - enterprise monitoring ML not needed for SMB
+  // Feature #72: React Query hooks for caching - analytics loads instantly on revisit
+  const { data: failingTestsData, isLoading } = useFailingTests();
+  const { data: browserStatsData, isLoading: isBrowserStatsLoading } = useBrowserStats();
+  const { data: projectStatsData, isLoading: isProjectStatsLoading } = useProjectComparison();
+  const { data: flakyTestsData, isLoading: isFlakyTestsLoading } = useFlakyTests();
+  const { data: trendsData, isLoading: isTrendsLoading } = usePassRateTrends(trendDays);
+  const { data: a11yTrendsData, isLoading: isA11yTrendsLoading } = useAccessibilityTrends(a11yTrendDays);
 
-  useEffect(() => {
-    const fetchFailingTests = async () => {
-      try {
-        const response = await fetch('/api/v1/analytics/failing-tests', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setFailingTests(data.failing_tests || []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch failing tests:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const fetchBrowserStats = async () => {
-      try {
-        const response = await fetch('/api/v1/analytics/browser-stats', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setBrowserStats(data.browser_stats || []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch browser stats:', error);
-      } finally {
-        setIsBrowserStatsLoading(false);
-      }
-    };
-
-    const fetchProjectStats = async () => {
-      try {
-        const response = await fetch('/api/v1/analytics/project-comparison', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setProjectStats(data.projects || []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch project stats:', error);
-      } finally {
-        setIsProjectStatsLoading(false);
-      }
-    };
-
-    const fetchFlakyTests = async () => {
-      try {
-        const response = await fetch('/api/v1/analytics/flaky-tests', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setFlakyTests(data.flaky_tests || []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch flaky tests:', error);
-      } finally {
-        setIsFlakyTestsLoading(false);
-      }
-    };
-
-    fetchFailingTests();
-    fetchBrowserStats();
-    fetchProjectStats();
-    fetchFlakyTests();
-  }, [token]);
-
-  // Fetch pass rate trends (separate effect to handle trendDays changes)
-  useEffect(() => {
-    const fetchTrends = async () => {
-      setIsTrendsLoading(true);
-      try {
-        const response = await fetch(`/api/v1/analytics/pass-rate-trends?days=${trendDays}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setTrendData(data.trends || []);
-          setTrendSummary(data.summary || null);
-        }
-      } catch (error) {
-        console.error('Failed to fetch pass rate trends:', error);
-      } finally {
-        setIsTrendsLoading(false);
-      }
-    };
-
-    fetchTrends();
-  }, [token, trendDays]);
-
-  // Fetch accessibility trends (separate effect to handle a11yTrendDays changes)
-  useEffect(() => {
-    const fetchA11yTrends = async () => {
-      setIsA11yTrendsLoading(true);
-      try {
-        const response = await fetch(`/api/v1/analytics/accessibility-trends?days=${a11yTrendDays}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setA11yTrendData(data.trends || []);
-          setA11yTrendSummary(data.summary || null);
-        }
-      } catch (error) {
-        console.error('Failed to fetch accessibility trends:', error);
-      } finally {
-        setIsA11yTrendsLoading(false);
-      }
-    };
-
-    fetchA11yTrends();
-  }, [token, a11yTrendDays]);
+  // Derive data from React Query responses
+  const failingTests = (failingTestsData?.failing_tests || []) as FailingTest[];
+  const browserStats = (browserStatsData?.browser_stats || []) as BrowserStats[];
+  const projectStats = (projectStatsData?.projects || []) as ProjectComparisonStats[];
+  const flakyTests = (flakyTestsData?.flaky_tests || []) as FlakyTest[];
+  const trendData = (trendsData?.trends || []) as TrendDataPoint[];
+  const trendSummary = (trendsData?.summary || null) as TrendSummary | null;
+  const a11yTrendData = (a11yTrendsData?.trends || []) as AccessibilityTrendDataPoint[];
+  const a11yTrendSummary = (a11yTrendsData?.summary || null) as AccessibilityTrendSummary | null;
 
   // Feature #1537: Anomaly fetch and handlers removed - enterprise monitoring ML not needed for SMB
 
@@ -1601,36 +1484,13 @@ export function AnalyticsPage() {
 }
 
 // FailureClustersSection component
-function FailureClustersSection({ token, navigate }: { token: string | null; navigate: (path: string) => void }) {
-  const [clusters, setClusters] = useState<FailureCluster[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+function FailureClustersSection({ navigate }: { token: string | null; navigate: (path: string) => void }) {
   const [expandedCluster, setExpandedCluster] = useState<string | null>(null);
   const [days, setDays] = useState<7 | 14 | 30>(7);
 
-  useEffect(() => {
-    const fetchClusters = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`/api/v1/ai/failure-clusters?days=${days}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setClusters(data.clusters || []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch failure clusters:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (token) {
-      fetchClusters();
-    }
-  }, [token, days]);
+  // Feature #72: Use React Query hook for caching
+  const { data: clustersData, isLoading } = useFailureClusters(days);
+  const clusters = (clustersData?.clusters || []) as FailureCluster[];
 
   // Get cluster icon based on pattern type
   const getClusterIcon = (patternType: string): string => {
