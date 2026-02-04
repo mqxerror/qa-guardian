@@ -1,10 +1,13 @@
 // Feature #1357: Extracted ProjectsPage for code quality compliance (400 line limit)
+// Feature #71: Migrated to React Query for caching
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { getErrorMessage, isNetworkError, isOffline } from '../utils/errorHandling';
+// Feature #71: Import React Query hooks for caching
+import { useProjects, useCreateProject, useInvalidateProjects } from '../hooks/api/useProjects';
 
 interface Project {
   id: string;
@@ -18,21 +21,26 @@ interface Project {
 
 export function ProjectsPage() {
   const { token, user } = useAuthStore();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [newProjectBaseUrl, setNewProjectBaseUrl] = useState('');
   const [createError, setCreateError] = useState('');
   const [createSuccess, setCreateSuccess] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
   const [nameError, setNameError] = useState('');
   const [urlError, setUrlError] = useState('');
   const [selectedProjectFilter, setSelectedProjectFilter] = useState<string>('all');
   const [showArchived, setShowArchived] = useState(false);
   const [archivingProjectId, setArchivingProjectId] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Feature #71: React Query hooks for caching - projects load instantly on revisit
+  const { data: projectsData, isLoading, refetch: refetchProjects } = useProjects(showArchived);
+  const createProjectMutation = useCreateProject();
+  const { invalidateLists } = useInvalidateProjects();
+
+  // Derive projects from React Query data
+  const projects = (projectsData?.projects || []) as Project[];
 
   // URL validation helper
   const isValidUrl = (url: string): boolean => {
@@ -69,34 +77,10 @@ export function ProjectsPage() {
     ? projects
     : projects.filter(p => p.id === selectedProjectFilter);
 
-  // Fetch projects on mount and when archive filter changes
-  useEffect(() => {
-    const fetchProjects = async () => {
-      setIsLoading(true);
-      try {
-        const params = new URLSearchParams();
-        if (showArchived) {
-          params.set('include_archived', 'true');
-        }
-        const response = await fetch(`/api/v1/projects?${params}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setProjects(data.projects);
-        }
-      } catch (err) {
-        console.error('Failed to fetch projects:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchProjects();
-  }, [token, showArchived]);
+  // Feature #71: React Query handles fetching automatically based on showArchived
+  // No manual useEffect needed - query key changes when showArchived changes
 
-  // Handle archive/unarchive
+  // Handle archive/unarchive - Feature #71: Invalidate cache after archive
   const handleArchiveProject = async (projectId: string, archive: boolean) => {
     setArchivingProjectId(projectId);
     try {
@@ -109,8 +93,8 @@ export function ProjectsPage() {
         body: JSON.stringify({ archived: archive }),
       });
       if (response.ok) {
-        const data = await response.json();
-        setProjects(prev => prev.map(p => p.id === projectId ? data.project : p));
+        // Feature #71: Invalidate cache to refetch with updated data
+        invalidateLists();
       }
     } catch (err) {
       console.error('Failed to archive project:', err);
@@ -157,51 +141,38 @@ export function ProjectsPage() {
       return;
     }
 
-    setIsCreating(true);
-
-    try {
-      const response = await fetch('/api/v1/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+    // Feature #71: Use React Query mutation for optimistic updates and cache management
+    createProjectMutation.mutate(
+      {
+        name: newProjectName,
+        description: newProjectDescription,
+        repository_url: newProjectBaseUrl || undefined,
+      },
+      {
+        onSuccess: (data) => {
+          setNewProjectName('');
+          setNewProjectDescription('');
+          setNewProjectBaseUrl('');
+          setShowCreateModal(false);
+          toast.success(`Project "${data.project.name}" created successfully!`);
+          // Navigate after a brief delay
+          setTimeout(() => {
+            navigate(`/projects/${data.project.id}`);
+          }, 1500);
         },
-        body: JSON.stringify({
-          name: newProjectName,
-          description: newProjectDescription,
-          base_url: newProjectBaseUrl || undefined,
-        }),
-      });
+        onError: (err) => {
+          // Use enhanced error handling for better user messages
+          const errorMessage = getErrorMessage(err, 'Failed to create project');
+          const isRetriable = isNetworkError(err) || isOffline();
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to create project');
+          if (isRetriable) {
+            toast.error(`${errorMessage} You can retry when the connection is restored.`);
+          } else {
+            toast.error(errorMessage);
+          }
+        },
       }
-
-      const data = await response.json();
-      setProjects([...projects, data.project]);
-      setNewProjectName('');
-      setNewProjectDescription('');
-      setNewProjectBaseUrl('');
-      setShowCreateModal(false);
-      toast.success(`Project "${data.project.name}" created successfully!`);
-      // Navigate after a brief delay
-      setTimeout(() => {
-        navigate(`/projects/${data.project.id}`);
-      }, 1500);
-    } catch (err) {
-      // Use enhanced error handling for better user messages
-      const errorMessage = getErrorMessage(err, 'Failed to create project');
-      const isRetriable = isNetworkError(err) || isOffline();
-
-      if (isRetriable) {
-        toast.error(`${errorMessage} You can retry when the connection is restored.`);
-      } else {
-        toast.error(errorMessage);
-      }
-    } finally {
-      setIsCreating(false);
-    }
+    );
   };
 
   return (
@@ -440,16 +411,16 @@ export function ProjectsPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isCreating}
+                    disabled={createProjectMutation.isPending}
                     className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
                   >
-                    {isCreating && (
+                    {createProjectMutation.isPending && (
                       <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                     )}
-                    {isCreating ? 'Creating...' : 'Create Project'}
+                    {createProjectMutation.isPending ? 'Creating...' : 'Create Project'}
                   </button>
                 </div>
               </form>
