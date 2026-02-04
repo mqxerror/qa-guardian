@@ -8,6 +8,7 @@ export * from './types';
 
 // Utilities
 export * from './utils';
+export { exportAccessibilityPDF, exportAccessibilityCSV } from './exportUtils';
 
 // Components
 export { default as TestStatusBadge } from './TestStatusBadge';
