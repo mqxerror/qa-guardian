@@ -38,31 +38,37 @@ export function EscalationPolicyModal({
   const [levels, setLevels] = useState<EscalationLevel[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize form when editing
+  // Initialize form when editing or reset when closed
   useEffect(() => {
-    if (editingPolicy) {
-      setName(editingPolicy.name);
-      setDescription(editingPolicy.description || '');
-      setIsDefault(editingPolicy.is_default);
-      setRepeatPolicy(editingPolicy.repeat_policy);
-      setRepeatInterval(editingPolicy.repeat_interval_minutes || 30);
-      setLevels(editingPolicy.levels.map(l => ({
-        escalate_after_minutes: l.escalate_after_minutes,
-        targets: l.targets.map(t => ({
-          type: t.type,
-          user_email: t.user_email,
-          user_name: t.user_name,
-          schedule_id: t.schedule_id,
-          webhook_url: t.webhook_url,
-          phone: t.phone,
-        })),
-      })));
-    } else {
-      resetForm();
+    if (isOpen) {
+      if (editingPolicy) {
+        setName(editingPolicy.name);
+        setDescription(editingPolicy.description || '');
+        setIsDefault(editingPolicy.is_default);
+        setRepeatPolicy(editingPolicy.repeat_policy);
+        setRepeatInterval(editingPolicy.repeat_interval_minutes || 30);
+        setLevels(editingPolicy.levels.map(l => ({
+          escalate_after_minutes: l.escalate_after_minutes,
+          targets: l.targets.map(t => ({
+            type: t.type,
+            user_email: t.user_email,
+            user_name: t.user_name,
+            schedule_id: t.schedule_id,
+            webhook_url: t.webhook_url,
+            phone: t.phone,
+          })),
+        })));
+      } else {
+        // Reset form for new policy
+        setName('');
+        setDescription('');
+        setIsDefault(false);
+        setRepeatPolicy('once');
+        setRepeatInterval(30);
+        setLevels([]);
+      }
     }
   }, [editingPolicy, isOpen]);
-
-  if (!isOpen) return null;
 
   const resetForm = () => {
     setName('');
@@ -72,6 +78,8 @@ export function EscalationPolicyModal({
     setRepeatInterval(30);
     setLevels([]);
   };
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
