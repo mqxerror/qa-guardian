@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { getErrorMessage } from '../utils/errorHandling';
+import { BackgroundBeams, Input } from '../components/aceternity';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -34,6 +37,21 @@ export function RegisterPage() {
       return 'Password must contain at least one number';
     }
     return '';
+  };
+
+  // Get password strength for visual indicator
+  const getPasswordStrength = (pwd: string): { score: number; label: string; color: string } => {
+    let score = 0;
+    if (pwd.length >= 8) score++;
+    if (pwd.length >= 12) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[a-z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+    if (score <= 2) return { score: 1, label: 'Weak', color: 'bg-red-500' };
+    if (score <= 4) return { score: 2, label: 'Medium', color: 'bg-yellow-500' };
+    return { score: 3, label: 'Strong', color: 'bg-green-500' };
   };
 
   // Validate email on blur
@@ -117,115 +135,220 @@ export function RegisterPage() {
     }
   };
 
+  const passwordStrength = getPasswordStrength(password);
+
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 shadow-sm">
-        <div className="mb-6 text-center">
-          <h2 className="text-2xl font-bold text-foreground">Register</h2>
-          <p className="mt-2 text-muted-foreground">
-            Create your QA Guardian account
-          </p>
-        </div>
-        <form onSubmit={handleRegister} className="space-y-4">
-          {error && (
-            <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-          <div>
-            <label htmlFor="register-name" className="mb-1 block text-sm font-medium text-foreground">
-              Name
-            </label>
-            <input
-              id="register-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
-              required
-              autoComplete="name"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-950 p-4">
+      {/* Background Effects */}
+      <BackgroundBeams className="opacity-40" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
+
+      {/* Register Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-10 w-full max-w-md"
+      >
+        <div className="rounded-2xl border border-gray-800 bg-gray-900/80 p-8 shadow-2xl backdrop-blur-sm">
+          {/* Header */}
+          <div className="mb-8 text-center">
+            <motion.h2
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-3xl font-bold text-transparent"
+            >
+              Create Account
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mt-2 text-gray-400"
+            >
+              Join QA Guardian today
+            </motion.p>
           </div>
-          <div>
-            <label htmlFor="register-email" className="mb-1 block text-sm font-medium text-foreground">
-              Email
-            </label>
-            <input
-              id="register-email"
-              type="email"
-              value={email}
-              onChange={(e) => handleEmailChange(e.target.value)}
-              onBlur={handleEmailBlur}
-              placeholder="you@example.com"
-              required
-              aria-describedby={emailError ? 'register-email-error' : undefined}
-              aria-invalid={!!emailError}
-              className={`w-full rounded-md border bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 ${
-                emailError
-                  ? 'border-destructive focus:border-destructive focus:ring-destructive'
-                  : 'border-input focus:border-primary focus:ring-primary'
-              }`}
-            />
-            {emailError && (
-              <p id="register-email-error" role="alert" className="mt-1 text-sm text-destructive">{emailError}</p>
+
+          <form onSubmit={handleRegister} className="space-y-5">
+            {/* Error Alert */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                role="alert"
+                className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
+              >
+                {error}
+              </motion.div>
             )}
-          </div>
-          <div>
-            <label htmlFor="register-password" className="mb-1 block text-sm font-medium text-foreground">
-              Password
-            </label>
-            <input
-              id="register-password"
-              type="password"
-              value={password}
-              onChange={(e) => handlePasswordChange(e.target.value)}
-              onBlur={handlePasswordBlur}
-              placeholder="Minimum 8 characters"
-              required
-              autoComplete="new-password"
-              aria-describedby={passwordError ? 'register-password-error' : undefined}
-              aria-invalid={!!passwordError}
-              className={`w-full rounded-md border bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 ${
-                passwordError
-                  ? 'border-destructive focus:border-destructive focus:ring-destructive'
-                  : 'border-input focus:border-primary focus:ring-primary'
-              }`}
-            />
-            {passwordError && (
-              <p id="register-password-error" role="alert" className="mt-1 text-sm text-destructive">{passwordError}</p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="register-confirm-password" className="mb-1 block text-sm font-medium text-foreground">
-              Confirm Password
-            </label>
-            <input
-              id="register-confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Re-enter your password"
-              required
-              autoComplete="new-password"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+
+            {/* Name Input */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Input
+                id="register-name"
+                type="text"
+                label="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                required
+                autoComplete="name"
+              />
+            </motion.div>
+
+            {/* Email Input */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.35 }}
+            >
+              <Input
+                id="register-email"
+                type="email"
+                label="Email"
+                value={email}
+                onChange={(e) => handleEmailChange(e.target.value)}
+                onBlur={handleEmailBlur}
+                placeholder="you@example.com"
+                required
+                autoComplete="email"
+                error={emailError}
+                aria-describedby={emailError ? 'register-email-error' : undefined}
+                aria-invalid={!!emailError}
+              />
+            </motion.div>
+
+            {/* Password Input */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Input
+                id="register-password"
+                type="password"
+                label="Password"
+                value={password}
+                onChange={(e) => handlePasswordChange(e.target.value)}
+                onBlur={handlePasswordBlur}
+                placeholder="Minimum 8 characters"
+                required
+                autoComplete="new-password"
+                error={passwordError}
+                aria-describedby={passwordError ? 'register-password-error' : undefined}
+                aria-invalid={!!passwordError}
+              />
+              {/* Password Strength Indicator */}
+              {password && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(passwordStrength.score / 3) * 100}%` }}
+                        className={`h-full ${passwordStrength.color}`}
+                      />
+                    </div>
+                    <span className={`text-xs ${passwordStrength.color.replace('bg-', 'text-')}`}>
+                      {passwordStrength.label}
+                    </span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-gray-500">
+                    <div className={`flex items-center gap-1 ${password.length >= 8 ? 'text-green-400' : ''}`}>
+                      <CheckCircle2 className={`h-3 w-3 ${password.length >= 8 ? 'text-green-400' : 'text-gray-600'}`} />
+                      8+ characters
+                    </div>
+                    <div className={`flex items-center gap-1 ${/[A-Z]/.test(password) ? 'text-green-400' : ''}`}>
+                      <CheckCircle2 className={`h-3 w-3 ${/[A-Z]/.test(password) ? 'text-green-400' : 'text-gray-600'}`} />
+                      Uppercase
+                    </div>
+                    <div className={`flex items-center gap-1 ${/[a-z]/.test(password) ? 'text-green-400' : ''}`}>
+                      <CheckCircle2 className={`h-3 w-3 ${/[a-z]/.test(password) ? 'text-green-400' : 'text-gray-600'}`} />
+                      Lowercase
+                    </div>
+                    <div className={`flex items-center gap-1 ${/[0-9]/.test(password) ? 'text-green-400' : ''}`}>
+                      <CheckCircle2 className={`h-3 w-3 ${/[0-9]/.test(password) ? 'text-green-400' : 'text-gray-600'}`} />
+                      Number
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+
+            {/* Confirm Password Input */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.45 }}
+            >
+              <Input
+                id="register-confirm-password"
+                type="password"
+                label="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter your password"
+                required
+                autoComplete="new-password"
+                error={confirmPassword && password !== confirmPassword ? "Passwords don't match" : undefined}
+              />
+            </motion.div>
+
+            {/* Submit Button */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 font-medium text-white transition-all hover:from-blue-500 hover:to-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {isLoading ? (
+                    <>
+                      <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      <span>Creating account...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Create Account</span>
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
+                </span>
+              </button>
+            </motion.div>
+          </form>
+
+          {/* Login Link */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="mt-6 text-center text-sm text-gray-400"
           >
-            {isLoading ? 'Registering...' : 'Register'}
-          </button>
-        </form>
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Link to="/login" className="text-primary hover:underline">
-            Login
-          </Link>
+            Already have an account?{' '}
+            <Link to="/login" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
+              Sign in
+            </Link>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
