@@ -8,11 +8,13 @@ import { analyzeSite, type SiteAnalysis } from '../../services/crawl4ai.js';
 
 /**
  * Analyze a website to understand its structure for test generation
+ * Feature #41: Supports Playwright for JS-rendered content
  */
 export const analyze_site: ToolHandler = async (args) => {
   const url = args.url as string;
   const includeLinks = args.include_links !== false;
   const includeForms = args.include_forms !== false;
+  const usePlaywright = args.use_playwright !== false; // Default to true for better JS support
 
   if (!url) {
     return { error: 'url is required', hint: 'Provide a URL to analyze (e.g., https://example.com)' };
@@ -25,7 +27,7 @@ export const analyze_site: ToolHandler = async (args) => {
   }
 
   try {
-    const analysis = await analyzeSite(normalizedUrl);
+    const analysis = await analyzeSite(normalizedUrl, usePlaywright);
 
     // Build response based on options
     const response: Record<string, unknown> = {
@@ -67,11 +69,14 @@ export const analyze_site: ToolHandler = async (args) => {
 
     response.buttons = analysis.buttons.slice(0, 10).map(b => b.text).filter(Boolean);
 
+    // Feature #41: Indicate crawler used (Playwright by default, Crawl4AI fallback)
+    const crawlerUsed = usePlaywright ? 'Playwright+Crawl4AI' : 'Crawl4AI';
+
     return {
       success: true,
-      crawler: 'Crawl4AI',  // Feature #1746: Explicitly mention Crawl4AI in response
+      crawler: crawlerUsed,
       analysis: response,
-      message: `🔍 Crawl4AI Analysis of ${normalizedUrl}: Found ${analysis.forms.length} forms, ${analysis.links.length} links, ${analysis.buttons.length} buttons.`,
+      message: `🔍 ${crawlerUsed} Analysis of ${normalizedUrl}: Found ${analysis.forms.length} forms, ${analysis.links.length} links, ${analysis.buttons.length} buttons.`,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

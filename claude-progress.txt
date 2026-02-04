@@ -30380,3 +30380,12 @@ Progress: 39/44 (88.6%)
 - 5 features remaining (44 total - 39 passing)
 
 
+
+**#40: Expand navigation detection patterns — PASSED**
+- Added detection for 7 navigation sources: nav elements, role=navigation, header, CSS classes (navbar, nav-menu, main-nav, etc.), ul.menu, aside, footer
+- Enhanced hasHeader/hasSidebar with ARIA role detection
+- Deduplication and 30-item limit for menuItems
+- Unit tests: 10/10 passed
+- API tests: WordPress.org (10 menu items), Bootstrap (10 menu items)
+- Commit: d49dbf3
+
