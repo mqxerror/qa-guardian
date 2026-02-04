@@ -5,6 +5,97 @@
 - **Last Updated**: 2026-02-04
 - **Status**: Feature #48 (TestDetailPage refactoring) - In Progress
 
+=== Session 2026-02-04 (Session 70) - Feature #48 Progress ===
+Progress: 47/50 (94%)
+
+Feature #48: Split TestDetailPage.tsx into modular components
+Status: IN PROGRESS (continued refactoring)
+
+Target: Reduce TestDetailPage.tsx to under 1,500 lines
+
+Completed This Session:
+1. Replaced inline baseline modals with extracted components:
+   - ApproveBaselineModal (~92 lines saved)
+   - RestoreBaselineModal (~60 lines saved)
+   - MergeBaselineModal (~65 lines saved)
+   - RejectChangesModal (~74 lines saved)
+   - Total: ~291 lines removed by using BaselineModals.tsx components
+
+2. Created TestDetailsCard.tsx component (320 lines):
+   - Complete Test Details section extraction
+   - TestTypeBadge sub-component for test type display
+   - Visual regression settings (viewport, threshold, anti-aliasing, ignore regions)
+   - Accessibility test settings (WCAG level, options, thresholds)
+   - Viewport presets dictionary for multi-viewport support
+   - Created/Updated timestamps
+
+3. Updated index.ts exports for TestDetailsCard
+
+Line Count Progress:
+- Session start: 8,597 lines
+- After baseline modal replacements: 8,367 lines (-230 lines)
+- After TestDetailsCard extraction: 8,047 lines (-320 lines)
+- Total reduction this session: 550 lines (6.4%)
+- Target: <1,500 lines
+
+Verification:
+- Frontend build: Successful (zero TypeScript errors)
+- Browser automation: TestDetailPage loads correctly
+  - Test header with all action buttons working
+  - Test Details showing ID, Type (E2E Test badge), Suite, Created, Updated
+  - Test Steps tab with steps list
+  - Flakiness Trend section with chart
+  - Run History with filter/sort controls
+  - Zero console errors
+- Screenshots:
+  - session70-testdetailpage-regression.png
+  - session70-testdetailpage-after-baseline-modal-extraction.png
+  - session70-testdetailpage-after-testdetailscard.png
+
+Components Extracted (Total for Feature #48):
+- test-detail/
+  - types.ts (472 lines)
+  - utils.ts (264 lines)
+  - index.ts (exports)
+  - TestStatusBadge.tsx (46 lines)
+  - VideoPlayer.tsx (133 lines)
+  - FlakinessPanel.tsx (209 lines)
+  - ImageLightbox.tsx (173 lines)
+  - K6CompareModal.tsx (190 lines)
+  - RunHistorySection.tsx (340 lines)
+  - ViewCodeTab.tsx (220 lines)
+  - K6ScriptTab.tsx (350 lines)
+  - CurrentRunPanel.tsx (500+ lines, not yet integrated)
+  - TestDetailsCard.tsx (320 lines) - NEW
+  - modals/
+    - DeleteTestModal.tsx (63 lines)
+    - UnsavedChangesModal.tsx (52 lines)
+    - BaselineModals.tsx (565 lines)
+    - EditTestModal.tsx (96 lines)
+    - AddStepModal.tsx (388 lines)
+    - AIExplainModal.tsx (245 lines)
+    - QuickScheduleModal.tsx (217 lines)
+
+Total Extracted: ~4,843 lines in modular components
+
+Remaining Work for Feature #48:
+1. Current file (8,047 lines) still far from target (1,500 lines)
+2. Major sections remaining to extract:
+   - Test Steps/Code Editor section (~1000+ lines)
+   - Baseline tab content (~500+ lines)
+   - Current Run Status panel (CurrentRunPanel created but not integrated)
+   - Header/Action buttons section
+3. State management should move to custom hooks
+4. This is a large refactoring task requiring multiple sessions
+
+Commit: e54bf2c
+
+Regression Check:
+- Login: Working with admin@example.com / Admin123!
+- Dashboard: Shows real data (1/4/12/16)
+- TestDetailPage: All sections working
+- Console errors: Zero
+
 === Session 2026-02-04 (Session 69) - Feature #48 Progress ===
 Progress: 47/50 (94%)
 
