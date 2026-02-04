@@ -39,16 +39,41 @@ import { listTestRunsBySuite } from '../../services/repositories/test-runs';
 export async function coreRoutes(app: FastifyInstance) {
   // List test suites for a project
   // Feature #2081: Use async database functions for persistence
-  app.get<{ Params: ProjectParams }>('/api/v1/projects/:projectId/suites', {
+  // Feature #55: Add server-side pagination
+  app.get<{ Params: ProjectParams; Querystring: { page?: number; limit?: number } }>('/api/v1/projects/:projectId/suites', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { projectId } = request.params;
+    const { page = 1, limit = 20 } = request.query;
     const orgId = getOrganizationId(request);
 
-    // Use async database function
-    const suites = await dbListTestSuites(projectId, orgId);
+    // Validate and clamp pagination params
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
 
-    return { suites };
+    // Use async database function
+    const allSuites = await dbListTestSuites(projectId, orgId);
+    const total = allSuites.length;
+
+    // Apply pagination
+    const offset = (pageNum - 1) * limitNum;
+    const suites = allSuites.slice(offset, offset + limitNum);
+
+    // Feature #55: Return paginated response
+    const totalPages = Math.ceil(total / limitNum);
+    return {
+      data: suites,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+        hasNext: pageNum < totalPages,
+        hasPrev: pageNum > 1,
+      },
+      // Backwards compatibility
+      suites,
+    };
   });
 
   // Get single test suite
