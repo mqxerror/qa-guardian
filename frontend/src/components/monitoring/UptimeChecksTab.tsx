@@ -65,6 +65,7 @@ export interface UptimeChecksTabProps {
   duplicateCheck: (checkId: string) => Promise<void>;
   openEditModal: (check: UptimeCheck) => void;
   bulkAction: (action: 'run' | 'disable' | 'enable' | 'delete', group: string) => Promise<void>;
+  deleteMaintenanceWindow: (windowId: string) => Promise<void>;
 
   // Helper function for status badge (passed from parent)
   getStatusBadge: (status: UptimeCheck['latest_status']) => React.ReactNode;
@@ -104,6 +105,7 @@ export default function UptimeChecksTab({
   duplicateCheck,
   openEditModal,
   bulkAction,
+  deleteMaintenanceWindow,
   getStatusBadge,
 }: UptimeChecksTabProps) {
   // Filter checks based on selected tag and group
@@ -354,6 +356,7 @@ export default function UptimeChecksTab({
               historyRange={historyRange}
               setHistoryRange={setHistoryRange}
               setShowMaintenanceModal={setShowMaintenanceModal}
+              deleteMaintenanceWindow={deleteMaintenanceWindow}
               getStatusBadge={getStatusBadge}
             />
           ) : (
@@ -387,6 +390,7 @@ interface CheckDetailPanelProps {
   historyRange: HistoryRange;
   setHistoryRange: (range: HistoryRange) => void;
   setShowMaintenanceModal: (show: boolean) => void;
+  deleteMaintenanceWindow: (windowId: string) => Promise<void>;
   getStatusBadge: (status: UptimeCheck['latest_status']) => React.ReactNode;
 }
 
@@ -408,6 +412,7 @@ function CheckDetailPanel({
   historyRange,
   setHistoryRange,
   setShowMaintenanceModal,
+  deleteMaintenanceWindow,
   getStatusBadge,
 }: CheckDetailPanelProps) {
   return (
@@ -504,6 +509,7 @@ function CheckDetailPanel({
           maintenanceData={maintenanceData}
           isLoadingMaintenance={isLoadingMaintenance}
           setShowMaintenanceModal={setShowMaintenanceModal}
+          deleteMaintenanceWindow={deleteMaintenanceWindow}
         />
       )}
     </div>
@@ -907,12 +913,14 @@ interface MaintenanceTabContentProps {
   maintenanceData: MaintenanceData | null;
   isLoadingMaintenance: boolean;
   setShowMaintenanceModal: (show: boolean) => void;
+  deleteMaintenanceWindow: (windowId: string) => Promise<void>;
 }
 
 function MaintenanceTabContent({
   maintenanceData,
   isLoadingMaintenance,
   setShowMaintenanceModal,
+  deleteMaintenanceWindow,
 }: MaintenanceTabContentProps) {
   if (isLoadingMaintenance) {
     return (
@@ -962,13 +970,22 @@ function MaintenanceTabContent({
             <div key={window.id} className="p-3 rounded-lg border border-border bg-muted/30">
               <div className="flex items-center justify-between mb-1">
                 <span className="font-medium text-sm text-foreground">{window.name}</span>
-                <span className={`text-xs px-2 py-0.5 rounded ${
-                  isActive
-                    ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                    : 'bg-muted text-muted-foreground'
-                }`}>
-                  {isActive ? 'Active' : 'Scheduled'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-0.5 rounded ${
+                    isActive
+                      ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {isActive ? 'Active' : 'Scheduled'}
+                  </span>
+                  <button
+                    onClick={() => deleteMaintenanceWindow(window.id)}
+                    className="text-xs text-red-500 hover:text-red-700"
+                    title="Delete"
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
                 {new Date(window.start_time).toLocaleString()} - {new Date(window.end_time).toLocaleString()}
