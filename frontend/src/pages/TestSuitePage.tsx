@@ -19,186 +19,39 @@ import { CreateTestModal } from '../components/create-test';
 // Feature #36: Import device emulation types and component
 import { DeviceConfig, DeviceEmulationPreset, DEVICE_PRESETS } from '../components/test-modals/types';
 import { DeviceSelect } from '../components/create-test/shared/DeviceSelect';
+// Feature #50: Import modular types and utilities from suite-detail
+import {
+  TestSuite,
+  TestType,
+  TestTypeEnum,
+  TestStatus,
+  HealingStatus,
+  IgnoreRegion,
+  TestStep,
+  AICopilotSuggestion,
+  AITestGeneration,
+  EditSelectorModalState,
+  SortField,
+  SortDirection,
+  SortConfig,
+  ViewportPreset,
+  VIEWPORT_PRESETS,
+  DEFAULT_K6_SCRIPT,
+  Project,
+  ReviewSettings,
+  QuickAction,
+  extractUrlFromText,
+  extractTestTypeFromText,
+  extractViewportFromText,
+  formatRelativeTime,
+  TestListItem,
+  TestTypeBadge,
+  TestStatusBadge,
+  AIConfidenceBadge,
+  ReviewStatusBadge,
+} from '../components/suite-detail';
 
-// Feature #1759: Extract URL from user description to avoid using example.com
-// Matches URLs like: mercan.pa, https://mercan.pa, www.example.org, sub.domain.com/path
-function extractUrlFromText(text: string): string | null {
-  if (!text) return null;
-
-  // Match full URLs first (with protocol)
-  const fullUrlMatch = text.match(/https?:\/\/[^\s<>"']+/i);
-  if (fullUrlMatch) {
-    return fullUrlMatch[0].replace(/[.,;:!?)]+$/, ''); // Remove trailing punctuation
-  }
-
-  // Match domain-like patterns (domain.tld, www.domain.tld)
-  const domainMatch = text.match(/(?:^|\s)((?:www\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.(?:com|org|net|io|co|pa|dev|app|ai|me|us|uk|de|fr|es|it|nl|be|ch|at|au|nz|jp|kr|cn|in|br|mx|ar|cl|ru|pl|se|no|dk|fi|pt|gr|cz|hu|ro|bg|hr|sk|si|lt|lv|ee|is|ie|lu|mt|cy)[^\s<>"']*)(?:\s|$)/i);
-  if (domainMatch) {
-    const domain = domainMatch[1].replace(/[.,;:!?)]+$/, '');
-    return `https://${domain}`;
-  }
-
-  return null;
-}
-
-// Feature #1764: Extract test type from natural language description
-// Detects: visual, e2e, performance, load, accessibility
-function extractTestTypeFromText(text: string): 'e2e' | 'visual_regression' | 'lighthouse' | 'load' | 'accessibility' | null {
-  if (!text) return null;
-  const lower = text.toLowerCase();
-
-  // Visual regression patterns
-  if (/visual|screenshot|baseline|pixel|appearance|look|design|ui\s*check/i.test(lower)) {
-    return 'visual_regression';
-  }
-
-  // Performance/Lighthouse patterns
-  if (/performance|lighthouse|speed|lcp|cls|fcp|core\s*web\s*vitals|page\s*speed/i.test(lower)) {
-    return 'lighthouse';
-  }
-
-  // Load test patterns
-  if (/load\s*test|stress|k6|concurrent|virtual\s*users|throughput|scalability/i.test(lower)) {
-    return 'load';
-  }
-
-  // Accessibility patterns
-  if (/accessibility|a11y|wcag|screen\s*reader|aria|accessible/i.test(lower)) {
-    return 'accessibility';
-  }
-
-  // E2E patterns (default for action-based descriptions)
-  if (/click|fill|type|login|submit|navigate|form|button|input|test\s+that|verify|check\s+if/i.test(lower)) {
-    return 'e2e';
-  }
-
-  return null;
-}
-
-// Feature #1764: Extract viewport from natural language description
-// Detects: mobile, tablet, desktop
-function extractViewportFromText(text: string): { width: number; height: number; preset: string } | null {
-  if (!text) return null;
-  const lower = text.toLowerCase();
-
-  // Mobile patterns
-  if (/mobile|phone|iphone|android|small\s*screen/i.test(lower)) {
-    return { width: 375, height: 812, preset: 'Mobile (375×812)' };
-  }
-
-  // Tablet patterns
-  if (/tablet|ipad|medium\s*screen/i.test(lower)) {
-    return { width: 768, height: 1024, preset: 'Tablet (768×1024)' };
-  }
-
-  // Desktop patterns (explicit)
-  if (/desktop|large\s*screen|full\s*screen|1920|1080/i.test(lower)) {
-    return { width: 1920, height: 1080, preset: 'Desktop (1920×1080)' };
-  }
-
-  return null;
-}
-
-// Types
-interface TestSuite {
-  id: string;
-  name: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-  test_count?: number;
-  browser?: string;
-  viewport_width?: number;
-  viewport_height?: number;
-  timeout?: number;
-  retry_count?: number;
-}
-
-interface TestType {
-  id: string;
-  suite_id: string;
-  name: string;
-  description?: string;
-  type: 'e2e' | 'visual_regression' | 'lighthouse' | 'load' | 'accessibility' | 'api';
-  test_type?: string;
-  status: 'pending' | 'running' | 'passed' | 'failed' | 'error' | 'active' | 'draft';
-  created_at: string;
-  updated_at: string;
-  last_run_at?: string;
-  target_url?: string;
-  viewport_width?: number;
-  viewport_height?: number;
-  capture_mode?: 'full_page' | 'viewport' | 'element';
-  element_selector?: string;
-  wait_for_selector?: string;
-  wait_time?: number;
-  hide_selectors?: string[];
-  remove_selectors?: string[];
-  diff_threshold?: number;
-  diff_threshold_mode?: 'percentage' | 'pixel_count';
-  diff_pixel_threshold?: number;
-  anti_aliasing_tolerance?: 'off' | 'low' | 'medium' | 'high';
-  color_threshold?: number;
-  ignore_regions?: Array<{id: string; x: number; y: number; width: number; height: number; name?: string}>;
-  ignore_selectors?: string[];
-  multi_viewport?: boolean;
-  selected_viewports?: string[];
-  steps?: any[];
-  // Lighthouse specific
-  device_preset?: 'mobile' | 'desktop';
-  performance_threshold?: number;
-  lcp_threshold?: number;
-  cls_threshold?: number;
-  bypass_csp?: boolean;
-  ignore_ssl_errors?: boolean;
-  audit_timeout?: number;
-  // Accessibility specific
-  wcag_level?: 'A' | 'AA' | 'AAA';
-  include_best_practices?: boolean;
-  include_experimental?: boolean;
-  include_pa11y?: boolean;
-  a11y_fail_on_critical?: number;
-  a11y_fail_on_serious?: number;
-  a11y_fail_on_moderate?: number;
-  a11y_fail_on_minor?: number;
-  a11y_fail_on_any?: boolean;
-  // Load test specific
-  virtual_users?: number;
-  duration?: number;
-  ramp_up_time?: number;
-  k6_script?: string;
-  // AI generation metadata
-  ai_generated?: boolean;
-  ai_confidence_score?: number;
-  requires_review?: boolean;
-  review_status?: 'pending' | 'approved' | 'rejected' | 'pending_review';
-  reviewed_by?: string;
-  reviewed_at?: string;
-  // Self-healing properties
-  healing_active?: boolean;
-  healing_status?: 'idle' | 'healing' | 'healed' | 'pending' | 'applied' | 'rejected';
-  healing_count?: number;
-  // Feature #1958: Run metadata for test list display
-  run_count?: number;
-  last_result?: 'passed' | 'failed' | 'error' | 'running' | null;
-  avg_duration_ms?: number | null;
-}
-
-// Feature #1959: Format date as relative time (e.g., "2 min ago", "1 hour ago")
-function formatRelativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
-
-  if (diffSec < 60) return 'Just now';
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHour < 24) return `${diffHour}h ago`;
-  if (diffDay < 7) return `${diffDay}d ago`;
-  return date.toLocaleDateString();
-}
+// Removed inline type definitions and utility functions - now imported from suite-detail module (Feature #50)
 
 function TestSuitePage() {
   const { suiteId } = useParams<{ suiteId: string }>();
