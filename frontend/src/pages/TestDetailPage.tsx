@@ -1,13 +1,20 @@
 // TestDetailPage - Extracted from App.tsx
 // Feature #1441: Split App.tsx into logical modules
+// Feature #68: Added React Query caching for faster loading
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 import { useSocketStore } from '../stores/socketStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { toast } from '../stores/toastStore';
+// Feature #68: Import React Query hooks for caching
+import { useTest, useInvalidateTests } from '../hooks/api/useTests';
+import { useRunsByTest, useInvalidateRuns } from '../hooks/api/useRuns';
+import { useSuite } from '../hooks/api/useSuites';
+import { useProject } from '../hooks/api/useProjects';
 // Feature #48: Import modular types and utilities
 import {
   TestSuite,
@@ -75,6 +82,23 @@ function TestDetailPage() {
   const { addNotification } = useNotificationStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+
+  // Feature #68: React Query hooks for caching - data loads instantly on second visit
+  const { data: testData, isLoading: testLoading, error: testError, refetch: refetchTest } = useTest(testId);
+  const { data: runsData, isLoading: runsLoading, refetch: refetchRuns } = useRunsByTest(testId);
+
+  // Derived state from React Query - suite and project fetching
+  const suiteId = testData?.test?.suite_id;
+  const { data: suiteData, isLoading: suiteLoading } = useSuite(suiteId);
+  const projectId = suiteData?.suite?.project_id;
+  const { data: projectData, isLoading: projectLoading } = useProject(projectId);
+
+  // Feature #68: Invalidation helpers for cache updates
+  const { invalidateTest } = useInvalidateTests();
+  const { invalidateAll: invalidateRuns } = useInvalidateRuns();
+
+  // Local state derived from React Query data
   const [test, setTest] = useState<TestType | null>(null);
   const [suite, setSuite] = useState<TestSuite | null>(null);
   const [project, setProject] = useState<{ id: string; name: string } | null>(null);
@@ -743,19 +767,11 @@ function TestDetailPage() {
     handleRejectChangesFromHook(runId || rejectChangesRunId || undefined, rejectionReason);
   };
 
-  // Fetch runs helper (needed by run handlers)
+  // Feature #68: Fetch runs helper uses React Query refetch for caching
   const fetchRuns = async () => {
     try {
-      const response = await fetch(`/api/v1/tests/${testId}/runs`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setRuns(data.runs);
-      }
+      // Use React Query refetch - data is cached and updates local state via useEffect
+      await refetchRuns();
     } catch {
       // Ignore errors for runs fetch
     }
@@ -884,54 +900,42 @@ function TestDetailPage() {
     setNewStepA11yThreshold('0');
   };
 
+  // Feature #68: Sync React Query data to local state (enables React Query caching)
+  // Data loads instantly on second visit due to React Query's built-in caching
   useEffect(() => {
-    const fetchTest = async () => {
-      try {
-        const headers = { 'Authorization': `Bearer ${token}` };
+    if (testData?.test) {
+      setTest(testData.test);
+    }
+    if (testError) {
+      setError('Test not found');
+    }
+  }, [testData, testError]);
 
-        // Fetch test and runs in parallel (both only need testId)
-        const [testResponse, runsResponse] = await Promise.all([
-          fetch(`/api/v1/tests/${testId}`, { headers }),
-          fetch(`/api/v1/tests/${testId}/runs`, { headers }),
-        ]);
+  useEffect(() => {
+    if (runsData?.runs) {
+      setRuns(runsData.runs);
+    }
+  }, [runsData]);
 
-        if (!testResponse.ok) {
-          setError('Test not found');
-          return;
-        }
+  useEffect(() => {
+    if (suiteData?.suite) {
+      setSuite(suiteData.suite);
+    }
+  }, [suiteData]);
 
-        const [testData, runsData] = await Promise.all([
-          testResponse.json(),
-          runsResponse.ok ? runsResponse.json() : { runs: [] },
-        ]);
+  useEffect(() => {
+    if (projectData?.project) {
+      setProject(projectData.project);
+    }
+  }, [projectData]);
 
-        setTest(testData.test);
-        if (runsData.runs) setRuns(runsData.runs);
-
-        // Fetch suite and project in parallel (suite needs suite_id from test)
-        if (testData.test.suite_id) {
-          const suiteResponse = await fetch(`/api/v1/suites/${testData.test.suite_id}`, { headers });
-          if (suiteResponse.ok) {
-            const suiteData = await suiteResponse.json();
-            setSuite(suiteData.suite);
-
-            if (suiteData.suite.project_id) {
-              const projectResponse = await fetch(`/api/v1/projects/${suiteData.suite.project_id}`, { headers });
-              if (projectResponse.ok) {
-                const projectData = await projectResponse.json();
-                setProject(projectData.project);
-              }
-            }
-          }
-        }
-      } catch (err) {
-        setError('Failed to load test');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchTest();
-  }, [testId, token]);
+  // Feature #68: Update loading state based on React Query
+  useEffect(() => {
+    // Only set loading to false when test data is loaded (or errored)
+    if (!testLoading && (testData || testError)) {
+      setIsLoading(false);
+    }
+  }, [testLoading, testData, testError]);
 
   useBaselineDataFetching({
     testId,
@@ -991,19 +995,8 @@ function TestDetailPage() {
         testId: testId,
       });
 
-      // Refresh runs list when a run completes (could be from another tab)
-      fetch(`/api/v1/tests/${testId}/runs`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-        .then(res => res.json())
-        .then(runsData => {
-          if (runsData.runs) {
-            setRuns(runsData.runs);
-          }
-        })
-        .catch(err => console.error('Failed to refresh runs:', err));
+      // Feature #68: Refresh runs list using React Query (caches the result)
+      refetchRuns().catch(err => console.error('Failed to refresh runs:', err));
     };
 
     socket.on('run-complete', handleOrgRunComplete);
@@ -1011,7 +1004,7 @@ function TestDetailPage() {
     return () => {
       socket.off('run-complete', handleOrgRunComplete);
     };
-  }, [socket, testId, token, addNotification]);
+  }, [socket, testId, token, addNotification, refetchRuns]);
 
   if (isLoading) {
     return (
