@@ -47,3 +47,6 @@ export { HumanReviewPanel } from './HumanReviewPanel';
 // Results Display
 export { SuiteRunResults } from './SuiteRunResults';
 export type { LiveScreenshot, ScreenshotHistoryItem } from './SuiteRunResults';
+
+// Test List
+export { TestListSection } from './TestListSection';
