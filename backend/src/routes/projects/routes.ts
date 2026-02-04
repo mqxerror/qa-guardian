@@ -1,5 +1,6 @@
 // Projects Module - Core Project Routes
 // Handles CRUD operations for projects and environment variables
+// Feature #61: Integrated Redis caching
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, JwtPayload, ApiKeyPayload, getOrganizationId } from '../../middleware/auth';
@@ -30,21 +31,33 @@ import {
 } from './stores';
 import { hasProjectAccess } from './utils';
 import { testRuns, BrowserType } from '../test-runs/execution';
+// Feature #61: Redis caching
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
 
 export async function coreRoutes(app: FastifyInstance) {
   // List all projects (requires authentication, only from user's organization)
   // API keys need 'read' scope
   // For developers/viewers, only show projects they have explicit access to
   // Query params: include_archived=true to include archived projects, archived_only=true for only archived
+  // Feature #61: Cached for 5 minutes
   app.get<{ Querystring: { include_archived?: string; archived_only?: string } }>('/api/v1/projects', {
     preHandler: [authenticate, requireScopes(['read'])],
   }, async (request) => {
     const orgId = getOrganizationId(request);
     const user = request.user as JwtPayload | ApiKeyPayload;
     const { include_archived, archived_only } = request.query;
+    const cache = getCache();
 
-    // Use async database function with Map fallback
-    let projectList = await dbListProjects(orgId);
+    // Feature #61: Try to get from cache first (base list without user filtering)
+    const cacheKey = CacheKeys.projects.list(orgId);
+    let projectList = await cache.get<Project[]>(cacheKey);
+
+    if (!projectList) {
+      // Cache miss - fetch from database
+      projectList = await dbListProjects(orgId);
+      // Cache the full list (before user-specific filtering)
+      await cache.set(cacheKey, projectList, CacheTTL.MEDIUM);
+    }
 
     // For JWT users (not API keys), filter by project-level access for non-admin users
     if (!('type' in user)) {
@@ -69,12 +82,26 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Get single project (requires authentication, organization membership, and project access)
+  // Feature #61: Cached for 5 minutes
   app.get<{ Params: ProjectParams }>('/api/v1/projects/:id', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { id } = request.params;
     const user = request.user as JwtPayload;
-    const project = await dbGetProject(id);
+    const cache = getCache();
+
+    // Feature #61: Try to get from cache first
+    const cacheKey = CacheKeys.projects.detail(id);
+    let project = await cache.get<Project>(cacheKey);
+
+    if (!project) {
+      // Cache miss - fetch from database
+      project = await dbGetProject(id);
+      if (project) {
+        // Cache the project
+        await cache.set(cacheKey, project, CacheTTL.MEDIUM);
+      }
+    }
 
     if (!project) {
       return reply.status(404).send({
@@ -167,6 +194,9 @@ export async function coreRoutes(app: FastifyInstance) {
     // Save to database (falls back to in-memory if DB not available)
     const project = await dbCreateProject(projectData);
 
+    // Feature #61: Invalidate projects list cache
+    await getCache().delete(CacheKeys.projects.list(orgId));
+
     // For non-admin/owner users, automatically add them as a project member
     // so they can access the project they just created
     if (!('type' in user)) {
@@ -233,6 +263,11 @@ export async function coreRoutes(app: FastifyInstance) {
     // Update in database (falls back to in-memory if DB not available)
     const updatedProject = await dbUpdateProject(id, updateFields);
 
+    // Feature #61: Invalidate project cache
+    const cache = getCache();
+    await cache.delete(CacheKeys.projects.detail(id));
+    await cache.delete(CacheKeys.projects.list(project.organization_id));
+
     // Log audit entry
     logAuditEntry(request, 'update', 'project', id, updatedProject?.name || project.name, { updates });
 
@@ -286,6 +321,11 @@ export async function coreRoutes(app: FastifyInstance) {
     const projectName = project.name;
     await dbDeleteProject(id);
 
+    // Feature #61: Invalidate project cache
+    const cache = getCache();
+    await cache.delete(CacheKeys.projects.detail(id));
+    await cache.delete(CacheKeys.projects.list(project.organization_id));
+
     // Log audit entry
     logAuditEntry(request, 'delete', 'project', id, projectName);
 
@@ -329,6 +369,11 @@ export async function coreRoutes(app: FastifyInstance) {
       archived,
       archived_at: archived ? new Date() : undefined,
     });
+
+    // Feature #61: Invalidate project cache
+    const cache = getCache();
+    await cache.delete(CacheKeys.projects.detail(id));
+    await cache.delete(CacheKeys.projects.list(project.organization_id));
 
     // Log audit entry
     const action = archived ? 'archive' : 'unarchive';

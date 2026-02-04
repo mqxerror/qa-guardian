@@ -3,6 +3,7 @@
  * Extracted from test-runs.ts to reduce file size
  *
  * Contains: POST routes to trigger test runs for suites and individual tests
+ * Feature #61: Redis caching integration
  *
  * Routes:
  * - POST /api/v1/suites/:suiteId/runs - Trigger test run for a suite
@@ -13,6 +14,8 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, getOrganizationId } from '../../middleware/auth';
 import { getTestSuite, getTest, listTests } from '../test-suites';
 import { testRuns, BrowserType, createTestRun as dbCreateTestRun } from './execution';
+// Feature #61: Redis caching
+import { getCache, CacheKeys } from '../../services/cache';
 
 // Type definitions for route params/body
 interface RunParams {
@@ -105,6 +108,10 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
         console.error('[RunTrigger] Failed to persist test run to database:', err)
       );
 
+      // Feature #61: Invalidate runs cache for this suite
+      const cache = getCache();
+      await cache.delete(CacheKeys.runs.bySuite(suiteId));
+
       // Start test execution asynchronously
       runTestsForRun(id).catch(console.error);
 
@@ -163,6 +170,11 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       dbCreateTestRun(run as any).catch(err =>
         console.error('[RunTrigger] Failed to persist test run to database:', err)
       );
+
+      // Feature #61: Invalidate runs cache for this test and suite
+      const cache = getCache();
+      await cache.delete(CacheKeys.runs.byTest(testId));
+      await cache.delete(CacheKeys.runs.bySuite(test.suite_id));
 
       // Start test execution asynchronously
       runTestsForRun(id).catch(console.error);
@@ -236,6 +248,13 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       dbCreateTestRun(run).catch(err =>
         console.error('[RunTrigger] Failed to persist rerun to database:', err)
       );
+
+      // Feature #61: Invalidate runs cache for the suite and all rerun tests
+      const cache = getCache();
+      await cache.delete(CacheKeys.runs.bySuite(suite_id));
+      for (const tid of validTestIds) {
+        await cache.delete(CacheKeys.runs.byTest(tid));
+      }
 
       // Start test execution asynchronously
       runTestsForRun(id).catch(console.error);

@@ -1,9 +1,12 @@
 // Test Suites Module - Core CRUD Routes
 // Handles test suite and test CRUD operations, plus test steps
+// Feature #61: Redis caching integration
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
 import { logAuditEntry } from '../audit-logs';
+// Feature #61: Redis caching
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
 // Feature #1305: Import webhook function for test.created event
 import { sendTestCreatedWebhook } from '../test-runs/webhook-events';
 import {
@@ -40,19 +43,29 @@ export async function coreRoutes(app: FastifyInstance) {
   // List test suites for a project
   // Feature #2081: Use async database functions for persistence
   // Feature #55: Add server-side pagination
+  // Feature #61: Cached for 5 minutes
   app.get<{ Params: ProjectParams; Querystring: { page?: number; limit?: number } }>('/api/v1/projects/:projectId/suites', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const { page = 1, limit = 20 } = request.query;
     const orgId = getOrganizationId(request);
+    const cache = getCache();
 
     // Validate and clamp pagination params
     const pageNum = Math.max(1, Number(page) || 1);
     const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
 
-    // Use async database function
-    const allSuites = await dbListTestSuites(projectId, orgId);
+    // Feature #61: Try to get from cache first
+    const cacheKey = CacheKeys.suites.list(projectId);
+    let allSuites = await cache.get<TestSuite[]>(cacheKey);
+
+    if (!allSuites) {
+      // Cache miss - fetch from database
+      allSuites = await dbListTestSuites(projectId, orgId);
+      // Cache the full list
+      await cache.set(cacheKey, allSuites, CacheTTL.MEDIUM);
+    }
     const total = allSuites.length;
 
     // Apply pagination
@@ -78,14 +91,27 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // Get single test suite
   // Feature #2081: Use async database functions for persistence
+  // Feature #61: Cached for 5 minutes
   app.get<{ Params: SuiteParams }>('/api/v1/suites/:suiteId', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { suiteId } = request.params;
     const orgId = getOrganizationId(request);
+    const cache = getCache();
 
-    // Use async database function
-    const suite = await dbGetTestSuite(suiteId);
+    // Feature #61: Try to get from cache first
+    const cacheKey = CacheKeys.suites.detail(suiteId);
+    let suite = await cache.get<TestSuite>(cacheKey);
+
+    if (!suite) {
+      // Cache miss - fetch from database
+      suite = await dbGetTestSuite(suiteId);
+      if (suite) {
+        // Cache the suite
+        await cache.set(cacheKey, suite, CacheTTL.MEDIUM);
+      }
+    }
+
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -159,6 +185,9 @@ export async function coreRoutes(app: FastifyInstance) {
     // Feature #2081: Use async database function for persistence
     const savedSuite = await dbCreateTestSuite(suite);
 
+    // Feature #61: Invalidate suites list cache
+    await getCache().delete(CacheKeys.suites.list(projectId));
+
     // Log audit entry
     logAuditEntry(request, 'create', 'test_suite', id, savedSuite.name, { projectId, type, base_url, browser: defaultBrowser, browsers, viewport_width, viewport_height });
 
@@ -212,6 +241,11 @@ export async function coreRoutes(app: FastifyInstance) {
     // Use async database function
     const updatedSuite = await dbUpdateTestSuite(suiteId, suiteUpdates);
 
+    // Feature #61: Invalidate suite cache
+    const cache = getCache();
+    await cache.delete(CacheKeys.suites.detail(suiteId));
+    await cache.delete(CacheKeys.suites.list(existingSuite.project_id));
+
     // Log audit entry
     logAuditEntry(request, 'update', 'test_suite', suiteId, updatedSuite?.name || existingSuite.name, { updates: Object.keys(updates) });
 
@@ -245,9 +279,17 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     const suiteName = suite.name;
+    const projectId = suite.project_id;
 
     // Use async database function - it will cascade delete tests
     await dbDeleteTestSuite(suiteId);
+
+    // Feature #61: Invalidate suite cache
+    const cache = getCache();
+    await cache.delete(CacheKeys.suites.detail(suiteId));
+    await cache.delete(CacheKeys.suites.list(projectId));
+    // Also invalidate tests list for this suite since they're deleted
+    await cache.delete(CacheKeys.tests.list(suiteId));
 
     // Log audit entry
     logAuditEntry(request, 'delete', 'test_suite', suiteId, suiteName);
@@ -259,19 +301,29 @@ export async function coreRoutes(app: FastifyInstance) {
   // Feature #1958: Include run metadata (last_run, last_result, run_count, avg_duration)
   // Feature #2081: Use async database functions for persistence
   // Feature #54: Add server-side pagination
+  // Feature #61: Cached for 5 minutes (tests list)
   app.get<{ Params: SuiteParams; Querystring: { page?: number; limit?: number } }>('/api/v1/suites/:suiteId/tests', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { suiteId } = request.params;
     const { page = 1, limit = 50 } = request.query;
     const orgId = getOrganizationId(request);
+    const cache = getCache();
 
     // Validate and clamp pagination params
     const pageNum = Math.max(1, Number(page) || 1);
     const limitNum = Math.min(100, Math.max(1, Number(limit) || 50));
 
-    // Use async database function
-    const suite = await dbGetTestSuite(suiteId);
+    // Feature #61: Try to get suite from cache first
+    const suiteCacheKey = CacheKeys.suites.detail(suiteId);
+    let suite = await cache.get<TestSuite>(suiteCacheKey);
+    if (!suite) {
+      suite = await dbGetTestSuite(suiteId);
+      if (suite) {
+        await cache.set(suiteCacheKey, suite, CacheTTL.MEDIUM);
+      }
+    }
+
     if (!suite || suite.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -279,8 +331,15 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    // Use async database function - get all tests (for now, DB-level pagination can be added later)
-    const allTests = await dbListTests(suiteId);
+    // Feature #61: Try to get tests from cache first
+    const testsCacheKey = CacheKeys.tests.list(suiteId);
+    let allTests = await cache.get<Test[]>(testsCacheKey);
+    if (!allTests) {
+      // Cache miss - fetch from database
+      allTests = await dbListTests(suiteId);
+      // Cache the full tests list
+      await cache.set(testsCacheKey, allTests, CacheTTL.MEDIUM);
+    }
     const total = allTests.length;
 
     // Apply pagination
@@ -341,14 +400,27 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // Get single test
   // Feature #2081: Use async database functions for persistence
+  // Feature #61: Cached for 5 minutes
   app.get<{ Params: TestParams }>('/api/v1/tests/:testId', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { testId } = request.params;
     const orgId = getOrganizationId(request);
+    const cache = getCache();
 
-    // Use async database function
-    const test = await dbGetTest(testId);
+    // Feature #61: Try to get from cache first
+    const cacheKey = CacheKeys.tests.detail(testId);
+    let test = await cache.get<Test>(cacheKey);
+
+    if (!test) {
+      // Cache miss - fetch from database
+      test = await dbGetTest(testId);
+      if (test) {
+        // Cache the test
+        await cache.set(cacheKey, test, CacheTTL.MEDIUM);
+      }
+    }
+
     if (!test || test.organization_id !== orgId) {
       return reply.status(404).send({
         error: 'Not Found',
@@ -581,6 +653,9 @@ export async function coreRoutes(app: FastifyInstance) {
     // Feature #2081: Use async database function for persistence
     const savedTest = await dbCreateTest(test);
 
+    // Feature #61: Invalidate tests list cache
+    await getCache().delete(CacheKeys.tests.list(suiteId));
+
     // Log audit entry
     logAuditEntry(request, 'create', 'test', id, savedTest.name, { suiteId, stepCount: steps.length });
 
@@ -674,6 +749,11 @@ export async function coreRoutes(app: FastifyInstance) {
     // Use async database function
     const updatedTest = await dbUpdateTest(testId, testUpdates);
 
+    // Feature #61: Invalidate test cache
+    const cache = getCache();
+    await cache.delete(CacheKeys.tests.detail(testId));
+    await cache.delete(CacheKeys.tests.list(existingTest.suite_id));
+
     // Log audit entry
     logAuditEntry(request, 'update', 'test', testId, updatedTest?.name || existingTest.name, { updates: Object.keys(updates) });
 
@@ -716,6 +796,10 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Use async database function
     const updatedTest = await dbUpdateTest(testId, { steps: newSteps });
+
+    // Feature #61: Invalidate test cache
+    const cache = getCache();
+    await cache.delete(CacheKeys.tests.detail(testId));
 
     // Log audit entry
     logAuditEntry(request, 'update', 'test', testId, updatedTest?.name || existingTest.name, { action: 'reorder_steps' });
@@ -789,6 +873,10 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Use async database function
     const updatedTest = await dbUpdateTest(testId, { steps: newSteps });
+
+    // Feature #61: Invalidate test cache
+    const cache = getCache();
+    await cache.delete(CacheKeys.tests.detail(testId));
 
     // Log audit entry
     logAuditEntry(request, 'update', 'test', testId, updatedTest?.name || existingTest.name, { action: 'add_step', stepAction: action, stepIndex: insertIndex });
@@ -868,6 +956,10 @@ export async function coreRoutes(app: FastifyInstance) {
     // Use async database function
     const updatedTest = await dbUpdateTest(testId, { steps: newSteps });
 
+    // Feature #61: Invalidate test cache
+    const cache = getCache();
+    await cache.delete(CacheKeys.tests.detail(testId));
+
     // Log audit entry
     logAuditEntry(request, 'update', 'test', testId, updatedTest?.name || existingTest.name, { action: 'update_step', stepId, stepIndex });
 
@@ -927,6 +1019,10 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Use async database function
     const updatedTest = await dbUpdateTest(testId, { steps: newSteps });
+
+    // Feature #61: Invalidate test cache
+    const cache = getCache();
+    await cache.delete(CacheKeys.tests.detail(testId));
 
     // Log audit entry
     logAuditEntry(request, 'update', 'test', testId, updatedTest?.name || existingTest.name, { action: 'delete_step', stepId, stepIndex });
@@ -997,6 +1093,14 @@ export async function coreRoutes(app: FastifyInstance) {
       }
     }
 
+    // Feature #61: Invalidate test list cache for this suite
+    const cache = getCache();
+    await cache.delete(CacheKeys.tests.list(suiteId));
+    // Also invalidate individual test caches
+    for (const testId of test_ids) {
+      await cache.delete(CacheKeys.tests.detail(testId));
+    }
+
     // Log audit entry
     logAuditEntry(request, 'update', 'suite', suiteId, suite.name, { action: 'reorder_tests', test_count: test_ids.length });
 
@@ -1035,9 +1139,15 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     const testName = existingTest.name;
+    const suiteId = existingTest.suite_id;
 
     // Use async database function
     await dbDeleteTest(testId);
+
+    // Feature #61: Invalidate test cache
+    const cache = getCache();
+    await cache.delete(CacheKeys.tests.detail(testId));
+    await cache.delete(CacheKeys.tests.list(suiteId));
 
     // Log audit entry
     logAuditEntry(request, 'delete', 'test', testId, testName);

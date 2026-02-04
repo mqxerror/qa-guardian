@@ -2,6 +2,7 @@
  * Run Core Routes Module (Feature #1356 - Code Quality)
  * Extracted from test-runs.ts to reduce file size
  * Contains: Run CRUD operations, status, results, listing
+ * Feature #61: Redis caching integration
  */
 
 import { FastifyInstance } from 'fastify';
@@ -9,6 +10,8 @@ import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites';
 import { testRuns, runningBrowsers, TestRun, BrowserType, TestRunResult } from './execution';
 import { getTestRun as dbGetTestRun, listTestRunsBySuite as dbListTestRunsBySuite, listTestRunsByOrg as dbListTestRunsByOrg, listTestRunsPaginated } from '../../services/repositories/test-runs';
+// Feature #61: Redis caching
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
 
 // Helper: get test run from Map first, then fall back to DB
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
@@ -311,11 +314,13 @@ export async function runCoreRoutes(app: FastifyInstance) {
   });
 
   // List test runs for a suite
+  // Feature #61: Cached for 1 minute (runs change frequently)
   app.get<{ Params: RunParams }>('/api/v1/suites/:suiteId/runs', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { suiteId } = request.params;
     const orgId = getOrganizationId(request);
+    const cache = getCache();
 
     // Verify suite exists
     const suite = await getTestSuite(suiteId);
@@ -326,7 +331,14 @@ export async function runCoreRoutes(app: FastifyInstance) {
       });
     }
 
-    const allSuiteRuns = await dbListTestRunsBySuite(suiteId, orgId);
+    // Feature #61: Try to get runs list from cache first
+    const cacheKey = CacheKeys.runs.bySuite(suiteId);
+    let allSuiteRuns = await cache.get<any[]>(cacheKey);
+    if (!allSuiteRuns) {
+      allSuiteRuns = await dbListTestRunsBySuite(suiteId, orgId);
+      // Cache with SHORT TTL since runs change frequently
+      await cache.set(cacheKey, allSuiteRuns, CacheTTL.SHORT);
+    }
     const runs = allSuiteRuns
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .map(r => ({
@@ -353,11 +365,13 @@ export async function runCoreRoutes(app: FastifyInstance) {
   });
 
   // List test runs for a specific test
+  // Feature #61: Cached for 1 minute (runs change frequently)
   app.get<{ Params: TestIdParams }>('/api/v1/tests/:testId/runs', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { testId } = request.params;
     const orgId = getOrganizationId(request);
+    const cache = getCache();
 
     // Verify test exists
     const test = await getTest(testId);
@@ -368,9 +382,16 @@ export async function runCoreRoutes(app: FastifyInstance) {
       });
     }
 
-    // Feature #1984: Include batch runs that contain results for this test
-    // Check both direct test_id match (single test run) AND results array for suite runs
-    const allOrgRuns = await dbListTestRunsByOrg(orgId);
+    // Feature #61: Try to get runs list from cache first
+    const cacheKey = CacheKeys.runs.byTest(testId);
+    let allOrgRuns = await cache.get<any[]>(cacheKey);
+    if (!allOrgRuns) {
+      // Feature #1984: Include batch runs that contain results for this test
+      // Check both direct test_id match (single test run) AND results array for suite runs
+      allOrgRuns = await dbListTestRunsByOrg(orgId);
+      // Cache with SHORT TTL since runs change frequently
+      await cache.set(cacheKey, allOrgRuns, CacheTTL.SHORT);
+    }
     const runs = allOrgRuns
       .filter(r => {
         // Direct single-test run
@@ -412,21 +433,31 @@ export async function runCoreRoutes(app: FastifyInstance) {
   // List all recent test runs across the organization
   // Feature #53: Server-side pagination support
   // Feature: MCP tool list_recent_runs support
+  // Feature #61: Cached for 1 minute (runs change frequently)
   app.get<{ Querystring: { page?: number; limit?: number; offset?: number; status?: string; suite_id?: string; project_id?: string } }>('/api/test-runs', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { page = 1, limit = 50, offset, status, suite_id, project_id } = request.query;
     const orgId = getOrganizationId(request);
+    const cache = getCache();
 
-    // Use new paginated function for efficient server-side pagination
-    const result = await listTestRunsPaginated(orgId, {
-      page: Number(page),
-      limit: Number(limit),
-      offset: offset !== undefined ? Number(offset) : undefined,
-      status: status as any,
-      suite_id,
-      project_id,
-    });
+    // Feature #61: Build cache key from org and filters
+    const cacheKey = `runs:list:${orgId}:p${page}:l${limit}:o${offset || 0}:s${status || 'all'}:suite${suite_id || 'all'}:proj${project_id || 'all'}`;
+    let result = await cache.get<any>(cacheKey);
+
+    if (!result) {
+      // Use new paginated function for efficient server-side pagination
+      result = await listTestRunsPaginated(orgId, {
+        page: Number(page),
+        limit: Number(limit),
+        offset: offset !== undefined ? Number(offset) : undefined,
+        status: status as any,
+        suite_id,
+        project_id,
+      });
+      // Cache with SHORT TTL since runs change frequently
+      await cache.set(cacheKey, result, CacheTTL.SHORT);
+    }
 
     // Map to response format with suite/test names
     const allSuites = await getTestSuitesMap();
