@@ -30702,3 +30702,61 @@ Session 57 Update:
 
 Commits: 640687a, 801160a, 90db73f
 
+
+=== Session 2026-02-04 (Session 58) - Feature #47 Progress ===
+Progress: 46/50 (92%)
+
+Feature #47: Split MonitoringPage.tsx into modular components
+Status: IN PROGRESS (partial completion)
+
+Target: Reduce MonitoringPage.tsx from 10,131 lines to under 1,500 lines
+
+Completed This Session:
+1. Created TransactionsTab.tsx component (200 lines)
+   - Multi-step API transaction monitors
+   - List/detail view with results
+   - Empty state handling
+
+2. Created PerformanceTab.tsx component (273 lines)
+   - Core Web Vitals (LCP, FID, CLS)
+   - Lighthouse scores
+   - Trend analysis
+
+3. Created WebhooksTab.tsx component (212 lines)
+   - Incoming webhook validation monitors
+   - Recent events display
+   - URL copy functionality
+
+4. Removed disabled DNS and TCP tab dead code (~354 lines)
+
+5. Updated index.ts to export all new components
+
+6. Integrated all components into MonitoringPage.tsx
+
+Line Count Progress:
+- Started: 10,131 lines
+- Current: 9,266 lines (-865 lines, 8.5% reduction)
+- Target: <1,500 lines
+
+Verification:
+- Frontend build: Successful (zero TypeScript errors)
+- Browser automation: All tabs working
+  - Uptime Checks (0) - empty state working
+  - Transactions (0) - empty state working
+  - Performance (0) - empty state working
+  - Webhooks (0) - empty state working
+  - Settings - loads correctly
+
+Remaining Work for Feature #47:
+1. Extract Settings tab (~5000+ lines) - LARGEST SECTION
+2. Extract remaining modal components
+3. Move state management to custom hooks
+4. Target: Under 1,500 lines in main file
+
+Note: Getting to <1,500 lines requires extracting the massive Settings tab
+which contains 12+ sub-sections (Retention, Status Pages, On-Call, Escalation,
+Alert Grouping, Alert Routing, Severity Mapping, Rate Limiting, Correlation,
+Runbooks, Incident Management, Alert History).
+
+Commit: def8791
+
