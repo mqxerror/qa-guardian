@@ -86,3 +86,9 @@ export {
   type RunHandlers,
   type LiveProgress as RunLiveProgress,
 } from './useRunHandlers';
+export {
+  useBaselineDataFetching,
+  type UseBaselineDataFetchingProps,
+  type BaselineDataResult,
+  // Note: MergeableBranch already exported from useTestDetailState
+} from './useBaselineDataFetching';
