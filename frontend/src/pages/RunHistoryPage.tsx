@@ -1,45 +1,15 @@
 // RunHistoryPage - Feature #1855: Global Run History page accessible from sidebar
 // Shows all historical test runs across all projects in the organization
+// Feature #57: Migrated to React Query with server-side pagination
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
-import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
-
-interface TestRun {
-  id: string;
-  suite_id: string;
-  suite_name: string;
-  project_id?: string;
-  test_id?: string;
-  test_name?: string;
-  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
-  browser?: string;
-  branch?: string;
-  created_at: string;
-  started_at?: string;
-  completed_at?: string;
-  duration_ms?: number;
-  results_count: number;
-  passed_count: number;
-  failed_count: number;
-  skipped_count?: number;
-}
-
-interface Project {
-  id: string;
-  name: string;
-}
+import { useRunsPaginated, useProjects, type TestRun } from '../hooks/api';
 
 function RunHistoryPage() {
-  const { token } = useAuthStore();
   const { formatDate } = useTimezoneStore();
-
-  const [runs, setRuns] = useState<TestRun[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -47,69 +17,25 @@ function RunHistoryPage() {
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Pagination
+  // Pagination - server-side via React Query
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Fetch projects for the filter dropdown
-  useEffect(() => {
-    const fetchProjects = async () => {
-      if (!token) return;
+  // Fetch projects using React Query
+  const { data: projectsData } = useProjects();
+  const projects = projectsData?.projects || [];
 
-      try {
-        const response = await fetch('/api/v1/projects', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  // Fetch runs using React Query with server-side pagination
+  const { data: runsData, isLoading: loading, error: runsError } = useRunsPaginated({
+    page: currentPage,
+    limit: itemsPerPage,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    project_id: projectFilter !== 'all' ? projectFilter : undefined,
+  });
 
-        if (!response.ok) throw new Error('Failed to fetch projects');
-
-        const data = await response.json();
-        setProjects(data.projects || []);
-      } catch (err) {
-        console.error('Error fetching projects:', err);
-      }
-    };
-
-    fetchProjects();
-  }, [token]);
-
-  // Fetch all runs
-  useEffect(() => {
-    const fetchRuns = async () => {
-      if (!token) return;
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Build query params
-        const params = new URLSearchParams({ limit: '1000' });
-        if (projectFilter !== 'all') {
-          params.append('project_id', projectFilter);
-        }
-        if (statusFilter !== 'all') {
-          params.append('status', statusFilter);
-        }
-
-        const response = await fetch(`/api/test-runs?${params.toString()}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch runs: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setRuns(data.runs || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load run history');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRuns();
-  }, [token, projectFilter, statusFilter]);
+  const runs = runsData?.data || [];
+  const pagination = runsData?.pagination;
+  const error = runsError ? (runsError as Error).message : null;
 
   // Get unique suites from runs
   const uniqueSuites = useMemo(() => {
@@ -165,24 +91,31 @@ function RunHistoryPage() {
     return filtered;
   }, [runs, dateFilter, searchQuery]);
 
-  // Calculate stats
+  // Calculate stats from current page data (local stats)
+  // Note: For full stats, the API could be enhanced to return aggregates
   const stats = useMemo(() => {
-    const total = filteredRuns.length;
+    const total = pagination?.total || filteredRuns.length;
     const passed = filteredRuns.filter(r => r.status === 'passed').length;
     const failed = filteredRuns.filter(r => r.status === 'failed').length;
     const running = filteredRuns.filter(r => r.status === 'running').length;
     const totalDuration = filteredRuns.reduce((sum, r) => sum + (r.duration_ms || 0), 0);
-    const avgDuration = total > 0 ? totalDuration / total : 0;
+    const avgDuration = filteredRuns.length > 0 ? totalDuration / filteredRuns.length : 0;
 
     return { total, passed, failed, running, avgDuration };
-  }, [filteredRuns]);
+  }, [filteredRuns, pagination?.total]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredRuns.length / itemsPerPage);
-  const paginatedRuns = filteredRuns.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Server-side pagination - use API pagination when no client-side filters are active
+  const hasClientSideFilters = dateFilter !== 'all' || searchQuery.trim() !== '';
+
+  // If client-side filters are active, do client-side pagination on filtered results
+  // Otherwise, use server-side pagination directly
+  const totalPages = hasClientSideFilters
+    ? Math.ceil(filteredRuns.length / itemsPerPage)
+    : (pagination?.totalPages || 1);
+
+  const paginatedRuns = hasClientSideFilters
+    ? filteredRuns // Already filtered, show all (pagination happens server-side on full dataset)
+    : filteredRuns; // Server already paginated
 
   // Format duration
   const formatDuration = (ms?: number) => {
@@ -424,7 +357,7 @@ function RunHistoryPage() {
             {/* Pagination */}
             <div className="flex items-center justify-between mt-4 text-sm">
               <div className="text-muted-foreground">
-                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredRuns.length)} of {filteredRuns.length} runs
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, pagination?.total || paginatedRuns.length)} of {pagination?.total || paginatedRuns.length} runs
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -443,14 +376,14 @@ function RunHistoryPage() {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
+                    disabled={currentPage === 1 || (pagination && !pagination.hasPrev)}
                     className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                   >
                     &laquo;&laquo;
                   </button>
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
+                    disabled={currentPage === 1 || (pagination && !pagination.hasPrev)}
                     className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                   >
                     &laquo;
@@ -458,14 +391,14 @@ function RunHistoryPage() {
                   <span className="px-3 py-1">{currentPage} / {totalPages || 1}</span>
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage >= totalPages}
+                    disabled={currentPage >= totalPages || (pagination && !pagination.hasNext)}
                     className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                   >
                     &raquo;
                   </button>
                   <button
                     onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage >= totalPages}
+                    disabled={currentPage >= totalPages || (pagination && !pagination.hasNext)}
                     className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                   >
                     &raquo;&raquo;
