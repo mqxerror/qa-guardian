@@ -631,6 +631,10 @@ async function executeTest(
             if (step.selector) {
               try {
                 await page.click(step.selector, { timeout: stepTimeout });
+                // Feature #38: Wait for network idle after click to ensure AJAX completes (e.g., add-to-cart)
+                try {
+                  await page.waitForLoadState('networkidle', { timeout: 3000 });
+                } catch { /* Ignore timeout - some clicks don't trigger AJAX */ }
               } catch (clickErr: any) {
                 // Feature #1052: Detect element not found and initiate healing
                 if (clickErr.message?.includes('strict mode') || clickErr.message?.includes('not found') ||
@@ -683,6 +687,10 @@ async function executeTest(
                     try {
                       console.log(`[HEALING] Trying alternate selector: ${alt.selector} (confidence: ${alt.confidence})`);
                       await page.click(alt.selector, { timeout: 5000 });
+                      // Feature #38: Wait for network idle after healing click
+                      try {
+                        await page.waitForLoadState('networkidle', { timeout: 3000 });
+                      } catch { /* Ignore timeout */ }
                       console.log(`[HEALING] SUCCESS with ${alt.strategy}: ${alt.selector} - auto-applied (confidence >= ${projectAutoHealThreshold})`);
                       // Feature #1057: Record successful heal for test update
                       recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, alt.selector, alt.strategy, alt.confidence, orgId);
@@ -710,6 +718,10 @@ async function executeTest(
                         const centerX = visualMatch.matchLocation.x + visualMatch.matchLocation.width / 2;
                         const centerY = visualMatch.matchLocation.y + visualMatch.matchLocation.height / 2;
                         await page.mouse.click(centerX, centerY);
+                        // Feature #38: Wait for network idle after visual match click
+                        try {
+                          await page.waitForLoadState('networkidle', { timeout: 3000 });
+                        } catch { /* Ignore timeout */ }
                         console.log(`[HEALING] SUCCESS with visual-match at (${centerX}, ${centerY})`);
                         // Feature #1057: Record successful visual heal for test update
                         recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
@@ -740,6 +752,10 @@ async function executeTest(
                           const centerX = visualMatch.matchLocation.x + visualMatch.matchLocation.width / 2;
                           const centerY = visualMatch.matchLocation.y + visualMatch.matchLocation.height / 2;
                           await page.mouse.click(centerX, centerY);
+                          // Feature #38: Wait for network idle after approved visual match click
+                          try {
+                            await page.waitForLoadState('networkidle', { timeout: 3000 });
+                          } catch { /* Ignore timeout */ }
                           console.log(`[HEALING] APPROVED: visual-match at (${centerX}, ${centerY})`);
                           // Feature #1057: Record approved heal for test update
                           recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
