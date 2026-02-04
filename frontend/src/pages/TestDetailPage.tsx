@@ -820,6 +820,47 @@ function TestDetailPage() {
     setDuplicateError,
   });
 
+  // Feature #48: Use extracted baseline handlers hook
+  const {
+    handleApproveBaseline,
+    handleRestoreBaseline,
+    handleRejectChanges: handleRejectChangesFromHook,
+    handleMergeBaseline,
+  } = useBaselineHandlers({
+    testId,
+    token,
+    selectedBranch,
+    activeTab,
+    setApprovingBaseline,
+    setApproveBaselineError,
+    setShowApproveBaselineModal,
+    setApproveBaselineRunId,
+    setRestoringBaseline,
+    setRestoreBaselineError,
+    setShowRestoreBaselineModal,
+    setRestoreHistoryEntry,
+    setRejectingChanges,
+    setRejectChangesError,
+    setShowRejectChangesModal,
+    setRejectChangesRunId,
+    setRejectionReason,
+    setRejectionStatus,
+    setIsMergingBaseline,
+    setMergeBaselineError,
+    setShowMergeBaselineModal,
+    setSelectedMergeBranch,
+    setBaselineData,
+    setLoadingBaseline,
+    setBaselineHistory,
+    setLoadingBaselineHistory,
+    addNotification,
+  });
+
+  // Wrapper for handleRejectChanges to pass state values
+  const handleRejectChanges = (runId?: string) => {
+    handleRejectChangesFromHook(runId || rejectChangesRunId || undefined, rejectionReason);
+  };
+
   const handleOpenEditModal = () => {
     if (test) {
       setEditName(test.name);
@@ -905,298 +946,8 @@ function TestDetailPage() {
     }
   };
 
-  // Handle approving a new baseline
-  const handleApproveBaseline = async (runId?: string) => {
-    setApprovingBaseline(true);
-    setApproveBaselineError('');
-
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}/baseline/approve`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ runId, branch: selectedBranch }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to approve baseline');
-      }
-
-      const data = await response.json();
-
-      // Close the modal
-      setShowApproveBaselineModal(false);
-      setApproveBaselineRunId(null);
-
-      // Show success notification
-      addNotification({
-        type: 'success',
-        title: 'Baseline Approved',
-        message: 'New baseline approved successfully! Future test runs will compare against this baseline.',
-      });
-
-      // Refresh baseline data
-      setBaselineData(null);
-      if (activeTab === 'baseline') {
-        // Trigger a re-fetch of baseline data
-        setLoadingBaseline(true);
-        try {
-          const baselineResponse = await fetch(`/api/v1/tests/${testId}/baseline`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Accept': 'application/json',
-            },
-          });
-          if (baselineResponse.ok) {
-            const baselineJson = await baselineResponse.json();
-            setBaselineData(baselineJson);
-          }
-        } catch (err) {
-          console.error('Failed to fetch baseline:', err);
-        } finally {
-          setLoadingBaseline(false);
-        }
-
-        // Also refresh baseline history
-        setLoadingBaselineHistory(true);
-        try {
-          const historyResponse = await fetch(`/api/v1/tests/${testId}/baseline/history`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          if (historyResponse.ok) {
-            const historyJson = await historyResponse.json();
-            setBaselineHistory(historyJson.history || []);
-          }
-        } catch (err) {
-          console.error('Failed to fetch baseline history:', err);
-        } finally {
-          setLoadingBaselineHistory(false);
-        }
-      }
-    } catch (error) {
-      setApproveBaselineError(error instanceof Error ? error.message : 'Failed to approve baseline');
-    } finally {
-      setApprovingBaseline(false);
-    }
-  };
-
-  // Handle restoring a baseline from history
-  const handleRestoreBaseline = async (historyId: string) => {
-    setRestoringBaseline(true);
-    setRestoreBaselineError('');
-
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}/baseline/history/${historyId}/restore`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ branch: selectedBranch }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to restore baseline');
-      }
-
-      const data = await response.json();
-
-      // Close the modal
-      setShowRestoreBaselineModal(false);
-      setRestoreHistoryEntry(null);
-
-      // Show success notification
-      addNotification({
-        type: 'success',
-        title: 'Baseline Restored',
-        message: `Baseline restored from version ${data.restoredFromVersion}! Future test runs will compare against this baseline.`,
-      });
-
-      // Refresh baseline data
-      setBaselineData(null);
-      setLoadingBaseline(true);
-      try {
-        const baselineResponse = await fetch(`/api/v1/tests/${testId}/baseline`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-          },
-        });
-        if (baselineResponse.ok) {
-          const baselineJson = await baselineResponse.json();
-          setBaselineData(baselineJson);
-        }
-      } catch (err) {
-        console.error('Failed to fetch baseline:', err);
-      } finally {
-        setLoadingBaseline(false);
-      }
-
-      // Also refresh baseline history
-      setLoadingBaselineHistory(true);
-      try {
-        const historyResponse = await fetch(`/api/v1/tests/${testId}/baseline/history`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (historyResponse.ok) {
-          const historyJson = await historyResponse.json();
-          setBaselineHistory(historyJson.history || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch baseline history:', err);
-      } finally {
-        setLoadingBaselineHistory(false);
-      }
-    } catch (error) {
-      setRestoreBaselineError(error instanceof Error ? error.message : 'Failed to restore baseline');
-    } finally {
-      setRestoringBaseline(false);
-    }
-  };
-
-  // Handle rejecting visual changes
-  const handleRejectChanges = async (runId?: string) => {
-    setRejectingChanges(true);
-    setRejectChangesError('');
-
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}/visual/reject`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          runId: runId || rejectChangesRunId,
-          reason: rejectionReason.trim() || undefined,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to reject changes');
-      }
-
-      const data = await response.json();
-
-      // Close the modal
-      setShowRejectChangesModal(false);
-      setRejectChangesRunId(null);
-      setRejectionReason('');
-
-      // Update rejection status
-      setRejectionStatus({
-        hasRejection: true,
-        rejectedBy: data.rejectedBy,
-        rejectedAt: data.rejectedAt,
-        reason: data.reason,
-      });
-
-      // Show success notification
-      addNotification({
-        type: 'success',
-        title: 'Changes Rejected',
-        message: `Visual changes have been marked as a regression${data.reason ? ': ' + data.reason : ''}`,
-        duration: 5000,
-      });
-    } catch (error) {
-      setRejectChangesError(error instanceof Error ? error.message : 'Failed to reject changes');
-    } finally {
-      setRejectingChanges(false);
-    }
-  };
-
-  // Handle merging a baseline from another branch (e.g., feature branch to main)
-  const handleMergeBaseline = async (sourceBranch: string) => {
-    setIsMergingBaseline(true);
-    setMergeBaselineError('');
-
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}/baseline/merge`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sourceBranch,
-          targetBranch: selectedBranch,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to merge baseline');
-      }
-
-      const data = await response.json();
-
-      // Close the modal
-      setShowMergeBaselineModal(false);
-      setSelectedMergeBranch(null);
-
-      // Show success notification
-      addNotification({
-        type: 'success',
-        title: 'Baseline Merged',
-        message: `Baseline merged from '${sourceBranch}' to '${selectedBranch}'. Future tests will compare against this baseline.`,
-        duration: 5000,
-      });
-
-      // Refresh baseline data
-      setBaselineData(null);
-      setLoadingBaseline(true);
-      try {
-        const baselineResponse = await fetch(`/api/v1/tests/${testId}/baseline?branch=${encodeURIComponent(selectedBranch)}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-          },
-        });
-        if (baselineResponse.ok) {
-          const baselineJson = await baselineResponse.json();
-          setBaselineData(baselineJson);
-        }
-      } catch (err) {
-        console.error('Failed to fetch baseline:', err);
-      } finally {
-        setLoadingBaseline(false);
-      }
-
-      // Also refresh baseline history
-      setLoadingBaselineHistory(true);
-      try {
-        const historyResponse = await fetch(`/api/v1/tests/${testId}/baseline/history?branch=${encodeURIComponent(selectedBranch)}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (historyResponse.ok) {
-          const historyJson = await historyResponse.json();
-          setBaselineHistory(historyJson.history || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch baseline history:', err);
-      } finally {
-        setLoadingBaselineHistory(false);
-      }
-
-      // Refresh mergeable branches
-      setMergeableBranches([]);
-    } catch (error) {
-      setMergeBaselineError(error instanceof Error ? error.message : 'Failed to merge baseline');
-    } finally {
-      setIsMergingBaseline(false);
-    }
-  };
+  // Feature #48: Inline baseline handlers removed - now using useBaselineHandlers hook
+  // Handlers: handleApproveBaseline, handleRestoreBaseline, handleRejectChanges, handleMergeBaseline
 
   // Check rejection status when test result changes
   useEffect(() => {

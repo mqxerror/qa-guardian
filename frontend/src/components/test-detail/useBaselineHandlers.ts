@@ -4,6 +4,10 @@
  */
 
 import { useCallback } from 'react';
+import type { RejectionStatus } from './useTestDetailState';
+
+// Re-export for convenience
+export type { RejectionStatus };
 
 export interface BaselineData {
   hasBaseline: boolean;
@@ -46,6 +50,8 @@ export interface UseBaselineHandlersProps {
   setRejectChangesError: (value: string) => void;
   setShowRejectChangesModal: (value: boolean) => void;
   setRejectChangesRunId: (value: string | null) => void;
+  setRejectionReason?: (value: string) => void;
+  setRejectionStatus?: (value: RejectionStatus | null) => void;
   setIsMergingBaseline: (value: boolean) => void;
   setMergeBaselineError: (value: string) => void;
   setShowMergeBaselineModal: (value: boolean) => void;
@@ -54,7 +60,7 @@ export interface UseBaselineHandlersProps {
   setLoadingBaseline: (value: boolean) => void;
   setBaselineHistory: (value: BaselineHistoryEntry[]) => void;
   setLoadingBaselineHistory: (value: boolean) => void;
-  addNotification: (notification: { type: string; title: string; message: string }) => void;
+  addNotification: (notification: { type: string; title: string; message: string; duration?: number }) => void;
 }
 
 export function useBaselineHandlers({
@@ -74,6 +80,8 @@ export function useBaselineHandlers({
   setRejectChangesError,
   setShowRejectChangesModal,
   setRejectChangesRunId,
+  setRejectionReason,
+  setRejectionStatus,
   setIsMergingBaseline,
   setMergeBaselineError,
   setShowMergeBaselineModal,
@@ -234,13 +242,13 @@ export function useBaselineHandlers({
     setRejectChangesError('');
 
     try {
-      const response = await fetch(`/api/v1/tests/${testId}/baseline/reject`, {
+      const response = await fetch(`/api/v1/tests/${testId}/visual/reject`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ runId, reason, branch: selectedBranch }),
+        body: JSON.stringify({ runId, reason: reason?.trim() || undefined }),
       });
 
       if (!response.ok) {
@@ -248,28 +256,37 @@ export function useBaselineHandlers({
         throw new Error(data.message || 'Failed to reject changes');
       }
 
-      // Close the modal
+      const data = await response.json();
+
+      // Close the modal and reset state
       setShowRejectChangesModal(false);
       setRejectChangesRunId(null);
+      if (setRejectionReason) setRejectionReason('');
+
+      // Update rejection status if setter provided
+      if (setRejectionStatus) {
+        setRejectionStatus({
+          hasRejection: true,
+          rejectedBy: data.rejectedBy,
+          rejectedAt: data.rejectedAt,
+          reason: data.reason,
+        });
+      }
 
       // Show success notification
       addNotification({
         type: 'success',
         title: 'Changes Rejected',
-        message: 'Visual changes rejected successfully. The test run has been marked as intentionally failed.',
+        message: `Visual changes have been marked as a regression${data.reason ? ': ' + data.reason : ''}`,
+        duration: 5000,
       });
-
-      // Refresh baseline data if on baseline tab
-      if (activeTab === 'baseline') {
-        await refreshBaselineData();
-      }
     } catch (error) {
       setRejectChangesError(error instanceof Error ? error.message : 'Failed to reject changes');
     } finally {
       setRejectingChanges(false);
     }
-  }, [testId, token, selectedBranch, activeTab, setRejectingChanges, setRejectChangesError,
-      setShowRejectChangesModal, setRejectChangesRunId, addNotification, refreshBaselineData]);
+  }, [testId, token, setRejectingChanges, setRejectChangesError,
+      setShowRejectChangesModal, setRejectChangesRunId, setRejectionReason, setRejectionStatus, addNotification]);
 
   // Merge baseline handler
   const handleMergeBaseline = useCallback(async (sourceBranch: string) => {
