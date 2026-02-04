@@ -32195,3 +32195,91 @@ No Code Changes This Session:
 - All attempted changes were reverted to maintain working state
 - Feature #48 remains in progress at 6,859 lines
 
+
+=== Session 2026-02-04 (Session 77) - Feature #48 Progress ===
+Progress: 47/50 (94%)
+
+Feature #48: Split TestDetailPage.tsx into modular components
+Status: IN PROGRESS (continued refactoring)
+
+Target: Reduce TestDetailPage.tsx to under 1,500 lines
+
+Completed This Session:
+1. Created codeGenUtils.ts (516 lines) with:
+   - generatePlaywrightCode: Generate Playwright test code from steps
+   - generateK6Script: Generate K6 load test scripts from test config
+   - getK6Templates: K6 script templates (load, stress, spike, soak, api tests)
+   - highlightJavaScriptLine: Syntax highlighting for JS/K6 code
+   - detectFoldableRegions: Detect foldable code regions
+   - isLineHidden, getFoldIcon: Code folding utilities
+   - selectorPatterns, getValuePatterns: Autocomplete patterns
+   - findSelectorAutocomplete, findValueAutocomplete: Autocomplete helpers
+
+2. Updated TestDetailPage.tsx to use imported utilities:
+   - Replaced inline generatePlaywrightCode (~55 lines)
+   - Replaced inline generateK6Script (~60 lines)
+   - Replaced inline k6Templates object (~150 lines)
+   - Replaced inline highlightJavaScript function (~55 lines)
+   - Replaced inline detectFoldableRegions and fold functions (~75 lines)
+   - Replaced inline autocomplete patterns and effects (~65 lines)
+
+3. Added wrapper functions for stateful operations:
+   - generatePlaywrightCodeForTest: Uses test?.name from state
+   - generateK6ScriptForTest: Uses test from state
+   - getFoldIconForLine, isLineHiddenForLine: Use foldedRegions state
+
+Line Count Progress:
+- Session 76 ended at: 3,008 lines
+- This session: 2,628 lines
+- Reduction: 380 lines (12.6%)
+- Target: <1,500 lines
+
+Verification:
+- Frontend build: Successful (zero TypeScript errors)
+- Browser automation: TestDetailPage loads correctly
+  - Test header, details, steps all display properly
+  - Flakiness trend section with chart working
+  - Run History section with filters and pagination
+  - Zero console errors
+- Screenshot: session77-testdetailpage-after-refactor.png
+
+Components Extracted (Total):
+- test-detail/
+  - types.ts (472 lines)
+  - utils.ts (264 lines)
+  - codeGenUtils.ts (516 lines) - NEW
+  - index.ts (exports)
+  - TestStatusBadge.tsx (46 lines)
+  - VideoPlayer.tsx (133 lines)
+  - FlakinessPanel.tsx (209 lines)
+  - ImageLightbox.tsx (173 lines)
+  - K6CompareModal.tsx (190 lines)
+  - RunHistorySection.tsx (377 lines)
+  - CurrentRunPanel.tsx (611 lines)
+  - ViewCodeTab.tsx (223 lines)
+  - K6ScriptTab.tsx (387 lines)
+  - TestDetailsCard.tsx (402 lines)
+  - TestStepsTab.tsx (314 lines)
+  - BaselineTab.tsx (608 lines)
+  - LiveExecutionPanel.tsx (312 lines)
+  - TestHeader.tsx (205 lines)
+  - TestResultCard.tsx (1,162 lines) - INTEGRATED
+  - exportUtils.ts (337 lines)
+  - useTestDetailState.ts (547 lines)
+  - useTestDetailActions.ts (269 lines)
+  - modals/ (multiple modal components)
+
+Total Extracted: ~8,757 lines in modular components
+
+Remaining Work for Feature #48:
+1. Extract more handler functions to custom hooks
+2. Move remaining API calls to service layer
+3. Consider extracting Current Run Status section (~95 lines)
+4. Target: Under 1,500 lines in main file
+
+Note: Current file (2,628 lines) is still far from target (1,500 lines).
+The refactoring has achieved significant progress but more extraction needed.
+Getting to target requires moving more handler functions and API calls.
+
+Commit: 5e1afdc
+
