@@ -32283,3 +32283,112 @@ Getting to target requires moving more handler functions and API calls.
 
 Commit: 5e1afdc
 
+
+
+=== Session 2026-02-04 (Session 78) - Feature #48 Progress ===
+Progress: 47/50 (94%)
+
+Feature #48: Split TestDetailPage.tsx into modular components
+Status: IN PROGRESS (continued refactoring)
+
+Target: Reduce TestDetailPage.tsx to under 1,500 lines
+Current: 2,632 lines
+
+Completed This Session:
+1. Created useBaselineHandlers.ts hook (290 lines):
+   - handleApproveBaseline: Approve a new baseline from a test run
+   - handleRestoreBaseline: Restore a baseline from history
+   - handleRejectChanges: Reject visual changes as regression
+   - handleMergeBaseline: Merge baseline from another branch
+   - refreshBaselineData: Helper to refresh baseline data
+   - refreshBaselineHistory: Helper to refresh baseline history
+   - Exported UseBaselineHandlersProps interface and BaselineHandlers type
+
+2. Updated index.ts to export useBaselineHandlers hook
+
+3. Added import for useBaselineHandlers to TestDetailPage.tsx
+
+4. Analyzed existing extracted hooks:
+   - useTestDetailState: Already exists with 5 sub-hooks (useCoreTestState, 
+     useModalState, useVisualTestingState, useUIState, useStepManagementState)
+   - useTestDetailActions: Already exists with handleDelete, handleEdit, 
+     handleDuplicate, handleRunTest, handleCancelRun handlers
+   - These hooks are NOT yet integrated into TestDetailPage.tsx
+
+Verification:
+- Frontend build: Successful (zero TypeScript errors)
+- Browser automation: TestDetailPage loads correctly
+  - Test header, details, steps all display properly
+  - Flakiness trend section with chart working
+  - Run History section with filters and pagination
+  - Zero console errors
+- Screenshots: session78-testdetailpage-regression.png, session78-testdetailpage-working.png
+
+Components Extracted (Total):
+- test-detail/
+  - types.ts (472 lines)
+  - utils.ts (264 lines)
+  - codeGenUtils.ts (516 lines)
+  - exportUtils.ts (337 lines)
+  - index.ts (exports)
+  - TestStatusBadge.tsx (46 lines)
+  - VideoPlayer.tsx (133 lines)
+  - FlakinessPanel.tsx (209 lines)
+  - ImageLightbox.tsx (173 lines)
+  - K6CompareModal.tsx (190 lines)
+  - RunHistorySection.tsx (377 lines)
+  - CurrentRunPanel.tsx (611 lines)
+  - ViewCodeTab.tsx (223 lines)
+  - K6ScriptTab.tsx (387 lines)
+  - TestDetailsCard.tsx (402 lines)
+  - TestStepsTab.tsx (314 lines)
+  - BaselineTab.tsx (608 lines)
+  - LiveExecutionPanel.tsx (312 lines)
+  - TestHeader.tsx (205 lines)
+  - TestResultCard.tsx (1,162 lines)
+  - useTestDetailState.ts (547 lines) - NOT INTEGRATED
+  - useTestDetailActions.ts (269 lines) - NOT INTEGRATED
+  - useBaselineHandlers.ts (290 lines) - NEW, NOT INTEGRATED
+  - modals/ (multiple modal components)
+
+Total Extracted: ~8,047 lines in modular components + ~1,106 lines in hooks
+
+Analysis for Remaining Work:
+The TestDetailPage.tsx has:
+- ~120 useState declarations (lines 100-330)
+- ~40 handler functions (lines 360-1500)
+- ~18 useEffect hooks (various locations)
+- ~542 lines of JSX (lines 2090-2632)
+
+To reach <1,500 lines target:
+1. PRIORITY: Integrate useTestDetailState hook
+   - Replace ~120 useState declarations with single hook call
+   - Potential reduction: ~230 lines
+   
+2. Integrate useTestDetailActions and useBaselineHandlers hooks
+   - Replace inline handlers with hook-provided handlers
+   - Potential reduction: ~300 lines
+
+3. Move remaining large useEffect blocks to custom hooks
+   - Socket.IO connection effects
+   - Baseline fetching effects
+   - Potential reduction: ~200 lines
+
+4. Further JSX extraction (if needed)
+   - Current Run Status section (~95 lines)
+
+Challenges Identified:
+- The hooks exist but have subtle differences from inline implementations
+- State management patterns vary between hooks and page
+- Some handlers have additional side effects not captured in hooks
+- Large refactoring risks introducing bugs
+
+Recommendation for Next Session:
+Focus on integrating useTestDetailState hook carefully by:
+1. Mapping each useState to corresponding hook property
+2. Updating all references in the file
+3. Testing each section after integration
+4. Building and browser-testing frequently
+
+Commit: 3705a66
+
