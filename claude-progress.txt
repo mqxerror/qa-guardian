@@ -31087,3 +31087,73 @@ Next Session Priorities:
 2. Replace inline Settings tab JSX with SettingsTab component (~2000 lines)
 3. Consider integrating useMonitoringSettings hook
 
+
+
+=== Session 2026-02-04 (Session 62) - Feature #47 Progress ===
+Progress: 46/50 (92%)
+
+Feature #47: Split MonitoringPage.tsx into modular components
+Status: IN PROGRESS (continued refactoring)
+
+Target: Reduce MonitoringPage.tsx to under 1,500 lines
+
+Completed This Session:
+1. Created ManagedIncidentModals.tsx with 4 extracted modals (~600 lines):
+   - CreateManagedIncidentModal - Form for creating new incidents
+   - ManagedIncidentDetailModal - Full incident detail view with status updates
+   - AssignResponderModal - Assign responders to incidents
+   - ResolveIncidentModal - Resolution form with postmortem support
+   
+2. Added helper functions to exports:
+   - getIncidentStatusColor()
+   - getIncidentPriorityColor()
+
+3. Created wrapper callbacks in MonitoringPage.tsx:
+   - handleCreateManagedIncidentFromModal
+   - handleAddNoteFromModal
+   - handleAssignResponderFromModal
+   - handleResolveFromModal
+
+4. Removed ~13 unused state variables:
+   - managedIncidentTitle, Description, Priority, Severity, Tags, AffectedServices
+   - managedIncidentNoteContent, NoteVisibility
+   - managedResponderName, Email, Role
+   - managedResolutionSummary, PostmortemUrl, PostmortemCompleted
+
+5. Removed old handler functions:
+   - handleCreateManagedIncident (replaced by handleCreateManagedIncidentFromModal)
+   - resetManagedIncidentForm (no longer needed - modal manages own state)
+   - handleAddManagedIncidentNote (replaced by handleAddNoteFromModal)
+   - handleAssignManagedResponder (replaced by handleAssignResponderFromModal)
+   - handleResolveManagedIncident (replaced by handleResolveFromModal)
+
+Line Count Progress:
+- Previous session: 4,760 lines
+- Current: 4,255 lines (-505 lines, 10.6% reduction)
+- Target: <1,500 lines
+
+Verification:
+- Frontend build: Successful (zero TypeScript errors)
+- Browser automation: All Monitoring tabs working
+  - Uptime Checks, Transactions, Performance, Webhooks, Settings
+- Login: Working with admin@example.com / Admin123\!
+- Dashboard: Shows real data (1/4/12/16)
+
+Architecture of monitoring/modals/settings:
+- AlertRoutingModal.tsx (existing)
+- EscalationPolicyModal.tsx (existing)
+- ManagedIncidentModals.tsx (NEW - 4 modals combined)
+- index.ts (exports all)
+
+Remaining Work for Feature #47:
+1. Extract OnCallScheduleModal (~175 lines)
+2. Extract StatusPageModal (~200+ lines)
+3. Extract AlertGroupingModal (~116 lines)
+4. Extract remaining inline modals (Incident, IncidentUpdate, Test Alert Routing)
+5. Target: Under 1,500 lines in main file
+
+Commits: 1c2a629
+
+Note: Still 2,755 lines to remove to reach target. This is a large refactoring
+task requiring multiple sessions.
+
