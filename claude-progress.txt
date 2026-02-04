@@ -31686,3 +31686,12 @@ Screenshot: session71-testdetailpage-after-stepstab-extraction.png
 Commit: 2dee88e
 
 Next: Extract Baseline Tab, Results sections, create custom hooks
+
+
+Session 71 Final Update:
+- Extracted TestStepsTab: -193 lines  
+- Integrated K6ScriptTab: -313 lines
+- Total this session: -506 lines
+- Current: 7,541 lines (target <1,500)
+
+Commits: 2dee88e, b0493dd, 84b98df
