@@ -37,3 +37,6 @@ export type { EditSelectorModalState, StepTemplate as TemplateType } from './mod
 
 // Panels
 export { ParallelizationPanel } from './ParallelizationPanel';
+
+// Header Components
+export { SuiteHeaderActions } from './SuiteHeaderActions';

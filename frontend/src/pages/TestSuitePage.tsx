@@ -63,6 +63,8 @@ import {
   TemplateType,
   // Feature #50: Panels
   ParallelizationPanel,
+  // Feature #50: Header Components
+  SuiteHeaderActions,
   // Feature #50: Utilities
   computeCodeDiff,
   calculateTestConfidence,
@@ -2737,75 +2739,22 @@ export function teardown(data) {
               </span>
             </div>
           </div>
-          <div className="flex gap-2">
-            {tests.length > 0 && (
-              <button
-                onClick={handleRunWithParallelization}
-                disabled={isRunningSuite || isAnalyzingParallel}
-                className="rounded-md bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-sm font-medium text-white hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isAnalyzingParallel ? '🤖 Analyzing...' : '🤖 AI Parallel Run'}
-              </button>
-            )}
-            {tests.length > 0 && (
-              <button
-                onClick={handleRunSuite}
-                disabled={isRunningSuite}
-                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isRunningSuite ? 'Running...' : 'Run Suite'}
-              </button>
-            )}
-            {tests.length > 0 && (
-              <button
-                onClick={handleExportTests}
-                className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-              >
-                Export Tests
-              </button>
-            )}
-            {/* Feature #1851: View run history at suite level */}
-            <Link
-              to={`/suites/${suiteId}/runs`}
-              className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted inline-flex items-center gap-1"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              View History
-            </Link>
-            {canCreateTest && (
-              <>
-                <button
-                  onClick={() => setShowImportModal(true)}
-                  className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                >
-                  Import Tests
-                </button>
-                <button
-                  onClick={() => setShowRecordModal(true)}
-                  className="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
-                >
-                  🎬 Record New Test
-                </button>
-                {/* Feature #1800: New two-section Create Test modal */}
-                <button
-                  onClick={() => setShowNewCreateTestModal(true)}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  Create Test
-                </button>
-              </>
-            )}
-            {canDeleteSuite && (
-              <button
-                onClick={() => setShowDeleteSuiteModal(true)}
-                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
-              >
-                Delete Suite
-              </button>
-            )}
-          </div>
+          {/* Feature #50: Extracted to SuiteHeaderActions component */}
+          <SuiteHeaderActions
+            suiteId={suiteId!}
+            testsCount={tests.length}
+            isRunningSuite={isRunningSuite}
+            isAnalyzingParallel={isAnalyzingParallel}
+            canCreateTest={canCreateTest}
+            canDeleteSuite={canDeleteSuite}
+            onRunWithParallelization={handleRunWithParallelization}
+            onRunSuite={handleRunSuite}
+            onExportTests={handleExportTests}
+            onShowImportModal={() => setShowImportModal(true)}
+            onShowRecordModal={() => setShowRecordModal(true)}
+            onShowCreateTestModal={() => setShowNewCreateTestModal(true)}
+            onShowDeleteSuiteModal={() => setShowDeleteSuiteModal(true)}
+          />
         </div>
 
         {/* Feature #1151: Human Review Settings Panel */}
