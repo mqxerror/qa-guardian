@@ -91,6 +91,7 @@ import {
   useTestDetailState,
   useTestDetailActions,
   useBaselineHandlers,
+  useStepHandlers,
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
@@ -367,205 +368,43 @@ function TestDetailPage() {
     }
   }, [test?.test_type, activeTab, test?.k6_script, generateK6ScriptForTest]);
 
-  // Handle step drag start
-  const handleStepDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedStepIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', String(index));
-    // Add visual feedback
-    if (e.currentTarget instanceof HTMLElement) {
-      e.currentTarget.style.opacity = '0.5';
-    }
-  };
+  // Feature #48: Use extracted step handlers hook
+  const {
+    handleStepDragStart,
+    handleStepDragEnd,
+    handleStepDragOver,
+    handleStepDrop,
+    handleSaveStepOrder,
+    handleSaveCode,
+    handleRevertToSteps,
+    handleStartEditCode,
+    handleCancelEditCode,
+    handleExplainTest,
+  } = useStepHandlers({
+    testId,
+    token,
+    test,
+    setTest,
+    draggedStepIndex,
+    setDraggedStepIndex,
+    setDragOverIndex,
+    setHasReorderedSteps,
+    hasReorderedSteps,
+    setIsSavingStepOrder,
+    editedCode,
+    setEditedCode,
+    setIsSavingCode,
+    setCodeError,
+    setIsEditingCode,
+    setIsExplainingTest,
+    setShowExplainModal,
+    setTestExplanation,
+  });
 
-  // Handle step drag end
-  const handleStepDragEnd = (e: React.DragEvent) => {
-    setDraggedStepIndex(null);
-    setDragOverIndex(null);
-    if (e.currentTarget instanceof HTMLElement) {
-      e.currentTarget.style.opacity = '1';
-    }
-  };
-
-  // Handle step drag over
-  const handleStepDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverIndex(index);
-  };
-
-  // Handle step drop
-  const handleStepDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-    const fromIndex = draggedStepIndex;
-    if (fromIndex === null || fromIndex === dropIndex || !test) return;
-
-    // Reorder steps
-    const newSteps = [...test.steps];
-    const [movedStep] = newSteps.splice(fromIndex, 1);
-    newSteps.splice(dropIndex, 0, movedStep);
-
-    // Update test with new step order
-    setTest({ ...test, steps: newSteps });
-    setHasReorderedSteps(true);
-    setDraggedStepIndex(null);
-    setDragOverIndex(null);
-  };
-
-  // Save reordered steps to server
-  const handleSaveStepOrder = async () => {
-    if (!test || !hasReorderedSteps) return;
-
-    setIsSavingStepOrder(true);
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}/steps/reorder`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ steps: test.steps }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to save step order');
-      }
-
-      setHasReorderedSteps(false);
-      toast.success('Step order saved successfully!');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save step order');
-    } finally {
-      setIsSavingStepOrder(false);
-    }
-  };
-
-  // Save custom Playwright code for advanced users
-  const handleSaveCode = async () => {
-    if (!test || !editedCode.trim()) return;
-
-    setIsSavingCode(true);
-    setCodeError('');
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          playwright_code: editedCode,
-          use_custom_code: true,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to save code');
-      }
-
-      const data = await response.json();
-      setTest(data.test);
-      setIsEditingCode(false);
-      toast.success('Custom Playwright code saved successfully!');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to save code';
-      setCodeError(message);
-      toast.error(message);
-    } finally {
-      setIsSavingCode(false);
-    }
-  };
-
-  // Revert to generated code (use steps instead of custom code)
-  const handleRevertToSteps = async () => {
-    if (!test) return;
-
-    setIsSavingCode(true);
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          use_custom_code: false,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to revert to steps');
-      }
-
-      const data = await response.json();
-      setTest(data.test);
-      setIsEditingCode(false);
-      toast.success('Reverted to generated code from steps');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to revert to steps');
-    } finally {
-      setIsSavingCode(false);
-    }
-  };
-
-  // Start editing custom code
-  const handleStartEditCode = () => {
-    // Initialize with existing custom code or generate from steps
-    const initialCode = test?.playwright_code || generatePlaywrightCodeForTest(test?.steps);
-    setEditedCode(initialCode);
-    setCodeError('');
-    setIsEditingCode(true);
-  };
-
-  // Cancel editing custom code
-  const handleCancelEditCode = () => {
-    setIsEditingCode(false);
-    setEditedCode('');
-    setCodeError('');
-  };
-
-  // AI Explain Test Code
-  const handleExplainTest = async () => {
-    if (!test) return;
-
-    setIsExplainingTest(true);
-    setShowExplainModal(true);
-    setTestExplanation(null);
-
-    try {
-      const code = test.use_custom_code && test.playwright_code
-        ? test.playwright_code
-        : generatePlaywrightCodeForTest(test.steps);
-
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://qa.pixelcraftedmedia.com'}/api/v1/ai/explain-test`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          code,
-          testName: test.name,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to explain test');
-      }
-
-      const data = await response.json();
-      setTestExplanation(data.explanation);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to explain test');
-      setShowExplainModal(false);
-    } finally {
-      setIsExplainingTest(false);
-    }
-  };
+  // Inline step handlers removed - now using useStepHandlers hook (Feature #48)
+  // Handlers: handleStepDragStart, handleStepDragEnd, handleStepDragOver, handleStepDrop,
+  //           handleSaveStepOrder, handleSaveCode, handleRevertToSteps, handleStartEditCode,
+  //           handleCancelEditCode, handleExplainTest
 
   // Download all artifacts for a test run (with authentication)
   const handleDownloadAllArtifacts = async (runId: string) => {

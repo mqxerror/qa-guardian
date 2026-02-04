@@ -69,3 +69,8 @@ export {
   type UseBaselineHandlersProps,
   type BaselineHandlers,
 } from './useBaselineHandlers';
+export {
+  useStepHandlers,
+  type UseStepHandlersProps,
+  type StepHandlers,
+} from './useStepHandlers';
