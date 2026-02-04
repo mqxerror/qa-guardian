@@ -32815,3 +32815,59 @@ Screenshots captured:
 Status: APPLICATION IS PRODUCTION-READY
 All 53 features passing (100% complete)
 
+
+=== Session 2026-02-04 (Session 92) - Bug Fix & Regression Testing ===
+Progress: 52/52 (100%) - ALL FEATURES COMPLETE!
+
+BUG FIX: Login Failure Due to Organization Member Seeding
+
+Issue: Test users could not log in with error "Your account is not associated with any organization"
+
+Root Cause Analysis:
+1. The initTestUsers() function was called at module load time (when auth.ts was imported)
+2. At that point, the database connection was NOT established yet
+3. isDatabaseConnected() returned false during seeding
+4. Organization members were added only to memory, not the database
+5. When login happened later, isDatabaseConnected() returned true
+6. The database query returned empty results (no members in DB)
+
+Fix Applied:
+1. Moved initTestUsers() call from module load to start() function in index.ts
+2. Now seeding happens AFTER initializeDatabase() completes
+3. Added individual member checking instead of array.length === 0 check
+4. This handles partial seeding where some but not all members exist
+5. Exported initTestUsers from auth.ts to be called from index.ts
+
+Files Modified:
+- backend/src/index.ts: Import and call initTestUsers after DB init
+- backend/src/routes/auth.ts: Export initTestUsers, remove auto-call
+- backend/src/services/repositories/organizations.ts: Check each user individually
+
+Regression Testing Performed:
+1. Landing Page: Aceternity UI working (Spotlight, animated text)
+2. Login Page: Login successful with owner@example.com
+3. Dashboard: Real data (1/4/12/17 projects/suites/tests/runs, 29% pass rate)
+4. Projects Page: E2E Verification Test project displayed
+5. Project Detail: 4 test suites visible
+6. Test Suite Page: 5 tests with icons (E2E, Visual, A11y, Perf, Load)
+7. MCP Hub: AI Chat tab shows AI: Kie.ai with claude-3 model
+8. Security Dashboard: 198 findings (11 Critical, 160 High, 27 Medium, 0 Low)
+
+Technical Verification:
+- Zero console errors
+- Login successful via both UI and API
+- Backend logs show correct organization member seeding
+- Database connected and seeding happening in correct order
+
+Commits:
+- 6ef4709: fix: Ensure organization_members seeded after database connection
+
+Screenshots captured:
+- session92-dashboard-verified.png
+- session92-suite-detail-verified.png
+- session92-mcp-chat-verified.png
+- session92-security-dashboard-verified.png
+
+Status: APPLICATION IS PRODUCTION-READY
+All 52 features passing (100% complete)
+
