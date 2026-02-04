@@ -104,7 +104,7 @@ interface AccessibilityResults {
 interface TestResult {
   test_id: string;
   test_name?: string;
-  status: 'passed' | 'failed' | 'running' | 'pending' | 'error' | 'warning';
+  status: 'passed' | 'failed' | 'running' | 'pending' | 'error' | 'warning' | 'skipped';
   duration_ms?: number;
   error?: string;
   steps?: StepResult[];
