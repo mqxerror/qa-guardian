@@ -372,3 +372,414 @@ export type HttpMethod = 'GET' | 'POST' | 'HEAD' | 'PUT' | 'DELETE' | 'PATCH';
 export type CheckStatus = 'up' | 'down' | 'degraded' | 'unknown';
 export type PerformanceStatus = 'good' | 'needs_improvement' | 'poor';
 export type TransactionStatus = 'passed' | 'failed';
+
+// ============================================================
+// Settings Tab Types (Feature #47 - Modular Refactoring)
+// ============================================================
+
+// Retention settings interface
+export interface MonitoringSettings {
+  organization_id: string;
+  retention_days: 30 | 90 | 365;
+  auto_cleanup_enabled: boolean;
+  last_cleanup_at?: string;
+  updated_at: string;
+}
+
+export interface RetentionStats {
+  retention_days: number;
+  auto_cleanup_enabled: boolean;
+  last_cleanup_at: string | null;
+  stats: {
+    uptime: { total: number; last30: number; last90: number; last365: number; older: number };
+    transaction: { total: number; last30: number; last90: number; last365: number; older: number };
+    performance: { total: number; last30: number; last90: number; last365: number; older: number };
+    webhook: { total: number; last30: number; last90: number; last365: number; older: number };
+    dns: { total: number; last30: number; last90: number; last365: number; older: number };
+    tcp: { total: number; last30: number; last90: number; last365: number; older: number };
+  };
+}
+
+// Status page interfaces
+export interface StatusPageCheck {
+  check_id: string;
+  check_type: 'uptime' | 'transaction' | 'performance' | 'dns' | 'tcp';
+  display_name?: string;
+  order: number;
+}
+
+export interface StatusPage {
+  id: string;
+  organization_id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  logo_url?: string;
+  primary_color?: string;
+  show_history_days: number;
+  checks: StatusPageCheck[];
+  is_public: boolean;
+  show_uptime_percentage: boolean;
+  show_response_time: boolean;
+  show_incidents: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AvailableCheck {
+  id: string;
+  type: string;
+  name: string;
+  enabled: boolean;
+}
+
+// Status page incident interfaces
+export interface StatusPageIncidentUpdate {
+  id: string;
+  status: 'investigating' | 'identified' | 'monitoring' | 'resolved';
+  message: string;
+  created_at: string;
+}
+
+export interface StatusPageIncident {
+  id: string;
+  status_page_id: string;
+  title: string;
+  status: 'investigating' | 'identified' | 'monitoring' | 'resolved';
+  impact: 'none' | 'minor' | 'major' | 'critical';
+  affected_components?: string[];
+  updates: StatusPageIncidentUpdate[];
+  created_at: string;
+  updated_at: string;
+  resolved_at?: string;
+}
+
+// On-call schedule interfaces
+export interface OnCallMember {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  phone?: string;
+  order: number;
+}
+
+export interface OnCallSchedule {
+  id: string;
+  organization_id: string;
+  name: string;
+  description?: string;
+  timezone: string;
+  rotation_type: 'daily' | 'weekly' | 'custom';
+  rotation_interval_days: number;
+  members: OnCallMember[];
+  current_on_call_index: number;
+  last_rotation_at?: string;
+  is_active: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Escalation policy interfaces
+export interface EscalationTarget {
+  id: string;
+  type: 'user' | 'on_call_schedule' | 'email' | 'webhook';
+  user_name?: string;
+  user_email?: string;
+  phone?: string;
+  schedule_id?: string;
+  webhook_url?: string;
+}
+
+export interface EscalationLevel {
+  id: string;
+  level: number;
+  escalate_after_minutes: number;
+  targets: EscalationTarget[];
+}
+
+export interface EscalationPolicy {
+  id: string;
+  organization_id: string;
+  name: string;
+  description?: string;
+  levels: EscalationLevel[];
+  repeat_policy: 'once' | 'repeat_until_acknowledged';
+  repeat_interval_minutes?: number;
+  is_default: boolean;
+  is_active: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Alert grouping interfaces
+export interface AlertGroupingRule {
+  id: string;
+  organization_id: string;
+  name: string;
+  description?: string;
+  group_by: ('check_name' | 'check_type' | 'location' | 'error_type' | 'tag')[];
+  time_window_minutes: number;
+  deduplication_enabled: boolean;
+  deduplication_key?: string;
+  max_alerts_per_group: number;
+  notification_delay_seconds: number;
+  is_active: boolean;
+  priority: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GroupedAlert {
+  id: string;
+  check_id: string;
+  check_name: string;
+  check_type: 'uptime' | 'transaction' | 'performance' | 'webhook' | 'dns' | 'tcp';
+  location?: string;
+  error_message?: string;
+  tags?: string[];
+  triggered_at: string;
+  deduplicated: boolean;
+}
+
+export interface AlertGroup {
+  id: string;
+  organization_id: string;
+  rule_id: string;
+  group_key: string;
+  alerts: GroupedAlert[];
+  status: 'active' | 'acknowledged' | 'resolved';
+  first_alert_at: string;
+  last_alert_at: string;
+  notification_sent: boolean;
+  notification_sent_at?: string;
+  acknowledged_by?: string;
+  acknowledged_at?: string;
+  resolved_at?: string;
+  snoozed_until?: string;
+  snoozed_by?: string;
+  snoozed_at?: string;
+  snooze_duration_hours?: number;
+}
+
+// Alert history interfaces
+export interface AlertHistoryStats {
+  total_alerts: number;
+  by_severity: { critical: number; high: number; medium: number; low: number };
+  by_source: { api: number; database: number; cache: number; system: number };
+  by_status: { active: number; acknowledged: number; resolved: number };
+  avg_resolution_time_seconds: number | null;
+}
+
+export interface AlertHistoryItem {
+  id: string;
+  check_name: string;
+  check_type: string;
+  error_message?: string;
+  severity: string;
+  source: string;
+  group_status: string;
+  triggered_at: string;
+  acknowledged_at?: string;
+  resolved_at?: string;
+}
+
+export interface AlertsOverTimeData {
+  time: string;
+  count: number;
+}
+
+// Alert routing interfaces
+export interface AlertRoutingCondition {
+  field: 'severity' | 'check_type' | 'check_name' | 'location' | 'tag' | 'error_contains';
+  operator: 'equals' | 'not_equals' | 'contains' | 'in' | 'not_in';
+  value: string | string[];
+}
+
+export interface AlertRoutingDestination {
+  type: 'pagerduty' | 'slack' | 'email' | 'webhook' | 'opsgenie' | 'on_call' | 'n8n' | 'telegram' | 'teams' | 'discord';
+  name: string;
+  config: {
+    integration_key?: string;
+    webhook_url?: string;
+    channel?: string;
+    addresses?: string[];
+    url?: string;
+    headers?: Record<string, string>;
+    api_key?: string;
+    schedule_id?: string;
+    n8n_webhook_url?: string;
+    workflow_id?: string;
+    telegram_bot_token?: string;
+    telegram_chat_id?: string;
+    severity_mapping?: {
+      critical?: 'critical' | 'error' | 'warning' | 'info';
+      high?: 'critical' | 'error' | 'warning' | 'info';
+      medium?: 'critical' | 'error' | 'warning' | 'info';
+      low?: 'critical' | 'error' | 'warning' | 'info';
+    };
+    message_template?: string;
+    payload_template?: string;
+    teams_webhook_url?: string;
+    teams_title?: string;
+    teams_theme_color?: string;
+    discord_webhook_url?: string;
+    discord_username?: string;
+    discord_avatar_url?: string;
+    discord_embed_color?: string;
+  };
+}
+
+export interface AlertRoutingRule {
+  id: string;
+  organization_id: string;
+  name: string;
+  description?: string;
+  conditions: AlertRoutingCondition[];
+  condition_match: 'all' | 'any';
+  destinations: AlertRoutingDestination[];
+  enabled: boolean;
+  priority: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AlertRoutingLog {
+  id: string;
+  rule_name: string;
+  check_name: string;
+  check_type: string;
+  severity: string;
+  destinations_notified: string[];
+  notification_status: 'sent' | 'failed' | 'simulated';
+  routed_at: string;
+}
+
+// Global severity mapping
+export interface GlobalSeverityMapping {
+  critical: string;
+  high: string;
+  medium: string;
+  low: string;
+  info: string;
+}
+
+// Alert rate limiting
+export interface AlertRateLimitConfig {
+  enabled: boolean;
+  max_alerts_per_minute: number;
+  time_window_seconds: number;
+  suppression_mode: 'drop' | 'aggregate';
+  aggregate_threshold: number;
+}
+
+export interface RateLimitStats {
+  total_alerts: number;
+  sent_alerts: number;
+  suppressed_alerts: number;
+  last_reset: string;
+}
+
+// Alert correlation
+export interface AlertCorrelationConfig {
+  enabled: boolean;
+  correlate_by_check: boolean;
+  correlate_by_location: boolean;
+  correlate_by_error_type: boolean;
+  correlate_by_time_window: boolean;
+  time_window_seconds: number;
+  similarity_threshold: number;
+}
+
+export interface CorrelatedAlert {
+  id: string;
+  check_id: string;
+  check_name: string;
+  check_type: string;
+  location?: string;
+  error_message?: string;
+  severity: string;
+  triggered_at: string;
+}
+
+export interface AlertCorrelation {
+  id: string;
+  correlation_reason: string;
+  correlation_details: string;
+  alerts: CorrelatedAlert[];
+  primary_alert_id: string;
+  status: 'active' | 'acknowledged' | 'resolved';
+  created_at: string;
+  updated_at: string;
+  acknowledged_by?: string;
+  acknowledged_at?: string;
+}
+
+// Alert runbook interfaces
+export interface AlertRunbookStep {
+  id: string;
+  order: number;
+  title: string;
+  description: string;
+  action_type: 'manual' | 'automated' | 'decision';
+  automation_config?: {
+    type: 'webhook' | 'api_call' | 'script';
+    url?: string;
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    script?: string;
+  };
+  decision_options?: { label: string; next_step_id?: string }[];
+}
+
+export interface AlertRunbook {
+  id: string;
+  name: string;
+  description?: string;
+  check_type: 'uptime' | 'transaction' | 'performance' | 'webhook' | 'dns' | 'tcp' | 'all';
+  severity?: 'critical' | 'high' | 'medium' | 'low';
+  steps: AlertRunbookStep[];
+  is_active: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Managed incident interfaces
+export interface ManagedIncidentNote {
+  id: string;
+  author: string;
+  content: string;
+  created_at: string;
+}
+
+export interface ManagedIncident {
+  id: string;
+  title: string;
+  description?: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  status: 'triggered' | 'acknowledged' | 'in_progress' | 'resolved' | 'closed';
+  source: 'manual' | 'alert' | 'api';
+  source_alert_id?: string;
+  source_check_id?: string;
+  source_check_name?: string;
+  assigned_to?: string;
+  assigned_to_name?: string;
+  assigned_at?: string;
+  escalation_policy_id?: string;
+  runbook_id?: string;
+  notes: ManagedIncidentNote[];
+  started_at: string;
+  acknowledged_at?: string;
+  resolved_at?: string;
+  closed_at?: string;
+  resolution_summary?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
