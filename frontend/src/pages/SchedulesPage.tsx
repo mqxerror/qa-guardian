@@ -1,5 +1,6 @@
 // SchedulesPage - Extracted from App.tsx for code quality compliance
 // Feature #1357: Frontend file size limit enforcement
+// Feature #74: Migrated to React Query with caching
 // Note: This file is 828 lines, exceeding the 400 line limit. Future work should split it further.
 
 import { useState, useEffect } from 'react';
@@ -7,30 +8,14 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
-
-// Type definitions for schedules
-interface Schedule {
-  id: string;
-  suite_id: string;
-  name: string;
-  description?: string;
-  cron_expression?: string;
-  run_at?: string;
-  timezone: string;
-  enabled: boolean;
-  browsers: string[];
-  notify_on_failure: boolean;
-  created_at: string;
-  next_run_at?: string;
-  run_count?: number;
-  last_run_id?: string;
-}
-
-interface TestSuiteOption {
-  id: string;
-  name: string;
-  project_id: string;
-}
+import {
+  useSchedules,
+  useTestSuitesForSchedule,
+  useCreateSchedule,
+  useToggleSchedule,
+  type Schedule,
+  type CreateScheduleInput,
+} from '../hooks/api/useSchedules';
 
 // Feature #1256: AI Schedule Recommendation interfaces
 interface AIScheduleRecommendation {
@@ -55,14 +40,17 @@ interface AIScheduleRecommendation {
 }
 
 export function SchedulesPage() {
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const { formatDateTime } = useTimezoneStore();
   const navigate = useNavigate();
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [testSuites, setTestSuites] = useState<TestSuiteOption[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // React Query hooks for data fetching
+  const { data: schedules = [], isLoading } = useSchedules();
+  const { data: testSuites = [] } = useTestSuitesForSchedule();
+  const createScheduleMutation = useCreateSchedule();
+  const toggleScheduleMutation = useToggleSchedule();
+
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState('');
 
   // Feature #1256: AI Schedule Recommendations state
@@ -105,30 +93,10 @@ export function SchedulesPage() {
   const [notifyOnFailure, setNotifyOnFailure] = useState(true);
 
   const canCreateSchedule = user?.role !== 'viewer';
-  const [togglingScheduleId, setTogglingScheduleId] = useState<string | null>(null);
 
-  // Toggle schedule enabled/disabled
-  const handleToggleSchedule = async (scheduleId: string, currentEnabled: boolean) => {
-    setTogglingScheduleId(scheduleId);
-    try {
-      const response = await fetch(`/api/v1/schedules/${scheduleId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ enabled: !currentEnabled }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSchedules(schedules.map(s => s.id === scheduleId ? data.schedule : s));
-      }
-    } catch (error) {
-      console.error('Failed to toggle schedule:', error);
-    } finally {
-      setTogglingScheduleId(null);
-    }
+  // Toggle schedule enabled/disabled using React Query mutation
+  const handleToggleSchedule = (scheduleId: string, currentEnabled: boolean) => {
+    toggleScheduleMutation.mutate({ id: scheduleId, enabled: !currentEnabled });
   };
 
   // Feature #1256: Load AI Schedule Recommendations
@@ -245,104 +213,45 @@ export function SchedulesPage() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [showCreateModal]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch schedules
-        const schedulesRes = await fetch('/api/v1/schedules', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (schedulesRes.ok) {
-          const data = await schedulesRes.json();
-          setSchedules(data.schedules);
-        }
-
-        // Fetch all projects and their suites for the dropdown
-        const projectsRes = await fetch('/api/v1/projects', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (projectsRes.ok) {
-          const projectsData = await projectsRes.json();
-          const allSuites: TestSuiteOption[] = [];
-
-          for (const project of projectsData.projects) {
-            const suitesRes = await fetch(`/api/v1/projects/${project.id}/suites`, {
-              headers: { 'Authorization': `Bearer ${token}` },
-            });
-            if (suitesRes.ok) {
-              const suitesData = await suitesRes.json();
-              allSuites.push(...suitesData.suites.map((s: { id: string; name: string }) => ({
-                id: s.id,
-                name: `${project.name} / ${s.name}`,
-                project_id: project.id,
-              })));
-            }
-          }
-          setTestSuites(allSuites);
-        }
-      } catch (err) {
-        console.error('Failed to fetch data:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, [token]);
+  // Data fetching is now handled by React Query hooks (useSchedules, useTestSuitesForSchedule)
 
   const handleCreateSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateError('');
-    setIsCreating(true);
 
-    try {
-      const body: Record<string, unknown> = {
-        name: scheduleName,
-        description: scheduleDescription,
-        suite_id: selectedSuiteId,
-        timezone,
-        enabled,
-        browsers: selectedBrowsers,
-        notify_on_failure: notifyOnFailure,
-      };
+    const body: CreateScheduleInput = {
+      name: scheduleName,
+      description: scheduleDescription,
+      suite_id: selectedSuiteId,
+      timezone,
+      enabled,
+      browsers: selectedBrowsers,
+      notify_on_failure: notifyOnFailure,
+    };
 
-      if (scheduleType === 'one-time') {
-        body.run_at = `${runAtDate}T${runAtTime}:00`;
-      } else {
-        body.cron_expression = cronExpression;
-      }
-
-      const response = await fetch('/api/v1/schedules', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to create schedule');
-      }
-
-      const data = await response.json();
-      setSchedules([...schedules, data.schedule]);
-
-      // Reset form
-      setScheduleName('');
-      setScheduleDescription('');
-      setSelectedSuiteId('');
-      setScheduleType('one-time');
-      setRunAtDate(getTodayString());
-      setRunAtTime('09:00');
-      setCronExpression('0 9 * * *');
-      setCronPreset('daily');
-      setShowCreateModal(false);
-    } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create schedule');
-    } finally {
-      setIsCreating(false);
+    if (scheduleType === 'one-time') {
+      body.run_at = `${runAtDate}T${runAtTime}:00`;
+    } else {
+      body.cron_expression = cronExpression;
     }
+
+    createScheduleMutation.mutate(body, {
+      onSuccess: () => {
+        // Reset form
+        setScheduleName('');
+        setScheduleDescription('');
+        setSelectedSuiteId('');
+        setScheduleType('one-time');
+        setRunAtDate(getTodayString());
+        setRunAtTime('09:00');
+        setCronExpression('0 9 * * *');
+        setCronPreset('daily');
+        setShowCreateModal(false);
+      },
+      onError: (err) => {
+        setCreateError(err instanceof Error ? err.message : 'Failed to create schedule');
+      },
+    });
   };
 
   if (isLoading) {
@@ -587,7 +496,7 @@ export function SchedulesPage() {
                       type="button"
                       role="switch"
                       aria-checked={schedule.enabled}
-                      disabled={togglingScheduleId === schedule.id}
+                      disabled={toggleScheduleMutation.isPending}
                       onClick={() => handleToggleSchedule(schedule.id, schedule.enabled)}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 ${
                         schedule.enabled ? 'bg-primary' : 'bg-muted'
@@ -862,16 +771,16 @@ export function SchedulesPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isCreating || testSuites.length === 0}
+                    disabled={createScheduleMutation.isPending || testSuites.length === 0}
                     className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
                   >
-                    {isCreating && (
+                    {createScheduleMutation.isPending && (
                       <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                     )}
-                    {isCreating ? 'Creating...' : 'Create Schedule'}
+                    {createScheduleMutation.isPending ? 'Creating...' : 'Create Schedule'}
                   </button>
                 </div>
               </form>
