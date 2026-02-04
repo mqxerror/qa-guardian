@@ -64,3 +64,8 @@ export {
   type MergeableBranch,
   type RejectionStatus,
 } from './useTestDetailState';
+export {
+  useBaselineHandlers,
+  type UseBaselineHandlersProps,
+  type BaselineHandlers,
+} from './useBaselineHandlers';

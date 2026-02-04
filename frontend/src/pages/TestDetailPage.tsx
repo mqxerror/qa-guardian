@@ -87,6 +87,10 @@ import {
   findValueAutocomplete,
   type FoldableRegion,
   type K6Template,
+  // Feature #48: Custom hooks for state management
+  useTestDetailState,
+  useTestDetailActions,
+  useBaselineHandlers,
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
