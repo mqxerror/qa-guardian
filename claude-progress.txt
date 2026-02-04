@@ -31300,3 +31300,79 @@ Getting to target requires extracting more of the massive JSX sections
 and moving state/handlers to custom hooks.
 
 Commit: 1fe5c0d
+
+
+=== Session 2026-02-04 (Session 67) - Feature #48 Progress ===
+Progress: 47/50 (94%)
+
+Feature #48: Split TestDetailPage.tsx into modular components
+Status: IN PROGRESS (continued refactoring)
+
+Target: Reduce TestDetailPage.tsx to under 1,500 lines
+
+Completed This Session:
+1. Created RunHistorySection.tsx component (340 lines)
+   - Test run history display with sort/filter controls
+   - Status filter (All/Passed/Failed), date filter, pagination
+   - K6 run comparison support
+   - Export and download functionality
+
+2. Created EditTestModal.tsx component (90 lines)
+   - Modal for editing test name and description
+   - Unsaved changes warning integration
+
+3. Created AddStepModal.tsx component (320 lines)
+   - Modal for adding test steps with all action categories:
+     - Navigation, Interaction, Scroll, Wait, Assert, Capture
+   - Visual checkpoint and accessibility check configuration
+   - AI Copilot autocomplete integration
+
+4. Updated index.ts exports for new components
+5. Integrated all components into TestDetailPage.tsx
+
+Line Count Progress:
+- Previous session: 9,682 lines
+- Current: 9,125 lines (-557 lines, 5.8% reduction)
+- Target: <1,500 lines
+
+Verification:
+- Frontend build: Successful (zero TypeScript errors)
+- Browser automation: TestDetailPage loads correctly
+  - Test header, details, steps all display properly
+  - Flakiness trend section with chart working
+  - Run History section with filters and pagination
+  - Zero console errors
+- Screenshot: session67-testdetailpage-refactored-working.png
+
+Components Extracted (Total):
+- test-detail/
+  - types.ts (472 lines)
+  - utils.ts (264 lines)
+  - index.ts (exports)
+  - TestStatusBadge.tsx (46 lines)
+  - VideoPlayer.tsx (133 lines)
+  - FlakinessPanel.tsx (209 lines)
+  - ImageLightbox.tsx (173 lines)
+  - K6CompareModal.tsx (190 lines)
+  - RunHistorySection.tsx (340 lines) - NEW
+  - modals/
+    - DeleteTestModal.tsx (63 lines)
+    - UnsavedChangesModal.tsx (52 lines)
+    - BaselineModals.tsx (565 lines)
+    - EditTestModal.tsx (90 lines) - NEW
+    - AddStepModal.tsx (320 lines) - NEW
+
+Total Extracted: ~2,917 lines in modular components
+
+Remaining Work for Feature #48:
+1. Extract more inline sections (Current Run Status, Test Configuration)
+2. Extract remaining inline modals
+3. Move state management to custom hooks
+4. Target: Under 1,500 lines in main file
+
+Note: Current file (9,125 lines) is still far from target (1,500 lines).
+Achieving this requires extracting more large JSX sections and moving
+state/handlers to custom hooks.
+
+Commit: fb10193
+
