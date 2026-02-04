@@ -13,3 +13,4 @@ export * from './utils';
 export { default as ExecutiveSummary } from './ExecutiveSummary';
 export { default as SummaryCards } from './SummaryCards';
 export { default as TabNavigation } from './TabNavigation';
+export { default as AccessibilityTab } from './AccessibilityTab';
