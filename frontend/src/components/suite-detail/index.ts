@@ -16,6 +16,11 @@ export { useModalState } from './useModalState';
 export type { ModalState, ScreenshotElement, ScreenshotTestStep, ScreenshotAnalysis, GeneratedTestPreview, GeneratedTestSuiteTest, GeneratedTestSuite, ConvertedGherkinTest, ParsedOpenApiEndpoint, GeneratedApiTest } from './useModalState';
 export { useRecordingState } from './useRecordingState';
 export type { RecordingState, UseRecordingStateReturn } from './useRecordingState';
+// Feature #50: New hooks for state consolidation
+export { useCreateTestState } from './useCreateTestState';
+export type { UseCreateTestStateReturn, NewTestType, UrlValidationState, AntiAliasingTolerance, CaptureMode, DiffThresholdMode, WcagLevel, IgnoreRegion } from './useCreateTestState';
+export { useAIGenerationState } from './useAIGenerationState';
+export type { UseAIGenerationStateReturn, AIGenMode, WizardStep, AnnotationType, Annotation, AICopilotSuggestion } from './useAIGenerationState';
 
 // Components
 export { default as TestListItem } from './TestListItem';
