@@ -2950,631 +2950,79 @@ export function teardown(data) {
           }}
         />
 
-        {/* Record New Test Modal - Feature #26: Live Browser View */}
-        {/* Record New Test Modal - Feature #26: Live Browser View */}
-        {showRecordModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onMouseDown={(e) => {
-              if (e.target === e.currentTarget && !isRecording) {
-                handleCancelRecording();
-              }
-            }}
-          >
-            <div
-              className={`w-full rounded-xl bg-card shadow-2xl transition-all duration-300 ${
-                isRecording ? 'max-w-7xl border-2 border-blue-500 shadow-blue-500/20' : 'max-w-xl border border-border'
-              }`}
-              style={{ maxHeight: '95vh' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center gap-3 p-4 pb-0">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                  isRecording ? 'bg-red-100' : 'bg-orange-100'
-                }`}>
-                  <span className="text-xl">{isRecording ? '🔴' : '🎬'}</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    {isRecording ? 'Recording in Progress' : 'Record New Test'}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {isRecording
-                      ? 'Click on the live browser view to interact - actions are recorded automatically'
-                      : 'Enter a URL to start recording user interactions'}
-                  </p>
-                </div>
-                {isRecording && (
-                  <div className="flex items-center gap-3">
-                    <span className="relative flex h-3.5 w-3.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500"></span>
-                    </span>
-                    <span className="font-semibold text-red-700">REC</span>
-                    <span className="font-mono text-lg font-bold text-red-800 tabular-nums">{formatElapsed(recordingElapsed)}</span>
-                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                      {recordedSteps.length} step{recordedSteps.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                )}
-              </div>
+        {/* Record New Test Modal - Feature #26, #50: Extracted to RecordTestModal component */}
+        <RecordTestModal
+          isOpen={showRecordModal}
+          isRecording={isRecording}
+          onClose={() => setShowRecordModal(false)}
+          recordTargetUrl={recordTargetUrl}
+          onRecordTargetUrlChange={setRecordTargetUrl}
+          recordedSteps={recordedSteps}
+          onRecordedStepsChange={setRecordedSteps}
+          recordingDeviceEnabled={recordingDeviceEnabled}
+          onRecordingDeviceEnabledChange={setRecordingDeviceEnabled}
+          recordingDeviceConfig={recordingDeviceConfig}
+          onRecordingDeviceConfigChange={setRecordingDeviceConfig}
+          recordingSessionId={recordingSessionId}
+          onRecordingSessionIdChange={setRecordingSessionId}
+          recordingElapsed={recordingElapsed}
+          recordingFrame={recordingFrame}
+          onRecordingFrameChange={setRecordingFrame}
+          recordingConnected={recordingConnected}
+          onRecordingConnectedChange={setRecordingConnected}
+          recordingCurrentUrl={recordingCurrentUrl}
+          onRecordingCurrentUrlChange={setRecordingCurrentUrl}
+          reconnectAttempt={reconnectAttempt}
+          onReconnectAttemptChange={setReconnectAttempt}
+          reconnectFailed={reconnectFailed}
+          onReconnectFailedChange={setReconnectFailed}
+          staleFrameWarning={staleFrameWarning}
+          onStaleFrameWarningChange={setStaleFrameWarning}
+          showDebugOverlay={showDebugOverlay}
+          onShowDebugOverlayChange={setShowDebugOverlay}
+          clickRipple={clickRipple}
+          onClickRippleChange={setClickRipple}
+          recordingSocketRef={recordingSocketRef}
+          browserViewRef={browserViewRef}
+          browserImgRef={browserImgRef}
+          frameScaleRef={frameScaleRef}
+          lastFrameTimeRef={lastFrameTimeRef}
+          staleFrameTimerRef={staleFrameTimerRef}
+          frameRequestRef={frameRequestRef}
+          pendingFrameRef={pendingFrameRef}
+          onStartRecording={handleStartRecording}
+          onStopRecording={handleStopRecording}
+          onCancelRecording={handleCancelRecording}
+          onRetryConnection={handleRetryConnection}
+          onStopAndSave={handleStopAndSave}
+          projectBaseUrl={project?.base_url}
+          token={token || ''}
+          formatElapsed={formatElapsed}
+          getActionIcon={getActionIcon}
+        />
 
-              {!isRecording ? (
-                <div className="p-4 pt-4 space-y-4">
-                  <div>
-                    <label htmlFor="record-url" className="block text-sm font-medium text-foreground">
-                      Target URL
-                    </label>
-                    <input
-                      id="record-url"
-                      type="url"
-                      value={recordTargetUrl}
-                      onChange={(e) => setRecordTargetUrl(e.target.value)}
-                      placeholder={project?.base_url || 'https://your-site.com'}
-                      className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
+        {/* Review Recorded Test Modal - Feature #31, #37, #50: Extracted to component */}
+        <ReviewRecordedTestModal
+          isOpen={showReviewModal}
+          onClose={() => setShowReviewModal(false)}
+          recordedSteps={recordedSteps}
+          onRecordedStepsChange={setRecordedSteps}
+          recordingDuration={recordingDuration}
+          recordedTestName={recordedTestName}
+          onRecordedTestNameChange={setRecordedTestName}
+          recordedTestDescription={recordedTestDescription}
+          onRecordedTestDescriptionChange={setRecordedTestDescription}
+          isSavingRecordedTest={isSavingRecordedTest}
+          onSaveRecordedTest={handleSaveRecordedTest}
+          templateName={templateName}
+          onTemplateNameChange={setTemplateName}
+          isSavingTemplate={isSavingTemplate}
+          onSaveAsTemplate={handleSaveAsTemplate}
+          formatElapsed={formatElapsed}
+          getActionIcon={getActionIcon}
+        />
 
-                  {/* Feature #36: Device emulation for recording */}
-                  <div className="border-t border-border pt-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="text-sm font-medium text-foreground">
-                        Device Emulation
-                      </label>
-                      <label className="inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={recordingDeviceEnabled}
-                          onChange={(e) => setRecordingDeviceEnabled(e.target.checked)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="ml-2 text-sm text-muted-foreground">Enable</span>
-                      </label>
-                    </div>
-                    {recordingDeviceEnabled ? (
-                      <DeviceSelect
-                        value={recordingDeviceConfig}
-                        onChange={setRecordingDeviceConfig}
-                      />
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        Enable to record on mobile/tablet with touch emulation and proper user agents.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={handleCancelRecording}
-                      className="rounded-lg border border-border px-4 py-2 font-medium text-foreground hover:bg-muted transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleStartRecording}
-                      className="rounded-lg bg-gradient-to-r from-orange-500 to-red-500 px-5 py-2 font-medium text-white hover:from-orange-600 hover:to-red-600 transition-all shadow-md hover:shadow-lg"
-                    >
-                      ⏺ Start Recording
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4 pt-3 flex gap-4" style={{ maxHeight: 'calc(95vh - 80px)' }}>
-                  {/* Left: Live Browser View */}
-                  <div className="flex-1 min-w-0 flex flex-col">
-                    {/* Feature #28: URL bar with navigation + connection status */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={`h-2 w-2 rounded-full shrink-0 ${recordingConnected ? 'bg-green-500' : reconnectFailed ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'}`} title={recordingConnected ? 'Connected' : reconnectFailed ? 'Connection Lost' : reconnectAttempt > 0 ? `Reconnecting (${reconnectAttempt}/10)` : 'Disconnected'} />
-                      <div className="flex items-center gap-1.5 rounded-lg bg-muted px-2 py-1 flex-1 min-w-0">
-                        <span className="text-xs shrink-0">🌐</span>
-                        <input
-                          type="text"
-                          value={recordingCurrentUrl || recordTargetUrl}
-                          onChange={(e) => setRecordingCurrentUrl(e.target.value)}
-                          onKeyDown={handleUrlBarNavigate}
-                          className="text-xs bg-transparent border-none outline-none w-full text-foreground placeholder:text-muted-foreground"
-                          placeholder="Enter URL and press Enter to navigate..."
-                        />
-                      </div>
-                      <button
-                        onClick={() => setShowDebugOverlay(prev => !prev)}
-                        className={`p-1 rounded text-xs shrink-0 transition-colors ${showDebugOverlay ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
-                        title={showDebugOverlay ? 'Hide coordinate debug overlay' : 'Show coordinate debug overlay'}
-                      >🎯</button>
-                      <div className="text-[10px] text-muted-foreground shrink-0">Click | Type | Enter=Navigate</div>
-                    </div>
-                    <div
-                      ref={browserViewRef}
-                      className="relative rounded-lg border-2 border-border overflow-hidden bg-gray-900 cursor-crosshair focus:outline-none focus:border-blue-400"
-                      style={{ aspectRatio: '16/9', maxHeight: '500px', width: '100%', maxWidth: 'calc(500px * 16 / 9)' }}
-                      tabIndex={0}
-                      onClick={handleBrowserViewClick}
-                      onKeyDown={handleBrowserViewKeyDown}
-                      onWheel={handleBrowserViewWheel}
-                      onMouseMove={handleBrowserViewMouseMove}
-                      onMouseLeave={handleBrowserViewMouseLeave}
-                    >
-                      {recordingFrame ? (
-                        <img
-                          ref={browserImgRef}
-                          src={recordingFrame}
-                          alt="Live browser view"
-                          className="w-full h-full"
-                          draggable={false}
-                          style={{ pointerEvents: 'none', objectFit: 'fill' }}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-3"></div>
-                            <p className="text-sm text-gray-400">Connecting to browser...</p>
-                            <p className="text-xs text-gray-500 mt-1">Loading {recordTargetUrl}</p>
-                          </div>
-                        </div>
-                      )}
-                      {/* Feature #28: Click ripple feedback */}
-                      {clickRipple && (
-                        <div
-                          key={clickRipple.id}
-                          className="absolute pointer-events-none"
-                          style={{
-                            left: clickRipple.x - 15,
-                            top: clickRipple.y - 15,
-                            width: 30,
-                            height: 30,
-                          }}
-                        >
-                          <div className="w-full h-full rounded-full border-2 border-blue-400 animate-ping opacity-75" />
-                          <div className="absolute inset-0 rounded-full bg-blue-400/30 animate-pulse" />
-                        </div>
-                      )}
-                      {/* Feature #33: Enhanced disconnection/reconnection overlay */}
-                      {!recordingConnected && recordingFrame && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-10">
-                          <div className="text-center px-4">
-                            {reconnectFailed ? (
-                              <>
-                                <div className="text-3xl mb-2">❌</div>
-                                <p className="text-sm text-red-300 font-medium mb-1">Connection Lost</p>
-                                <p className="text-xs text-gray-400 mb-3">All reconnection attempts failed</p>
-                                <div className="flex gap-2 justify-center">
-                                  <button
-                                    onClick={handleRetryConnection}
-                                    className="px-3 py-1.5 text-xs rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-                                  >
-                                    🔄 Retry
-                                  </button>
-                                  <button
-                                    onClick={handleStopAndSave}
-                                    className="px-3 py-1.5 text-xs rounded-md bg-orange-600 hover:bg-orange-700 text-white transition-colors"
-                                  >
-                                    💾 Stop & Save
-                                  </button>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400 mx-auto mb-2"></div>
-                                <p className="text-sm text-yellow-300 font-medium">Reconnecting...</p>
-                                {reconnectAttempt > 0 && (
-                                  <p className="text-xs text-gray-400 mt-1">Attempt {reconnectAttempt}/10</p>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      {/* Feature #33: Stale frame warning overlay */}
-                      {recordingConnected && staleFrameWarning !== 'none' && recordingFrame && (
-                        <div className="absolute bottom-2 left-2 right-2 z-10">
-                          <div className={`rounded-md px-3 py-1.5 text-xs text-center ${
-                            staleFrameWarning === 'unresponsive'
-                              ? 'bg-red-900/80 text-red-200'
-                              : 'bg-yellow-900/80 text-yellow-200'
-                          }`}>
-                            {staleFrameWarning === 'unresponsive'
-                              ? '⚠️ Browser may be unresponsive — try clicking or navigating'
-                              : '⏳ Waiting for frame...'}
-                          </div>
-                        </div>
-                      )}
-                      {/* Feature #34: Coordinate debug overlay */}
-                      {showDebugOverlay && recordingFrame && (
-                        <div className="absolute inset-0 pointer-events-none z-20">
-                          {/* Grid lines */}
-                          <svg className="absolute inset-0 w-full h-full opacity-20">
-                            {[...Array(8)].map((_, i) => (
-                              <line key={`v${i}`} x1={`${(i + 1) * 12.5}%`} y1="0" x2={`${(i + 1) * 12.5}%`} y2="100%" stroke="cyan" strokeWidth="0.5" />
-                            ))}
-                            {[...Array(4)].map((_, i) => (
-                              <line key={`h${i}`} x1="0" y1={`${(i + 1) * 20}%`} x2="100%" y2={`${(i + 1) * 20}%`} stroke="cyan" strokeWidth="0.5" />
-                            ))}
-                          </svg>
-                          {/* Crosshair and coordinate readout */}
-                          {debugCoords && (
-                            <>
-                              <div className="absolute bg-cyan-400" style={{ left: debugCoords.cssX, top: 0, width: 1, height: '100%', opacity: 0.5 }} />
-                              <div className="absolute bg-cyan-400" style={{ left: 0, top: debugCoords.cssY, width: '100%', height: 1, opacity: 0.5 }} />
-                              <div className="absolute rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-cyan-300 font-mono whitespace-nowrap"
-                                style={{ left: Math.min(debugCoords.cssX + 10, (browserViewRef.current?.clientWidth || 300) - 120), top: Math.min(debugCoords.cssY + 10, (browserViewRef.current?.clientHeight || 200) - 30) }}>
-                                VP: {debugCoords.vpX},{debugCoords.vpY} | CSS: {Math.round(debugCoords.cssX)},{Math.round(debugCoords.cssY)}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right: Action Log + Controls */}
-                  <div className="w-72 flex flex-col shrink-0">
-                    {/* Action Log */}
-                    <div className="flex-1 min-h-0 flex flex-col">
-                      <h4 className="text-sm font-semibold text-foreground mb-2">Action Log</h4>
-                      <div className="flex-1 overflow-y-auto rounded-lg border border-border bg-muted/20 divide-y divide-border" style={{ maxHeight: '340px' }}>
-                        {recordedSteps.length === 0 ? (
-                          <div className="p-4 text-center">
-                            <p className="text-sm text-muted-foreground">Waiting for actions...</p>
-                            <p className="text-xs text-muted-foreground mt-1">Click on the browser view</p>
-                          </div>
-                        ) : (
-                          recordedSteps.map((step, idx) => (
-                            <div key={idx} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted/40 transition-colors group">
-                              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-background border border-border text-xs shrink-0">
-                                {getActionIcon(step.action)}
-                              </span>
-                              <div className="flex-1 min-w-0">
-                                <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-600">{step.action}</span>
-                                <div className="text-[10px] text-muted-foreground truncate">
-                                  {step.url && step.url}
-                                  {step.selector && step.selector}
-                                  {step.value && `"${step.value}"`}
-                                  {step.text && `"${step.text}"`}
-                                </div>
-                              </div>
-                              <span className="text-[9px] text-muted-foreground tabular-nums shrink-0">#{idx + 1}</span>
-                              <button
-                                onClick={() => setRecordedSteps(prev => prev.filter((_, i) => i !== idx))}
-                                className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity text-xs shrink-0"
-                                title="Remove step"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Manual Step Buttons */}
-                    <div className="mt-3">
-                      <h4 className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">Add Manual Step</h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        <button
-                          onClick={() => {
-                            const text = prompt('Enter text to assert is visible:');
-                            if (text) handleAddRecordingStep('assert_text', { text });
-                          }}
-                          className="inline-flex items-center gap-1 rounded-md border border-green-200 bg-green-50 px-2 py-1 text-[10px] font-medium text-green-700 hover:bg-green-100 transition-colors"
-                        >
-                          ✅ Assert
-                        </button>
-                        <button
-                          onClick={() => handleAddRecordingStep('screenshot', {})}
-                          className="inline-flex items-center gap-1 rounded-md border border-purple-200 bg-purple-50 px-2 py-1 text-[10px] font-medium text-purple-700 hover:bg-purple-100 transition-colors"
-                        >
-                          📸 Screenshot
-                        </button>
-                        <button
-                          onClick={() => {
-                            const ms = prompt('Enter wait time in milliseconds:', '1000');
-                            if (ms) handleAddRecordingStep('wait', { value: ms });
-                          }}
-                          className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-                        >
-                          ⏱️ Wait
-                        </button>
-                        <button
-                          onClick={() => {
-                            const url = prompt('Enter expected URL pattern:', window.location.href);
-                            if (url) handleAddRecordingStep('assert_url', { value: url });
-                          }}
-                          className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-medium text-blue-700 hover:bg-blue-100 transition-colors"
-                        >
-                          🔗 Assert URL
-                        </button>
-                        <button
-                          onClick={() => {
-                            handleAddRecordingStep('hover', { selector: 'body', value: 'Hover over element' });
-                            toast.info('Hover step added. Edit the selector in the review modal.');
-                          }}
-                          className="inline-flex items-center gap-1 rounded-md border border-orange-200 bg-orange-50 px-2 py-1 text-[10px] font-medium text-orange-700 hover:bg-orange-100 transition-colors"
-                        >
-                          👆 Hover
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex justify-between items-center pt-3 mt-3 border-t border-border">
-                      <button
-                        onClick={handleCancelRecording}
-                        className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleStopRecording}
-                        className="rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-4 py-1.5 text-xs font-semibold text-white hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg flex items-center gap-1.5"
-                      >
-                        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-white"></span>
-                        Stop Recording
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Review Recorded Test Modal */}
-        {showReviewModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onMouseDown={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowReviewModal(false);
-              }
-            }}
-          >
-            <div
-              className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
-                  <span className="text-xl">✅</span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground">Review Recorded Test</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Review the recorded steps, give your test a name, and save it to the suite.
-                  </p>
-                </div>
-              </div>
-
-              {/* Recording Summary Stats */}
-              <div className="grid grid-cols-3 gap-3 mb-5">
-                <div className="rounded-lg border border-border bg-muted/30 p-3 text-center">
-                  <div className="text-2xl font-bold text-foreground">{recordedSteps.length}</div>
-                  <div className="text-xs text-muted-foreground">Steps Recorded</div>
-                </div>
-                <div className="rounded-lg border border-border bg-muted/30 p-3 text-center">
-                  <div className="text-2xl font-bold text-foreground">{formatElapsed(recordingDuration)}</div>
-                  <div className="text-xs text-muted-foreground">Duration</div>
-                </div>
-                <div className="rounded-lg border border-border bg-muted/30 p-3 text-center">
-                  <div className="text-2xl font-bold text-foreground">
-                    {new Set(recordedSteps.map(s => s.action)).size}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Action Types</div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="recorded-test-name" className="block text-sm font-medium text-foreground">
-                    Test Name *
-                  </label>
-                  <input
-                    id="recorded-test-name"
-                    type="text"
-                    value={recordedTestName}
-                    onChange={(e) => setRecordedTestName(e.target.value)}
-                    placeholder="Enter test name"
-                    className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="recorded-test-desc" className="block text-sm font-medium text-foreground">
-                    Description
-                  </label>
-                  <textarea
-                    id="recorded-test-desc"
-                    value={recordedTestDescription}
-                    onChange={(e) => setRecordedTestDescription(e.target.value)}
-                    placeholder="Optional description"
-                    rows={2}
-                    className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2">Test Steps Preview</h4>
-                  <div className="rounded-lg border border-border bg-muted/20 divide-y divide-border max-h-64 overflow-y-auto">
-                    {recordedSteps.map((step, idx) => (
-                      <div key={idx} className="flex items-start gap-3 px-3 py-2.5 hover:bg-muted/40 transition-colors group">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-background border border-border text-sm shrink-0 mt-0.5">
-                          {getActionIcon(step.action)}
-                        </span>
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-medium shrink-0 mt-0.5">
-                          {idx + 1}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-xs font-semibold uppercase tracking-wider text-blue-600">{step.action}</span>
-                          {step.url && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              URL: <input
-                                type="text"
-                                defaultValue={step.url}
-                                onBlur={(e) => {
-                                  const newSteps = [...recordedSteps];
-                                  newSteps[idx] = { ...newSteps[idx], url: e.target.value };
-                                  setRecordedSteps(newSteps);
-                                }}
-                                className="bg-muted px-1 rounded text-xs w-full border border-transparent hover:border-border focus:border-blue-400 focus:outline-none"
-                              />
-                            </p>
-                          )}
-                          {step.selector && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              Selector: <input
-                                type="text"
-                                defaultValue={step.selector}
-                                onBlur={(e) => {
-                                  const newSteps = [...recordedSteps];
-                                  newSteps[idx] = { ...newSteps[idx], selector: e.target.value };
-                                  setRecordedSteps(newSteps);
-                                }}
-                                className="bg-muted px-1 rounded text-xs font-mono w-full border border-transparent hover:border-border focus:border-blue-400 focus:outline-none"
-                              />
-                            </p>
-                          )}
-                          {step.value && (
-                            <p className="text-xs text-green-600 mt-0.5">
-                              Value: <input
-                                type="text"
-                                defaultValue={step.value}
-                                onBlur={(e) => {
-                                  const newSteps = [...recordedSteps];
-                                  newSteps[idx] = { ...newSteps[idx], value: e.target.value };
-                                  setRecordedSteps(newSteps);
-                                }}
-                                className="bg-muted px-1 rounded text-xs w-full border border-transparent hover:border-border focus:border-blue-400 focus:outline-none text-green-700"
-                              />
-                            </p>
-                          )}
-                          {step.text && (
-                            <p className="text-xs text-green-600 mt-0.5">
-                              Assert: <input
-                                type="text"
-                                defaultValue={step.text}
-                                onBlur={(e) => {
-                                  const newSteps = [...recordedSteps];
-                                  newSteps[idx] = { ...newSteps[idx], text: e.target.value };
-                                  setRecordedSteps(newSteps);
-                                }}
-                                className="bg-muted px-1 rounded text-xs w-full border border-transparent hover:border-border focus:border-blue-400 focus:outline-none text-green-700"
-                              />
-                            </p>
-                          )}
-                          {/* Feature #37: Optional step toggle for cookie consent/popup handling */}
-                          <label className="flex items-center gap-1.5 mt-1.5 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={step.optional || false}
-                              onChange={(e) => {
-                                const newSteps = [...recordedSteps];
-                                newSteps[idx] = {
-                                  ...newSteps[idx],
-                                  optional: e.target.checked,
-                                  optionalReason: e.target.checked ? 'user_marked' : undefined,
-                                };
-                                setRecordedSteps(newSteps);
-                              }}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-3 w-3"
-                            />
-                            <span className="text-xs text-muted-foreground" title="Enable for elements that may not always appear (popups, consent dialogs)">
-                              Optional
-                              {step.optional && step.optionalReason && step.optionalReason !== 'user_marked' && (
-                                <span className="ml-1 px-1 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px]">
-                                  ⚡ {step.optionalReason.replace('_', ' ')}
-                                </span>
-                              )}
-                            </span>
-                          </label>
-                        </div>
-                        <div className="flex flex-col gap-1 shrink-0 mt-0.5">
-                          {idx > 0 && (
-                            <button
-                              onClick={() => {
-                                const newSteps = [...recordedSteps];
-                                [newSteps[idx - 1], newSteps[idx]] = [newSteps[idx], newSteps[idx - 1]];
-                                setRecordedSteps(newSteps);
-                              }}
-                              className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity text-xs"
-                              title="Move up"
-                            >
-                              ▲
-                            </button>
-                          )}
-                          {idx < recordedSteps.length - 1 && (
-                            <button
-                              onClick={() => {
-                                const newSteps = [...recordedSteps];
-                                [newSteps[idx], newSteps[idx + 1]] = [newSteps[idx + 1], newSteps[idx]];
-                                setRecordedSteps(newSteps);
-                              }}
-                              className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity text-xs"
-                              title="Move down"
-                            >
-                              ▼
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setRecordedSteps(prev => prev.filter((_, i) => i !== idx))}
-                            className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
-                            title="Remove step"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Feature #31: Save as Template */}
-                <div className="rounded-lg border border-dashed border-purple-300 bg-purple-50/50 dark:bg-purple-900/10 p-3">
-                  <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-2">📋 Save as Reusable Template</p>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={templateName}
-                      onChange={(e) => setTemplateName(e.target.value)}
-                      placeholder="Template name..."
-                      className="flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-purple-400"
-                    />
-                    <button
-                      onClick={handleSaveAsTemplate}
-                      disabled={isSavingTemplate || !templateName.trim() || recordedSteps.length === 0}
-                      className="rounded-md bg-purple-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-600 disabled:opacity-50 transition-colors whitespace-nowrap"
-                    >
-                      {isSavingTemplate ? 'Saving...' : '📋 Save Template'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-4 border-t border-border">
-                  <button
-                    onClick={() => {
-                      setShowReviewModal(false);
-                      setRecordedSteps([]);
-                      setRecordedTestName('');
-                      setRecordedTestDescription('');
-                    }}
-                    className="rounded-lg border border-border px-4 py-2 font-medium text-foreground hover:bg-muted transition-colors"
-                  >
-                    Discard
-                  </button>
-                  <button
-                    onClick={handleSaveRecordedTest}
-                    disabled={isSavingRecordedTest || recordedSteps.length === 0 || !recordedTestName.trim()}
-                    className="rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-5 py-2 font-semibold text-white hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none"
-                  >
-                    {isSavingRecordedTest ? 'Saving...' : '💾 Save Test'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
+        {/* Feature #31: Insert Template Modal - Feature #50: Extracted to component */}
         {/* Feature #31: Insert Template Modal - Feature #50: Extracted to component */}
         <InsertTemplateModal
           isOpen={showTemplateModal}

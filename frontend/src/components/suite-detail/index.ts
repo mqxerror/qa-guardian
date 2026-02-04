@@ -14,6 +14,8 @@ export { useSuiteState } from './useSuiteState';
 export type { SuiteState, RecordingStep, ParallelizationPlan, ParallelizationWorker, ReviewStats, StepTemplate } from './useSuiteState';
 export { useModalState } from './useModalState';
 export type { ModalState, ScreenshotElement, ScreenshotTestStep, ScreenshotAnalysis, GeneratedTestPreview, GeneratedTestSuiteTest, GeneratedTestSuite, ConvertedGherkinTest, ParsedOpenApiEndpoint, GeneratedApiTest } from './useModalState';
+export { useRecordingState } from './useRecordingState';
+export type { RecordingState, UseRecordingStateReturn } from './useRecordingState';
 
 // Components
 export { default as TestListItem } from './TestListItem';
