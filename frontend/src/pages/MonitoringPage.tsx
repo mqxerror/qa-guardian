@@ -7,362 +7,43 @@ import { useAuthStore } from "../stores/authStore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { toast } from "../stores/toastStore";
 
-
-type MonitoringLocation = 'us-east' | 'us-west' | 'europe' | 'asia-pacific' | 'australia';
-
-interface MonitoringLocationInfo {
-  id: MonitoringLocation;
-  name: string;
-  region: string;
-  city: string;
-}
-
-// Result by location for display
-interface LocationResult {
-  location: MonitoringLocation;
-  location_name: string;
-  latest_result: CheckResult | null;
-  avg_response_time: number;
-  uptime_percentage: number;
-  total_checks: number;
-}
-
-// Assertion interface for uptime checks
-interface UptimeAssertion {
-  type: 'responseTime' | 'statusCode' | 'bodyContains' | 'headerContains';
-  operator: 'lessThan' | 'greaterThan' | 'equals' | 'contains';
-  value: string | number;
-}
-
-interface AssertionResult {
-  type: string;
-  operator: string;
-  expected: string | number;
-  actual: string | number;
-  passed: boolean;
-}
-
-// SSL Certificate info interface
-interface SSLCertificateInfo {
-  valid: boolean;
-  issuer: string;
-  subject: string;
-  valid_from: string;
-  valid_to: string;
-  days_until_expiry: number;
-  fingerprint: string;
-}
-
-// Uptime Check interface for frontend
-interface UptimeCheck {
-  id: string;
-  name: string;
-  url: string;
-  method: 'GET' | 'POST' | 'HEAD' | 'PUT' | 'DELETE' | 'PATCH';
-  interval: number;
-  timeout: number;
-  expected_status: number;
-  headers?: Record<string, string>;
-  body?: string;
-  locations: MonitoringLocation[]; // Geographic locations
-  assertions?: UptimeAssertion[]; // Assertions for validation
-  ssl_expiry_warning_days?: number; // Alert when SSL cert expires in this many days
-  consecutive_failures_threshold?: number; // Only alert after N consecutive failures
-  tags?: string[]; // Tags for organizing and filtering checks
-  group?: string; // Group name for organizing checks
-  enabled: boolean;
-  created_at: string;
-  updated_at: string;
-  latest_status?: 'up' | 'down' | 'degraded' | 'unknown';
-  latest_response_time?: number;
-  latest_checked_at?: string;
-}
-
-interface CheckResult {
-  id: string;
-  check_id: string;
-  location: MonitoringLocation; // Location check ran from
-  status: 'up' | 'down' | 'degraded';
-  response_time: number;
-  status_code: number;
-  error?: string;
-  assertion_results?: AssertionResult[];
-  assertions_passed?: number;
-  assertions_failed?: number;
-  ssl_info?: SSLCertificateInfo; // SSL certificate information
-  checked_at: string;
-}
-
-interface MonitoringSummary {
-  total_checks: number;
-  enabled_checks: number;
-  status_summary: {
-    up: number;
-    down: number;
-    degraded: number;
-    unknown: number;
-  };
-  uptime_percentage: number;
-}
-
-// Webhook check interface
-interface WebhookCheck {
-  id: string;
-  name: string;
-  description?: string;
-  webhook_url: string;
-  webhook_secret?: string;
-  expected_interval: number;
-  expected_payload?: {
-    type: 'json-schema' | 'key-value' | 'any';
-    schema?: object;
-    required_fields?: string[];
-    field_values?: Record<string, string | number | boolean>;
-  };
-  enabled: boolean;
-  created_at: string;
-  updated_at: string;
-  last_received?: string | null;
-  last_payload_valid?: boolean | null;
-  events_24h?: number;
-}
-
-interface WebhookEvent {
-  id: string;
-  check_id: string;
-  received_at: string;
-  source_ip: string;
-  headers: Record<string, string>;
-  payload: unknown;
-  payload_valid: boolean;
-  validation_errors?: string[];
-  signature_valid?: boolean;
-}
-
-// SLA metrics interface
-interface SlaPeriod {
-  uptime_percentage: number;
-  total_checks: number;
-  successful_checks: number;
-  failed_checks: number;
-  avg_response_time: number;
-}
-
-interface SlaMetrics {
-  check_id: string;
-  check_name: string;
-  sla: {
-    last_24h: SlaPeriod;
-    last_7d: SlaPeriod;
-    last_30d: SlaPeriod;
-    all_time: SlaPeriod;
-  };
-  generated_at: string;
-}
-
-// Incident interface
-interface Incident {
-  id: string;
-  status: 'down' | 'degraded';
-  started_at: string;
-  ended_at: string | null;
-  duration_seconds: number | null;
-  duration_formatted: string;
-  error?: string;
-  affected_locations: string[];
-  is_active: boolean;
-}
-
-interface IncidentData {
-  check_id: string;
-  check_name: string;
-  active_incident: Incident | null;
-  incidents: Incident[];
-  total_incidents: number;
-}
-
-// History data interfaces
-interface HistoryChartDataPoint {
-  timestamp: string;
-  avg_response_time: number;
-  min_response_time: number;
-  max_response_time: number;
-  successful_checks: number;
-  failed_checks: number;
-  degraded_checks: number;
-  total_checks: number;
-  uptime_percentage: number;
-}
-
-interface HistoryStatusEntry {
-  timestamp: string;
-  status: 'up' | 'down' | 'degraded';
-  response_time: number;
-  location: string;
-  error?: string;
-}
-
-interface HistoryData {
-  check_id: string;
-  check_name: string;
-  range: string;
-  start_time: string;
-  end_time: string;
-  summary: {
-    total_checks: number;
-    successful_checks: number;
-    failed_checks: number;
-    degraded_checks: number;
-    uptime_percentage: number;
-    avg_response_time: number;
-    min_response_time: number;
-    max_response_time: number;
-  };
-  chart_data: HistoryChartDataPoint[];
-  status_history: HistoryStatusEntry[];
-}
-
-// Maintenance window interfaces
-interface MaintenanceWindow {
-  id: string;
-  check_id: string;
-  name: string;
-  start_time: string;
-  end_time: string;
-  reason?: string;
-  created_by: string;
-  created_at: string;
-}
-
-interface MaintenanceData {
-  check_id: string;
-  check_name: string;
-  in_maintenance: boolean;
-  active_window: MaintenanceWindow | null;
-  scheduled_windows: MaintenanceWindow[];
-  past_windows: MaintenanceWindow[];
-}
-
-// Transaction monitoring interfaces
-interface TransactionStepAssertion {
-  type: 'status' | 'responseTime' | 'bodyContains' | 'headerContains';
-  value: string | number;
-  operator?: 'equals' | 'contains' | 'lessThan' | 'greaterThan';
-}
-
-interface TransactionStep {
-  id: string;
-  name: string;
-  url: string;
-  method: 'GET' | 'POST' | 'HEAD' | 'PUT' | 'DELETE' | 'PATCH';
-  headers?: Record<string, string>;
-  body?: string;
-  expected_status: number;
-  assertions?: TransactionStepAssertion[];
-  timeout: number;
-}
-
-interface TransactionCheck {
-  id: string;
-  organization_id: string;
-  name: string;
-  description?: string;
-  steps: TransactionStep[];
-  interval: number;
-  enabled: boolean;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface TransactionStepResult {
-  step_id: string;
-  step_name: string;
-  status: 'passed' | 'failed';
-  response_time: number;
-  status_code: number;
-  error?: string;
-  assertions_passed: number;
-  assertions_failed: number;
-}
-
-interface TransactionResult {
-  id: string;
-  transaction_id: string;
-  status: 'passed' | 'failed';
-  total_duration: number;
-  steps_passed: number;
-  steps_failed: number;
-  step_results: TransactionStepResult[];
-  executed_at: string;
-}
-
-// Input interface for creating/editing transaction steps (without id)
-interface TransactionStepInput {
-  name: string;
-  url: string;
-  method: 'GET' | 'POST' | 'HEAD' | 'PUT' | 'DELETE' | 'PATCH';
-  headers?: string;
-  body?: string;
-  expected_status: number;
-  assertions: TransactionStepAssertion[];
-  timeout?: number;
-}
-
-// Performance check interfaces
-interface PerformanceCheck {
-  id: string;
-  name: string;
-  url: string;
-  interval: number;
-  device: 'desktop' | 'mobile';
-  enabled: boolean;
-  created_at: string;
-  updated_at: string;
-  latest_status?: 'good' | 'needs_improvement' | 'poor';
-  latest_score?: number;
-  latest_lcp?: number;
-  latest_checked_at?: string;
-}
-
-interface PerformanceMetrics {
-  lcp: number;
-  fid: number;
-  cls: number;
-  ttfb: number;
-  fcp: number;
-  tti: number;
-  tbt: number;
-  si: number;
-  total_size: number;
-  request_count: number;
-  dom_elements: number;
-}
-
-interface PerformanceResult {
-  id: string;
-  check_id: string;
-  status: 'good' | 'needs_improvement' | 'poor';
-  metrics: PerformanceMetrics;
-  lighthouse_score: number;
-  checked_at: string;
-}
-
-interface PerformanceTrends {
-  trends: {
-    lcp: { avg: number; min: number; max: number; trend: string };
-    fid: { avg: number; min: number; max: number; trend: string };
-    cls: { avg: number; min: number; max: number; trend: string };
-    lighthouse_score: { avg: number; min: number; max: number; trend: string };
-  };
-  data_points: {
-    timestamp: string;
-    lcp: number;
-    fid: number;
-    cls: number;
-    lighthouse_score: number;
-  }[];
-}
+// Feature #47: Import modular components and types for performance optimization
+// Eliminates ~350 lines of duplicate type definitions
+import {
+  MonitoringSummaryCards,
+  StatusBadge,
+  // Import ALL types from modular components
+  MonitoringLocation,
+  MonitoringLocationInfo,
+  LocationResult,
+  UptimeAssertion,
+  AssertionResult,
+  SSLCertificateInfo,
+  UptimeCheck,
+  CheckResult,
+  MonitoringSummary,
+  WebhookCheck,
+  WebhookEvent,
+  SlaPeriod,
+  SlaMetrics,
+  Incident,
+  IncidentData,
+  HistoryChartDataPoint,
+  HistoryStatusEntry,
+  HistoryData,
+  MaintenanceWindow,
+  MaintenanceData,
+  TransactionStepAssertion,
+  TransactionStep,
+  TransactionCheck,
+  TransactionStepResult,
+  TransactionResult,
+  TransactionStepInput,
+  PerformanceCheck,
+  PerformanceMetrics,
+  PerformanceResult,
+  PerformanceTrends,
+} from '../components/monitoring';
 
 function MonitoringPage() {
   const { token } = useAuthStore();
@@ -4252,31 +3933,8 @@ function MonitoringPage() {
           </nav>
         </div>
 
-        {/* Summary Cards */}
-        {summary && (
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border border-border bg-card p-4">
-              <div className="text-sm text-muted-foreground">Total Checks</div>
-              <div className="mt-1 text-2xl font-bold text-foreground">{summary.total_checks}</div>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <div className="text-sm text-muted-foreground">Uptime</div>
-              <div className="mt-1 text-2xl font-bold text-green-600">{summary.uptime_percentage}%</div>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <div className="text-sm text-muted-foreground">Status</div>
-              <div className="mt-1 flex gap-2">
-                <span className="text-green-600">🟢 {summary.status_summary.up}</span>
-                <span className="text-red-600">🔴 {summary.status_summary.down}</span>
-                <span className="text-yellow-600">🟡 {summary.status_summary.degraded}</span>
-              </div>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <div className="text-sm text-muted-foreground">Enabled</div>
-              <div className="mt-1 text-2xl font-bold text-foreground">{summary.enabled_checks}</div>
-            </div>
-          </div>
-        )}
+        {/* Summary Cards - Using modular component (Feature #47) */}
+        <MonitoringSummaryCards summary={summary} isLoading={isLoading} />
 
         {/* Uptime Checks Tab Content */}
         {activeTab === 'checks' && (
