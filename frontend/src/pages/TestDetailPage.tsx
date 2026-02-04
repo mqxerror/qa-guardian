@@ -1,16 +1,13 @@
 // TestDetailPage - Extracted from App.tsx
 // Feature #1441: Split App.tsx into logical modules
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 import { useSocketStore } from '../stores/socketStore';
 import { useNotificationStore } from '../stores/notificationStore';
-import { useToastStore, toast } from '../stores/toastStore';
-import { useVisualReviewStore } from '../stores/visualReviewStore';
-import { getErrorMessage, isNetworkError, isOffline } from '../utils/errorHandling';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { toast } from '../stores/toastStore';
 // Feature #48: Import modular types and utilities
 import {
   TestSuite,
@@ -25,28 +22,7 @@ import {
   ResultStatus,
   StepStatus,
   TestCategory,
-  TestStatusBadge,
-  formatDuration,
-  formatDateTime,
-  formatRelativeTime,
-  getStatusColorClass,
-  getStatusBadgeClass,
-  getStatusIcon,
-  getStatusLabel,
-  getTestTypeLabel,
-  getTestTypeColorClass,
-  getTestTypeBadgeClass,
-  getTestTypeIcon,
-  formatPercentage,
-  formatBytes,
-  getLighthouseScoreColorClass,
-  getLighthouseScoreBadgeClass,
-  getImpactColorClass,
-  getImpactBadgeClass,
-  calculatePassRate,
-  truncateText,
   // Feature #48: Import extracted components
-  VideoPlayer,
   DeleteTestModal,
   ApproveBaselineModal,
   RestoreBaselineModal,
@@ -61,6 +37,7 @@ import {
   EditTestModal,
   AddStepModal,
   AIExplainModal,
+  UnsavedChangesConfirmModal,
   TestExplanation,
   QuickScheduleModal,
   ViewCodeTab,
@@ -68,39 +45,27 @@ import {
   TestDetailsCard,
   TestStepsTab,
   BaselineTab,
-  LiveExecutionPanel,
   TestHeader,
-  TestResultCard,
-  exportAccessibilityPDF,
-  exportAccessibilityCSV,
+  CurrentRunStatusSection,
   // Feature #48: Code generation utilities
   generatePlaywrightCode,
   generateK6Script,
   getK6Templates,
   highlightJavaScriptLine,
-  detectFoldableRegions,
   isLineHidden,
   getFoldIcon,
-  selectorPatterns,
-  getValuePatterns,
   findSelectorAutocomplete,
   findValueAutocomplete,
   type FoldableRegion,
   type K6Template,
   // Feature #48: Custom hooks for state management
-  useTestDetailState,
-  useTestDetailActions,
   useBaselineHandlers,
   useStepHandlers,
   useTestCrudHandlers,
   useRunHandlers,
   useBaselineDataFetching,
   useTestPageUtilities,
-  // Note: FlakinessTrend is also imported as a component above
 } from '../components/test-detail';
-
-// Removed inline type definitions - now imported from test-detail module (Feature #48)
-// Removed VideoPlayer - now imported from test-detail module (Feature #48)
 
 function TestDetailPage() {
   const { testId } = useParams<{ testId: string }>();
@@ -234,10 +199,9 @@ function TestDetailPage() {
   const [isEditingK6Script, setIsEditingK6Script] = useState(false);
   const [isSavingK6Script, setIsSavingK6Script] = useState(false);
   const [showK6Templates, setShowK6Templates] = useState(false);
-  // Feature #323: K6 script code folding state
+  // K6 script code folding state
   const [foldedRegions, setFoldedRegions] = useState<Set<number>>(new Set());
 
-  // Feature #48: Toggle fold state for a line (uses state)
   const toggleFold = useCallback((lineNumber: number) => {
     setFoldedRegions(prev => {
       const newSet = new Set(prev);
@@ -250,7 +214,6 @@ function TestDetailPage() {
     });
   }, []);
 
-  // Feature #48: Wrappers for code folding functions that use state
   const getFoldIconForLine = useCallback((lineNumber: number, regions: FoldableRegion[]) => {
     return getFoldIcon(lineNumber, regions, foldedRegions);
   }, [foldedRegions]);
@@ -339,17 +302,14 @@ function TestDetailPage() {
   const [testExplanation, setTestExplanation] = useState<TestExplanation | null>(null);
   const [isExplainingTest, setIsExplainingTest] = useState(false);
 
-  // Feature #48: Wrapper for generatePlaywrightCode that uses test name from state
   const generatePlaywrightCodeForTest = useCallback((steps: TestType['steps'] | undefined) => {
     return generatePlaywrightCode(steps || [], test?.name || 'Untitled Test');
   }, [test?.name]);
 
-  // Feature #48: Wrapper for generateK6Script that uses test from state
   const generateK6ScriptForTest = useCallback(() => {
     return generateK6Script(test);
   }, [test]);
 
-  // Feature #48: Syntax highlighting wrapper using imported utility
   const highlightJavaScript = useCallback((code: string): JSX.Element[] => {
     const lines = code.split('\n');
     return lines.map((line, lineIndex) => {
@@ -365,17 +325,15 @@ function TestDetailPage() {
     });
   }, []);
 
-  // Feature #48: K6 script templates from utility
   const k6Templates = useMemo(() => getK6Templates(test?.target_url || ''), [test?.target_url]);
 
-  // Initialize K6 script when tab is opened for load tests
+  // Initialize K6 script when tab is opened
   useEffect(() => {
     if (test?.test_type === 'load' && activeTab === 'k6script' && !k6Script) {
       setK6Script(test?.k6_script || generateK6ScriptForTest());
     }
   }, [test?.test_type, activeTab, test?.k6_script, generateK6ScriptForTest]);
 
-  // Feature #48: Use extracted step handlers hook
   const {
     handleStepDragStart,
     handleStepDragEnd,
@@ -411,12 +369,6 @@ function TestDetailPage() {
     setAddStepError,
     setShowAddStepModal,
   });
-
-  // Feature #48: Inline handlers removed - now using custom hooks
-  // handleStepDragStart, handleStepDragEnd, handleStepDragOver, handleStepDrop,
-  // handleSaveStepOrder, handleSaveCode, handleRevertToSteps, handleStartEditCode,
-  // handleCancelEditCode, handleExplainTest (useStepHandlers)
-  // handleDownloadAllArtifacts (useTestPageUtilities)
 
   // Reset zoom and pan when lightbox image changes
   useEffect(() => {
@@ -655,12 +607,9 @@ function TestDetailPage() {
     });
   };
 
-  // Feature #48: handleCompareRuns moved to useTestPageUtilities hook
-
   const [newStepAction, setNewStepAction] = useState('navigate');
   const [newStepSelector, setNewStepSelector] = useState('');
   const [newStepValue, setNewStepValue] = useState('');
-  // Feature #48: isAddingStep, addStepError moved earlier (before useStepHandlers hook)
   const [newStepCheckpointName, setNewStepCheckpointName] = useState('');
   const [newStepCheckpointThreshold, setNewStepCheckpointThreshold] = useState('0.1');
   // Accessibility check step configuration
@@ -669,16 +618,15 @@ function TestDetailPage() {
   const [newStepA11yFailOnCritical, setNewStepA11yFailOnCritical] = useState(true);
   const [newStepA11yThreshold, setNewStepA11yThreshold] = useState('0'); // 0 = any violation fails
 
-  // Feature #1236: AI Copilot autocomplete state for test steps
+  // AI Copilot autocomplete state
   const [selectorAutocomplete, setSelectorAutocomplete] = useState<string | null>(null);
   const [valueAutocomplete, setValueAutocomplete] = useState<string | null>(null);
   const [showSelectorAutocomplete, setShowSelectorAutocomplete] = useState(false);
   const [showValueAutocomplete, setShowValueAutocomplete] = useState(false);
 
-  // Feature #48: Autocomplete using imported utilities
   const baseUrl = test?.target_url || '';
 
-  // Feature #1236: Generate autocomplete suggestion for selector using imported utility
+  // Autocomplete suggestion for selector
   useEffect(() => {
     if (!newStepSelector || !showAddStepModal) {
       setSelectorAutocomplete(null);
@@ -695,7 +643,7 @@ function TestDetailPage() {
     }
   }, [newStepSelector, showAddStepModal]);
 
-  // Feature #1236: Generate autocomplete suggestion for value using imported utility
+  // Autocomplete suggestion for value
   useEffect(() => {
     if (!newStepValue || !showAddStepModal) {
       setValueAutocomplete(null);
@@ -712,7 +660,7 @@ function TestDetailPage() {
     }
   }, [newStepValue, newStepAction, showAddStepModal, baseUrl]);
 
-  // Feature #1236: Handle Tab key to accept autocomplete
+  // Handle Tab key to accept autocomplete
   const handleSelectorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Tab' && selectorAutocomplete && showSelectorAutocomplete) {
       e.preventDefault();
@@ -735,7 +683,6 @@ function TestDetailPage() {
   const canDelete = user?.role !== 'viewer';
   const canRun = user?.role !== 'viewer';
 
-  // Feature #48: Use extracted CRUD handlers hook
   const {
     handleDelete,
     handleEdit: handleEditFromHook,
@@ -756,7 +703,6 @@ function TestDetailPage() {
     setDuplicateError,
   });
 
-  // Feature #48: Use extracted baseline handlers hook
   const {
     handleApproveBaseline,
     handleRestoreBaseline,
@@ -815,7 +761,6 @@ function TestDetailPage() {
     }
   };
 
-  // Feature #48: Use extracted run handlers hook
   const {
     handleRunTest,
     handleCancelRun,
@@ -837,7 +782,6 @@ function TestDetailPage() {
     fetchRuns,
   });
 
-  // Feature #48: Use extracted utility handlers hook
   const {
     handleDownloadAllArtifacts,
     handleCompareRuns,
@@ -886,11 +830,6 @@ function TestDetailPage() {
     await handleEditFromHook(editName, editDescription);
   };
 
-  // Feature #48: handleCreateQuickSchedule moved to useTestPageUtilities hook
-
-  // Feature #48: Inline baseline handlers removed - now using useBaselineHandlers hook
-  // Handlers: handleApproveBaseline, handleRestoreBaseline, handleRejectChanges, handleMergeBaseline
-
   // Check rejection status when test result changes
   useEffect(() => {
     const checkRejectionStatus = async () => {
@@ -913,21 +852,12 @@ function TestDetailPage() {
     checkRejectionStatus();
   }, [currentRun?.id, testId, token]);
 
-  // Feature #48: handleRunTest removed - now using useRunHandlers hook
-
-  // Feature #48: handleCancelRun removed - now using useRunHandlers hook
-
-  // Feature #48: pollRunStatus, duplicate fetchRuns, fetchFlakinessTrend removed - now in hooks
-
-  // Feature #1101: Fetch flakiness trend when test ID changes
+  // Fetch flakiness trend when test ID changes
   useEffect(() => {
     if (testId && token) {
       fetchFlakinessTrend();
     }
   }, [testId, token, fetchFlakinessTrend]);
-
-  // Feature #48: handleAddStep moved to useStepHandlers hook
-  // The hook now handles step creation, the component just needs to pass step data
 
   // Wrapper to reset form fields after adding step
   const handleAddStepWithReset = async (e: React.FormEvent) => {
@@ -1003,7 +933,6 @@ function TestDetailPage() {
     fetchTest();
   }, [testId, token]);
 
-  // Feature #48: Baseline data fetching moved to useBaselineDataFetching hook
   useBaselineDataFetching({
     testId,
     token,
@@ -1266,42 +1195,12 @@ function TestDetailPage() {
           }}
         />
 
-        {/* Unsaved Changes Warning Modal */}
-        {showUnsavedChangesModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-            <div role="alertdialog" aria-modal="true" aria-labelledby="unsaved-changes-title" aria-describedby="unsaved-changes-desc" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg">
-              <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-100">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 id="unsaved-changes-title" className="text-lg font-semibold text-foreground">Unsaved Changes</h3>
-                  <p id="unsaved-changes-desc" className="mt-2 text-sm text-muted-foreground">
-                    You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
-                  </p>
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={handleCancelNavigation}
-                  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmNavigation}
-                  className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
-                >
-                  Discard Changes
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Unsaved Changes Warning Modal - Feature #48: Extracted to component */}
+        <UnsavedChangesConfirmModal
+          show={showUnsavedChangesModal}
+          onCancel={handleCancelNavigation}
+          onConfirm={handleConfirmNavigation}
+        />
 
         {/* Test Details - Feature #48: Using extracted TestDetailsCard component */}
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
@@ -1488,103 +1387,44 @@ function TestDetailPage() {
           onClose={() => setShowAddStepModal(false)}
         />
 
-        {/* Current Run Status */}
+        {/* Current Run Status - Feature #48: Extracted to component */}
         {currentRun && (
-          <div className="mt-8 rounded-lg border border-border bg-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Current Run</h2>
-              {/* Download All Artifacts Button */}
-              {currentRun.results && currentRun.results.length > 0 &&
-               (currentRun.status === 'passed' || currentRun.status === 'failed' || currentRun.status === 'error') && (
-                <button
-                  onClick={() => handleDownloadAllArtifacts(currentRun.id)}
-                  disabled={isDownloadingArtifacts}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
-                >
-                  {isDownloadingArtifacts ? (
-                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  ) : (
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                  )}
-                  {isDownloadingArtifacts ? 'Downloading...' : 'Download All Artifacts'}
-                </button>
-              )}
-            </div>
-            <div>
-              <div className="flex items-center gap-4">
-                {/* Feature #1979: Added 'warning' status styling for accessibility tests */}
-                <span className={`rounded-full px-3 py-1 text-sm font-medium ${
-                  currentRun.status === 'passed' ? 'bg-green-100 text-green-700' :
-                  currentRun.status === 'failed' ? 'bg-red-100 text-red-700' :
-                  currentRun.status === 'warning' ? 'bg-amber-100 text-amber-700' :
-                  currentRun.status === 'running' ? 'bg-blue-100 text-blue-700' :
-                  currentRun.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
-                  {currentRun.status}
-                </span>
-                {currentRun.duration_ms !== undefined && (
-                  <span className="text-sm text-muted-foreground">
-                    Duration: {currentRun.duration_ms}ms
-                  </span>
-                )}
-              </div>
-
-              {/* Live Execution Panel - Feature #48: Extracted to component */}
-              <LiveExecutionPanel
-                currentRun={currentRun as any}
-                test={test}
-                liveProgress={liveProgress}
-                liveScreenshot={liveScreenshot}
-                liveConsoleLogs={liveConsoleLogs}
-                isCancellingRun={isCancellingRun}
-                onCancelRun={handleCancelRun}
-              />
-
-              {/* Test Results - Feature #48: Extracted to TestResultCard component */}
-              {currentRun.results && currentRun.results.length > 0 && (
-                <div className="mt-4 space-y-4">
-                  {currentRun.results.map((result) => (
-                    <TestResultCard
-                      key={result.test_id}
-                      result={result as any}
-                      testType={test?.test_type}
-                      token={token || ''}
-                      comparisonViewMode={comparisonViewMode}
-                      setComparisonViewMode={setComparisonViewMode}
-                      sliderPosition={sliderPosition}
-                      setSliderPosition={setSliderPosition}
-                      onionSkinOpacity={onionSkinOpacity}
-                      setOnionSkinOpacity={setOnionSkinOpacity}
-                      diffOverlayOpacity={diffOverlayOpacity}
-                      setDiffOverlayOpacity={setDiffOverlayOpacity}
-                      imageZoomLevel={imageZoomLevel}
-                      setImageZoomLevel={setImageZoomLevel}
-                      baselineContainerRef={baselineContainerRef}
-                      currentContainerRef={currentContainerRef}
-                      diffContainerRef={diffContainerRef}
-                      handleSyncScroll={handleSyncScroll}
-                      onOpenLightbox={setLightboxImage}
-                      onApproveBaseline={(runId) => handleApproveBaseline(runId)}
-                      onRejectChanges={(runId) => handleRejectChanges(runId)}
-                      a11ySeverityFilter={a11ySeverityFilter as any}
-                      setA11ySeverityFilter={setA11ySeverityFilter as any}
-                      a11yCategoryFilter={a11yCategoryFilter as any}
-                      setA11yCategoryFilter={setA11yCategoryFilter as any}
-                      a11ySearchQuery={a11ySearchQuery as any}
-                      setA11ySearchQuery={setA11ySearchQuery as any}
-                      formatDateTime={formatDateTime}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <CurrentRunStatusSection
+            currentRun={currentRun}
+            test={test}
+            liveProgress={liveProgress}
+            liveScreenshot={liveScreenshot}
+            liveConsoleLogs={liveConsoleLogs}
+            isCancellingRun={isCancellingRun}
+            isDownloadingArtifacts={isDownloadingArtifacts}
+            onCancelRun={handleCancelRun}
+            onDownloadAllArtifacts={handleDownloadAllArtifacts}
+            comparisonViewMode={comparisonViewMode}
+            setComparisonViewMode={setComparisonViewMode}
+            sliderPosition={sliderPosition}
+            setSliderPosition={setSliderPosition}
+            onionSkinOpacity={onionSkinOpacity}
+            setOnionSkinOpacity={setOnionSkinOpacity}
+            diffOverlayOpacity={diffOverlayOpacity}
+            setDiffOverlayOpacity={setDiffOverlayOpacity}
+            imageZoomLevel={imageZoomLevel}
+            setImageZoomLevel={setImageZoomLevel}
+            baselineContainerRef={baselineContainerRef}
+            currentContainerRef={currentContainerRef}
+            diffContainerRef={diffContainerRef}
+            handleSyncScroll={handleSyncScroll}
+            onOpenLightbox={setLightboxImage}
+            onApproveBaseline={handleApproveBaseline}
+            onRejectChanges={handleRejectChanges}
+            a11ySeverityFilter={a11ySeverityFilter}
+            setA11ySeverityFilter={setA11ySeverityFilter}
+            a11yCategoryFilter={a11yCategoryFilter}
+            setA11yCategoryFilter={setA11yCategoryFilter}
+            a11ySearchQuery={a11ySearchQuery}
+            setA11ySearchQuery={setA11ySearchQuery}
+            token={token || ''}
+            formatDateTime={formatDateTime}
+          />
         )}
 
         {/* Feature #1101: Flakiness Trend - Feature #48: Extracted to component */}

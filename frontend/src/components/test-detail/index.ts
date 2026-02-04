@@ -42,6 +42,7 @@ export { TestStepsTab } from './TestStepsTab';
 export { BaselineTab } from './BaselineTab';
 export { LiveExecutionPanel, type LiveExecutionPanelProps } from './LiveExecutionPanel';
 export { TestHeader, type TestHeaderProps } from './TestHeader';
+export { CurrentRunStatusSection, type CurrentRunStatusSectionProps } from './CurrentRunStatusSection';
 export { TestResultCard, type TestResultCardProps, type TestResult } from './TestResultCard';
 
 // Modals

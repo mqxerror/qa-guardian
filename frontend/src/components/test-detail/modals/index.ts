@@ -1,6 +1,7 @@
 // Feature #48: Test detail modals
 export { DeleteTestModal } from './DeleteTestModal';
 export { UnsavedChangesModal } from './UnsavedChangesModal';
+export { UnsavedChangesConfirmModal } from './UnsavedChangesConfirmModal';
 export { EditTestModal } from './EditTestModal';
 export { AddStepModal } from './AddStepModal';
 export {
