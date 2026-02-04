@@ -92,6 +92,7 @@ import {
   useTestDetailActions,
   useBaselineHandlers,
   useStepHandlers,
+  useTestCrudHandlers,
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
@@ -798,41 +799,33 @@ function TestDetailPage() {
   const canDelete = user?.role !== 'viewer';
   const canRun = user?.role !== 'viewer';
 
-  const handleDelete = async () => {
-    setDeleteError('');
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to delete test');
-      }
-
-      // Navigate to parent suite page after successful deletion
-      if (suite) {
-        navigate(`/suites/${suite.id}`);
-      } else {
-        navigate('/projects');
-      }
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Failed to delete test');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  // Feature #48: Use extracted CRUD handlers hook
+  const {
+    handleDelete,
+    handleEdit: handleEditFromHook,
+    handleDuplicate,
+  } = useTestCrudHandlers({
+    testId,
+    token,
+    suite,
+    test,
+    setIsDeleting,
+    setDeleteError,
+    setIsEditing,
+    setEditError,
+    setShowEditModal,
+    setTest,
+    setIsDirty,
+    setIsDuplicating,
+    setDuplicateError,
+  });
 
   const handleOpenEditModal = () => {
     if (test) {
       setEditName(test.name);
       setEditDescription(test.description || '');
       setEditError('');
-      setIsDirty(false); // Reset dirty state when opening modal
+      setIsDirty(false);
       setShowEditModal(true);
     }
   };
@@ -846,71 +839,10 @@ function TestDetailPage() {
     }
   }, [editName, editDescription, showEditModal, test]);
 
+  // Wrapper for form submission that calls hook handler
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setEditError('');
-    setIsEditing(true);
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: editName,
-          description: editDescription,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to update test');
-      }
-
-      const data = await response.json();
-      setTest(data.test);
-      setIsDirty(false); // Reset dirty state on successful save
-      setShowEditModal(false);
-    } catch (err) {
-      setEditError(err instanceof Error ? err.message : 'Failed to update test');
-    } finally {
-      setIsEditing(false);
-    }
-  };
-
-  const handleDuplicate = async () => {
-    if (!test || !suite) return;
-    setDuplicateError('');
-    setIsDuplicating(true);
-    try {
-      // Create a new test with the same properties but "(Copy)" suffix
-      const response = await fetch(`/api/v1/suites/${suite.id}/tests`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: `${test.name} (Copy)`,
-          description: test.description,
-          steps: test.steps,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to duplicate test');
-      }
-
-      const data = await response.json();
-      // Navigate to the new test
-      navigate(`/tests/${data.test.id}`);
-    } catch (err) {
-      setDuplicateError(err instanceof Error ? err.message : 'Failed to duplicate test');
-    } finally {
-      setIsDuplicating(false);
-    }
+    await handleEditFromHook(editName, editDescription);
   };
 
   // Handle creating a quick schedule for this test

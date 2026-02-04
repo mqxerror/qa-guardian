@@ -74,3 +74,8 @@ export {
   type UseStepHandlersProps,
   type StepHandlers,
 } from './useStepHandlers';
+export {
+  useTestCrudHandlers,
+  type UseTestCrudHandlersProps,
+  type TestCrudHandlers,
+} from './useTestCrudHandlers';
