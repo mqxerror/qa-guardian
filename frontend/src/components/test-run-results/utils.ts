@@ -165,3 +165,95 @@ export const getHealthScoreBarClass = (score: number): string => {
   if (score >= 50) return 'bg-orange-500';
   return 'bg-red-500';
 };
+
+// K6 Time Series data point type
+export interface K6TimeSeriesPoint {
+  time: string;
+  vus: number;
+  rps: number;
+  avg_response_time: number;
+  p95_response_time: number;
+}
+
+// Response time histogram bucket type
+export interface ResponseTimeHistogramBucket {
+  range: string;
+  count: number;
+  percentage: number;
+}
+
+// Feature #1836: Generate mock time series data if not available
+export const generateK6TimeSeries = (loadTestData: any): K6TimeSeriesPoint[] => {
+  // If actual time series data exists, use it
+  if (loadTestData?.time_series && loadTestData.time_series.length > 0) {
+    return loadTestData.time_series;
+  }
+
+  // Generate simulated data based on duration and summary
+  const duration = loadTestData?.duration?.actual || loadTestData?.duration?.configured || 60;
+  const maxVUs = loadTestData?.virtual_users?.max_concurrent || loadTestData?.virtual_users?.configured || 10;
+  const avgRPS = parseFloat(loadTestData?.summary?.requests_per_second) || 100;
+  const avgResponseTime = loadTestData?.response_times?.avg || 200;
+  const p95ResponseTime = loadTestData?.response_times?.p95 || 500;
+
+  const points: K6TimeSeriesPoint[] = [];
+  const interval = Math.max(1, Math.floor(duration / 30)); // ~30 data points
+
+  for (let t = 0; t <= duration; t += interval) {
+    // Simulate ramp-up in first 10%, plateau, then ramp-down in last 10%
+    const progress = t / duration;
+    let vuMultiplier: number;
+    if (progress < 0.1) {
+      vuMultiplier = progress / 0.1; // Ramp up
+    } else if (progress > 0.9) {
+      vuMultiplier = (1 - progress) / 0.1; // Ramp down
+    } else {
+      vuMultiplier = 1; // Plateau
+    }
+
+    // Add some variance
+    const variance = 0.9 + Math.random() * 0.2;
+
+    points.push({
+      time: `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`,
+      vus: Math.round(maxVUs * vuMultiplier),
+      rps: Math.round(avgRPS * vuMultiplier * variance),
+      avg_response_time: Math.round(avgResponseTime * variance),
+      p95_response_time: Math.round(p95ResponseTime * variance),
+    });
+  }
+
+  return points;
+};
+
+// Feature #1836: Generate response time distribution histogram
+export const generateResponseTimeHistogram = (loadTestData: any): ResponseTimeHistogramBucket[] => {
+  // If actual histogram data exists, use it
+  if (loadTestData?.response_time_distribution && loadTestData.response_time_distribution.length > 0) {
+    return loadTestData.response_time_distribution;
+  }
+
+  // Generate simulated distribution based on percentiles
+  const rt = loadTestData?.response_times || {};
+  const min = rt.min || 50;
+  const median = rt.median || 200;
+  const p95 = rt.p95 || 500;
+  const max = rt.max || 2000;
+
+  // Create histogram buckets
+  const buckets = [
+    { range: `0-${Math.round(min * 1.5)}ms`, percentage: 15 },
+    { range: `${Math.round(min * 1.5)}-${Math.round(median * 0.8)}ms`, percentage: 25 },
+    { range: `${Math.round(median * 0.8)}-${Math.round(median * 1.2)}ms`, percentage: 30 },
+    { range: `${Math.round(median * 1.2)}-${Math.round(p95 * 0.8)}ms`, percentage: 18 },
+    { range: `${Math.round(p95 * 0.8)}-${Math.round(p95)}ms`, percentage: 8 },
+    { range: `${Math.round(p95)}-${Math.round(max)}ms`, percentage: 4 },
+  ];
+
+  const totalRequests = loadTestData?.summary?.total_requests || 10000;
+  return buckets.map(b => ({
+    range: b.range,
+    count: Math.round(totalRequests * b.percentage / 100),
+    percentage: b.percentage,
+  }));
+};

@@ -7,8 +7,7 @@ import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useOrganizationBrandingStore } from '../stores/organizationBrandingStore';
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ComposedChart, Cell, ReferenceLine, ReferenceArea, ReferenceDot } from 'recharts';
-import { jsPDF } from 'jspdf';
+// Feature #46: Recharts and jsPDF imports removed - now used only in extracted components
 import { io, Socket } from 'socket.io-client';
 import { toast } from '../stores/toastStore';
 import { useMetricsState } from '../hooks/useMetricsState';
@@ -43,6 +42,9 @@ import {
   getScoreColorClass,
   getScoreBgClass,
   getScreenshotTypeBadgeColor,
+  detectSimpleError,
+  generateK6TimeSeries,
+  generateResponseTimeHistogram,
   ActiveTab,
   // Import types from modular components - eliminates ~380 lines of duplicate type definitions
   StepResult,
@@ -67,6 +69,11 @@ import {
   // Feature #46: Report generation utilities (extracted from this file)
   generatePdfReport,
   generateHtmlReport,
+  // Feature #46 Phase 2: Extract modal and view components
+  ExportModal,
+  BatchAnalysisModal,
+  LiveExecutionView,
+  ComparisonPanel,
 } from '../components/test-run-results';
 
 export default function TestRunResultPage() {
@@ -257,8 +264,6 @@ export default function TestRunResultPage() {
     seekVisualVideoToMarker, handleVisualVideoTimeUpdate,
   } = useVisualTestState({ runId, token, setRetryTrigger });
 
-  // Feature #1838: Accessibility tab enhanced state - moved to useAccessibilityState hook
-
   // Feature #1839: Logs tab enhanced state
   const [logsViewMode, setLogsViewMode] = useState<'unified' | 'console' | 'network'>('unified');
   const [logsFilter, setLogsFilter] = useState<{
@@ -273,8 +278,6 @@ export default function TestRunResultPage() {
   const [expandedNetworkItems, setExpandedNetworkItems] = useState<Set<number>>(new Set());
   const [logsExportFormat, setLogsExportFormat] = useState<'json' | 'txt'>('json');
 
-  // Feature #1840: Network tab - HAR viewer and waterfall state extracted to useNetworkAnalysisState hook
-
   // Feature #1841: Individual test result cards state
   const [expandedResultCards, setExpandedResultCards] = useState<Set<string>>(new Set());
   const [selectedResultsFilter, setSelectedResultsFilter] = useState<'all' | 'passed' | 'failed' | 'skipped'>('all');
@@ -283,23 +286,8 @@ export default function TestRunResultPage() {
   // Feature #1842: Run comparison state (previousRuns, selectedCompareRunId, compareRun, loadingCompareRun, runHistory from useTestRunData)
   const [compareMode, setCompareMode] = useState(false);
 
-  // Feature #1843: Export state
+  // Feature #1843: Export modal state
   const [exportModalOpen, setExportModalOpen] = useState(false);
-  const [generatingPdf, setGeneratingPdf] = useState(false);
-  const [generatingShare, setGeneratingShare] = useState(false);
-  const [shareLink, setShareLink] = useState<string | null>(null);
-  const [shareLinkExpiry, setShareLinkExpiry] = useState<'1h' | '24h' | '7d' | '30d'>('24h');
-  const [shareLinkPassword, setShareLinkPassword] = useState('');
-  // Feature #1992: PDF section selection state
-  const [pdfSections, setPdfSections] = useState({
-    summary: true,
-    typeBreakdown: true,
-    testResults: true,
-    failures: true,
-    screenshots: true,
-  });
-  // Feature #1993: HTML export state
-  const [generatingHtml, setGeneratingHtml] = useState(false);
 
   // Feature #1844: Live execution state
   const socketRef = useRef<Socket | null>(null);
@@ -311,48 +299,11 @@ export default function TestRunResultPage() {
   const [executionProgress, setExecutionProgress] = useState<{ current: number; total: number; eta?: number }>({ current: 0, total: 0 });
   const [cancellingTest, setCancellingTest] = useState(false);
 
-  // Feature #1962: AI state removed - AI analysis now only on Visual Review page
-  // Feature #1951: Simple error pattern detection - provides tips without AI cost
-  const SIMPLE_ERROR_PATTERNS: Array<{ pattern: RegExp; tip: string; category: string }> = [
-    { pattern: /element\s*(not\s*found|does\s*not\s*exist|could\s*not\s*be\s*located)/i, tip: 'Check if the selector has changed or the element is inside an iframe/shadow DOM.', category: 'selector' },
-    { pattern: /timeout\s*(exceeded|waiting|error)|timed?\s*out/i, tip: 'Increase wait time or check if the page loads slower than expected.', category: 'timeout' },
-    { pattern: /navigation\s*(failed|error)|failed\s*to\s*navigate/i, tip: 'Verify the URL is correct and the page is accessible.', category: 'navigation' },
-    { pattern: /assertion\s*(failed|error)|expect.*to\s*(be|equal|have|contain)/i, tip: 'Check if the expected value has changed or the comparison is correct.', category: 'assertion' },
-    { pattern: /net::err_|network\s*error|connection\s*(refused|reset|failed)/i, tip: 'Check network connectivity and if the server is running.', category: 'network' },
-    { pattern: /click\s*intercepted|element\s*is\s*not\s*clickable/i, tip: 'Wait for overlays to close or scroll the element into view.', category: 'interaction' },
-    { pattern: /strict\s*mode\s*violation|locator\s*resolved\s*to\s*\d+\s*elements/i, tip: 'Make the selector more specific to match exactly one element.', category: 'selector' },
-    { pattern: /frame\s*(detached|was\s*detached)/i, tip: 'The frame navigated away. Wait for navigation to complete.', category: 'frame' },
-  ];
-
-  const detectSimpleError = useCallback((errorMessage?: string): { isSimple: boolean; tip?: string; category?: string } => {
-    if (!errorMessage) return { isSimple: false };
-
-    for (const { pattern, tip, category } of SIMPLE_ERROR_PATTERNS) {
-      if (pattern.test(errorMessage)) {
-        // Log for tuning (Feature #1951 Step 5)
-        console.log('[AI Skip] Simple error detected:', { category, pattern: pattern.source, errorSnippet: errorMessage.slice(0, 100) });
-        return { isSimple: true, tip, category };
-      }
-    }
-    // Log complex errors that trigger AI
-    console.log('[AI Triggered] Complex error:', { errorSnippet: errorMessage.slice(0, 100) });
-    return { isSimple: false };
-  }, []);
-
-  // Get the primary error from the run results - extracted to useComputedResults hook
-
-  // Detect if the primary error is simple
-  const errorAnalysis = useMemo(() => detectSimpleError(primaryError || undefined), [primaryError, detectSimpleError]);
-
-  // Feature #46: Performance AI analysis state (perfAI*) moved to useMetricsState hook
-
-  // Feature #1936: Accessibility AI analysis state - moved to useAccessibilityState hook
+  // Detect if the primary error is simple (Feature #1951)
+  const errorAnalysis = useMemo(() => detectSimpleError(primaryError || undefined), [primaryError]);
 
   // Feature #1954: Batch failure analysis state
-  const [batchAnalysisLoading, setBatchAnalysisLoading] = useState(false);
-  const [batchAnalysisResult, setBatchAnalysisResult] = useState<string | null>(null);
   const [batchAnalysisOpen, setBatchAnalysisOpen] = useState(false);
-  const [batchAnalysisCached, setBatchAnalysisCached] = useState(false);
 
   // Feature #1865: Video playback synchronized with timeline
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -361,17 +312,6 @@ export default function TestRunResultPage() {
   const [videoError, setVideoError] = useState<string | null>(null);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-
-  // Feature #1880: Visual video state extracted to useVisualTestState hook
-
-  // Feature #46: resultSummary and consoleLogs extracted to useComputedResults hook
-
-  // Get network requests - extracted to useNetworkAnalysisState hook
-  // performanceResults, accessibilityResults, loadTestResults, visualResults,
-  // videoFile, and runDurationMs extracted to useComputedResults hook
-
-  // Feature #1880: visualMarkers extracted to useComputedResults hook
-  // Feature #46: seekVisualVideoToMarker and handleVisualVideoTimeUpdate moved to useTestRunHandlers hook
 
   // Feature #1865: Fetch video when available
   useEffect(() => {
@@ -410,8 +350,6 @@ export default function TestRunResultPage() {
       }
     };
   }, [videoFile, token]);
-
-  // Feature #46: seekVideoToTime, handleVideoTimeUpdate, handleVideoDownload moved to useTestRunHandlers hook
 
   // Feature #46: Data fetching useEffects (fetchRunData, fetchPreviousRuns, fetchCompareRun)
   // moved to useTestRunData hook
@@ -557,83 +495,7 @@ export default function TestRunResultPage() {
 
   // Feature #46: exportK6ResultsPDF imported from components/test-run-results/pdfExport
 
-  // Feature #46: exportLighthousePDF imported from components/test-run-results/pdfExport
-
-  // Feature #1836: Generate mock time series data if not available
-  const generateK6TimeSeries = (loadTestData: any): Array<{ time: string; vus: number; rps: number; avg_response_time: number; p95_response_time: number }> => {
-    // If actual time series data exists, use it
-    if (loadTestData?.time_series && loadTestData.time_series.length > 0) {
-      return loadTestData.time_series;
-    }
-
-    // Generate simulated data based on duration and summary
-    const duration = loadTestData?.duration?.actual || loadTestData?.duration?.configured || 60;
-    const maxVUs = loadTestData?.virtual_users?.max_concurrent || loadTestData?.virtual_users?.configured || 10;
-    const avgRPS = parseFloat(loadTestData?.summary?.requests_per_second) || 100;
-    const avgResponseTime = loadTestData?.response_times?.avg || 200;
-    const p95ResponseTime = loadTestData?.response_times?.p95 || 500;
-
-    const points: Array<{ time: string; vus: number; rps: number; avg_response_time: number; p95_response_time: number }> = [];
-    const interval = Math.max(1, Math.floor(duration / 30)); // ~30 data points
-
-    for (let t = 0; t <= duration; t += interval) {
-      // Simulate ramp-up in first 10%, plateau, then ramp-down in last 10%
-      const progress = t / duration;
-      let vuMultiplier: number;
-      if (progress < 0.1) {
-        vuMultiplier = progress / 0.1; // Ramp up
-      } else if (progress > 0.9) {
-        vuMultiplier = (1 - progress) / 0.1; // Ramp down
-      } else {
-        vuMultiplier = 1; // Plateau
-      }
-
-      // Add some variance
-      const variance = 0.9 + Math.random() * 0.2;
-
-      points.push({
-        time: `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`,
-        vus: Math.round(maxVUs * vuMultiplier),
-        rps: Math.round(avgRPS * vuMultiplier * variance),
-        avg_response_time: Math.round(avgResponseTime * variance),
-        p95_response_time: Math.round(p95ResponseTime * variance),
-      });
-    }
-
-    return points;
-  };
-
-  // Feature #1836: Generate response time distribution histogram
-  const generateResponseTimeHistogram = (loadTestData: any): Array<{ range: string; count: number; percentage: number }> => {
-    // If actual histogram data exists, use it
-    if (loadTestData?.response_time_distribution && loadTestData.response_time_distribution.length > 0) {
-      return loadTestData.response_time_distribution;
-    }
-
-    // Generate simulated distribution based on percentiles
-    const rt = loadTestData?.response_times || {};
-    const min = rt.min || 50;
-    const median = rt.median || 200;
-    const p95 = rt.p95 || 500;
-    const max = rt.max || 2000;
-
-    // Create histogram buckets
-    const buckets = [
-      { range: `0-${Math.round(min * 1.5)}ms`, percentage: 15 },
-      { range: `${Math.round(min * 1.5)}-${Math.round(median * 0.8)}ms`, percentage: 25 },
-      { range: `${Math.round(median * 0.8)}-${Math.round(median * 1.2)}ms`, percentage: 30 },
-      { range: `${Math.round(median * 1.2)}-${Math.round(p95 * 0.8)}ms`, percentage: 18 },
-      { range: `${Math.round(p95 * 0.8)}-${Math.round(p95)}ms`, percentage: 8 },
-      { range: `${Math.round(p95)}-${Math.round(max)}ms`, percentage: 4 },
-    ];
-
-    const totalRequests = loadTestData?.summary?.total_requests || 10000;
-    return buckets.map(b => ({
-      range: b.range,
-      count: Math.round(totalRequests * b.percentage / 100),
-      percentage: b.percentage,
-    }));
-  };
+  // Feature #46: exportLighthousePDF, generateK6TimeSeries, generateResponseTimeHistogram imported from components/test-run-results
 
   // Feature #46: Visual test handlers (toggleVisualResult, handleSliderChange, handleOnionOpacityChange,
   // handleZoomIn/Out/Reset/Fit, handlePanStart/Move/End, handleWheelZoom, handleApproveBaseline,
@@ -851,7 +713,8 @@ export default function TestRunResultPage() {
 
   // Feature #1841: Get key metric for a test result based on type
   // Feature #1980: Show correct test type badge - check visual indicators and use testInfo fallback
-  const getKeyMetric = (result: TestResult) => {
+  type KeyMetricType = 'performance' | 'accessibility' | 'load' | 'visual' | 'e2e';
+  const getKeyMetric = (result: TestResult): { label: string; value: string; type: KeyMetricType } => {
     // Check for performance metrics
     const perfStep = result.steps.find(s => s.lighthouse);
     if (perfStep?.lighthouse) {
@@ -896,7 +759,7 @@ export default function TestRunResultPage() {
     // Feature #1980: Use testInfo.type as fallback for correct badge display
     // This handles cases where test type-specific data isn't in the result
     if (testInfo?.type) {
-      const typeMapping: Record<string, string> = {
+      const typeMapping: Record<string, KeyMetricType> = {
         'visual_regression': 'visual',
         'lighthouse': 'performance',
         'load': 'load',
@@ -1042,179 +905,11 @@ export default function TestRunResultPage() {
   };
 
   // Feature #1842: Compare run summary
-  const compareRunSummary = useMemo(() => {
-    if (!compareRun?.results) return { passed: 0, failed: 0, skipped: 0, total: 0 };
-    return {
-      passed: compareRun.results.filter(r => r.status === 'passed').length,
-      failed: compareRun.results.filter(r => r.status === 'failed' || r.status === 'error').length,
-      skipped: compareRun.results.filter(r => r.status === 'skipped').length,
-      total: compareRun.results.length,
-    };
-  }, [compareRun]);
+  // Feature #46: Comparison panel logic (compareRunSummary, calculateDelta, comparisonMetrics)
+  // moved to ComparisonPanel component
 
-  // Feature #1842: Calculate delta between current and compare run
-  const calculateDelta = (current: number, baseline: number): { value: number; direction: 'up' | 'down' | 'same' } => {
-    const delta = current - baseline;
-    return {
-      value: Math.abs(delta),
-      direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'same',
-    };
-  };
-
-  // Feature #1842: Get comparison metrics
-  const comparisonMetrics = useMemo(() => {
-    if (!run || !compareRun) return null;
-
-    const durationDelta = calculateDelta(run.duration_ms || 0, compareRun.duration_ms || 0);
-    const passedDelta = calculateDelta(resultSummary.passed, compareRunSummary.passed);
-    const failedDelta = calculateDelta(resultSummary.failed, compareRunSummary.failed);
-
-    return {
-      duration: {
-        current: run.duration_ms || 0,
-        baseline: compareRun.duration_ms || 0,
-        delta: durationDelta,
-        improved: durationDelta.direction === 'down', // faster is better
-      },
-      passed: {
-        current: resultSummary.passed,
-        baseline: compareRunSummary.passed,
-        delta: passedDelta,
-        improved: passedDelta.direction === 'up', // more passed is better
-      },
-      failed: {
-        current: resultSummary.failed,
-        baseline: compareRunSummary.failed,
-        delta: failedDelta,
-        improved: failedDelta.direction === 'down', // fewer failed is better
-      },
-      total: {
-        current: resultSummary.total,
-        baseline: compareRunSummary.total,
-      },
-    };
-  }, [run, compareRun, resultSummary, compareRunSummary]);
-
-  // Feature #1843 + #1988 + #46: Generate PDF report (extracted to reportGenerators.ts)
-  const handleGeneratePdfReport = async () => {
-    if (!run) return;
-    await generatePdfReport({
-      run,
-      resultSummary,
-      pdfSections,
-      logoBase64,
-      organizationName,
-      setGeneratingPdf,
-    });
-  };
-
-
-  // Feature #1843: Export full JSON
-  const exportFullJson = () => {
-    if (!run) return;
-
-    const fullData = {
-      run: {
-        id: run.id,
-        suite_id: run.suite_id,
-        status: run.status,
-        started_at: run.started_at,
-        completed_at: run.completed_at,
-        duration_ms: run.duration_ms,
-        created_at: run.created_at,
-      },
-      summary: resultSummary,
-      results: run.results.map(r => ({
-        test_id: r.test_id,
-        test_name: r.test_name,
-        status: r.status,
-        duration_ms: r.duration_ms,
-        error: r.error,
-        steps: r.steps.map(s => ({
-          id: s.id,
-          action: s.action,
-          selector: s.selector,
-          status: s.status,
-          duration_ms: s.duration_ms,
-          error: s.error,
-        })),
-        console_logs_count: r.console_logs?.length || 0,
-        network_requests_count: r.network_requests?.length || 0,
-      })),
-      console_logs: consoleLogs,
-      network_requests: networkRequests.map(r => ({
-        method: r.method,
-        url: r.url,
-        status: r.status,
-        duration_ms: r.duration_ms,
-        resourceType: r.resourceType,
-      })),
-      generated_at: new Date().toISOString(),
-    };
-
-    const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `test-report-${run.id}-full.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  // Feature #1993 + #46: Generate HTML report (extracted to reportGenerators.ts)
-  const handleGenerateHtmlReport = () => {
-    if (!run) return;
-    generateHtmlReport({
-      run,
-      resultSummary,
-      setGeneratingHtml,
-    });
-  };
-
-  // Feature #1843: Generate shareable link
-  const generateShareLink = async () => {
-    if (!run || !token) return;
-
-    setGeneratingShare(true);
-    try {
-      const response = await fetch('/api/v1/runs/share', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          run_id: run.id,
-          expiry: shareLinkExpiry,
-          password: shareLinkPassword || undefined,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setShareLink(data.share_url || `${window.location.origin}/shared/${data.share_id}`);
-      } else {
-        // Fallback: generate a mock share link for demo
-        const mockShareId = btoa(`${run.id}-${Date.now()}`).replace(/=/g, '');
-        setShareLink(`${window.location.origin}/shared/run/${mockShareId}`);
-      }
-    } catch {
-      // Fallback for demo
-      const mockShareId = btoa(`${run.id}-${Date.now()}`).replace(/=/g, '');
-      setShareLink(`${window.location.origin}/shared/run/${mockShareId}`);
-    } finally {
-      setGeneratingShare(false);
-    }
-  };
-
-  // Feature #1843: Copy share link to clipboard
-  const copyShareLink = async () => {
-    if (shareLink) {
-      await navigator.clipboard.writeText(shareLink);
-    }
-  };
+  // Feature #46: Export functionality (handleGeneratePdfReport, exportFullJson, handleGenerateHtmlReport,
+  // generateShareLink, copyShareLink) moved to ExportModal component
 
   // Feature #46: allSteps, screenshots, allScreenshots extracted to useComputedResults hook
 
@@ -1297,96 +992,7 @@ export default function TestRunResultPage() {
     setPerfAIResult,
   });
 
-  // Feature #1954: Batch analysis for multiple failures
-  const handleBatchAnalysis = async () => {
-    if (!run || !token) return;
-
-    // Get all failed tests
-    const failedTests = run.results.filter(r => r.status === 'failed' || r.status === 'error');
-    if (failedTests.length < 2) return;
-
-    // Check cache using run ID as key
-    const cacheKey = `batch_${run.id}`;
-    try {
-      const cachedStr = localStorage.getItem(`ai_batch_${cacheKey}`);
-      if (cachedStr) {
-        const cached = JSON.parse(cachedStr);
-        if (Date.now() - cached.timestamp < 24 * 60 * 60 * 1000) {
-          setBatchAnalysisResult(cached.analysis);
-          setBatchAnalysisCached(true);
-          setBatchAnalysisOpen(true);
-          console.log('[AI Cache] Using cached batch analysis');
-          return;
-        }
-      }
-    } catch (e) {
-      // Ignore cache errors
-    }
-
-    setBatchAnalysisOpen(true);
-    setBatchAnalysisLoading(true);
-    setBatchAnalysisResult(null);
-    setBatchAnalysisCached(false);
-
-    // Step 2: Collect error summaries (not full data)
-    const errorSummaries = failedTests.map(t => {
-      const failedStep = t.steps.find(s => s.status === 'failed');
-      return {
-        test_name: t.test_name,
-        error: (t.error || failedStep?.error || 'Unknown error').slice(0, 200),
-        selector: failedStep?.selector,
-        action: failedStep?.action,
-        duration_ms: t.duration_ms,
-      };
-    });
-
-    try {
-      const response = await fetch('https://qa.pixelcraftedmedia.com/api/v1/mcp-tools/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          message: `Analyze these ${failedTests.length} test failures and find the COMMON ROOT CAUSE.
-
-Failed Tests:
-${JSON.stringify(errorSummaries, null, 2)}
-
-Please identify:
-1. **Most Likely Root Cause**: What single issue is causing multiple tests to fail?
-2. **Common Patterns**: Shared selectors, pages, timing issues, or error types
-3. **Priority Fix**: What ONE thing should be fixed to resolve multiple failures?
-4. **Individual vs Systemic**: Are these independent failures or related to the same underlying issue?`,
-          complexity: 'simple', // Use Haiku for cost efficiency
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const analysis = data.response || data.content || 'No analysis available';
-        setBatchAnalysisResult(analysis);
-        // Cache the result
-        try {
-          localStorage.setItem(`ai_batch_${cacheKey}`, JSON.stringify({
-            analysis,
-            timestamp: Date.now(),
-          }));
-        } catch (e) {
-          // Storage full
-        }
-        console.log('[AI Triggered] Batch failure analysis for', failedTests.length, 'tests');
-      } else {
-        setBatchAnalysisResult('Failed to analyze failures. Please try again.');
-      }
-    } catch (error) {
-      console.error('Batch analysis failed:', error);
-      setBatchAnalysisResult('Error connecting to AI service. Please try again.');
-    } finally {
-      setBatchAnalysisLoading(false);
-    }
-  };
-
+  // Feature #1954: Batch analysis functionality moved to BatchAnalysisModal component
   // Feature #1971: Ask AI button and related functions DELETED
   // AI analysis is now ONLY available on the Visual Review page for diff analysis
 
@@ -1603,354 +1209,38 @@ Please identify:
           completedAt={run.completed_at}
         />
 
-        {/* Feature #1842: Comparison Panel */}
-        {compareMode && (
-          <div className="mt-6 pt-6 border-t border-border">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-foreground">Compare with Previous Run</h3>
-              <select
-                value={selectedCompareRunId || ''}
-                onChange={(e) => setSelectedCompareRunId(e.target.value || null)}
-                className="px-3 py-1.5 border border-border rounded-md bg-background text-foreground"
-              >
-                <option value="">Select a run to compare...</option>
-                {previousRuns.map(prevRun => (
-                  <option key={prevRun.id} value={prevRun.id}>
-                    {new Date(prevRun.created_at).toLocaleString()} - {prevRun.status}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {loadingCompareRun && (
-              <div className="text-center py-4">
-                <svg className="animate-spin h-6 w-6 mx-auto text-primary" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-              </div>
-            )}
-
-            {comparisonMetrics && (
-              <div className="space-y-4">
-                {/* Comparison Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {/* Duration */}
-                  <div className={`p-4 rounded-lg border ${
-                    comparisonMetrics.duration.improved
-                      ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
-                      : comparisonMetrics.duration.delta.direction !== 'same'
-                      ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800'
-                      : 'bg-muted/50 border-border'
-                  }`}>
-                    <div className="text-sm text-muted-foreground mb-1">Duration</div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold text-foreground">
-                        {formatDuration(comparisonMetrics.duration.current)}
-                      </span>
-                      {comparisonMetrics.duration.delta.direction !== 'same' && (
-                        <span className={`flex items-center text-sm ${
-                          comparisonMetrics.duration.improved ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {comparisonMetrics.duration.delta.direction === 'down' ? (
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                            </svg>
-                          ) : (
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                            </svg>
-                          )}
-                          {formatDuration(comparisonMetrics.duration.delta.value)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      vs {formatDuration(comparisonMetrics.duration.baseline)}
-                    </div>
-                  </div>
-
-                  {/* Passed */}
-                  <div className={`p-4 rounded-lg border ${
-                    comparisonMetrics.passed.improved
-                      ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
-                      : comparisonMetrics.passed.delta.direction !== 'same'
-                      ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800'
-                      : 'bg-muted/50 border-border'
-                  }`}>
-                    <div className="text-sm text-muted-foreground mb-1">Passed</div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                        {comparisonMetrics.passed.current}
-                      </span>
-                      {comparisonMetrics.passed.delta.direction !== 'same' && (
-                        <span className={`flex items-center text-sm ${
-                          comparisonMetrics.passed.improved ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {comparisonMetrics.passed.delta.direction === 'up' ? '+' : '-'}
-                          {comparisonMetrics.passed.delta.value}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      vs {comparisonMetrics.passed.baseline}
-                    </div>
-                  </div>
-
-                  {/* Failed */}
-                  <div className={`p-4 rounded-lg border ${
-                    comparisonMetrics.failed.improved
-                      ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
-                      : comparisonMetrics.failed.delta.direction !== 'same'
-                      ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800'
-                      : 'bg-muted/50 border-border'
-                  }`}>
-                    <div className="text-sm text-muted-foreground mb-1">Failed</div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold text-red-600 dark:text-red-400">
-                        {comparisonMetrics.failed.current}
-                      </span>
-                      {comparisonMetrics.failed.delta.direction !== 'same' && (
-                        <span className={`flex items-center text-sm ${
-                          comparisonMetrics.failed.improved ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {comparisonMetrics.failed.delta.direction === 'up' ? '+' : '-'}
-                          {comparisonMetrics.failed.delta.value}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      vs {comparisonMetrics.failed.baseline}
-                    </div>
-                  </div>
-
-                  {/* Total */}
-                  <div className="p-4 rounded-lg border bg-muted/50 border-border">
-                    <div className="text-sm text-muted-foreground mb-1">Total Tests</div>
-                    <div className="text-lg font-bold text-foreground">
-                      {comparisonMetrics.total.current}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      vs {comparisonMetrics.total.baseline}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Trend Chart */}
-                {runHistory.length > 1 && (
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium text-foreground mb-3">Trend (Last {runHistory.length} runs)</h4>
-                    <div className="h-32 bg-muted/30 rounded-lg p-4">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={runHistory.slice().reverse()}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
-                          <XAxis
-                            dataKey="created_at"
-                            tickFormatter={(v) => new Date(v).toLocaleDateString()}
-                            tick={{ fontSize: 10 }}
-                            stroke="currentColor"
-                            opacity={0.5}
-                          />
-                          <YAxis tick={{ fontSize: 10 }} stroke="currentColor" opacity={0.5} />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: 'var(--background)',
-                              border: '1px solid var(--border)',
-                              borderRadius: '8px',
-                            }}
-                            labelFormatter={(v) => new Date(v).toLocaleString()}
-                          />
-                          <Legend />
-                          <Line
-                            type="monotone"
-                            dataKey="passed"
-                            name="Passed"
-                            stroke="#22c55e"
-                            strokeWidth={2}
-                            dot={{ r: 3 }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="failed"
-                            name="Failed"
-                            stroke="#ef4444"
-                            strokeWidth={2}
-                            dot={{ r: 3 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Feature #1842: Comparison Panel - Feature #46: Extracted to ComparisonPanel component */}
+        <ComparisonPanel
+          compareMode={compareMode}
+          previousRuns={previousRuns}
+          selectedCompareRunId={selectedCompareRunId}
+          setSelectedCompareRunId={setSelectedCompareRunId}
+          loadingCompareRun={loadingCompareRun}
+          run={run}
+          compareRun={compareRun}
+          resultSummary={resultSummary}
+          runHistory={runHistory}
+        />
       </div>
 
-      {/* Feature #1844: Live Execution View */}
-      {liveMode && (run?.status === 'running' || run?.status === 'pending') && (
-        <div className="bg-card border-2 border-blue-500 dark:border-blue-600 rounded-lg p-6 mb-6 shadow-lg shadow-blue-500/20">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="h-4 w-4 bg-blue-500 rounded-full animate-ping absolute"></div>
-                <div className="h-4 w-4 bg-blue-500 rounded-full relative"></div>
-              </div>
-              <h2 className="text-lg font-semibold text-foreground">Live Execution</h2>
-              <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">
-                {run?.status === 'pending' ? 'Starting...' : 'Running'}
-              </span>
-            </div>
-            <button
-              onClick={cancelTest}
-              disabled={cancellingTest}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
-            >
-              {cancellingTest ? (
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              )}
-              Cancel Test
-            </button>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">
-                Step {executionProgress.current} of {executionProgress.total || '?'}
-              </span>
-              {executionProgress.eta && (
-                <span className="text-sm text-muted-foreground">
-                  ETA: {formatDuration(executionProgress.eta)}
-                </span>
-              )}
-            </div>
-            <div className="h-3 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
-                style={{ width: `${currentStep?.progress || 0}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Current Step */}
-            <div className="p-4 bg-muted/30 rounded-lg">
-              <h3 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Current Step
-              </h3>
-              {currentStep ? (
-                <div className="space-y-2">
-                  <div className="font-mono text-foreground bg-muted rounded px-3 py-2">
-                    {currentStep.action}
-                  </div>
-                  {currentStep.selector && (
-                    <div className="text-sm text-muted-foreground font-mono truncate">
-                      Selector: {currentStep.selector}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-muted-foreground">Waiting for first step...</div>
-              )}
-
-              {/* Live Metrics (for load tests) */}
-              {liveMetrics && (
-                <div className="mt-4 grid grid-cols-3 gap-3">
-                  {liveMetrics.vus !== undefined && (
-                    <div className="text-center p-2 bg-muted rounded">
-                      <div className="text-lg font-bold text-foreground">{liveMetrics.vus}</div>
-                      <div className="text-xs text-muted-foreground">VUs</div>
-                    </div>
-                  )}
-                  {liveMetrics.rps !== undefined && (
-                    <div className="text-center p-2 bg-muted rounded">
-                      <div className="text-lg font-bold text-foreground">{liveMetrics.rps.toFixed(1)}</div>
-                      <div className="text-xs text-muted-foreground">RPS</div>
-                    </div>
-                  )}
-                  {liveMetrics.responseTime !== undefined && (
-                    <div className="text-center p-2 bg-muted rounded">
-                      <div className="text-lg font-bold text-foreground">{liveMetrics.responseTime}ms</div>
-                      <div className="text-xs text-muted-foreground">Latency</div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Live Screenshot */}
-            <div className="p-4 bg-muted/30 rounded-lg">
-              <h3 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Live Screenshot
-              </h3>
-              {liveScreenshot ? (
-                <img
-                  src={liveScreenshot.startsWith('data:') ? liveScreenshot : `data:image/png;base64,${liveScreenshot}`}
-                  alt="Live screenshot"
-                  className="w-full h-48 object-contain bg-black/50 rounded-lg"
-                />
-              ) : (
-                <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <svg className="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span className="text-sm">Waiting for screenshot...</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Live Console Logs */}
-          {liveConsoleLogs.length > 0 && (
-            <div className="mt-6">
-              <h3 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Live Console ({liveConsoleLogs.length})
-              </h3>
-              <div className="bg-gray-900 rounded-lg p-3 max-h-40 overflow-auto font-mono text-xs">
-                {liveConsoleLogs.slice(-20).map((log, idx) => (
-                  <div
-                    key={idx}
-                    className={`py-0.5 ${
-                      log.level === 'error' ? 'text-red-400' :
-                      log.level === 'warn' ? 'text-yellow-400' :
-                      log.level === 'info' ? 'text-blue-400' :
-                      'text-gray-300'
-                    }`}
-                  >
-                    <span className="text-gray-500">[{new Date(log.timestamp).toISOString().split('T')[1].slice(0, 12)}]</span>
-                    <span className="ml-1">{log.message}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+      {/* Feature #1844: Live Execution View - Feature #46: Extracted to LiveExecutionView component */}
+      {liveMode && (
+        <LiveExecutionView
+          runStatus={run?.status || ''}
+          currentStep={currentStep}
+          executionProgress={executionProgress}
+          liveScreenshot={liveScreenshot}
+          liveConsoleLogs={liveConsoleLogs}
+          liveMetrics={liveMetrics}
+          cancellingTest={cancellingTest}
+          onCancelTest={cancelTest}
+        />
       )}
 
       {/* Tab Navigation - Using modular component (Feature #46) */}
       <TabNavigation
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab)}
+        onTabChange={(tab) => setActiveTab(tab as ActiveTab)}
         tabs={[
           { id: 'results', label: 'Results', icon: '🧪', count: run.results?.length || 0 },
           { id: 'timeline', label: 'Timeline', icon: '📋', count: allSteps.length },
@@ -2038,7 +1328,7 @@ Please identify:
             openLightbox={openLightbox}
             navigateLightbox={navigateLightbox}
             toggleComparisonSelect={toggleComparisonSelect}
-            setActiveTab={setActiveTab}
+            setActiveTab={(tab) => setActiveTab(tab as ActiveTab)}
           />
         )}
 
@@ -2181,344 +1471,27 @@ Please identify:
         </div>
       )}
 
-      {/* Feature #1843: Export Modal */}
-      {exportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50 transition-opacity"
-            onClick={() => {
-              setExportModalOpen(false);
-              setShareLink(null);
-            }}
-          />
+      {/* Feature #1843: Export Modal - Feature #46: Extracted to ExportModal component */}
+      <ExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        run={run}
+        resultSummary={resultSummary}
+        token={token}
+        logoBase64={logoBase64}
+        organizationName={organizationName}
+        consoleLogs={consoleLogs}
+        networkRequests={networkRequests}
+      />
 
-          {/* Modal */}
-          <div className="relative bg-card border border-border rounded-lg shadow-xl w-full max-w-lg p-6 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-foreground">Export Test Results</h2>
-              <button
-                onClick={() => {
-                  setExportModalOpen(false);
-                  setShareLink(null);
-                }}
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-              >
-                <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {/* PDF Export */}
-              <div className="p-4 border border-border rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                      <svg className="h-5 w-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-foreground">PDF Report</h3>
-                      <p className="text-sm text-muted-foreground">Professional report with summary and metrics</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Feature #1992: Section Selection Checkboxes */}
-                <div className="mb-3 p-3 bg-muted/50 rounded-md">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Include sections:</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={pdfSections.summary}
-                        onChange={(e) => setPdfSections(prev => ({ ...prev, summary: e.target.checked }))}
-                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                      />
-                      Summary
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={pdfSections.typeBreakdown}
-                        onChange={(e) => setPdfSections(prev => ({ ...prev, typeBreakdown: e.target.checked }))}
-                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                      />
-                      Type Breakdown
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={pdfSections.testResults}
-                        onChange={(e) => setPdfSections(prev => ({ ...prev, testResults: e.target.checked }))}
-                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                      />
-                      Test Results
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={pdfSections.failures}
-                        onChange={(e) => setPdfSections(prev => ({ ...prev, failures: e.target.checked }))}
-                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                      />
-                      Failure Details
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={pdfSections.screenshots}
-                        onChange={(e) => setPdfSections(prev => ({ ...prev, screenshots: e.target.checked }))}
-                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                      />
-                      Screenshots
-                    </label>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleGeneratePdfReport}
-                  disabled={generatingPdf}
-                  className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
-                >
-                  {generatingPdf ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Generating PDF...
-                    </span>
-                  ) : 'Download PDF'}
-                </button>
-              </div>
-
-              {/* Feature #1993: HTML Export */}
-              <div className="p-4 border border-border rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                      <svg className="h-5 w-5 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-foreground">HTML Report</h3>
-                      <p className="text-sm text-muted-foreground">Interactive report viewable in any browser</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleGenerateHtmlReport}
-                    disabled={generatingHtml}
-                    className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 transition-colors"
-                  >
-                    {generatingHtml ? (
-                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                    ) : 'Download'}
-                  </button>
-                </div>
-              </div>
-
-              {/* JSON Export */}
-              <div className="p-4 border border-border rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                      <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-foreground">JSON Data</h3>
-                      <p className="text-sm text-muted-foreground">Full raw data for CI integration</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={exportFullJson}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Download
-                  </button>
-                </div>
-              </div>
-
-              {/* Share Link */}
-              <div className="p-4 border border-border rounded-lg">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-foreground">Shareable Link</h3>
-                    <p className="text-sm text-muted-foreground">Generate a link to share results</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={shareLinkExpiry}
-                      onChange={(e) => setShareLinkExpiry(e.target.value as typeof shareLinkExpiry)}
-                      className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                    >
-                      <option value="1h">Expires in 1 hour</option>
-                      <option value="24h">Expires in 24 hours</option>
-                      <option value="7d">Expires in 7 days</option>
-                      <option value="30d">Expires in 30 days</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <input
-                      type="password"
-                      placeholder="Optional password (leave empty for public)"
-                      value={shareLinkPassword}
-                      onChange={(e) => setShareLinkPassword(e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground"
-                    />
-                  </div>
-
-                  {shareLink ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={shareLink}
-                        readOnly
-                        className="flex-1 px-3 py-2 border border-border rounded-md bg-muted text-foreground text-sm"
-                      />
-                      <button
-                        onClick={copyShareLink}
-                        className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={generateShareLink}
-                      disabled={generatingShare}
-                      className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
-                    >
-                      {generatingShare ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                          </svg>
-                          Generating...
-                        </span>
-                      ) : 'Generate Share Link'}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Feature #1954: Batch Failure Analysis Modal */}
-      {batchAnalysisOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
-            <div className="p-4 border-b border-border bg-gradient-to-r from-purple-600/10 to-indigo-600/10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center">
-                    <span className="text-white text-lg">🤖</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">Batch Failure Analysis</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Analyzing {resultSummary.failed} failed tests for common patterns
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setBatchAnalysisOpen(false)}
-                  className="p-2 rounded-full hover:bg-muted transition-colors"
-                >
-                  <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 overflow-y-auto max-h-[60vh]">
-              {/* Failed Tests Summary */}
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                <div className="text-sm font-medium text-red-700 dark:text-red-400 mb-2">Failed Tests:</div>
-                <div className="flex flex-wrap gap-2">
-                  {run?.results.filter(r => r.status === 'failed' || r.status === 'error').slice(0, 8).map(t => (
-                    <span key={t.test_id} className="px-2 py-1 text-xs bg-red-100 dark:bg-red-800/30 text-red-700 dark:text-red-300 rounded">
-                      {t.test_name.length > 30 ? t.test_name.slice(0, 27) + '...' : t.test_name}
-                    </span>
-                  ))}
-                  {(run?.results.filter(r => r.status === 'failed' || r.status === 'error').length || 0) > 8 && (
-                    <span className="px-2 py-1 text-xs bg-red-100 dark:bg-red-800/30 text-red-700 dark:text-red-300 rounded">
-                      +{(run?.results.filter(r => r.status === 'failed' || r.status === 'error').length || 0) - 8} more
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Analysis Content */}
-              {batchAnalysisLoading ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent mb-3" />
-                  <p className="text-sm text-muted-foreground">Finding common patterns across failures...</p>
-                </div>
-              ) : batchAnalysisResult ? (
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
-                  <div className="whitespace-pre-wrap text-sm text-foreground">{batchAnalysisResult}</div>
-                </div>
-              ) : null}
-
-              {/* Cached indicator */}
-              {batchAnalysisCached && !batchAnalysisLoading && (
-                <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <span>💾</span> Cached analysis (24hr)
-                  </span>
-                  <button
-                    onClick={() => {
-                      // Clear cache and re-analyze
-                      if (run) {
-                        try {
-                          localStorage.removeItem(`ai_batch_batch_${run.id}`);
-                        } catch (e) {}
-                      }
-                      setBatchAnalysisCached(false);
-                      handleBatchAnalysis();
-                    }}
-                    className="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
-                  >
-                    🔄 Refresh
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 border-t border-border bg-muted/30 flex justify-end">
-              <button
-                onClick={() => setBatchAnalysisOpen(false)}
-                className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Feature #1954: Batch Failure Analysis Modal - Feature #46: Extracted to BatchAnalysisModal component */}
+      <BatchAnalysisModal
+        isOpen={batchAnalysisOpen}
+        onClose={() => setBatchAnalysisOpen(false)}
+        run={run}
+        resultSummary={resultSummary}
+        token={token}
+      />
 
       {/* Feature #1962: AI Side Panel removed - AI analysis now only on Visual Review page */}
     </div>

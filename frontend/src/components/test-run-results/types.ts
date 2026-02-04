@@ -511,3 +511,45 @@ export interface SimpleErrorPattern {
   tip: string;
   category: string;
 }
+
+// Feature #46: Network waterfall request with timing breakdown
+export interface WaterfallRequest {
+  index: number;
+  method: string;
+  url: string;
+  resourceType: string;
+  status?: number;
+  statusText?: string;
+  duration_ms?: number;
+  requestSize?: number;
+  responseSize?: number;
+  failed?: boolean;
+  failureText?: string;
+  timestamp: number;
+  timing?: {
+    dns?: number;
+    connect?: number;
+    ssl?: number;
+    ttfb?: number;
+    download?: number;
+  };
+}
+
+// Feature #46: Network statistics
+export interface NetworkStats {
+  totalRequests: number;
+  totalSize: number;
+  totalDuration: number;
+  failedRequests: number;
+  byType: Record<string, number>;
+}
+
+// Feature #46: Waterfall bounds for timeline display
+export interface WaterfallBounds {
+  start: number;
+  end: number;
+  duration: number;
+}
+
+// Feature #46: Network sort options
+export type NetworkSortBy = 'time' | 'duration' | 'size';
