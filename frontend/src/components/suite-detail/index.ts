@@ -40,3 +40,6 @@ export { ParallelizationPanel } from './ParallelizationPanel';
 
 // Header Components
 export { SuiteHeaderActions } from './SuiteHeaderActions';
+
+// Review Panels
+export { HumanReviewPanel } from './HumanReviewPanel';

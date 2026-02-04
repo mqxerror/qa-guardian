@@ -65,6 +65,8 @@ import {
   ParallelizationPanel,
   // Feature #50: Header Components
   SuiteHeaderActions,
+  // Feature #50: Review Panels
+  HumanReviewPanel,
   // Feature #50: Utilities
   computeCodeDiff,
   calculateTestConfidence,
@@ -2757,140 +2759,21 @@ export function teardown(data) {
           />
         </div>
 
-        {/* Feature #1151: Human Review Settings Panel */}
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-border bg-card p-3">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">🔍 Human Review for AI Tests</span>
-              <button
-                onClick={handleToggleHumanReview}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  requireHumanReview ? 'bg-primary' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    requireHumanReview ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-              <span className="text-xs text-muted-foreground">
-                {requireHumanReview ? 'Required' : 'Disabled'}
-              </span>
-            </div>
-            {reviewStats && reviewStats.pending_review > 0 && (
-              <button
-                onClick={() => setShowReviewPanel(!showReviewPanel)}
-                className="flex items-center gap-1 rounded-md bg-orange-100 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-200"
-              >
-                <span>⏳</span>
-                <span>{reviewStats.pending_review} Pending Review</span>
-              </button>
-            )}
-          </div>
-          {reviewStats && (
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span>🤖 {reviewStats.ai_generated} AI-generated</span>
-              <span>✅ {reviewStats.approved} approved</span>
-              {reviewStats.rejected > 0 && <span>❌ {reviewStats.rejected} rejected</span>}
-            </div>
-          )}
-        </div>
-
-        {/* Feature #1151: Pending Review Tests Panel - Enhanced with #1152 Batch Review */}
-        {showReviewPanel && tests.filter(t => t.review_status === 'pending_review').length > 0 && (
-          <div className="mb-4 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                ⏳ Tests Pending Review
-              </h3>
-              <button
-                onClick={() => setShowReviewPanel(false)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                ✕
-              </button>
-            </div>
-            {/* Feature #1152: Batch selection controls */}
-            {(() => {
-              const pendingTests = tests.filter(t => t.review_status === 'pending_review');
-              const pendingIds = pendingTests.map(t => t.id);
-              const allSelected = pendingIds.length > 0 && pendingIds.every(id => selectedForReview.has(id));
-              return (
-                <>
-                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-orange-200 dark:border-orange-700">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={allSelected}
-                        onChange={() => toggleAllTestsSelection(pendingIds)}
-                        className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        Select All ({selectedForReview.size}/{pendingTests.length} selected)
-                      </span>
-                    </label>
-                    {selectedForReview.size > 0 && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleBatchReview('approve')}
-                          disabled={isApproving}
-                          className="rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 flex items-center gap-1"
-                        >
-                          ✓ Batch Approve ({selectedForReview.size})
-                        </button>
-                        <button
-                          onClick={() => handleBatchReview('reject')}
-                          disabled={isApproving}
-                          className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 flex items-center gap-1"
-                        >
-                          ✗ Batch Reject ({selectedForReview.size})
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    {pendingTests.map(test => (
-                      <div key={test.id} className="flex items-center justify-between rounded-md border border-border bg-background p-3">
-                        <div className="flex items-center gap-3">
-                          {/* Feature #1152: Checkbox for batch selection */}
-                          <input
-                            type="checkbox"
-                            checked={selectedForReview.has(test.id)}
-                            onChange={() => toggleTestSelection(test.id)}
-                            className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                          />
-                          <div>
-                            <span className="font-medium text-sm">{test.name}</span>
-                            {test.description && (
-                              <p className="text-xs text-muted-foreground mt-0.5">{test.description}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleReviewTest(test.id, 'approve')}
-                            disabled={isApproving}
-                            className="rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
-                          >
-                            ✓ Approve
-                          </button>
-                          <button
-                            onClick={() => handleReviewTest(test.id, 'reject')}
-                            disabled={isApproving}
-                            className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                          >
-                            ✗ Reject
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        )}
+        {/* Feature #1151: Human Review Panel - Feature #50: Extracted to component */}
+        <HumanReviewPanel
+          tests={tests}
+          requireHumanReview={requireHumanReview}
+          showReviewPanel={showReviewPanel}
+          reviewStats={reviewStats}
+          selectedForReview={selectedForReview}
+          isApproving={isApproving}
+          onToggleHumanReview={handleToggleHumanReview}
+          onToggleReviewPanel={() => setShowReviewPanel(!showReviewPanel)}
+          onToggleTestSelection={toggleTestSelection}
+          onToggleAllTestsSelection={toggleAllTestsSelection}
+          onReviewTest={handleReviewTest}
+          onBatchReview={handleBatchReview}
+        />
 
         {/* Feature #1257: AI Parallelization Panel - Feature #50: Extracted to component */}
         {showParallelization && (
