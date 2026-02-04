@@ -21,6 +21,8 @@ import {
   TransactionModal,
   PerformanceCheckModal,
   WebhookModal,
+  // Feature #47: Import the settings hook for state management
+  useMonitoringSettings,
   // Import ALL types from modular components
   MonitoringLocation,
   MonitoringLocationInfo,
