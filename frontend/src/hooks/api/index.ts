@@ -78,3 +78,12 @@ export {
   type CreateTestInput,
   type UpdateTestInput,
 } from './useTests';
+
+// Dashboard hooks (Feature #70)
+export {
+  useDashboardStats,
+  useRecentRuns,
+  dashboardKeys,
+  type DashboardStats,
+  type RecentRun,
+} from './useDashboard';

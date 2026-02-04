@@ -1,11 +1,17 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
+// Feature #70: Import React Query hooks for dashboard caching
+import { useDashboardStats } from '../hooks/api/useDashboard';
 
 export function DashboardPage() {
-  const { user, token } = useAuthStore();
-  const [stats, setStats] = useState({
+  const { user } = useAuthStore();
+
+  // Feature #70: Use React Query for caching - dashboard loads instantly on revisit
+  const { data: stats, isLoading } = useDashboardStats();
+
+  // Default stats when loading or no data
+  const displayStats = stats || {
     projects: 0,
     test_suites: 0,
     tests: 0,
@@ -13,29 +19,7 @@ export function DashboardPage() {
     passed_runs: 0,
     failed_runs: 0,
     pass_rate: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch('/api/v1/stats', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch stats:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchStats();
-  }, [token]);
+  };
 
   return (
     <Layout>
@@ -48,25 +32,25 @@ export function DashboardPage() {
           <div className="rounded-lg border border-border bg-card p-6">
             <h3 className="text-lg font-semibold text-foreground">Projects</h3>
             <p className="mt-1 text-3xl font-bold text-primary">
-              {isLoading ? '...' : stats.projects}
+              {isLoading ? '...' : displayStats.projects}
             </p>
           </div>
           <div className="rounded-lg border border-border bg-card p-6">
             <h3 className="text-lg font-semibold text-foreground">Test Suites</h3>
             <p className="mt-1 text-3xl font-bold text-primary">
-              {isLoading ? '...' : stats.test_suites}
+              {isLoading ? '...' : displayStats.test_suites}
             </p>
           </div>
           <div className="rounded-lg border border-border bg-card p-6">
             <h3 className="text-lg font-semibold text-foreground">Total Tests</h3>
             <p className="mt-1 text-3xl font-bold text-primary">
-              {isLoading ? '...' : stats.tests}
+              {isLoading ? '...' : displayStats.tests}
             </p>
           </div>
           <div className="rounded-lg border border-border bg-card p-6">
             <h3 className="text-lg font-semibold text-foreground">Test Runs</h3>
             <p className="mt-1 text-3xl font-bold text-primary">
-              {isLoading ? '...' : stats.test_runs}
+              {isLoading ? '...' : displayStats.test_runs}
             </p>
           </div>
         </div>
@@ -78,27 +62,27 @@ export function DashboardPage() {
             <div className="rounded-lg border border-border bg-card p-6">
               <h4 className="text-lg font-semibold text-foreground">Pass Rate</h4>
               <p className={`mt-1 text-3xl font-bold ${
-                stats.pass_rate >= 80 ? 'text-green-600' :
-                stats.pass_rate >= 50 ? 'text-yellow-600' :
+                displayStats.pass_rate >= 80 ? 'text-green-600' :
+                displayStats.pass_rate >= 50 ? 'text-yellow-600' :
                 'text-red-600'
               }`}>
-                {isLoading ? '...' : `${stats.pass_rate}%`}
+                {isLoading ? '...' : `${displayStats.pass_rate}%`}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {isLoading ? '' : `${stats.passed_runs + stats.failed_runs} completed runs`}
+                {isLoading ? '' : `${displayStats.passed_runs + displayStats.failed_runs} completed runs`}
               </p>
             </div>
             <div className="rounded-lg border border-border bg-card p-6">
               <h4 className="text-lg font-semibold text-foreground">Passed</h4>
               <p className="mt-1 text-3xl font-bold text-green-600">
-                {isLoading ? '...' : stats.passed_runs}
+                {isLoading ? '...' : displayStats.passed_runs}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">successful runs</p>
             </div>
             <div className="rounded-lg border border-border bg-card p-6">
               <h4 className="text-lg font-semibold text-foreground">Failed</h4>
               <p className="mt-1 text-3xl font-bold text-red-600">
-                {isLoading ? '...' : stats.failed_runs}
+                {isLoading ? '...' : displayStats.failed_runs}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">failed runs</p>
             </div>
