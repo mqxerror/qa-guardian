@@ -27,6 +27,13 @@ Completed This Session:
    - K6LiveMetrics sub-component for load test metrics
    - Not yet integrated (requires more work to extract full section)
 
+3. Created K6ScriptTab.tsx component (350+ lines)
+   - K6 load test script display/editing
+   - Copy, Download, Templates dropdown functionality
+   - Code folding support for better script navigation
+   - K6 run command display with copy button
+   - Exported but not yet integrated (requires careful replacement)
+
 Line Count Progress:
 - Previous session: 8,753 lines
 - Current: 8,596 lines (-157 lines, 1.8% reduction)
@@ -52,7 +59,8 @@ Components Extracted (Total):
   - ImageLightbox.tsx (173 lines)
   - K6CompareModal.tsx (190 lines)
   - RunHistorySection.tsx (340 lines)
-  - ViewCodeTab.tsx (220 lines) - NEW
+  - ViewCodeTab.tsx (220 lines) - NEW, INTEGRATED
+  - K6ScriptTab.tsx (350+ lines) - NEW, not yet integrated
   - CurrentRunPanel.tsx (500+ lines) - NEW (foundation only)
   - modals/
     - DeleteTestModal.tsx (63 lines)
@@ -63,7 +71,7 @@ Components Extracted (Total):
     - AIExplainModal.tsx (245 lines)
     - QuickScheduleModal.tsx (217 lines)
 
-Total Extracted: ~3,873 lines in modular components
+Total Extracted: ~4,223 lines in modular components
 
 Remaining Work for Feature #48:
 1. Integrate CurrentRunPanel to replace ~3800 lines of current run status
@@ -77,7 +85,18 @@ Note: Current file (8,596 lines) is still far from target (1,500 lines).
 Getting to target requires extracting the massive current run section (~3800 lines)
 which includes all test result displays (Lighthouse, Accessibility, E2E, K6).
 
-Commit: 370735b
+Commits: 370735b, 121a650, 5d3bf47
+
+Session Summary:
+- Created 3 new components (ViewCodeTab, CurrentRunPanel, K6ScriptTab)
+- Integrated ViewCodeTab, reducing TestDetailPage by 157 lines
+- K6ScriptTab ready for integration in next session
+- CurrentRunPanel foundation ready for expansion
+
+Next Session Priorities:
+1. Integrate K6ScriptTab to replace ~330 lines
+2. Continue CurrentRunPanel integration for massive reduction
+3. Consider extracting Baseline tab content
 
 Regression Check:
 - Login: Working with admin@example.com / Admin123!
