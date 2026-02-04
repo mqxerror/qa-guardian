@@ -30389,3 +30389,16 @@ Progress: 39/44 (88.6%)
 - API tests: WordPress.org (10 menu items), Bootstrap (10 menu items)
 - Commit: d49dbf3
 
+
+**#41: Use Playwright for JavaScript-rendered content — PASSED**
+- Added crawlWithPlaywright() for JS-rendered sites
+- Network idle wait + cookie consent handling
+- Falls back to Crawl4AI if Playwright fails
+- API test: React.dev crawled with 98 links, 43 images
+- Backend logs confirm Playwright execution
+- Commit: 51015e6
+
+### Session Progress Update
+- Progress: 42/44 (95.5%)
+- Completed: Features #39, #40, #41 (Site Analysis category)
+

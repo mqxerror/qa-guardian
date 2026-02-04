@@ -43,6 +43,28 @@ export interface ButtonInfo { text: string; type?: string; isSubmit: boolean; }
 export interface InputInfo { name?: string; type: string; placeholder?: string; label?: string; required: boolean; }
 export interface NavigationInfo { hasHeader: boolean; hasFooter: boolean; hasSidebar: boolean; menuItems: string[]; }
 
+/** Feature #43: Site map interface for multi-page crawl results */
+export interface SiteMap {
+  baseUrl: string;
+  pages: PageInfo[];
+  totalPages: number;
+  crawlDepth: number;
+  crawledAt: string;
+  suggestedSmokeTests: string[];
+}
+
+export interface PageInfo {
+  url: string;
+  title: string;
+  pageType: SiteAnalysis['pageType'];
+  depth: number;
+  hasLogin: boolean;
+  hasSearch: boolean;
+  hasCart: boolean;
+  forms: number;
+  links: number;
+}
+
 /**
  * Feature #41: Crawl a URL using Playwright for JS-rendered content
  * Handles cookie consent popups, waits for network idle, and extracts rendered HTML
