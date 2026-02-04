@@ -24,5 +24,9 @@ export { TransactionModal, type TransactionModalProps } from './modals';
 export { PerformanceCheckModal, type PerformanceCheckModalProps } from './modals';
 export { WebhookModal, type WebhookModalProps } from './modals';
 
+// Settings Modals
+export { AlertRoutingModal, type AlertRoutingModalProps } from './modals';
+export { EscalationPolicyModal, type EscalationPolicyModalProps } from './modals';
+
 // Hooks
 export { useMonitoringSettings, type UseMonitoringSettingsReturn } from './hooks';
