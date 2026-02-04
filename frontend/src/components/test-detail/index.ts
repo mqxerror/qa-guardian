@@ -21,6 +21,7 @@ export { ViewCodeTab } from './ViewCodeTab';
 export { K6ScriptTab } from './K6ScriptTab';
 export { TestDetailsCard } from './TestDetailsCard';
 export { TestStepsTab } from './TestStepsTab';
+export { BaselineTab } from './BaselineTab';
 
 // Modals
 export * from './modals';
