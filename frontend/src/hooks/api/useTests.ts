@@ -167,6 +167,7 @@ export function useTestCode(testId: string | undefined, format: 'typescript' | '
 
 /**
  * Hook to create a new test
+ * Feature #65: Added optimistic updates for immediate UI feedback
  */
 export function useCreateTest() {
   const token = useAuthStore(state => state.token);
@@ -178,7 +179,60 @@ export function useCreateTest() {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    onSuccess: (_, { suiteId }) => {
+    // Optimistic update: add the new test to cache immediately
+    onMutate: async ({ suiteId, data }) => {
+      // Cancel any outgoing refetches (all queries for this suite)
+      await queryClient.cancelQueries({ queryKey: testKeys.listBySuite(suiteId) });
+
+      // The page uses useTests which internally uses { limit: 100 }
+      const queryKey = testKeys.listBySuite(suiteId, { limit: 100 });
+
+      // Snapshot the previous value for rollback
+      const previousTests = queryClient.getQueryData<PaginatedTestsResponse>(queryKey);
+
+      // Optimistically add the new test
+      if (previousTests) {
+        const optimisticTest: Test = {
+          id: `temp-${Date.now()}`, // Temporary ID until server responds
+          suite_id: suiteId,
+          organization_id: '', // Will be set by server
+          name: data.name,
+          description: data.description,
+          order: (previousTests.data?.length || 0) + 1,
+          test_type: (data.test_type as Test['test_type']) || 'e2e',
+          steps: data.steps || [],
+          target_url: data.target_url,
+          status: 'draft',
+          ai_generated: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        queryClient.setQueryData<PaginatedTestsResponse>(
+          queryKey,
+          {
+            ...previousTests,
+            data: [...(previousTests.data || []), optimisticTest],
+            tests: [...(previousTests.tests || []), optimisticTest],
+            pagination: {
+              ...previousTests.pagination,
+              total: (previousTests.pagination?.total || 0) + 1,
+            },
+          }
+        );
+      }
+
+      // Return context with previous value for rollback
+      return { previousTests, suiteId, queryKey };
+    },
+    // Rollback on error
+    onError: (_err, _vars, context) => {
+      if (context?.previousTests && context?.queryKey) {
+        queryClient.setQueryData(context.queryKey, context.previousTests);
+      }
+    },
+    // Always refetch after error or success to get fresh data
+    onSettled: (_, __, { suiteId }) => {
       queryClient.invalidateQueries({ queryKey: testKeys.listBySuite(suiteId) });
     },
   });

@@ -103,6 +103,7 @@ export function useProject(projectId: string | undefined) {
 
 /**
  * Hook to create a new project
+ * Feature #65: Added optimistic updates for immediate UI feedback
  */
 export function useCreateProject() {
   const token = useAuthStore(state => state.token);
@@ -114,7 +115,53 @@ export function useCreateProject() {
         method: 'POST',
         body: JSON.stringify(input),
       }),
-    onSuccess: () => {
+    // Optimistic update: add the new project to cache immediately
+    onMutate: async (newProject) => {
+      // Cancel any outgoing refetches to prevent overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: projectKeys.lists() });
+
+      // Snapshot the previous value for rollback
+      const previousProjects = queryClient.getQueryData<ProjectsResponse>(
+        projectKeys.list(false)
+      );
+
+      // Optimistically add the new project
+      if (previousProjects) {
+        const optimisticProject: Project = {
+          id: `temp-${Date.now()}`, // Temporary ID until server responds
+          organization_id: '', // Will be set by server
+          name: newProject.name,
+          description: newProject.description,
+          slug: newProject.name.toLowerCase().replace(/\s+/g, '-'),
+          repository_url: newProject.repository_url,
+          default_branch: newProject.default_branch || 'main',
+          is_archived: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        queryClient.setQueryData<ProjectsResponse>(
+          projectKeys.list(false),
+          {
+            projects: [...previousProjects.projects, optimisticProject],
+          }
+        );
+      }
+
+      // Return context with previous value for rollback
+      return { previousProjects };
+    },
+    // Rollback on error
+    onError: (_err, _newProject, context) => {
+      if (context?.previousProjects) {
+        queryClient.setQueryData(
+          projectKeys.list(false),
+          context.previousProjects
+        );
+      }
+    },
+    // Always refetch after error or success to get fresh data
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
     },
   });

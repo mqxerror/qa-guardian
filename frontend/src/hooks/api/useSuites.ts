@@ -143,6 +143,7 @@ export function useSuite(suiteId: string | undefined) {
 
 /**
  * Hook to create a new suite
+ * Feature #65: Added optimistic updates for immediate UI feedback
  */
 export function useCreateSuite() {
   const token = useAuthStore(state => state.token);
@@ -154,7 +155,62 @@ export function useCreateSuite() {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    onSuccess: (_, { projectId }) => {
+    // Optimistic update: add the new suite to cache immediately
+    onMutate: async ({ projectId, data }) => {
+      // Cancel any outgoing refetches (all queries for this project)
+      await queryClient.cancelQueries({ queryKey: suiteKeys.listByProject(projectId) });
+
+      // The page uses useSuites which internally uses { limit: 100 }
+      const queryKey = suiteKeys.listByProject(projectId, { limit: 100 });
+
+      // Snapshot the previous value for rollback
+      const previousSuites = queryClient.getQueryData<PaginatedSuitesResponse>(queryKey);
+
+      // Optimistically add the new suite
+      if (previousSuites) {
+        const optimisticSuite: TestSuite = {
+          id: `temp-${Date.now()}`, // Temporary ID until server responds
+          project_id: projectId,
+          organization_id: '', // Will be set by server
+          name: data.name,
+          description: data.description,
+          type: (data.type as TestSuite['type']) || 'e2e',
+          browser: data.browser || 'chromium',
+          browsers: data.browsers || ['chromium'],
+          base_url: data.base_url,
+          viewport_width: data.viewport_width || 1280,
+          viewport_height: data.viewport_height || 720,
+          timeout: data.timeout || 30000,
+          retry_count: data.retry_count || 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        queryClient.setQueryData<PaginatedSuitesResponse>(
+          queryKey,
+          {
+            ...previousSuites,
+            data: [...previousSuites.data, optimisticSuite],
+            suites: [...(previousSuites.suites || []), optimisticSuite],
+            pagination: {
+              ...previousSuites.pagination,
+              total: (previousSuites.pagination?.total || 0) + 1,
+            },
+          }
+        );
+      }
+
+      // Return context with previous value for rollback
+      return { previousSuites, projectId, queryKey };
+    },
+    // Rollback on error
+    onError: (_err, _vars, context) => {
+      if (context?.previousSuites && context?.queryKey) {
+        queryClient.setQueryData(context.queryKey, context.previousSuites);
+      }
+    },
+    // Always refetch after error or success to get fresh data
+    onSettled: (_, __, { projectId }) => {
       queryClient.invalidateQueries({ queryKey: suiteKeys.listByProject(projectId) });
     },
   });
