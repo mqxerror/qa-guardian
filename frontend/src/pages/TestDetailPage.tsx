@@ -93,6 +93,7 @@ import {
   useBaselineHandlers,
   useStepHandlers,
   useTestCrudHandlers,
+  useRunHandlers,
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
@@ -861,6 +862,46 @@ function TestDetailPage() {
     handleRejectChangesFromHook(runId || rejectChangesRunId || undefined, rejectionReason);
   };
 
+  // Fetch runs helper (needed by run handlers)
+  const fetchRuns = async () => {
+    try {
+      const response = await fetch(`/api/v1/tests/${testId}/runs`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRuns(data.runs);
+      }
+    } catch {
+      // Ignore errors for runs fetch
+    }
+  };
+
+  // Feature #48: Use extracted run handlers hook
+  const {
+    handleRunTest,
+    handleCancelRun,
+  } = useRunHandlers({
+    testId,
+    token,
+    selectedBranch,
+    testType: test?.test_type,
+    currentRun,
+    socket,
+    connect,
+    joinRun,
+    leaveRun,
+    setIsRunning,
+    setRunError,
+    setCurrentRun,
+    setLiveProgress,
+    setIsCancellingRun,
+    fetchRuns,
+  });
+
   const handleOpenEditModal = () => {
     if (test) {
       setEditName(test.name);
@@ -971,236 +1012,11 @@ function TestDetailPage() {
     checkRejectionStatus();
   }, [currentRun?.id, testId, token]);
 
-  const handleRunTest = async () => {
-    setRunError('');
-    setIsRunning(true);
-    setLiveProgress(null);
+  // Feature #48: handleRunTest removed - now using useRunHandlers hook
 
-    // Connect to socket if not already connected
-    connect();
+  // Feature #48: handleCancelRun removed - now using useRunHandlers hook
 
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}/runs`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          branch: selectedBranch, // Include branch for baseline comparison
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to start test run');
-      }
-
-      const data = await response.json();
-      setCurrentRun(data.run);
-
-      // Join the run's WebSocket room for real-time updates
-      joinRun(data.run.id);
-      console.log('[WebSocket] Joined run room:', data.run.id);
-
-      // Also poll for completion as fallback (WebSocket may not be immediate)
-      pollRunStatus(data.run.id);
-    } catch (err) {
-      // Use enhanced error handling for network errors
-      setRunError(getErrorMessage(err, 'Failed to start test run'));
-      setIsRunning(false);
-    }
-  };
-
-  const handleCancelRun = async () => {
-    if (!currentRun?.id) return;
-
-    setIsCancellingRun(true);
-
-    try {
-      const response = await fetch(`/api/v1/runs/${currentRun.id}/cancel`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to cancel run');
-      }
-
-      setCurrentRun(prev => prev ? { ...prev, status: 'cancelled' } : null);
-      setIsRunning(false);
-      setLiveProgress(null);
-      // Leave the run room
-      if (currentRun.id) {
-        leaveRun(currentRun.id);
-      }
-      toast.success('Test run cancelled');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to cancel run');
-    } finally {
-      setIsCancellingRun(false);
-    }
-  };
-
-  // Handle WebSocket events for real-time updates
-  useEffect(() => {
-    if (!socket || !currentRun) return;
-
-    const handleRunStart = (data: { runId: string; status: string }) => {
-      console.log('[WebSocket] run-start event:', data);
-      if (data.runId === currentRun.id) {
-        setCurrentRun(prev => prev ? { ...prev, status: 'running' } : null);
-      }
-    };
-
-    const handleRunProgress = (data: { runId: string; totalTests: number; completedTests: number; currentTest?: string }) => {
-      console.log('[WebSocket] run-progress event:', data);
-      if (data.runId === currentRun.id) {
-        setLiveProgress({
-          totalTests: data.totalTests,
-          completedTests: data.completedTests,
-          currentTest: data.currentTest,
-        });
-      }
-    };
-
-    const handleStepStart = (data: { runId: string; stepIndex: number; action: string }) => {
-      console.log('[WebSocket] step-start event:', data);
-      if (data.runId === currentRun.id) {
-        setLiveProgress(prev => prev ? {
-          ...prev,
-          currentStep: { index: data.stepIndex, total: prev.currentStep?.total || 0, action: data.action }
-        } : null);
-      }
-    };
-
-    const handleStepComplete = (data: { runId: string; stepIndex: number; totalSteps: number; status: string }) => {
-      console.log('[WebSocket] step-complete event:', data);
-      if (data.runId === currentRun.id) {
-        setLiveProgress(prev => prev ? {
-          ...prev,
-          currentStep: { index: data.stepIndex + 1, total: data.totalSteps, action: '' }
-        } : null);
-      }
-    };
-
-    const handleRunComplete = (data: { runId: string; status: string; duration_ms: number }) => {
-      console.log('[WebSocket] run-complete event:', data);
-      if (data.runId === currentRun.id) {
-        setIsRunning(false);
-        setLiveProgress(null);
-        // Leave the room
-        leaveRun(data.runId);
-        // Refresh runs list
-        fetchRuns();
-      }
-    };
-
-    // K6 load test progress handler -- only populate k6Metrics for load tests
-    const handleStepProgress = (data: { runId: string; stepId?: string; phase: string; progress: number; currentVUs?: number; totalRequests?: number; requestsPerSecond?: number; avgResponseTime?: number; errorRate?: number; p50ResponseTime?: number; p95ResponseTime?: number; p99ResponseTime?: number }) => {
-      console.log('[WebSocket] step-progress event:', data);
-      if (data.runId === currentRun.id) {
-        // Only show k6 metrics panel for actual load tests (stepId === 'load_test')
-        // Lighthouse and other executors also emit step-progress but with different stepIds
-        if (test?.test_type === 'load' || data.stepId === 'load_test') {
-          setLiveProgress(prev => prev ? {
-            ...prev,
-            k6Metrics: {
-              phase: data.phase,
-              progress: data.progress,
-              currentVUs: data.currentVUs,
-              totalRequests: data.totalRequests,
-              requestsPerSecond: data.requestsPerSecond,
-              avgResponseTime: data.avgResponseTime,
-              errorRate: data.errorRate,
-              // Response time percentiles (Feature #549)
-              p50ResponseTime: data.p50ResponseTime,
-              p95ResponseTime: data.p95ResponseTime,
-              p99ResponseTime: data.p99ResponseTime,
-            }
-          } : null);
-        } else {
-          // For non-load tests, just update the progress bar
-          setLiveProgress(prev => prev ? {
-            ...prev,
-            currentStep: { ...prev.currentStep, action: data.phase },
-          } : null);
-        }
-      }
-    };
-
-    socket.on('run-start', handleRunStart);
-    socket.on('run-progress', handleRunProgress);
-    socket.on('step-start', handleStepStart);
-    socket.on('step-complete', handleStepComplete);
-    socket.on('step-progress', handleStepProgress);
-    socket.on('run-complete', handleRunComplete);
-
-    return () => {
-      socket.off('run-start', handleRunStart);
-      socket.off('run-progress', handleRunProgress);
-      socket.off('step-start', handleStepStart);
-      socket.off('step-complete', handleStepComplete);
-      socket.off('step-progress', handleStepProgress);
-      socket.off('run-complete', handleRunComplete);
-    };
-  }, [socket, currentRun, leaveRun]);
-
-  const pollRunStatus = async (runId: string) => {
-    const poll = async () => {
-      try {
-        const response = await fetch(`/api/v1/runs/${runId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setCurrentRun(data.run);
-
-          if (data.run.status === 'pending' || data.run.status === 'running') {
-            // Continue polling
-            setTimeout(poll, 1000);
-          } else {
-            // Run completed
-            setIsRunning(false);
-            setLiveProgress(null);
-            // Leave the room
-            leaveRun(runId);
-            // Refresh runs list
-            fetchRuns();
-          }
-        } else {
-          setIsRunning(false);
-        }
-      } catch {
-        setIsRunning(false);
-      }
-    };
-
-    poll();
-  };
-
-  const fetchRuns = async () => {
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}/runs`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setRuns(data.runs);
-      }
-    } catch {
-      // Ignore errors for runs fetch
-    }
-  };
+  // Feature #48: pollRunStatus and duplicate fetchRuns removed - now in useRunHandlers hook
 
   // Feature #1101: Fetch flakiness trend data
   const fetchFlakinessTrend = async () => {
