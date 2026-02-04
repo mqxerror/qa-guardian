@@ -17,3 +17,9 @@ export { default as UptimeChecksTab, type UptimeChecksTabProps } from './UptimeC
 export { TransactionsTab, type TransactionsTabProps } from './TransactionsTab';
 export { PerformanceTab, type PerformanceTabProps } from './PerformanceTab';
 export { WebhooksTab, type WebhooksTabProps } from './WebhooksTab';
+
+// Modals
+export { CreateCheckModal, type CreateCheckModalProps } from './modals';
+export { TransactionModal, type TransactionModalProps } from './modals';
+export { PerformanceCheckModal, type PerformanceCheckModalProps } from './modals';
+export { WebhookModal, type WebhookModalProps } from './modals';
