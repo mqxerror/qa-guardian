@@ -10,6 +10,23 @@ export * from './types';
 export * from './utils';
 export { exportAccessibilityPDF, exportAccessibilityCSV } from './exportUtils';
 
+// Code Generation Utilities (Feature #48)
+export {
+  generatePlaywrightCode,
+  generateK6Script,
+  getK6Templates,
+  highlightJavaScriptLine,
+  detectFoldableRegions,
+  isLineHidden,
+  getFoldIcon,
+  selectorPatterns,
+  getValuePatterns,
+  findSelectorAutocomplete,
+  findValueAutocomplete,
+  type K6Template,
+  type FoldableRegion,
+} from './codeGenUtils';
+
 // Components
 export { default as TestStatusBadge } from './TestStatusBadge';
 export { VideoPlayer } from './VideoPlayer';

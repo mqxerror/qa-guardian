@@ -73,6 +73,20 @@ import {
   TestResultCard,
   exportAccessibilityPDF,
   exportAccessibilityCSV,
+  // Feature #48: Code generation utilities
+  generatePlaywrightCode,
+  generateK6Script,
+  getK6Templates,
+  highlightJavaScriptLine,
+  detectFoldableRegions,
+  isLineHidden,
+  getFoldIcon,
+  selectorPatterns,
+  getValuePatterns,
+  findSelectorAutocomplete,
+  findValueAutocomplete,
+  type FoldableRegion,
+  type K6Template,
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
@@ -211,68 +225,8 @@ function TestDetailPage() {
   // Feature #323: K6 script code folding state
   const [foldedRegions, setFoldedRegions] = useState<Set<number>>(new Set());
 
-  // Feature #323: Detect foldable regions in code
-  interface FoldableRegion {
-    startLine: number;
-    endLine: number;
-    type: 'function' | 'object' | 'block' | 'import';
-  }
-
-  const detectFoldableRegions = (code: string): FoldableRegion[] => {
-    const lines = code.split('\n');
-    const regions: FoldableRegion[] = [];
-    const openBraces: Array<{ line: number; type: FoldableRegion['type'] }> = [];
-
-    lines.forEach((line, index) => {
-      const trimmedLine = line.trim();
-
-      // Detect function/method/export definitions
-      if (trimmedLine.match(/^(export\s+)?(default\s+)?(function|const|let|var)\s+\w+.*\{$/)) {
-        openBraces.push({ line: index, type: 'function' });
-      }
-      // Detect arrow functions with blocks
-      else if (trimmedLine.match(/^(export\s+)?(const|let|var)\s+\w+\s*=.*=>\s*\{$/)) {
-        openBraces.push({ line: index, type: 'function' });
-      }
-      // Detect object literals
-      else if (trimmedLine.match(/^(export\s+)?(const|let|var)\s+\w+\s*=\s*\{$/)) {
-        openBraces.push({ line: index, type: 'object' });
-      }
-      // Detect group() blocks from K6
-      else if (trimmedLine.match(/^group\s*\(.*,\s*(?:function\s*\(\)|\(\)\s*=>)\s*\{$/)) {
-        openBraces.push({ line: index, type: 'block' });
-      }
-      // Detect check() blocks
-      else if (trimmedLine.match(/^check\s*\(.*\{$/)) {
-        openBraces.push({ line: index, type: 'block' });
-      }
-      // Detect import blocks (multiple lines)
-      else if (trimmedLine.match(/^import\s*\{$/)) {
-        openBraces.push({ line: index, type: 'import' });
-      }
-      // Detect standalone opening brace with content before
-      else if (trimmedLine.endsWith('{') && trimmedLine.length > 1) {
-        openBraces.push({ line: index, type: 'block' });
-      }
-
-      // Check for closing braces
-      if (trimmedLine.match(/^\}[\);,]*$/) || trimmedLine === '}') {
-        const lastOpen = openBraces.pop();
-        if (lastOpen && index > lastOpen.line) {
-          regions.push({
-            startLine: lastOpen.line,
-            endLine: index,
-            type: lastOpen.type,
-          });
-        }
-      }
-    });
-
-    return regions;
-  };
-
-  // Toggle fold state for a line
-  const toggleFold = (lineNumber: number) => {
+  // Feature #48: Toggle fold state for a line (uses state)
+  const toggleFold = useCallback((lineNumber: number) => {
     setFoldedRegions(prev => {
       const newSet = new Set(prev);
       if (newSet.has(lineNumber)) {
@@ -282,24 +236,16 @@ function TestDetailPage() {
       }
       return newSet;
     });
-  };
+  }, []);
 
-  // Get the fold icon for a line
-  const getFoldIcon = (lineNumber: number, foldableRegions: FoldableRegion[]): 'fold' | 'unfold' | null => {
-    const region = foldableRegions.find(r => r.startLine === lineNumber);
-    if (!region) return null;
-    return foldedRegions.has(lineNumber) ? 'unfold' : 'fold';
-  };
+  // Feature #48: Wrappers for code folding functions that use state
+  const getFoldIconForLine = useCallback((lineNumber: number, regions: FoldableRegion[]) => {
+    return getFoldIcon(lineNumber, regions, foldedRegions);
+  }, [foldedRegions]);
 
-  // Check if a line should be hidden due to folding
-  const isLineHidden = (lineNumber: number, foldableRegions: FoldableRegion[]): boolean => {
-    for (const region of foldableRegions) {
-      if (foldedRegions.has(region.startLine) && lineNumber > region.startLine && lineNumber <= region.endLine) {
-        return true;
-      }
-    }
-    return false;
-  };
+  const isLineHiddenForLine = useCallback((lineNumber: number, regions: FoldableRegion[]) => {
+    return isLineHidden(lineNumber, regions, foldedRegions);
+  }, [foldedRegions]);
   const [baselineData, setBaselineData] = useState<{hasBaseline: boolean; image?: string; createdAt?: string; size?: number; approvedBy?: string; approvedByUserId?: string; approvedAt?: string; sourceRunId?: string} | null>(null);
   const [loadingBaseline, setLoadingBaseline] = useState(false);
 
@@ -381,169 +327,21 @@ function TestDetailPage() {
   const [testExplanation, setTestExplanation] = useState<TestExplanation | null>(null);
   const [isExplainingTest, setIsExplainingTest] = useState(false);
 
-  // Generate Playwright code from test steps
-  const generatePlaywrightCode = (steps: typeof test.steps): string => {
-    if (!steps || steps.length === 0) return '// No steps defined yet';
+  // Feature #48: Wrapper for generatePlaywrightCode that uses test name from state
+  const generatePlaywrightCodeForTest = useCallback((steps: TestType['steps'] | undefined) => {
+    return generatePlaywrightCode(steps || [], test?.name || 'Untitled Test');
+  }, [test?.name]);
 
-    const lines: string[] = [
-      `import { test, expect } from '@playwright/test';`,
-      '',
-      `test('${test?.name || 'Untitled Test'}', async ({ page }) => {`,
-    ];
+  // Feature #48: Wrapper for generateK6Script that uses test from state
+  const generateK6ScriptForTest = useCallback(() => {
+    return generateK6Script(test);
+  }, [test]);
 
-    steps.forEach((step, index) => {
-      const indent = '  ';
-      const comment = `// Step ${index + 1}: ${step.action}`;
-      lines.push(`${indent}${comment}`);
-
-      switch (step.action) {
-        case 'navigate':
-          lines.push(`${indent}await page.goto('${step.value || ''}');`);
-          break;
-        case 'click':
-          lines.push(`${indent}await page.locator('${step.selector || ''}').click();`);
-          break;
-        case 'fill':
-          lines.push(`${indent}await page.locator('${step.selector || ''}').fill('${step.value || ''}');`);
-          break;
-        case 'type':
-          lines.push(`${indent}await page.locator('${step.selector || ''}').type('${step.value || ''}');`);
-          break;
-        case 'wait':
-          lines.push(`${indent}await page.waitForTimeout(${step.value || 1000});`);
-          break;
-        case 'assert_text':
-          lines.push(`${indent}await expect(page.getByText('${step.value || ''}')).toBeVisible();`);
-          break;
-        case 'screenshot':
-          const screenshotName = step.value || `step-${index + 1}`;
-          lines.push(`${indent}await page.screenshot({ path: '${screenshotName}.png' });`);
-          break;
-        case 'accessibility_check':
-          const a11yLevel = (step as any).a11y_wcag_level || 'AA';
-          const a11yThreshold = (step as any).a11y_threshold || 0;
-          lines.push(`${indent}// Accessibility check - WCAG ${a11yLevel} (threshold: ${a11yThreshold})`);
-          lines.push(`${indent}const a11yResults_${index} = await new AxeBuilder({ page })`);
-          lines.push(`${indent}  .withTags(['wcag2a', 'wcag2aa'${a11yLevel === 'AAA' ? ", 'wcag2aaa'" : ''}])`);
-          lines.push(`${indent}  .analyze();`);
-          lines.push(`${indent}expect(a11yResults_${index}.violations.length).toBeLessThanOrEqual(${a11yThreshold});`);
-          break;
-        default:
-          lines.push(`${indent}// Unknown action: ${step.action}`);
-      }
-      lines.push('');
-    });
-
-    lines.push('});');
-    return lines.join('\n');
-  };
-
-  // Generate K6 load test script
-  const generateK6Script = (): string => {
-    const targetUrl = test?.target_url || 'https://example.com';
-    const virtualUsers = test?.virtual_users || 10;
-    const duration = test?.duration || 60;
-    const rampUpTime = test?.ramp_up_time || 10;
-
-    return `import http from 'k6/http';
-import { check, sleep } from 'k6';
-import { Rate } from 'k6/metrics';
-
-// Custom metrics
-const errorRate = new Rate('errors');
-
-// Test configuration
-export const options = {
-  stages: [
-    { duration: '${rampUpTime}s', target: ${virtualUsers} },  // Ramp up
-    { duration: '${duration - rampUpTime}s', target: ${virtualUsers} }, // Steady state
-    { duration: '10s', target: 0 },    // Ramp down
-  ],
-  thresholds: {
-    http_req_duration: ['p(95)<500'], // 95% of requests should be below 500ms
-    errors: ['rate<0.1'],              // Error rate should be below 10%
-  },
-};
-
-// Default function - runs for each virtual user iteration
-export default function () {
-  // GET request to target URL
-  const response = http.get('${targetUrl}');
-
-  // Check response status
-  const checkResult = check(response, {
-    'status is 200': (r) => r.status === 200,
-    'response time < 500ms': (r) => r.timings.duration < 500,
-  });
-
-  // Track errors
-  errorRate.add(!checkResult);
-
-  // Think time between requests (1-3 seconds)
-  sleep(Math.random() * 2 + 1);
-}
-
-// Setup function - runs once before the test
-export function setup() {
-  console.log('Starting load test against ${targetUrl}');
-  console.log('Virtual Users: ${virtualUsers}');
-  console.log('Duration: ${duration}s');
-  return { startTime: new Date().toISOString() };
-}
-
-// Teardown function - runs once after the test
-export function teardown(data) {
-  console.log('Load test completed');
-  console.log('Started at:', data.startTime);
-  console.log('Ended at:', new Date().toISOString());
-}
-`;
-  };
-
-  // Syntax highlighting for JavaScript/K6 code
-  const highlightJavaScript = (code: string): JSX.Element[] => {
+  // Feature #48: Syntax highlighting wrapper using imported utility
+  const highlightJavaScript = useCallback((code: string): JSX.Element[] => {
     const lines = code.split('\n');
     return lines.map((line, lineIndex) => {
-      // Process each line for syntax highlighting
-      let highlighted = line;
-
-      // Handle comments first (preserve them)
-      const commentIndex = line.indexOf('//');
-      let beforeComment = line;
-      let comment = '';
-      if (commentIndex !== -1) {
-        beforeComment = line.substring(0, commentIndex);
-        comment = line.substring(commentIndex);
-      }
-
-      // Keywords (blue)
-      const keywords = ['import', 'export', 'from', 'const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'default', 'async', 'await', 'new', 'true', 'false', 'null', 'undefined'];
-      keywords.forEach(keyword => {
-        const regex = new RegExp(`\\b(${keyword})\\b`, 'g');
-        beforeComment = beforeComment.replace(regex, `<span class="text-blue-400">$1</span>`);
-      });
-
-      // Strings (green) - single and double quotes
-      beforeComment = beforeComment.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '<span class="text-green-400">\'$1\'</span>');
-      beforeComment = beforeComment.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, '<span class="text-green-400">"$1"</span>');
-      beforeComment = beforeComment.replace(/`([^`\\]*(\\.[^`\\]*)*)`/g, '<span class="text-green-400">`$1`</span>');
-
-      // Numbers (orange)
-      beforeComment = beforeComment.replace(/\b(\d+\.?\d*)\b/g, '<span class="text-orange-400">$1</span>');
-
-      // Function names (yellow)
-      beforeComment = beforeComment.replace(/(\w+)\s*\(/g, '<span class="text-yellow-300">$1</span>(');
-
-      // Properties after dot (cyan)
-      beforeComment = beforeComment.replace(/\.(\w+)/g, '.<span class="text-cyan-300">$1</span>');
-
-      // Reassemble with comment (gray)
-      if (comment) {
-        highlighted = beforeComment + `<span class="text-gray-500">${comment}</span>`;
-      } else {
-        highlighted = beforeComment;
-      }
-
+      const highlighted = highlightJavaScriptLine(line);
       return (
         <div key={lineIndex} className="leading-6 flex">
           <span className="select-none text-gray-500 pr-4 text-right" style={{ minWidth: '3rem' }}>
@@ -553,166 +351,17 @@ export function teardown(data) {
         </div>
       );
     });
-  };
+  }, []);
 
-  // K6 script templates
-  const k6Templates = {
-    'load-test': {
-      name: '📈 Load Test',
-      description: 'Standard load test with VU ramp-up',
-      script: generateK6Script(),
-    },
-    'stress-test': {
-      name: '💥 Stress Test',
-      description: 'High load to find breaking points',
-      script: `import http from 'k6/http';
-import { check, sleep } from 'k6';
-import { Rate } from 'k6/metrics';
-
-const errorRate = new Rate('errors');
-
-export const options = {
-  stages: [
-    { duration: '2m', target: 100 },   // Ramp to 100 users
-    { duration: '5m', target: 100 },   // Stay at 100
-    { duration: '2m', target: 200 },   // Ramp to 200
-    { duration: '5m', target: 200 },   // Stay at 200
-    { duration: '2m', target: 300 },   // Ramp to 300
-    { duration: '5m', target: 300 },   // Stay at 300
-    { duration: '2m', target: 0 },     // Ramp down
-  ],
-  thresholds: {
-    http_req_duration: ['p(99)<1500'], // 99% under 1.5s
-    errors: ['rate<0.1'],
-  },
-};
-
-export default function () {
-  const response = http.get('${test?.target_url || 'https://example.com'}');
-
-  const checkResult = check(response, {
-    'status is 200': (r) => r.status === 200,
-    'response time OK': (r) => r.timings.duration < 1500,
-  });
-
-  errorRate.add(!checkResult);
-  sleep(1);
-}
-`,
-    },
-    'spike-test': {
-      name: '⚡ Spike Test',
-      description: 'Sudden traffic surge simulation',
-      script: `import http from 'k6/http';
-import { check, sleep } from 'k6';
-
-export const options = {
-  stages: [
-    { duration: '10s', target: 10 },    // Normal load
-    { duration: '1m', target: 10 },     // Normal load
-    { duration: '10s', target: 1000 },  // Spike!
-    { duration: '3m', target: 1000 },   // Stay at spike
-    { duration: '10s', target: 10 },    // Scale down
-    { duration: '3m', target: 10 },     // Recovery
-    { duration: '10s', target: 0 },     // End
-  ],
-};
-
-export default function () {
-  const response = http.get('${test?.target_url || 'https://example.com'}');
-
-  check(response, {
-    'status is 200': (r) => r.status === 200,
-  });
-
-  sleep(1);
-}
-`,
-    },
-    'soak-test': {
-      name: '🕐 Soak Test',
-      description: 'Extended duration for reliability',
-      script: `import http from 'k6/http';
-import { check, sleep } from 'k6';
-
-export const options = {
-  stages: [
-    { duration: '5m', target: 50 },   // Ramp up
-    { duration: '4h', target: 50 },   // Soak at 50 VUs for 4 hours
-    { duration: '5m', target: 0 },    // Ramp down
-  ],
-  thresholds: {
-    http_req_duration: ['p(95)<500'],
-    http_req_failed: ['rate<0.01'],   // Less than 1% failures
-  },
-};
-
-export default function () {
-  const response = http.get('${test?.target_url || 'https://example.com'}');
-
-  check(response, {
-    'status is 200': (r) => r.status === 200,
-    'response time < 500ms': (r) => r.timings.duration < 500,
-  });
-
-  sleep(Math.random() * 3 + 2); // 2-5 second think time
-}
-`,
-    },
-    'api-test': {
-      name: '🔌 API Test',
-      description: 'REST API endpoint testing',
-      script: `import http from 'k6/http';
-import { check, group, sleep } from 'k6';
-
-const BASE_URL = '${test?.target_url || 'https://api.example.com'}';
-
-export const options = {
-  vus: 10,
-  duration: '30s',
-  thresholds: {
-    http_req_duration: ['p(95)<200'],
-    'http_req_duration{name:GET}': ['p(95)<100'],
-    'http_req_duration{name:POST}': ['p(95)<300'],
-  },
-};
-
-export default function () {
-  group('API Endpoints', function () {
-    // GET request
-    let getRes = http.get(\`\${BASE_URL}/api/items\`, {
-      tags: { name: 'GET' },
-    });
-    check(getRes, {
-      'GET status is 200': (r) => r.status === 200,
-      'GET response has data': (r) => r.json().length > 0,
-    });
-
-    // POST request
-    let postRes = http.post(\`\${BASE_URL}/api/items\`, JSON.stringify({
-      name: 'Test Item',
-      value: 123,
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-      tags: { name: 'POST' },
-    });
-    check(postRes, {
-      'POST status is 201': (r) => r.status === 201,
-    });
-  });
-
-  sleep(1);
-}
-`,
-    },
-  };
+  // Feature #48: K6 script templates from utility
+  const k6Templates = useMemo(() => getK6Templates(test?.target_url || ''), [test?.target_url]);
 
   // Initialize K6 script when tab is opened for load tests
   useEffect(() => {
     if (test?.test_type === 'load' && activeTab === 'k6script' && !k6Script) {
-      setK6Script(test?.k6_script || generateK6Script());
+      setK6Script(test?.k6_script || generateK6ScriptForTest());
     }
-  }, [test?.test_type, activeTab, test?.k6_script]);
+  }, [test?.test_type, activeTab, test?.k6_script, generateK6ScriptForTest]);
 
   // Handle step drag start
   const handleStepDragStart = (e: React.DragEvent, index: number) => {
@@ -861,7 +510,7 @@ export default function () {
   // Start editing custom code
   const handleStartEditCode = () => {
     // Initialize with existing custom code or generate from steps
-    const initialCode = test?.playwright_code || generatePlaywrightCode(test?.steps || []);
+    const initialCode = test?.playwright_code || generatePlaywrightCodeForTest(test?.steps);
     setEditedCode(initialCode);
     setCodeError('');
     setIsEditingCode(true);
@@ -885,7 +534,7 @@ export default function () {
     try {
       const code = test.use_custom_code && test.playwright_code
         ? test.playwright_code
-        : generatePlaywrightCode(test.steps || []);
+        : generatePlaywrightCodeForTest(test.steps);
 
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://qa.pixelcraftedmedia.com'}/api/v1/ai/explain-test`, {
         method: 'POST',
@@ -1246,63 +895,34 @@ export default function () {
   const [showSelectorAutocomplete, setShowSelectorAutocomplete] = useState(false);
   const [showValueAutocomplete, setShowValueAutocomplete] = useState(false);
 
-  // Feature #1236: Common selector patterns for autocomplete
-  const selectorPatterns: Record<string, string[]> = {
-    'button': ['button.submit', 'button[type="submit"]', 'button.btn-primary', 'button#submit'],
-    'input': ['input[type="email"]', 'input[type="password"]', 'input#username', 'input.form-control'],
-    '#': ['#login-form', '#submit-button', '#email', '#password', '#search'],
-    '.': ['.btn', '.form-control', '.nav-link', '.card', '.modal'],
-    '[data': ['[data-testid="submit"]', '[data-testid="login"]', '[data-testid="search"]'],
-    'form': ['form#login', 'form.auth-form', 'form[action="/login"]'],
-    'a': ['a.nav-link', 'a[href="/dashboard"]', 'a.btn'],
-  };
-
-  // Feature #1236: Common value patterns based on action type
-  // Feature #1969: Use test's target_url instead of example.com
+  // Feature #48: Autocomplete using imported utilities
   const baseUrl = test?.target_url || '';
-  const valuePatterns: Record<string, string[]> = {
-    navigate: baseUrl ? [`${baseUrl}`, `${baseUrl}/login`, `${baseUrl}/dashboard`, '/api/health'] : ['/home', '/login', '/dashboard', '/api/health'],
-    fill: ['your-email@domain.com', 'password123', 'John Doe', 'Search query'],
-    type: ['Hello World', 'your-text', 'password', 'Search term'],
-    wait: ['1000', '2000', '500', '3000'],
-    assert_text: ['Welcome', 'Login successful', 'Dashboard', 'Submit'],
-  };
 
-  // Feature #1236: Generate autocomplete suggestion for selector
+  // Feature #1236: Generate autocomplete suggestion for selector using imported utility
   useEffect(() => {
     if (!newStepSelector || !showAddStepModal) {
       setSelectorAutocomplete(null);
       setShowSelectorAutocomplete(false);
       return;
     }
-
-    // Find matching pattern
-    const input = newStepSelector.toLowerCase();
-    for (const [prefix, suggestions] of Object.entries(selectorPatterns)) {
-      if (input.startsWith(prefix.toLowerCase())) {
-        const match = suggestions.find(s => s.toLowerCase().startsWith(input) && s.toLowerCase() !== input);
-        if (match) {
-          setSelectorAutocomplete(match);
-          setShowSelectorAutocomplete(true);
-          return;
-        }
-      }
+    const match = findSelectorAutocomplete(newStepSelector);
+    if (match) {
+      setSelectorAutocomplete(match);
+      setShowSelectorAutocomplete(true);
+    } else {
+      setSelectorAutocomplete(null);
+      setShowSelectorAutocomplete(false);
     }
-    setSelectorAutocomplete(null);
-    setShowSelectorAutocomplete(false);
   }, [newStepSelector, showAddStepModal]);
 
-  // Feature #1236: Generate autocomplete suggestion for value
+  // Feature #1236: Generate autocomplete suggestion for value using imported utility
   useEffect(() => {
     if (!newStepValue || !showAddStepModal) {
       setValueAutocomplete(null);
       setShowValueAutocomplete(false);
       return;
     }
-
-    const patterns = valuePatterns[newStepAction] || [];
-    const input = newStepValue.toLowerCase();
-    const match = patterns.find(p => p.toLowerCase().startsWith(input) && p.toLowerCase() !== input);
+    const match = findValueAutocomplete(newStepValue, newStepAction, baseUrl);
     if (match) {
       setValueAutocomplete(match);
       setShowValueAutocomplete(true);
@@ -1310,7 +930,7 @@ export default function () {
       setValueAutocomplete(null);
       setShowValueAutocomplete(false);
     }
-  }, [newStepValue, newStepAction, showAddStepModal]);
+  }, [newStepValue, newStepAction, showAddStepModal, baseUrl]);
 
   // Feature #1236: Handle Tab key to accept autocomplete
   const handleSelectorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -2753,7 +2373,7 @@ export default function () {
                 onSaveCode={handleSaveCode}
                 onRevertToSteps={handleRevertToSteps}
                 onExplainTest={handleExplainTest}
-                generatePlaywrightCode={generatePlaywrightCode}
+                generatePlaywrightCode={generatePlaywrightCodeForTest}
               />
             )}
 
@@ -2771,7 +2391,7 @@ export default function () {
                 onSetK6Script={setK6Script}
                 onSetIsEditingK6Script={setIsEditingK6Script}
                 onSetShowK6Templates={setShowK6Templates}
-                generateK6Script={generateK6Script}
+                generateK6Script={generateK6ScriptForTest}
               />
             )}
 
