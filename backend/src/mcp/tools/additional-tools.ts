@@ -262,6 +262,29 @@ export const ADDITIONAL_TOOLS: ToolDefinition[] = [
       required: ['url'],
     },
   },
+  // Feature #43: Multi-page crawl for smoke test generation
+  {
+    name: 'crawl_site_map',
+    description: 'Crawl a website following navigation links to build a site map for comprehensive smoke test coverage. Returns page types, forms, and suggested smoke tests.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'Starting URL to crawl (e.g., https://example.com)',
+        },
+        depth: {
+          type: 'number',
+          description: 'Maximum crawl depth (1-3, default: 2)',
+        },
+        max_pages: {
+          type: 'number',
+          description: 'Maximum pages to crawl (default: 20)',
+        },
+      },
+      required: ['url'],
+    },
+  },
 ];
 
 export const ADDITIONAL_TOOL_NAMES = ADDITIONAL_TOOLS.map(t => t.name);

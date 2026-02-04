@@ -518,4 +518,472 @@ function createEmptyAnalysis(url: string, error?: string): SiteAnalysis {
   };
 }
 
-export default { crawlUrl, crawlWithPlaywright, analyzeSite };
+/**
+ * Feature #43: Multi-page crawl for smoke test generation
+ * Follows navigation links and builds a site map for comprehensive coverage
+ * @param url - Starting URL to crawl
+ * @param depth - Maximum crawl depth (1-3), default 2
+ * @param maxPages - Maximum pages to crawl, default 20
+ */
+export async function crawlSite(
+  url: string,
+  depth: number = 2,
+  maxPages: number = 20
+): Promise<SiteMap> {
+  // Clamp depth between 1-3
+  const maxDepth = Math.max(1, Math.min(3, depth));
+
+  const baseUrl = new URL(url);
+  const baseHost = baseUrl.hostname;
+  const visitedUrls = new Set<string>();
+  const pages: PageInfo[] = [];
+  const queue: Array<{ url: string; depth: number }> = [{ url, depth: 0 }];
+
+  console.log(`[Crawl4AI] Starting multi-page crawl of ${url} (depth: ${maxDepth}, maxPages: ${maxPages})`);
+
+  while (queue.length > 0 && pages.length < maxPages) {
+    const current = queue.shift();
+    if (!current) break;
+
+    const { url: currentUrl, depth: currentDepth } = current;
+
+    // Normalize URL for deduplication
+    const normalizedUrl = normalizeUrl(currentUrl, baseHost);
+    if (visitedUrls.has(normalizedUrl)) continue;
+    visitedUrls.add(normalizedUrl);
+
+    // Skip URLs that should be ignored
+    if (shouldSkipUrl(normalizedUrl, baseHost)) continue;
+
+    console.log(`[Crawl4AI] Crawling page ${pages.length + 1}/${maxPages}: ${normalizedUrl} (depth ${currentDepth})`);
+
+    try {
+      // Analyze the current page
+      const analysis = await analyzeSite(normalizedUrl, true);
+
+      // Add page info to results
+      pages.push({
+        url: normalizedUrl,
+        title: analysis.title,
+        pageType: analysis.pageType,
+        depth: currentDepth,
+        hasLogin: analysis.hasLogin,
+        hasSearch: analysis.hasSearch,
+        hasCart: analysis.hasCart,
+        forms: analysis.forms.length,
+        links: analysis.links.length,
+      });
+
+      // If not at max depth, queue navigation links for crawling
+      if (currentDepth < maxDepth) {
+        // Prioritize navigation links over content links
+        const linksToFollow = analysis.links
+          .filter(link => link.category === 'nav' || link.category === 'footer')
+          .filter(link => !link.isExternal)
+          .map(link => link.href);
+
+        // Also include some content links if we have room
+        if (linksToFollow.length < 10) {
+          const contentLinks = analysis.links
+            .filter(link => link.category === 'content' && !link.isExternal)
+            .slice(0, 10 - linksToFollow.length)
+            .map(link => link.href);
+          linksToFollow.push(...contentLinks);
+        }
+
+        for (const linkHref of linksToFollow) {
+          const absoluteUrl = resolveUrl(linkHref, normalizedUrl, baseHost);
+          if (absoluteUrl && !visitedUrls.has(absoluteUrl)) {
+            queue.push({ url: absoluteUrl, depth: currentDepth + 1 });
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`[Crawl4AI] Failed to crawl ${normalizedUrl}:`, error);
+    }
+  }
+
+  console.log(`[Crawl4AI] Multi-page crawl complete: ${pages.length} pages crawled`);
+
+  return {
+    baseUrl: url,
+    pages,
+    totalPages: pages.length,
+    crawlDepth: maxDepth,
+    crawledAt: new Date().toISOString(),
+    suggestedSmokeTests: generateSmokeTests(pages),
+  };
+}
+
+/** Normalize URL for consistent deduplication */
+function normalizeUrl(url: string, baseHost: string): string {
+  try {
+    const parsed = new URL(url);
+    // Remove trailing slash, lowercase, remove fragments
+    let normalized = `${parsed.protocol}//${parsed.host}${parsed.pathname}`.toLowerCase();
+    normalized = normalized.replace(/\/$/, '');
+    // Include query params for uniqueness (but sorted)
+    if (parsed.search) {
+      const params = new URLSearchParams(parsed.search);
+      params.sort();
+      normalized += '?' + params.toString();
+    }
+    return normalized;
+  } catch {
+    return url.toLowerCase().replace(/\/$/, '');
+  }
+}
+
+/** Check if URL should be skipped (pagination, media, etc.) */
+function shouldSkipUrl(url: string, baseHost: string): boolean {
+  try {
+    const parsed = new URL(url);
+    // Only crawl same domain
+    if (parsed.hostname !== baseHost) return true;
+
+    // Skip common non-page URLs
+    const skipPatterns = [
+      /\.(jpg|jpeg|png|gif|svg|webp|ico|pdf|zip|tar|gz|mp3|mp4|avi|mov)$/i,
+      /\/api\//i,
+      /\/cdn-cgi\//i,
+      /\/(login|logout|signin|signout|register)\/?$/i, // Skip auth pages for now
+      /\?page=\d+/i, // Skip pagination
+      /\/page\/\d+/i,
+      /#/i, // Skip anchor links
+    ];
+
+    return skipPatterns.some(pattern => pattern.test(url));
+  } catch {
+    return true;
+  }
+}
+
+/** Resolve relative URL to absolute URL */
+function resolveUrl(href: string, currentUrl: string, baseHost: string): string | null {
+  try {
+    // Handle relative URLs
+    const resolved = new URL(href, currentUrl);
+
+    // Only return URLs on same host
+    if (resolved.hostname !== baseHost) return null;
+
+    return resolved.href;
+  } catch {
+    return null;
+  }
+}
+
+/** Generate smoke test suggestions from crawled pages */
+function generateSmokeTests(pages: PageInfo[]): string[] {
+  const tests: string[] = [];
+
+  // Test each unique page type
+  const pageTypes = new Set(pages.map(p => p.pageType));
+  pageTypes.forEach(type => {
+    if (type !== 'unknown') {
+      tests.push(`Load ${type} page and verify title`);
+    }
+  });
+
+  // Test pages with forms
+  const formsCount = pages.filter(p => p.forms > 0).length;
+  if (formsCount > 0) {
+    tests.push(`Verify forms are functional on ${formsCount} pages`);
+  }
+
+  // Test navigation
+  const navPages = pages.filter(p => p.depth === 0 || p.links > 10);
+  if (navPages.length > 0) {
+    tests.push('Verify main navigation links work');
+  }
+
+  // Test search functionality
+  if (pages.some(p => p.hasSearch)) {
+    tests.push('Verify search functionality');
+  }
+
+  // Test e-commerce flow
+  if (pages.some(p => p.hasCart)) {
+    tests.push('Verify add to cart functionality');
+  }
+
+  // Test login accessibility
+  if (pages.some(p => p.hasLogin)) {
+    tests.push('Verify login form accessibility');
+  }
+
+  // Add generic tests
+  tests.push(`Verify all ${pages.length} pages load without errors`);
+  tests.push('Check for broken links');
+  tests.push('Verify responsive design on mobile viewport');
+
+  return tests.slice(0, 15);
+}
+
+/** Feature #44: Smoke Test interface for auto-generated tests */
+export interface SmokeTest {
+  name: string;
+  description: string;
+  targetUrl: string;
+  steps: SmokeTestStep[];
+  assertions: SmokeTestAssertion[];
+}
+
+export interface SmokeTestStep {
+  action: 'navigate' | 'screenshot' | 'wait' | 'scroll' | 'check_console';
+  value?: string;
+  timeout?: number;
+  description: string;
+}
+
+export interface SmokeTestAssertion {
+  type: 'title_not_empty' | 'no_console_errors' | 'no_404' | 'no_500' | 'element_exists' | 'page_loaded';
+  selector?: string;
+  description: string;
+}
+
+export interface SmokeTestSuite {
+  name: string;
+  description: string;
+  baseUrl: string;
+  tests: SmokeTest[];
+  generatedAt: string;
+  totalPages: number;
+}
+
+/**
+ * Feature #44: Auto-generate smoke tests from discovered pages
+ * Generates E2E tests that navigate to each page and verify basic functionality
+ * @param siteMap - Site map from crawlSite() or individual pages array
+ * @param options - Generation options (baseUrl, name)
+ */
+export function generateSmokeTestSuite(
+  siteMap: SiteMap | PageInfo[],
+  options?: { suiteName?: string; baseUrl?: string }
+): SmokeTestSuite {
+  const pages = Array.isArray(siteMap) ? siteMap : siteMap.pages;
+  const baseUrl = options?.baseUrl || (Array.isArray(siteMap) ? '' : siteMap.baseUrl);
+  const suiteName = options?.suiteName || 'Smoke Tests';
+
+  const tests: SmokeTest[] = pages.map((page, index) => {
+    const steps: SmokeTestStep[] = [
+      {
+        action: 'navigate',
+        value: page.url,
+        timeout: 30000,
+        description: `Navigate to ${page.title || page.url}`,
+      },
+      {
+        action: 'wait',
+        value: 'networkidle',
+        timeout: 10000,
+        description: 'Wait for page to fully load',
+      },
+      {
+        action: 'check_console',
+        description: 'Check for JavaScript console errors',
+      },
+      {
+        action: 'screenshot',
+        value: `smoke-test-page-${index + 1}.png`,
+        description: `Capture screenshot of ${page.title || 'page'}`,
+      },
+    ];
+
+    // Add scroll for content pages to trigger lazy loading
+    if (page.pageType === 'article' || page.links > 10) {
+      steps.push({
+        action: 'scroll',
+        value: 'bottom',
+        description: 'Scroll to page bottom to trigger lazy loading',
+      });
+      steps.push({
+        action: 'screenshot',
+        value: `smoke-test-page-${index + 1}-scrolled.png`,
+        description: 'Capture screenshot after scrolling',
+      });
+    }
+
+    const assertions: SmokeTestAssertion[] = [
+      {
+        type: 'page_loaded',
+        description: 'Page should load successfully',
+      },
+      {
+        type: 'title_not_empty',
+        description: 'Page title should not be empty',
+      },
+      {
+        type: 'no_console_errors',
+        description: 'No JavaScript errors in console',
+      },
+      {
+        type: 'no_404',
+        description: 'Page should not return 404 error',
+      },
+      {
+        type: 'no_500',
+        description: 'Page should not return server error',
+      },
+    ];
+
+    // Add specific assertions based on page type
+    if (page.hasLogin) {
+      assertions.push({
+        type: 'element_exists',
+        selector: 'input[type="password"], input[name*="password"]',
+        description: 'Login form password field should exist',
+      });
+    }
+
+    if (page.hasSearch) {
+      assertions.push({
+        type: 'element_exists',
+        selector: 'input[type="search"], input[name*="search"], input[placeholder*="search" i]',
+        description: 'Search input should exist',
+      });
+    }
+
+    if (page.forms > 0) {
+      assertions.push({
+        type: 'element_exists',
+        selector: 'form',
+        description: 'Form element should be present',
+      });
+    }
+
+    return {
+      name: `Smoke Test: ${page.title || page.url}`,
+      description: `Verify ${page.pageType} page loads correctly without errors`,
+      targetUrl: page.url,
+      steps,
+      assertions,
+    };
+  });
+
+  return {
+    name: suiteName,
+    description: `Auto-generated smoke tests for ${pages.length} pages. Tests verify each page loads, has a title, no console errors, and key elements exist.`,
+    baseUrl,
+    tests,
+    generatedAt: new Date().toISOString(),
+    totalPages: pages.length,
+  };
+}
+
+/**
+ * Feature #44: Generate Playwright test code from smoke test suite
+ */
+export function smokeTestSuiteToPlaywright(suite: SmokeTestSuite): string {
+  let code = `// Auto-generated Smoke Test Suite: ${suite.name}
+// Generated at: ${suite.generatedAt}
+// Total pages: ${suite.totalPages}
+
+import { test, expect } from '@playwright/test';
+
+`;
+
+  for (const smokeTest of suite.tests) {
+    code += `test('${escapeTestName(smokeTest.name)}', async ({ page }) => {
+  // ${smokeTest.description}
+  const consoleErrors: string[] = [];
+
+  // Collect console errors
+  page.on('console', msg => {
+    if (msg.type() === 'error') {
+      consoleErrors.push(msg.text());
+    }
+  });
+
+  // Collect page errors
+  page.on('pageerror', error => {
+    consoleErrors.push(error.message);
+  });
+
+`;
+
+    // Generate step code
+    for (const step of smokeTest.steps) {
+      switch (step.action) {
+        case 'navigate':
+          code += `  // ${step.description}
+  const response = await page.goto('${step.value}', { waitUntil: 'domcontentloaded', timeout: ${step.timeout || 30000} });
+  expect(response?.status()).toBeLessThan(400);
+
+`;
+          break;
+        case 'wait':
+          code += `  // ${step.description}
+  await page.waitForLoadState('${step.value || 'networkidle'}', { timeout: ${step.timeout || 10000} });
+
+`;
+          break;
+        case 'screenshot':
+          code += `  // ${step.description}
+  await page.screenshot({ path: 'screenshots/${step.value}', fullPage: true });
+
+`;
+          break;
+        case 'scroll':
+          code += `  // ${step.description}
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.waitForTimeout(500);
+
+`;
+          break;
+        case 'check_console':
+          code += `  // ${step.description}
+  // Console errors are collected automatically
+
+`;
+          break;
+      }
+    }
+
+    // Generate assertion code
+    for (const assertion of smokeTest.assertions) {
+      switch (assertion.type) {
+        case 'title_not_empty':
+          code += `  // ${assertion.description}
+  const title = await page.title();
+  expect(title.length).toBeGreaterThan(0);
+
+`;
+          break;
+        case 'no_console_errors':
+          code += `  // ${assertion.description}
+  expect(consoleErrors, 'Console errors found: ' + consoleErrors.join(', ')).toHaveLength(0);
+
+`;
+          break;
+        case 'element_exists':
+          code += `  // ${assertion.description}
+  await expect(page.locator('${assertion.selector}')).toBeVisible({ timeout: 5000 }).catch(() => {
+    // Element not found, but this is a soft assertion for smoke tests
+    console.warn('Element not found: ${assertion.selector}');
+  });
+
+`;
+          break;
+        case 'page_loaded':
+        case 'no_404':
+        case 'no_500':
+          // These are handled by the response status check above
+          break;
+      }
+    }
+
+    code += `});
+
+`;
+  }
+
+  return code;
+}
+
+/** Escape special characters in test names */
+function escapeTestName(name: string): string {
+  return name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+export default { crawlUrl, crawlWithPlaywright, analyzeSite, crawlSite, generateSmokeTestSuite, smokeTestSuiteToPlaywright };

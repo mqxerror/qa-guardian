@@ -4,7 +4,7 @@
  */
 
 import { ToolHandler, HandlerModule } from './types.js';
-import { analyzeSite, type SiteAnalysis } from '../../services/crawl4ai.js';
+import { analyzeSite, crawlSite, type SiteAnalysis, type SiteMap } from '../../services/crawl4ai.js';
 
 /**
  * Analyze a website to understand its structure for test generation
@@ -88,9 +88,71 @@ export const analyze_site: ToolHandler = async (args) => {
   }
 };
 
+/**
+ * Feature #43: Multi-page crawl for smoke test generation
+ * Crawls a website following navigation links to build a site map
+ */
+export const crawl_site_map: ToolHandler = async (args) => {
+  const url = args.url as string;
+  const depth = typeof args.depth === 'number' ? args.depth : 2;
+  const maxPages = typeof args.max_pages === 'number' ? args.max_pages : 20;
+
+  if (!url) {
+    return { error: 'url is required', hint: 'Provide a URL to crawl (e.g., https://example.com)' };
+  }
+
+  // Normalize URL
+  let normalizedUrl = url;
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    normalizedUrl = `https://${url}`;
+  }
+
+  try {
+    const siteMap = await crawlSite(normalizedUrl, depth, maxPages);
+
+    // Summarize page types
+    const pageTypeCounts: Record<string, number> = {};
+    siteMap.pages.forEach(p => {
+      pageTypeCounts[p.pageType] = (pageTypeCounts[p.pageType] || 0) + 1;
+    });
+
+    return {
+      success: true,
+      siteMap: {
+        baseUrl: siteMap.baseUrl,
+        totalPages: siteMap.totalPages,
+        crawlDepth: siteMap.crawlDepth,
+        crawledAt: siteMap.crawledAt,
+        pageTypes: pageTypeCounts,
+        pages: siteMap.pages.map(p => ({
+          url: p.url,
+          title: p.title,
+          pageType: p.pageType,
+          depth: p.depth,
+          hasLogin: p.hasLogin,
+          hasSearch: p.hasSearch,
+          hasCart: p.hasCart,
+          forms: p.forms,
+          links: p.links,
+        })),
+        suggestedSmokeTests: siteMap.suggestedSmokeTests,
+      },
+      message: `🗺️ Site Map: Crawled ${siteMap.totalPages} pages (depth ${siteMap.crawlDepth}). Page types: ${Object.entries(pageTypeCounts).map(([k, v]) => `${k}:${v}`).join(', ')}. Generated ${siteMap.suggestedSmokeTests.length} smoke test suggestions.`,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return {
+      success: false,
+      error: `Failed to crawl site: ${errorMessage}`,
+      url: normalizedUrl,
+    };
+  }
+};
+
 // Handler registry
 export const handlers: Record<string, ToolHandler> = {
   analyze_site,
+  crawl_site_map,
 };
 
 export const toolNames = Object.keys(handlers);
