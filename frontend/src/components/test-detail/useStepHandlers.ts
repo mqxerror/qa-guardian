@@ -7,6 +7,18 @@ import { useCallback } from 'react';
 import { toast } from '../../stores/toastStore';
 import { generatePlaywrightCode } from './codeGenUtils';
 
+export interface AddStepData {
+  action: string;
+  selector?: string;
+  value?: string;
+  checkpointName?: string;
+  checkpointThreshold?: string;
+  a11yWcagLevel?: 'A' | 'AA' | 'AAA';
+  a11yFailOnAny?: boolean;
+  a11yFailOnCritical?: boolean;
+  a11yThreshold?: string;
+}
+
 export interface UseStepHandlersProps {
   testId: string | undefined;
   token: string | null;
@@ -26,6 +38,10 @@ export interface UseStepHandlersProps {
   setIsExplainingTest: (value: boolean) => void;
   setShowExplainModal: (value: boolean) => void;
   setTestExplanation: (explanation: any) => void;
+  // Add step handlers
+  setIsAddingStep?: (value: boolean) => void;
+  setAddStepError?: (error: string) => void;
+  setShowAddStepModal?: (value: boolean) => void;
 }
 
 export interface StepHandlers {
@@ -39,6 +55,7 @@ export interface StepHandlers {
   handleStartEditCode: () => void;
   handleCancelEditCode: () => void;
   handleExplainTest: () => Promise<void>;
+  handleAddStep: (e: React.FormEvent, stepData: AddStepData) => Promise<void>;
 }
 
 export function useStepHandlers({
@@ -60,6 +77,9 @@ export function useStepHandlers({
   setIsExplainingTest,
   setShowExplainModal,
   setTestExplanation,
+  setIsAddingStep,
+  setAddStepError,
+  setShowAddStepModal,
 }: UseStepHandlersProps): StepHandlers {
 
   // Handle step drag start
@@ -222,6 +242,77 @@ export function useStepHandlers({
     setCodeError('');
   }, [setIsEditingCode, setEditedCode, setCodeError]);
 
+  // Add new step to test
+  const handleAddStep = useCallback(async (e: React.FormEvent, stepData: AddStepData) => {
+    e.preventDefault();
+    if (!test || !setAddStepError || !setIsAddingStep || !setShowAddStepModal) return;
+
+    setAddStepError('');
+    setIsAddingStep(true);
+
+    try {
+      // Build new step object
+      const newStep: {
+        id: string;
+        action: string;
+        selector?: string;
+        value?: string;
+        order: number;
+        checkpointName?: string;
+        checkpointThreshold?: number;
+        a11y_wcag_level?: 'A' | 'AA' | 'AAA';
+        a11y_fail_on_any?: boolean;
+        a11y_fail_on_critical?: boolean;
+        a11y_threshold?: number;
+      } = {
+        id: String(Date.now()),
+        action: stepData.action,
+        selector: stepData.selector || undefined,
+        value: stepData.value || undefined,
+        order: test?.steps?.length || 0,
+      };
+
+      // Add visual checkpoint configuration
+      if (stepData.action === 'visual_checkpoint') {
+        newStep.checkpointName = stepData.checkpointName || `checkpoint-${Date.now()}`;
+        newStep.checkpointThreshold = parseFloat(stepData.checkpointThreshold || '0.1') || 0.1;
+      }
+
+      // Add accessibility check configuration
+      if (stepData.action === 'accessibility_check') {
+        newStep.a11y_wcag_level = stepData.a11yWcagLevel;
+        newStep.a11y_fail_on_any = stepData.a11yFailOnAny;
+        newStep.a11y_fail_on_critical = stepData.a11yFailOnCritical;
+        newStep.a11y_threshold = parseInt(stepData.a11yThreshold || '0', 10) || 0;
+      }
+
+      const updatedSteps = [...(test?.steps || []), newStep];
+
+      const response = await fetch(`/api/v1/tests/${testId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ steps: updatedSteps }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to add step');
+      }
+
+      const data = await response.json();
+      setTest(data.test);
+      setShowAddStepModal(false);
+      toast.success('Step added successfully!');
+    } catch (err) {
+      setAddStepError(err instanceof Error ? err.message : 'Failed to add step');
+    } finally {
+      setIsAddingStep(false);
+    }
+  }, [test, testId, token, setTest, setAddStepError, setIsAddingStep, setShowAddStepModal]);
+
   // AI Explain Test Code
   const handleExplainTest = useCallback(async () => {
     if (!test) return;
@@ -273,5 +364,6 @@ export function useStepHandlers({
     handleStartEditCode,
     handleCancelEditCode,
     handleExplainTest,
+    handleAddStep,
   };
 }

@@ -73,6 +73,7 @@ export {
   useStepHandlers,
   type UseStepHandlersProps,
   type StepHandlers,
+  type AddStepData,
 } from './useStepHandlers';
 export {
   useTestCrudHandlers,

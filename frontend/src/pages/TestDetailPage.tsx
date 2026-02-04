@@ -157,6 +157,8 @@ function TestDetailPage() {
   const runPage = parseInt(searchParams.get('page') || '1', 10);
   const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
   const [showAddStepModal, setShowAddStepModal] = useState(false);
+  const [isAddingStep, setIsAddingStep] = useState(false);
+  const [addStepError, setAddStepError] = useState('');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [lightboxZoom, setLightboxZoom] = useState(1);
   const [lightboxPan, setLightboxPan] = useState({ x: 0, y: 0 });
@@ -382,6 +384,7 @@ function TestDetailPage() {
     handleStartEditCode,
     handleCancelEditCode,
     handleExplainTest,
+    handleAddStep,
   } = useStepHandlers({
     testId,
     token,
@@ -401,6 +404,9 @@ function TestDetailPage() {
     setIsExplainingTest,
     setShowExplainModal,
     setTestExplanation,
+    setIsAddingStep,
+    setAddStepError,
+    setShowAddStepModal,
   });
 
   // Inline step handlers removed - now using useStepHandlers hook (Feature #48)
@@ -724,8 +730,7 @@ function TestDetailPage() {
   const [newStepAction, setNewStepAction] = useState('navigate');
   const [newStepSelector, setNewStepSelector] = useState('');
   const [newStepValue, setNewStepValue] = useState('');
-  const [isAddingStep, setIsAddingStep] = useState(false);
-  const [addStepError, setAddStepError] = useState('');
+  // Feature #48: isAddingStep, addStepError moved earlier (before useStepHandlers hook)
   const [newStepCheckpointName, setNewStepCheckpointName] = useState('');
   const [newStepCheckpointThreshold, setNewStepCheckpointThreshold] = useState('0.1');
   // Accessibility check step configuration
@@ -1044,82 +1049,32 @@ function TestDetailPage() {
     }
   }, [testId, token]);
 
-  const handleAddStep = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAddStepError('');
-    setIsAddingStep(true);
+  // Feature #48: handleAddStep moved to useStepHandlers hook
+  // The hook now handles step creation, the component just needs to pass step data
 
-    try {
-      // Get current steps and add new one
-      const newStep: {
-        id: string;
-        action: string;
-        selector?: string;
-        value?: string;
-        order: number;
-        checkpointName?: string;
-        checkpointThreshold?: number;
-        // Accessibility check fields
-        a11y_wcag_level?: 'A' | 'AA' | 'AAA';
-        a11y_fail_on_any?: boolean;
-        a11y_fail_on_critical?: boolean;
-        a11y_threshold?: number;
-      } = {
-        id: String(Date.now()),
-        action: newStepAction,
-        selector: newStepSelector || undefined,
-        value: newStepValue || undefined,
-        order: test?.steps.length || 0,
-      };
-
-      // Add visual checkpoint configuration
-      if (newStepAction === 'visual_checkpoint') {
-        newStep.checkpointName = newStepCheckpointName || `checkpoint-${Date.now()}`;
-        newStep.checkpointThreshold = parseFloat(newStepCheckpointThreshold) || 0.1;
-      }
-
-      // Add accessibility check configuration
-      if (newStepAction === 'accessibility_check') {
-        newStep.a11y_wcag_level = newStepA11yWcagLevel;
-        newStep.a11y_fail_on_any = newStepA11yFailOnAny;
-        newStep.a11y_fail_on_critical = newStepA11yFailOnCritical;
-        newStep.a11y_threshold = parseInt(newStepA11yThreshold, 10) || 0;
-      }
-
-      const updatedSteps = [...(test?.steps || []), newStep];
-
-      const response = await fetch(`/api/v1/tests/${testId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ steps: updatedSteps }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to add step');
-      }
-
-      const data = await response.json();
-      setTest(data.test);
-      setShowAddStepModal(false);
-      setNewStepAction('navigate');
-      setNewStepSelector('');
-      setNewStepValue('');
-      setNewStepCheckpointName('');
-      setNewStepCheckpointThreshold('0.1');
-      // Reset accessibility check fields
-      setNewStepA11yWcagLevel('AA');
-      setNewStepA11yFailOnAny(false);
-      setNewStepA11yFailOnCritical(true);
-      setNewStepA11yThreshold('0');
-    } catch (err) {
-      setAddStepError(err instanceof Error ? err.message : 'Failed to add step');
-    } finally {
-      setIsAddingStep(false);
-    }
+  // Wrapper to reset form fields after adding step
+  const handleAddStepWithReset = async (e: React.FormEvent) => {
+    await handleAddStep(e, {
+      action: newStepAction,
+      selector: newStepSelector,
+      value: newStepValue,
+      checkpointName: newStepCheckpointName,
+      checkpointThreshold: newStepCheckpointThreshold,
+      a11yWcagLevel: newStepA11yWcagLevel,
+      a11yFailOnAny: newStepA11yFailOnAny,
+      a11yFailOnCritical: newStepA11yFailOnCritical,
+      a11yThreshold: newStepA11yThreshold,
+    });
+    // Reset form fields after successful add
+    setNewStepAction('navigate');
+    setNewStepSelector('');
+    setNewStepValue('');
+    setNewStepCheckpointName('');
+    setNewStepCheckpointThreshold('0.1');
+    setNewStepA11yWcagLevel('AA');
+    setNewStepA11yFailOnAny(false);
+    setNewStepA11yFailOnCritical(true);
+    setNewStepA11yThreshold('0');
   };
 
   useEffect(() => {
@@ -1796,7 +1751,7 @@ function TestDetailPage() {
           onA11yFailOnAnyChange={setNewStepA11yFailOnAny}
           onSelectorKeyDown={handleSelectorKeyDown}
           onValueKeyDown={handleValueKeyDown}
-          onSubmit={handleAddStep}
+          onSubmit={handleAddStepWithReset}
           onClose={() => setShowAddStepModal(false)}
         />
 
