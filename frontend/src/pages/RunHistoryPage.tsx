@@ -1,12 +1,14 @@
 // RunHistoryPage - Feature #1855: Global Run History page accessible from sidebar
 // Shows all historical test runs across all projects in the organization
 // Feature #57: Migrated to React Query with server-side pagination
+// Feature #64: Added infinite scroll as alternative to pagination
 
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useTimezoneStore } from '../stores/timezoneStore';
-import { useRunsPaginated, useProjects, type TestRun } from '../hooks/api';
+import { useRunsPaginated, useRunsInfinite, useProjects, type TestRun } from '../hooks/api';
+import { InfiniteScrollContainer } from '../components/ui/InfiniteScrollContainer';
 
 function RunHistoryPage() {
   const { formatDate } = useTimezoneStore();
@@ -21,21 +23,48 @@ function RunHistoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  // Feature #64: Toggle between pagination and infinite scroll
+  const [useInfiniteScroll, setUseInfiniteScroll] = useState(false);
+
   // Fetch projects using React Query
   const { data: projectsData } = useProjects();
   const projects = projectsData?.projects || [];
 
-  // Fetch runs using React Query with server-side pagination
-  const { data: runsData, isLoading: loading, error: runsError } = useRunsPaginated({
+  // Fetch runs using React Query with server-side pagination (when not using infinite scroll)
+  const {
+    data: runsData,
+    isLoading: paginationLoading,
+    error: runsError,
+  } = useRunsPaginated({
     page: currentPage,
     limit: itemsPerPage,
     status: statusFilter !== 'all' ? statusFilter : undefined,
     project_id: projectFilter !== 'all' ? projectFilter : undefined,
   });
 
-  const runs = runsData?.data || [];
-  const pagination = runsData?.pagination;
-  const error = runsError ? (runsError as Error).message : null;
+  // Feature #64: Infinite scroll query
+  const {
+    data: infiniteData,
+    isLoading: infiniteLoading,
+    error: infiniteError,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useRunsInfinite({
+    limit: itemsPerPage,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    project_id: projectFilter !== 'all' ? projectFilter : undefined,
+  });
+
+  // Get runs based on mode
+  const runs = useInfiniteScroll
+    ? (infiniteData?.pages.flatMap(page => page.data) || [])
+    : (runsData?.data || []);
+  const pagination = useInfiniteScroll ? null : runsData?.pagination;
+  const loading = useInfiniteScroll ? infiniteLoading : paginationLoading;
+  const error = useInfiniteScroll
+    ? (infiniteError ? (infiniteError as Error).message : null)
+    : (runsError ? (runsError as Error).message : null);
 
   // Get unique suites from runs
   const uniqueSuites = useMemo(() => {
@@ -249,6 +278,17 @@ function RunHistoryPage() {
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             className="flex-1 min-w-[200px] rounded-md border border-border bg-background px-3 py-1.5 text-sm"
           />
+
+          {/* Feature #64: Infinite scroll toggle */}
+          <label className="flex items-center gap-2 cursor-pointer ml-auto">
+            <input
+              type="checkbox"
+              checked={useInfiniteScroll}
+              onChange={(e) => setUseInfiniteScroll(e.target.checked)}
+              className="rounded border-border"
+            />
+            <span className="text-sm text-muted-foreground">Infinite scroll</span>
+          </label>
         </div>
 
         {/* Error State */}
@@ -281,131 +321,222 @@ function RunHistoryPage() {
         {/* Runs Table */}
         {!loading && !error && filteredRuns.length > 0 && (
           <>
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Run ID</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Suite</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Date/Time</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Duration</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Pass/Fail</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Branch</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {paginatedRuns.map((run) => (
-                    <tr key={run.id} className="hover:bg-muted/30">
-                      <td className="px-4 py-3">
-                        <StatusBadge status={run.status} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <code className="text-sm text-foreground">#{run.id.slice(-8)}</code>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Link
-                          to={`/suites/${run.suite_id}`}
-                          className="text-primary hover:underline font-medium"
-                        >
-                          {run.suite_name}
-                        </Link>
-                        {run.test_name && (
-                          <div className="text-xs text-muted-foreground mt-0.5" title={run.test_name}>
-                            {run.test_name}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">
-                        <div>{formatDate(run.created_at)}</div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-foreground">
-                        {formatDuration(run.duration_ms)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1 text-sm">
-                          <span className="text-green-600 dark:text-green-400 font-medium">{run.passed_count}</span>
-                          <span className="text-muted-foreground">/</span>
-                          <span className="text-red-600 dark:text-red-400 font-medium">{run.failed_count}</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {run.results_count} test{run.results_count !== 1 ? 's' : ''}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">
-                        {run.branch || 'main'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Link
-                          to={`/runs/${run.id}`}
-                          className="inline-flex items-center gap-1 text-primary hover:underline text-sm"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                          View
-                        </Link>
-                      </td>
+            {/* Feature #64: Wrap table in InfiniteScrollContainer when infinite scroll is enabled */}
+            {useInfiniteScroll ? (
+              <InfiniteScrollContainer
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                fetchNextPage={fetchNextPage}
+                threshold={200}
+                height={600}
+                className="bg-card rounded-lg border border-border overflow-hidden"
+                showEndOfList={true}
+                endOfListIndicator={
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    All {filteredRuns.length} runs loaded
+                  </div>
+                }
+              >
+                <table className="w-full">
+                  <thead className="bg-muted/50 sticky top-0 z-10">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Run ID</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Suite</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Date/Time</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Duration</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Pass/Fail</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Branch</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredRuns.map((run) => (
+                      <tr key={run.id} className="hover:bg-muted/30">
+                        <td className="px-4 py-3">
+                          <StatusBadge status={run.status} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <code className="text-sm text-foreground">#{run.id.slice(-8)}</code>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Link
+                            to={`/suites/${run.suite_id}`}
+                            className="text-primary hover:underline font-medium"
+                          >
+                            {run.suite_name}
+                          </Link>
+                          {run.test_name && (
+                            <div className="text-xs text-muted-foreground mt-0.5" title={run.test_name}>
+                              {run.test_name}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          <div>{formatDate(run.created_at)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground">
+                          {formatDuration(run.duration_ms)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1 text-sm">
+                            <span className="text-green-600 dark:text-green-400 font-medium">{run.passed_count}</span>
+                            <span className="text-muted-foreground">/</span>
+                            <span className="text-red-600 dark:text-red-400 font-medium">{run.failed_count}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {run.results_count} test{run.results_count !== 1 ? 's' : ''}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {run.branch || 'main'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Link
+                            to={`/runs/${run.id}`}
+                            className="inline-flex items-center gap-1 text-primary hover:underline text-sm"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </InfiniteScrollContainer>
+            ) : (
+              <>
+                <div className="bg-card rounded-lg border border-border overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Run ID</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Suite</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Date/Time</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Duration</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Pass/Fail</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Branch</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {paginatedRuns.map((run) => (
+                        <tr key={run.id} className="hover:bg-muted/30">
+                          <td className="px-4 py-3">
+                            <StatusBadge status={run.status} />
+                          </td>
+                          <td className="px-4 py-3">
+                            <code className="text-sm text-foreground">#{run.id.slice(-8)}</code>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Link
+                              to={`/suites/${run.suite_id}`}
+                              className="text-primary hover:underline font-medium"
+                            >
+                              {run.suite_name}
+                            </Link>
+                            {run.test_name && (
+                              <div className="text-xs text-muted-foreground mt-0.5" title={run.test_name}>
+                                {run.test_name}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            <div>{formatDate(run.created_at)}</div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-foreground">
+                            {formatDuration(run.duration_ms)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1 text-sm">
+                              <span className="text-green-600 dark:text-green-400 font-medium">{run.passed_count}</span>
+                              <span className="text-muted-foreground">/</span>
+                              <span className="text-red-600 dark:text-red-400 font-medium">{run.failed_count}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {run.results_count} test{run.results_count !== 1 ? 's' : ''}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {run.branch || 'main'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Link
+                              to={`/runs/${run.id}`}
+                              className="inline-flex items-center gap-1 text-primary hover:underline text-sm"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              View
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-            {/* Pagination */}
-            <div className="flex items-center justify-between mt-4 text-sm">
-              <div className="text-muted-foreground">
-                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, pagination?.total || paginatedRuns.length)} of {pagination?.total || paginatedRuns.length} runs
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Per page:</span>
-                  <select
-                    value={itemsPerPage}
-                    onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
-                    className="rounded-md border border-border bg-background px-2 py-1 text-sm"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                  </select>
+                {/* Pagination - only shown when not using infinite scroll */}
+                <div className="flex items-center justify-between mt-4 text-sm">
+                  <div className="text-muted-foreground">
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, pagination?.total || paginatedRuns.length)} of {pagination?.total || paginatedRuns.length} runs
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Per page:</span>
+                      <select
+                        value={itemsPerPage}
+                        onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                        className="rounded-md border border-border bg-background px-2 py-1 text-sm"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setCurrentPage(1)}
+                        disabled={currentPage === 1 || (pagination && !pagination.hasPrev)}
+                        className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+                      >
+                        &laquo;&laquo;
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1 || (pagination && !pagination.hasPrev)}
+                        className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+                      >
+                        &laquo;
+                      </button>
+                      <span className="px-3 py-1">{currentPage} / {totalPages || 1}</span>
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage >= totalPages || (pagination && !pagination.hasNext)}
+                        className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+                      >
+                        &raquo;
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={currentPage >= totalPages || (pagination && !pagination.hasNext)}
+                        className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+                      >
+                        &raquo;&raquo;
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1 || (pagination && !pagination.hasPrev)}
-                    className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
-                  >
-                    &laquo;&laquo;
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1 || (pagination && !pagination.hasPrev)}
-                    className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
-                  >
-                    &laquo;
-                  </button>
-                  <span className="px-3 py-1">{currentPage} / {totalPages || 1}</span>
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage >= totalPages || (pagination && !pagination.hasNext)}
-                    className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
-                  >
-                    &raquo;
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage >= totalPages || (pagination && !pagination.hasNext)}
-                    className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
-                  >
-                    &raquo;&raquo;
-                  </button>
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </>
         )}
       </div>

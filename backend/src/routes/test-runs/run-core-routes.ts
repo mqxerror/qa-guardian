@@ -462,6 +462,13 @@ export async function runCoreRoutes(app: FastifyInstance) {
     // Map to response format with suite/test names
     const allSuites = await getTestSuitesMap();
     const allTests = await getTestsMap();
+    // Helper to safely convert date to ISO string
+    const toISOString = (date: Date | string | null | undefined): string | null => {
+      if (!date) return null;
+      if (date instanceof Date) return date.toISOString();
+      return date; // Already a string from PostgreSQL
+    };
+
     const runsResponse = result.data.map(r => {
       const suite = allSuites.get(r.suite_id);
       const test = r.test_id ? allTests.get(r.test_id) : null;
@@ -475,9 +482,9 @@ export async function runCoreRoutes(app: FastifyInstance) {
         status: r.status,
         browser: r.browser,
         branch: r.branch,
-        created_at: r.created_at.toISOString(),
-        started_at: r.started_at?.toISOString(),
-        completed_at: r.completed_at?.toISOString(),
+        created_at: toISOString(r.created_at),
+        started_at: toISOString(r.started_at),
+        completed_at: toISOString(r.completed_at),
         duration_ms: r.duration_ms,
         results_count: r.results?.length || 0,
         passed_count: r.results?.filter(res => res.status === 'passed').length || 0,

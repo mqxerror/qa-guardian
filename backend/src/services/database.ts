@@ -1019,6 +1019,14 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_test_runs_status ON test_runs(status);
     CREATE INDEX IF NOT EXISTS idx_test_runs_created ON test_runs(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_test_runs_organization ON test_runs(organization_id);
+
+    -- Feature #62: Composite indexes for common query patterns (organization + sort + filter)
+    CREATE INDEX IF NOT EXISTS idx_test_runs_org_created ON test_runs(organization_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_test_runs_suite_created ON test_runs(suite_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_test_runs_project_created ON test_runs(project_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_test_runs_org_status ON test_runs(organization_id, status);
+    CREATE INDEX IF NOT EXISTS idx_test_runs_test_created ON test_runs(test_id, created_at DESC);
+
     CREATE INDEX IF NOT EXISTS idx_selector_overrides_test ON selector_overrides(test_id);
     CREATE INDEX IF NOT EXISTS idx_healed_selector_history_test ON healed_selector_history(test_id);
     CREATE INDEX IF NOT EXISTS idx_api_keys_organization ON api_keys(organization_id);
