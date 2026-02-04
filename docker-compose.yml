@@ -55,8 +55,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      zap:
-        condition: service_healthy
+      # ZAP is optional - don't block backend startup on ZAP health
+      # zap:
+      #   condition: service_healthy
     networks:
       - qa-network
 
