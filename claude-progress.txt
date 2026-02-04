@@ -5,6 +5,102 @@
 - **Last Updated**: 2026-02-04
 - **Status**: Feature #48 (TestDetailPage refactoring) - In Progress
 
+=== Session 2026-02-04 (Session 72) - Feature #48 Progress ===
+Progress: 47/50 (94%)
+
+Feature #48: Split TestDetailPage.tsx into modular components
+Status: IN PROGRESS (continued refactoring)
+
+Target: Reduce TestDetailPage.tsx to under 1,500 lines
+
+Completed This Session:
+1. Created TestHeader.tsx component (200 lines):
+   - Breadcrumb navigation (Projects / Project Name / Suite / Test)
+   - Test title and description
+   - Status badge (active/draft)
+   - Visual regression branch selector with new branch input
+   - Action buttons: Run Test, Schedule, Cancel Run, Edit Test, Duplicate, Delete Test
+   - Error displays (runError, duplicateError)
+
+2. Created useTestDetailActions.ts hook (245 lines):
+   - Preparation for future handler extraction
+   - Contains: handleDelete, handleEdit, handleDuplicate, handleRunTest, handleCancelRun, handleDownloadAllArtifacts
+
+3. Integrated TestHeader into TestDetailPage.tsx:
+   - Added import for new component
+   - Replaced ~139 lines of inline header code with component
+   - Reduced file by 109 lines
+
+Line Count Progress:
+- Session start: 6,967 lines
+- After TestHeader extraction: 6,858 lines (-109 lines)
+- Target: <1,500 lines
+- Remaining: ~5,358 lines to remove
+
+Verification:
+- Frontend build: Successful (zero TypeScript errors)
+- Browser automation: TestDetailPage loads correctly
+  - Breadcrumb: Projects / E2E Verification Test / Verification Tests / E2E Test - localhost
+  - Test header with all action buttons working (Run Test, Schedule, Edit, Duplicate, Delete)
+  - Test Details showing ID, Type, Suite, Created, Updated
+  - Test Steps tab with 3 steps (navigate, wait, screenshot)
+  - Flakiness Trend section (3 runs, 0.00 flakiness, 100% pass rate)
+  - Run History with 3 passed runs
+  - Zero console errors
+- Screenshots: session72-testdetailpage-working.png, session72-testheader-integrated.png
+
+Components Extracted (Total for Feature #48):
+- test-detail/
+  - types.ts (472 lines)
+  - utils.ts (264 lines)
+  - index.ts (exports)
+  - TestStatusBadge.tsx (46 lines)
+  - VideoPlayer.tsx (133 lines)
+  - FlakinessPanel.tsx (209 lines)
+  - ImageLightbox.tsx (173 lines)
+  - K6CompareModal.tsx (190 lines)
+  - RunHistorySection.tsx (340 lines)
+  - TestDetailsCard.tsx (402 lines)
+  - TestStepsTab.tsx (314 lines)
+  - ViewCodeTab.tsx (223 lines)
+  - K6ScriptTab.tsx (387 lines)
+  - BaselineTab.tsx (608 lines)
+  - LiveExecutionPanel.tsx (312 lines)
+  - TestHeader.tsx (200 lines) - NEW
+  - useTestDetailState.ts (547 lines)
+  - useTestDetailActions.ts (245 lines) - NEW
+  - CurrentRunPanel.tsx (611 lines - exists but NOT YET integrated)
+  - modals/
+    - DeleteTestModal.tsx (63 lines)
+    - UnsavedChangesModal.tsx (52 lines)
+    - BaselineModals.tsx (565 lines)
+    - EditTestModal.tsx (96 lines)
+    - AddStepModal.tsx (388 lines)
+    - AIExplainModal.tsx (245 lines)
+    - QuickScheduleModal.tsx (217 lines)
+
+Total Extracted: ~5,720 lines in modular components
+
+Remaining Work for Feature #48 (to reach <1,500 lines):
+1. The "Current Run Status" section is the largest remaining piece (~3,600 lines)
+   - Lines 3163-6789 contain test results for all types
+   - Includes: K6 errors, Lighthouse results, Accessibility results, Visual comparison
+2. Options:
+   a) Complete and integrate CurrentRunPanel.tsx (partially built)
+   b) Create separate result type components:
+      - LighthouseResults (~760 lines)
+      - AccessibilityResults (~780 lines)
+      - VisualComparisonResults (~400 lines)
+      - K6ErrorDisplays (~400 lines)
+3. Extract remaining handlers to useTestDetailActions hook
+4. Move useEffect hooks to custom hooks
+
+Note: Target of <1,500 lines requires removing ~5,358 more lines.
+This is a large refactoring task requiring multiple sessions.
+
+Commits: c1deb3e
+
+
 === Session 2026-02-04 (Session 71) - Feature #48 Progress ===
 Progress: 47/50 (94%)
 
