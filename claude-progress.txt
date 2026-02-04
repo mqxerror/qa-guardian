@@ -32064,3 +32064,95 @@ Next session should focus on:
 2. Integrate useTestDetailState hook to consolidate 121 useState declarations
 3. Further extract inline JSX sections
 
+
+
+=== Session 2026-02-04 (Session 75) - Feature #48 Analysis ===
+Progress: 47/50 (94%)
+
+Feature #48: Split TestDetailPage.tsx into modular components
+Status: IN PROGRESS (analysis and attempted integration)
+
+Target: Reduce TestDetailPage.tsx to under 1,500 lines
+Current: 6,859 lines
+
+Session Summary:
+This session focused on analyzing and attempting to integrate the TestResultCard
+component into TestDetailPage.tsx to replace ~3,500 lines of inline results
+rendering code (lines 3222-6786).
+
+Analysis Completed:
+1. Identified the exact boundaries of inline code to replace:
+   - Start: Line 3222 "{/* Test Results - remaining inline code */}"
+   - End: Line 6786 (closing of results.map and container divs)
+   - Total inline code: ~3,564 lines
+
+2. Verified TestResultCard component interface (TestResultCardProps):
+   - result: TestResult
+   - testType?: string
+   - token: string
+   - Visual comparison controls (comparisonViewMode, sliderPosition, etc.)
+   - Refs for synchronized scrolling (baselineContainerRef, etc.)
+   - Callbacks (onOpenLightbox, onApproveBaseline, onRejectChanges)
+   - Accessibility filters (a11ySeverityFilter, etc.)
+   - formatDateTime function
+
+3. Attempted Integration:
+   - Tried to replace inline code with TestResultCard component call
+   - The Edit tool limitations made it difficult to remove 3,500+ lines
+   - Partial edits caused JSX syntax errors
+   - Restored file to working state from git
+
+Challenges:
+- The inline code block is too large (~3,500 lines) for reliable Edit tool operations
+- Multiple edit operations resulted in broken JSX structure
+- The file structure requires precise bracket matching
+
+Regression Testing Passed:
+- Dashboard: Loads with real data (1/4/12/16 projects/suites/tests/runs)
+- TestDetailPage: All sections working
+  - Test header with actions (Run, Schedule, Edit, Duplicate, Delete)
+  - Test Details card (ID, Type, Suite, Created, Updated)
+  - Test Steps (3 steps: navigate, wait, screenshot)
+  - Flakiness Trend with chart (3 runs, 0.00 score, 100% pass rate)
+  - Run History (3 passed runs)
+- Console errors: Zero
+- Screenshots: session75-dashboard-regression.png, session75-testdetailpage-working.png
+
+Components Already Extracted (Summary):
+- test-detail/
+  - types.ts, utils.ts, index.ts
+  - TestStatusBadge.tsx, VideoPlayer.tsx
+  - FlakinessPanel.tsx, ImageLightbox.tsx
+  - K6CompareModal.tsx, RunHistorySection.tsx
+  - CurrentRunPanel.tsx, ViewCodeTab.tsx
+  - K6ScriptTab.tsx, TestDetailsCard.tsx
+  - TestStepsTab.tsx, BaselineTab.tsx
+  - LiveExecutionPanel.tsx, TestHeader.tsx
+  - TestResultCard.tsx (1,162 lines) - NOT YET INTEGRATED
+  - useTestDetailState.ts, useTestDetailActions.ts
+  - modals/ (multiple modal components)
+
+Technical Debt for Feature #48:
+The TestResultCard component exists and is exported but not integrated.
+Integration requires replacing ~3,500 lines of inline JSX with a single
+component call. This is a complex refactoring task that may require:
+1. A dedicated script to perform the file surgery
+2. Manual editing with IDE support
+3. Multiple smaller, targeted edits with careful bracket matching
+
+Recommendation for Next Session:
+1. Consider using a Python/Node script to:
+   - Read TestDetailPage.tsx
+   - Find the exact start/end positions of inline results code
+   - Replace with TestResultCard component call
+   - Validate the resulting file compiles
+
+2. Alternative: Break the task into smaller chunks:
+   - Extract individual result type renderings one at a time
+   - Test after each extraction
+   - Gradually integrate TestResultCard
+
+No Code Changes This Session:
+- All attempted changes were reverted to maintain working state
+- Feature #48 remains in progress at 6,859 lines
+
