@@ -31217,3 +31217,86 @@ Commits: 1c2a629
 Note: Still 2,755 lines to remove to reach target. This is a large refactoring
 task requiring multiple sessions.
 
+
+
+
+=== Session 2026-02-04 (Session 66) - Feature #48 Progress ===
+Progress: 47/50 (94%)
+
+Feature #48: Split TestDetailPage.tsx into modular components
+Status: IN PROGRESS (continued refactoring)
+
+Target: Reduce TestDetailPage.tsx to under 1,500 lines
+
+Completed This Session:
+1. Created FlakinessPanel.tsx component (202 lines)
+   - Flakiness trend display with summary stats grid
+   - Daily flakiness chart using Recharts
+   - Code changes correlation section
+   - Recent run results sparkline
+   
+2. Created ImageLightbox.tsx component (178 lines)
+   - Screenshot zoom/pan modal
+   - Zoom controls (in/out, reset, fit)
+   - Download link
+   - Drag-to-pan support when zoomed
+   
+3. Created K6CompareModal.tsx component (197 lines)
+   - K6 load test comparison modal (Feature #564)
+   - Run info comparison
+   - Overall performance status
+   - Summary metrics comparison grid
+   - Response time percentiles
+
+4. Added types to types.ts:
+   - FlakinessTrend interface (35 lines)
+   - K6CompareResults interface (in K6CompareModal.tsx)
+
+5. Updated index.ts to export all new components
+
+6. Integrated components into TestDetailPage.tsx:
+   - Replaced inline Flakiness Trend section
+   - Replaced inline Screenshot Lightbox modal
+   - Replaced inline K6 Compare modal
+   - Updated state typing (K6CompareResults)
+
+Line Count Progress:
+- Started: 10,140 lines
+- After FlakinessPanel: 9,938 lines (-202 lines)
+- After ImageLightbox: 9,813 lines (-125 lines)  
+- After K6CompareModal: 9,682 lines (-131 lines)
+- Total reduction: 458 lines (4.5%)
+- Target: <1,500 lines
+
+Verification:
+- Frontend build: Successful (zero TypeScript errors)
+- Browser automation: TestDetailPage loads correctly
+- All sections display properly (Test Details, Steps, Flakiness, Run History)
+- Zero console errors
+
+Components Extracted:
+- test-detail/
+  - types.ts (472 lines)
+  - utils.ts (223 lines)
+  - index.ts (exports)
+  - TestStatusBadge.tsx
+  - VideoPlayer.tsx
+  - FlakinessPanel.tsx (NEW)
+  - ImageLightbox.tsx (NEW)
+  - K6CompareModal.tsx (NEW)
+  - modals/
+    - DeleteTestModal.tsx
+    - UnsavedChangesModal.tsx  
+    - BaselineModals.tsx
+
+Remaining Work for Feature #48:
+1. Extract more inline modal components
+2. Extract inline handler functions to custom hooks
+3. Consider extracting Run History section (~290 lines)
+4. Target: Under 1,500 lines in main file
+
+Note: Current file (9,682 lines) is far from target (1,500 lines).
+Getting to target requires extracting more of the massive JSX sections
+and moving state/handlers to custom hooks.
+
+Commit: 1fe5c0d
