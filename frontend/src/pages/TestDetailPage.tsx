@@ -46,135 +46,17 @@ import {
   getImpactBadgeClass,
   calculatePassRate,
   truncateText,
+  // Feature #48: Import extracted components
+  VideoPlayer,
+  DeleteTestModal,
+  ApproveBaselineModal,
+  RestoreBaselineModal,
+  MergeBaselineModal,
+  RejectChangesModal,
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
-
-// Video Player Component - handles authenticated video loading
-function VideoPlayer({ videoFile, token }: { videoFile: string; token: string | null }) {
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let objectUrl: string | null = null;
-
-    const fetchVideo = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL || 'https://qa.pixelcraftedmedia.com'}/api/v1/videos/${videoFile}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to load video: ${response.status}`);
-        }
-
-        const blob = await response.blob();
-        objectUrl = URL.createObjectURL(blob);
-        setVideoUrl(objectUrl);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load video');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (token && videoFile) {
-      fetchVideo();
-    }
-
-    return () => {
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [videoFile, token]);
-
-  const handleDownload = async () => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || 'https://qa.pixelcraftedmedia.com'}/api/v1/videos/${videoFile}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to download video: ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = videoFile;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Download failed:', err);
-    }
-  };
-
-  return (
-    <div className="mt-4">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-medium text-foreground">Test Recording:</p>
-        <button
-          onClick={handleDownload}
-          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-        >
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          Download Video
-        </button>
-      </div>
-      <div className="rounded-lg border border-border overflow-hidden bg-black">
-        {isLoading && (
-          <div className="flex items-center justify-center h-48 text-muted-foreground">
-            <svg className="animate-spin h-6 w-6 mr-2" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            Loading video...
-          </div>
-        )}
-        {error && (
-          <div className="flex items-center justify-center h-48 text-destructive text-sm">
-            <span>⚠️ {error}</span>
-          </div>
-        )}
-        {videoUrl && !isLoading && (
-          <video
-            controls
-            preload="metadata"
-            className="w-full max-h-96"
-            controlsList="nodownload"
-            playsInline
-            src={videoUrl}
-          >
-            Your browser does not support the video tag.
-          </video>
-        )}
-      </div>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Use controls: Play/Pause, Seek, Fullscreen, Playback Speed (right-click for more options)
-      </p>
-    </div>
-  );
-}
+// Removed VideoPlayer - now imported from test-detail module (Feature #48)
 
 function TestDetailPage() {
   const { testId } = useParams<{ testId: string }>();
@@ -3070,40 +2952,15 @@ export default function () {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
+        {/* Delete Confirmation Modal - Feature #48: Extracted to component */}
         {showDeleteModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && setShowDeleteModal(false)}
-          >
-            <div role="dialog" aria-modal="true" aria-labelledby="delete-test-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-              <h3 id="delete-test-title" className="text-lg font-semibold text-foreground">Delete Test</h3>
-              <p className="mt-2 text-muted-foreground">
-                Are you sure you want to delete "{test?.name}"? This action cannot be undone.
-              </p>
-              {deleteError && (
-                <div role="alert" className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  {deleteError}
-                </div>
-              )}
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  disabled={isDeleting}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <DeleteTestModal
+            testName={test?.name || ''}
+            isDeleting={isDeleting}
+            deleteError={deleteError}
+            onClose={() => setShowDeleteModal(false)}
+            onDelete={handleDelete}
+          />
         )}
 
         {/* AI Explain Test Modal */}

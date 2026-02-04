@@ -11,3 +11,7 @@ export * from './utils';
 
 // Components
 export { default as TestStatusBadge } from './TestStatusBadge';
+export { VideoPlayer } from './VideoPlayer';
+
+// Modals
+export * from './modals';
