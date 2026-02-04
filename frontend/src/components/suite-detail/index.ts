@@ -32,6 +32,9 @@ export {
   EditSelectorModal,
   ExpandedScreenshotModal,
   InsertTemplateModal,
+  GeneratedTestPreviewModal,
+  RecordTestModal,
+  ReviewRecordedTestModal,
 } from './modals';
 export type { EditSelectorModalState, StepTemplate as TemplateType } from './modals';
 

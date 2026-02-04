@@ -11,3 +11,6 @@ export type { EditSelectorModalState } from './EditSelectorModal';
 export { ExpandedScreenshotModal } from './ExpandedScreenshotModal';
 export { InsertTemplateModal } from './InsertTemplateModal';
 export type { StepTemplate } from './InsertTemplateModal';
+export { GeneratedTestPreviewModal } from './GeneratedTestPreviewModal';
+export { RecordTestModal } from './RecordTestModal';
+export { ReviewRecordedTestModal } from './ReviewRecordedTestModal';
