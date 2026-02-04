@@ -10,7 +10,7 @@ import jwt from '@fastify/jwt';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { Server as SocketIOServer } from 'socket.io';
-import { authRoutes } from './routes/auth';
+import { authRoutes, initTestUsers } from './routes/auth';
 import { organizationRoutes } from './routes/organizations';
 import { projectRoutes } from './routes/projects';
 import { apiKeyRoutes } from './routes/api-keys';
@@ -297,6 +297,14 @@ async function start() {
       console.log('[Startup] PostgreSQL database connected - data will persist');
     } else {
       console.log('[Startup] Using in-memory storage - data will NOT persist across restarts');
+    }
+
+    // Seed test users AFTER database is connected
+    // This ensures organization_members are persisted to the database
+    try {
+      await initTestUsers();
+    } catch (err: any) {
+      console.error('[Startup] Failed to seed test users (non-fatal):', err.message);
     }
 
     await registerPlugins();

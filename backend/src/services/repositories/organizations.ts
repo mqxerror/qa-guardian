@@ -743,22 +743,38 @@ export async function seedDefaultOrganizations(): Promise<void> {
       console.log('[Org Repo] Created Other Organization');
     }
 
-    // Seed default members for DEFAULT_ORG
+    // Seed default members for DEFAULT_ORG - check each user individually
     const defaultOrgMembers = await getOrganizationMembers(DEFAULT_ORG_ID);
-    if (defaultOrgMembers.length === 0) {
-      await addOrganizationMember({ user_id: DEFAULT_USER_IDS.owner, organization_id: DEFAULT_ORG_ID, role: 'owner' });
-      await addOrganizationMember({ user_id: DEFAULT_USER_IDS.admin, organization_id: DEFAULT_ORG_ID, role: 'admin' });
-      await addOrganizationMember({ user_id: DEFAULT_USER_IDS.developer, organization_id: DEFAULT_ORG_ID, role: 'developer' });
-      await addOrganizationMember({ user_id: DEFAULT_USER_IDS.viewer, organization_id: DEFAULT_ORG_ID, role: 'viewer' });
-      console.log('[Org Repo] Created Default Organization members');
+    const defaultMemberIds = new Set(defaultOrgMembers.map(m => m.user_id));
+
+    const defaultMembersToAdd = [
+      { user_id: DEFAULT_USER_IDS.owner, organization_id: DEFAULT_ORG_ID, role: 'owner' as const },
+      { user_id: DEFAULT_USER_IDS.admin, organization_id: DEFAULT_ORG_ID, role: 'admin' as const },
+      { user_id: DEFAULT_USER_IDS.developer, organization_id: DEFAULT_ORG_ID, role: 'developer' as const },
+      { user_id: DEFAULT_USER_IDS.viewer, organization_id: DEFAULT_ORG_ID, role: 'viewer' as const },
+    ];
+
+    for (const member of defaultMembersToAdd) {
+      if (!defaultMemberIds.has(member.user_id)) {
+        await addOrganizationMember(member);
+        console.log(`[Org Repo] Added missing member ${member.user_id} to Default Organization`);
+      }
     }
 
-    // Seed default members for OTHER_ORG
+    // Seed default members for OTHER_ORG - check each user individually
     const otherOrgMembers = await getOrganizationMembers(OTHER_ORG_ID);
-    if (otherOrgMembers.length === 0) {
-      await addOrganizationMember({ user_id: DEFAULT_USER_IDS.otherOwner, organization_id: OTHER_ORG_ID, role: 'owner' });
-      await addOrganizationMember({ user_id: DEFAULT_USER_IDS.owner, organization_id: OTHER_ORG_ID, role: 'admin' });
-      console.log('[Org Repo] Created Other Organization members');
+    const otherMemberIds = new Set(otherOrgMembers.map(m => m.user_id));
+
+    const otherMembersToAdd = [
+      { user_id: DEFAULT_USER_IDS.otherOwner, organization_id: OTHER_ORG_ID, role: 'owner' as const },
+      { user_id: DEFAULT_USER_IDS.owner, organization_id: OTHER_ORG_ID, role: 'admin' as const },
+    ];
+
+    for (const member of otherMembersToAdd) {
+      if (!otherMemberIds.has(member.user_id)) {
+        await addOrganizationMember(member);
+        console.log(`[Org Repo] Added missing member ${member.user_id} to Other Organization`);
+      }
     }
   } catch (error) {
     console.error('[Org Repo] Failed to seed organizations:', error);

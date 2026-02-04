@@ -105,18 +105,17 @@ let seedingComplete = false;
 // Seed some test users for development
 // Feature #2083: Now uses async repository function
 // Feature #2083: Initialize test users using repository
-async function initTestUsers() {
+// NOTE: This is now called from index.ts AFTER database is connected
+export async function initTestUsers(): Promise<void> {
+  console.log('[Auth] Starting test user seeding...');
   await seedDefaultOrganizations();
   await seedTestUsers();
   seedingComplete = true;
   console.log('[Auth] Test user seeding complete');
 }
 
-// Initialize test users
-initTestUsers().catch((err) => {
-  console.error('[Auth] Failed to seed test users (non-fatal):', err.message);
-  seedingComplete = true; // Allow app to continue
-});
+// NOTE: Removed auto-call - now called from index.ts after database initialization
+// This ensures database is connected before seeding
 
 interface LoginBody {
   email: string;
