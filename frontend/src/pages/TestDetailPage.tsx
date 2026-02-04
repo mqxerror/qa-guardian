@@ -58,6 +58,9 @@ import {
   ImageLightbox,
   K6CompareModal,
   K6CompareResults,
+  RunHistorySection,
+  EditTestModal,
+  AddStepModal,
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
@@ -3619,69 +3622,26 @@ export default function () {
           </div>
         )}
 
-        {/* Edit Modal */}
-        {showEditModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg">
-              <h3 className="text-lg font-semibold text-foreground">Edit Test</h3>
-              <form onSubmit={handleEdit} className="mt-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground">Test Name</label>
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    required
-                    className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    placeholder="Enter test name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground">Description (optional)</label>
-                  <textarea
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    placeholder="Describe the test..."
-                    rows={3}
-                  />
-                </div>
-                {editError && (
-                  <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                    {editError}
-                  </div>
-                )}
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isDirty) {
-                        setShowUnsavedChangesModal(true);
-                        setPendingNavigation(() => () => {
-                          setShowEditModal(false);
-                          setIsDirty(false);
-                        });
-                      } else {
-                        setShowEditModal(false);
-                      }
-                    }}
-                    className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                    disabled={isEditing}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isEditing || !editName.trim()}
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    {isEditing ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {/* Edit Modal - Feature #48: Extracted to component */}
+        <EditTestModal
+          show={showEditModal}
+          editName={editName}
+          editDescription={editDescription}
+          editError={editError}
+          isEditing={isEditing}
+          isDirty={isDirty}
+          onNameChange={setEditName}
+          onDescriptionChange={setEditDescription}
+          onSubmit={handleEdit}
+          onClose={() => setShowEditModal(false)}
+          onShowUnsavedChanges={() => {
+            setShowUnsavedChangesModal(true);
+            setPendingNavigation(() => () => {
+              setShowEditModal(false);
+              setIsDirty(false);
+            });
+          }}
+        />
 
         {/* Unsaved Changes Warning Modal */}
         {showUnsavedChangesModal && (
@@ -5218,299 +5178,39 @@ export default function () {
           </div>
         </div>
 
-        {/* Add Step Modal */}
-        {showAddStepModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && setShowAddStepModal(false)}
-          >
-            <div role="dialog" aria-modal="true" aria-labelledby="add-step-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-              <h3 id="add-step-title" className="text-lg font-semibold text-foreground">Add Test Step</h3>
-              <form onSubmit={handleAddStep} className="mt-4 space-y-4">
-                {/* Feature #1965: Expanded action dropdown with categorized sections */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground">Action</label>
-                  <select
-                    value={newStepAction}
-                    onChange={(e) => setNewStepAction(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    {/* Navigation Actions */}
-                    <optgroup label="🧭 Navigation">
-                      <option value="navigate">Navigate to URL</option>
-                      <option value="go_back">Go Back</option>
-                      <option value="go_forward">Go Forward</option>
-                      <option value="refresh">Refresh Page</option>
-                    </optgroup>
-
-                    {/* Interaction Actions */}
-                    <optgroup label="👆 Interaction">
-                      <option value="click">Click Element</option>
-                      <option value="fill">Fill Input</option>
-                      <option value="type">Type Text</option>
-                      <option value="clear">Clear Input</option>
-                      <option value="hover">Hover Over Element</option>
-                      <option value="select_option">Select Dropdown Option</option>
-                      <option value="check">Check Checkbox</option>
-                      <option value="uncheck">Uncheck Checkbox</option>
-                      <option value="upload_file">Upload File</option>
-                      <option value="press_key">Press Key</option>
-                    </optgroup>
-
-                    {/* Scroll Actions */}
-                    <optgroup label="📜 Scroll">
-                      <option value="scroll_to_element">Scroll to Element</option>
-                      <option value="scroll_to_top">Scroll to Top</option>
-                      <option value="scroll_to_bottom">Scroll to Bottom</option>
-                      <option value="scroll_by_pixels">Scroll by Pixels</option>
-                    </optgroup>
-
-                    {/* Wait Actions */}
-                    <optgroup label="⏳ Wait">
-                      <option value="wait_for_element">Wait for Element</option>
-                      <option value="wait_for_url">Wait for URL</option>
-                      <option value="wait_for_load">Wait for Page Load</option>
-                      <option value="wait">Wait (Fixed Time)</option>
-                    </optgroup>
-
-                    {/* Assert Actions */}
-                    <optgroup label="✅ Assert">
-                      <option value="assert_text">Assert Text Visible</option>
-                      <option value="assert_visible">Assert Element Visible</option>
-                      <option value="assert_hidden">Assert Element Hidden</option>
-                      <option value="assert_url">Assert URL</option>
-                      <option value="assert_title">Assert Page Title</option>
-                    </optgroup>
-
-                    {/* Capture Actions */}
-                    <optgroup label="📸 Capture">
-                      <option value="screenshot">Take Screenshot</option>
-                      <option value="screenshot_fullpage">Full Page Screenshot</option>
-                      <option value="visual_checkpoint">Visual Checkpoint</option>
-                      <option value="accessibility_check">Accessibility Check</option>
-                    </optgroup>
-                  </select>
-                </div>
-                {/* Feature #1965: Extended selector field for more actions */}
-                {(newStepAction === 'click' || newStepAction === 'fill' || newStepAction === 'type' ||
-                  newStepAction === 'clear' || newStepAction === 'hover' || newStepAction === 'select_option' ||
-                  newStepAction === 'check' || newStepAction === 'uncheck' || newStepAction === 'upload_file' ||
-                  newStepAction === 'scroll_to_element' || newStepAction === 'wait_for_element' ||
-                  newStepAction === 'assert_visible' || newStepAction === 'assert_hidden') && (
-                  <div>
-                    <label className="block text-sm font-medium text-foreground">Selector</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={newStepSelector}
-                        onChange={(e) => setNewStepSelector(e.target.value)}
-                        onKeyDown={handleSelectorKeyDown}
-                        className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="e.g., button.submit, #email"
-                      />
-                      {/* Feature #1236: AI Copilot autocomplete suggestion */}
-                      {showSelectorAutocomplete && selectorAutocomplete && (
-                        <div className="absolute inset-0 mt-1 pointer-events-none">
-                          <div className="w-full rounded-md border border-transparent px-3 py-2">
-                            <span className="text-transparent">{newStepSelector}</span>
-                            <span className="text-muted-foreground/50">{selectorAutocomplete.slice(newStepSelector.length)}</span>
-                          </div>
-                        </div>
-                      )}
-                      {showSelectorAutocomplete && selectorAutocomplete && (
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                          <kbd className="px-1.5 py-0.5 bg-muted border border-border rounded text-[10px] font-mono">Tab</kbd>
-                          <span>to accept</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {/* Feature #1965: Extended value field for more actions */}
-                {(newStepAction === 'navigate' || newStepAction === 'fill' || newStepAction === 'type' ||
-                  newStepAction === 'wait' || newStepAction === 'assert_text' || newStepAction === 'select_option' ||
-                  newStepAction === 'upload_file' || newStepAction === 'press_key' || newStepAction === 'scroll_by_pixels' ||
-                  newStepAction === 'wait_for_url' || newStepAction === 'assert_url' || newStepAction === 'assert_title' ||
-                  newStepAction === 'screenshot') && (
-                  <div>
-                    <label className="block text-sm font-medium text-foreground">
-                      {newStepAction === 'navigate' ? 'URL' :
-                       newStepAction === 'wait' ? 'Milliseconds' :
-                       newStepAction === 'assert_text' ? 'Text to Find' :
-                       newStepAction === 'select_option' ? 'Option Value' :
-                       newStepAction === 'upload_file' ? 'File Path' :
-                       newStepAction === 'press_key' ? 'Key Name' :
-                       newStepAction === 'scroll_by_pixels' ? 'Pixels (negative=up)' :
-                       newStepAction === 'wait_for_url' ? 'URL Pattern' :
-                       newStepAction === 'assert_url' ? 'Expected URL' :
-                       newStepAction === 'assert_title' ? 'Expected Title' :
-                       newStepAction === 'screenshot' ? 'Screenshot Name' : 'Value'}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={newStepValue}
-                        onChange={(e) => setNewStepValue(e.target.value)}
-                        onKeyDown={handleValueKeyDown}
-                        className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                        placeholder={
-                          newStepAction === 'navigate' ? (test?.target_url || '/page') :
-                          newStepAction === 'wait' ? '1000' :
-                          newStepAction === 'assert_text' ? 'Welcome' :
-                          newStepAction === 'select_option' ? 'option-value' :
-                          newStepAction === 'upload_file' ? '/path/to/file.pdf' :
-                          newStepAction === 'press_key' ? 'Enter, Escape, Tab, ArrowDown...' :
-                          newStepAction === 'scroll_by_pixels' ? '500 (down) or -500 (up)' :
-                          newStepAction === 'wait_for_url' ? '**/dashboard' :
-                          newStepAction === 'assert_url' ? (test?.target_url ? `${test.target_url}/home` : '/home') :
-                          newStepAction === 'assert_title' ? 'My Page Title' :
-                          newStepAction === 'screenshot' ? 'my-screenshot' : 'Enter value'
-                        }
-                      />
-                      {/* Feature #1236: AI Copilot autocomplete suggestion */}
-                      {showValueAutocomplete && valueAutocomplete && (
-                        <div className="absolute inset-0 mt-1 pointer-events-none">
-                          <div className="w-full rounded-md border border-transparent px-3 py-2">
-                            <span className="text-transparent">{newStepValue}</span>
-                            <span className="text-muted-foreground/50">{valueAutocomplete.slice(newStepValue.length)}</span>
-                          </div>
-                        </div>
-                      )}
-                      {showValueAutocomplete && valueAutocomplete && (
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                          <kbd className="px-1.5 py-0.5 bg-muted border border-border rounded text-[10px] font-mono">Tab</kbd>
-                          <span>to accept</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {newStepAction === 'visual_checkpoint' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground">Checkpoint Name</label>
-                      <input
-                        type="text"
-                        value={newStepCheckpointName}
-                        onChange={(e) => setNewStepCheckpointName(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="e.g., login-page, dashboard-header"
-                      />
-                      <p className="mt-1 text-xs text-muted-foreground">Unique identifier for this visual checkpoint</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground">Diff Threshold (%)</label>
-                      <input
-                        type="number"
-                        value={newStepCheckpointThreshold}
-                        onChange={(e) => setNewStepCheckpointThreshold(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="0.1"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                      />
-                      <p className="mt-1 text-xs text-muted-foreground">Test fails if diff exceeds this percentage (0 = any change fails)</p>
-                    </div>
-                    <div className="rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-3">
-                      <div className="flex items-start gap-2">
-                        <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <div className="text-sm text-blue-700 dark:text-blue-300">
-                          <p className="font-medium">Visual Checkpoint</p>
-                          <p className="mt-1">Takes a screenshot and compares it against the baseline. The test will fail if visual differences exceed the threshold.</p>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-                {newStepAction === 'accessibility_check' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground">WCAG Level</label>
-                      <select
-                        value={newStepA11yWcagLevel}
-                        onChange={(e) => setNewStepA11yWcagLevel(e.target.value as 'A' | 'AA' | 'AAA')}
-                        className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                      >
-                        <option value="A">Level A (Minimum)</option>
-                        <option value="AA">Level AA (Recommended)</option>
-                        <option value="AAA">Level AAA (Enhanced)</option>
-                      </select>
-                      <p className="mt-1 text-xs text-muted-foreground">WCAG conformance level to check against</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground">Failure Threshold</label>
-                      <input
-                        type="number"
-                        value={newStepA11yThreshold}
-                        onChange={(e) => setNewStepA11yThreshold(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="0"
-                        min="0"
-                      />
-                      <p className="mt-1 text-xs text-muted-foreground">Number of violations allowed before step fails (0 = any violation fails)</p>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={newStepA11yFailOnCritical}
-                          onChange={(e) => setNewStepA11yFailOnCritical(e.target.checked)}
-                          className="rounded border-border"
-                        />
-                        <span className="text-sm text-foreground">Fail on critical/serious violations only</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={newStepA11yFailOnAny}
-                          onChange={(e) => setNewStepA11yFailOnAny(e.target.checked)}
-                          className="rounded border-border"
-                        />
-                        <span className="text-sm text-foreground">Fail on any violation (ignore threshold)</span>
-                      </label>
-                    </div>
-                    <div className="rounded-md border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 p-3">
-                      <div className="flex items-start gap-2">
-                        <svg className="h-5 w-5 text-purple-600 dark:text-purple-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                        <div className="text-sm text-purple-700 dark:text-purple-300">
-                          <p className="font-medium">Accessibility Check</p>
-                          <p className="mt-1">Runs an accessibility scan on the current page using axe-core. The E2E test will fail if accessibility violations exceed the configured threshold.</p>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-                {addStepError && (
-                  <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                    {addStepError}
-                  </div>
-                )}
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddStepModal(false)}
-                    className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                    disabled={isAddingStep}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isAddingStep}
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    {isAddingStep ? 'Adding...' : 'Add Step'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {/* Add Step Modal - Feature #48: Extracted to component */}
+        <AddStepModal
+          show={showAddStepModal}
+          newStepAction={newStepAction}
+          newStepSelector={newStepSelector}
+          newStepValue={newStepValue}
+          newStepCheckpointName={newStepCheckpointName}
+          newStepCheckpointThreshold={newStepCheckpointThreshold}
+          newStepA11yWcagLevel={newStepA11yWcagLevel}
+          newStepA11yThreshold={newStepA11yThreshold}
+          newStepA11yFailOnCritical={newStepA11yFailOnCritical}
+          newStepA11yFailOnAny={newStepA11yFailOnAny}
+          showSelectorAutocomplete={showSelectorAutocomplete}
+          selectorAutocomplete={selectorAutocomplete}
+          showValueAutocomplete={showValueAutocomplete}
+          valueAutocomplete={valueAutocomplete}
+          addStepError={addStepError}
+          isAddingStep={isAddingStep}
+          targetUrl={test?.target_url}
+          onActionChange={setNewStepAction}
+          onSelectorChange={setNewStepSelector}
+          onValueChange={setNewStepValue}
+          onCheckpointNameChange={setNewStepCheckpointName}
+          onCheckpointThresholdChange={setNewStepCheckpointThreshold}
+          onA11yWcagLevelChange={setNewStepA11yWcagLevel}
+          onA11yThresholdChange={setNewStepA11yThreshold}
+          onA11yFailOnCriticalChange={setNewStepA11yFailOnCritical}
+          onA11yFailOnAnyChange={setNewStepA11yFailOnAny}
+          onSelectorKeyDown={handleSelectorKeyDown}
+          onValueKeyDown={handleValueKeyDown}
+          onSubmit={handleAddStep}
+          onClose={() => setShowAddStepModal(false)}
+        />
 
         {/* Current Run Status */}
         {currentRun && (
@@ -9364,294 +9064,37 @@ export default function () {
           onRefresh={fetchFlakinessTrend}
         />
 
-        {/* Run History */}
-        {runs.length > 0 && (
-          <div className="mt-8 rounded-lg border border-border bg-card p-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <h2 className="text-lg font-semibold text-foreground">Run History</h2>
-              <div className="flex items-center gap-4 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Sort:</span>
-                  <div className="flex rounded-md border border-border">
-                    <button
-                      onClick={() => handleSort('date')}
-                      className={`px-3 py-1 text-sm font-medium ${
-                        sortBy === 'date'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-background text-foreground hover:bg-muted'
-                      } rounded-l-md`}
-                    >
-                      Date {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
-                    </button>
-                    <button
-                      onClick={() => handleSort('duration')}
-                      className={`px-3 py-1 text-sm font-medium ${
-                        sortBy === 'duration'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-background text-foreground hover:bg-muted'
-                      } border-l border-border rounded-r-md`}
-                    >
-                      Duration {sortBy === 'duration' && (sortOrder === 'asc' ? '↑' : '↓')}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Status:</span>
-                    <div className="flex rounded-md border border-border">
-                      <button
-                        onClick={() => setStatusFilter('all')}
-                        className={`px-3 py-1 text-sm font-medium ${
-                          statusFilter === 'all'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-background text-foreground hover:bg-muted'
-                        } rounded-l-md`}
-                      >
-                        All ({runCounts.all})
-                      </button>
-                      <button
-                        onClick={() => setStatusFilter('passed')}
-                        className={`px-3 py-1 text-sm font-medium ${
-                          statusFilter === 'passed'
-                            ? 'bg-green-600 text-white'
-                            : 'bg-background text-foreground hover:bg-muted'
-                        } border-l border-border`}
-                      >
-                        Passed ({runCounts.passed})
-                      </button>
-                      <button
-                        onClick={() => setStatusFilter('failed')}
-                        className={`px-3 py-1 text-sm font-medium ${
-                          statusFilter === 'failed'
-                            ? 'bg-red-600 text-white'
-                            : 'bg-background text-foreground hover:bg-muted'
-                        } border-l border-border rounded-r-md`}
-                      >
-                        Failed ({runCounts.failed})
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Date:</span>
-                    <select
-                      value={dateFilter}
-                      onChange={(e) => setDateFilter(e.target.value as 'all' | 'today' | '7days' | '30days')}
-                      className="rounded-md border border-border bg-background px-3 py-1 text-sm text-foreground"
-                    >
-                      <option value="all">All Time</option>
-                      <option value="today">Today</option>
-                      <option value="7days">Last 7 Days</option>
-                      <option value="30days">Last 30 Days</option>
-                    </select>
-                  </div>
-                  {hasActiveFilters && (
-                    <button
-                      onClick={clearFilters}
-                      className="rounded-md border border-border px-3 py-1 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-                    >
-                      Clear Filters
-                    </button>
-                  )}
-                  {filteredRuns.length > 0 && (
-                    <button
-                      onClick={handleExportRuns}
-                      className="rounded-md border border-border bg-background px-3 py-1 text-sm font-medium text-foreground hover:bg-muted"
-                    >
-                      Export Runs ({filteredRuns.length})
-                    </button>
-                  )}
-                  {/* Compare K6 Runs button (Feature #564) */}
-                  {isLoadTest && selectedRunsForCompare.length === 2 && (
-                    <button
-                      onClick={handleCompareRuns}
-                      disabled={isComparing}
-                      className="rounded-md bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {isComparing ? 'Comparing...' : '📊 Compare Selected'}
-                    </button>
-                  )}
-                  {isLoadTest && selectedRunsForCompare.length > 0 && selectedRunsForCompare.length < 2 && (
-                    <span className="text-sm text-muted-foreground">
-                      Select {2 - selectedRunsForCompare.length} more run{selectedRunsForCompare.length === 1 ? '' : 's'} to compare
-                    </span>
-                  )}
-                </div>
-              </div>
-              {/* Active filter chips with individual clear buttons */}
-              {hasActiveFilters && (
-                <div className="flex items-center gap-2 mt-3">
-                  <span className="text-sm text-muted-foreground">Active filters:</span>
-                  {statusFilter !== 'all' && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                      Status: {statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
-                      <button
-                        onClick={() => setStatusFilter('all')}
-                        className="ml-1 rounded-full hover:bg-primary/20 p-0.5"
-                        aria-label="Clear status filter"
-                      >
-                        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </span>
-                  )}
-                  {dateFilter !== 'all' && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                      Date: {dateFilter === 'today' ? 'Today' : dateFilter === '7days' ? 'Last 7 Days' : 'Last 30 Days'}
-                      <button
-                        onClick={() => setDateFilter('all')}
-                        className="ml-1 rounded-full hover:bg-primary/20 p-0.5"
-                        aria-label="Clear date filter"
-                      >
-                        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="mt-4 space-y-2">
-              {sortedRuns.length === 0 ? (
-                <div className="py-8 text-center">
-                  <p className="text-sm font-medium text-foreground">
-                    No {statusFilter === 'all' ? '' : statusFilter} runs found
-                  </p>
-                  {hasActiveFilters && (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Try adjusting your filters or{' '}
-                      <button
-                        onClick={clearFilters}
-                        className="text-primary hover:underline"
-                      >
-                        clear all filters
-                      </button>
-                      {' '}to see more results.
-                    </p>
-                  )}
-                </div>
-              ) : paginatedRuns.map((run) => (
-                <div
-                  key={run.id}
-                  className={`flex items-center justify-between rounded-md border p-3 ${
-                    selectedRunsForCompare.includes(run.id)
-                      ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10'
-                      : 'border-border'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Checkbox for K6 run comparison (Feature #564) */}
-                    {isLoadTest && (run.status === 'passed' || run.status === 'failed') && (
-                      <label className="cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedRunsForCompare.includes(run.id)}
-                          onChange={() => toggleRunSelection(run.id)}
-                          className="h-4 w-4 rounded border-border text-blue-600 focus:ring-blue-500"
-                        />
-                      </label>
-                    )}
-                    {/* Feature #1979: Added 'warning' status styling for accessibility tests */}
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      run.status === 'passed' ? 'bg-green-100 text-green-700' :
-                      run.status === 'failed' ? 'bg-red-100 text-red-700' :
-                      run.status === 'warning' ? 'bg-amber-100 text-amber-700' :
-                      run.status === 'running' ? 'bg-blue-100 text-blue-700' :
-                      run.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {run.status}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {formatDateTime(run.created_at)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground">
-                      {run.duration_ms ? `${run.duration_ms}ms` : '-'}
-                    </span>
-                    {/* Feature #1823: View Details link to TestRunResultPage */}
-                    {(run.status === 'passed' || run.status === 'failed' || run.status === 'error') && (
-                      <Link
-                        to={`/runs/${run.id}`}
-                        className="inline-flex items-center gap-1 rounded-md border border-primary bg-primary/10 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        title="View detailed run results"
-                      >
-                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                        View Details
-                      </Link>
-                    )}
-                    {/* Download All Artifacts button for completed runs */}
-                    {(run.status === 'passed' || run.status === 'failed' || run.status === 'error') && (
-                      <button
-                        onClick={() => handleDownloadAllArtifacts(run.id)}
-                        disabled={isDownloadingArtifacts}
-                        className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
-                        title="Download all artifacts (screenshots, traces, videos)"
-                      >
-                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Download All
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Pagination */}
-            {sortedRuns.length > 0 && (
-              <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-t border-border pt-4">
-                <div className="flex items-center gap-4">
-                  <p className="text-sm text-muted-foreground">
-                    Showing {(runPage - 1) * pageSize + 1} to {Math.min(runPage * pageSize, sortedRuns.length)} of {sortedRuns.length} results
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <label htmlFor="page-size-select" className="text-sm text-muted-foreground">
-                      Per page:
-                    </label>
-                    <select
-                      id="page-size-select"
-                      value={pageSize}
-                      onChange={(e) => setPageSize(parseInt(e.target.value, 10))}
-                      className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
-                    >
-                      <option value="5">5</option>
-                      <option value="10">10</option>
-                      <option value="25">25</option>
-                      <option value="50">50</option>
-                      <option value="100">100</option>
-                    </select>
-                  </div>
-                </div>
-                {totalPages > 1 && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setRunPage(runPage - 1)}
-                      disabled={runPage === 1}
-                      className="rounded-md border border-border px-3 py-1 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
-                    <span className="text-sm text-muted-foreground">
-                      Page {runPage} of {totalPages}
-                    </span>
-                    <button
-                      onClick={() => setRunPage(runPage + 1)}
-                      disabled={runPage === totalPages}
-                      className="rounded-md border border-border px-3 py-1 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Run History - Feature #48: Extracted to component */}
+        <RunHistorySection
+          runs={runs}
+          filteredRuns={filteredRuns}
+          sortedRuns={sortedRuns}
+          paginatedRuns={paginatedRuns}
+          runCounts={runCounts}
+          statusFilter={statusFilter}
+          dateFilter={dateFilter}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          runPage={runPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          hasActiveFilters={hasActiveFilters}
+          isLoadTest={isLoadTest}
+          selectedRunsForCompare={selectedRunsForCompare}
+          isComparing={isComparing}
+          isDownloadingArtifacts={isDownloadingArtifacts}
+          formatDateTime={formatDateTime}
+          onSetStatusFilter={setStatusFilter}
+          onSetDateFilter={setDateFilter}
+          onSort={handleSort}
+          onSetRunPage={setRunPage}
+          onSetPageSize={setPageSize}
+          onClearFilters={clearFilters}
+          onExportRuns={handleExportRuns}
+          onToggleRunSelection={toggleRunSelection}
+          onCompareRuns={handleCompareRuns}
+          onDownloadAllArtifacts={handleDownloadAllArtifacts}
+        />
 
         {/* K6 Run Comparison Modal - Feature #48: Extracted to component */}
         <K6CompareModal

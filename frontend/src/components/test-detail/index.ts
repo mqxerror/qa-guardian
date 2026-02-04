@@ -15,6 +15,7 @@ export { VideoPlayer } from './VideoPlayer';
 export { FlakinessPanel } from './FlakinessPanel';
 export { ImageLightbox } from './ImageLightbox';
 export { K6CompareModal, type K6CompareResults } from './K6CompareModal';
+export { RunHistorySection } from './RunHistorySection';
 
 // Modals
 export * from './modals';
