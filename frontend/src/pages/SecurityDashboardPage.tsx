@@ -1,166 +1,29 @@
 // SecurityDashboardPage - SAST findings dashboard across all projects
 // Feature #1441: Extracted from App.tsx for code quality compliance
+// Feature #73: Migrated to React Query with caching for faster loading
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
-import { useAuthStore } from '../stores/authStore';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-
-// Types for Security Dashboard
-interface DashboardFinding {
-  id: string;
-  projectId: string;
-  projectName: string;
-  projectSlug: string;
-  scanId: string;
-  scanDate: string;
-  ruleId: string;
-  ruleName: string;
-  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-  category: string;
-  message: string;
-  filePath: string;
-  line: number;
-  column?: number;
-  snippet?: string;
-  cweId?: string;
-  owaspCategory?: string;
-  suggestion?: string;
-  isFalsePositive?: boolean;
-}
-
-interface SecurityDashboardData {
-  findings: DashboardFinding[];
-  summary: {
-    total: number;
-    bySeverity: {
-      critical: number;
-      high: number;
-      medium: number;
-      low: number;
-    };
-    byCategory: Record<string, number>;
-    projectsScanned: number;
-    totalProjects: number;
-    falsePositives: number;
-  };
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
-}
-
-interface TrendDataPoint {
-  date: string;
-  total: number;
-  critical: number;
-  high: number;
-  medium: number;
-  low: number;
-  scanCount: number;
-}
-
-interface TrendsData {
-  trends: TrendDataPoint[];
-  summary: {
-    totalScans: number;
-    latestFindings: {
-      total: number;
-      critical: number;
-      high: number;
-      medium: number;
-      low: number;
-    };
-    changes: {
-      total: number;
-      critical: number;
-      high: number;
-      medium: number;
-      low: number;
-    };
-  };
-  scans: Array<{
-    date: string;
-    scanId: string;
-    projectId: string;
-    projectName: string;
-    total: number;
-    critical: number;
-    high: number;
-    medium: number;
-    low: number;
-  }>;
-}
-
-interface DetectedSecret {
-  id: string;
-  projectId: string;
-  projectName: string;
-  secretType: string;
-  secretTypeName: string;
-  category: string;
-  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-  filePath: string;
-  line: number;
-  column?: number;
-  snippet: string;
-  detectedAt: string;
-  commitSha?: string;
-  commitAuthor?: string;
-  status: 'active' | 'resolved' | 'false-positive';
-  resolvedAt?: string;
-  resolvedBy?: string;
-  verificationStatus?: 'unverified' | 'active' | 'revoked' | 'unknown';
-  lastVerifiedAt?: string;
-  lastVerifiedBy?: string;
-  verificationError?: string;
-}
-
-interface SecretType {
-  id: string;
-  name: string;
-  category: string;
-  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-}
-
-interface SecretsData {
-  secrets: DetectedSecret[];
-  summary: {
-    total: number;
-    active: number;
-    resolved: number;
-    falsePositives: number;
-    bySeverity: {
-      critical: number;
-      high: number;
-      medium: number;
-      low: number;
-    };
-    bySecretType: Array<{
-      type: string;
-      name: string;
-      count: number;
-      severity: string;
-      category: string;
-    }>;
-    byCategory: Record<string, number>;
-    byProject: Array<{ id: string; name: string; count: number }>;
-  };
-  secretTypes: SecretType[];
-}
+import {
+  useSecurityDashboard,
+  useSecurityTrends,
+  useSecretsDashboard,
+  useScanSecrets,
+  useVerifySecret,
+  useInvalidateSecurity,
+  DashboardFinding,
+  SecurityDashboardData,
+  TrendsData,
+  SecretsData,
+  DetectedSecret,
+} from '../hooks/api/useSecurity';
 
 export function SecurityDashboardPage() {
-  const { token } = useAuthStore();
   const navigate = useNavigate();
-  const [data, setData] = useState<SecurityDashboardData | null>(null);
-  const [trendsData, setTrendsData] = useState<TrendsData | null>(null);
-  const [secretsData, setSecretsData] = useState<SecretsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isTrendsLoading, setIsTrendsLoading] = useState(true);
-  const [isSecretsLoading, setIsSecretsLoading] = useState(true);
+
+  // Filter and UI state
   const [severityFilter, setSeverityFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'date' | 'severity' | 'project'>('date');
@@ -172,80 +35,84 @@ export function SecurityDashboardPage() {
   const [secretsTypeFilter, setSecretsTypeFilter] = useState<string>('all');
   const [secretsSortBy, setSecretsSortBy] = useState<'date' | 'severity' | 'project' | 'type'>('date');
   const [verifyingSecrets, setVerifyingSecrets] = useState<Set<string>>(new Set());
-
-  // Verify a secret to check if it's still active
-  const verifySecret = async (secretId: string) => {
-    setVerifyingSecrets(prev => new Set([...prev, secretId]));
-    try {
-      const response = await fetch(`/api/v1/secrets/${secretId}/verify`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Update the secret in the local state
-        setSecretsData(prev => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            secrets: prev.secrets.map(s =>
-              s.id === secretId ? data.secret : s
-            ),
-          };
-        });
-      }
-    } catch (error) {
-      console.error('Failed to verify secret:', error);
-    } finally {
-      setVerifyingSecrets(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(secretId);
-        return newSet;
-      });
-    }
-  };
-
-  // State for secret scanning
-  const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<{ message: string; secretsFound: number } | null>(null);
 
-  // Scan for secrets in env files and CI configs
-  const scanForSecrets = async (scanEnvFiles: boolean = true, scanCiConfigs: boolean = true) => {
-    setIsScanning(true);
-    setScanResult(null);
-    try {
-      const response = await fetch('/api/v1/secrets/scan', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          scanEnvFiles,
-          scanCiConfigs,
-        }),
-      });
+  // React Query hooks with memoized params for caching
+  const dashboardParams = useMemo(() => ({
+    severity: severityFilter.length > 0 ? severityFilter : undefined,
+    category: categoryFilter.length > 0 ? categoryFilter : undefined,
+    sortBy,
+    sortOrder,
+  }), [severityFilter, categoryFilter, sortBy, sortOrder]);
 
-      if (response.ok) {
-        const data = await response.json();
-        setScanResult({
-          message: data.message,
-          secretsFound: data.secretsFound,
-        });
-        // Refresh secrets data after scan
-        fetchSecretsData();
+  const secretsParams = useMemo(() => ({
+    project: secretsProjectFilter !== 'all' ? secretsProjectFilter : undefined,
+    secretType: secretsTypeFilter !== 'all' ? secretsTypeFilter : undefined,
+    sortBy: secretsSortBy,
+    sortOrder,
+  }), [secretsProjectFilter, secretsTypeFilter, secretsSortBy, sortOrder]);
+
+  // React Query data fetching with automatic caching
+  const {
+    data,
+    isLoading,
+    error: dashboardError,
+  } = useSecurityDashboard(dashboardParams);
+
+  const {
+    data: trendsData,
+    isLoading: isTrendsLoading,
+    error: trendsError,
+  } = useSecurityTrends(30);
+
+  const {
+    data: secretsData,
+    isLoading: isSecretsLoading,
+    error: secretsError,
+  } = useSecretsDashboard(secretsParams);
+
+  // Mutations for scanning and verifying secrets
+  const scanSecretsMutation = useScanSecrets();
+  const verifySecretMutation = useVerifySecret();
+  const { refetchSecrets } = useInvalidateSecurity();
+
+  // Helper function for scanning secrets
+  const scanForSecrets = (scanEnvFiles: boolean = true, scanCiConfigs: boolean = true) => {
+    setScanResult(null);
+    scanSecretsMutation.mutate(
+      { scanEnvFiles, scanCiConfigs },
+      {
+        onSuccess: (result) => {
+          setScanResult({
+            message: result.message,
+            secretsFound: result.secretsFound,
+          });
+        },
+        onError: () => {
+          setScanResult({
+            message: 'Failed to scan for secrets',
+            secretsFound: 0,
+          });
+        },
       }
-    } catch (error) {
-      console.error('Failed to scan for secrets:', error);
-      setScanResult({
-        message: 'Failed to scan for secrets',
-        secretsFound: 0,
-      });
-    } finally {
-      setIsScanning(false);
-    }
+    );
   };
+
+  // Helper function for verifying secrets
+  const verifySecret = (secretId: string) => {
+    setVerifyingSecrets(prev => new Set([...prev, secretId]));
+    verifySecretMutation.mutate(secretId, {
+      onSettled: () => {
+        setVerifyingSecrets(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(secretId);
+          return newSet;
+        });
+      },
+    });
+  };
+
+  const isScanning = scanSecretsMutation.isPending;
 
   // Get verification status badge
   const getVerificationStatusBadge = (status?: string) => {
@@ -277,93 +144,8 @@ export function SecurityDashboardPage() {
     }
   };
 
-  const fetchDashboardData = async () => {
-    try {
-      setIsLoading(true);
-      const params = new URLSearchParams();
-      if (severityFilter.length > 0) {
-        params.set('severity', severityFilter.join(','));
-      }
-      if (categoryFilter.length > 0) {
-        params.set('category', categoryFilter.join(','));
-      }
-      params.set('sortBy', sortBy);
-      params.set('sortOrder', sortOrder);
-
-      const response = await fetch(`/api/v1/sast/dashboard?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const dashboardData = await response.json();
-        setData(dashboardData);
-      }
-    } catch (error) {
-      console.error('Failed to fetch security dashboard:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchTrendsData = async () => {
-    try {
-      setIsTrendsLoading(true);
-      const response = await fetch('/api/v1/sast/trends?days=30', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const trends = await response.json();
-        setTrendsData(trends);
-      }
-    } catch (error) {
-      console.error('Failed to fetch security trends:', error);
-    } finally {
-      setIsTrendsLoading(false);
-    }
-  };
-
-  const fetchSecretsData = async () => {
-    try {
-      setIsSecretsLoading(true);
-      const params = new URLSearchParams();
-      if (secretsProjectFilter !== 'all') {
-        params.set('project', secretsProjectFilter);
-      }
-      if (secretsTypeFilter !== 'all') {
-        params.set('secretType', secretsTypeFilter);
-      }
-      params.set('sortBy', secretsSortBy);
-      params.set('sortOrder', sortOrder);
-
-      const response = await fetch(`/api/v1/secrets/dashboard?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const secrets = await response.json();
-        setSecretsData(secrets);
-      }
-    } catch (error) {
-      console.error('Failed to fetch secrets dashboard:', error);
-    } finally {
-      setIsSecretsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboardData();
-    fetchTrendsData();
-    fetchSecretsData();
-  }, [token]);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, [severityFilter, categoryFilter, sortBy, sortOrder]);
-
-  useEffect(() => {
-    fetchSecretsData();
-  }, [secretsProjectFilter, secretsTypeFilter, secretsSortBy, sortOrder]);
+  // Note: React Query automatically handles data fetching based on params changes
+  // No need for manual useEffect calls - the hooks refetch when dependencies change
 
   const toggleFinding = (findingId: string) => {
     setExpandedFindings(prev => {
