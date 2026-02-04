@@ -435,3 +435,38 @@ export type AntiAliasingTolerance = 'off' | 'low' | 'medium' | 'high';
 
 // Viewport preset
 export type ViewportPreset = 'mobile' | 'tablet' | 'laptop' | 'desktop' | 'custom';
+
+// Feature #48: Flakiness Trend types
+export interface FlakinessTrend {
+  summary: {
+    total_runs: number;
+    total_passes: number;
+    total_failures: number;
+    overall_pass_rate: number;
+    overall_flakiness_score: number;
+    flakiness_started: string | null;
+    first_run: string | null;
+    last_run: string | null;
+  };
+  daily_trend: Array<{
+    date: string;
+    passes: number;
+    failures: number;
+    total: number;
+    pass_rate: number;
+    flakiness_score: number;
+  }>;
+  weekly_trend: Array<{
+    week_start: string;
+    passes: number;
+    failures: number;
+    flakiness_score: number;
+  }>;
+  code_changes: Array<{
+    date: string;
+    commit_id: string;
+    message: string;
+    author: string;
+    files_changed: string[];
+  }>;
+}

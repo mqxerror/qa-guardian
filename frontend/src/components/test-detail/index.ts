@@ -12,6 +12,9 @@ export * from './utils';
 // Components
 export { default as TestStatusBadge } from './TestStatusBadge';
 export { VideoPlayer } from './VideoPlayer';
+export { FlakinessPanel } from './FlakinessPanel';
+export { ImageLightbox } from './ImageLightbox';
+export { K6CompareModal, type K6CompareResults } from './K6CompareModal';
 
 // Modals
 export * from './modals';

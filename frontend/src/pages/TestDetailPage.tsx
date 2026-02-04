@@ -53,6 +53,11 @@ import {
   RestoreBaselineModal,
   MergeBaselineModal,
   RejectChangesModal,
+  FlakinessPanel,
+  FlakinessTrend,
+  ImageLightbox,
+  K6CompareModal,
+  K6CompareResults,
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
@@ -129,40 +134,8 @@ function TestDetailPage() {
   const [diffOverlayOpacity, setDiffOverlayOpacity] = useState(50); // Percentage opacity 0-100 for diff overlay
   const [imageZoomLevel, setImageZoomLevel] = useState<'fit' | '100' | '50' | '200'>('fit'); // Zoom level for images
 
-  // Feature #1101: Flakiness trend tracking state
-  const [flakinessTrend, setFlakinessTrend] = useState<{
-    summary: {
-      total_runs: number;
-      total_passes: number;
-      total_failures: number;
-      overall_pass_rate: number;
-      overall_flakiness_score: number;
-      flakiness_started: string | null;
-      first_run: string | null;
-      last_run: string | null;
-    };
-    daily_trend: Array<{
-      date: string;
-      passes: number;
-      failures: number;
-      total: number;
-      pass_rate: number;
-      flakiness_score: number;
-    }>;
-    weekly_trend: Array<{
-      week_start: string;
-      passes: number;
-      failures: number;
-      flakiness_score: number;
-    }>;
-    code_changes: Array<{
-      date: string;
-      commit_id: string;
-      message: string;
-      author: string;
-      files_changed: string[];
-    }>;
-  } | null>(null);
+  // Feature #1101: Flakiness trend tracking state - Feature #48: Use imported type
+  const [flakinessTrend, setFlakinessTrend] = useState<FlakinessTrend | null>(null);
   const [isLoadingFlakinessTrend, setIsLoadingFlakinessTrend] = useState(false);
   const [showFlakinessTrendSection, setShowFlakinessTrendSection] = useState(true);
 
@@ -1492,10 +1465,10 @@ export default function () {
   const [sortBy, setSortBy] = useState<'date' | 'duration'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // K6 run comparison state (Feature #564)
+  // K6 run comparison state (Feature #564) - Feature #48: Use imported type
   const [selectedRunsForCompare, setSelectedRunsForCompare] = useState<string[]>([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
-  const [compareResults, setCompareResults] = useState<any>(null);
+  const [compareResults, setCompareResults] = useState<K6CompareResults | null>(null);
   const [isComparing, setIsComparing] = useState(false);
 
   // Check if current test is a load test (for comparison feature)
@@ -9381,187 +9354,15 @@ export default function () {
           </div>
         )}
 
-        {/* Feature #1101: Flakiness Trend */}
-        {showFlakinessTrendSection && (
-          <div className="mt-8 rounded-lg border border-border bg-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <span className="text-xl">📊</span> Flakiness Trend
-              </h2>
-              <button
-                onClick={() => setShowFlakinessTrendSection(false)}
-                className="text-muted-foreground hover:text-foreground"
-                title="Hide section"
-              >
-                ×
-              </button>
-            </div>
-
-            {isLoadingFlakinessTrend ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
-                <span className="ml-2 text-muted-foreground">Loading trend data...</span>
-              </div>
-            ) : !flakinessTrend ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No trend data available yet</p>
-                <button
-                  onClick={fetchFlakinessTrend}
-                  className="mt-2 text-sm text-primary hover:underline"
-                >
-                  Refresh
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Summary Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="rounded-lg border border-border bg-muted/30 p-3">
-                    <div className="text-2xl font-bold text-foreground">{flakinessTrend.summary.total_runs}</div>
-                    <div className="text-xs text-muted-foreground">Total Runs</div>
-                  </div>
-                  <div className="rounded-lg border border-border bg-muted/30 p-3">
-                    <div className={`text-2xl font-bold ${
-                      flakinessTrend.summary.overall_flakiness_score >= 0.7 ? 'text-red-600' :
-                      flakinessTrend.summary.overall_flakiness_score >= 0.4 ? 'text-orange-600' :
-                      flakinessTrend.summary.overall_flakiness_score > 0 ? 'text-yellow-600' :
-                      'text-emerald-600'
-                    }`}>
-                      {flakinessTrend.summary.overall_flakiness_score.toFixed(2)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Flakiness Score</div>
-                  </div>
-                  <div className="rounded-lg border border-border bg-muted/30 p-3">
-                    <div className="text-2xl font-bold text-emerald-600">{flakinessTrend.summary.overall_pass_rate}%</div>
-                    <div className="text-xs text-muted-foreground">Pass Rate</div>
-                  </div>
-                  <div className="rounded-lg border border-border bg-muted/30 p-3">
-                    <div className="text-sm font-medium text-foreground">
-                      {flakinessTrend.summary.flakiness_started
-                        ? new Date(flakinessTrend.summary.flakiness_started).toLocaleDateString()
-                        : 'N/A'}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Flakiness Started</div>
-                  </div>
-                </div>
-
-                {/* Daily Trend Chart */}
-                {flakinessTrend.daily_trend.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-medium text-foreground mb-2">Daily Flakiness Trend</h3>
-                    <div className="h-40 relative">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={flakinessTrend.daily_trend}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                          <XAxis
-                            dataKey="date"
-                            tick={{ fontSize: 10 }}
-                            tickFormatter={(value) => new Date(value).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
-                            className="text-muted-foreground"
-                          />
-                          <YAxis
-                            domain={[0, 1]}
-                            tick={{ fontSize: 10 }}
-                            tickFormatter={(value) => value.toFixed(1)}
-                            className="text-muted-foreground"
-                          />
-                          <Tooltip
-                            content={({ active, payload }) => {
-                              if (!active || !payload?.[0]) return null;
-                              const data = payload[0].payload;
-                              return (
-                                <div className="rounded-md border border-border bg-card p-2 shadow-sm text-xs">
-                                  <div className="font-medium">{new Date(data.date).toLocaleDateString()}</div>
-                                  <div className="text-emerald-600">Passes: {data.passes}</div>
-                                  <div className="text-red-600">Failures: {data.failures}</div>
-                                  <div className="text-orange-600">Flakiness: {data.flakiness_score.toFixed(2)}</div>
-                                </div>
-                              );
-                            }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="flakiness_score"
-                            stroke="#f97316"
-                            strokeWidth={2}
-                            dot={{ fill: '#f97316', r: 3 }}
-                            name="Flakiness"
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Higher values indicate more flaky behavior (0 = stable, 1 = highly flaky)
-                    </p>
-                  </div>
-                )}
-
-                {/* Code Changes Correlation */}
-                {flakinessTrend.code_changes.length > 0 && flakinessTrend.summary.flakiness_started ? (
-                  <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
-                    <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-2 flex items-center gap-2">
-                      <span>⚠️</span> Potential Related Code Changes
-                    </h3>
-                    <p className="text-xs text-yellow-700 dark:text-yellow-400 mb-2">
-                      Flakiness started on {new Date(flakinessTrend.summary.flakiness_started).toLocaleDateString()}.
-                      The following commits may be related:
-                    </p>
-                    {flakinessTrend.code_changes.map((change) => (
-                      <div key={change.commit_id} className="mt-2 p-2 bg-white dark:bg-gray-800 rounded border border-yellow-300 dark:border-yellow-700">
-                        <div className="flex items-center gap-2">
-                          <code className="text-xs font-mono text-primary">{change.commit_id.substring(0, 8)}</code>
-                          <span className="text-xs text-muted-foreground">{new Date(change.date).toLocaleDateString()}</span>
-                        </div>
-                        <div className="text-sm text-foreground mt-1">{change.message}</div>
-                        <div className="text-xs text-muted-foreground mt-1">by {change.author}</div>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {change.files_changed.map((file, idx) => (
-                            <span key={idx} className="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">
-                              {file}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-2">
-                      <span>🔗</span> Code Changes Correlation
-                    </h3>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">
-                      Git integration not configured. Connect your repository to see commits correlated with flakiness.
-                    </p>
-                  </div>
-                )}
-
-                {/* Run History Sparkline */}
-                <div>
-                  <h3 className="text-sm font-medium text-foreground mb-2">Recent Run Results</h3>
-                  <div className="flex gap-0.5 h-8">
-                    {runs.slice(0, 30).reverse().map((run, idx) => (
-                      <div
-                        key={run.id || idx}
-                        className={`flex-1 rounded-sm ${
-                          run.status === 'passed' ? 'bg-emerald-500' :
-                          run.status === 'failed' ? 'bg-red-500' :
-                          run.status === 'warning' ? 'bg-amber-500' :
-                          run.status === 'running' ? 'bg-blue-500 animate-pulse' :
-                          'bg-gray-300'
-                        }`}
-                        title={`${run.status} - ${run.created_at ? new Date(run.created_at).toLocaleString() : 'Unknown'}`}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                    <span>Oldest</span>
-                    <span>Newest</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Feature #1101: Flakiness Trend - Feature #48: Extracted to component */}
+        <FlakinessPanel
+          isLoading={isLoadingFlakinessTrend}
+          flakinessTrend={flakinessTrend}
+          runs={runs}
+          showSection={showFlakinessTrendSection}
+          onHideSection={() => setShowFlakinessTrendSection(false)}
+          onRefresh={fetchFlakinessTrend}
+        />
 
         {/* Run History */}
         {runs.length > 0 && (
@@ -9852,286 +9653,27 @@ export default function () {
           </div>
         )}
 
-        {/* K6 Run Comparison Modal (Feature #564) */}
-        {showCompareModal && compareResults && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-            onClick={() => setShowCompareModal(false)}
-          >
-            <div
-              className="max-w-4xl w-full max-h-[90vh] overflow-auto rounded-lg bg-background border border-border shadow-lg"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="sticky top-0 bg-background border-b border-border p-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">📊</span>
-                  <h3 className="text-lg font-semibold text-foreground">K6 Load Test Comparison</h3>
-                </div>
-                <button
-                  onClick={() => setShowCompareModal(false)}
-                  className="rounded-md p-1 hover:bg-muted"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+        {/* K6 Run Comparison Modal - Feature #48: Extracted to component */}
+        <K6CompareModal
+          show={showCompareModal}
+          results={compareResults}
+          onClose={() => setShowCompareModal(false)}
+          formatDateTime={formatDateTime}
+        />
 
-              <div className="p-4 space-y-6">
-                {/* Run Info */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 rounded-lg border border-border bg-muted/30">
-                    <div className="text-xs text-muted-foreground mb-1">Base Run</div>
-                    <div className="text-sm font-medium">{compareResults.base_run?.test_name || 'Unknown'}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {compareResults.base_run?.completed_at ? formatDateTime(compareResults.base_run.completed_at) : 'N/A'}
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg border border-border bg-muted/30">
-                    <div className="text-xs text-muted-foreground mb-1">Compare Run</div>
-                    <div className="text-sm font-medium">{compareResults.compare_run?.test_name || 'Unknown'}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {compareResults.compare_run?.completed_at ? formatDateTime(compareResults.compare_run.completed_at) : 'N/A'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Overall Status */}
-                {compareResults.overall && (
-                  <div className={`p-4 rounded-lg border ${
-                    compareResults.overall.performance === 'improved' ? 'border-green-500 bg-green-50 dark:bg-green-900/10' :
-                    compareResults.overall.performance === 'regressed' ? 'border-red-500 bg-red-50 dark:bg-red-900/10' :
-                    'border-border bg-muted/30'
-                  }`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`text-lg ${
-                        compareResults.overall.performance === 'improved' ? 'text-green-600' :
-                        compareResults.overall.performance === 'regressed' ? 'text-red-600' :
-                        'text-gray-600'
-                      }`}>
-                        {compareResults.overall.performance === 'improved' ? '📈' : compareResults.overall.performance === 'regressed' ? '📉' : '➡️'}
-                      </span>
-                      <span className={`font-semibold ${
-                        compareResults.overall.performance === 'improved' ? 'text-green-700 dark:text-green-400' :
-                        compareResults.overall.performance === 'regressed' ? 'text-red-700 dark:text-red-400' :
-                        'text-foreground'
-                      }`}>
-                        {compareResults.overall.performance === 'improved' ? 'Performance Improved' :
-                         compareResults.overall.performance === 'regressed' ? 'Performance Regressed' :
-                         'No Significant Change'}
-                      </span>
-                    </div>
-                    {compareResults.overall.highlights?.length > 0 && (
-                      <ul className="text-sm space-y-1">
-                        {compareResults.overall.highlights.map((h: string, i: number) => (
-                          <li key={i} className="text-muted-foreground">• {h}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
-
-                {/* Summary Metrics Comparison */}
-                {compareResults.summary && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-3">Summary Metrics</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {Object.entries(compareResults.summary).map(([key, value]: [string, any]) => (
-                        <div key={key} className="p-3 rounded-lg border border-border bg-muted/20 text-center">
-                          <div className="text-xs text-muted-foreground mb-1 capitalize">{key.replace(/_/g, ' ')}</div>
-                          <div className={`text-sm font-bold ${
-                            value.status === 'improved' ? 'text-green-600 dark:text-green-400' :
-                            value.status === 'regressed' ? 'text-red-600 dark:text-red-400' :
-                            'text-foreground'
-                          }`}>
-                            {value.delta_percent > 0 ? '+' : ''}{value.delta_percent?.toFixed(1)}%
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {typeof value.base === 'number' ? value.base.toLocaleString() : value.base} → {typeof value.compare === 'number' ? value.compare.toLocaleString() : value.compare}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Response Time Comparison */}
-                {compareResults.response_times && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-3">Response Time Percentiles</h4>
-                    <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
-                      {Object.entries(compareResults.response_times).map(([key, value]: [string, any]) => (
-                        <div key={key} className={`p-2 rounded-lg border text-center ${
-                          key === 'median' ? 'border-green-200 bg-green-50/50 dark:border-green-700 dark:bg-green-900/10' :
-                          key === 'p95' ? 'border-yellow-200 bg-yellow-50/50 dark:border-yellow-700 dark:bg-yellow-900/10' :
-                          key === 'p99' ? 'border-orange-200 bg-orange-50/50 dark:border-orange-700 dark:bg-orange-900/10' :
-                          'border-border bg-muted/20'
-                        }`}>
-                          <div className={`text-xs mb-1 ${
-                            key === 'median' ? 'text-green-600 dark:text-green-400' :
-                            key === 'p95' ? 'text-yellow-600 dark:text-yellow-400' :
-                            key === 'p99' ? 'text-orange-600 dark:text-orange-400' :
-                            'text-muted-foreground'
-                          }`}>{key}</div>
-                          <div className={`text-sm font-bold ${
-                            value.status === 'improved' ? 'text-green-600 dark:text-green-400' :
-                            value.status === 'regressed' ? 'text-red-600 dark:text-red-400' :
-                            'text-foreground'
-                          }`}>
-                            {value.delta_percent > 0 ? '+' : ''}{value.delta_percent?.toFixed(1)}%
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {value.base}ms → {value.compare}ms
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Screenshot Lightbox Modal with Zoom and Pan */}
-        {lightboxImage && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-            onClick={() => setLightboxImage(null)}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Screenshot lightbox"
-          >
-            <div className="relative max-h-[90vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
-              {/* Top toolbar */}
-              <div className="absolute -top-12 left-0 right-0 flex items-center justify-between">
-                {/* Zoom controls */}
-                <div className="flex items-center gap-2 bg-black/50 rounded-lg px-3 py-1.5" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => {
-                      setLightboxZoom(Math.max(0.25, lightboxZoom - 0.25));
-                      if (lightboxZoom <= 1) setLightboxPan({ x: 0, y: 0 });
-                    }}
-                    className="text-white hover:text-gray-300 px-2 py-1 rounded hover:bg-white/10"
-                    aria-label="Zoom out"
-                  >
-                    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
-                    </svg>
-                  </button>
-                  <span className="text-white text-sm min-w-[60px] text-center font-medium">
-                    {Math.round(lightboxZoom * 100)}%
-                  </span>
-                  <button
-                    onClick={() => setLightboxZoom(Math.min(4, lightboxZoom + 0.25))}
-                    className="text-white hover:text-gray-300 px-2 py-1 rounded hover:bg-white/10"
-                    aria-label="Zoom in"
-                  >
-                    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setLightboxZoom(1);
-                      setLightboxPan({ x: 0, y: 0 });
-                    }}
-                    className="text-white text-xs hover:text-gray-300 px-2 py-1 ml-1 rounded hover:bg-white/10"
-                    aria-label="Reset zoom"
-                  >
-                    Reset
-                  </button>
-                  <button
-                    onClick={() => {
-                      setLightboxZoom(1);
-                      setLightboxPan({ x: 0, y: 0 });
-                    }}
-                    className="text-white text-xs hover:text-gray-300 px-2 py-1 rounded hover:bg-white/10 flex items-center gap-1"
-                    aria-label="Fit to screen"
-                  >
-                    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                    </svg>
-                    Fit
-                  </button>
-                </div>
-
-                {/* Download and Close */}
-                <div className="flex items-center gap-4">
-                  <a
-                    href={lightboxImage}
-                    download={`screenshot-${Date.now()}.png`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-white text-sm hover:text-gray-300 flex items-center gap-1"
-                  >
-                    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Download
-                  </a>
-                  <button
-                    onClick={() => setLightboxImage(null)}
-                    className="text-white text-xl hover:text-gray-300"
-                  >
-                    ✕ Close
-                  </button>
-                </div>
-              </div>
-
-              {/* Help text for panning */}
-              {lightboxZoom > 1 && (
-                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-white/70 text-xs">
-                  Drag to pan • Scroll to zoom
-                </div>
-              )}
-
-              {/* Image container with overflow handling for zoomed images */}
-              <div
-                className={`overflow-hidden rounded-lg shadow-2xl ${lightboxZoom > 1 ? 'cursor-grab' : 'cursor-default'} ${isDragging ? 'cursor-grabbing' : ''}`}
-                style={{ maxHeight: '85vh', maxWidth: '90vw' }}
-                onClick={(e) => e.stopPropagation()}
-                onMouseDown={(e) => {
-                  if (lightboxZoom > 1) {
-                    setIsDragging(true);
-                    setDragStart({ x: e.clientX - lightboxPan.x, y: e.clientY - lightboxPan.y });
-                  }
-                }}
-                onMouseMove={(e) => {
-                  if (isDragging && lightboxZoom > 1) {
-                    setLightboxPan({
-                      x: e.clientX - dragStart.x,
-                      y: e.clientY - dragStart.y,
-                    });
-                  }
-                }}
-                onMouseUp={() => setIsDragging(false)}
-                onMouseLeave={() => setIsDragging(false)}
-                onWheel={(e) => {
-                  e.preventDefault();
-                  const delta = e.deltaY > 0 ? -0.1 : 0.1;
-                  const newZoom = Math.max(0.25, Math.min(4, lightboxZoom + delta));
-                  setLightboxZoom(newZoom);
-                  if (newZoom <= 1) {
-                    setLightboxPan({ x: 0, y: 0 });
-                  }
-                }}
-              >
-                <img
-                  src={lightboxImage}
-                  alt="Full-size screenshot"
-                  className="select-none"
-                  style={{
-                    transform: `scale(${lightboxZoom}) translate(${lightboxPan.x / lightboxZoom}px, ${lightboxPan.y / lightboxZoom}px)`,
-                    transformOrigin: 'center center',
-                    maxHeight: lightboxZoom === 1 ? '85vh' : 'none',
-                    maxWidth: lightboxZoom === 1 ? '90vw' : 'none',
-                  }}
-                  draggable={false}
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Screenshot Lightbox Modal - Feature #48: Extracted to component */}
+        <ImageLightbox
+          image={lightboxImage}
+          onClose={() => setLightboxImage(null)}
+          zoom={lightboxZoom}
+          setZoom={setLightboxZoom}
+          pan={lightboxPan}
+          setPan={setLightboxPan}
+          isDragging={isDragging}
+          setIsDragging={setIsDragging}
+          dragStart={dragStart}
+          setDragStart={setDragStart}
+        />
       </div>
     </Layout>
   );
