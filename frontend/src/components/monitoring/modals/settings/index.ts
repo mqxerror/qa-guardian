@@ -5,3 +5,11 @@
 
 export { AlertRoutingModal, type AlertRoutingModalProps } from './AlertRoutingModal';
 export { EscalationPolicyModal, type EscalationPolicyModalProps } from './EscalationPolicyModal';
+export {
+  CreateManagedIncidentModal,
+  ManagedIncidentDetailModal,
+  AssignResponderModal,
+  ResolveIncidentModal,
+  getIncidentStatusColor,
+  getIncidentPriorityColor,
+} from './ManagedIncidentModals';

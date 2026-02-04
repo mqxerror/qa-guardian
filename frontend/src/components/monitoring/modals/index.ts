@@ -11,3 +11,11 @@ export { default as WebhookModal, type WebhookModalProps } from './WebhookModal'
 // Settings modals
 export { AlertRoutingModal, type AlertRoutingModalProps } from './settings/AlertRoutingModal';
 export { EscalationPolicyModal, type EscalationPolicyModalProps } from './settings/EscalationPolicyModal';
+export {
+  CreateManagedIncidentModal,
+  ManagedIncidentDetailModal,
+  AssignResponderModal,
+  ResolveIncidentModal,
+  getIncidentStatusColor,
+  getIncidentPriorityColor,
+} from './settings/ManagedIncidentModals';

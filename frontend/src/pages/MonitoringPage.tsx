@@ -23,6 +23,13 @@ import {
   WebhookModal,
   AlertRoutingModal,
   EscalationPolicyModal,
+  // Feature #47: Import managed incident modals
+  CreateManagedIncidentModal,
+  ManagedIncidentDetailModal,
+  AssignResponderModal,
+  ResolveIncidentModal,
+  getIncidentStatusColor,
+  getIncidentPriorityColor,
   // Feature #47: Import the settings hook for state management
   useMonitoringSettings,
   // Import ALL types from modular components
@@ -335,27 +342,14 @@ function MonitoringPage() {
 
   // Incident Management state (types imported from monitoring/types.ts)
   const [managedIncidents, setManagedIncidents] = useState<ManagedIncident[]>([]);
+  // Feature #47: Managed incident state - modals manage their own internal form state
   const [isLoadingManagedIncidents, setIsLoadingManagedIncidents] = useState(false);
   const [showManagedIncidentModal, setShowManagedIncidentModal] = useState(false);
   const [selectedManagedIncident, setSelectedManagedIncident] = useState<ManagedIncident | null>(null);
-  const [managedIncidentTitle, setManagedIncidentTitle] = useState('');
-  const [managedIncidentDescription, setManagedIncidentDescription] = useState('');
-  const [managedIncidentPriority, setManagedIncidentPriority] = useState<'P1' | 'P2' | 'P3' | 'P4' | 'P5'>('P3');
-  const [managedIncidentSeverity, setManagedIncidentSeverity] = useState<'critical' | 'high' | 'medium' | 'low' | 'info'>('medium');
-  const [managedIncidentTags, setManagedIncidentTags] = useState('');
-  const [managedIncidentAffectedServices, setManagedIncidentAffectedServices] = useState('');
   const [isSubmittingManagedIncident, setIsSubmittingManagedIncident] = useState(false);
   const [showManagedIncidentDetailModal, setShowManagedIncidentDetailModal] = useState(false);
-  const [managedIncidentNoteContent, setManagedIncidentNoteContent] = useState('');
-  const [managedIncidentNoteVisibility, setManagedIncidentNoteVisibility] = useState<'internal' | 'public'>('internal');
   const [showManagedAssignResponderModal, setShowManagedAssignResponderModal] = useState(false);
-  const [managedResponderName, setManagedResponderName] = useState('');
-  const [managedResponderEmail, setManagedResponderEmail] = useState('');
-  const [managedResponderRole, setManagedResponderRole] = useState<'primary' | 'secondary' | 'observer'>('secondary');
   const [showManagedResolveModal, setShowManagedResolveModal] = useState(false);
-  const [managedResolutionSummary, setManagedResolutionSummary] = useState('');
-  const [managedPostmortemUrl, setManagedPostmortemUrl] = useState('');
-  const [managedPostmortemCompleted, setManagedPostmortemCompleted] = useState(false);
   const [managedIncidentFilter, setManagedIncidentFilter] = useState<'all' | 'active' | 'resolved'>('active');
 
   // TCP and DNS state removed - infrastructure monitoring, not QA testing
@@ -1942,58 +1936,7 @@ function MonitoringPage() {
     }
   }, [token, managedIncidentFilter]);
 
-  // Create incident
-  const handleCreateManagedIncident = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token || !managedIncidentTitle.trim()) return;
-
-    setIsSubmittingManagedIncident(true);
-    try {
-      const payload = {
-        title: managedIncidentTitle.trim(),
-        description: managedIncidentDescription.trim() || undefined,
-        priority: managedIncidentPriority,
-        severity: managedIncidentSeverity,
-        source: 'manual',
-        tags: managedIncidentTags ? managedIncidentTags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
-        affected_services: managedIncidentAffectedServices ? managedIncidentAffectedServices.split(',').map(s => s.trim()).filter(Boolean) : undefined,
-      };
-
-      const response = await fetch('/api/v1/monitoring/incidents', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        toast.success('Incident created');
-        setShowManagedIncidentModal(false);
-        resetManagedIncidentForm();
-        fetchManagedIncidents();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Failed to create incident');
-      }
-    } catch (error) {
-      console.error('Failed to create incident:', error);
-      toast.error('Failed to create incident');
-    } finally {
-      setIsSubmittingManagedIncident(false);
-    }
-  };
-
-  // Reset incident form
-  const resetManagedIncidentForm = () => {
-    setManagedIncidentTitle('');
-    setManagedIncidentDescription('');
-    setManagedIncidentPriority('P3');
-    setManagedIncidentSeverity('medium');
-    setManagedIncidentTags('');
-    setManagedIncidentAffectedServices('');
-  };
+  // Feature #47: Old handleCreateManagedIncident removed - now using handleCreateManagedIncidentFromModal
 
   // Create incident from alert group
   const createIncidentFromAlertGroup = async (group: AlertGroup) => {
@@ -2188,113 +2131,8 @@ function MonitoringPage() {
     }
   };
 
-  // Add note to incident
-  const handleAddManagedIncidentNote = async (incidentId: string) => {
-    if (!token || !managedIncidentNoteContent.trim()) return;
-
-    try {
-      const response = await fetch(`/api/v1/monitoring/incidents/${incidentId}/notes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          content: managedIncidentNoteContent.trim(),
-          visibility: managedIncidentNoteVisibility,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        toast.success('Note added');
-        setSelectedManagedIncident(data.incident);
-        setManagedIncidentNoteContent('');
-        fetchManagedIncidents();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Failed to add note');
-      }
-    } catch (error) {
-      console.error('Failed to add note:', error);
-      toast.error('Failed to add note');
-    }
-  };
-
-  // Assign responder to incident
-  const handleAssignManagedResponder = async (incidentId: string) => {
-    if (!token || !managedResponderName.trim() || !managedResponderEmail.trim()) return;
-
-    try {
-      const response = await fetch(`/api/v1/monitoring/incidents/${incidentId}/responders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          user_id: `user-${Date.now()}`,
-          user_name: managedResponderName.trim(),
-          user_email: managedResponderEmail.trim(),
-          role: managedResponderRole,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        toast.success(`${managedResponderName} assigned as ${managedResponderRole} responder`);
-        setSelectedManagedIncident(data.incident);
-        setShowManagedAssignResponderModal(false);
-        setManagedResponderName('');
-        setManagedResponderEmail('');
-        setManagedResponderRole('secondary');
-        fetchManagedIncidents();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Failed to assign responder');
-      }
-    } catch (error) {
-      console.error('Failed to assign responder:', error);
-      toast.error('Failed to assign responder');
-    }
-  };
-
-  // Resolve incident
-  const handleResolveManagedIncident = async (incidentId: string) => {
-    if (!token || !managedResolutionSummary.trim()) return;
-
-    try {
-      const response = await fetch(`/api/v1/monitoring/incidents/${incidentId}/resolve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          resolution_summary: managedResolutionSummary.trim(),
-          postmortem_url: managedPostmortemUrl.trim() || undefined,
-          postmortem_completed: managedPostmortemCompleted,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        toast.success('Incident resolved');
-        setSelectedManagedIncident(data);
-        setShowManagedResolveModal(false);
-        setManagedResolutionSummary('');
-        setManagedPostmortemUrl('');
-        setManagedPostmortemCompleted(false);
-        fetchManagedIncidents();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Failed to resolve incident');
-      }
-    } catch (error) {
-      console.error('Failed to resolve incident:', error);
-      toast.error('Failed to resolve incident');
-    }
-  };
+  // Feature #47: Old handlers (handleAddManagedIncidentNote, handleAssignManagedResponder, handleResolveManagedIncident)
+  // removed - now using handleAddNoteFromModal, handleAssignResponderFromModal, handleResolveFromModal
 
   // Open incident detail
   const openManagedIncidentDetail = async (incident: ManagedIncident) => {
@@ -2315,28 +2153,123 @@ function MonitoringPage() {
     }
   };
 
-  // Get status badge color
-  const getIncidentStatusColor = (status: ManagedIncident['status']) => {
-    switch (status) {
-      case 'triggered': return 'bg-red-100 text-red-800';
-      case 'acknowledged': return 'bg-yellow-100 text-yellow-800';
-      case 'investigating': return 'bg-blue-100 text-blue-800';
-      case 'identified': return 'bg-purple-100 text-purple-800';
-      case 'monitoring': return 'bg-cyan-100 text-cyan-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+  // Feature #47: Wrapper callbacks for extracted modals
+  const handleCreateManagedIncidentFromModal = async (data: {
+    title: string;
+    description?: string;
+    priority: ManagedIncident['priority'];
+    severity: ManagedIncident['severity'];
+    tags?: string[];
+    affected_services?: string[];
+  }) => {
+    if (!token) return;
+    setIsSubmittingManagedIncident(true);
+    try {
+      const response = await fetch('/api/v1/monitoring/incidents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ...data, source: 'manual' }),
+      });
+      if (response.ok) {
+        toast.success('Incident created');
+        setShowManagedIncidentModal(false);
+        fetchManagedIncidents();
+      } else {
+        const responseData = await response.json();
+        toast.error(responseData.error || 'Failed to create incident');
+      }
+    } catch (error) {
+      console.error('Failed to create incident:', error);
+      toast.error('Failed to create incident');
+    } finally {
+      setIsSubmittingManagedIncident(false);
     }
   };
 
-  // Get priority badge color
-  const getIncidentPriorityColor = (priority: ManagedIncident['priority']) => {
-    switch (priority) {
-      case 'P1': return 'bg-red-600 text-white';
-      case 'P2': return 'bg-orange-500 text-white';
-      case 'P3': return 'bg-yellow-500 text-white';
-      case 'P4': return 'bg-blue-500 text-white';
-      case 'P5': return 'bg-gray-500 text-white';
-      default: return 'bg-gray-500 text-white';
+  const handleAddNoteFromModal = async (incidentId: string, content: string, visibility: 'internal' | 'public') => {
+    if (!token) return;
+    try {
+      const response = await fetch(`/api/v1/monitoring/incidents/${incidentId}/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content, visibility }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast.success('Note added');
+        setSelectedManagedIncident(data.incident);
+        fetchManagedIncidents();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to add note');
+      }
+    } catch (error) {
+      console.error('Failed to add note:', error);
+      toast.error('Failed to add note');
+    }
+  };
+
+  const handleAssignResponderFromModal = async (incidentId: string, name: string, email: string, role: ManagedIncidentResponder['role']) => {
+    if (!token) return;
+    try {
+      const response = await fetch(`/api/v1/monitoring/incidents/${incidentId}/responders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ user_name: name, user_email: email, role }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast.success('Responder assigned');
+        setSelectedManagedIncident(data.incident);
+        setShowManagedAssignResponderModal(false);
+        fetchManagedIncidents();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to assign responder');
+      }
+    } catch (error) {
+      console.error('Failed to assign responder:', error);
+      toast.error('Failed to assign responder');
+    }
+  };
+
+  const handleResolveFromModal = async (incidentId: string, resolutionSummary: string, postmortemUrl?: string, postmortemCompleted?: boolean) => {
+    if (!token) return;
+    try {
+      const response = await fetch(`/api/v1/monitoring/incidents/${incidentId}/resolve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          resolution_summary: resolutionSummary,
+          postmortem_url: postmortemUrl,
+          postmortem_completed: postmortemCompleted,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast.success('Incident resolved');
+        setSelectedManagedIncident(data);
+        setShowManagedResolveModal(false);
+        fetchManagedIncidents();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to resolve incident');
+      }
+    } catch (error) {
+      console.error('Failed to resolve incident:', error);
+      toast.error('Failed to resolve incident');
     }
   };
 
@@ -3367,472 +3300,34 @@ function MonitoringPage() {
           />
         )}
 
-        {/* Create Managed Incident Modal */}
-        {showManagedIncidentModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-6 shadow-xl">
-              <h2 className="text-lg font-semibold text-foreground mb-4">
-                🔥 Declare Incident
-              </h2>
-              <form onSubmit={handleCreateManagedIncident} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Incident Title *</label>
-                  <input
-                    type="text"
-                    value={managedIncidentTitle}
-                    onChange={e => setManagedIncidentTitle(e.target.value)}
-                    placeholder="API Server Outage - US East"
-                    required
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Description</label>
-                  <textarea
-                    value={managedIncidentDescription}
-                    onChange={e => setManagedIncidentDescription(e.target.value)}
-                    placeholder="Describe the incident..."
-                    rows={3}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">Priority</label>
-                    <select
-                      value={managedIncidentPriority}
-                      onChange={e => setManagedIncidentPriority(e.target.value as ManagedIncident['priority'])}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                    >
-                      <option value="P1">P1 - Critical</option>
-                      <option value="P2">P2 - High</option>
-                      <option value="P3">P3 - Medium</option>
-                      <option value="P4">P4 - Low</option>
-                      <option value="P5">P5 - Minimal</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">Severity</label>
-                    <select
-                      value={managedIncidentSeverity}
-                      onChange={e => setManagedIncidentSeverity(e.target.value as ManagedIncident['severity'])}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                    >
-                      <option value="critical">Critical</option>
-                      <option value="high">High</option>
-                      <option value="medium">Medium</option>
-                      <option value="low">Low</option>
-                      <option value="info">Info</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Tags (comma-separated)</label>
-                  <input
-                    type="text"
-                    value={managedIncidentTags}
-                    onChange={e => setManagedIncidentTags(e.target.value)}
-                    placeholder="database, api, production"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Affected Services (comma-separated)</label>
-                  <input
-                    type="text"
-                    value={managedIncidentAffectedServices}
-                    onChange={e => setManagedIncidentAffectedServices(e.target.value)}
-                    placeholder="user-service, auth-service, api-gateway"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowManagedIncidentModal(false);
-                      resetManagedIncidentForm();
-                    }}
-                    className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmittingManagedIncident || !managedIncidentTitle.trim()}
-                    className="flex-1 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                  >
-                    {isSubmittingManagedIncident ? 'Creating...' : 'Declare Incident'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Managed Incident Detail Modal */}
-        {showManagedIncidentDetailModal && selectedManagedIncident && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-6 shadow-xl">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-2 py-0.5 text-xs font-bold rounded ${getIncidentPriorityColor(selectedManagedIncident.priority)}`}>
-                      {selectedManagedIncident.priority}
-                    </span>
-                    <span className={`px-2 py-0.5 text-xs rounded ${getIncidentStatusColor(selectedManagedIncident.status)}`}>
-                      {selectedManagedIncident.status}
-                    </span>
-                  </div>
-                  <h2 className="text-xl font-semibold text-foreground">{selectedManagedIncident.title}</h2>
-                  {selectedManagedIncident.description && (
-                    <p className="text-muted-foreground mt-1">{selectedManagedIncident.description}</p>
-                  )}
-                </div>
-                <button
-                  onClick={() => setShowManagedIncidentDetailModal(false)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Status Actions */}
-              {selectedManagedIncident.status !== 'resolved' && (
-                <div className="flex flex-wrap gap-2 mb-6 p-4 rounded-lg bg-muted/50">
-                  <span className="text-sm text-muted-foreground mr-2">Update Status:</span>
-                  {['acknowledged', 'investigating', 'identified', 'monitoring'].map(status => (
-                    <button
-                      key={status}
-                      onClick={() => handleUpdateManagedIncidentStatus(selectedManagedIncident.id, status as ManagedIncident['status'])}
-                      disabled={selectedManagedIncident.status === status}
-                      className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                        selectedManagedIncident.status === status
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-background border border-input hover:bg-muted'
-                      }`}
-                    >
-                      {status}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => setShowManagedResolveModal(true)}
-                    className="px-3 py-1 text-xs rounded-full bg-green-600 text-white hover:bg-green-700"
-                  >
-                    Resolve
-                  </button>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left column - Info & Responders */}
-                <div className="space-y-6">
-                  {/* Info */}
-                  <div className="p-4 rounded-lg border border-border">
-                    <h3 className="font-medium text-foreground mb-3">Incident Details</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Severity:</span>
-                        <span className="text-foreground">{selectedManagedIncident.severity}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Source:</span>
-                        <span className="text-foreground">{selectedManagedIncident.source}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Created:</span>
-                        <span className="text-foreground">{new Date(selectedManagedIncident.created_at).toLocaleString()}</span>
-                      </div>
-                      {selectedManagedIncident.acknowledged_at && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Acknowledged:</span>
-                          <span className="text-foreground">{new Date(selectedManagedIncident.acknowledged_at).toLocaleString()}</span>
-                        </div>
-                      )}
-                      {selectedManagedIncident.resolved_at && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Resolved:</span>
-                          <span className="text-foreground">{new Date(selectedManagedIncident.resolved_at).toLocaleString()}</span>
-                        </div>
-                      )}
-                      {selectedManagedIncident.time_to_acknowledge_seconds && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Time to Acknowledge:</span>
-                          <span className="text-foreground">{Math.round(selectedManagedIncident.time_to_acknowledge_seconds / 60)} min</span>
-                        </div>
-                      )}
-                      {selectedManagedIncident.time_to_resolve_seconds && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Time to Resolve:</span>
-                          <span className="text-foreground">{Math.round(selectedManagedIncident.time_to_resolve_seconds / 60)} min</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Responders */}
-                  <div className="p-4 rounded-lg border border-border">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-medium text-foreground">Responders</h3>
-                      {selectedManagedIncident.status !== 'resolved' && (
-                        <button
-                          onClick={() => setShowManagedAssignResponderModal(true)}
-                          className="text-xs text-primary hover:underline"
-                        >
-                          + Assign
-                        </button>
-                      )}
-                    </div>
-                    {selectedManagedIncident.responders.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No responders assigned yet</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {selectedManagedIncident.responders.map(responder => (
-                          <div key={responder.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                            <div>
-                              <span className="text-sm font-medium text-foreground">{responder.user_name}</span>
-                              <span className="text-xs text-muted-foreground ml-2">({responder.role})</span>
-                            </div>
-                            <span className="text-xs text-muted-foreground">{responder.user_email}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Resolution (if resolved) */}
-                  {selectedManagedIncident.status === 'resolved' && selectedManagedIncident.resolution_summary && (
-                    <div className="p-4 rounded-lg border border-green-300 bg-green-50">
-                      <h3 className="font-medium text-green-800 mb-2">Resolution</h3>
-                      <p className="text-sm text-green-700">{selectedManagedIncident.resolution_summary}</p>
-                      {selectedManagedIncident.postmortem_url && (
-                        <a
-                          href={selectedManagedIncident.postmortem_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block mt-2 text-sm text-green-600 hover:underline"
-                        >
-                          📄 View Postmortem
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Right column - Notes & Timeline */}
-                <div className="space-y-6">
-                  {/* Add Note */}
-                  {selectedManagedIncident.status !== 'resolved' && (
-                    <div className="p-4 rounded-lg border border-border">
-                      <h3 className="font-medium text-foreground mb-3">Add Note</h3>
-                      <textarea
-                        value={managedIncidentNoteContent}
-                        onChange={e => setManagedIncidentNoteContent(e.target.value)}
-                        placeholder="Add investigation notes, updates, or findings..."
-                        rows={3}
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground text-sm"
-                      />
-                      <div className="flex items-center justify-between mt-2">
-                        <select
-                          value={managedIncidentNoteVisibility}
-                          onChange={e => setManagedIncidentNoteVisibility(e.target.value as 'internal' | 'public')}
-                          className="text-xs rounded border border-input bg-background px-2 py-1"
-                        >
-                          <option value="internal">Internal only</option>
-                          <option value="public">Public (visible on status page)</option>
-                        </select>
-                        <button
-                          onClick={() => handleAddManagedIncidentNote(selectedManagedIncident.id)}
-                          disabled={!managedIncidentNoteContent.trim()}
-                          className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                        >
-                          Add Note
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Notes */}
-                  {selectedManagedIncident.notes.length > 0 && (
-                    <div className="p-4 rounded-lg border border-border">
-                      <h3 className="font-medium text-foreground mb-3">Notes ({selectedManagedIncident.notes.length})</h3>
-                      <div className="space-y-3 max-h-64 overflow-y-auto">
-                        {selectedManagedIncident.notes.map(note => (
-                          <div key={note.id} className="p-3 rounded bg-muted/50">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-medium text-foreground">{note.author_name}</span>
-                              <div className="flex items-center gap-2">
-                                <span className={`text-xs px-1.5 py-0.5 rounded ${note.visibility === 'public' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                                  {note.visibility}
-                                </span>
-                                <span className="text-xs text-muted-foreground">{new Date(note.created_at).toLocaleString()}</span>
-                              </div>
-                            </div>
-                            <p className="text-sm text-foreground whitespace-pre-wrap">{note.content}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Timeline */}
-                  <div className="p-4 rounded-lg border border-border">
-                    <h3 className="font-medium text-foreground mb-3">Timeline ({selectedManagedIncident.timeline.length})</h3>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {selectedManagedIncident.timeline.map(event => (
-                        <div key={event.id} className="flex gap-3 text-sm">
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {new Date(event.created_at).toLocaleTimeString()}
-                          </span>
-                          <span className="text-foreground">{event.description}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end mt-6">
-                <button
-                  onClick={() => setShowManagedIncidentDetailModal(false)}
-                  className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Assign Responder Modal */}
-        {showManagedAssignResponderModal && selectedManagedIncident && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Assign Responder</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Name *</label>
-                  <input
-                    type="text"
-                    value={managedResponderName}
-                    onChange={e => setManagedResponderName(e.target.value)}
-                    placeholder="John Doe"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Email *</label>
-                  <input
-                    type="email"
-                    value={managedResponderEmail}
-                    onChange={e => setManagedResponderEmail(e.target.value)}
-                    placeholder="john@example.com"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Role</label>
-                  <select
-                    value={managedResponderRole}
-                    onChange={e => setManagedResponderRole(e.target.value as ManagedIncidentResponder['role'])}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  >
-                    <option value="primary">Primary</option>
-                    <option value="secondary">Secondary</option>
-                    <option value="observer">Observer</option>
-                  </select>
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={() => {
-                      setShowManagedAssignResponderModal(false);
-                      setManagedResponderName('');
-                      setManagedResponderEmail('');
-                    }}
-                    className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => handleAssignManagedResponder(selectedManagedIncident.id)}
-                    disabled={!managedResponderName.trim() || !managedResponderEmail.trim()}
-                    className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    Assign
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Resolve Incident Modal */}
-        {showManagedResolveModal && selectedManagedIncident && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Resolve Incident</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Resolution Summary *</label>
-                  <textarea
-                    value={managedResolutionSummary}
-                    onChange={e => setManagedResolutionSummary(e.target.value)}
-                    placeholder="Describe how the incident was resolved..."
-                    rows={4}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Postmortem URL</label>
-                  <input
-                    type="url"
-                    value={managedPostmortemUrl}
-                    onChange={e => setManagedPostmortemUrl(e.target.value)}
-                    placeholder="https://docs.company.com/postmortems/inc-123"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="postmortemCompleted"
-                    checked={managedPostmortemCompleted}
-                    onChange={e => setManagedPostmortemCompleted(e.target.checked)}
-                    className="h-4 w-4 rounded border-input"
-                  />
-                  <label htmlFor="postmortemCompleted" className="text-sm text-foreground">
-                    Postmortem has been completed
-                  </label>
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={() => {
-                      setShowManagedResolveModal(false);
-                      setManagedResolutionSummary('');
-                      setManagedPostmortemUrl('');
-                      setManagedPostmortemCompleted(false);
-                    }}
-                    className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => handleResolveManagedIncident(selectedManagedIncident.id)}
-                    disabled={!managedResolutionSummary.trim()}
-                    className="flex-1 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-                  >
-                    Resolve Incident
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Feature #47: Extracted Managed Incident Modals */}
+        <CreateManagedIncidentModal
+          isOpen={showManagedIncidentModal}
+          onClose={() => setShowManagedIncidentModal(false)}
+          onSubmit={handleCreateManagedIncidentFromModal}
+          isSubmitting={isSubmittingManagedIncident}
+        />
+        <ManagedIncidentDetailModal
+          isOpen={showManagedIncidentDetailModal}
+          incident={selectedManagedIncident}
+          onClose={() => setShowManagedIncidentDetailModal(false)}
+          onUpdateStatus={handleUpdateManagedIncidentStatus}
+          onAddNote={handleAddNoteFromModal}
+          onOpenResolveModal={() => setShowManagedResolveModal(true)}
+          onOpenAssignResponderModal={() => setShowManagedAssignResponderModal(true)}
+        />
+        <AssignResponderModal
+          isOpen={showManagedAssignResponderModal}
+          incidentId={selectedManagedIncident?.id || null}
+          onClose={() => setShowManagedAssignResponderModal(false)}
+          onAssign={handleAssignResponderFromModal}
+        />
+        <ResolveIncidentModal
+          isOpen={showManagedResolveModal}
+          incidentId={selectedManagedIncident?.id || null}
+          onClose={() => setShowManagedResolveModal(false)}
+          onResolve={handleResolveFromModal}
+        />
 
         {/* Create/Edit Alert Grouping Rule Modal */}
         {showAlertGroupingModal && (

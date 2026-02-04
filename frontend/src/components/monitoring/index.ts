@@ -27,6 +27,14 @@ export { WebhookModal, type WebhookModalProps } from './modals';
 // Settings Modals
 export { AlertRoutingModal, type AlertRoutingModalProps } from './modals';
 export { EscalationPolicyModal, type EscalationPolicyModalProps } from './modals';
+export {
+  CreateManagedIncidentModal,
+  ManagedIncidentDetailModal,
+  AssignResponderModal,
+  ResolveIncidentModal,
+  getIncidentStatusColor,
+  getIncidentPriorityColor,
+} from './modals';
 
 // Hooks
 export { useMonitoringSettings, type UseMonitoringSettingsReturn } from './hooks';
