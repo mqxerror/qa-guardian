@@ -11,7 +11,7 @@ export * from './utils';
 
 // Hooks
 export { useSuiteState } from './useSuiteState';
-export type { SuiteState, RecordingStep, ParallelizationPlan, ParallelizationWorker, ReviewStats, StepTemplate, LiveScreenshot, ScreenshotHistoryItem } from './useSuiteState';
+export type { SuiteState, RecordingStep, ParallelizationPlan, ParallelizationWorker, ReviewStats, StepTemplate } from './useSuiteState';
 export { useModalState } from './useModalState';
 export type { ModalState, ScreenshotElement, ScreenshotTestStep, ScreenshotAnalysis, GeneratedTestPreview, GeneratedTestSuiteTest, GeneratedTestSuite, ConvertedGherkinTest, ParsedOpenApiEndpoint, GeneratedApiTest } from './useModalState';
 
@@ -43,3 +43,7 @@ export { SuiteHeaderActions } from './SuiteHeaderActions';
 
 // Review Panels
 export { HumanReviewPanel } from './HumanReviewPanel';
+
+// Results Display
+export { SuiteRunResults } from './SuiteRunResults';
+export type { LiveScreenshot, ScreenshotHistoryItem } from './SuiteRunResults';
