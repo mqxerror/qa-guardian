@@ -95,6 +95,8 @@ import {
   useTestCrudHandlers,
   useRunHandlers,
   useBaselineDataFetching,
+  useTestPageUtilities,
+  // Note: FlakinessTrend is also imported as a component above
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
@@ -410,54 +412,11 @@ function TestDetailPage() {
     setShowAddStepModal,
   });
 
-  // Inline step handlers removed - now using useStepHandlers hook (Feature #48)
-  // Handlers: handleStepDragStart, handleStepDragEnd, handleStepDragOver, handleStepDrop,
-  //           handleSaveStepOrder, handleSaveCode, handleRevertToSteps, handleStartEditCode,
-  //           handleCancelEditCode, handleExplainTest
-
-  // Download all artifacts for a test run (with authentication)
-  const handleDownloadAllArtifacts = async (runId: string) => {
-    if (isDownloadingArtifacts) return;
-    setIsDownloadingArtifacts(true);
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || 'https://qa.pixelcraftedmedia.com'}/api/v1/runs/${runId}/artifacts/download`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Download failed' }));
-        throw new Error(errorData.message || 'Failed to download artifacts');
-      }
-
-      // Get the filename from Content-Disposition header or use default
-      const contentDisposition = response.headers.get('Content-Disposition');
-      const filenameMatch = contentDisposition?.match(/filename="?([^"]+)"?/);
-      const filename = filenameMatch ? filenameMatch[1] : `run-${runId}-artifacts.zip`;
-
-      // Create blob and download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast.success('Artifacts downloaded successfully!');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to download artifacts';
-      toast.error(message);
-    } finally {
-      setIsDownloadingArtifacts(false);
-    }
-  };
+  // Feature #48: Inline handlers removed - now using custom hooks
+  // handleStepDragStart, handleStepDragEnd, handleStepDragOver, handleStepDrop,
+  // handleSaveStepOrder, handleSaveCode, handleRevertToSteps, handleStartEditCode,
+  // handleCancelEditCode, handleExplainTest (useStepHandlers)
+  // handleDownloadAllArtifacts (useTestPageUtilities)
 
   // Reset zoom and pan when lightbox image changes
   useEffect(() => {
@@ -696,37 +655,7 @@ function TestDetailPage() {
     });
   };
 
-  // Compare two K6 runs (Feature #564)
-  const handleCompareRuns = async () => {
-    if (selectedRunsForCompare.length !== 2) return;
-
-    setIsComparing(true);
-    setCompareResults(null);
-
-    try {
-      const [baseRunId, compareRunId] = selectedRunsForCompare;
-      const response = await fetch(
-        `/api/v1/runs/compare?baseRunId=${baseRunId}&compareRunId=${compareRunId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to compare runs');
-      }
-
-      const data = await response.json();
-      // API returns { comparison: { ... } }, so we extract the comparison object
-      setCompareResults(data.comparison || data);
-      setShowCompareModal(true);
-    } catch (error) {
-      console.error('Error comparing runs:', error);
-      alert('Failed to compare runs. Make sure both runs have K6 load test results.');
-    } finally {
-      setIsComparing(false);
-    }
-  };
+  // Feature #48: handleCompareRuns moved to useTestPageUtilities hook
 
   const [newStepAction, setNewStepAction] = useState('navigate');
   const [newStepSelector, setNewStepSelector] = useState('');
@@ -908,6 +837,30 @@ function TestDetailPage() {
     fetchRuns,
   });
 
+  // Feature #48: Use extracted utility handlers hook
+  const {
+    handleDownloadAllArtifacts,
+    handleCompareRuns,
+    fetchFlakinessTrend,
+    handleCreateQuickSchedule,
+  } = useTestPageUtilities({
+    testId,
+    token,
+    test,
+    suite,
+    selectedRunsForCompare,
+    setIsDownloadingArtifacts,
+    setIsComparing,
+    setCompareResults,
+    setShowCompareModal,
+    setIsLoadingFlakinessTrend,
+    setFlakinessTrend,
+    setIsCreatingSchedule,
+    setQuickScheduleError,
+    setShowQuickScheduleModal,
+    addNotification,
+  });
+
   const handleOpenEditModal = () => {
     if (test) {
       setEditName(test.name);
@@ -933,65 +886,7 @@ function TestDetailPage() {
     await handleEditFromHook(editName, editDescription);
   };
 
-  // Handle creating a quick schedule for this test
-  // Feature #48: Updated to accept data from QuickScheduleModal component
-  const handleCreateQuickScheduleFromModal = async (data: {
-    name: string;
-    type: 'recurring' | 'one-time';
-    cron: string;
-    runAt: string;
-    timezone: string;
-  }) => {
-    if (!test || !suite) return;
-
-    setIsCreatingSchedule(true);
-    setQuickScheduleError('');
-
-    try {
-      const scheduleData: Record<string, unknown> = {
-        name: data.name || `${test.name} Schedule`,
-        description: `Automated schedule for test: ${test.name}`,
-        test_suite_id: suite.id,
-        tests: [test.id],
-        browsers: [suite.default_browser || 'chromium'],
-        enabled: true,
-        timezone: data.timezone,
-        notify_on_failure: true,
-      };
-
-      if (data.type === 'one-time') {
-        scheduleData.run_at = data.runAt;
-      } else {
-        scheduleData.cron_expression = data.cron;
-      }
-
-      const response = await fetch('/api/v1/schedules', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(scheduleData),
-      });
-
-      if (!response.ok) {
-        const responseData = await response.json();
-        throw new Error(responseData.message || 'Failed to create schedule');
-      }
-
-      // Success - close modal and show notification
-      setShowQuickScheduleModal(false);
-      addNotification({
-        type: 'success',
-        title: 'Schedule Created',
-        message: `Schedule "${data.name || test.name + ' Schedule'}" created successfully`,
-      });
-    } catch (err) {
-      setQuickScheduleError(err instanceof Error ? err.message : 'Failed to create schedule');
-    } finally {
-      setIsCreatingSchedule(false);
-    }
-  };
+  // Feature #48: handleCreateQuickSchedule moved to useTestPageUtilities hook
 
   // Feature #48: Inline baseline handlers removed - now using useBaselineHandlers hook
   // Handlers: handleApproveBaseline, handleRestoreBaseline, handleRejectChanges, handleMergeBaseline
@@ -1022,33 +917,14 @@ function TestDetailPage() {
 
   // Feature #48: handleCancelRun removed - now using useRunHandlers hook
 
-  // Feature #48: pollRunStatus and duplicate fetchRuns removed - now in useRunHandlers hook
-
-  // Feature #1101: Fetch flakiness trend data
-  const fetchFlakinessTrend = async () => {
-    if (!testId || !token) return;
-    setIsLoadingFlakinessTrend(true);
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}/flakiness-trend`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setFlakinessTrend(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch flakiness trend:', error);
-    } finally {
-      setIsLoadingFlakinessTrend(false);
-    }
-  };
+  // Feature #48: pollRunStatus, duplicate fetchRuns, fetchFlakinessTrend removed - now in hooks
 
   // Feature #1101: Fetch flakiness trend when test ID changes
   useEffect(() => {
     if (testId && token) {
       fetchFlakinessTrend();
     }
-  }, [testId, token]);
+  }, [testId, token, fetchFlakinessTrend]);
 
   // Feature #48: handleAddStep moved to useStepHandlers hook
   // The hook now handles step creation, the component just needs to pass step data
@@ -1297,7 +1173,7 @@ function TestDetailPage() {
           isCreating={isCreatingSchedule}
           error={quickScheduleError}
           onClose={() => setShowQuickScheduleModal(false)}
-          onSubmit={handleCreateQuickScheduleFromModal}
+          onSubmit={handleCreateQuickSchedule}
         />
 
         {/* Approve Baseline Confirmation Modal - Feature #48: Using extracted component */}

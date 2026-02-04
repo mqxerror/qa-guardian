@@ -92,3 +92,9 @@ export {
   type BaselineDataResult,
   // Note: MergeableBranch already exported from useTestDetailState
 } from './useBaselineDataFetching';
+export {
+  useTestPageUtilities,
+  type UseTestPageUtilitiesProps,
+  type TestPageUtilities,
+  type FlakinessTrend,
+} from './useTestPageUtilities';
