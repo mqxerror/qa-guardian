@@ -110,21 +110,26 @@ function extractLinks(html: string, baseUrl: string): LinkInfo[] {
       // Skip invalid links
       if (!href || href.startsWith('#') || href.startsWith('javascript:')) return null;
 
-      // Priority 1: aria-label on the link itself
-      const ariaLabel = attrs.match(/aria-label=["']([^"']+)["']/i)?.[1];
+      // Priority 1: aria-label on the link itself (decode HTML entities)
+      const ariaLabelRaw = attrs.match(/aria-label=["']([^"']+)["']/i)?.[1];
+      const ariaLabel = ariaLabelRaw ? decodeHtmlEntities(ariaLabelRaw) : undefined;
 
-      // Priority 2: title attribute on the link
-      const titleAttr = attrs.match(/title=["']([^"']+)["']/i)?.[1];
+      // Priority 2: title attribute on the link (decode HTML entities)
+      const titleAttrRaw = attrs.match(/title=["']([^"']+)["']/i)?.[1];
+      const titleAttr = titleAttrRaw ? decodeHtmlEntities(titleAttrRaw) : undefined;
 
       // Priority 3: Extract text recursively from content
       const nestedText = extractNestedText(content);
 
-      // Priority 4: Extract alt/title from nested images
-      const imgAlt = content.match(/<img[^>]*alt=["']([^"']+)["']/i)?.[1];
-      const imgTitle = content.match(/<img[^>]*title=["']([^"']+)["']/i)?.[1];
+      // Priority 4: Extract alt/title from nested images (decode HTML entities)
+      const imgAltRaw = content.match(/<img[^>]*alt=["']([^"']+)["']/i)?.[1];
+      const imgAlt = imgAltRaw ? decodeHtmlEntities(imgAltRaw) : undefined;
+      const imgTitleRaw = content.match(/<img[^>]*title=["']([^"']+)["']/i)?.[1];
+      const imgTitle = imgTitleRaw ? decodeHtmlEntities(imgTitleRaw) : undefined;
 
-      // Priority 5: aria-label from nested elements
-      const nestedAriaLabel = content.match(/aria-label=["']([^"']+)["']/i)?.[1];
+      // Priority 5: aria-label from nested elements (decode HTML entities)
+      const nestedAriaLabelRaw = content.match(/aria-label=["']([^"']+)["']/i)?.[1];
+      const nestedAriaLabel = nestedAriaLabelRaw ? decodeHtmlEntities(nestedAriaLabelRaw) : undefined;
 
       // Choose the best text, prioritizing explicit labels
       const text = (ariaLabel || titleAttr || nestedText || imgAlt || imgTitle || nestedAriaLabel || '').trim();
@@ -139,6 +144,19 @@ function extractLinks(html: string, baseUrl: string): LinkInfo[] {
     .slice(0, 50);
 }
 
+/** Decode HTML entities in a string */
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, code) => String.fromCharCode(parseInt(code, 16)));
+}
+
 /** Recursively extract visible text from HTML content, handling nested spans, divs, etc. */
 function extractNestedText(html: string): string {
   // Remove script and style tags completely
@@ -151,18 +169,8 @@ function extractNestedText(html: string): string {
   // Remove HTML tags but keep text content
   cleaned = cleaned.replace(/<[^>]+>/g, ' ');
 
-  // Decode common HTML entities
-  cleaned = cleaned
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, code) => String.fromCharCode(parseInt(code, 16)));
-
-  // Normalize whitespace
-  return cleaned.replace(/\s+/g, ' ').trim();
+  // Decode HTML entities and normalize whitespace
+  return decodeHtmlEntities(cleaned).replace(/\s+/g, ' ').trim();
 }
 
 function extractButtons(html: string): ButtonInfo[] {
@@ -181,25 +189,87 @@ function extractInputs(html: string): InputInfo[] {
 }
 
 function extractNavigation(html: string): NavigationInfo {
+  // Enhanced patterns for detecting navigation regions
+  const hasHeader = /<header|<nav|role=["']?banner|role=["']?navigation/i.test(html);
+  const hasFooter = /<footer|role=["']?contentinfo/i.test(html);
+  const hasSidebar = /<aside|sidebar|role=["']?complementary/i.test(html);
+
+  // Helper to extract links from HTML content
+  const extractLinksFromContent = (content: string): string[] => {
+    return [...content.matchAll(/<a\s+([^>]*)>([\s\S]*?)<\/a>/gi)].map(a => {
+      const attrs = a[1] || '';
+      const linkContent = a[2] || '';
+      const ariaLabelRaw = attrs.match(/aria-label=["']([^"']+)["']/i)?.[1];
+      const ariaLabel = ariaLabelRaw ? decodeHtmlEntities(ariaLabelRaw) : undefined;
+      const titleAttrRaw = attrs.match(/title=["']([^"']+)["']/i)?.[1];
+      const titleAttr = titleAttrRaw ? decodeHtmlEntities(titleAttrRaw) : undefined;
+      const nestedText = extractNestedText(linkContent);
+      return (ariaLabel || titleAttr || nestedText || '').trim();
+    });
+  };
+
+  // Collect menu items from multiple navigation sources
+  const allMenuItems: string[] = [];
+
+  // 1. Standard <nav> elements
+  const navMatches = [...html.matchAll(/<nav[^>]*>([\s\S]*?)<\/nav>/gi)];
+  for (const m of navMatches) {
+    allMenuItems.push(...extractLinksFromContent(m[1] || ''));
+  }
+
+  // 2. Elements with role="navigation"
+  const roleNavMatches = [...html.matchAll(/<(?:div|ul|section|aside)[^>]*role=["']navigation["'][^>]*>([\s\S]*?)<\/(?:div|ul|section|aside)>/gi)];
+  for (const m of roleNavMatches) {
+    allMenuItems.push(...extractLinksFromContent(m[1] || ''));
+  }
+
+  // 3. Header menus (extract links from header)
+  const headerMatches = [...html.matchAll(/<header[^>]*>([\s\S]*?)<\/header>/gi)];
+  for (const m of headerMatches) {
+    allMenuItems.push(...extractLinksFromContent(m[1] || ''));
+  }
+
+  // 4. Common CSS class patterns for navigation
+  const navClassPatterns = [
+    /class=["'][^"']*(?:navbar|nav-menu|main-nav|site-nav|header-nav|primary-nav|global-nav)[^"']*["']/i,
+    /class=["'][^"']*(?:navigation|menu-container|menu-wrapper|top-nav|main-menu)[^"']*["']/i,
+  ];
+  for (const pattern of navClassPatterns) {
+    const classRegex = new RegExp(`<(?:div|ul|nav)[^>]*${pattern.source}[^>]*>([\\s\\S]*?)<\\/(?:div|ul|nav)>`, 'gi');
+    const matches = [...html.matchAll(classRegex)];
+    for (const m of matches) {
+      allMenuItems.push(...extractLinksFromContent(m[1] || ''));
+    }
+  }
+
+  // 5. ul.menu and ul.nav patterns (common in WordPress, Drupal, Bootstrap)
+  const ulMenuMatches = [...html.matchAll(/<ul[^>]*class=["'][^"']*(?:\bmenu\b|\bnav\b|\bnavbar-nav\b)[^"']*["'][^>]*>([\s\S]*?)<\/ul>/gi)];
+  for (const m of ulMenuMatches) {
+    allMenuItems.push(...extractLinksFromContent(m[1] || ''));
+  }
+
+  // 6. Aside/sidebar navigation
+  const asideMatches = [...html.matchAll(/<aside[^>]*>([\s\S]*?)<\/aside>/gi)];
+  for (const m of asideMatches) {
+    allMenuItems.push(...extractLinksFromContent(m[1] || ''));
+  }
+
+  // 7. Footer navigation
+  const footerMatches = [...html.matchAll(/<footer[^>]*>([\s\S]*?)<\/footer>/gi)];
+  for (const m of footerMatches) {
+    allMenuItems.push(...extractLinksFromContent(m[1] || ''));
+  }
+
+  // Deduplicate and filter
+  const uniqueMenuItems = [...new Set(allMenuItems)]
+    .filter(item => item && item.length > 0 && item.length < 100)
+    .slice(0, 30);
+
   return {
-    hasHeader: /<header|<nav|role=["']?banner/i.test(html),
-    hasFooter: /<footer|role=["']?contentinfo/i.test(html),
-    hasSidebar: /<aside|sidebar/i.test(html),
-    menuItems: [...html.matchAll(/<nav[^>]*>([\s\S]*?)<\/nav>/gi)]
-      .flatMap(m => {
-        const navContent = m[1] || '';
-        // Extract full link content including nested elements
-        return [...navContent.matchAll(/<a\s+([^>]*)>([\s\S]*?)<\/a>/gi)].map(a => {
-          const attrs = a[1] || '';
-          const content = a[2] || '';
-          // Check aria-label first, then title, then nested text
-          const ariaLabel = attrs.match(/aria-label=["']([^"']+)["']/i)?.[1];
-          const titleAttr = attrs.match(/title=["']([^"']+)["']/i)?.[1];
-          const nestedText = extractNestedText(content);
-          return (ariaLabel || titleAttr || nestedText || '').trim();
-        });
-      })
-      .filter(Boolean).slice(0, 20),
+    hasHeader,
+    hasFooter,
+    hasSidebar,
+    menuItems: uniqueMenuItems,
   };
 }
 

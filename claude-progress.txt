@@ -30347,3 +30347,36 @@ Progress: 31/31 (100%). Regression verified via browser: Login works with admin@
 Progress: 34/34 (100%). ALL FEATURES PASSING.
 Features completed: #32 (recording auto-cleanup), #33 (Socket.IO reconnect), #34 (click coordinate accuracy).
 Zero console errors. App stable. No pending features.
+
+=== Session 2026-02-03 (Session 17) - Site Analysis Feature ===
+Progress: 39/44 (88.6%)
+
+### Feature Completed This Session
+
+**#39: Extract nested link text from menus — PASSED**
+- Updated extractLinks() in backend/src/services/crawl4ai.ts to handle modern menu structures
+- Added extractNestedText() helper function that recursively extracts text from nested HTML
+- Priority order for link text: aria-label > title > nestedText > imgAlt > imgTitle > nestedAriaLabel
+- Removes script, style, SVG tags before extracting text
+- Decodes HTML entities (&nbsp;, &amp;, numeric codes)
+- Updated extractNavigation() to use same logic for menuItems extraction
+- Unit tests: 10/10 passed (simple links, nested spans, aria-label, img alt, React/Shopify structures)
+- API tests: Shopify.com and React.dev both return meaningful menu items from complex nested HTML
+
+### Technical Changes
+- backend/src/services/crawl4ai.ts: extractLinks(), extractNestedText(), extractNavigation() functions updated
+- TypeScript compilation: zero errors
+
+### Regression Status
+- Login: Working with admin@example.com / Admin123\!
+- Dashboard: Shows real stats (1 project, 3 suites, 10 tests, 15 runs, 33% pass rate)
+- Backend: Running on port 3001
+- Frontend: Running on port 5173
+
+### Commit
+- 53d677a: Feature #39: Extract nested link text from menus
+
+### Remaining Features
+- 5 features remaining (44 total - 39 passing)
+
+
