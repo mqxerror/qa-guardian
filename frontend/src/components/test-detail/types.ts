@@ -321,6 +321,15 @@ export interface LighthouseResult {
   metrics?: LighthouseMetrics;
   opportunities?: LighthouseOpportunity[];
   diagnostics?: LighthouseDiagnostic[];
+  passedAudits?: LighthousePassedAudit[];
+}
+
+// Lighthouse passed audit
+export interface LighthousePassedAudit {
+  id: string;
+  title: string;
+  description?: string;
+  score?: number;
 }
 
 // Lighthouse metrics

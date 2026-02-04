@@ -12,317 +12,43 @@ import { useVisualReviewStore } from '../stores/visualReviewStore';
 import { getErrorMessage, isNetworkError, isOffline } from '../utils/errorHandling';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import jsPDF from 'jspdf';
+// Feature #48: Import modular types and utilities
+import {
+  TestSuite,
+  TestType,
+  TestRunType,
+  ConsoleLog,
+  NetworkRequest,
+  TestRunResult,
+  StepResult,
+  TestStatus,
+  RunStatus,
+  ResultStatus,
+  StepStatus,
+  TestCategory,
+  TestStatusBadge,
+  formatDuration,
+  formatDateTime,
+  formatRelativeTime,
+  getStatusColorClass,
+  getStatusBadgeClass,
+  getStatusIcon,
+  getStatusLabel,
+  getTestTypeLabel,
+  getTestTypeColorClass,
+  getTestTypeBadgeClass,
+  getTestTypeIcon,
+  formatPercentage,
+  formatBytes,
+  getLighthouseScoreColorClass,
+  getLighthouseScoreBadgeClass,
+  getImpactColorClass,
+  getImpactBadgeClass,
+  calculatePassRate,
+  truncateText,
+} from '../components/test-detail';
 
-// Types used by TestDetailPage
-interface TestSuite {
-  id: string;
-  name: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-  test_count?: number;
-  browser?: string;
-  default_browser?: 'chromium' | 'firefox' | 'webkit';
-  viewport_width?: number;
-  viewport_height?: number;
-  timeout?: number;
-  retry_count?: number;
-  project_id?: string;
-}
-
-interface TestType {
-  id: string;
-  suite_id: string;
-  name: string;
-  description?: string;
-  type: 'e2e' | 'visual_regression' | 'lighthouse' | 'load' | 'accessibility' | 'api';
-  test_type?: string;
-  // Feature #1979: Added 'warning' status for accessibility tests with violations below thresholds
-  status: 'pending' | 'running' | 'passed' | 'failed' | 'warning' | 'error' | 'active' | 'draft';
-  created_at: string;
-  updated_at: string;
-  last_run_at?: string;
-  target_url?: string;
-  viewport_width?: number;
-  viewport_height?: number;
-  capture_mode?: 'full_page' | 'viewport' | 'element';
-  element_selector?: string;
-  wait_for_selector?: string;
-  wait_time?: number;
-  hide_selectors?: string[];
-  remove_selectors?: string[];
-  diff_threshold?: number;
-  diff_threshold_mode?: 'percentage' | 'pixel_count';
-  diff_pixel_threshold?: number;
-  anti_aliasing_tolerance?: 'off' | 'low' | 'medium' | 'high';
-  color_threshold?: number;
-  ignore_regions?: Array<{id: string; x: number; y: number; width: number; height: number; name?: string}>;
-  ignore_selectors?: string[];
-  multi_viewport?: boolean;
-  selected_viewports?: string[];
-  steps?: any[];
-  device_preset?: 'mobile' | 'desktop';
-  performance_threshold?: number;
-  lcp_threshold?: number;
-  cls_threshold?: number;
-  bypass_csp?: boolean;
-  ignore_ssl_errors?: boolean;
-  audit_timeout?: number;
-  wcag_level?: 'A' | 'AA' | 'AAA';
-  include_best_practices?: boolean;
-  include_experimental?: boolean;
-  include_pa11y?: boolean;
-  a11y_fail_on_critical?: number;
-  a11y_fail_on_serious?: number;
-  a11y_fail_on_moderate?: number;
-  a11y_fail_on_minor?: number;
-  a11y_fail_on_any?: boolean;
-  virtual_users?: number;
-  duration?: number;
-  ramp_up_time?: number;
-  k6_script?: string;
-  ai_generated?: boolean;
-  ai_confidence_score?: number;
-  requires_review?: boolean;
-  review_status?: 'pending' | 'approved' | 'rejected' | 'pending_review';
-  reviewed_by?: string;
-  reviewed_at?: string;
-  healing_active?: boolean;
-  healing_status?: 'idle' | 'healing' | 'healed';
-  healing_count?: number;
-  // Playwright code properties
-  playwright_code?: string;
-  use_custom_code?: boolean;
-  // Viewport properties
-  viewports?: Array<{ name: string; width: number; height: number }>;
-  viewport_preset?: 'mobile' | 'tablet' | 'laptop' | 'desktop' | 'custom';
-}
-
-interface TestRunType {
-  id: string;
-  suite_id: string;
-  test_id?: string;
-  // Feature #1979: Added 'warning' status for accessibility tests with violations below thresholds
-  status: 'pending' | 'running' | 'passed' | 'failed' | 'warning' | 'error' | 'cancelled';
-  duration_ms?: number;
-  started_at?: string;
-  completed_at?: string;
-  created_at: string;
-  results?: TestRunResult[];
-  error?: string;
-}
-
-interface ConsoleLog {
-  timestamp: number;
-  level: 'log' | 'info' | 'warn' | 'error' | 'debug';
-  message: string;
-  location?: string;
-}
-
-interface NetworkRequest {
-  timestamp: number;
-  method: string;
-  url: string;
-  resourceType: string;
-  status?: number;
-  statusText?: string;
-  duration_ms?: number;
-  requestHeaders?: Record<string, string>;
-  responseHeaders?: Record<string, string>;
-  requestSize?: number;
-  responseSize?: number;
-  failed?: boolean;
-  failureText?: string;
-}
-
-interface TestRunResult {
-  test_id: string;
-  test_name: string;
-  // Feature #1979: Added 'warning' status for accessibility tests with violations below thresholds
-  status: 'passed' | 'failed' | 'warning' | 'error' | 'skipped';
-  duration_ms: number;
-  steps: StepResult[];
-  error?: string;
-  screenshot_base64?: string;
-  trace_file?: string;
-  video_file?: string;
-  console_logs?: ConsoleLog[];
-  network_requests?: NetworkRequest[];
-  // Feature #604: Storage quota exceeded
-  isQuotaExceeded?: boolean;
-  suggestions?: string[];
-  // Visual comparison results
-  visual_comparison?: {
-    hasBaseline: boolean;
-    baselineScreenshot?: string;
-    diffPercentage?: number;
-    diffImage?: string;
-    mismatchedPixels?: number;
-    totalPixels?: number;
-    baselineCorrupted?: boolean; // Feature #600
-    corruptionError?: string; // Feature #600
-  };
-  baseline_screenshot_base64?: string;
-  diff_image_base64?: string;
-  diff_percentage?: number;
-  // K6 Load test results (Feature #551)
-  load_test?: {
-    summary: {
-      total_requests: number;
-      failed_requests: number;
-      success_rate: string;
-      requests_per_second: string;
-      data_transferred: number;
-      data_transferred_formatted: string;
-    };
-    response_times: {
-      min: number;
-      avg: number;
-      median: number; // p50
-      p90: number;
-      p95: number;
-      p99: number;
-      max: number;
-    };
-    virtual_users: {
-      configured: number;
-      max_concurrent: number;
-    };
-    duration: {
-      configured: number;
-      actual: number;
-      ramp_up: number;
-    };
-    http_codes: Record<string, number>;
-    checks: Record<string, { passes: number; fails: number }>;
-  };
-}
-
-interface StepResult {
-  id: string;
-  action: string;
-  selector?: string;
-  value?: string;
-  // Feature #1979: Added 'warning' status for accessibility tests with violations below thresholds
-  status: 'passed' | 'failed' | 'warning' | 'skipped';
-  duration_ms: number;
-  error?: string;
-  screenshot_timeout?: boolean; // Feature #601
-  navigation_error?: boolean; // Feature #602
-  http_status?: number; // Feature #602
-  // Extended result data for different test types
-  metadata?: {
-    screenshot_url?: string;
-    diff_percentage?: number;
-    baseline_url?: string;
-    comparison_url?: string;
-    diff_url?: string;
-    isBrowserCrash?: boolean;
-    isOversized?: boolean;
-    crashDetectedAt?: string;
-    crashDumpFile?: string;
-    suggestion?: string;
-    canRetry?: boolean;
-    pageDimensions?: { width: number; height: number; estimatedSizeMb?: number; reason?: string };
-  };
-  load_test?: {
-    virtual_users: number | { configured: number; peak: number };
-    duration: number;
-    requests_per_second: number;
-    avg_response_time: number;
-    p95_response_time: number;
-    error_rate: number;
-    http_codes?: Record<string, number>;
-    response_times?: {
-      avg: number;
-      min: number;
-      max: number;
-      median: number;
-      p50?: number;
-      p90: number;
-      p95: number;
-      p99: number;
-    };
-    summary?: {
-      http_req_duration_avg: number;
-      http_req_duration_p95: number;
-      http_req_duration_p99: number;
-      http_reqs: number;
-      iterations: number;
-      vus_max: number;
-      success_rate?: number;
-      total_requests?: number;
-      requests_per_second?: number;
-      peak_rps?: number;
-      data_transferred_formatted?: string;
-    };
-  };
-  lighthouse?: {
-    performance: number;
-    accessibility: number;
-    best_practices: number;
-    bestPractices?: number;
-    seo: number;
-    pwa?: number;
-    lcp?: number;
-    cls?: number;
-    fcp?: number;
-    tbt?: number;
-    url?: string;
-    device?: string;
-    metrics?: {
-      lcp?: number;
-      fid?: number;
-      cls?: number;
-      fcp?: number;
-      tbt?: number;
-      si?: number;
-      tti?: number;
-      largestContentfulPaint?: number;
-      firstContentfulPaint?: number;
-      speedIndex?: number;
-      timeToInteractive?: number;
-      totalBlockingTime?: number;
-      cumulativeLayoutShift?: number;
-      interactionToNextPaint?: number;
-    };
-    opportunities?: Array<{
-      id: string;
-      title: string;
-      description?: string;
-      score?: number;
-      savings?: number;
-      numericValue?: number;
-      displayValue?: string;
-    }>;
-    diagnostics?: Array<{
-      id: string;
-      title: string;
-      description?: string;
-      score?: number;
-      numericValue?: number;
-      displayValue?: string;
-    }>;
-    passedAudits?: Array<{
-      id: string;
-      title: string;
-      description?: string;
-      score?: number;
-    }>;
-  };
-  accessibility?: {
-    violations: number;
-    passes: number;
-    incomplete: number;
-    inapplicable: number;
-    violationsBySeverity?: {
-      critical: number;
-      serious: number;
-      moderate: number;
-      minor: number;
-    };
-  };
-}
+// Removed inline type definitions - now imported from test-detail module (Feature #48)
 
 // Video Player Component - handles authenticated video loading
 function VideoPlayer({ videoFile, token }: { videoFile: string; token: string | null }) {
