@@ -1,11 +1,16 @@
 /**
  * useTestRunData - Custom hook for test run data fetching
  * Feature #46: Extract data fetching logic from TestRunResultPage for better modularity
+ * Feature #69: Added React Query caching for faster loading on second visit
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+// Feature #69: Import React Query hooks for caching
+import { useRun, useRunsBySuite } from './api/useRuns';
+import { useTest } from './api/useTests';
+import { useSuite } from './api/useSuites';
 import {
   TestRun,
   TestInfo,
@@ -45,12 +50,25 @@ export interface UseTestRunDataReturn {
 /**
  * Hook to manage test run data fetching and core state
  * Extracts data fetching logic from TestRunResultPage for cleaner separation of concerns
+ * Feature #69: Uses React Query for caching - data loads instantly on second visit
  */
 export function useTestRunData(): UseTestRunDataReturn {
   const { runId } = useParams<{ runId: string }>();
   const { token } = useAuthStore();
 
-  // Core state
+  // Feature #69: React Query hooks for caching
+  const { data: runData, isLoading: runLoading, error: runError, refetch: refetchRun } = useRun(runId);
+
+  // Derived IDs from run data for dependent queries
+  const testId = runData?.run?.test_id;
+  const suiteId = runData?.run?.suite_id;
+
+  // Feature #69: Dependent queries - auto-fetch when IDs are available
+  const { data: testData } = useTest(testId);
+  const { data: suiteData } = useSuite(suiteId);
+  const { data: suiteRunsData } = useRunsBySuite(suiteId);
+
+  // Core state derived from React Query
   const [run, setRun] = useState<TestRun | null>(null);
   const [testInfo, setTestInfo] = useState<TestInfo | null>(null);
   const [suiteInfo, setSuiteInfo] = useState<SuiteInfo | null>(null);
@@ -67,6 +85,37 @@ export function useTestRunData(): UseTestRunDataReturn {
   const [loadingCompareRun, setLoadingCompareRun] = useState(false);
   const [runHistory, setRunHistory] = useState<RunHistoryEntry[]>([]);
 
+  // Feature #69: Sync React Query data to local state
+  useEffect(() => {
+    if (runData?.run) {
+      setRun(runData.run);
+      setLoading(false);
+    }
+    if (runError) {
+      setError(runError instanceof Error ? runError.message : 'Failed to load run data');
+      setLoading(false);
+    }
+  }, [runData, runError]);
+
+  useEffect(() => {
+    if (testData?.test) {
+      setTestInfo(testData.test);
+    }
+  }, [testData]);
+
+  useEffect(() => {
+    if (suiteData?.suite) {
+      setSuiteInfo(suiteData.suite);
+    }
+  }, [suiteData]);
+
+  // Feature #69: Handle retry trigger by refetching
+  useEffect(() => {
+    if (retryTrigger > 0) {
+      refetchRun();
+    }
+  }, [retryTrigger, refetchRun]);
+
   // Get result summary - computed from run data
   const resultSummary = useMemo<ResultSummary>(() => {
     if (!run?.results) return { passed: 0, failed: 0, skipped: 0, total: 0 };
@@ -78,159 +127,49 @@ export function useTestRunData(): UseTestRunDataReturn {
     };
   }, [run]);
 
-  // Fetch run data
+  // Feature #69: Derive previous runs from cached suite runs data
   useEffect(() => {
-    const fetchRunData = async () => {
-      if (!runId || !token) return;
+    if (!suiteRunsData?.runs || !run) return;
 
-      // Only show loading spinner on initial load, not background refreshes
-      if (!run) {
-        setLoading(true);
-      }
-      setError(null);
+    const runs = (suiteRunsData.runs || [])
+      .filter((r: { id: string }) => r.id !== runId)
+      .slice(0, 10) // Limit to 10 runs
+      .map((r: { id: string; status: string; created_at: string; duration_ms?: number; results?: TestResult[] }) => ({
+        id: r.id,
+        status: r.status,
+        created_at: r.created_at,
+        duration_ms: r.duration_ms,
+        passed: r.results?.filter((res: TestResult) => res.status === 'passed').length || 0,
+        failed: r.results?.filter((res: TestResult) => res.status === 'failed' || res.status === 'error').length || 0,
+        total: r.results?.length || 0,
+      }));
+    setPreviousRuns(runs);
+    setRunHistory([
+      {
+        id: run.id,
+        status: run.status,
+        created_at: run.created_at,
+        duration_ms: run.duration_ms,
+        passed: resultSummary.passed,
+        failed: resultSummary.failed,
+        total: resultSummary.total,
+      },
+      ...runs,
+    ]);
+  }, [suiteRunsData, run, runId, resultSummary]);
 
-      try {
-        // Fetch run details
-        const runResponse = await fetch(`/api/v1/runs/${runId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  // Feature #69: Use React Query for comparison run (also cached)
+  const { data: compareRunData, isLoading: compareRunLoading } = useRun(selectedCompareRunId || undefined);
 
-        if (!runResponse.ok) {
-          // Feature #1929: Provide specific error messages based on HTTP status
-          if (runResponse.status === 404) {
-            throw new Error('Run not found. It may have been deleted or the ID is invalid.');
-          } else if (runResponse.status === 401 || runResponse.status === 403) {
-            throw new Error('You do not have permission to view this run.');
-          } else if (runResponse.status >= 500) {
-            throw new Error('Server error. Please try again later.');
-          } else {
-            throw new Error(`Failed to fetch run details (${runResponse.status})`);
-          }
-        }
-
-        const runData = await runResponse.json();
-        setRun(runData.run);
-
-        // If we have a test_id, fetch test info
-        if (runData.run.test_id) {
-          try {
-            const testResponse = await fetch(`/api/v1/tests/${runData.run.test_id}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (testResponse.ok) {
-              const testData = await testResponse.json();
-              // Feature #1970: Extract test from response object (API returns { test: {...} } or direct object)
-              setTestInfo(testData.test || testData);
-            }
-          } catch {
-            // Test info is optional
-          }
-        }
-
-        // If we have a suite_id, fetch suite info
-        if (runData.run.suite_id) {
-          try {
-            const suiteResponse = await fetch(`/api/v1/suites/${runData.run.suite_id}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (suiteResponse.ok) {
-              const suiteData = await suiteResponse.json();
-              // Feature #1970: Extract suite from response object (API returns { suite: {...} })
-              setSuiteInfo(suiteData.suite || suiteData);
-            }
-          } catch {
-            // Suite info is optional
-          }
-        }
-
-      } catch (err) {
-        // Feature #1929: Provide specific error messages for network errors
-        if (err instanceof TypeError && err.message.includes('fetch')) {
-          setError('Network error. Please check your internet connection and try again.');
-        } else {
-          setError(err instanceof Error ? err.message : 'Failed to load run data');
-        }
-        console.error('Error loading run data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRunData();
-  }, [runId, token, retryTrigger]); // Feature #1929: Added retryTrigger to dependency array
-
-  // Feature #1842: Fetch previous runs for comparison
+  // Sync comparison run data to local state
   useEffect(() => {
-    const fetchPreviousRuns = async () => {
-      if (!run?.suite_id || !token) return;
-
-      try {
-        const response = await fetch(`/api/v1/suites/${run.suite_id}/runs?limit=10`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const runs = (data.runs || [])
-            .filter((r: { id: string }) => r.id !== runId)
-            .map((r: { id: string; status: string; created_at: string; duration_ms?: number; results?: TestResult[] }) => ({
-              id: r.id,
-              status: r.status,
-              created_at: r.created_at,
-              duration_ms: r.duration_ms,
-              passed: r.results?.filter((res: TestResult) => res.status === 'passed').length || 0,
-              failed: r.results?.filter((res: TestResult) => res.status === 'failed' || res.status === 'error').length || 0,
-              total: r.results?.length || 0,
-            }));
-          setPreviousRuns(runs);
-          setRunHistory([
-            {
-              id: run.id,
-              status: run.status,
-              created_at: run.created_at,
-              duration_ms: run.duration_ms,
-              passed: resultSummary.passed,
-              failed: resultSummary.failed,
-              total: resultSummary.total,
-            },
-            ...runs,
-          ]);
-        }
-      } catch {
-        // Silent fail - comparison is optional
-      }
-    };
-
-    fetchPreviousRuns();
-  }, [run, runId, token, resultSummary]);
-
-  // Feature #1842: Fetch comparison run data
-  useEffect(() => {
-    const fetchCompareRun = async () => {
-      if (!selectedCompareRunId || !token) {
-        setCompareRun(null);
-        return;
-      }
-
-      setLoadingCompareRun(true);
-      try {
-        const response = await fetch(`/api/v1/runs/${selectedCompareRunId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setCompareRun(data.run);
-        }
-      } catch {
-        setCompareRun(null);
-      } finally {
-        setLoadingCompareRun(false);
-      }
-    };
-
-    fetchCompareRun();
-  }, [selectedCompareRunId, token]);
+    if (compareRunData?.run) {
+      setCompareRun(compareRunData.run);
+    } else if (!selectedCompareRunId) {
+      setCompareRun(null);
+    }
+    setLoadingCompareRun(compareRunLoading);
+  }, [compareRunData, selectedCompareRunId, compareRunLoading]);
 
   return {
     // Core state
