@@ -1,9 +1,43 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 38/38 features passing (100%)**
+- **Progress: 38/44 features passing (86%)**
 - **Last Updated**: 2026-02-04
-- **Pending**: None - all features complete
+- **Pending**: Features #39-44 (Site Analysis & Smoke Test Generation)
+
+=== Agent Session 2026-02-04 (Features #39-#44) ===
+Progress: 0/6 (0%) - Comprehensive site scanning and smoke test generation
+
+### Features Pending
+**#39: Extract Nested Link Text from Menus** (Priority 1 - Enhancement)
+- Current regex only captures direct text inside `<a>` tags
+- Need to extract text from nested spans, divs, images (alt text)
+- Handle modern menu structures with icons and labels
+
+**#40: Expand Navigation Detection Patterns** (Priority 2 - Enhancement)
+- Only detecting `<nav>` elements misses many sites
+- Add: header/footer menus, `ul.menu`, `div.navigation`, `role=navigation`
+- Match common CSS classes: menu, nav, navigation, navbar
+
+**#41: Use Playwright for JavaScript-Rendered Content** (Priority 3 - Feature)
+- Crawl4AI returns static HTML, misses JS-rendered menus (React, Vue)
+- Use Playwright to load page with JS execution
+- Wait for network idle, handle cookie consent popups
+
+**#42: Increase Link and Menu Extraction Limits** (Priority 4 - Enhancement)
+- Current: 50 links, 20 menu items - too low for large sites
+- Increase to: 200 links, 50 menu items
+- Categorize links by type: nav, footer, content, external
+
+**#43: Multi-Page Crawl for Smoke Test Generation** (Priority 5 - Feature)
+- Currently only scans landing page
+- Add depth parameter (1-3 levels) to follow nav links
+- Build site map with page types, dedupe URLs
+
+**#44: Auto-Generate Smoke Tests from Discovered Pages** (Priority 6 - Feature)
+- Generate E2E test per discovered page
+- Test: page loads, no console errors, title present
+- Create complete smoke test suite automatically
 
 === Manual Hotfix Session 2026-02-04 (Feature #38) - COMPLETED ===
 Progress: 1/1 (100%) - Cart state persistence fix
