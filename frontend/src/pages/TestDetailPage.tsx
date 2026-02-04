@@ -61,6 +61,9 @@ import {
   RunHistorySection,
   EditTestModal,
   AddStepModal,
+  AIExplainModal,
+  TestExplanation,
+  QuickScheduleModal,
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
@@ -346,13 +349,8 @@ function TestDetailPage() {
   const [isMergingBaseline, setIsMergingBaseline] = useState(false);
   const [mergeBaselineError, setMergeBaselineError] = useState('');
 
-  // Quick schedule modal state
+  // Quick schedule modal state - Feature #48: State moved to QuickScheduleModal component
   const [showQuickScheduleModal, setShowQuickScheduleModal] = useState(false);
-  const [quickScheduleName, setQuickScheduleName] = useState('');
-  const [quickScheduleType, setQuickScheduleType] = useState<'one-time' | 'recurring'>('recurring');
-  const [quickScheduleCron, setQuickScheduleCron] = useState('0 2 * * *'); // Default: Every night at 2 AM
-  const [quickScheduleRunAt, setQuickScheduleRunAt] = useState('');
-  const [quickScheduleTimezone, setQuickScheduleTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [isCreatingSchedule, setIsCreatingSchedule] = useState(false);
   const [quickScheduleError, setQuickScheduleError] = useState('');
 
@@ -693,17 +691,9 @@ function TestDetailPage() {
   const [isSavingCode, setIsSavingCode] = useState(false);
   const [codeError, setCodeError] = useState('');
 
-  // AI Explanation state
+  // AI Explanation state - Feature #48: Use imported TestExplanation type
   const [showExplainModal, setShowExplainModal] = useState(false);
-  const [testExplanation, setTestExplanation] = useState<{
-    summary: string;
-    purpose: string;
-    steps: Array<{ line: number; code: string; explanation: string; type: string }>;
-    assertions: Array<{ line: number; code: string; what_it_checks: string; importance: string }>;
-    selectors: Array<{ selector: string; strategy: string; reliability: string; suggestion?: string }>;
-    improvements: Array<{ category: string; suggestion: string; priority: string }>;
-    complexity: { level: string; lines_of_code: number; num_assertions: number; num_steps: number };
-  } | null>(null);
+  const [testExplanation, setTestExplanation] = useState<TestExplanation | null>(null);
   const [isExplainingTest, setIsExplainingTest] = useState(false);
 
   // Generate Playwright code from test steps
@@ -1776,8 +1766,14 @@ export default function () {
   };
 
   // Handle creating a quick schedule for this test
-  const handleCreateQuickSchedule = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Feature #48: Updated to accept data from QuickScheduleModal component
+  const handleCreateQuickScheduleFromModal = async (data: {
+    name: string;
+    type: 'recurring' | 'one-time';
+    cron: string;
+    runAt: string;
+    timezone: string;
+  }) => {
     if (!test || !suite) return;
 
     setIsCreatingSchedule(true);
@@ -1785,20 +1781,20 @@ export default function () {
 
     try {
       const scheduleData: Record<string, unknown> = {
-        name: quickScheduleName || `${test.name} Schedule`,
+        name: data.name || `${test.name} Schedule`,
         description: `Automated schedule for test: ${test.name}`,
         test_suite_id: suite.id,
         tests: [test.id],
         browsers: [suite.default_browser || 'chromium'],
         enabled: true,
-        timezone: quickScheduleTimezone,
+        timezone: data.timezone,
         notify_on_failure: true,
       };
 
-      if (quickScheduleType === 'one-time') {
-        scheduleData.run_at = quickScheduleRunAt;
+      if (data.type === 'one-time') {
+        scheduleData.run_at = data.runAt;
       } else {
-        scheduleData.cron_expression = quickScheduleCron;
+        scheduleData.cron_expression = data.cron;
       }
 
       const response = await fetch('/api/v1/schedules', {
@@ -1811,19 +1807,16 @@ export default function () {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to create schedule');
+        const responseData = await response.json();
+        throw new Error(responseData.message || 'Failed to create schedule');
       }
 
       // Success - close modal and show notification
       setShowQuickScheduleModal(false);
-      setQuickScheduleName('');
-      setQuickScheduleType('recurring');
-      setQuickScheduleCron('0 2 * * *');
       addNotification({
         type: 'success',
         title: 'Schedule Created',
-        message: `Schedule "${quickScheduleName || test.name + ' Schedule'}" created successfully`,
+        message: `Schedule "${data.name || test.name + ' Schedule'}" created successfully`,
       });
     } catch (err) {
       setQuickScheduleError(err instanceof Error ? err.message : 'Failed to create schedule');
@@ -2939,389 +2932,24 @@ export default function () {
           />
         )}
 
-        {/* AI Explain Test Modal */}
-        {showExplainModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && !isExplainingTest && setShowExplainModal(false)}
-          >
-            <div role="dialog" aria-modal="true" aria-labelledby="explain-test-title" className="w-full max-w-4xl max-h-[85vh] rounded-lg bg-card shadow-lg flex flex-col" onClick={(e) => e.stopPropagation()}>
-              {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-border">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/30">
-                    <svg className="h-6 w-6 text-violet-600 dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 id="explain-test-title" className="text-lg font-semibold text-foreground">AI Test Explanation</h3>
-                    <p className="text-sm text-muted-foreground">{test?.name}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowExplainModal(false)}
-                  disabled={isExplainingTest}
-                  className="text-muted-foreground hover:text-foreground disabled:opacity-50"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-              </div>
+        {/* AI Explain Test Modal - Feature #48: Extracted to component */}
+        <AIExplainModal
+          show={showExplainModal}
+          testName={test?.name || ''}
+          isLoading={isExplainingTest}
+          explanation={testExplanation}
+          onClose={() => setShowExplainModal(false)}
+        />
 
-              {/* Body */}
-              <div className="flex-1 overflow-y-auto p-6">
-                {isExplainingTest ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <svg className="animate-spin h-10 w-10 text-violet-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p className="text-muted-foreground">Analyzing test code with AI...</p>
-                  </div>
-                ) : testExplanation ? (
-                  <div className="space-y-6">
-                    {/* Summary Section */}
-                    <div className="rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 p-4">
-                      <h4 className="font-semibold text-violet-900 dark:text-violet-100 mb-2">Summary</h4>
-                      <p className="text-violet-800 dark:text-violet-200">{testExplanation.summary}</p>
-                      <p className="text-sm text-violet-600 dark:text-violet-300 mt-2"><strong>Purpose:</strong> {testExplanation.purpose}</p>
-                    </div>
-
-                    {/* Complexity Badge */}
-                    <div className="flex items-center gap-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        testExplanation.complexity.level === 'simple' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                        testExplanation.complexity.level === 'moderate' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                      }`}>
-                        {testExplanation.complexity.level.charAt(0).toUpperCase() + testExplanation.complexity.level.slice(1)} Complexity
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {testExplanation.complexity.lines_of_code} lines • {testExplanation.complexity.num_steps} steps • {testExplanation.complexity.num_assertions} assertions
-                      </span>
-                    </div>
-
-                    {/* Steps Section */}
-                    {testExplanation.steps.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-                            <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-                          </svg>
-                          Step-by-Step Breakdown
-                        </h4>
-                        <div className="space-y-3">
-                          {testExplanation.steps.map((step, idx) => (
-                            <div key={idx} className="rounded-md border border-border p-3 bg-muted/30">
-                              <div className="flex items-start gap-3">
-                                <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">
-                                  {idx + 1}
-                                </span>
-                                <div className="flex-1 min-w-0">
-                                  <code className="block text-xs bg-gray-800 text-gray-200 p-2 rounded mb-2 overflow-x-auto">{step.code}</code>
-                                  <p className="text-sm text-foreground">{step.explanation}</p>
-                                  <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded ${
-                                    step.type === 'navigation' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
-                                    step.type === 'interaction' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
-                                    step.type === 'assertion' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' :
-                                    step.type === 'wait' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                                    'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                                  }`}>{step.type}</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Assertions Section */}
-                    {testExplanation.assertions.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                            <polyline points="22 4 12 14.01 9 11.01"/>
-                          </svg>
-                          Assertions ({testExplanation.assertions.length})
-                        </h4>
-                        <div className="space-y-2">
-                          {testExplanation.assertions.map((assertion, idx) => (
-                            <div key={idx} className="rounded-md border border-border p-3 bg-muted/30">
-                              <code className="block text-xs bg-gray-800 text-gray-200 p-2 rounded mb-2 overflow-x-auto">{assertion.code}</code>
-                              <p className="text-sm text-foreground">{assertion.what_it_checks}</p>
-                              <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded ${
-                                assertion.importance === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
-                                assertion.importance === 'high' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' :
-                                'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                              }`}>{assertion.importance} importance</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Selectors Section */}
-                    {testExplanation.selectors.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                          </svg>
-                          Selectors ({testExplanation.selectors.length})
-                        </h4>
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-border">
-                                <th className="text-left py-2 px-3 font-medium text-muted-foreground">Selector</th>
-                                <th className="text-left py-2 px-3 font-medium text-muted-foreground">Strategy</th>
-                                <th className="text-left py-2 px-3 font-medium text-muted-foreground">Reliability</th>
-                                <th className="text-left py-2 px-3 font-medium text-muted-foreground">Suggestion</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {testExplanation.selectors.map((sel, idx) => (
-                                <tr key={idx} className="border-b border-border/50">
-                                  <td className="py-2 px-3"><code className="text-xs bg-muted px-1 py-0.5 rounded">{sel.selector}</code></td>
-                                  <td className="py-2 px-3 text-foreground">{sel.strategy}</td>
-                                  <td className="py-2 px-3">
-                                    <span className={`inline-block text-xs px-2 py-0.5 rounded ${
-                                      sel.reliability === 'high' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
-                                      sel.reliability === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                                    }`}>{sel.reliability}</span>
-                                  </td>
-                                  <td className="py-2 px-3 text-muted-foreground text-xs">{sel.suggestion || '-'}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Improvements Section */}
-                    {testExplanation.improvements.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                          </svg>
-                          Suggested Improvements
-                        </h4>
-                        <div className="space-y-2">
-                          {testExplanation.improvements.map((imp, idx) => (
-                            <div key={idx} className="flex items-start gap-3 rounded-md border border-border p-3 bg-muted/30">
-                              <span className={`flex-shrink-0 inline-block text-xs px-2 py-0.5 rounded ${
-                                imp.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
-                                imp.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                                'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                              }`}>{imp.priority}</span>
-                              <div>
-                                <span className="text-xs text-muted-foreground uppercase tracking-wide">{imp.category}</span>
-                                <p className="text-sm text-foreground">{imp.suggestion}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    No explanation available.
-                  </div>
-                )}
-              </div>
-
-              {/* Footer */}
-              <div className="flex justify-end gap-3 p-6 border-t border-border">
-                <button
-                  onClick={() => setShowExplainModal(false)}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Quick Schedule Modal */}
-        {showQuickScheduleModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && !isCreatingSchedule && setShowQuickScheduleModal(false)}
-          >
-            <div role="dialog" aria-modal="true" aria-labelledby="quick-schedule-title" className="w-full max-w-lg rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-                  <svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 id="quick-schedule-title" className="text-lg font-semibold text-foreground">Schedule Test</h3>
-              </div>
-              <p className="text-muted-foreground mb-4">
-                Create a schedule to run "{test?.name}" automatically.
-              </p>
-
-              {quickScheduleError && (
-                <div role="alert" className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  {quickScheduleError}
-                </div>
-              )}
-
-              <form onSubmit={handleCreateQuickSchedule} className="space-y-4">
-                {/* Schedule Name */}
-                <div>
-                  <label htmlFor="quick-schedule-name" className="mb-1 block text-sm font-medium text-foreground">
-                    Schedule Name
-                  </label>
-                  <input
-                    id="quick-schedule-name"
-                    type="text"
-                    value={quickScheduleName}
-                    onChange={(e) => setQuickScheduleName(e.target.value)}
-                    placeholder={`${test?.name} Schedule`}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-
-                {/* Schedule Type */}
-                <div>
-                  <span className="mb-2 block text-sm font-medium text-foreground">Schedule Type</span>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="quickScheduleType"
-                        checked={quickScheduleType === 'recurring'}
-                        onChange={() => setQuickScheduleType('recurring')}
-                        className="h-4 w-4"
-                      />
-                      <span className="text-sm text-foreground">Recurring</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="quickScheduleType"
-                        checked={quickScheduleType === 'one-time'}
-                        onChange={() => setQuickScheduleType('one-time')}
-                        className="h-4 w-4"
-                      />
-                      <span className="text-sm text-foreground">One-time</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Schedule Frequency/Time */}
-                {quickScheduleType === 'recurring' ? (
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-foreground">Frequency</label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {[
-                        { cron: '0 * * * *', label: 'Hourly' },
-                        { cron: '0 9 * * *', label: 'Daily (9 AM)' },
-                        { cron: '0 2 * * *', label: 'Nightly (2 AM)' },
-                        { cron: '0 9 * * 1', label: 'Weekly (Mon)' },
-                      ].map(({ cron, label }) => (
-                        <button
-                          key={cron}
-                          type="button"
-                          onClick={() => setQuickScheduleCron(cron)}
-                          className={`rounded-md px-3 py-1.5 text-sm border transition-colors ${
-                            quickScheduleCron === cron
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-background text-foreground border-border hover:border-primary'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="mt-3">
-                      <label htmlFor="quick-schedule-cron" className="mb-1 block text-sm text-muted-foreground">
-                        Custom cron expression
-                      </label>
-                      <input
-                        id="quick-schedule-cron"
-                        type="text"
-                        value={quickScheduleCron}
-                        onChange={(e) => setQuickScheduleCron(e.target.value)}
-                        placeholder="0 2 * * *"
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm text-foreground"
-                      />
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Format: minute hour day month weekday (e.g., "0 2 * * *" = every night at 2 AM)
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <label htmlFor="quick-schedule-datetime" className="mb-1 block text-sm font-medium text-foreground">
-                      Run At
-                    </label>
-                    <input
-                      id="quick-schedule-datetime"
-                      type="datetime-local"
-                      value={quickScheduleRunAt}
-                      onChange={(e) => setQuickScheduleRunAt(e.target.value)}
-                      required={quickScheduleType === 'one-time'}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                    />
-                  </div>
-                )}
-
-                {/* Timezone */}
-                <div>
-                  <label htmlFor="quick-schedule-timezone" className="mb-1 block text-sm font-medium text-foreground">
-                    Timezone
-                  </label>
-                  <select
-                    id="quick-schedule-timezone"
-                    value={quickScheduleTimezone}
-                    onChange={(e) => setQuickScheduleTimezone(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  >
-                    <option value="America/New_York">America/New_York (ET)</option>
-                    <option value="America/Chicago">America/Chicago (CT)</option>
-                    <option value="America/Denver">America/Denver (MT)</option>
-                    <option value="America/Los_Angeles">America/Los_Angeles (PT)</option>
-                    <option value="Europe/London">Europe/London (GMT)</option>
-                    <option value="Europe/Paris">Europe/Paris (CET)</option>
-                    <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
-                    <option value="UTC">UTC</option>
-                  </select>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowQuickScheduleModal(false)}
-                    disabled={isCreatingSchedule}
-                    className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isCreatingSchedule || (quickScheduleType === 'one-time' && !quickScheduleRunAt)}
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {isCreatingSchedule ? 'Creating...' : 'Create Schedule'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {/* Quick Schedule Modal - Feature #48: Extracted to component */}
+        <QuickScheduleModal
+          show={showQuickScheduleModal}
+          testName={test?.name || ''}
+          isCreating={isCreatingSchedule}
+          error={quickScheduleError}
+          onClose={() => setShowQuickScheduleModal(false)}
+          onSubmit={handleCreateQuickScheduleFromModal}
+        />
 
         {/* Approve Baseline Confirmation Modal */}
         {showApproveBaselineModal && (

@@ -9,3 +9,5 @@ export {
   MergeBaselineModal,
   RejectChangesModal,
 } from './BaselineModals';
+export { AIExplainModal, type TestExplanation } from './AIExplainModal';
+export { QuickScheduleModal } from './QuickScheduleModal';
