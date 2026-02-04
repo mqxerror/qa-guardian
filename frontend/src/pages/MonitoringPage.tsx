@@ -13,6 +13,7 @@ import {
   MonitoringSummaryCards,
   StatusBadge,
   UptimeChecksTab,
+  SettingsTab,
   // Import ALL types from modular components
   MonitoringLocation,
   MonitoringLocationInfo,
