@@ -8,7 +8,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { toast } from "../stores/toastStore";
 
 // Feature #47: Import modular components and types for performance optimization
-// Eliminates ~350 lines of duplicate type definitions
+// Eliminates ~600 lines of duplicate type definitions
 import {
   MonitoringSummaryCards,
   StatusBadge,
@@ -54,6 +54,41 @@ import {
   PerformanceTrends,
   DetailTab,
   HistoryRange,
+  // Feature #47: Add settings-related types to eliminate duplicate definitions
+  MonitoringSettings,
+  RetentionStats,
+  StatusPageCheck,
+  StatusPage,
+  AvailableCheck,
+  StatusPageIncidentUpdate,
+  StatusPageIncident,
+  OnCallMember,
+  OnCallSchedule,
+  EscalationTarget,
+  EscalationLevel,
+  EscalationPolicy,
+  AlertGroupingRule,
+  AlertGroup,
+  GroupedAlert,
+  AlertHistoryStats,
+  AlertHistoryItem,
+  AlertsOverTimeData,
+  AlertRoutingCondition,
+  AlertRoutingDestination,
+  AlertRoutingRule,
+  AlertRoutingLog,
+  GlobalSeverityMapping,
+  AlertRateLimitConfig,
+  RateLimitStats,
+  AlertCorrelationConfig,
+  CorrelatedAlert,
+  AlertCorrelation,
+  AlertRunbook,
+  AlertRunbookStep,
+  ManagedIncidentNote,
+  ManagedIncidentTimeline,
+  ManagedIncidentResponder,
+  ManagedIncident,
 } from '../components/monitoring';
 
 function MonitoringPage() {
@@ -117,30 +152,7 @@ function MonitoringPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState<'checks' | 'transactions' | 'performance' | 'webhooks' | 'dns' | 'tcp' | 'settings'>('checks');
 
-  // Retention settings interface
-  interface MonitoringSettings {
-    organization_id: string;
-    retention_days: 30 | 90 | 365;
-    auto_cleanup_enabled: boolean;
-    last_cleanup_at?: string;
-    updated_at: string;
-  }
-
-  interface RetentionStats {
-    retention_days: number;
-    auto_cleanup_enabled: boolean;
-    last_cleanup_at: string | null;
-    stats: {
-      uptime: { total: number; last30: number; last90: number; last365: number; older: number };
-      transaction: { total: number; last30: number; last90: number; last365: number; older: number };
-      performance: { total: number; last30: number; last90: number; last365: number; older: number };
-      webhook: { total: number; last30: number; last90: number; last365: number; older: number };
-      dns: { total: number; last30: number; last90: number; last365: number; older: number };
-      tcp: { total: number; last30: number; last90: number; last365: number; older: number };
-    };
-  }
-
-  // Settings state
+  // Settings state (types imported from monitoring/types.ts)
   const [monitoringSettings, setMonitoringSettings] = useState<MonitoringSettings | null>(null);
   const [retentionStats, setRetentionStats] = useState<RetentionStats | null>(null);
   const [isLoadingSettings, setIsLoadingSettings] = useState(false);
@@ -149,40 +161,7 @@ function MonitoringPage() {
   const [settingsRetentionDays, setSettingsRetentionDays] = useState<30 | 90 | 365>(90);
   const [settingsAutoCleanup, setSettingsAutoCleanup] = useState(true);
 
-  // Status page interfaces
-  interface StatusPageCheck {
-    check_id: string;
-    check_type: 'uptime' | 'transaction' | 'performance' | 'dns' | 'tcp';
-    display_name?: string;
-    order: number;
-  }
-
-  interface StatusPage {
-    id: string;
-    organization_id: string;
-    name: string;
-    slug: string;
-    description?: string;
-    logo_url?: string;
-    primary_color?: string;
-    show_history_days: number;
-    checks: StatusPageCheck[];
-    is_public: boolean;
-    show_uptime_percentage: boolean;
-    show_response_time: boolean;
-    show_incidents: boolean;
-    created_at: string;
-    updated_at: string;
-  }
-
-  interface AvailableCheck {
-    id: string;
-    type: string;
-    name: string;
-    enabled: boolean;
-  }
-
-  // Status page state
+  // Status page state (types imported from monitoring/types.ts)
   const [statusPages, setStatusPages] = useState<StatusPage[]>([]);
   const [availableChecksForStatus, setAvailableChecksForStatus] = useState<AvailableCheck[]>([]);
   const [isLoadingStatusPages, setIsLoadingStatusPages] = useState(false);
@@ -199,28 +178,7 @@ function MonitoringPage() {
   const [statusPageSelectedChecks, setStatusPageSelectedChecks] = useState<{ id: string; type: string; name: string }[]>([]);
   const [isSubmittingStatusPage, setIsSubmittingStatusPage] = useState(false);
 
-  // Status page incident interfaces
-  interface StatusPageIncidentUpdate {
-    id: string;
-    status: 'investigating' | 'identified' | 'monitoring' | 'resolved';
-    message: string;
-    created_at: string;
-  }
-
-  interface StatusPageIncident {
-    id: string;
-    status_page_id: string;
-    title: string;
-    status: 'investigating' | 'identified' | 'monitoring' | 'resolved';
-    impact: 'none' | 'minor' | 'major' | 'critical';
-    affected_components?: string[];
-    updates: StatusPageIncidentUpdate[];
-    created_at: string;
-    updated_at: string;
-    resolved_at?: string;
-  }
-
-  // Incident management state
+  // Incident management state (types imported from monitoring/types.ts)
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [showIncidentUpdateModal, setShowIncidentUpdateModal] = useState(false);
   const [selectedStatusPageForIncident, setSelectedStatusPageForIncident] = useState<StatusPage | null>(null);
@@ -233,34 +191,7 @@ function MonitoringPage() {
   const [incidentUpdateMessage, setIncidentUpdateMessage] = useState('');
   const [isSubmittingIncident, setIsSubmittingIncident] = useState(false);
 
-  // On-call schedule interfaces
-  interface OnCallMember {
-    id: string;
-    user_id: string;
-    user_name: string;
-    user_email: string;
-    phone?: string;
-    order: number;
-  }
-
-  interface OnCallSchedule {
-    id: string;
-    organization_id: string;
-    name: string;
-    description?: string;
-    timezone: string;
-    rotation_type: 'daily' | 'weekly' | 'custom';
-    rotation_interval_days: number;
-    members: OnCallMember[];
-    current_on_call_index: number;
-    last_rotation_at?: string;
-    is_active: boolean;
-    created_by: string;
-    created_at: string;
-    updated_at: string;
-  }
-
-  // On-call schedule state
+  // On-call schedule state (types imported from monitoring/types.ts)
   const [onCallSchedules, setOnCallSchedules] = useState<OnCallSchedule[]>([]);
   const [isLoadingOnCallSchedules, setIsLoadingOnCallSchedules] = useState(false);
   const [showOnCallModal, setShowOnCallModal] = useState(false);
@@ -276,40 +207,7 @@ function MonitoringPage() {
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [newMemberPhone, setNewMemberPhone] = useState('');
 
-  // Escalation policy interfaces
-  interface EscalationTarget {
-    id: string;
-    type: 'user' | 'on_call_schedule' | 'email' | 'webhook';
-    user_name?: string;
-    user_email?: string;
-    phone?: string;
-    schedule_id?: string;
-    webhook_url?: string;
-  }
-
-  interface EscalationLevel {
-    id: string;
-    level: number;
-    escalate_after_minutes: number;
-    targets: EscalationTarget[];
-  }
-
-  interface EscalationPolicy {
-    id: string;
-    organization_id: string;
-    name: string;
-    description?: string;
-    levels: EscalationLevel[];
-    repeat_policy: 'once' | 'repeat_until_acknowledged';
-    repeat_interval_minutes?: number;
-    is_default: boolean;
-    is_active: boolean;
-    created_by: string;
-    created_at: string;
-    updated_at: string;
-  }
-
-  // Escalation policy state
+  // Escalation policy state (types imported from monitoring/types.ts)
   const [escalationPolicies, setEscalationPolicies] = useState<EscalationPolicy[]>([]);
   const [isLoadingEscalationPolicies, setIsLoadingEscalationPolicies] = useState(false);
   const [showEscalationPolicyModal, setShowEscalationPolicyModal] = useState(false);
@@ -322,59 +220,7 @@ function MonitoringPage() {
   const [escalationPolicyIsDefault, setEscalationPolicyIsDefault] = useState(false);
   const [isSubmittingEscalationPolicy, setIsSubmittingEscalationPolicy] = useState(false);
 
-  // Alert grouping interfaces
-  interface AlertGroupingRule {
-    id: string;
-    organization_id: string;
-    name: string;
-    description?: string;
-    group_by: ('check_name' | 'check_type' | 'location' | 'error_type' | 'tag')[];
-    time_window_minutes: number;
-    deduplication_enabled: boolean;
-    deduplication_key?: string;
-    max_alerts_per_group: number;
-    notification_delay_seconds: number;
-    is_active: boolean;
-    priority: number;
-    created_by: string;
-    created_at: string;
-    updated_at: string;
-  }
-
-  interface AlertGroup {
-    id: string;
-    organization_id: string;
-    rule_id: string;
-    group_key: string;
-    alerts: GroupedAlert[];
-    status: 'active' | 'acknowledged' | 'resolved';
-    first_alert_at: string;
-    last_alert_at: string;
-    notification_sent: boolean;
-    notification_sent_at?: string;
-    acknowledged_by?: string;
-    acknowledged_at?: string;
-    resolved_at?: string;
-    // Snooze fields
-    snoozed_until?: string;
-    snoozed_by?: string;
-    snoozed_at?: string;
-    snooze_duration_hours?: number;
-  }
-
-  interface GroupedAlert {
-    id: string;
-    check_id: string;
-    check_name: string;
-    check_type: 'uptime' | 'transaction' | 'performance' | 'webhook' | 'dns' | 'tcp';
-    location?: string;
-    error_message?: string;
-    tags?: string[];
-    triggered_at: string;
-    deduplicated: boolean;
-  }
-
-  // Alert grouping state
+  // Alert grouping state (types imported from monitoring/types.ts)
   const [alertGroupingRules, setAlertGroupingRules] = useState<AlertGroupingRule[]>([]);
   const [alertGroups, setAlertGroups] = useState<AlertGroup[]>([]);
   const [isLoadingAlertGrouping, setIsLoadingAlertGrouping] = useState(false);
@@ -388,30 +234,7 @@ function MonitoringPage() {
   const [alertGroupingNotificationDelay, setAlertGroupingNotificationDelay] = useState(30);
   const [isSubmittingAlertGrouping, setIsSubmittingAlertGrouping] = useState(false);
 
-  // Alert history state
-  interface AlertHistoryStats {
-    total_alerts: number;
-    by_severity: { critical: number; high: number; medium: number; low: number };
-    by_source: { api: number; database: number; cache: number; system: number };
-    by_status: { active: number; acknowledged: number; resolved: number };
-    avg_resolution_time_seconds: number | null;
-  }
-  interface AlertHistoryItem {
-    id: string;
-    check_name: string;
-    check_type: string;
-    error_message?: string;
-    severity: string;
-    source: string;
-    group_status: string;
-    triggered_at: string;
-    acknowledged_at?: string;
-    resolved_at?: string;
-  }
-  interface AlertsOverTimeData {
-    time: string;
-    count: number;
-  }
+  // Alert history state (types imported from monitoring/types.ts)
   const [alertHistory, setAlertHistory] = useState<AlertHistoryItem[]>([]);
   const [alertHistoryStats, setAlertHistoryStats] = useState<AlertHistoryStats | null>(null);
   const [alertsOverTime, setAlertsOverTime] = useState<AlertsOverTimeData[]>([]);
@@ -420,80 +243,7 @@ function MonitoringPage() {
   const [alertHistorySourceFilter, setAlertHistorySourceFilter] = useState<string>('');
   const [showAlertHistorySection, setShowAlertHistorySection] = useState(false);
 
-  // Alert routing interfaces
-  interface AlertRoutingCondition {
-    field: 'severity' | 'check_type' | 'check_name' | 'location' | 'tag' | 'error_contains';
-    operator: 'equals' | 'not_equals' | 'contains' | 'in' | 'not_in';
-    value: string | string[];
-  }
-
-  interface AlertRoutingDestination {
-    type: 'pagerduty' | 'slack' | 'email' | 'webhook' | 'opsgenie' | 'on_call' | 'n8n' | 'telegram' | 'teams' | 'discord';
-    name: string;
-    config: {
-      integration_key?: string;
-      webhook_url?: string;
-      channel?: string;
-      addresses?: string[];
-      url?: string;
-      headers?: Record<string, string>;
-      api_key?: string;
-      schedule_id?: string;
-      // n8n
-      n8n_webhook_url?: string;
-      workflow_id?: string;
-      // Telegram
-      telegram_bot_token?: string;
-      telegram_chat_id?: string;
-      // PagerDuty severity mapping
-      severity_mapping?: {
-        critical?: 'critical' | 'error' | 'warning' | 'info';
-        high?: 'critical' | 'error' | 'warning' | 'info';
-        medium?: 'critical' | 'error' | 'warning' | 'info';
-        low?: 'critical' | 'error' | 'warning' | 'info';
-      };
-      message_template?: string;
-      // Custom webhook payload template (JSON string with {{variables}})
-      payload_template?: string;
-      // Microsoft Teams
-      teams_webhook_url?: string;
-      teams_title?: string;
-      teams_theme_color?: string;
-      // Discord
-      discord_webhook_url?: string;
-      discord_username?: string;
-      discord_avatar_url?: string;
-      discord_embed_color?: string;
-    };
-  }
-
-  interface AlertRoutingRule {
-    id: string;
-    organization_id: string;
-    name: string;
-    description?: string;
-    conditions: AlertRoutingCondition[];
-    condition_match: 'all' | 'any';
-    destinations: AlertRoutingDestination[];
-    enabled: boolean;
-    priority: number;
-    created_by: string;
-    created_at: string;
-    updated_at: string;
-  }
-
-  interface AlertRoutingLog {
-    id: string;
-    rule_name: string;
-    check_name: string;
-    check_type: string;
-    severity: string;
-    destinations_notified: string[];
-    notification_status: 'sent' | 'failed' | 'simulated';
-    routed_at: string;
-  }
-
-  // Alert routing state
+  // Alert routing state (types imported from monitoring/types.ts)
   const [alertRoutingRules, setAlertRoutingRules] = useState<AlertRoutingRule[]>([]);
   const [alertRoutingLogs, setAlertRoutingLogs] = useState<AlertRoutingLog[]>([]);
   const [isLoadingAlertRouting, setIsLoadingAlertRouting] = useState(false);
@@ -515,14 +265,7 @@ function MonitoringPage() {
   const [testAlertCheckName, setTestAlertCheckName] = useState('API Server');
   const [testRoutingResult, setTestRoutingResult] = useState<{ matched_rules: unknown[]; message: string } | null>(null);
 
-  // Global Alert Severity Mapping state
-  interface GlobalSeverityMapping {
-    critical: string;
-    high: string;
-    medium: string;
-    low: string;
-    info: string;
-  }
+  // Global Alert Severity Mapping state (types imported from monitoring/types.ts)
   const [globalSeverityMapping, setGlobalSeverityMapping] = useState<GlobalSeverityMapping>({
     critical: 'P1',
     high: 'P2',
@@ -532,14 +275,7 @@ function MonitoringPage() {
   });
   const [isSavingSeverityMapping, setIsSavingSeverityMapping] = useState(false);
 
-  // Alert Rate Limiting state
-  interface AlertRateLimitConfig {
-    enabled: boolean;
-    max_alerts_per_minute: number;
-    time_window_seconds: number;
-    suppression_mode: 'drop' | 'aggregate'; // drop: discard, aggregate: collect and send summary
-    aggregate_threshold: number; // When aggregating, send summary after this many alerts
-  }
+  // Alert Rate Limiting state (types imported from monitoring/types.ts)
   const [alertRateLimitConfig, setAlertRateLimitConfig] = useState<AlertRateLimitConfig>({
     enabled: true,
     max_alerts_per_minute: 5,
@@ -548,46 +284,10 @@ function MonitoringPage() {
     aggregate_threshold: 10,
   });
   const [isSavingRateLimit, setIsSavingRateLimit] = useState(false);
-  const [rateLimitStats, setRateLimitStats] = useState<{
-    total_alerts: number;
-    sent_alerts: number;
-    suppressed_alerts: number;
-    last_reset: string;
-  } | null>(null);
+  const [rateLimitStats, setRateLimitStats] = useState<RateLimitStats | null>(null);
   const [isTestingRateLimit, setIsTestingRateLimit] = useState(false);
 
-  // Alert Correlation state
-  interface AlertCorrelationConfig {
-    enabled: boolean;
-    correlate_by_check: boolean;
-    correlate_by_location: boolean;
-    correlate_by_error_type: boolean;
-    correlate_by_time_window: boolean;
-    time_window_seconds: number;
-    similarity_threshold: number;
-  }
-  interface CorrelatedAlert {
-    id: string;
-    check_id: string;
-    check_name: string;
-    check_type: string;
-    location?: string;
-    error_message?: string;
-    severity: string;
-    triggered_at: string;
-  }
-  interface AlertCorrelation {
-    id: string;
-    correlation_reason: string;
-    correlation_details: string;
-    alerts: CorrelatedAlert[];
-    primary_alert_id: string;
-    status: 'active' | 'acknowledged' | 'resolved';
-    created_at: string;
-    updated_at: string;
-    acknowledged_by?: string;
-    acknowledged_at?: string;
-  }
+  // Alert Correlation state (types imported from monitoring/types.ts)
   const [alertCorrelationConfig, setAlertCorrelationConfig] = useState<AlertCorrelationConfig>({
     enabled: true,
     correlate_by_check: true,
@@ -602,20 +302,7 @@ function MonitoringPage() {
   const [isTestingCorrelation, setIsTestingCorrelation] = useState(false);
   const [selectedCorrelation, setSelectedCorrelation] = useState<AlertCorrelation | null>(null);
 
-  // Alert Runbook state
-  interface AlertRunbook {
-    id: string;
-    name: string;
-    description?: string;
-    check_type: 'uptime' | 'transaction' | 'performance' | 'webhook' | 'dns' | 'tcp' | 'all';
-    severity?: 'critical' | 'high' | 'medium' | 'low' | 'all';
-    runbook_url: string;
-    instructions?: string;
-    tags?: string[];
-    created_by: string;
-    created_at: string;
-    updated_at: string;
-  }
+  // Alert Runbook state (types imported from monitoring/types.ts)
   const [alertRunbooks, setAlertRunbooks] = useState<AlertRunbook[]>([]);
   const [isLoadingRunbooks, setIsLoadingRunbooks] = useState(false);
   const [showRunbookModal, setShowRunbookModal] = useState(false);
@@ -642,66 +329,7 @@ function MonitoringPage() {
     message: string;
   } | null>(null);
 
-  // Incident Management interfaces
-  interface IncidentNote {
-    id: string;
-    author_id: string;
-    author_name: string;
-    content: string;
-    visibility: 'internal' | 'public';
-    created_at: string;
-  }
-
-  interface IncidentTimeline {
-    id: string;
-    event_type: 'created' | 'assigned' | 'status_changed' | 'priority_changed' | 'note_added' | 'responder_added' | 'responder_removed' | 'resolved' | 'escalated';
-    description: string;
-    actor_id?: string;
-    actor_name?: string;
-    metadata?: Record<string, unknown>;
-    created_at: string;
-  }
-
-  interface IncidentResponder {
-    id: string;
-    user_id: string;
-    user_name: string;
-    user_email: string;
-    role: 'primary' | 'secondary' | 'observer';
-    assigned_at: string;
-    acknowledged_at?: string;
-  }
-
-  interface ManagedIncident {
-    id: string;
-    organization_id: string;
-    title: string;
-    description?: string;
-    status: 'triggered' | 'acknowledged' | 'investigating' | 'identified' | 'monitoring' | 'resolved';
-    priority: 'P1' | 'P2' | 'P3' | 'P4' | 'P5';
-    severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
-    source: 'alert' | 'manual' | 'api' | 'integration';
-    source_alert_id?: string;
-    source_check_id?: string;
-    source_check_type?: string;
-    responders: IncidentResponder[];
-    notes: IncidentNote[];
-    timeline: IncidentTimeline[];
-    tags?: string[];
-    affected_services?: string[];
-    postmortem_url?: string;
-    postmortem_completed: boolean;
-    created_by: string;
-    created_at: string;
-    updated_at: string;
-    acknowledged_at?: string;
-    resolved_at?: string;
-    resolution_summary?: string;
-    time_to_acknowledge_seconds?: number;
-    time_to_resolve_seconds?: number;
-  }
-
-  // Incident Management state
+  // Incident Management state (types imported from monitoring/types.ts)
   const [managedIncidents, setManagedIncidents] = useState<ManagedIncident[]>([]);
   const [isLoadingManagedIncidents, setIsLoadingManagedIncidents] = useState(false);
   const [showManagedIncidentModal, setShowManagedIncidentModal] = useState(false);
@@ -6073,7 +5701,7 @@ function MonitoringPage() {
                   <label className="block text-sm font-medium text-foreground mb-1">Role</label>
                   <select
                     value={managedResponderRole}
-                    onChange={e => setManagedResponderRole(e.target.value as IncidentResponder['role'])}
+                    onChange={e => setManagedResponderRole(e.target.value as ManagedIncidentResponder['role'])}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
                   >
                     <option value="primary">Primary</option>

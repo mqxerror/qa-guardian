@@ -742,9 +742,12 @@ export interface AlertRunbook {
   name: string;
   description?: string;
   check_type: 'uptime' | 'transaction' | 'performance' | 'webhook' | 'dns' | 'tcp' | 'all';
-  severity?: 'critical' | 'high' | 'medium' | 'low';
-  steps: AlertRunbookStep[];
-  is_active: boolean;
+  severity?: 'critical' | 'high' | 'medium' | 'low' | 'all';
+  runbook_url: string;
+  instructions?: string;
+  steps?: AlertRunbookStep[];
+  tags?: string[];
+  is_active?: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -753,33 +756,58 @@ export interface AlertRunbook {
 // Managed incident interfaces
 export interface ManagedIncidentNote {
   id: string;
-  author: string;
+  author_id: string;
+  author_name: string;
   content: string;
+  visibility: 'internal' | 'public';
   created_at: string;
+}
+
+export interface ManagedIncidentTimeline {
+  id: string;
+  event_type: 'created' | 'assigned' | 'status_changed' | 'priority_changed' | 'note_added' | 'responder_added' | 'responder_removed' | 'resolved' | 'escalated';
+  description: string;
+  actor_id?: string;
+  actor_name?: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface ManagedIncidentResponder {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  role: 'primary' | 'secondary' | 'observer';
+  assigned_at: string;
+  acknowledged_at?: string;
 }
 
 export interface ManagedIncident {
   id: string;
+  organization_id: string;
   title: string;
   description?: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  status: 'triggered' | 'acknowledged' | 'in_progress' | 'resolved' | 'closed';
-  source: 'manual' | 'alert' | 'api';
+  status: 'triggered' | 'acknowledged' | 'investigating' | 'identified' | 'monitoring' | 'resolved';
+  priority: 'P1' | 'P2' | 'P3' | 'P4' | 'P5';
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  source: 'alert' | 'manual' | 'api' | 'integration';
   source_alert_id?: string;
   source_check_id?: string;
-  source_check_name?: string;
-  assigned_to?: string;
-  assigned_to_name?: string;
-  assigned_at?: string;
-  escalation_policy_id?: string;
-  runbook_id?: string;
+  source_check_type?: string;
+  responders: ManagedIncidentResponder[];
   notes: ManagedIncidentNote[];
-  started_at: string;
-  acknowledged_at?: string;
-  resolved_at?: string;
-  closed_at?: string;
-  resolution_summary?: string;
+  timeline: ManagedIncidentTimeline[];
+  tags?: string[];
+  affected_services?: string[];
+  postmortem_url?: string;
+  postmortem_completed: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;
+  acknowledged_at?: string;
+  resolved_at?: string;
+  resolution_summary?: string;
+  time_to_acknowledge_seconds?: number;
+  time_to_resolve_seconds?: number;
 }
