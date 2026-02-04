@@ -1,4 +1,5 @@
 // TestSuitePage - Test suite management with recording, AI generation, and execution
+// Feature #59: Migrated to React Query for paginated test loading
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
@@ -8,6 +9,8 @@ import { getErrorMessage } from '../utils/errorHandling';
 import { io, Socket } from 'socket.io-client';
 import { UnifiedAIService } from '../services/UnifiedAIService';
 import { CreateTestModal } from '../components/create-test';
+// Feature #59: React Query hooks for paginated test loading
+import { useTestsPaginated, useSuite, useInvalidateTests } from '../hooks/api';
 import {
   TestSuite, TestType, TestTypeEnum, DeleteSuiteModal, DeleteTestModal,
   ImportTestsModal, EditSelectorModal, ExpandedScreenshotModal, InsertTemplateModal,
@@ -20,26 +23,44 @@ function TestSuitePage() {
   const { suiteId } = useParams<{ suiteId: string }>();
   const { token, user } = useAuthStore();
   const navigate = useNavigate();
-  const [suite, setSuite] = useState<TestSuite & { project_id: string } | null>(null);
-  const [tests, setTests] = useState<TestType[]>([]);
+
+  // Feature #59: Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+
+  // Feature #59: React Query hooks for suite and tests (parallel loading)
+  const { data: suiteData, isLoading: suiteLoading, error: suiteError } = useSuite(suiteId);
+  const { data: testsData, isLoading: testsLoading } = useTestsPaginated(suiteId, {
+    page: currentPage,
+    limit: itemsPerPage,
+  });
+  const { invalidateBySuite } = useInvalidateTests();
+
+  // Extract data from React Query responses
+  const suite = suiteData?.suite || null;
+  // Feature #59: Map API response to TestType format (API returns test_type, component expects type)
+  const tests: TestType[] = (testsData?.tests || testsData?.data || []).map((t: any) => ({
+    ...t,
+    type: t.type || t.test_type || 'e2e', // Ensure type field exists
+  }));
+  const pagination = testsData?.pagination;
+
+  // Project state - loaded separately after suite loads
   const [project, setProject] = useState<{ id: string; name: string; base_url?: string } | null>(null);
 
   // Recording state hook - saves ~500 lines of recording/socket logic
   const recording = useRecordingState({
     suiteId, token, projectBaseUrl: project?.base_url,
     onTestCreated: async () => {
-      try {
-        const response = await fetch(`/api/v1/suites/${suiteId}/tests`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) setTests((await response.json()).tests);
-      } catch (err) { console.error('Failed to refresh tests:', err); }
+      // Feature #59: Use React Query invalidation to refresh tests
+      invalidateBySuite(suiteId || '');
     },
   });
 
   useEffect(() => { UnifiedAIService.setToken(token || null); }, [token]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Feature #59: Derive loading/error state from React Query
+  const isLoading = suiteLoading || testsLoading;
+  const error = suiteError ? (suiteError instanceof Error ? suiteError.message : 'Failed to load test suite') : null;
   // Feature #1800: New two-section modal toggle (use new modal by default)
   const [showNewCreateTestModal, setShowNewCreateTestModal] = useState(false);
   // Feature #1342: Natural Language Test Generation state
@@ -246,53 +267,26 @@ function TestSuitePage() {
     return sortDirection === 'desc' ? -comparison : comparison;
   });
 
+  // Feature #59: Fetch project when suite data is available
+  // Suite and tests are now loaded via React Query hooks at the top
   useEffect(() => {
-    const fetchSuite = async () => {
+    if (!suite?.project_id || !token) return;
+
+    const fetchProject = async () => {
       try {
-        // Fetch suite
-        const suiteResponse = await fetch(`/api/v1/suites/${suiteId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (!suiteResponse.ok) {
-          setError('Test suite not found');
-          return;
-        }
-
-        const suiteData = await suiteResponse.json();
-        setSuite(suiteData.suite);
-
-        // Fetch project
-        const projectResponse = await fetch(`/api/v1/projects/${suiteData.suite.project_id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
+        const projectResponse = await fetch(`/api/v1/projects/${suite.project_id}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
         });
         if (projectResponse.ok) {
           const projectData = await projectResponse.json();
           setProject(projectData.project);
         }
-
-        // Fetch tests
-        const testsResponse = await fetch(`/api/v1/suites/${suiteId}/tests`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (testsResponse.ok) {
-          const testsData = await testsResponse.json();
-          setTests(testsData.tests);
-        }
       } catch (err) {
-        setError('Failed to load test suite');
-      } finally {
-        setIsLoading(false);
+        console.error('Failed to load project:', err);
       }
     };
-    fetchSuite();
-  }, [suiteId, token]);
+    fetchProject();
+  }, [suite?.project_id, token]);
 
   // Feature #1151: Fetch review settings when suite loads
   useEffect(() => {
@@ -351,8 +345,8 @@ function TestSuitePage() {
       });
       if (response.ok) {
         const data = await response.json();
-        // Update the test in state
-        setTests(prev => prev.map(t => t.id === testId ? data.test : t));
+        // Feature #59: Use React Query invalidation to refresh tests
+        invalidateBySuite(suiteId || '');
         toast.success(data.message);
       } else {
         const error = await response.json();
@@ -383,11 +377,8 @@ function TestSuitePage() {
       });
       if (response.ok) {
         const data = await response.json();
-        // Update all tests in state
-        if (data.results) {
-          const updatedTestMap = new Map(data.results.filter((r: any) => r.success).map((r: any) => [r.test_id, r.test]));
-          setTests(prev => prev.map(t => updatedTestMap.has(t.id) ? (updatedTestMap.get(t.id) as TestType) : t));
-        }
+        // Feature #59: Use React Query invalidation to refresh tests
+        invalidateBySuite(suiteId || '');
         // Update review stats
         if (suiteId) {
           const statsResponse = await fetch(`/api/v1/suites/${suiteId}/review-settings`, {
@@ -522,14 +513,8 @@ function TestSuitePage() {
         const data = await response.json();
         throw new Error(data.message || 'Failed to duplicate test');
       }
-      // Refresh tests list
-      const refreshResponse = await fetch(`/api/v1/suites/${suiteId}/tests`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (refreshResponse.ok) {
-        const data = await refreshResponse.json();
-        setTests(data.tests);
-      }
+      // Feature #59: Use React Query invalidation to refresh tests
+      invalidateBySuite(suiteId || '');
       toast.success('Test duplicated successfully');
     } catch (err) {
       console.error('Failed to duplicate test:', err);
@@ -551,14 +536,8 @@ function TestSuitePage() {
         const data = await response.json();
         throw new Error(data.message || 'Failed to delete test');
       }
-      // Refresh tests list
-      const refreshResponse = await fetch(`/api/v1/suites/${suiteId}/tests`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (refreshResponse.ok) {
-        const data = await refreshResponse.json();
-        setTests(data.tests);
-      }
+      // Feature #59: Use React Query invalidation to refresh tests
+      invalidateBySuite(suiteId || '');
       toast.success('Test deleted successfully');
       setShowDeleteTestModal(null);
     } catch (err) {
@@ -937,14 +916,8 @@ function TestSuitePage() {
       toast.success('Template steps inserted into test');
       setShowTemplateModal(false);
       setInsertTemplateForTest(null);
-      // Refresh tests
-      const refreshResponse = await fetch(`/api/v1/suites/${suiteId}/tests`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (refreshResponse.ok) {
-        const data = await refreshResponse.json();
-        setTests(data.tests);
-      }
+      // Feature #59: Use React Query invalidation to refresh tests
+      invalidateBySuite(suiteId || '');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to insert template');
     }
@@ -1300,23 +1273,76 @@ function TestSuitePage() {
           loadStepTemplates={loadStepTemplates}
         />
 
-                {/* Feature #1800: New two-section Create Test Modal */}
+        {/* Feature #59: Pagination controls for tests */}
+        {pagination && pagination.totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-between rounded-lg border border-border bg-card p-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, pagination.total)} of {pagination.total} tests
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Per page:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="rounded border border-input bg-background px-2 py-1 text-sm"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={!pagination.hasPrev}
+                  className="rounded px-2 py-1 text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="First page"
+                >
+                  ««
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={!pagination.hasPrev}
+                  className="rounded px-2 py-1 text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Previous page"
+                >
+                  «
+                </button>
+                <span className="px-3 text-sm">
+                  {currentPage} / {pagination.totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                  disabled={!pagination.hasNext}
+                  className="rounded px-2 py-1 text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Next page"
+                >
+                  »
+                </button>
+                <button
+                  onClick={() => setCurrentPage(pagination.totalPages)}
+                  disabled={!pagination.hasNext}
+                  className="rounded px-2 py-1 text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Last page"
+                >
+                  »»
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Feature #1800: New two-section Create Test Modal */}
         <CreateTestModal
           isOpen={showNewCreateTestModal}
           onClose={() => setShowNewCreateTestModal(false)}
           onTestCreated={async (test) => {
-            // Refresh tests list after creation
-            try {
-              const response = await fetch(`/api/v1/suites/${suiteId}/tests`, {
-                headers: { 'Authorization': `Bearer ${token}` },
-              });
-              if (response.ok) {
-                const data = await response.json();
-                setTests(data.tests);
-              }
-            } catch (err) {
-              console.error('Failed to refresh tests:', err);
-            }
+            // Feature #59: Use React Query invalidation to refresh tests
+            invalidateBySuite(suiteId || '');
             // Feature #1985: Handle Create & Run flow
             if (test.runId) {
               // Navigate to run details page after Create & Run
