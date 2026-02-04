@@ -5,6 +5,7 @@ dotenv.config();
 
 import Fastify from 'fastify';
 import { initializeDatabase, isDatabaseConnected, healthCheck as dbHealthCheck, closeDatabase } from './services/database';
+import { initializeCache, closeCache, getCache } from './services/cache'; // Feature #60: Redis cache service
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import swagger from '@fastify/swagger';
@@ -241,11 +242,15 @@ app.get('/health', async () => {
   // Check database health
   const dbCheck = await dbHealthCheck();
 
+  // Feature #60: Check cache status
+  const cacheStats = await getCache().stats();
+
   const checks = {
     server: true,
     socketio: io !== null,
     filesystem: true,
     database: dbCheck.status === 'ok',
+    cache: cacheStats.redisConnected || cacheStats.memoryCacheSize >= 0, // Always true with fallback
   };
 
   // Check filesystem (screenshots/traces/videos directories)
@@ -274,6 +279,12 @@ app.get('/health', async () => {
       latency: dbCheck.latency,
       error: dbCheck.error,
     },
+    // Feature #60: Include cache status in health check
+    cache: {
+      redisConnected: cacheStats.redisConnected,
+      memoryCacheSize: cacheStats.memoryCacheSize,
+      redisKeyCount: cacheStats.redisKeyCount,
+    },
     version: '1.0.0',
     uptime: process.uptime(),
   };
@@ -297,6 +308,14 @@ async function start() {
       console.log('[Startup] PostgreSQL database connected - data will persist');
     } else {
       console.log('[Startup] Using in-memory storage - data will NOT persist across restarts');
+    }
+
+    // Feature #60: Initialize Redis cache service (optional - will fall back to in-memory if not available)
+    const cache = await initializeCache();
+    if (cache.isRedisConnected()) {
+      console.log('[Startup] Redis cache connected - caching enabled');
+    } else {
+      console.log('[Startup] Redis not available - using in-memory cache fallback');
     }
 
     // Seed test users AFTER database is connected
@@ -416,6 +435,7 @@ start();
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('[Shutdown] SIGTERM received, closing connections...');
+  await closeCache(); // Feature #60: Close cache connection
   await closeDatabase();
   await app.close();
   process.exit(0);
@@ -423,6 +443,7 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   console.log('[Shutdown] SIGINT received, closing connections...');
+  await closeCache(); // Feature #60: Close cache connection
   await closeDatabase();
   await app.close();
   process.exit(0);

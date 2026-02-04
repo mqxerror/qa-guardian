@@ -1,0 +1,400 @@
+/**
+ * Redis Cache Service
+ * Feature #60: Redis cache service for backend
+ *
+ * Provides centralized caching functionality using Redis (ioredis).
+ * Falls back to in-memory caching if Redis is not available.
+ */
+
+import Redis from 'ioredis';
+import { CacheTTL } from './cache-keys';
+
+// Cache service singleton
+let cacheInstance: CacheService | null = null;
+
+export interface CacheConfig {
+  redisUrl?: string;
+  defaultTTL?: number;
+  keyPrefix?: string;
+  enableFallback?: boolean;
+}
+
+export class CacheService {
+  private redis: Redis | null = null;
+  private memoryCache: Map<string, { value: string; expiresAt: number }> = new Map();
+  private defaultTTL: number;
+  private keyPrefix: string;
+  private connected: boolean = false;
+  private enableFallback: boolean;
+
+  constructor(config: CacheConfig = {}) {
+    this.defaultTTL = config.defaultTTL || CacheTTL.STANDARD;
+    this.keyPrefix = config.keyPrefix || 'qa-guardian:';
+    this.enableFallback = config.enableFallback !== false; // Default to true
+
+    const redisUrl = config.redisUrl || process.env.REDIS_URL;
+
+    if (redisUrl) {
+      try {
+        this.redis = new Redis(redisUrl, {
+          maxRetriesPerRequest: 3,
+          retryStrategy: (times) => {
+            if (times > 3) {
+              console.warn('[CacheService] Redis connection failed after 3 retries, using memory fallback');
+              return null; // Stop retrying
+            }
+            return Math.min(times * 100, 2000); // Exponential backoff
+          },
+          lazyConnect: true, // Don't connect immediately
+        });
+
+        this.redis.on('connect', () => {
+          this.connected = true;
+          console.log('[CacheService] Connected to Redis');
+        });
+
+        this.redis.on('error', (err) => {
+          console.warn('[CacheService] Redis error:', err.message);
+          this.connected = false;
+        });
+
+        this.redis.on('close', () => {
+          this.connected = false;
+          console.log('[CacheService] Redis connection closed');
+        });
+      } catch (err) {
+        console.warn('[CacheService] Failed to initialize Redis:', err);
+        this.redis = null;
+      }
+    } else {
+      console.log('[CacheService] No REDIS_URL configured, using in-memory cache');
+    }
+
+    // Cleanup expired memory cache entries periodically
+    setInterval(() => this.cleanupMemoryCache(), 60 * 1000);
+  }
+
+  /**
+   * Connect to Redis (if configured)
+   */
+  async connect(): Promise<boolean> {
+    if (!this.redis) {
+      return false;
+    }
+
+    try {
+      await this.redis.connect();
+      return true;
+    } catch (err) {
+      console.warn('[CacheService] Failed to connect to Redis:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Check if cache service is available
+   */
+  isAvailable(): boolean {
+    return this.connected || this.enableFallback;
+  }
+
+  /**
+   * Check if Redis is connected
+   */
+  isRedisConnected(): boolean {
+    return this.connected;
+  }
+
+  /**
+   * Get a value from cache
+   */
+  async get<T>(key: string): Promise<T | null> {
+    const fullKey = this.keyPrefix + key;
+
+    // Try Redis first
+    if (this.redis && this.connected) {
+      try {
+        const value = await this.redis.get(fullKey);
+        if (value) {
+          return JSON.parse(value) as T;
+        }
+      } catch (err) {
+        console.warn(`[CacheService] Redis get error for key ${key}:`, err);
+      }
+    }
+
+    // Fall back to memory cache
+    if (this.enableFallback) {
+      const entry = this.memoryCache.get(fullKey);
+      if (entry && entry.expiresAt > Date.now()) {
+        return JSON.parse(entry.value) as T;
+      }
+      // Remove expired entry
+      if (entry) {
+        this.memoryCache.delete(fullKey);
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Set a value in cache
+   */
+  async set(key: string, value: unknown, ttl?: number): Promise<boolean> {
+    const fullKey = this.keyPrefix + key;
+    const ttlSeconds = ttl || this.defaultTTL;
+    const serialized = JSON.stringify(value);
+
+    // Try Redis first
+    if (this.redis && this.connected) {
+      try {
+        await this.redis.setex(fullKey, ttlSeconds, serialized);
+        return true;
+      } catch (err) {
+        console.warn(`[CacheService] Redis set error for key ${key}:`, err);
+      }
+    }
+
+    // Fall back to memory cache
+    if (this.enableFallback) {
+      this.memoryCache.set(fullKey, {
+        value: serialized,
+        expiresAt: Date.now() + (ttlSeconds * 1000),
+      });
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Delete a specific key from cache
+   */
+  async delete(key: string): Promise<boolean> {
+    const fullKey = this.keyPrefix + key;
+
+    let deleted = false;
+
+    // Delete from Redis
+    if (this.redis && this.connected) {
+      try {
+        const result = await this.redis.del(fullKey);
+        deleted = result > 0;
+      } catch (err) {
+        console.warn(`[CacheService] Redis delete error for key ${key}:`, err);
+      }
+    }
+
+    // Delete from memory cache
+    if (this.enableFallback) {
+      deleted = this.memoryCache.delete(fullKey) || deleted;
+    }
+
+    return deleted;
+  }
+
+  /**
+   * Invalidate all keys matching a pattern
+   * Pattern uses Redis SCAN with MATCH for efficiency
+   */
+  async invalidate(pattern: string): Promise<number> {
+    const fullPattern = this.keyPrefix + pattern;
+    let count = 0;
+
+    // Invalidate from Redis using SCAN (non-blocking)
+    if (this.redis && this.connected) {
+      try {
+        let cursor = '0';
+        do {
+          const [newCursor, keys] = await this.redis.scan(cursor, 'MATCH', fullPattern, 'COUNT', 100);
+          cursor = newCursor;
+
+          if (keys.length > 0) {
+            const deleted = await this.redis.del(...keys);
+            count += deleted;
+          }
+        } while (cursor !== '0');
+      } catch (err) {
+        console.warn(`[CacheService] Redis invalidate error for pattern ${pattern}:`, err);
+      }
+    }
+
+    // Invalidate from memory cache
+    if (this.enableFallback) {
+      const regex = new RegExp('^' + fullPattern.replace(/\*/g, '.*') + '$');
+      for (const key of this.memoryCache.keys()) {
+        if (regex.test(key)) {
+          this.memoryCache.delete(key);
+          count++;
+        }
+      }
+    }
+
+    return count;
+  }
+
+  /**
+   * Check if a key exists in cache
+   */
+  async exists(key: string): Promise<boolean> {
+    const fullKey = this.keyPrefix + key;
+
+    // Check Redis first
+    if (this.redis && this.connected) {
+      try {
+        const result = await this.redis.exists(fullKey);
+        if (result > 0) return true;
+      } catch (err) {
+        console.warn(`[CacheService] Redis exists error for key ${key}:`, err);
+      }
+    }
+
+    // Check memory cache
+    if (this.enableFallback) {
+      const entry = this.memoryCache.get(fullKey);
+      return entry !== undefined && entry.expiresAt > Date.now();
+    }
+
+    return false;
+  }
+
+  /**
+   * Get or set a value (cache-aside pattern)
+   */
+  async getOrSet<T>(
+    key: string,
+    fetchFn: () => Promise<T>,
+    ttl?: number
+  ): Promise<T> {
+    // Try to get from cache first
+    const cached = await this.get<T>(key);
+    if (cached !== null) {
+      return cached;
+    }
+
+    // Fetch fresh data
+    const value = await fetchFn();
+
+    // Store in cache
+    await this.set(key, value, ttl);
+
+    return value;
+  }
+
+  /**
+   * Clear all cache (use with caution)
+   */
+  async clear(): Promise<void> {
+    // Clear Redis keys with our prefix
+    if (this.redis && this.connected) {
+      try {
+        let cursor = '0';
+        do {
+          const [newCursor, keys] = await this.redis.scan(cursor, 'MATCH', this.keyPrefix + '*', 'COUNT', 100);
+          cursor = newCursor;
+
+          if (keys.length > 0) {
+            await this.redis.del(...keys);
+          }
+        } while (cursor !== '0');
+      } catch (err) {
+        console.warn('[CacheService] Redis clear error:', err);
+      }
+    }
+
+    // Clear memory cache
+    this.memoryCache.clear();
+  }
+
+  /**
+   * Get cache statistics
+   */
+  async stats(): Promise<{
+    redisConnected: boolean;
+    memoryCacheSize: number;
+    redisKeyCount?: number;
+  }> {
+    const stats = {
+      redisConnected: this.connected,
+      memoryCacheSize: this.memoryCache.size,
+      redisKeyCount: undefined as number | undefined,
+    };
+
+    if (this.redis && this.connected) {
+      try {
+        let count = 0;
+        let cursor = '0';
+        do {
+          const [newCursor, keys] = await this.redis.scan(cursor, 'MATCH', this.keyPrefix + '*', 'COUNT', 1000);
+          cursor = newCursor;
+          count += keys.length;
+        } while (cursor !== '0');
+        stats.redisKeyCount = count;
+      } catch (err) {
+        console.warn('[CacheService] Redis stats error:', err);
+      }
+    }
+
+    return stats;
+  }
+
+  /**
+   * Close the cache service connection
+   */
+  async close(): Promise<void> {
+    if (this.redis) {
+      await this.redis.quit();
+      this.redis = null;
+      this.connected = false;
+    }
+    this.memoryCache.clear();
+  }
+
+  /**
+   * Clean up expired memory cache entries
+   */
+  private cleanupMemoryCache(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.memoryCache.entries()) {
+      if (entry.expiresAt < now) {
+        this.memoryCache.delete(key);
+      }
+    }
+  }
+}
+
+/**
+ * Get the singleton cache service instance
+ */
+export function getCache(): CacheService {
+  if (!cacheInstance) {
+    cacheInstance = new CacheService();
+  }
+  return cacheInstance;
+}
+
+/**
+ * Initialize the cache service (call on startup)
+ */
+export async function initializeCache(config?: CacheConfig): Promise<CacheService> {
+  if (cacheInstance) {
+    await cacheInstance.close();
+  }
+  cacheInstance = new CacheService(config);
+  await cacheInstance.connect();
+  return cacheInstance;
+}
+
+/**
+ * Close the cache service (call on shutdown)
+ */
+export async function closeCache(): Promise<void> {
+  if (cacheInstance) {
+    await cacheInstance.close();
+    cacheInstance = null;
+  }
+}
+
+// Export the CacheTTL and CacheKeys for convenience
+export { CacheTTL, CacheKeys } from './cache-keys';
