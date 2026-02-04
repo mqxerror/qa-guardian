@@ -41,6 +41,290 @@ import {
   CustomMetricDefinition,
 } from './k6-helpers';
 
+// ============================================================================
+// Threshold Evaluation (Feature #45)
+// ============================================================================
+
+/**
+ * Result of evaluating a single threshold
+ */
+interface ThresholdEvalResult {
+  metric: string;
+  expression: string;
+  passed: boolean;
+  actualValue: number;
+  threshold: number;
+  operator: string;
+  error?: string;
+}
+
+/**
+ * Result of evaluating all thresholds
+ */
+interface ThresholdEvaluation {
+  allPassed: boolean;
+  results: ThresholdEvalResult[];
+  failedThresholds: ThresholdEvalResult[];
+}
+
+/**
+ * Parse a K6 threshold expression and extract components
+ * Supports: p(95)<500, avg<200, rate<0.01, count>1000, value>0, med<300, min<100, max<1000
+ */
+function parseThresholdExpression(expression: string): {
+  aggregation: string;
+  percentile?: number;
+  operator: string;
+  threshold: number;
+} | null {
+  const expr = expression.trim();
+
+  // Pattern: function(args)operator value or function operator value
+  // e.g., p(95)<500, avg<200, rate<0.01
+  const exprPattern = /^(avg|min|max|med|p|count|rate|value)(?:\s*\(\s*(\d+(?:\.\d+)?)\s*\))?\s*([<>=!]+)\s*(-?\d+(?:\.\d+)?)$/;
+  const match = expr.match(exprPattern);
+
+  if (!match) return null;
+
+  const [, aggregation, percentileArg, operator, thresholdStr] = match;
+
+  return {
+    aggregation: aggregation || 'value',
+    percentile: percentileArg ? parseFloat(percentileArg) : undefined,
+    operator: operator || '<',
+    threshold: parseFloat(thresholdStr || '0'),
+  };
+}
+
+/**
+ * Get the actual metric value from load test results
+ */
+function getMetricValue(
+  metric: string,
+  aggregation: string,
+  percentile: number | undefined,
+  loadTestResults: any
+): number | null {
+  // Map K6 metric names to our result structure
+  switch (metric) {
+    case 'http_req_duration':
+      // Response time metrics
+      switch (aggregation) {
+        case 'p':
+          if (percentile === 90) return loadTestResults.response_times?.p90;
+          if (percentile === 95) return loadTestResults.response_times?.p95;
+          if (percentile === 99) return loadTestResults.response_times?.p99;
+          // For other percentiles, estimate from available data
+          if (percentile && percentile < 90) return loadTestResults.response_times?.avg;
+          if (percentile && percentile > 95) return loadTestResults.response_times?.p99;
+          return loadTestResults.response_times?.p95; // Default to p95
+        case 'avg':
+          return loadTestResults.response_times?.avg;
+        case 'min':
+          return loadTestResults.response_times?.min;
+        case 'max':
+          return loadTestResults.response_times?.max;
+        case 'med':
+          return loadTestResults.response_times?.med ?? loadTestResults.response_times?.avg;
+        default:
+          return loadTestResults.response_times?.avg;
+      }
+
+    case 'http_req_failed':
+      // Failure rate (0-1)
+      const failedRequests = loadTestResults.summary?.failed_requests || 0;
+      const totalRequests = loadTestResults.summary?.total_requests || 1;
+      return failedRequests / totalRequests;
+
+    case 'http_reqs':
+      // Request count
+      if (aggregation === 'count') return loadTestResults.summary?.total_requests;
+      if (aggregation === 'rate') {
+        const rps = parseFloat(loadTestResults.summary?.requests_per_second || '0');
+        return rps;
+      }
+      return loadTestResults.summary?.total_requests;
+
+    case 'iterations':
+      return loadTestResults.summary?.iterations;
+
+    case 'vus':
+    case 'vus_max':
+      return loadTestResults.virtual_users?.max_concurrent;
+
+    case 'data_received':
+      if (aggregation === 'count') return loadTestResults.data_transfer?.received_bytes;
+      if (aggregation === 'rate') return loadTestResults.data_transfer?.received_rate;
+      return loadTestResults.data_transfer?.received_bytes;
+
+    case 'data_sent':
+      if (aggregation === 'count') return loadTestResults.data_transfer?.sent_bytes;
+      if (aggregation === 'rate') return loadTestResults.data_transfer?.sent_rate;
+      return loadTestResults.data_transfer?.sent_bytes;
+
+    case 'checks':
+      // Check pass rate (from checks array)
+      if (loadTestResults.checks && loadTestResults.checks.length > 0) {
+        const totalPasses = loadTestResults.checks.reduce((sum: number, c: any) => sum + c.passes, 0);
+        const totalFails = loadTestResults.checks.reduce((sum: number, c: any) => sum + c.fails, 0);
+        const total = totalPasses + totalFails;
+        if (total === 0) return 1; // No checks = 100% pass
+        return totalPasses / total;
+      }
+      return 1; // Default to 100% if no checks defined
+
+    default:
+      // Check custom metrics
+      if (loadTestResults.custom_metrics) {
+        const customMetric = loadTestResults.custom_metrics.find((m: any) => m.name === metric);
+        if (customMetric) {
+          if (typeof customMetric.value === 'object') {
+            // Trend metric with aggregations
+            switch (aggregation) {
+              case 'avg': return customMetric.value.avg;
+              case 'min': return customMetric.value.min;
+              case 'max': return customMetric.value.max;
+              case 'p':
+                if (percentile === 95) return customMetric.value.p95;
+                if (percentile === 99) return customMetric.value.p99;
+                return customMetric.value.avg;
+              default: return customMetric.value.avg;
+            }
+          }
+          return customMetric.value;
+        }
+      }
+      return null;
+  }
+}
+
+/**
+ * Compare a value against a threshold using the given operator
+ */
+function compareValue(actual: number, operator: string, threshold: number): boolean {
+  switch (operator) {
+    case '<': return actual < threshold;
+    case '<=': return actual <= threshold;
+    case '>': return actual > threshold;
+    case '>=': return actual >= threshold;
+    case '==': return actual === threshold;
+    case '!=': return actual !== threshold;
+    default: return actual < threshold; // Default to less-than
+  }
+}
+
+/**
+ * Evaluate all configured thresholds against actual results
+ */
+function evaluateThresholds(
+  thresholds: Array<{ metric: string; expression: string; abortOnFail?: boolean; delayAbortEval?: string }> | undefined,
+  loadTestResults: any
+): ThresholdEvaluation {
+  const results: ThresholdEvalResult[] = [];
+  const failedThresholds: ThresholdEvalResult[] = [];
+
+  // If no thresholds configured, use default thresholds
+  const effectiveThresholds = thresholds && thresholds.length > 0
+    ? thresholds
+    : [
+        { metric: 'http_req_failed', expression: 'rate<0.05' }, // Default: 95% success rate
+        { metric: 'http_req_duration', expression: 'p(95)<1000' }, // Default: p95 < 1000ms
+      ];
+
+  for (const threshold of effectiveThresholds) {
+    const parsed = parseThresholdExpression(threshold.expression);
+
+    if (!parsed) {
+      results.push({
+        metric: threshold.metric,
+        expression: threshold.expression,
+        passed: false,
+        actualValue: 0,
+        threshold: 0,
+        operator: '?',
+        error: `Invalid threshold expression: ${threshold.expression}`,
+      });
+      continue;
+    }
+
+    const actualValue = getMetricValue(
+      threshold.metric,
+      parsed.aggregation,
+      parsed.percentile,
+      loadTestResults
+    );
+
+    if (actualValue === null) {
+      // Metric not found - skip but log warning
+      console.warn(`[K6 Threshold] Metric not found: ${threshold.metric}`);
+      results.push({
+        metric: threshold.metric,
+        expression: threshold.expression,
+        passed: true, // Don't fail on missing metrics
+        actualValue: 0,
+        threshold: parsed.threshold,
+        operator: parsed.operator,
+        error: `Metric not available: ${threshold.metric}`,
+      });
+      continue;
+    }
+
+    const passed = compareValue(actualValue, parsed.operator, parsed.threshold);
+
+    const result: ThresholdEvalResult = {
+      metric: threshold.metric,
+      expression: threshold.expression,
+      passed,
+      actualValue,
+      threshold: parsed.threshold,
+      operator: parsed.operator,
+    };
+
+    results.push(result);
+    if (!passed) {
+      failedThresholds.push(result);
+    }
+  }
+
+  return {
+    allPassed: failedThresholds.length === 0,
+    results,
+    failedThresholds,
+  };
+}
+
+/**
+ * Format threshold failures into a human-readable error message
+ */
+function formatThresholdError(failedThresholds: ThresholdEvalResult[]): string {
+  if (failedThresholds.length === 0) return '';
+
+  const errors = failedThresholds.map(f => {
+    // Format the actual value based on the metric
+    let formattedActual = f.actualValue.toString();
+    if (f.metric === 'http_req_failed' || f.metric === 'checks') {
+      formattedActual = (f.actualValue * 100).toFixed(2) + '%';
+    } else if (f.metric === 'http_req_duration') {
+      formattedActual = f.actualValue.toFixed(0) + 'ms';
+    }
+
+    // Format the threshold
+    let formattedThreshold = f.threshold.toString();
+    if (f.metric === 'http_req_failed' || f.metric === 'checks') {
+      formattedThreshold = (f.threshold * 100).toFixed(2) + '%';
+    } else if (f.metric === 'http_req_duration') {
+      formattedThreshold = f.threshold.toFixed(0) + 'ms';
+    }
+
+    return `${f.metric}: ${formattedActual} (threshold: ${f.expression})`;
+  });
+
+  if (errors.length === 1) {
+    return `Threshold failed: ${errors[0]}`;
+  }
+  return `${errors.length} thresholds failed: ${errors.join('; ')}`;
+}
+
 // Environment variable to control K6 execution mode
 // Set USE_REAL_K6=false for CI/testing environments without K6 installed
 const USE_REAL_K6 = process.env.USE_REAL_K6 !== 'false';
@@ -560,16 +844,15 @@ export async function executeLoadTest(
           const actualDuration = Date.now() - loadTestStepStart;
           loadTestResults = convertK6SummaryToResults(k6Result.summary, test, actualDuration);
 
-          // Determine pass/fail from actual metrics
-          const successRate = parseFloat(loadTestResults.summary.success_rate);
-          const p95 = loadTestResults.response_times.p95;
+          // Evaluate thresholds against actual metrics (Feature #45)
+          const thresholdEval = evaluateThresholds(test.k6_thresholds, loadTestResults);
 
-          if (successRate < 95) {
+          // Add threshold results to loadTestResults for UI display
+          loadTestResults.threshold_results = thresholdEval.results;
+
+          if (!thresholdEval.allPassed) {
             testStatus = 'failed';
-            testError = `Success rate ${successRate.toFixed(2)}% is below 95% threshold`;
-          } else if (p95 > 1000) {
-            testStatus = 'failed';
-            testError = `P95 response time ${p95}ms exceeds 1000ms threshold`;
+            testError = formatThresholdError(thresholdEval.failedThresholds);
           }
         } else {
           // K6 execution failed, fall back to error state
@@ -633,14 +916,15 @@ export async function executeLoadTest(
       // Generate simulated results
       loadTestResults = generateSimulatedResults(test, customMetrics, serverError);
 
-      // Determine pass/fail
-      const successRate = parseFloat(loadTestResults.summary.success_rate);
-      if (successRate < 95) {
+      // Evaluate thresholds against simulated metrics (Feature #45)
+      const thresholdEval = evaluateThresholds(test.k6_thresholds, loadTestResults);
+
+      // Add threshold results to loadTestResults for UI display
+      loadTestResults.threshold_results = thresholdEval.results;
+
+      if (!thresholdEval.allPassed) {
         testStatus = 'failed';
-        testError = `Success rate ${successRate.toFixed(2)}% is below 95% threshold`;
-      } else if (loadTestResults.response_times.p95 > 1000) {
-        testStatus = 'failed';
-        testError = `P95 response time ${loadTestResults.response_times.p95}ms exceeds 1000ms threshold`;
+        testError = formatThresholdError(thresholdEval.failedThresholds);
       }
     }
 
