@@ -23,3 +23,6 @@ export { CreateCheckModal, type CreateCheckModalProps } from './modals';
 export { TransactionModal, type TransactionModalProps } from './modals';
 export { PerformanceCheckModal, type PerformanceCheckModalProps } from './modals';
 export { WebhookModal, type WebhookModalProps } from './modals';
+
+// Hooks
+export { useMonitoringSettings, type UseMonitoringSettingsReturn } from './hooks';
