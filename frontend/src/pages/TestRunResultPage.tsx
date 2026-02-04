@@ -12,390 +12,25 @@ import { jsPDF } from 'jspdf';
 import { io, Socket } from 'socket.io-client';
 import { toast } from '../stores/toastStore';
 
-// Types for run result data
-interface StepResult {
-  id: string;
-  action: string;
-  selector?: string;
-  value?: string;
-  status: 'passed' | 'failed' | 'skipped';
-  duration_ms: number;
-  error?: string;
-  screenshot_timeout?: boolean;
-  navigation_error?: boolean;
-  http_status?: number;
-  // Feature #1913: Multi-viewport visual test support
-  viewport?: string; // Viewport label for multi-viewport tests (e.g., "Desktop (1920x1080)")
-  // Feature #1833: Timeline enhancement - timestamps and screenshots per step
-  timestamp?: number; // Unix timestamp when step started
-  screenshot_before?: string; // Base64 screenshot before action
-  screenshot_after?: string; // Base64 screenshot after action
-  // Feature #1833: Per-step network requests and console logs
-  network_requests?: NetworkRequest[];
-  console_logs?: ConsoleLog[];
-  metadata?: {
-    screenshot_url?: string;
-    diff_percentage?: number;
-    baseline_url?: string;
-    comparison_url?: string;
-    diff_url?: string;
-    isBrowserCrash?: boolean;
-    crashDetectedAt?: string;
-    crashDumpFile?: string;
-    suggestion?: string;
-    canRetry?: boolean;
-  };
-  load_test?: {
-    virtual_users: number | { configured: number; peak: number };
-    duration: number;
-    requests_per_second: number;
-    avg_response_time: number;
-    p95_response_time: number;
-    error_rate: number;
-    http_codes?: Record<string, number>;
-    response_times?: {
-      avg: number;
-      min: number;
-      max: number;
-      median: number;
-      p50?: number;
-      p90: number;
-      p95: number;
-      p99: number;
-    };
-    summary?: {
-      http_req_duration_avg: number;
-      http_req_duration_p95: number;
-      http_req_duration_p99: number;
-      http_reqs: number;
-      iterations: number;
-      vus_max: number;
-      success_rate?: number;
-      total_requests?: number;
-      requests_per_second?: number;
-      peak_rps?: number;
-      data_transferred_formatted?: string;
-    };
-  };
-  lighthouse?: {
-    performance: number;
-    accessibility: number;
-    best_practices: number;
-    bestPractices?: number;
-    seo: number;
-    pwa?: number;
-    lcp?: number;
-    cls?: number;
-    fcp?: number;
-    tbt?: number;
-    url?: string;
-    device?: string;
-    metrics?: {
-      lcp?: number;
-      fid?: number;
-      cls?: number;
-      fcp?: number;
-      tbt?: number;
-      ttfb?: number;
-      si?: number;
-      tti?: number;
-    };
-    // Feature #1887, #1889: Opportunities, diagnostics, and passed audits from Lighthouse
-    opportunities?: Array<{
-      id: string;
-      title: string;
-      savings: number;
-      description: string;
-    }>;
-    diagnostics?: Array<{
-      id: string;
-      title: string;
-      description: string;
-    }>;
-    passedAudits?: Array<{
-      id: string;
-      title: string;
-      description: string;
-      category?: string;
-    }>;
-    // Feature #1890: Security detection results
-    csp?: {
-      detected: boolean;
-      header?: string;
-      blocksLighthouse: boolean;
-      warning?: string;
-      partialResults: boolean;
-      bypassEnabled: boolean;
-      suggestion?: string;
-    };
-    authentication?: {
-      required: boolean;
-      warning?: string;
-      suggestion?: string;
-      redirectedToLogin: boolean;
-      originalUrl?: string;
-      actualUrl?: string;
-      loginIndicators?: string[];
-      resultsReflectLoginPage: boolean;
-    };
-    mixedContent?: {
-      detected: boolean;
-      warning?: string;
-      count: number;
-      activeCount: number;
-      passiveCount: number;
-      resources: Array<{
-        url: string;
-        resourceType: string;
-        severity: 'passive' | 'active';
-      }>;
-      hasMore: boolean;
-      remediation: string[];
-      securityImpact: 'high' | 'medium';
-      scorePenalty: number;
-    };
-    // Feature #1893: Filmstrip view of page load
-    filmstrip?: Array<{
-      timestamp_ms: number;
-      screenshot_base64: string;
-      label?: string;
-    }>;
-    // Comparison to previous run
-    comparison_to_previous?: {
-      improved?: boolean;
-      avg_change?: number;
-      performance_change?: number;
-      accessibility_change?: number;
-      seo_change?: number;
-    };
-  };
-  accessibility?: {
-    violations: AccessibilityViolation[];
-    passes: number;
-    incomplete: number;
-    inapplicable: number;
-    score?: number;
-    wcagLevel?: string;
-    axeVersion?: string;
-  };
-}
-
-interface AccessibilityViolation {
-  id: string;
-  impact: 'critical' | 'serious' | 'moderate' | 'minor';
-  description: string;
-  help: string;
-  helpUrl: string;
-  wcagTags?: string[];
-  nodes?: Array<{
-    html: string;
-    target: string[];
-    failureSummary: string;
-  }>;
-}
-
-interface ConsoleLog {
-  timestamp: number;
-  level: 'log' | 'info' | 'warn' | 'error' | 'debug';
-  message: string;
-  location?: string;
-}
-
-interface NetworkRequest {
-  timestamp: number;
-  method: string;
-  url: string;
-  resourceType: string;
-  status?: number;
-  statusText?: string;
-  duration_ms?: number;
-  requestSize?: number;
-  responseSize?: number;
-  failed?: boolean;
-  failureText?: string;
-}
-
-interface TestResult {
-  test_id: string;
-  test_name: string;
-  test_type?: 'e2e' | 'visual_regression' | 'lighthouse' | 'load' | 'accessibility'; // Feature #1991: Test type for PDF breakdown
-  status: 'passed' | 'failed' | 'error' | 'skipped';
-  duration_ms: number;
-  steps: StepResult[];
-  error?: string;
-  screenshot_base64?: string;
-  trace_file?: string;
-  video_file?: string;
-  console_logs?: ConsoleLog[];
-  network_requests?: NetworkRequest[];
-  visual_comparison?: {
-    hasBaseline: boolean;
-    baselineScreenshot?: string;
-    diffPercentage?: number;
-    diffImage?: string;
-    mismatchedPixels?: number;
-    totalPixels?: number;
-    baselineCorrupted?: boolean;
-    corruptionError?: string;
-  };
-  baseline_screenshot_base64?: string;
-  diff_image_base64?: string;
-  diff_percentage?: number;
-  // Feature #1913: Multi-viewport results
-  viewport_results?: Array<{
-    viewportId: string;
-    viewportLabel: string;
-    width: number;
-    height: number;
-    visualComparison?: {
-      hasBaseline: boolean;
-      diffPercentage?: number;
-      mismatchedPixels?: number;
-      totalPixels?: number;
-    };
-    screenshotBase64?: string;
-    baselineScreenshotBase64?: string;
-    diffImageBase64?: string;
-    diffPercentage?: number;
-  }>;
-  load_test?: {
-    summary: {
-      total_requests: number;
-      failed_requests: number;
-      success_rate: string;
-      requests_per_second: string;
-      data_transferred: number;
-      data_transferred_formatted: string;
-      max_vus?: number;
-      duration_formatted?: string;
-      peak_rps?: number;
-      data_sent?: number;
-      data_received?: number;
-    };
-    response_times: {
-      min: number;
-      avg: number;
-      median: number;
-      p50?: number;
-      p75?: number;
-      p90: number;
-      p95: number;
-      p99: number;
-      max: number;
-    };
-    virtual_users: {
-      configured: number;
-      max_concurrent: number;
-    };
-    duration: {
-      configured: number;
-      actual: number;
-      ramp_up: number;
-    };
-    http_codes: Record<string, number>;
-    // Checks - array of assertion results
-    checks: Array<{ name: string; passes: number; fails: number; pass_rate?: number }>;
-    // Feature #1836: K6 dashboard additions
-    thresholds?: Record<string, boolean>;
-    endpoints?: Array<{
-      path: string;
-      method: string;
-      count: number;
-      avg_time: number;
-      p95_time: number;
-      error_rate: number;
-    }>;
-    time_series?: Array<{
-      time: string;
-      timestamp?: number;
-      vus: number;
-      rps: number;
-      avg_response_time: number;
-      p95_response_time: number;
-    }>;
-    response_time_distribution?: Array<{
-      range: string;
-      count: number;
-      percentage: number;
-    }>;
-    // Additional load test properties
-    started_at?: string;
-    target_url?: string;
-    environment?: string;
-    configuration?: {
-      max_vus?: number;
-      target_vus?: number;
-      duration?: string;
-      duration_formatted?: string;
-    };
-    comparison_to_previous?: {
-      improved?: boolean;
-      percentage_change?: number;
-      requests_per_second_change?: number;
-      avg_response_time_change?: number;
-      success_rate_change?: number;
-    };
-    peak_rps?: number;
-    threshold_details?: Array<{
-      name: string;
-      passed: boolean;
-      value: number;
-      threshold: number;
-    }>;
-    error_annotations?: Array<{
-      time: string;
-      timestamp?: number;
-      message: string;
-      type?: string;
-    }>;
-    error_time_series?: Array<{
-      timestamp: number;
-      count: number;
-      types: Record<string, number>;
-    }>;
-    data_sent?: number;
-    data_received?: number;
-    expected_bandwidth?: number;
-    content_type_breakdown?: Array<{ type: string; bytes: number; percentage: number }>;
-    error_types?: Record<string, number>;
-    custom_metrics?: Array<{
-      name: string;
-      type: 'counter' | 'rate' | 'trend' | 'gauge';
-      value?: number;
-      values?: { avg?: number; min?: number; max?: number; p90?: number; p95?: number };
-    }>;
-  };
-}
-
-interface TestRun {
-  id: string;
-  suite_id: string;
-  test_id?: string;
-  organization_id?: string;
-  status: 'pending' | 'running' | 'passed' | 'failed' | 'error' | 'cancelled';
-  started_at?: string;
-  completed_at?: string;
-  duration_ms?: number;
-  created_at: string;
-  results: TestResult[];
-  error?: string;
-  browser?: string;
-  branch?: string;
-}
-
-interface TestInfo {
-  id: string;
-  name: string;
-  type: string;
-  suite_id: string;
-  target_url?: string;
-}
-
-interface SuiteInfo {
-  id: string;
-  name: string;
-  project_id: string;
-}
+// Feature #46: Import modular components and types for performance optimization
+import {
+  ExecutiveSummary,
+  SummaryCards,
+  TabNavigation,
+  formatDuration,
+  formatDateTime,
+  ActiveTab,
+  // Import types from modular components - eliminates ~380 lines of duplicate type definitions
+  StepResult,
+  TestResult,
+  TestRun,
+  TestInfo,
+  SuiteInfo,
+  ConsoleLog,
+  NetworkRequest,
+  AccessibilityViolation,
+  ResultSummary,
+} from '../components/test-run-results';
 
 export default function TestRunResultPage() {
   const { runId } = useParams<{ runId: string }>();
@@ -413,7 +48,7 @@ export default function TestRunResultPage() {
   const [retryTrigger, setRetryTrigger] = useState(0);
 
   // Active sections
-  const [activeTab, setActiveTab] = useState<'results' | 'timeline' | 'screenshots' | 'metrics' | 'logs' | 'visual' | 'accessibility' | 'network'>('results');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('results');
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
   const [expandedLogs, setExpandedLogs] = useState(false);
 
@@ -1148,21 +783,7 @@ export default function TestRunResultPage() {
     seekVideoToTime(stepOffsetMs);
   }, [videoUrl, run, seekVideoToTime]);
 
-  // Format duration
-  const formatDuration = (ms?: number) => {
-    if (ms === undefined || ms === null) return '-';
-    if (ms < 1000) return `${ms}ms`;
-    if (ms < 60000) return `${(ms / 1000).toFixed(2)}s`;
-    const mins = Math.floor(ms / 60000);
-    const secs = ((ms % 60000) / 1000).toFixed(0);
-    return `${mins}m ${secs}s`;
-  };
-
-  // Format timestamp
-  const formatDateTime = (dateStr?: string) => {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleString();
-  };
+  // Format duration and formatDateTime imported from modular components (Feature #46)
 
   // Feature #1833: Format step timestamp (showing time with milliseconds)
   const formatStepTime = (timestamp?: number) => {
@@ -4897,143 +4518,20 @@ Format your response with clear sections using **bold headers** and code blocks 
           </div>
         </div>
 
-        {/* Feature #1858: Executive Summary Card */}
-        <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <span className="text-2xl">📊</span>
-              Executive Summary
-            </h2>
-            <span className="text-xs text-muted-foreground">Run #{run?.id?.slice(-8) || runId?.slice(-8)}</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Health Score */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-              <div className="text-sm text-muted-foreground mb-2">Health Score</div>
-              <div className="flex items-center gap-3">
-                <div className={`text-4xl font-bold ${
-                  resultSummary.total === 0 ? 'text-gray-400' :
-                  Math.round((resultSummary.passed / resultSummary.total) * 100) >= 85 ? 'text-green-600 dark:text-green-400' :
-                  Math.round((resultSummary.passed / resultSummary.total) * 100) >= 70 ? 'text-amber-600 dark:text-amber-400' :
-                  Math.round((resultSummary.passed / resultSummary.total) * 100) >= 50 ? 'text-orange-600 dark:text-orange-400' :
-                  'text-red-600 dark:text-red-400'
-                }`}>
-                  {resultSummary.total === 0 ? 'N/A' : Math.round((resultSummary.passed / resultSummary.total) * 100)}
-                </div>
-                {resultSummary.total > 0 && (
-                  <div className="text-lg text-muted-foreground">/100</div>
-                )}
-              </div>
-              <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    resultSummary.total === 0 ? 'bg-gray-400' :
-                    Math.round((resultSummary.passed / resultSummary.total) * 100) >= 85 ? 'bg-green-500' :
-                    Math.round((resultSummary.passed / resultSummary.total) * 100) >= 70 ? 'bg-amber-500' :
-                    Math.round((resultSummary.passed / resultSummary.total) * 100) >= 50 ? 'bg-orange-500' :
-                    'bg-red-500'
-                  }`}
-                  style={{ width: resultSummary.total === 0 ? '0%' : `${(resultSummary.passed / resultSummary.total) * 100}%` }}
-                />
-              </div>
-            </div>
-            {/* Pass Rate */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-              <div className="text-sm text-muted-foreground mb-2">Pass Rate</div>
-              <div className="flex items-baseline gap-2">
-                <span className={`text-4xl font-bold ${
-                  resultSummary.total === 0 ? 'text-gray-400' :
-                  resultSummary.failed === 0 ? 'text-green-600 dark:text-green-400' :
-                  resultSummary.passed === 0 ? 'text-red-600 dark:text-red-400' :
-                  'text-amber-600 dark:text-amber-400'
-                }`}>
-                  {resultSummary.total === 0 ? '0' : Math.round((resultSummary.passed / resultSummary.total) * 100)}%
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  ({resultSummary.passed}/{resultSummary.total} tests)
-                </span>
-              </div>
-              <div className="mt-3 text-sm text-muted-foreground">
-                {resultSummary.failed === 0 && resultSummary.total > 0 ? (
-                  <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    All tests passed
-                  </span>
-                ) : resultSummary.total > 0 ? (
-                  <span className="text-amber-600 dark:text-amber-400">{resultSummary.failed} test{resultSummary.failed !== 1 ? 's' : ''} need attention</span>
-                ) : (
-                  <span>No test results available</span>
-                )}
-              </div>
-            </div>
-            {/* Critical Issues */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-              <div className="text-sm text-muted-foreground mb-2">Critical Issues</div>
-              <div className="flex items-baseline gap-2">
-                <span className={`text-4xl font-bold ${
-                  resultSummary.failed === 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                }`}>
-                  {resultSummary.failed}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {resultSummary.failed === 1 ? 'failure' : 'failures'}
-                </span>
-              </div>
-              {resultSummary.failed > 0 && (
-                <div className="mt-3 flex flex-col gap-2">
-                  <button
-                    onClick={() => setActiveTab('results')}
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                  >
-                    View failure details
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                  {/* Feature #1962: Batch Analysis button removed - AI only on Visual Review page */}
-                </div>
-              )}
-              {resultSummary.failed === 0 && resultSummary.total > 0 && (
-                <div className="mt-3 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  No critical issues
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Feature #1858: Executive Summary Card - Using modular component (Feature #46) */}
+        <ExecutiveSummary
+          resultSummary={resultSummary}
+          runId={run?.id || runId}
+          onViewFailures={() => setActiveTab('results')}
+        />
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-6">
-          <div className="bg-muted/50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-foreground">{resultSummary.total}</div>
-            <div className="text-sm text-muted-foreground">Total Tests</div>
-          </div>
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{resultSummary.passed}</div>
-            <div className="text-sm text-green-600/70 dark:text-green-400/70">Passed</div>
-          </div>
-          <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{resultSummary.failed}</div>
-            <div className="text-sm text-red-600/70 dark:text-red-400/70">Failed</div>
-          </div>
-          <div className="bg-muted/50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-foreground">{formatDuration(run.duration_ms)}</div>
-            <div className="text-sm text-muted-foreground">Duration</div>
-          </div>
-          <div className="bg-muted/50 rounded-lg p-4">
-            <div className="text-sm font-medium text-foreground">{formatDateTime(run.started_at)}</div>
-            <div className="text-sm text-muted-foreground">Started</div>
-          </div>
-          <div className="bg-muted/50 rounded-lg p-4">
-            <div className="text-sm font-medium text-foreground">{formatDateTime(run.completed_at)}</div>
-            <div className="text-sm text-muted-foreground">Completed</div>
-          </div>
-        </div>
+        {/* Summary Cards - Using modular component (Feature #46) */}
+        <SummaryCards
+          resultSummary={resultSummary}
+          durationMs={run.duration_ms}
+          startedAt={run.started_at}
+          completedAt={run.completed_at}
+        />
 
         {/* Feature #1842: Comparison Panel */}
         {compareMode && (
@@ -5379,39 +4877,21 @@ Format your response with clear sections using **bold headers** and code blocks 
         </div>
       )}
 
-      {/* Tab Navigation */}
-      <div className="border-b border-border mb-6">
-        <nav className="flex gap-1 overflow-x-auto">
-          {[
-            { id: 'results', label: 'Results', icon: '🧪', count: run.results?.length || 0 },
-            { id: 'timeline', label: 'Timeline', icon: '📋', count: allSteps.length },
-            { id: 'screenshots', label: 'Screenshots', icon: '📸', count: screenshots.length },
-            { id: 'metrics', label: 'Metrics', icon: '📊', count: performanceResults.length + loadTestResults.length },
-            { id: 'network', label: 'Network', icon: '🌐', count: networkRequests.length },
-            { id: 'visual', label: 'Visual Diff', icon: '🎨', count: visualResults.length },
-            { id: 'accessibility', label: 'Accessibility', icon: '♿', count: accessibilityResults.length },
-            { id: 'logs', label: 'Logs', icon: '📝', count: consoleLogs.length },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-              }`}
-            >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.label}
-              {tab.count > 0 && (
-                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-muted">
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
-      </div>
+      {/* Tab Navigation - Using modular component (Feature #46) */}
+      <TabNavigation
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab)}
+        tabs={[
+          { id: 'results', label: 'Results', icon: '🧪', count: run.results?.length || 0 },
+          { id: 'timeline', label: 'Timeline', icon: '📋', count: allSteps.length },
+          { id: 'screenshots', label: 'Screenshots', icon: '📸', count: screenshots.length },
+          { id: 'metrics', label: 'Metrics', icon: '📊', count: performanceResults.length + loadTestResults.length },
+          { id: 'network', label: 'Network', icon: '🌐', count: networkRequests.length },
+          { id: 'visual', label: 'Visual Diff', icon: '🎨', count: visualResults.length },
+          { id: 'accessibility', label: 'Accessibility', icon: '♿', count: accessibilityResults.length },
+          { id: 'logs', label: 'Logs', icon: '📝', count: consoleLogs.length },
+        ]}
+      />
 
       {/* Tab Content */}
       <div className="bg-card border border-border rounded-lg p-6">
