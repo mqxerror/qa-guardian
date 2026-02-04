@@ -726,95 +726,7 @@ function MonitoringPage() {
   const [managedPostmortemCompleted, setManagedPostmortemCompleted] = useState(false);
   const [managedIncidentFilter, setManagedIncidentFilter] = useState<'all' | 'active' | 'resolved'>('active');
 
-  // TCP check interfaces
-  interface TcpCheck {
-    id: string;
-    name: string;
-    host: string;
-    port: number;
-    timeout: number;
-    interval: number;
-    enabled: boolean;
-    created_at: string;
-    updated_at: string;
-    latest_status?: 'up' | 'down' | 'unknown';
-    latest_port_open?: boolean;
-    latest_response_time?: number;
-    latest_checked_at?: string;
-  }
-
-  interface TcpCheckResult {
-    id: string;
-    check_id: string;
-    status: 'up' | 'down';
-    port_open: boolean;
-    response_time: number;
-    error?: string;
-    checked_at: string;
-  }
-
-  // TCP state
-  const [tcpChecks, setTcpChecks] = useState<TcpCheck[]>([]);
-  const [showTcpModal, setShowTcpModal] = useState(false);
-  const [selectedTcp, setSelectedTcp] = useState<TcpCheck | null>(null);
-  const [tcpResults, setTcpResults] = useState<TcpCheckResult[]>([]);
-
-  // TCP form state
-  const [tcpName, setTcpName] = useState('');
-  const [tcpHost, setTcpHost] = useState('');
-  const [tcpPort, setTcpPort] = useState(80);
-  const [tcpInterval, setTcpInterval] = useState(60);
-  const [isSubmittingTcp, setIsSubmittingTcp] = useState(false);
-  const [isLoadingTcpResults, setIsLoadingTcpResults] = useState(false);
-
-  // DNS check interfaces
-  interface DnsCheck {
-    id: string;
-    name: string;
-    domain: string;
-    record_type: 'A' | 'AAAA' | 'CNAME' | 'MX' | 'TXT' | 'NS';
-    expected_values: string[];
-    nameservers?: string[];
-    interval: number;
-    timeout: number;
-    enabled: boolean;
-    created_at: string;
-    updated_at: string;
-    latest_status?: 'up' | 'down' | 'degraded' | 'unknown';
-    latest_response_time?: number;
-    latest_checked_at?: string;
-    latest_resolved_values?: string[];
-  }
-
-  interface DnsCheckResult {
-    id: string;
-    check_id: string;
-    status: 'up' | 'down' | 'degraded';
-    resolved_values: string[];
-    expected_values: string[];
-    response_time: number;
-    nameserver_used: string;
-    error?: string;
-    ttl?: number;
-    all_expected_found: boolean;
-    unexpected_values: string[];
-    checked_at: string;
-  }
-
-  // DNS state
-  const [dnsChecks, setDnsChecks] = useState<DnsCheck[]>([]);
-  const [showDnsModal, setShowDnsModal] = useState(false);
-  const [selectedDns, setSelectedDns] = useState<DnsCheck | null>(null);
-  const [dnsResults, setDnsResults] = useState<DnsCheckResult[]>([]);
-
-  // DNS form state
-  const [dnsName, setDnsName] = useState('');
-  const [dnsDomain, setDnsDomain] = useState('');
-  const [dnsRecordType, setDnsRecordType] = useState<'A' | 'AAAA' | 'CNAME' | 'MX' | 'TXT' | 'NS'>('A');
-  const [dnsExpectedValues, setDnsExpectedValues] = useState('');
-  const [dnsInterval, setDnsInterval] = useState(60);
-  const [isSubmittingDns, setIsSubmittingDns] = useState(false);
-  const [isLoadingDnsResults, setIsLoadingDnsResults] = useState(false);
+  // TCP and DNS state removed - infrastructure monitoring, not QA testing
 
   // Webhook state
   const [webhookChecks, setWebhookChecks] = useState<WebhookCheck[]>([]);
@@ -1167,263 +1079,15 @@ function MonitoringPage() {
 
   // DNS monitoring removed - infrastructure monitoring, not QA testing
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const fetchDnsChecks = useCallback(async () => {
-    // DNS monitoring has been removed
-  }, []);
-
-  // Fetch DNS results
-  const fetchDnsResults = useCallback(async (checkId: string) => {
-    if (!token) return;
-    setIsLoadingDnsResults(true);
-    try {
-      const response = await fetch(`/api/v1/monitoring/dns/${checkId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDnsResults(data.results || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch DNS results:', error);
-    } finally {
-      setIsLoadingDnsResults(false);
-    }
-  }, [token]);
-
-  // Create DNS check
-  const handleCreateDns = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) return;
-    setIsSubmittingDns(true);
-
-    try {
-      const expectedValues = dnsExpectedValues.split(',').map(v => v.trim()).filter(Boolean);
-
-      const response = await fetch('/api/v1/monitoring/dns', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: dnsName,
-          domain: dnsDomain,
-          record_type: dnsRecordType,
-          expected_values: expectedValues,
-          interval: dnsInterval,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success('DNS check created successfully');
-        setShowDnsModal(false);
-        resetDnsForm();
-        fetchDnsChecks();
-      } else {
-        const data = await response.json();
-        toast.error(data.message || 'Failed to create DNS check');
-      }
-    } catch (error) {
-      toast.error('Failed to create DNS check');
-    } finally {
-      setIsSubmittingDns(false);
-    }
-  };
-
-  // Run DNS check manually
-  const runDnsCheck = async (checkId: string) => {
-    if (!token) return;
-    try {
-      const response = await fetch(`/api/v1/monitoring/dns/${checkId}/run`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        toast.success('DNS check executed');
-        fetchDnsChecks();
-        if (selectedDns?.id === checkId) {
-          fetchDnsResults(checkId);
-        }
-      }
-    } catch (error) {
-      toast.error('Failed to run DNS check');
-    }
-  };
-
-  // Toggle DNS check
-  const toggleDnsCheck = async (checkId: string) => {
-    if (!token) return;
-    try {
-      const response = await fetch(`/api/v1/monitoring/dns/${checkId}/toggle`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        toast.success('DNS check toggled');
-        fetchDnsChecks();
-      }
-    } catch (error) {
-      toast.error('Failed to toggle DNS check');
-    }
-  };
-
-  // Delete DNS check
-  const deleteDnsCheck = async (checkId: string) => {
-    if (!token) return;
-    if (!window.confirm('Are you sure you want to delete this DNS check?')) return;
-    try {
-      const response = await fetch(`/api/v1/monitoring/dns/${checkId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        toast.success('DNS check deleted');
-        if (selectedDns?.id === checkId) {
-          setSelectedDns(null);
-        }
-        fetchDnsChecks();
-      }
-    } catch (error) {
-      toast.error('Failed to delete DNS check');
-    }
-  };
-
-  // Reset DNS form
-  const resetDnsForm = () => {
-    setDnsName('');
-    setDnsDomain('');
-    setDnsRecordType('A');
-    setDnsExpectedValues('');
-    setDnsInterval(60);
-  };
+  const fetchDnsChecks = useCallback(async () => {}, []);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const fetchDnsResults = useCallback(async (_checkId: string) => {}, []);
 
   // TCP monitoring removed - infrastructure monitoring, not QA testing
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const fetchTcpChecks = useCallback(async () => {
-    // TCP monitoring has been removed
-  }, []);
-
-  // Fetch TCP results
-  const fetchTcpResults = useCallback(async (checkId: string) => {
-    if (!token) return;
-    setIsLoadingTcpResults(true);
-    try {
-      const response = await fetch(`/api/v1/monitoring/tcp/${checkId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTcpResults(data.results || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch TCP results:', error);
-    } finally {
-      setIsLoadingTcpResults(false);
-    }
-  }, [token]);
-
-  // Create TCP check
-  const handleCreateTcp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) return;
-    setIsSubmittingTcp(true);
-
-    try {
-      const response = await fetch('/api/v1/monitoring/tcp', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: tcpName,
-          host: tcpHost,
-          port: tcpPort,
-          interval: tcpInterval,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success('TCP check created successfully');
-        setShowTcpModal(false);
-        resetTcpForm();
-        fetchTcpChecks();
-      } else {
-        const data = await response.json();
-        toast.error(data.message || 'Failed to create TCP check');
-      }
-    } catch (error) {
-      toast.error('Failed to create TCP check');
-    } finally {
-      setIsSubmittingTcp(false);
-    }
-  };
-
-  // Run TCP check manually
-  const runTcpCheck = async (checkId: string) => {
-    if (!token) return;
-    try {
-      const response = await fetch(`/api/v1/monitoring/tcp/${checkId}/run`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        toast.success('TCP check executed');
-        fetchTcpChecks();
-        if (selectedTcp?.id === checkId) {
-          fetchTcpResults(checkId);
-        }
-      }
-    } catch (error) {
-      toast.error('Failed to run TCP check');
-    }
-  };
-
-  // Toggle TCP check
-  const toggleTcpCheck = async (checkId: string) => {
-    if (!token) return;
-    try {
-      const response = await fetch(`/api/v1/monitoring/tcp/${checkId}/toggle`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        toast.success('TCP check toggled');
-        fetchTcpChecks();
-      }
-    } catch (error) {
-      toast.error('Failed to toggle TCP check');
-    }
-  };
-
-  // Delete TCP check
-  const deleteTcpCheck = async (checkId: string) => {
-    if (!token) return;
-    if (!window.confirm('Are you sure you want to delete this TCP check?')) return;
-    try {
-      const response = await fetch(`/api/v1/monitoring/tcp/${checkId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        toast.success('TCP check deleted');
-        if (selectedTcp?.id === checkId) {
-          setSelectedTcp(null);
-        }
-        fetchTcpChecks();
-      }
-    } catch (error) {
-      toast.error('Failed to delete TCP check');
-    }
-  };
-
-  // Reset TCP form
-  const resetTcpForm = () => {
-    setTcpName('');
-    setTcpHost('');
-    setTcpPort(80);
-    setTcpInterval(60);
-  };
+  const fetchTcpChecks = useCallback(async () => {}, []);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const fetchTcpResults = useCallback(async (_checkId: string) => {}, []);
 
   // Fetch monitoring settings
   const fetchMonitoringSettings = useCallback(async () => {
@@ -3281,8 +2945,6 @@ function MonitoringPage() {
     fetchTransactions();
     fetchPerformanceChecks();
     fetchWebhookChecks();
-    fetchDnsChecks();
-    fetchTcpChecks();
     fetchLocations();
     // Refresh data every 30 seconds
     const interval = setInterval(() => {
@@ -3290,25 +2952,11 @@ function MonitoringPage() {
       fetchTransactions();
       fetchPerformanceChecks();
       fetchWebhookChecks();
-      fetchDnsChecks();
-      fetchTcpChecks();
     }, 30000);
     return () => clearInterval(interval);
-  }, [fetchData, fetchTransactions, fetchPerformanceChecks, fetchWebhookChecks, fetchDnsChecks, fetchTcpChecks, fetchLocations]);
+  }, [fetchData, fetchTransactions, fetchPerformanceChecks, fetchWebhookChecks, fetchLocations]);
 
-  // Fetch DNS results when a DNS check is selected
-  useEffect(() => {
-    if (selectedDns) {
-      fetchDnsResults(selectedDns.id);
-    }
-  }, [selectedDns, fetchDnsResults]);
-
-  // Fetch TCP results when a TCP check is selected
-  useEffect(() => {
-    if (selectedTcp) {
-      fetchTcpResults(selectedTcp.id);
-    }
-  }, [selectedTcp, fetchTcpResults]);
+  // DNS and TCP selection effects removed - infrastructure monitoring, not QA testing
 
   // Fetch transaction results when a transaction is selected
   useEffect(() => {
@@ -3862,8 +3510,6 @@ function MonitoringPage() {
                 if (activeTab === 'checks') setShowCreateModal(true);
                 else if (activeTab === 'transactions') setShowTransactionModal(true);
                 else if (activeTab === 'webhooks') setShowWebhookModal(true);
-                else if (activeTab === 'dns') setShowDnsModal(true);
-                else if (activeTab === 'tcp') setShowTcpModal(true);
                 else setShowPerformanceModal(true);
               }}
               className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
@@ -3871,7 +3517,7 @@ function MonitoringPage() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
               </svg>
-              {activeTab === 'checks' ? 'Create Check' : activeTab === 'transactions' ? 'Create Transaction' : activeTab === 'dns' ? 'Create DNS Check' : activeTab === 'tcp' ? 'Create TCP Check' : activeTab === 'webhooks' ? 'Create Webhook' : 'Create Performance Check'}
+              {activeTab === 'checks' ? 'Create Check' : activeTab === 'transactions' ? 'Create Transaction' : activeTab === 'webhooks' ? 'Create Webhook' : 'Create Performance Check'}
             </button>
           )}
         </div>
@@ -8303,177 +7949,7 @@ function MonitoringPage() {
           </div>
         )}
 
-        {/* Create TCP Modal */}
-        {showTcpModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Create TCP Check</h2>
-              <form onSubmit={handleCreateTcp} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Name</label>
-                  <input
-                    type="text"
-                    value={tcpName}
-                    onChange={e => setTcpName(e.target.value)}
-                    placeholder="My Server Port Monitor"
-                    required
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Host</label>
-                  <input
-                    type="text"
-                    value={tcpHost}
-                    onChange={e => setTcpHost(e.target.value)}
-                    placeholder="example.com or 192.168.1.1"
-                    required
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Port</label>
-                  <input
-                    type="number"
-                    value={tcpPort}
-                    onChange={e => setTcpPort(parseInt(e.target.value) || 80)}
-                    min={1}
-                    max={65535}
-                    placeholder="80"
-                    required
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">Port number (1-65535)</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Check Interval</label>
-                  <select
-                    value={tcpInterval}
-                    onChange={e => setTcpInterval(parseInt(e.target.value))}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  >
-                    <option value={30}>30 seconds</option>
-                    <option value={60}>1 minute</option>
-                    <option value={300}>5 minutes</option>
-                    <option value={900}>15 minutes</option>
-                    <option value={3600}>1 hour</option>
-                  </select>
-                </div>
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowTcpModal(false);
-                      resetTcpForm();
-                    }}
-                    className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmittingTcp}
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    {isSubmittingTcp ? 'Creating...' : 'Create TCP Check'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Create DNS Modal */}
-        {showDnsModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Create DNS Check</h2>
-              <form onSubmit={handleCreateDns} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Name</label>
-                  <input
-                    type="text"
-                    value={dnsName}
-                    onChange={e => setDnsName(e.target.value)}
-                    placeholder="My Domain DNS Monitor"
-                    required
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Domain</label>
-                  <input
-                    type="text"
-                    value={dnsDomain}
-                    onChange={e => setDnsDomain(e.target.value)}
-                    placeholder="example.com"
-                    required
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Record Type</label>
-                  <select
-                    value={dnsRecordType}
-                    onChange={e => setDnsRecordType(e.target.value as 'A' | 'AAAA' | 'CNAME' | 'MX' | 'TXT' | 'NS')}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  >
-                    <option value="A">A (IPv4 Address)</option>
-                    <option value="AAAA">AAAA (IPv6 Address)</option>
-                    <option value="CNAME">CNAME (Canonical Name)</option>
-                    <option value="MX">MX (Mail Exchange)</option>
-                    <option value="TXT">TXT (Text Record)</option>
-                    <option value="NS">NS (Name Server)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Expected Values (Optional)</label>
-                  <input
-                    type="text"
-                    value={dnsExpectedValues}
-                    onChange={e => setDnsExpectedValues(e.target.value)}
-                    placeholder="e.g., 192.168.1.1, 192.168.1.2"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">Comma-separated IP addresses or values to expect</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Check Interval</label>
-                  <select
-                    value={dnsInterval}
-                    onChange={e => setDnsInterval(parseInt(e.target.value))}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  >
-                    <option value={30}>30 seconds</option>
-                    <option value={60}>1 minute</option>
-                    <option value={300}>5 minutes</option>
-                    <option value={900}>15 minutes</option>
-                    <option value={3600}>1 hour</option>
-                  </select>
-                </div>
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowDnsModal(false);
-                      resetDnsForm();
-                    }}
-                    className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmittingDns}
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    {isSubmittingDns ? 'Creating...' : 'Create DNS Check'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {/* DNS and TCP Modals removed - infrastructure monitoring, not QA testing */}
 
         {/* Create Webhook Modal - Feature #47: Extracted to modular component */}
         <WebhookModal
