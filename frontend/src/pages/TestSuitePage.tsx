@@ -30,7 +30,6 @@ import {
   TestStep,
   AICopilotSuggestion,
   AITestGeneration,
-  EditSelectorModalState,
   SortField,
   SortDirection,
   SortConfig,
@@ -56,8 +55,18 @@ import {
   DeleteSuiteModal,
   DeleteTestModal,
   ImportTestsModal,
+  EditSelectorModal,
+  ExpandedScreenshotModal,
+  InsertTemplateModal,
+  // Feature #50: Types
+  EditSelectorModalState,
+  TemplateType,
   // Feature #50: Panels
   ParallelizationPanel,
+  // Feature #50: Utilities
+  computeCodeDiff,
+  calculateTestConfidence,
+  validateTestName,
 } from '../components/suite-detail';
 
 // Removed inline type definitions and utility functions - now imported from suite-detail module (Feature #50)
@@ -1031,175 +1040,7 @@ function TestSuitePage() {
     });
   };
 
-  // Feature #1163: Compute diff between two code strings
-  const computeCodeDiff = (oldCode: string, newCode: string): { type: 'unchanged' | 'added' | 'removed'; line: string }[] => {
-    const oldLines = oldCode.split('\n');
-    const newLines = newCode.split('\n');
-    const diff: { type: 'unchanged' | 'added' | 'removed'; line: string }[] = [];
-
-    // Simple line-by-line diff algorithm
-    let oldIdx = 0;
-    let newIdx = 0;
-
-    while (oldIdx < oldLines.length || newIdx < newLines.length) {
-      if (oldIdx >= oldLines.length) {
-        // All remaining new lines are additions
-        diff.push({ type: 'added', line: newLines[newIdx] });
-        newIdx++;
-      } else if (newIdx >= newLines.length) {
-        // All remaining old lines are removals
-        diff.push({ type: 'removed', line: oldLines[oldIdx] });
-        oldIdx++;
-      } else if (oldLines[oldIdx] === newLines[newIdx]) {
-        // Lines match
-        diff.push({ type: 'unchanged', line: oldLines[oldIdx] });
-        oldIdx++;
-        newIdx++;
-      } else {
-        // Lines differ - look ahead to find if old line appears later in new
-        const oldLineInNew = newLines.slice(newIdx + 1).indexOf(oldLines[oldIdx]);
-        const newLineInOld = oldLines.slice(oldIdx + 1).indexOf(newLines[newIdx]);
-
-        if (oldLineInNew === -1 && newLineInOld === -1) {
-          // Neither line appears later - treat as removal then addition
-          diff.push({ type: 'removed', line: oldLines[oldIdx] });
-          diff.push({ type: 'added', line: newLines[newIdx] });
-          oldIdx++;
-          newIdx++;
-        } else if (oldLineInNew !== -1 && (newLineInOld === -1 || oldLineInNew <= newLineInOld)) {
-          // Old line appears later in new - this new line is an addition
-          diff.push({ type: 'added', line: newLines[newIdx] });
-          newIdx++;
-        } else {
-          // New line appears later in old - this old line is a removal
-          diff.push({ type: 'removed', line: oldLines[oldIdx] });
-          oldIdx++;
-        }
-      }
-    }
-
-    return diff;
-  };
-
-  // Feature #1153: Calculate confidence score for generated test
-  const calculateTestConfidence = (test: {
-    syntax_valid: boolean;
-    syntax_errors?: string[];
-    assertions: string[];
-    selectors: string[];
-    steps: string[];
-    complexity: 'simple' | 'medium' | 'complex';
-    warnings?: string[];
-  }): { score: number; factors: { factor: string; score: number; max_score: number; description: string; }[] } => {
-    const factors: { factor: string; score: number; max_score: number; description: string; }[] = [];
-
-    // Factor 1: Syntax validity (25 points max)
-    const syntaxScore = test.syntax_valid ? 25 : 0;
-    factors.push({
-      factor: 'Syntax Validity',
-      score: syntaxScore,
-      max_score: 25,
-      description: test.syntax_valid
-        ? 'Code syntax is valid and parseable'
-        : `Syntax errors detected: ${test.syntax_errors?.length || 0} issues`
-    });
-
-    // Factor 2: Assertions presence (25 points max)
-    const assertionCount = test.assertions.length;
-    const assertionScore = Math.min(25, assertionCount * 8); // 8 points per assertion, max 25
-    factors.push({
-      factor: 'Test Assertions',
-      score: assertionScore,
-      max_score: 25,
-      description: assertionCount > 0
-        ? `${assertionCount} assertion${assertionCount > 1 ? 's' : ''} to verify expected outcomes`
-        : 'No assertions - test may not verify expected behavior'
-    });
-
-    // Factor 3: Selector quality (20 points max)
-    const selectorCount = test.selectors.length;
-    const hasGoodSelectors = test.selectors.some(s =>
-      s.includes('getByRole') || s.includes('getByLabel') || s.includes('getByText') || s.includes('data-testid')
-    );
-    const selectorScore = Math.min(20, selectorCount * 4 + (hasGoodSelectors ? 8 : 0));
-    factors.push({
-      factor: 'Selector Quality',
-      score: Math.min(20, selectorScore),
-      max_score: 20,
-      description: hasGoodSelectors
-        ? `Uses ${selectorCount} accessible selectors (role, label, text, testid)`
-        : selectorCount > 0
-          ? `${selectorCount} selector${selectorCount > 1 ? 's' : ''} - consider using more accessible selectors`
-          : 'No specific selectors detected'
-    });
-
-    // Factor 4: Test steps completeness (15 points max)
-    const stepCount = test.steps.length;
-    const stepScore = Math.min(15, stepCount * 3);
-    factors.push({
-      factor: 'Test Steps',
-      score: stepScore,
-      max_score: 15,
-      description: stepCount >= 3
-        ? `${stepCount} clear test steps covering the workflow`
-        : `Only ${stepCount} step${stepCount !== 1 ? 's' : ''} - consider more comprehensive coverage`
-    });
-
-    // Factor 5: Complexity appropriateness (15 points max)
-    const complexityScore = test.complexity === 'simple' ? 15 : test.complexity === 'medium' ? 12 : 8;
-    factors.push({
-      factor: 'Complexity',
-      score: complexityScore,
-      max_score: 15,
-      description: test.complexity === 'simple'
-        ? 'Simple test - easy to maintain and debug'
-        : test.complexity === 'medium'
-          ? 'Medium complexity - balanced coverage and maintainability'
-          : 'Complex test - may be harder to maintain'
-    });
-
-    // Deduct points for warnings
-    const warningDeduction = Math.min(10, (test.warnings?.length || 0) * 3);
-    const totalScore = Math.max(0, Math.min(100,
-      syntaxScore + assertionScore + Math.min(20, selectorScore) + stepScore + complexityScore - warningDeduction
-    ));
-
-    if (warningDeduction > 0) {
-      factors.push({
-        factor: 'Warnings',
-        score: -warningDeduction,
-        max_score: 0,
-        description: `${test.warnings?.length} warning${(test.warnings?.length || 0) > 1 ? 's' : ''} detected that may affect test reliability`
-      });
-    }
-
-    return { score: Math.round(totalScore), factors };
-  };
-
-  // Validate test name and return error message if invalid
-  const validateTestName = (name: string): string => {
-    const trimmedName = name.trim();
-
-    if (!trimmedName) {
-      return 'Test name is required';
-    }
-
-    if (trimmedName.length < 3) {
-      return 'Test name must be at least 3 characters';
-    }
-
-    if (trimmedName.length > 255) {
-      return 'Test name must be 255 characters or less';
-    }
-
-    // Allow letters, numbers, spaces, hyphens, underscores, and common punctuation
-    const validNamePattern = /^[a-zA-Z0-9\s\-_.,():'"!?]+$/;
-    if (!validNamePattern.test(trimmedName)) {
-      return 'Test name can only contain letters, numbers, spaces, hyphens, underscores, and basic punctuation';
-    }
-
-    return '';
-  };
+  // Feature #50: computeCodeDiff, calculateTestConfidence, validateTestName moved to utils.ts
 
   // Feature #1771: Smart URL validation and auto-completion
   const validateAndNormalizeUrl = useCallback((url: string): { isValid: boolean; normalizedUrl: string; favicon: string | null } => {
@@ -5221,283 +5062,45 @@ export function teardown(data) {
           </div>
         )}
 
-        {/* Feature #31: Insert Template Modal */}
-        {showTemplateModal && insertTemplateForTest && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onMouseDown={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowTemplateModal(false);
-                setInsertTemplateForTest(null);
-              }
-            }}
-          >
-            <div
-              className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-2xl max-h-[80vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                  <span className="text-xl">📋</span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground">Insert Template</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Choose a step template to append to this test.
-                  </p>
-                </div>
-              </div>
+        {/* Feature #31: Insert Template Modal - Feature #50: Extracted to component */}
+        <InsertTemplateModal
+          isOpen={showTemplateModal}
+          testId={insertTemplateForTest}
+          templates={stepTemplates}
+          onClose={() => {
+            setShowTemplateModal(false);
+            setInsertTemplateForTest(null);
+          }}
+          onInsertTemplate={handleInsertTemplate}
+          onDeleteTemplate={handleDeleteTemplate}
+        />
 
-              {stepTemplates.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="text-lg mb-1">No templates yet</p>
-                  <p className="text-sm">Save steps as a template during recording to see them here.</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {stepTemplates.map((tpl) => (
-                    <div
-                      key={tpl.id}
-                      className="rounded-lg border border-border p-3 hover:bg-muted/40 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-medium text-sm text-foreground">{tpl.name}</h4>
-                        <span className="text-xs text-muted-foreground">{tpl.steps.length} steps</span>
-                      </div>
-                      {tpl.description && (
-                        <p className="text-xs text-muted-foreground mb-2">{tpl.description}</p>
-                      )}
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                        {tpl.steps.slice(0, 3).map((s: any, i: number) => (
-                          <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-xs">
-                            {s.action}
-                          </span>
-                        ))}
-                        {tpl.steps.length > 3 && <span>+{tpl.steps.length - 3} more</span>}
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleInsertTemplate(insertTemplateForTest!, tpl)}
-                          className="rounded-md bg-purple-500 px-3 py-1 text-xs font-medium text-white hover:bg-purple-600 transition-colors"
-                        >
-                          Insert Steps
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTemplate(tpl.id)}
-                          className="rounded-md border border-red-200 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20 transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+        {/* Feature #1065: Edit Selector Modal - Feature #50: Extracted to component */}
+        <EditSelectorModal
+          modalState={editSelectorModal}
+          selectorValue={editSelectorValue}
+          selectorNotes={editSelectorNotes}
+          applyToTest={editSelectorApplyToTest}
+          isSubmitting={isSubmittingSelector}
+          onSelectorValueChange={setEditSelectorValue}
+          onNotesChange={setEditSelectorNotes}
+          onApplyToTestChange={setEditSelectorApplyToTest}
+          onClose={() => {
+            setEditSelectorModal({
+              isOpen: false, runId: '', testId: '', stepId: '', currentSelector: '', originalSelector: '', wasHealed: false,
+            });
+            setEditSelectorValue('');
+            setEditSelectorNotes('');
+          }}
+          onUpdateSelector={handleUpdateSelector}
+          onAcceptHealed={handleAcceptHealed}
+        />
 
-              <div className="flex justify-end pt-4 mt-4 border-t border-border">
-                <button
-                  onClick={() => {
-                    setShowTemplateModal(false);
-                    setInsertTemplateForTest(null);
-                  }}
-                  className="rounded-lg border border-border px-4 py-2 font-medium text-foreground hover:bg-muted transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Feature #1065: Edit Selector Modal for TestSuitePage */}
-        {editSelectorModal.isOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onMouseDown={(e) => {
-              if (e.target === e.currentTarget && !isSubmittingSelector) {
-                setEditSelectorModal({
-                  isOpen: false, runId: '', testId: '', stepId: '', currentSelector: '', originalSelector: '', wasHealed: false,
-                });
-              }
-            }}
-          >
-            <div role="dialog" aria-modal="true" className="w-full max-w-lg rounded-lg bg-card p-6 shadow-lg">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30">
-                    <svg className="h-5 w-5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground">
-                      {editSelectorModal.wasHealed ? 'Edit Healed Selector' : 'Edit Selector'}
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      {editSelectorModal.wasHealed ? 'Modify or accept the AI-healed selector' : 'Manually update the selector'}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setEditSelectorModal({
-                    isOpen: false, runId: '', testId: '', stepId: '', currentSelector: '', originalSelector: '', wasHealed: false,
-                  })}
-                  className="text-muted-foreground hover:text-foreground"
-                  disabled={isSubmittingSelector}
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Original Selector */}
-              <div className="mb-4 p-3 bg-muted/50 rounded-md">
-                <div className="text-xs font-medium text-muted-foreground mb-1">Original Selector</div>
-                <code className="text-sm font-mono text-foreground break-all">
-                  {editSelectorModal.originalSelector || 'N/A'}
-                </code>
-              </div>
-
-              {/* Current Selector (if healed) */}
-              {editSelectorModal.wasHealed && editSelectorModal.currentSelector !== editSelectorModal.originalSelector && (
-                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-800">
-                  <div className="text-xs font-medium text-green-700 dark:text-green-300 mb-1 flex items-center gap-1">
-                    <span>🔧</span> AI-Healed Selector
-                  </div>
-                  <code className="text-sm font-mono text-green-800 dark:text-green-200 break-all">
-                    {editSelectorModal.currentSelector}
-                  </code>
-                </div>
-              )}
-
-              {/* New Selector Input */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  {editSelectorModal.wasHealed ? 'New Selector (or keep healed)' : 'New Selector'}
-                </label>
-                <input
-                  type="text"
-                  value={editSelectorValue}
-                  onChange={(e) => setEditSelectorValue(e.target.value)}
-                  placeholder={editSelectorModal.currentSelector || 'Enter selector...'}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Supports CSS selectors, XPath, or data-testid attributes
-                </p>
-              </div>
-
-              {/* Notes */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-foreground mb-1">Notes (optional)</label>
-                <textarea
-                  value={editSelectorNotes}
-                  onChange={(e) => setEditSelectorNotes(e.target.value)}
-                  placeholder="Why are you changing this selector?"
-                  rows={2}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                />
-              </div>
-
-              {/* Apply to Test Definition Checkbox */}
-              <div className="mb-6">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editSelectorApplyToTest}
-                    onChange={(e) => setEditSelectorApplyToTest(e.target.checked)}
-                    className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                  />
-                  <span className="text-sm text-foreground">Apply to test definition</span>
-                </label>
-                <p className="ml-6 text-xs text-muted-foreground">
-                  If checked, the new selector will be saved to the test so future runs use it
-                </p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setEditSelectorModal({
-                      isOpen: false, runId: '', testId: '', stepId: '', currentSelector: '', originalSelector: '', wasHealed: false,
-                    });
-                    setEditSelectorValue('');
-                    setEditSelectorNotes('');
-                  }}
-                  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  disabled={isSubmittingSelector}
-                >
-                  Cancel
-                </button>
-                {editSelectorModal.wasHealed && (
-                  <button
-                    onClick={handleAcceptHealed}
-                    disabled={isSubmittingSelector}
-                    className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-                  >
-                    {isSubmittingSelector ? 'Accepting...' : '✓ Accept Healed'}
-                  </button>
-                )}
-                <button
-                  onClick={handleUpdateSelector}
-                  disabled={isSubmittingSelector || !editSelectorValue.trim()}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                >
-                  {isSubmittingSelector ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Saving...
-                    </span>
-                  ) : (
-                    'Save Changes'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Feature #35: Expanded Screenshot Modal */}
-        {expandedScreenshot && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-            onClick={() => setExpandedScreenshot(null)}
-          >
-            <div
-              className="relative max-w-[90vw] max-h-[90vh] bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  Screenshot Preview
-                </h3>
-                <button
-                  onClick={() => setExpandedScreenshot(null)}
-                  className="rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="p-2 overflow-auto max-h-[calc(90vh-60px)]">
-                <img
-                  src={`data:image/jpeg;base64,${expandedScreenshot}`}
-                  alt="Expanded screenshot"
-                  className="max-w-full max-h-full object-contain rounded"
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Feature #35: Expanded Screenshot Modal - Feature #50: Extracted to component */}
+        <ExpandedScreenshotModal
+          screenshotBase64={expandedScreenshot}
+          onClose={() => setExpandedScreenshot(null)}
+        />
       </div>
     </Layout>
   );

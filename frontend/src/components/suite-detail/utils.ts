@@ -361,3 +361,214 @@ export function truncateText(text: string, maxLength: number): string {
   if (!text || text.length <= maxLength) return text;
   return text.slice(0, maxLength - 3) + '...';
 }
+
+/**
+ * Code diff line type
+ */
+export type DiffLineType = 'unchanged' | 'added' | 'removed';
+
+export interface DiffLine {
+  type: DiffLineType;
+  line: string;
+}
+
+/**
+ * Compute diff between two code strings (Feature #1163)
+ * Simple line-by-line diff algorithm for code comparison
+ */
+export function computeCodeDiff(oldCode: string, newCode: string): DiffLine[] {
+  const oldLines = oldCode.split('\n');
+  const newLines = newCode.split('\n');
+  const diff: DiffLine[] = [];
+
+  let oldIdx = 0;
+  let newIdx = 0;
+
+  while (oldIdx < oldLines.length || newIdx < newLines.length) {
+    if (oldIdx >= oldLines.length) {
+      // All remaining new lines are additions
+      diff.push({ type: 'added', line: newLines[newIdx] });
+      newIdx++;
+    } else if (newIdx >= newLines.length) {
+      // All remaining old lines are removals
+      diff.push({ type: 'removed', line: oldLines[oldIdx] });
+      oldIdx++;
+    } else if (oldLines[oldIdx] === newLines[newIdx]) {
+      // Lines match
+      diff.push({ type: 'unchanged', line: oldLines[oldIdx] });
+      oldIdx++;
+      newIdx++;
+    } else {
+      // Lines differ - look ahead to find if old line appears later in new
+      const oldLineInNew = newLines.slice(newIdx + 1).indexOf(oldLines[oldIdx]);
+      const newLineInOld = oldLines.slice(oldIdx + 1).indexOf(newLines[newIdx]);
+
+      if (oldLineInNew === -1 && newLineInOld === -1) {
+        // Neither line appears later - treat as removal then addition
+        diff.push({ type: 'removed', line: oldLines[oldIdx] });
+        diff.push({ type: 'added', line: newLines[newIdx] });
+        oldIdx++;
+        newIdx++;
+      } else if (oldLineInNew !== -1 && (newLineInOld === -1 || oldLineInNew <= newLineInOld)) {
+        // Old line appears later in new - this new line is an addition
+        diff.push({ type: 'added', line: newLines[newIdx] });
+        newIdx++;
+      } else {
+        // New line appears later in old - this old line is a removal
+        diff.push({ type: 'removed', line: oldLines[oldIdx] });
+        oldIdx++;
+      }
+    }
+  }
+
+  return diff;
+}
+
+/**
+ * Confidence factor for test generation
+ */
+export interface ConfidenceFactor {
+  factor: string;
+  score: number;
+  max_score: number;
+  description: string;
+}
+
+/**
+ * Confidence result for test generation
+ */
+export interface ConfidenceResult {
+  score: number;
+  factors: ConfidenceFactor[];
+}
+
+/**
+ * Test input for confidence calculation
+ */
+export interface TestConfidenceInput {
+  syntax_valid: boolean;
+  syntax_errors?: string[];
+  assertions: string[];
+  selectors: string[];
+  steps: string[];
+  complexity: 'simple' | 'medium' | 'complex';
+  warnings?: string[];
+}
+
+/**
+ * Calculate confidence score for generated test (Feature #1153)
+ * Returns a score from 0-100 with breakdown by factor
+ */
+export function calculateTestConfidence(test: TestConfidenceInput): ConfidenceResult {
+  const factors: ConfidenceFactor[] = [];
+
+  // Factor 1: Syntax validity (25 points max)
+  const syntaxScore = test.syntax_valid ? 25 : 0;
+  factors.push({
+    factor: 'Syntax Validity',
+    score: syntaxScore,
+    max_score: 25,
+    description: test.syntax_valid
+      ? 'Code syntax is valid and parseable'
+      : `Syntax errors detected: ${test.syntax_errors?.length || 0} issues`
+  });
+
+  // Factor 2: Assertions presence (25 points max)
+  const assertionCount = test.assertions.length;
+  const assertionScore = Math.min(25, assertionCount * 8);
+  factors.push({
+    factor: 'Test Assertions',
+    score: assertionScore,
+    max_score: 25,
+    description: assertionCount > 0
+      ? `${assertionCount} assertion${assertionCount > 1 ? 's' : ''} to verify expected outcomes`
+      : 'No assertions - test may not verify expected behavior'
+  });
+
+  // Factor 3: Selector quality (20 points max)
+  const selectorCount = test.selectors.length;
+  const hasGoodSelectors = test.selectors.some(s =>
+    s.includes('getByRole') || s.includes('getByLabel') || s.includes('getByText') || s.includes('data-testid')
+  );
+  const selectorScore = Math.min(20, selectorCount * 4 + (hasGoodSelectors ? 8 : 0));
+  factors.push({
+    factor: 'Selector Quality',
+    score: Math.min(20, selectorScore),
+    max_score: 20,
+    description: hasGoodSelectors
+      ? `Uses ${selectorCount} accessible selectors (role, label, text, testid)`
+      : selectorCount > 0
+        ? `${selectorCount} selector${selectorCount > 1 ? 's' : ''} - consider using more accessible selectors`
+        : 'No specific selectors detected'
+  });
+
+  // Factor 4: Test steps completeness (15 points max)
+  const stepCount = test.steps.length;
+  const stepScore = Math.min(15, stepCount * 3);
+  factors.push({
+    factor: 'Test Steps',
+    score: stepScore,
+    max_score: 15,
+    description: stepCount >= 3
+      ? `${stepCount} clear test steps covering the workflow`
+      : `Only ${stepCount} step${stepCount !== 1 ? 's' : ''} - consider more comprehensive coverage`
+  });
+
+  // Factor 5: Complexity appropriateness (15 points max)
+  const complexityScore = test.complexity === 'simple' ? 15 : test.complexity === 'medium' ? 12 : 8;
+  factors.push({
+    factor: 'Complexity',
+    score: complexityScore,
+    max_score: 15,
+    description: test.complexity === 'simple'
+      ? 'Simple test - easy to maintain and debug'
+      : test.complexity === 'medium'
+        ? 'Medium complexity - balanced coverage and maintainability'
+        : 'Complex test - may be harder to maintain'
+  });
+
+  // Deduct points for warnings
+  const warningDeduction = Math.min(10, (test.warnings?.length || 0) * 3);
+  const totalScore = Math.max(0, Math.min(100,
+    syntaxScore + assertionScore + Math.min(20, selectorScore) + stepScore + complexityScore - warningDeduction
+  ));
+
+  if (warningDeduction > 0) {
+    factors.push({
+      factor: 'Warnings',
+      score: -warningDeduction,
+      max_score: 0,
+      description: `${test.warnings?.length} warning${(test.warnings?.length || 0) > 1 ? 's' : ''} detected that may affect test reliability`
+    });
+  }
+
+  return { score: Math.round(totalScore), factors };
+}
+
+/**
+ * Validate test name and return error message if invalid
+ * Returns empty string if valid
+ */
+export function validateTestName(name: string): string {
+  const trimmedName = name.trim();
+
+  if (!trimmedName) {
+    return 'Test name is required';
+  }
+
+  if (trimmedName.length < 3) {
+    return 'Test name must be at least 3 characters';
+  }
+
+  if (trimmedName.length > 255) {
+    return 'Test name must be 255 characters or less';
+  }
+
+  // Allow letters, numbers, spaces, hyphens, underscores, and common punctuation
+  const validNamePattern = /^[a-zA-Z0-9\s\-_.,():'"!?]+$/;
+  if (!validNamePattern.test(trimmedName)) {
+    return 'Test name can only contain letters, numbers, spaces, hyphens, underscores, and basic punctuation';
+  }
+
+  return '';
+}

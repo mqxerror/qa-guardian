@@ -25,7 +25,15 @@ export {
 } from './TestTypeBadge';
 
 // Modals
-export { DeleteSuiteModal, DeleteTestModal, ImportTestsModal } from './modals';
+export {
+  DeleteSuiteModal,
+  DeleteTestModal,
+  ImportTestsModal,
+  EditSelectorModal,
+  ExpandedScreenshotModal,
+  InsertTemplateModal,
+} from './modals';
+export type { EditSelectorModalState, StepTemplate as TemplateType } from './modals';
 
 // Panels
 export { ParallelizationPanel } from './ParallelizationPanel';
