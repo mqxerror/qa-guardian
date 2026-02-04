@@ -19,7 +19,7 @@ import { CreateTestModal } from '../components/create-test';
 // Feature #36: Import device emulation types and component
 import { DeviceConfig, DeviceEmulationPreset, DEVICE_PRESETS } from '../components/test-modals/types';
 import { DeviceSelect } from '../components/create-test/shared/DeviceSelect';
-// Feature #50: Import modular types and utilities from suite-detail
+// Feature #50: Import modular types, utilities, and hooks from suite-detail
 import {
   TestSuite,
   TestType,
@@ -49,6 +49,15 @@ import {
   TestStatusBadge,
   AIConfidenceBadge,
   ReviewStatusBadge,
+  // Feature #50: Hooks for state management
+  useSuiteState,
+  useModalState,
+  // Feature #50: Modals
+  DeleteSuiteModal,
+  DeleteTestModal,
+  ImportTestsModal,
+  // Feature #50: Panels
+  ParallelizationPanel,
 } from '../components/suite-detail';
 
 // Removed inline type definitions and utility functions - now imported from suite-detail module (Feature #50)
@@ -3093,302 +3102,47 @@ export function teardown(data) {
           </div>
         )}
 
-        {/* Feature #1257: AI Parallelization Panel */}
+        {/* Feature #1257: AI Parallelization Panel - Feature #50: Extracted to component */}
         {showParallelization && (
-          <div className="mb-6 rounded-lg border border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  🤖 AI Dynamic Test Parallelization
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Optimal test distribution across workers
-                </p>
-              </div>
-              <button
-                onClick={() => setShowParallelization(false)}
-                className="p-1 rounded hover:bg-muted"
-              >
-                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {isAnalyzingParallel ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-center">
-                  <svg aria-hidden="true" className="animate-spin h-8 w-8 text-purple-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  <p className="text-muted-foreground">Analyzing test durations and optimizing distribution...</p>
-                </div>
-              </div>
-            ) : parallelizationPlan && (
-              <div className="space-y-6">
-                {/* Optimization Summary */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 rounded-lg bg-card border border-border text-center">
-                    <p className="text-2xl font-bold text-foreground">{parallelizationPlan.totalTests}</p>
-                    <p className="text-sm text-muted-foreground">Total Tests</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-card border border-border text-center">
-                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{parallelizationPlan.optimization.speedup}x</p>
-                    <p className="text-sm text-muted-foreground">Speedup</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-card border border-border text-center">
-                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{parallelizationPlan.optimization.timeSaved}s</p>
-                    <p className="text-sm text-muted-foreground">Time Saved</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-card border border-border text-center">
-                    <p className={`text-2xl font-bold ${
-                      parallelizationPlan.resourceBalance.balanceScore === 'Excellent' ? 'text-green-600 dark:text-green-400' :
-                      parallelizationPlan.resourceBalance.balanceScore === 'Good' ? 'text-blue-600 dark:text-blue-400' :
-                      'text-yellow-600 dark:text-yellow-400'
-                    }`}>{parallelizationPlan.resourceBalance.balanceScore}</p>
-                    <p className="text-sm text-muted-foreground">Balance Score</p>
-                  </div>
-                </div>
-
-                {/* Time Comparison */}
-                <div className="p-4 rounded-lg bg-card border border-border">
-                  <h3 className="font-medium text-foreground mb-3">⏱️ Time Optimization</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground w-24">Sequential:</span>
-                      <div className="flex-1 h-4 bg-red-100 dark:bg-red-900/30 rounded-full overflow-hidden">
-                        <div className="h-full bg-red-500 rounded-full" style={{ width: '100%' }} />
-                      </div>
-                      <span className="text-sm font-medium text-red-600 dark:text-red-400 w-16">{parallelizationPlan.optimization.sequentialTime}s</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground w-24">Parallel:</span>
-                      <div className="flex-1 h-4 bg-green-100 dark:bg-green-900/30 rounded-full overflow-hidden">
-                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${(parallelizationPlan.optimization.parallelTime / parallelizationPlan.optimization.sequentialTime) * 100}%` }} />
-                      </div>
-                      <span className="text-sm font-medium text-green-600 dark:text-green-400 w-16">{parallelizationPlan.optimization.parallelTime}s</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Worker Distribution */}
-                <div className="p-4 rounded-lg bg-card border border-border">
-                  <h3 className="font-medium text-foreground mb-3">🖥️ Worker Distribution</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {parallelizationPlan.workers.map((worker) => (
-                      <div key={worker.id} className="p-3 rounded-lg bg-muted/30 border border-border">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-foreground">{worker.name}</span>
-                          <span className="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary">
-                            {worker.utilizationPercent}%
-                          </span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden mb-2">
-                          <div
-                            className="h-full bg-primary rounded-full"
-                            style={{ width: `${worker.utilizationPercent}%` }}
-                          />
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {worker.tests.length} tests • {worker.totalDuration}s total
-                        </div>
-                        <div className="mt-2 max-h-20 overflow-y-auto">
-                          {worker.tests.map((t, i) => (
-                            <div key={i} className="text-xs text-muted-foreground truncate">
-                              • {t.name} ({t.duration}s)
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Resource Balance */}
-                <div className="p-4 rounded-lg bg-card border border-border">
-                  <h3 className="font-medium text-foreground mb-3">📊 Resource Balance</h3>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <p className="text-lg font-semibold text-foreground">{parallelizationPlan.resourceBalance.avgUtilization}%</p>
-                      <p className="text-xs text-muted-foreground">Avg Utilization</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-semibold text-foreground">{parallelizationPlan.resourceBalance.maxDifference}s</p>
-                      <p className="text-xs text-muted-foreground">Max Diff Between Workers</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-semibold text-foreground">{parallelizationPlan.workers.length}</p>
-                      <p className="text-xs text-muted-foreground">Active Workers</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Run Button */}
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleRunSuite}
-                    disabled={isRunningSuite}
-                    className="px-6 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-50"
-                  >
-                    {isRunningSuite ? 'Running...' : '▶️ Execute Optimized Run'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <ParallelizationPanel
+            isAnalyzing={isAnalyzingParallel}
+            plan={parallelizationPlan}
+            isRunningSuite={isRunningSuite}
+            onClose={() => setShowParallelization(false)}
+            onRunSuite={handleRunSuite}
+          />
         )}
 
-        {/* Delete Suite Confirmation Modal */}
+        {/* Delete Suite Confirmation Modal - Feature #50: Extracted to component */}
         {showDeleteSuiteModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onMouseDown={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowDeleteSuiteModal(false);
-              }
-            }}
-          >
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="delete-suite-title"
-              className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 id="delete-suite-title" className="text-lg font-semibold text-foreground">Delete Test Suite</h3>
-              <p className="mt-2 text-muted-foreground">
-                Are you sure you want to delete "{suite?.name}"? This action cannot be undone and will delete all tests within this suite.
-              </p>
-              <div className="mt-4 flex justify-end gap-2">
-                <button
-                  onClick={() => setShowDeleteSuiteModal(false)}
-                  className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteSuite}
-                  disabled={isDeletingSuite}
-                  className="rounded-md bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                >
-                  {isDeletingSuite ? 'Deleting...' : 'Delete Suite'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <DeleteSuiteModal
+            suiteName={suite?.name || ''}
+            isDeleting={isDeletingSuite}
+            onConfirm={handleDeleteSuite}
+            onCancel={() => setShowDeleteSuiteModal(false)}
+          />
         )}
 
-        {/* Feature #1961: Delete Test Confirmation Modal */}
+        {/* Feature #1961: Delete Test Confirmation Modal - Feature #50: Extracted to component */}
         {showDeleteTestModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onMouseDown={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowDeleteTestModal(null);
-              }
-            }}
-          >
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="delete-test-title"
-              className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 id="delete-test-title" className="text-lg font-semibold text-foreground">Delete Test</h3>
-              <p className="mt-2 text-muted-foreground">
-                Are you sure you want to delete this test? This action cannot be undone.
-              </p>
-              <div className="mt-4 flex justify-end gap-2">
-                <button
-                  onClick={() => setShowDeleteTestModal(null)}
-                  className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleDeleteTest(showDeleteTestModal)}
-                  disabled={isDeletingTest}
-                  className="rounded-md bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                >
-                  {isDeletingTest ? 'Deleting...' : 'Delete Test'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <DeleteTestModal
+            isDeleting={isDeletingTest}
+            onConfirm={() => handleDeleteTest(showDeleteTestModal)}
+            onCancel={() => setShowDeleteTestModal(null)}
+          />
         )}
 
-        {/* Import Tests Modal */}
+        {/* Import Tests Modal - Feature #50: Extracted to component */}
         {showImportModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onMouseDown={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowImportModal(false);
-              }
+          <ImportTestsModal
+            importError={importError}
+            isImporting={isImporting}
+            onImport={handleImportTests}
+            onClose={() => {
+              setShowImportModal(false);
+              setImportError('');
             }}
-          >
-            <div
-              className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-lg font-semibold text-foreground">Import Tests</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Upload a JSON file with test definitions or Playwright test files.
-              </p>
-
-              {importError && (
-                <div className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  {importError}
-                </div>
-              )}
-
-              <div className="mt-4">
-                <label
-                  htmlFor="import-file"
-                  className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-colors hover:border-primary/50 hover:bg-muted/30 ${isImporting ? 'pointer-events-none opacity-50' : ''}`}
-                >
-                  <svg className="h-10 w-10 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <span className="mt-2 text-sm font-medium text-foreground">
-                    {isImporting ? 'Importing...' : 'Click to upload or drag and drop'}
-                  </span>
-                  <span className="mt-1 text-xs text-muted-foreground">
-                    JSON, .spec.ts, .spec.js, .test.ts, .test.js (Max 5MB)
-                  </span>
-                </label>
-                <input
-                  ref={fileInputRef}
-                  id="import-file"
-                  type="file"
-                  accept=".json,.spec.ts,.spec.js,.test.ts,.test.js"
-                  onChange={handleImportTests}
-                  className="hidden"
-                  disabled={isImporting}
-                />
-              </div>
-
-              <div className="mt-4 rounded-md bg-muted/50 p-3">
-                <p className="text-xs text-muted-foreground">
-                  <strong>JSON Format:</strong> Array of objects with "name" and optional "description", "steps" fields.
-                </p>
-              </div>
-
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={() => {
-                    setShowImportModal(false);
-                    setImportError('');
-                  }}
-                  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
+          />
         )}
 
         {/* Suite Run Results */}
