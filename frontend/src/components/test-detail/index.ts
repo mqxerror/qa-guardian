@@ -20,6 +20,7 @@ export { CurrentRunPanel, type CurrentRunPanelProps, type LiveProgress, type Con
 export { ViewCodeTab } from './ViewCodeTab';
 export { K6ScriptTab } from './K6ScriptTab';
 export { TestDetailsCard } from './TestDetailsCard';
+export { TestStepsTab } from './TestStepsTab';
 
 // Modals
 export * from './modals';

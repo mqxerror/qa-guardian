@@ -67,6 +67,7 @@ import {
   ViewCodeTab,
   K6ScriptTab,
   TestDetailsCard,
+  TestStepsTab,
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
@@ -3149,214 +3150,20 @@ export default function () {
               )}
             </div>
 
-            {/* Steps Tab Content */}
+            {/* Steps Tab Content - Feature #48: Extracted to TestStepsTab component */}
             {activeTab === 'steps' && (
-              <>
-                {/* Feature #1963: Visual tests don't need steps - show config instead */}
-                {test?.test_type === 'visual_regression' ? (
-                  <div className="mt-4 space-y-4">
-                    <div className="rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/20 p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xl">📸</span>
-                        <h4 className="font-medium text-foreground">Visual Test Configuration</h4>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Visual regression tests work by capturing screenshots and comparing them against baselines. No test steps required.
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {test?.target_url && (
-                          <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
-                            <dt className="text-xs font-medium text-muted-foreground mb-1">Target URL</dt>
-                            <dd className="text-sm text-foreground break-all">
-                              <a href={test.target_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                {test.target_url}
-                              </a>
-                            </dd>
-                          </div>
-                        )}
-                        <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
-                          <dt className="text-xs font-medium text-muted-foreground mb-1">Viewport</dt>
-                          <dd className="text-sm text-foreground">
-                            {test?.multi_viewport && test?.viewports?.length > 0 ? (
-                              <span>Multi-viewport: {test.viewports.map((vp: string | { name: string; width: number; height: number }) =>
-                                typeof vp === 'object' ? vp.name : vp
-                              ).join(', ')}</span>
-                            ) : test?.viewport_preset && test.viewport_preset !== 'custom' ? (
-                              <span className="capitalize">{test.viewport_preset} ({test.viewport_width || 1280}×{test.viewport_height || 720})</span>
-                            ) : (
-                              <span>{test?.viewport_width || 1280}×{test?.viewport_height || 720}</span>
-                            )}
-                          </dd>
-                        </div>
-                        <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
-                          <dt className="text-xs font-medium text-muted-foreground mb-1">Capture Mode</dt>
-                          <dd className="text-sm text-foreground capitalize">
-                            {(test?.capture_mode || 'full_page').replace('_', ' ')}
-                          </dd>
-                        </div>
-                        <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
-                          <dt className="text-xs font-medium text-muted-foreground mb-1">Diff Threshold</dt>
-                          <dd className="text-sm text-foreground">
-                            {(test?.diff_threshold_mode ?? 'percentage') === 'pixel_count'
-                              ? ((test?.diff_pixel_threshold ?? 0) === 0 ? 'Exact match (0 pixels)' : `${test?.diff_pixel_threshold} pixel tolerance`)
-                              : ((test?.diff_threshold ?? 0) === 0 ? 'Exact match (0%)' : `${test?.diff_threshold}% tolerance`)
-                            }
-                          </dd>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : test?.test_type === 'lighthouse' ? (
-                  <div className="mt-4 space-y-4">
-                    <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20 p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xl">⚡</span>
-                        <h4 className="font-medium text-foreground">Performance Test Configuration</h4>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Lighthouse performance tests analyze page load metrics. No test steps required.
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
-                          <dt className="text-xs font-medium text-muted-foreground mb-1">Device Preset</dt>
-                          <dd className="text-sm text-foreground capitalize">{test?.device_preset || 'mobile'}</dd>
-                        </div>
-                        <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
-                          <dt className="text-xs font-medium text-muted-foreground mb-1">Performance Threshold</dt>
-                          <dd className="text-sm text-foreground">{test?.performance_threshold || 0}% minimum score</dd>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : test?.test_type === 'accessibility' ? (
-                  <div className="mt-4 space-y-4">
-                    <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/20 p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xl">♿</span>
-                        <h4 className="font-medium text-foreground">Accessibility Test Configuration</h4>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Accessibility tests scan pages for WCAG violations. No test steps required.
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
-                          <dt className="text-xs font-medium text-muted-foreground mb-1">WCAG Level</dt>
-                          <dd className="text-sm text-foreground">{test?.wcag_level || 'AA'}</dd>
-                        </div>
-                        <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
-                          <dt className="text-xs font-medium text-muted-foreground mb-1">Include Best Practices</dt>
-                          <dd className="text-sm text-foreground">{test?.include_best_practices ? 'Yes' : 'No'}</dd>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : test?.steps.length === 0 ? (
-                  <p className="mt-4 text-muted-foreground">No steps defined yet. Add steps to run the test.</p>
-                ) : (
-                  <>
-                    {hasReorderedSteps && (
-                      <div className="mt-4 flex items-center gap-2 rounded-md bg-yellow-500/10 p-3 border border-yellow-500/30">
-                        <span className="text-yellow-600 dark:text-yellow-400 text-sm">Steps have been reordered. Save to persist changes.</span>
-                        <button
-                          onClick={handleSaveStepOrder}
-                          disabled={isSavingStepOrder}
-                          className="ml-auto rounded-md bg-yellow-600 px-3 py-1 text-sm font-medium text-white hover:bg-yellow-700 disabled:opacity-50"
-                        >
-                          {isSavingStepOrder ? 'Saving...' : 'Save Order'}
-                        </button>
-                      </div>
-                    )}
-                    <ol className="mt-4 space-y-2">
-                      {test?.steps.map((step, index) => (
-                        <li
-                          key={step.id}
-                          draggable
-                          onDragStart={(e) => handleStepDragStart(e, index)}
-                          onDragEnd={handleStepDragEnd}
-                          onDragOver={(e) => handleStepDragOver(e, index)}
-                          onDrop={(e) => handleStepDrop(e, index)}
-                          className={`flex gap-3 rounded-md bg-muted/30 p-3 cursor-move transition-all ${
-                            dragOverIndex === index && draggedStepIndex !== index
-                              ? 'border-2 border-primary border-dashed bg-primary/10'
-                              : 'border-2 border-transparent'
-                          } ${draggedStepIndex === index ? 'opacity-50' : ''}`}
-                        >
-                          {/* Drag handle */}
-                          <span className="flex items-center text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                              <circle cx="9" cy="6" r="1.5"/>
-                              <circle cx="15" cy="6" r="1.5"/>
-                              <circle cx="9" cy="12" r="1.5"/>
-                              <circle cx="15" cy="12" r="1.5"/>
-                              <circle cx="9" cy="18" r="1.5"/>
-                              <circle cx="15" cy="18" r="1.5"/>
-                            </svg>
-                          </span>
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
-                            {index + 1}
-                          </span>
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">
-                              {step.action === 'visual_checkpoint' ? (
-                                <span className="flex items-center gap-1">
-                                  <svg className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                  </svg>
-                                  Visual Checkpoint
-                                </span>
-                              ) : step.action === 'accessibility_check' ? (
-                                <span className="flex items-center gap-1">
-                                  <svg className="h-4 w-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                  </svg>
-                                  Accessibility Check
-                                </span>
-                              ) : step.action}
-                            </p>
-                            {step.selector && (
-                              <p className="text-xs text-muted-foreground">Selector: {step.selector}</p>
-                            )}
-                            {step.value && (
-                              <p className="text-xs text-muted-foreground">Value: {step.value}</p>
-                            )}
-                            {step.action === 'visual_checkpoint' && (
-                              <div className="flex gap-2 mt-1">
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
-                                  {(step as any).checkpointName || 'unnamed'}
-                                </span>
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
-                                  Threshold: {(step as any).checkpointThreshold ?? 0.1}%
-                                </span>
-                              </div>
-                            )}
-                            {step.action === 'accessibility_check' && (
-                              <div className="flex flex-wrap gap-2 mt-1">
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300">
-                                  WCAG {(step as any).a11y_wcag_level || 'AA'}
-                                </span>
-                                {(step as any).a11y_fail_on_any && (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300">
-                                    Fail on any
-                                  </span>
-                                )}
-                                {(step as any).a11y_fail_on_critical && !((step as any).a11y_fail_on_any) && (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
-                                    Critical/Serious only
-                                  </span>
-                                )}
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
-                                  Threshold: {(step as any).a11y_threshold ?? 0}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ol>
-                  </>
-                )}
-              </>
+              <TestStepsTab
+                test={test}
+                hasReorderedSteps={hasReorderedSteps}
+                isSavingStepOrder={isSavingStepOrder}
+                draggedStepIndex={draggedStepIndex}
+                dragOverIndex={dragOverIndex}
+                onSaveStepOrder={handleSaveStepOrder}
+                onStepDragStart={handleStepDragStart}
+                onStepDragEnd={handleStepDragEnd}
+                onStepDragOver={handleStepDragOver}
+                onStepDrop={handleStepDrop}
+              />
             )}
 
             {/* View Code Tab Content - Feature #48: Extracted to ViewCodeTab component */}
