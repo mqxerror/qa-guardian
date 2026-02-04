@@ -1,5 +1,6 @@
 // ProjectDetailPage - Extracted from App.tsx (Feature #1441)
 // Project details with test suites, test management, and GitHub integration
+// Feature #58: Migrated to React Query for parallel data loading
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Layout } from "../components/Layout";
@@ -7,6 +8,8 @@ import { useAuthStore } from "../stores/authStore";
 import { useTimezoneStore } from "../stores/timezoneStore";
 import { useTestDefaultsStore } from "../stores/testDefaultsStore";
 import { toast } from "../stores/toastStore";
+// Feature #58: Import React Query hooks for parallel data fetching
+import { useProject, useSuites, useInvalidateSuites } from '../hooks/api';
 // Feature #49: Import modular types, utilities and hooks from project-detail
 import {
   // Types (still needed for inline useState declarations until fully migrated)
@@ -92,7 +95,19 @@ function ProjectDetailPage() {
     newParams.set('tab', tab);
     setSearchParams(newParams);
   };
-  const [project, setProject] = useState<{ id: string; name: string; description?: string; slug: string; base_url?: string; default_browser?: string; viewport_profiles?: Array<{name: string; width: number; height: number}>; created_at: string } | null>(null);
+
+  // Feature #58: React Query hooks for parallel data loading
+  // Project and suites load in parallel automatically via React Query
+  const { data: projectData, isLoading: projectLoading, error: projectError } = useProject(id);
+  const { data: suitesData, isLoading: suitesLoading } = useSuites(id);
+  const { invalidateByProject } = useInvalidateSuites();
+
+  // Extract data from React Query responses
+  const project = projectData?.project || null;
+  const suites = suitesData?.suites || suitesData?.data || [];
+  const isLoading = projectLoading || suitesLoading;
+  const error = projectError ? (projectError instanceof Error ? projectError.message : 'Failed to load project') : null;
+
   // Feature #1794: Project defaults state
   const [projectDefaultBrowser, setProjectDefaultBrowser] = useState<'chromium' | 'firefox' | 'webkit'>('chromium');
   const [projectViewportProfiles, setProjectViewportProfiles] = useState<Array<{name: string; width: number; height: number}>>([
@@ -101,9 +116,10 @@ function ProjectDetailPage() {
     { name: 'Mobile', width: 375, height: 667 },
   ]);
   const [isSavingProjectDefaults, setIsSavingProjectDefaults] = useState(false);
-  const [suites, setSuites] = useState<TestSuite[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Feature #58: Settings/GitHub data loading state (lazy-loaded when tabs active)
+  const [settingsDataLoaded, setSettingsDataLoaded] = useState(false);
+  const [githubDataLoaded, setGithubDataLoaded] = useState(false);
   const [showCreateSuiteModal, setShowCreateSuiteModal] = useState(false);
   const [newSuiteName, setNewSuiteName] = useState('');
   const [newSuiteDescription, setNewSuiteDescription] = useState('');
@@ -250,7 +266,8 @@ function ProjectDetailPage() {
       }
 
       const data = await response.json();
-      setSuites([...suites, data.suite]);
+      // Feature #58: Use React Query invalidation to refetch suites
+      invalidateByProject(id || '');
       setNewSuiteName('');
       setNewSuiteDescription('');
       setNewSuiteBrowser(testDefaults.defaultBrowser);
@@ -389,134 +406,114 @@ function ProjectDetailPage() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [showCreateSuiteModal, showDeleteModal]);
 
+  // Feature #58: Lazy-load settings data when Settings tab is activated
+  // This reduces initial page load from 11+ sequential calls to just 2 parallel calls (project + suites)
   useEffect(() => {
-    const fetchProject = async () => {
+    if (activeTab !== 'settings' || settingsDataLoaded) return;
+
+    const fetchSettingsData = async () => {
       try {
-        const response = await fetch(`/api/v1/projects/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            setError('Project not found');
-          } else if (response.status === 403) {
-            setError('You do not have access to this project');
-          } else {
-            setError('Failed to load project');
-          }
-          return;
-        }
-
-        const data = await response.json();
-        setProject(data.project);
-
-        // Fetch test suites
-        const suitesResponse = await fetch(`/api/v1/projects/${id}/suites`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (suitesResponse.ok) {
-          const suitesData = await suitesResponse.json();
-          setSuites(suitesData.suites);
-        }
+        // Load all settings-related data in parallel
+        const promises: Promise<void>[] = [];
 
         // Fetch project members (only for admins/owners)
         if (user?.role === 'owner' || user?.role === 'admin') {
-          const membersResponse = await fetch(`/api/v1/projects/${id}/members`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          if (membersResponse.ok) {
-            const membersData = await membersResponse.json();
-            setProjectMembers(membersData.members);
-          }
+          promises.push(
+            fetch(`/api/v1/projects/${id}/members`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+            }).then(res => res.ok ? res.json() : null).then(data => {
+              if (data) setProjectMembers(data.members);
+            })
+          );
 
           // Fetch organization members for the dropdown
-          const orgMembersResponse = await fetch(`/api/v1/organizations/${user?.organization_id}/members`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          if (orgMembersResponse.ok) {
-            const orgMembersData = await orgMembersResponse.json();
-            setOrgMembers(orgMembersData.members);
-          }
+          promises.push(
+            fetch(`/api/v1/organizations/${user?.organization_id}/members`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+            }).then(res => res.ok ? res.json() : null).then(data => {
+              if (data) setOrgMembers(data.members);
+            })
+          );
         }
 
         // Fetch alert channels (all roles except viewer can see)
         if (user?.role !== 'viewer') {
-          const alertsResponse = await fetch(`/api/v1/projects/${id}/alerts`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          if (alertsResponse.ok) {
-            const alertsData = await alertsResponse.json();
-            setAlertChannels(alertsData.channels);
-          }
+          promises.push(
+            fetch(`/api/v1/projects/${id}/alerts`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+            }).then(res => res.ok ? res.json() : null).then(data => {
+              if (data) setAlertChannels(data.channels);
+            })
+          );
 
           // Fetch alert history
-          const historyResponse = await fetch('/api/v1/alert-history', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          if (historyResponse.ok) {
-            const historyData = await historyResponse.json();
-            // Filter to only this project's alerts
-            const projectHistory = historyData.history.filter(
-              (h: AlertHistoryEntry) => h.projectId === id
-            );
-            setAlertHistory(projectHistory);
-          }
+          promises.push(
+            fetch('/api/v1/alert-history', {
+              headers: { 'Authorization': `Bearer ${token}` },
+            }).then(res => res.ok ? res.json() : null).then(data => {
+              if (data) {
+                const projectHistory = data.history.filter(
+                  (h: AlertHistoryEntry) => h.projectId === id
+                );
+                setAlertHistory(projectHistory);
+              }
+            })
+          );
 
           // Fetch environment variables
-          const envResponse = await fetch(`/api/v1/projects/${id}/env`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          if (envResponse.ok) {
-            const envData = await envResponse.json();
-            setEnvVars(envData.env_vars);
-          }
+          promises.push(
+            fetch(`/api/v1/projects/${id}/env`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+            }).then(res => res.ok ? res.json() : null).then(data => {
+              if (data) setEnvVars(data.env_vars);
+            })
+          );
 
           // Fetch healing settings (Feature #1064)
-          const healingResponse = await fetch(`/api/v1/projects/${id}/healing-settings`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          if (healingResponse.ok) {
-            const healingData = await healingResponse.json();
-            setHealingSettings(healingData.healing_settings);
-          }
+          promises.push(
+            fetch(`/api/v1/projects/${id}/healing-settings`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+            }).then(res => res.ok ? res.json() : null).then(data => {
+              if (data) setHealingSettings(data.healing_settings);
+            })
+          );
         }
 
-        // Fetch GitHub status and project connection
-        const githubStatusResponse = await fetch('/api/v1/github/status', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (githubStatusResponse.ok) {
-          const githubStatus = await githubStatusResponse.json();
+        // Execute all in parallel
+        await Promise.all(promises);
+        setSettingsDataLoaded(true);
+      } catch (err) {
+        console.error('Failed to load settings data:', err);
+      }
+    };
+
+    fetchSettingsData();
+  }, [activeTab, settingsDataLoaded, id, token, user?.role, user?.organization_id]);
+
+  // Feature #58: Lazy-load GitHub data when GitHub tab is activated
+  useEffect(() => {
+    if (activeTab !== 'github' || githubDataLoaded) return;
+
+    const fetchGitHubData = async () => {
+      try {
+        // Load GitHub data in parallel
+        const [statusRes, connRes] = await Promise.all([
+          fetch('/api/v1/github/status', {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+          fetch(`/api/v1/projects/${id}/github`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+        ]);
+
+        if (statusRes.ok) {
+          const githubStatus = await statusRes.json();
           setGithubConnected(githubStatus.connected);
           setGithubUsername(githubStatus.username);
         }
 
-        // Fetch GitHub connection for this project
-        const githubConnResponse = await fetch(`/api/v1/projects/${id}/github`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (githubConnResponse.ok) {
-          const githubConnData = await githubConnResponse.json();
+        if (connRes.ok) {
+          const githubConnData = await connRes.json();
           if (githubConnData.connected) {
             setGithubConnection(githubConnData.connection);
             setGithubTestFiles(githubConnData.test_files || []);
@@ -524,9 +521,7 @@ function ProjectDetailPage() {
 
             // Fetch PR checks status
             const prResponse = await fetch(`/api/v1/projects/${id}/github/pull-requests`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-              },
+              headers: { 'Authorization': `Bearer ${token}` },
             });
             if (prResponse.ok) {
               const prData = await prResponse.json();
@@ -536,14 +531,15 @@ function ProjectDetailPage() {
             }
           }
         }
+
+        setGithubDataLoaded(true);
       } catch (err) {
-        setError('Failed to load project');
-      } finally {
-        setIsLoading(false);
+        console.error('Failed to load GitHub data:', err);
       }
     };
-    fetchProject();
-  }, [id, token, user?.role, user?.organization_id]);
+
+    fetchGitHubData();
+  }, [activeTab, githubDataLoaded, id, token]);
 
   // Fetch SAST configuration and scans when Security tab is active
   useEffect(() => {
