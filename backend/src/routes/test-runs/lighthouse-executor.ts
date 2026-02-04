@@ -537,9 +537,19 @@ export async function runRealLighthouseAudit(
   ];
 
   if (device === 'mobile') {
-    args.push('--preset=perf');
+    // Use --form-factor=mobile for proper mobile device emulation
+    // --preset=perf is for performance preset (throttling), NOT device type
+    args.push('--form-factor=mobile');
+    // Add mobile screen emulation for accurate viewport
+    args.push('--screenEmulation.mobile=true');
+    args.push('--screenEmulation.width=375');
+    args.push('--screenEmulation.height=667');
+    args.push('--screenEmulation.deviceScaleFactor=2');
   } else {
+    // Desktop mode with appropriate form factor
+    args.push('--form-factor=desktop');
     args.push('--preset=desktop');
+    args.push('--screenEmulation.mobile=false');
   }
 
   const lighthouseBin = resolveLighthouseBin();
