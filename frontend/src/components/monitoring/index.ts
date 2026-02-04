@@ -13,3 +13,4 @@ export * from './utils';
 export { default as StatusBadge } from './StatusBadge';
 export { default as MonitoringSummaryCards } from './MonitoringSummaryCards';
 export { default as SettingsTab, type SettingsTabProps } from './SettingsTab';
+export { default as UptimeChecksTab, type UptimeChecksTabProps } from './UptimeChecksTab';

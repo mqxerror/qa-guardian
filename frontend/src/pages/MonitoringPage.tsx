@@ -12,6 +12,7 @@ import { toast } from "../stores/toastStore";
 import {
   MonitoringSummaryCards,
   StatusBadge,
+  UptimeChecksTab,
   // Import ALL types from modular components
   MonitoringLocation,
   MonitoringLocationInfo,
@@ -43,6 +44,8 @@ import {
   PerformanceMetrics,
   PerformanceResult,
   PerformanceTrends,
+  DetailTab,
+  HistoryRange,
 } from '../components/monitoring';
 
 function MonitoringPage() {
@@ -62,8 +65,8 @@ function MonitoringPage() {
   const [showIncidentTab, setShowIncidentTab] = useState(false);
   const [historyData, setHistoryData] = useState<HistoryData | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [historyRange, setHistoryRange] = useState<'1h' | '6h' | '24h' | '7d' | '30d'>('24h');
-  const [activeDetailTab, setActiveDetailTab] = useState<'details' | 'incidents' | 'history' | 'maintenance'>('details');
+  const [historyRange, setHistoryRange] = useState<HistoryRange>('24h');
+  const [activeDetailTab, setActiveDetailTab] = useState<DetailTab>('details');
   const [maintenanceData, setMaintenanceData] = useState<MaintenanceData | null>(null);
   const [isLoadingMaintenance, setIsLoadingMaintenance] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
