@@ -70,6 +70,7 @@ import {
   TestStepsTab,
   BaselineTab,
   LiveExecutionPanel,
+  TestHeader,
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
@@ -2787,145 +2788,35 @@ export default function () {
   return (
     <Layout>
       <div className="p-8">
-        {/* Breadcrumb navigation */}
-        <nav className="mb-6 flex items-center gap-2 text-sm">
-          <Link to="/projects" className="text-muted-foreground hover:text-foreground">
-            Projects
-          </Link>
-          <span className="text-muted-foreground">/</span>
-          <Link to={`/projects/${project?.id}`} className="text-muted-foreground hover:text-foreground">
-            {project?.name || 'Project'}
-          </Link>
-          <span className="text-muted-foreground">/</span>
-          <Link to={`/suites/${suite?.id}`} className="text-muted-foreground hover:text-foreground">
-            {suite?.name || 'Suite'}
-          </Link>
-          <span className="text-muted-foreground">/</span>
-          <span className="font-medium text-foreground">{test?.name}</span>
-        </nav>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">{test?.name}</h1>
-            {test?.description && (
-              <p className="mt-2 text-muted-foreground">{test.description}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <span className={`rounded-full px-3 py-1 text-sm font-medium ${
-              test?.status === 'active' ? 'bg-green-100 text-green-700' :
-              test?.status === 'draft' ? 'bg-yellow-100 text-yellow-700' :
-              'bg-gray-100 text-gray-700'
-            }`}>
-              {test?.status}
-            </span>
-            {/* Branch selector for visual regression tests */}
-            {test?.test_type === 'visual_regression' && (
-              <div className="flex items-center gap-2">
-                <label htmlFor="branch-select" className="text-sm text-muted-foreground">
-                  Branch:
-                </label>
-                <select
-                  id="branch-select"
-                  value={selectedBranch}
-                  onChange={(e) => setSelectedBranch(e.target.value)}
-                  disabled={isRunning}
-                  className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground"
-                >
-                  {availableBranches.map(branch => (
-                    <option key={branch} value={branch}>{branch}</option>
-                  ))}
-                </select>
-                {/* Option to enter a new branch name */}
-                <input
-                  type="text"
-                  placeholder="New branch..."
-                  className="rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground w-32"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                      const newBranch = e.currentTarget.value.trim();
-                      if (!availableBranches.includes(newBranch)) {
-                        setAvailableBranches([...availableBranches, newBranch]);
-                      }
-                      setSelectedBranch(newBranch);
-                      e.currentTarget.value = '';
-                    }
-                  }}
-                />
-              </div>
-            )}
-            {canRun && !isRunning && (
-              <button
-                onClick={handleRunTest}
-                // Feature #1912: Allow running tests with target_url even if no steps (AI-generated tests)
-                disabled={
-                  !['visual_regression', 'lighthouse', 'load', 'accessibility'].includes(test?.test_type || '') &&
-                  (test?.steps?.length || 0) === 0 &&
-                  !test?.target_url
-                }
-                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-              >
-                Run Test
-              </button>
-            )}
-            {canRun && !isRunning && (
-              <button
-                onClick={() => setShowQuickScheduleModal(true)}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-              >
-                Schedule
-              </button>
-            )}
-            {isRunning && (
-              <button
-                onClick={handleCancelRun}
-                disabled={isCancellingRun}
-                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                {isCancellingRun ? 'Cancelling...' : 'Cancel Run'}
-              </button>
-            )}
-            {canEdit && (
-              <button
-                onClick={handleOpenEditModal}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                Edit Test
-              </button>
-            )}
-            {canEdit && (
-              <button
-                onClick={handleDuplicate}
-                disabled={isDuplicating}
-                className="rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50"
-              >
-                {isDuplicating ? 'Duplicating...' : 'Duplicate'}
-              </button>
-            )}
-            {canDelete && (
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
-              >
-                Delete Test
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Run Error */}
-        {runError && (
-          <div role="alert" className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {runError}
-          </div>
-        )}
-
-        {/* Duplicate Error */}
-        {duplicateError && (
-          <div role="alert" className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {duplicateError}
-          </div>
-        )}
+        {/* Feature #48: Extracted TestHeader component */}
+        <TestHeader
+          test={test}
+          project={project}
+          suite={suite}
+          selectedBranch={selectedBranch}
+          availableBranches={availableBranches}
+          onBranchChange={setSelectedBranch}
+          onAddBranch={(newBranch) => {
+            if (!availableBranches.includes(newBranch)) {
+              setAvailableBranches([...availableBranches, newBranch]);
+            }
+            setSelectedBranch(newBranch);
+          }}
+          isRunning={isRunning}
+          canRun={canRun}
+          canEdit={canEdit}
+          canDelete={canDelete}
+          isDuplicating={isDuplicating}
+          isCancellingRun={isCancellingRun}
+          onRunTest={handleRunTest}
+          onCancelRun={handleCancelRun}
+          onSchedule={() => setShowQuickScheduleModal(true)}
+          onEditTest={handleOpenEditModal}
+          onDuplicate={handleDuplicate}
+          onDelete={() => setShowDeleteModal(true)}
+          runError={runError}
+          duplicateError={duplicateError}
+        />
 
         {/* Delete Confirmation Modal - Feature #48: Extracted to component */}
         {showDeleteModal && (

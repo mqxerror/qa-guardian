@@ -23,11 +23,13 @@ export { TestDetailsCard } from './TestDetailsCard';
 export { TestStepsTab } from './TestStepsTab';
 export { BaselineTab } from './BaselineTab';
 export { LiveExecutionPanel, type LiveExecutionPanelProps } from './LiveExecutionPanel';
+export { TestHeader, type TestHeaderProps } from './TestHeader';
 
 // Modals
 export * from './modals';
 
 // Hooks
+export { useTestDetailActions, type UseTestDetailActionsProps } from './useTestDetailActions';
 export {
   useTestDetailState,
   useCoreTestState,
