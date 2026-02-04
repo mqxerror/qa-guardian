@@ -233,11 +233,17 @@ export async function coreRoutes(app: FastifyInstance) {
   // List tests in a suite
   // Feature #1958: Include run metadata (last_run, last_result, run_count, avg_duration)
   // Feature #2081: Use async database functions for persistence
-  app.get<{ Params: SuiteParams }>('/api/v1/suites/:suiteId/tests', {
+  // Feature #54: Add server-side pagination
+  app.get<{ Params: SuiteParams; Querystring: { page?: number; limit?: number } }>('/api/v1/suites/:suiteId/tests', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { suiteId } = request.params;
+    const { page = 1, limit = 50 } = request.query;
     const orgId = getOrganizationId(request);
+
+    // Validate and clamp pagination params
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number(limit) || 50));
 
     // Use async database function
     const suite = await dbGetTestSuite(suiteId);
@@ -248,8 +254,13 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    // Use async database function
-    const testList = await dbListTests(suiteId);
+    // Use async database function - get all tests (for now, DB-level pagination can be added later)
+    const allTests = await dbListTests(suiteId);
+    const total = allTests.length;
+
+    // Apply pagination
+    const offset = (pageNum - 1) * limitNum;
+    const testList = allTests.slice(offset, offset + limitNum);
 
     // Feature #1958: Compute run metadata for each test
     // Feature #2108: Use async DB call instead of Map iteration
@@ -286,7 +297,21 @@ export async function coreRoutes(app: FastifyInstance) {
       };
     });
 
-    return { tests: testsWithRunMetadata };
+    // Feature #54: Return paginated response
+    const totalPages = Math.ceil(total / limitNum);
+    return {
+      data: testsWithRunMetadata,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+        hasNext: pageNum < totalPages,
+        hasPrev: pageNum > 1,
+      },
+      // Backwards compatibility
+      tests: testsWithRunMetadata,
+    };
   });
 
   // Get single test
