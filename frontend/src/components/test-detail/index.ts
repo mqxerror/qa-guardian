@@ -19,6 +19,7 @@ export { RunHistorySection } from './RunHistorySection';
 export { CurrentRunPanel, type CurrentRunPanelProps, type LiveProgress, type ConsoleLogEntry } from './CurrentRunPanel';
 export { ViewCodeTab } from './ViewCodeTab';
 export { K6ScriptTab } from './K6ScriptTab';
+export { TestDetailsCard } from './TestDetailsCard';
 
 // Modals
 export * from './modals';

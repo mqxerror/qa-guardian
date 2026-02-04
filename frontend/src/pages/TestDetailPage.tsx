@@ -66,6 +66,7 @@ import {
   QuickScheduleModal,
   ViewCodeTab,
   K6ScriptTab,
+  TestDetailsCard,
 } from '../components/test-detail';
 
 // Removed inline type definitions - now imported from test-detail module (Feature #48)
@@ -2953,303 +2954,73 @@ export default function () {
           onSubmit={handleCreateQuickScheduleFromModal}
         />
 
-        {/* Approve Baseline Confirmation Modal */}
+        {/* Approve Baseline Confirmation Modal - Feature #48: Using extracted component */}
         {showApproveBaselineModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && !approvingBaseline && setShowApproveBaselineModal(false)}
-          >
-            <div role="dialog" aria-modal="true" aria-labelledby="approve-baseline-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                  <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h3 id="approve-baseline-title" className="text-lg font-semibold text-foreground">Approve New Baseline</h3>
-              </div>
-              <p className="text-muted-foreground">
-                Are you sure you want to approve the current screenshot as the new baseline for <span className="font-medium text-foreground">"{test?.name}"</span>?
-              </p>
-              {/* Old vs New Baseline Preview */}
-              {(() => {
-                const runResult = currentRun?.results?.find(r => String(r.test_id) === String(test?.id));
-                const hasPreview = runResult?.baseline_screenshot_base64 && runResult?.screenshot_base64;
-                return hasPreview ? (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Preview: Old vs New Baseline</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <p className="text-xs text-center text-muted-foreground">Current Baseline</p>
-                        <div className="border border-red-200 dark:border-red-800 rounded-md overflow-hidden bg-red-50 dark:bg-red-900/20">
-                          <img
-                            src={`data:image/png;base64,${runResult.baseline_screenshot_base64}`}
-                            alt="Current baseline"
-                            className="w-full h-24 object-cover object-top"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-center text-muted-foreground">New Baseline</p>
-                        <div className="border border-green-200 dark:border-green-800 rounded-md overflow-hidden bg-green-50 dark:bg-green-900/20">
-                          <img
-                            src={`data:image/png;base64,${runResult.screenshot_base64}`}
-                            alt="New baseline"
-                            className="w-full h-24 object-cover object-top"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-              <div className="mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                <p className="text-sm text-amber-800 dark:text-amber-200">
-                  <strong>⚠️ This will replace the existing baseline.</strong> All future test runs will compare against this new baseline screenshot.
-                </p>
-              </div>
-              {approveBaselineError && (
-                <div role="alert" className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  {approveBaselineError}
-                </div>
-              )}
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setShowApproveBaselineModal(false);
-                    setApproveBaselineRunId(null);
-                    setApproveBaselineError('');
-                  }}
-                  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  disabled={approvingBaseline}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleApproveBaseline(approveBaselineRunId || undefined)}
-                  disabled={approvingBaseline}
-                  className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-                >
-                  {approvingBaseline ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Approving...
-                    </span>
-                  ) : (
-                    'Approve Baseline'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
+          <ApproveBaselineModal
+            testName={test?.name || ''}
+            approvingBaseline={approvingBaseline}
+            approveBaselineError={approveBaselineError}
+            currentRun={currentRun as any}
+            testId={test?.id}
+            runId={approveBaselineRunId}
+            onClose={() => {
+              setShowApproveBaselineModal(false);
+              setApproveBaselineRunId(null);
+              setApproveBaselineError('');
+            }}
+            onApprove={handleApproveBaseline}
+          />
         )}
 
-        {/* Restore Baseline Confirmation Modal */}
-        {showRestoreBaselineModal && restoreHistoryEntry && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && !restoringBaseline && setShowRestoreBaselineModal(false)}
-          >
-            <div role="dialog" aria-modal="true" aria-labelledby="restore-baseline-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
-                  <svg className="h-6 w-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5" />
-                  </svg>
-                </div>
-                <h3 id="restore-baseline-title" className="text-lg font-semibold text-foreground">Restore Previous Baseline</h3>
-              </div>
-              <p className="text-muted-foreground">
-                Are you sure you want to restore <span className="font-medium text-foreground">version {restoreHistoryEntry.version}</span> as the current baseline for <span className="font-medium text-foreground">"{test?.name}"</span>?
-              </p>
-              <div className="mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                <p className="text-sm text-amber-800 dark:text-amber-200">
-                  <strong>⚠️ This will replace the current baseline.</strong> All future test runs will compare against this restored baseline. A new version will be created in the history for audit trail.
-                </p>
-              </div>
-              {restoreBaselineError && (
-                <div role="alert" className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  {restoreBaselineError}
-                </div>
-              )}
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setShowRestoreBaselineModal(false);
-                    setRestoreHistoryEntry(null);
-                    setRestoreBaselineError('');
-                  }}
-                  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  disabled={restoringBaseline}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleRestoreBaseline(restoreHistoryEntry.id)}
-                  disabled={restoringBaseline}
-                  className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
-                >
-                  {restoringBaseline ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Restoring...
-                    </span>
-                  ) : (
-                    'Restore Baseline'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* Restore Baseline Confirmation Modal - Feature #48: Using extracted component */}
+        {showRestoreBaselineModal && (
+          <RestoreBaselineModal
+            testName={test?.name || ''}
+            restoringBaseline={restoringBaseline}
+            restoreBaselineError={restoreBaselineError}
+            restoreHistoryEntry={restoreHistoryEntry}
+            onClose={() => {
+              setShowRestoreBaselineModal(false);
+              setRestoreHistoryEntry(null);
+              setRestoreBaselineError('');
+            }}
+            onRestore={handleRestoreBaseline}
+          />
         )}
 
-        {/* Merge Baseline Modal */}
-        {showMergeBaselineModal && selectedMergeBranch && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && !isMergingBaseline && setShowMergeBaselineModal(false)}
-          >
-            <div role="dialog" aria-modal="true" aria-labelledby="merge-baseline-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-                  <svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <circle cx="18" cy="18" r="3"/>
-                    <circle cx="6" cy="6" r="3"/>
-                    <path d="M6 21V9a9 9 0 0 0 9 9"/>
-                  </svg>
-                </div>
-                <h3 id="merge-baseline-title" className="text-lg font-semibold text-foreground">Merge Baseline from Branch</h3>
-              </div>
-              <p className="text-muted-foreground">
-                Merge the baseline from branch <span className="font-semibold text-blue-600 dark:text-blue-400">'{selectedMergeBranch}'</span> to <span className="font-semibold text-foreground">'{selectedBranch}'</span>?
-              </p>
-              <div className="mt-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  <strong>ℹ️ This will copy the baseline.</strong> The baseline from '{selectedMergeBranch}' will be used as the new baseline for branch '{selectedBranch}'. All future test runs on '{selectedBranch}' will compare against this baseline.
-                </p>
-              </div>
-              <p className="text-sm text-muted-foreground mt-3">
-                This is typically done after merging a feature branch to main, so the visual baseline matches the merged code.
-              </p>
-              {mergeBaselineError && (
-                <div role="alert" className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  {mergeBaselineError}
-                </div>
-              )}
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setShowMergeBaselineModal(false);
-                    setSelectedMergeBranch(null);
-                    setMergeBaselineError('');
-                  }}
-                  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  disabled={isMergingBaseline}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleMergeBaseline(selectedMergeBranch)}
-                  disabled={isMergingBaseline}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {isMergingBaseline ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Merging...
-                    </span>
-                  ) : (
-                    'Merge Baseline'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* Merge Baseline Modal - Feature #48: Using extracted component */}
+        {showMergeBaselineModal && (
+          <MergeBaselineModal
+            selectedBranch={selectedBranch}
+            selectedMergeBranch={selectedMergeBranch}
+            isMergingBaseline={isMergingBaseline}
+            mergeBaselineError={mergeBaselineError}
+            onClose={() => {
+              setShowMergeBaselineModal(false);
+              setSelectedMergeBranch(null);
+              setMergeBaselineError('');
+            }}
+            onMerge={handleMergeBaseline}
+          />
         )}
 
-        {/* Reject Changes Confirmation Modal */}
+        {/* Reject Changes Confirmation Modal - Feature #48: Using extracted component */}
         {showRejectChangesModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && !rejectingChanges && setShowRejectChangesModal(false)}
-          >
-            <div role="dialog" aria-modal="true" aria-labelledby="reject-changes-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-                  <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <h3 id="reject-changes-title" className="text-lg font-semibold text-foreground">Reject Visual Changes</h3>
-              </div>
-              <p className="text-muted-foreground">
-                Mark this visual difference as a <span className="font-semibold text-red-600 dark:text-red-400">regression</span> for <span className="font-medium text-foreground">"{test?.name}"</span>?
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                This indicates that the visual changes are unintended and should be fixed. The baseline will remain unchanged.
-              </p>
-
-              {/* Optional reason input */}
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Rejection Reason <span className="text-muted-foreground font-normal">(optional)</span>
-                </label>
-                <textarea
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  placeholder="Describe why this change is a regression..."
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-foreground text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                  rows={3}
-                />
-              </div>
-
-              {rejectChangesError && (
-                <div role="alert" className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  {rejectChangesError}
-                </div>
-              )}
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setShowRejectChangesModal(false);
-                    setRejectChangesRunId(null);
-                    setRejectChangesError('');
-                    setRejectionReason('');
-                  }}
-                  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  disabled={rejectingChanges}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleRejectChanges(rejectChangesRunId || undefined)}
-                  disabled={rejectingChanges}
-                  className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                >
-                  {rejectingChanges ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Rejecting...
-                    </span>
-                  ) : (
-                    'Reject Changes'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
+          <RejectChangesModal
+            testName={test?.name || ''}
+            rejectingChanges={rejectingChanges}
+            rejectChangesError={rejectChangesError}
+            rejectionReason={rejectionReason}
+            onReasonChange={setRejectionReason}
+            runId={rejectChangesRunId}
+            onClose={() => {
+              setShowRejectChangesModal(false);
+              setRejectChangesRunId(null);
+              setRejectChangesError('');
+              setRejectionReason('');
+            }}
+            onReject={handleRejectChanges}
+          />
         )}
 
         {/* Edit Modal - Feature #48: Extracted to component */}
@@ -3310,334 +3081,13 @@ export default function () {
           </div>
         )}
 
-        {/* Test Details */}
+        {/* Test Details - Feature #48: Using extracted TestDetailsCard component */}
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <div className="rounded-lg border border-border bg-card p-6">
-            <h2 className="text-lg font-semibold text-foreground">Test Details</h2>
-            <dl className="mt-4 space-y-3">
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">ID</dt>
-                <dd className="text-foreground">{test?.id}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Type</dt>
-                <dd className="text-foreground">
-                  {test?.test_type === 'visual_regression' ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
-                      📸 Visual Regression
-                    </span>
-                  ) : test?.test_type === 'lighthouse' ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                      ⚡ Performance
-                    </span>
-                  ) : test?.test_type === 'load' ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-300">
-                      🔥 Load Test
-                    </span>
-                  ) : test?.test_type === 'accessibility' ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-300">
-                      ♿ Accessibility
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                      🔄 E2E Test
-                    </span>
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Suite</dt>
-                <dd className="text-foreground">{suite?.name}</dd>
-              </div>
-              {test?.test_type === 'visual_regression' && test?.target_url && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Target URL</dt>
-                  <dd className="text-foreground break-all">
-                    <a href={test.target_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      {test.target_url}
-                    </a>
-                  </dd>
-                </div>
-              )}
-              {test?.test_type === 'visual_regression' && test?.multi_viewport && test?.viewports && test.viewports.length > 0 && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Viewports (Multi-viewport Mode)</dt>
-                  <dd className="text-foreground">
-                    <div className="flex flex-wrap gap-1.5">
-                      {test.viewports.map((vp: string | { name: string; width: number; height: number }, idx: number) => {
-                        // Feature #1983: Support both string presets and object viewports
-                        if (typeof vp === 'object' && vp !== null) {
-                          // New format: object with name, width, height
-                          return (
-                            <span key={`${vp.name}-${idx}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                              📐 {vp.name} ({vp.width}×{vp.height})
-                            </span>
-                          );
-                        }
-                        // Legacy format: string preset name
-                        const vpString = vp as string;
-                        const presets: Record<string, { width: number; height: number; label: string }> = {
-                          'iPhone 14': { width: 390, height: 844, label: 'iPhone 14' },
-                          'iPhone SE': { width: 375, height: 667, label: 'iPhone SE' },
-                          'Pixel 7': { width: 412, height: 915, label: 'Pixel 7' },
-                          'Galaxy S21': { width: 360, height: 800, label: 'Galaxy S21' },
-                          'iPad': { width: 768, height: 1024, label: 'iPad' },
-                          'iPad Pro': { width: 1024, height: 1366, label: 'iPad Pro' },
-                          'MacBook 13"': { width: 1440, height: 900, label: 'MacBook 13"' },
-                          'Desktop HD': { width: 1920, height: 1080, label: 'Desktop HD' },
-                          'Desktop 4K': { width: 3840, height: 2160, label: 'Desktop 4K' },
-                          'mobile': { width: 375, height: 667, label: 'Mobile' },
-                          'tablet': { width: 768, height: 1024, label: 'Tablet' },
-                          'desktop': { width: 1920, height: 1080, label: 'Desktop' },
-                          'desktop-hd': { width: 1920, height: 1080, label: 'Desktop HD' },
-                          'mobile-medium': { width: 390, height: 844, label: 'Mobile Medium' },
-                          'mobile-large': { width: 428, height: 926, label: 'Mobile Large' },
-                          'mobile-small': { width: 320, height: 568, label: 'Mobile Small' },
-                          'mobile-android': { width: 412, height: 915, label: 'Android' },
-                          'mobile-android-small': { width: 360, height: 800, label: 'Android Small' },
-                          'mobile-landscape': { width: 844, height: 390, label: 'Mobile Landscape' },
-                          'tablet-portrait': { width: 768, height: 1024, label: 'Tablet Portrait' },
-                          'tablet-landscape': { width: 1024, height: 768, label: 'Tablet Landscape' },
-                          'tablet-pro-portrait': { width: 1024, height: 1366, label: 'iPad Pro Portrait' },
-                          'tablet-pro-landscape': { width: 1366, height: 1024, label: 'iPad Pro Landscape' },
-                          'desktop-medium': { width: 1440, height: 900, label: 'Desktop Medium' },
-                          'desktop-small': { width: 1280, height: 720, label: 'Desktop Small' },
-                          'desktop-large': { width: 1920, height: 1080, label: 'Desktop Large' },
-                          'desktop-4k': { width: 3840, height: 2160, label: 'Desktop 4K' },
-                          'desktop-ultrawide': { width: 2560, height: 1080, label: 'Ultrawide' },
-                          'laptop': { width: 1366, height: 768, label: 'Laptop' },
-                          'desktop_hd': { width: 1280, height: 720, label: 'Desktop HD' },
-                          'mobile_large': { width: 414, height: 896, label: 'Mobile Large' },
-                        };
-                        const preset = presets[vpString];
-                        return (
-                          <span key={vpString} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                            📐 {preset?.label || vpString} ({preset?.width || '?'}×{preset?.height || '?'})
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </dd>
-                </div>
-              )}
-              {test?.test_type === 'visual_regression' && !test?.multi_viewport && (test?.viewport_width || test?.viewport_preset) && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Viewport</dt>
-                  <dd className="text-foreground">
-                    {test.viewport_preset && test.viewport_preset !== 'custom' ? (
-                      <span className="capitalize">{test.viewport_preset} ({test.viewport_width}×{test.viewport_height})</span>
-                    ) : (
-                      <span>{test.viewport_width}×{test.viewport_height}</span>
-                    )}
-                  </dd>
-                </div>
-              )}
-              {test?.test_type === 'visual_regression' && test?.wait_for_selector && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Wait for Selector</dt>
-                  <dd className="text-foreground font-mono text-sm bg-muted px-2 py-1 rounded">
-                    {test.wait_for_selector}
-                  </dd>
-                </div>
-              )}
-              {test?.test_type === 'visual_regression' && test?.wait_time && test.wait_time > 0 && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Additional Wait</dt>
-                  <dd className="text-foreground">
-                    {test.wait_time}ms
-                  </dd>
-                </div>
-              )}
-              {test?.test_type === 'visual_regression' && test?.hide_selectors && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Hide Elements</dt>
-                  <dd className="text-foreground font-mono text-sm bg-muted px-2 py-1 rounded">
-                    {test.hide_selectors}
-                  </dd>
-                </div>
-              )}
-              {test?.test_type === 'visual_regression' && test?.remove_selectors && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Remove Elements</dt>
-                  <dd className="text-foreground font-mono text-sm bg-muted px-2 py-1 rounded">
-                    {test.remove_selectors}
-                  </dd>
-                </div>
-              )}
-              {test?.test_type === 'visual_regression' && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Diff Threshold</dt>
-                  <dd className="text-foreground">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
-                      ((test.diff_threshold_mode ?? 'percentage') === 'percentage' && (test.diff_threshold ?? 0) === 0) ||
-                      ((test.diff_threshold_mode ?? 'percentage') === 'pixel_count' && (test.diff_pixel_threshold ?? 0) === 0)
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                    }`}>
-                      {(test.diff_threshold_mode ?? 'percentage') === 'pixel_count'
-                        ? ((test.diff_pixel_threshold ?? 0) === 0 ? 'Exact match' : `${test.diff_pixel_threshold} pixel tolerance`)
-                        : ((test.diff_threshold ?? 0) === 0 ? 'Exact match' : `${test.diff_threshold}% tolerance`)
-                      }
-                    </span>
-                  </dd>
-                </div>
-              )}
-              {/* Feature #647: Anti-aliasing Tolerance Display */}
-              {test?.test_type === 'visual_regression' && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Anti-aliasing Tolerance</dt>
-                  <dd className="text-foreground">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
-                      (test.anti_aliasing_tolerance ?? 'off') === 'off'
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                        : (test.anti_aliasing_tolerance === 'low'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                          : (test.anti_aliasing_tolerance === 'medium'
-                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                            : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'))
-                    }`}>
-                      {test.color_threshold !== undefined
-                        ? `Custom (${test.color_threshold.toFixed(2)})`
-                        : (test.anti_aliasing_tolerance ?? 'off') === 'off'
-                          ? 'Off (Strict)'
-                          : String(test.anti_aliasing_tolerance ?? 'off').charAt(0).toUpperCase() + String(test.anti_aliasing_tolerance ?? 'off').slice(1)
-                      }
-                    </span>
-                  </dd>
-                </div>
-              )}
-              {test?.test_type === 'visual_regression' && test.ignore_regions && test.ignore_regions.length > 0 && (
-                <div className="col-span-2">
-                  <dt className="text-sm font-medium text-muted-foreground mb-1">Ignore Regions</dt>
-                  <dd className="text-foreground">
-                    <div className="flex flex-wrap gap-1.5">
-                      {test.ignore_regions.map((region: {id: string; x: number; y: number; width: number; height: number; name?: string}, idx: number) => (
-                        <span key={region.id || idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
-                          {region.name || `Region ${idx + 1}`}: {region.x},{region.y} ({region.width}×{region.height})
-                        </span>
-                      ))}
-                    </div>
-                  </dd>
-                </div>
-              )}
-              {test?.test_type === 'visual_regression' && test.ignore_selectors && test.ignore_selectors.length > 0 && (
-                <div className="col-span-2">
-                  <dt className="text-sm font-medium text-muted-foreground mb-1">Ignore Selectors</dt>
-                  <dd className="text-foreground">
-                    <div className="flex flex-wrap gap-1.5">
-                      {test.ignore_selectors.map((selector: string, idx: number) => (
-                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400 font-mono">
-                          {selector}
-                        </span>
-                      ))}
-                    </div>
-                  </dd>
-                </div>
-              )}
-              {/* Accessibility Test Details */}
-              {test?.test_type === 'accessibility' && test?.target_url && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Target URL</dt>
-                  <dd className="text-foreground break-all">
-                    <a href={test.target_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      {test.target_url}
-                    </a>
-                  </dd>
-                </div>
-              )}
-              {test?.test_type === 'accessibility' && test?.wcag_level && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">WCAG Level</dt>
-                  <dd className="text-foreground">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
-                      test.wcag_level === 'AAA'
-                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
-                        : test.wcag_level === 'AA'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                    }`}>
-                      Level {test.wcag_level}
-                    </span>
-                  </dd>
-                </div>
-              )}
-              {test?.test_type === 'accessibility' && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Options</dt>
-                  <dd className="text-foreground flex flex-wrap gap-2">
-                    {test.include_best_practices !== false && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400">
-                        ✓ Best Practices
-                      </span>
-                    )}
-                    {test.include_experimental === true && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                        🧪 Experimental
-                      </span>
-                    )}
-                    {test.include_pa11y === true && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
-                        🔍 Pa11y
-                      </span>
-                    )}
-                  </dd>
-                </div>
-              )}
-              {test?.test_type === 'accessibility' && (
-                <div className="col-span-2">
-                  <dt className="text-sm font-medium text-muted-foreground mb-1">Pass/Fail Threshold</dt>
-                  <dd className="text-foreground">
-                    {test.a11y_fail_on_any ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                        🚫 Fail on ANY violation
-                      </span>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {test.a11y_fail_on_critical !== undefined && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                            🔴 Critical: {test.a11y_fail_on_critical === 0 ? 'Fail on any' : `max ${test.a11y_fail_on_critical}`}
-                          </span>
-                        )}
-                        {test.a11y_fail_on_serious !== undefined && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
-                            🟠 Serious: {test.a11y_fail_on_serious === 0 ? 'Fail on any' : `max ${test.a11y_fail_on_serious}`}
-                          </span>
-                        )}
-                        {test.a11y_fail_on_moderate !== undefined && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                            🟡 Moderate: {test.a11y_fail_on_moderate === 0 ? 'Fail on any' : `max ${test.a11y_fail_on_moderate}`}
-                          </span>
-                        )}
-                        {test.a11y_fail_on_minor !== undefined && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                            🔵 Minor: {test.a11y_fail_on_minor === 0 ? 'Fail on any' : `max ${test.a11y_fail_on_minor}`}
-                          </span>
-                        )}
-                        {test.a11y_fail_on_critical === undefined && test.a11y_fail_on_serious === undefined &&
-                         test.a11y_fail_on_moderate === undefined && test.a11y_fail_on_minor === undefined && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">
-                            Default: Fail on Critical/Serious
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </dd>
-                </div>
-              )}
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Created</dt>
-                <dd className="text-foreground">
-                  {test?.created_at ? formatDate(test.created_at) : '-'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Updated</dt>
-                <dd className="text-foreground">
-                  {test?.updated_at ? formatDate(test.updated_at) : '-'}
-                </dd>
-              </div>
-            </dl>
-          </div>
+          <TestDetailsCard
+            test={test as any}
+            suiteName={suite?.name}
+            formatDate={formatDate}
+          />
 
           <div className="rounded-lg border border-border bg-card p-6">
             {/* Tab Header */}
