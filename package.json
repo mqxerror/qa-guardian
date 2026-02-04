@@ -1,0 +1,15 @@
+{
+  "name": "qa-dam3oun",
+  "version": "1.0.0",
+  "description": "[![Build and Deploy](https://github.com/mqxerror/qa-guardian/actions/workflows/deploy.yml/badge.svg)](https://github.com/mqxerror/qa-guardian/actions/workflows/deploy.yml) [![Deploy Status](https://img.shields.io/badge/deploy-qa.pixelcraftedmedia.com-blue)](https://qa.pixelcraftedmedia.com) [![Staging](https://img.shields.io/badge/staging-staging.qa.pixelcraftedmedia.com-green)](https://staging.qa.pixelcraftedmedia.com)",
+  "main": "fix_feature.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
