@@ -41,7 +41,18 @@ Verification:
 - Console errors: Zero on Dashboard, some API 404s on Monitoring (pre-existing)
 - Screenshot: session62-monitoring-settings.png
 
-Commits: (pending - will commit at end of session)
+Regression Verification:
+- Login: Working with admin@example.com / Admin123!
+- Dashboard: Shows real data (1/4/12/16 - projects/suites/tests/runs), 31% pass rate
+- Projects page: Loads correctly with E2E Verification Test project (UUID: 44723e9e-9ccd-4163-81b0-da042cc44bf5)
+- Test Suite page: 5 tests with real metadata (E2E Passed, Accessibility Passed, Performance Failed, Load Test Failed)
+- Recording feature: "Record New Test" button visible and functional
+- Console errors: Zero on all core pages
+- Screenshots: session62-dashboard-regression.png, session62-monitoring-settings.png, session62-suite-page-regression.png
+
+Commits:
+- 5990278: feat(#47): Add useMonitoringSettings hook import to MonitoringPage.tsx
+- 9fb7f16: docs: Add regression test screenshot for Session 62
 
 === Session 2026-02-04 (Session 55) - Feature #46 Refactoring ===
 Progress: 45/50 (90%). Working on TestRunResultPage.tsx modularization:
