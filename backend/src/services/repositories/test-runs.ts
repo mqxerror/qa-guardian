@@ -459,6 +459,119 @@ export async function getRecentTestRuns(
   return { runs, total };
 }
 
+/**
+ * Feature #53: List test runs with full pagination and filters
+ * Returns paginated response with full metadata
+ */
+export interface ListTestRunsOptions {
+  page?: number;
+  limit?: number;
+  offset?: number;
+  status?: TestRunStatus;
+  suite_id?: string;
+  project_id?: string;
+}
+
+export interface PaginatedTestRunsResult {
+  data: TestRun[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
+export async function listTestRunsPaginated(
+  orgId: string,
+  options: ListTestRunsOptions = {}
+): Promise<PaginatedTestRunsResult> {
+  const limit = Math.min(options.limit || 50, 100); // Max 100 per page
+  const page = options.page || 1;
+  const offset = options.offset !== undefined ? options.offset : (page - 1) * limit;
+
+  if (isDatabaseConnected()) {
+    try {
+      // Build WHERE clause
+      let whereClause = 'WHERE organization_id = $1';
+      const params: any[] = [orgId];
+      let paramIndex = 2;
+
+      if (options.status) {
+        whereClause += ` AND status = $${paramIndex}`;
+        params.push(options.status);
+        paramIndex++;
+      }
+
+      if (options.suite_id) {
+        whereClause += ` AND suite_id = $${paramIndex}`;
+        params.push(options.suite_id);
+        paramIndex++;
+      }
+
+      if (options.project_id) {
+        whereClause += ` AND project_id = $${paramIndex}`;
+        params.push(options.project_id);
+        paramIndex++;
+      }
+
+      // Count total matching records
+      const countQuery = `SELECT COUNT(*) FROM test_runs ${whereClause}`;
+      const countResult = await query<any>(countQuery, params);
+      const total = countResult?.rows[0]?.count ? parseInt(countResult.rows[0].count, 10) : 0;
+
+      // Fetch paginated results
+      const selectQuery = `SELECT * FROM test_runs ${whereClause} ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      const result = await query<any>(selectQuery, [...params, limit, offset]);
+      const runs = result?.rows ? result.rows.map(rowToTestRun) : [];
+
+      const totalPages = Math.ceil(total / limit);
+      return {
+        data: runs,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+      };
+    } catch (error) {
+      console.error('[TestRunsRepo] Failed to list test runs paginated from database:', error);
+    }
+  }
+
+  // Fallback: filter from in-memory Map when DB unavailable
+  const map = getTestRunsMap();
+  let runs: TestRun[] = [];
+  for (const run of map.values()) {
+    if (run.organization_id !== orgId) continue;
+    if (options.status && run.status !== options.status) continue;
+    if (options.suite_id && run.suite_id !== options.suite_id) continue;
+    if (options.project_id && run.project_id !== options.project_id) continue;
+    runs.push(run);
+  }
+  runs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const total = runs.length;
+  runs = runs.slice(offset, offset + limit);
+
+  const totalPages = Math.ceil(total / limit);
+  return {
+    data: runs,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    },
+  };
+}
+
 // ============================================================================
 // Selector Overrides CRUD Functions
 // ============================================================================

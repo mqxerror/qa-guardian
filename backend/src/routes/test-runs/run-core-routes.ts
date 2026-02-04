@@ -8,7 +8,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites';
 import { testRuns, runningBrowsers, TestRun, BrowserType, TestRunResult } from './execution';
-import { getTestRun as dbGetTestRun, listTestRunsBySuite as dbListTestRunsBySuite, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
+import { getTestRun as dbGetTestRun, listTestRunsBySuite as dbListTestRunsBySuite, listTestRunsByOrg as dbListTestRunsByOrg, listTestRunsPaginated } from '../../services/repositories/test-runs';
 
 // Helper: get test run from Map first, then fall back to DB
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
@@ -410,51 +410,35 @@ export async function runCoreRoutes(app: FastifyInstance) {
   });
 
   // List all recent test runs across the organization
+  // Feature #53: Server-side pagination support
   // Feature: MCP tool list_recent_runs support
-  app.get<{ Querystring: { limit?: number; status?: string; suite_id?: string; project_id?: string } }>('/api/test-runs', {
+  app.get<{ Querystring: { page?: number; limit?: number; offset?: number; status?: string; suite_id?: string; project_id?: string } }>('/api/test-runs', {
     preHandler: [authenticate],
   }, async (request, reply) => {
-    const { limit = 50, status, suite_id, project_id } = request.query;
+    const { page = 1, limit = 50, offset, status, suite_id, project_id } = request.query;
     const orgId = getOrganizationId(request);
 
-    let runs = await dbListTestRunsByOrg(orgId);
+    // Use new paginated function for efficient server-side pagination
+    const result = await listTestRunsPaginated(orgId, {
+      page: Number(page),
+      limit: Number(limit),
+      offset: offset !== undefined ? Number(offset) : undefined,
+      status: status as any,
+      suite_id,
+      project_id,
+    });
 
-    // Filter by status if specified
-    if (status) {
-      runs = runs.filter(r => r.status === status);
-    }
-
-    // Filter by suite_id if specified
-    if (suite_id) {
-      runs = runs.filter(r => r.suite_id === suite_id);
-    }
-
-    // Filter by project_id if specified (need to check suite's project)
-    if (project_id) {
-      const suitesMap = await getTestSuitesMap();
-      runs = runs.filter(r => {
-        const suite = suitesMap.get(r.suite_id);
-        return suite && suite.project_id === project_id;
-      });
-    }
-
-    // Sort by created_at descending (most recent first)
-    runs = runs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-    // Apply limit
-    runs = runs.slice(0, limit);
-
-    // Map to response format
+    // Map to response format with suite/test names
     const allSuites = await getTestSuitesMap();
     const allTests = await getTestsMap();
-    const runsResponse = runs.map(r => {
+    const runsResponse = result.data.map(r => {
       const suite = allSuites.get(r.suite_id);
       const test = r.test_id ? allTests.get(r.test_id) : null;
       return {
         id: r.id,
         suite_id: r.suite_id,
         suite_name: suite?.name || 'Unknown Suite',
-        project_id: suite?.project_id,
+        project_id: suite?.project_id || r.project_id,
         test_id: r.test_id,
         test_name: test?.name,
         status: r.status,
@@ -472,10 +456,14 @@ export async function runCoreRoutes(app: FastifyInstance) {
     });
 
     return {
+      data: runsResponse,
+      pagination: result.pagination,
+      // Also include 'runs' and 'total' for backwards compatibility
       runs: runsResponse,
-      total: runsResponse.length,
+      total: result.pagination.total,
       filters: {
-        limit,
+        page: result.pagination.page,
+        limit: result.pagination.limit,
         status: status || null,
         suite_id: suite_id || null,
         project_id: project_id || null,
