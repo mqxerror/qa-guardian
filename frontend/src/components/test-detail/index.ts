@@ -22,6 +22,7 @@ export { K6ScriptTab } from './K6ScriptTab';
 export { TestDetailsCard } from './TestDetailsCard';
 export { TestStepsTab } from './TestStepsTab';
 export { BaselineTab } from './BaselineTab';
+export { LiveExecutionPanel, type LiveExecutionPanelProps } from './LiveExecutionPanel';
 
 // Modals
 export * from './modals';
