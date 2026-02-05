@@ -1,76 +1,14 @@
 // AIAgentWorkspacePage - AI Agent Workspace with Kanban-style Task Board
 // Feature #1560: AI Agent Workspace with Real MCP Tool Execution
 // Uses real AI API keys (Kie.ai/Anthropic) - NO mock data
+// Feature #79: Migrated to React Query for caching
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
+import { useAIStatus, useExecuteWorkspaceTask, type TaskStatus, type AgentTask } from '../hooks/api/useAIWorkspace';
 
-// API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
-
-// Task status types for Kanban
-type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
-
-// AI Agent Task
-interface AgentTask {
-  id: string;
-  title: string;
-  description: string;
-  status: TaskStatus;
-  toolsUsed: string[];
-  result?: string;
-  error?: string;
-  createdAt: Date;
-  startedAt?: Date;
-  completedAt?: Date;
-  aiMetadata?: {
-    provider?: string;
-    model?: string;
-    tokens?: { input?: number; output?: number };
-    execution_time_ms?: number;
-  };
-}
-
-// AI Status response type
-interface AIStatusResponse {
-  ready: boolean;
-  providers: {
-    available: boolean;
-    primary: { name: string; available: boolean; model?: string };
-    fallback: { name: string; available: boolean; model?: string };
-  };
-  message: string;
-}
-
-// MCP Chat response type
-interface MCPChatResponse {
-  success: boolean;
-  result?: {
-    response?: string;
-    tools_executed?: Array<{
-      tool: string;
-      args: Record<string, unknown>;
-      result: unknown;
-      success: boolean;
-    }>;
-    ai_metadata?: {
-      used_real_ai?: boolean;
-      provider?: string;
-      model?: string;
-      tokens?: { input?: number; output?: number };
-    };
-  };
-  tool_used?: string;
-  metadata?: {
-    used_real_ai: boolean;
-    provider?: string;
-    model?: string;
-    execution_time_ms?: number;
-    tools_called?: number;
-  };
-  error?: string;
-}
+// Types are imported from useAIWorkspace hook
 
 // Available MCP tool categories for quick actions
 const TOOL_CATEGORIES = [
@@ -136,42 +74,17 @@ const TOOL_CATEGORIES = [
 
 export function AIAgentWorkspacePage() {
   const { token } = useAuthStore();
-  const [aiStatus, setAiStatus] = useState<AIStatusResponse | null>(null);
   const [tasks, setTasks] = useState<AgentTask[]>([]);
   const [customPrompt, setCustomPrompt] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const taskIdCounter = useRef(1);
 
-  // Check AI status on mount
-  useEffect(() => {
-    const checkAIStatus = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/mcp/status`);
-        if (response.ok) {
-          const status = await response.json();
-          setAiStatus(status);
-        }
-      } catch (error) {
-        console.error('Failed to check AI status:', error);
-        setAiStatus({
-          ready: false,
-          providers: {
-            available: false,
-            primary: { name: 'Kie.ai', available: false },
-            fallback: { name: 'Anthropic', available: false },
-          },
-          message: 'Failed to connect to AI service',
-        });
-      }
-    };
-    checkAIStatus();
-    // Refresh status every 30 seconds
-    const interval = setInterval(checkAIStatus, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  // Feature #79: React Query hooks for AI status and task execution
+  const { data: aiStatus } = useAIStatus();
+  const executeTaskMutation = useExecuteWorkspaceTask();
+  const isProcessing = executeTaskMutation.isPending;
 
-  // Execute a task using the MCP Chat API
+  // Feature #79: Execute a task using the React Query mutation
   const executeTask = useCallback(async (prompt: string, taskTitle: string) => {
     const taskId = `task_${Date.now()}_${taskIdCounter.current++}`;
 
@@ -192,45 +105,8 @@ export function AIAgentWorkspacePage() {
       t.id === taskId ? { ...t, status: 'in_progress' as TaskStatus, startedAt: new Date() } : t
     ));
 
-    setIsProcessing(true);
-
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/mcp/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          message: prompt,
-          context: {
-            workspace: 'ai-agent',
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data: MCPChatResponse = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'Unknown error');
-      }
-
-      // Extract tools used
-      const toolsUsed: string[] = [];
-      if (data.tool_used) {
-        toolsUsed.push(...data.tool_used.split(', '));
-      }
-      if (data.result?.tools_executed) {
-        for (const exec of data.result.tools_executed) {
-          if (!toolsUsed.includes(exec.tool)) {
-            toolsUsed.push(exec.tool);
-          }
-        }
-      }
+      const result = await executeTaskMutation.mutateAsync({ prompt });
 
       // Update task as completed
       setTasks(prev => prev.map(t =>
@@ -238,14 +114,9 @@ export function AIAgentWorkspacePage() {
           ...t,
           status: 'completed' as TaskStatus,
           completedAt: new Date(),
-          toolsUsed,
-          result: data.result?.response || JSON.stringify(data.result, null, 2),
-          aiMetadata: {
-            provider: data.metadata?.provider,
-            model: data.metadata?.model,
-            execution_time_ms: data.metadata?.execution_time_ms,
-            tokens: data.result?.ai_metadata?.tokens,
-          },
+          toolsUsed: result.toolsUsed,
+          result: result.result,
+          aiMetadata: result.aiMetadata,
         } : t
       ));
     } catch (error) {
@@ -258,10 +129,8 @@ export function AIAgentWorkspacePage() {
           error: error instanceof Error ? error.message : 'Unknown error',
         } : t
       ));
-    } finally {
-      setIsProcessing(false);
     }
-  }, [token]);
+  }, [executeTaskMutation]);
 
   // Handle custom prompt submission
   const handleCustomPrompt = () => {
