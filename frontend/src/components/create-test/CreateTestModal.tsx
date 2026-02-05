@@ -19,6 +19,8 @@ import {
 import { CreateTestModalProps, TestType } from '../test-modals/types';
 import { URLInput, QuickTestPanel, type QuickTestType } from './shared';
 import { CustomTestWizard } from './CustomTestWizard';
+// Feature #97: Toast for run started notification
+import { toast } from '../../stores/toastStore';
 
 // URL validation regex
 const URL_REGEX = /^https?:\/\/[^\s<>"']+$/i;
@@ -362,15 +364,17 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
       const data = await response.json();
       setRunStatus('started');
 
-      // Wait a moment to show success state, then close modal
-      setTimeout(() => {
-        onClose();
-      }, 1500);
+      // Feature #97: Close modal immediately and show toast
+      // No need to wait - the toast provides feedback
+      const testCount = generatedTests.filter(t => t.status === 'created').length;
+      toast.success(`Running ${testCount} test${testCount !== 1 ? 's' : ''}! Check the run history for progress.`);
+      onClose();
 
     } catch (err) {
       console.error('Failed to run tests:', err);
       setRunStatus('error');
       setIsRunningTests(false);
+      toast.error('Failed to start test run. Please try again.');
     }
   }, [generatedTests, suiteId, token, onClose]);
 
@@ -756,10 +760,17 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
       </div>
 
       {/* Custom Test Wizard Modal - Feature #1807: CustomTestWizard with MethodSelection */}
+      {/* Feature #97: Close both wizard and parent modal on test creation */}
       {showWizard && (
         <CustomTestWizard
           onClose={() => setShowWizard(false)}
-          onTestCreated={onTestCreated}
+          onTestCreated={(test) => {
+            // Feature #97: Close parent modal when test is created from wizard
+            onTestCreated?.(test);
+            // Close this modal after wizard reports success
+            // The wizard already calls onClose() internally, but we also need to close the parent
+            onClose();
+          }}
           suiteId={suiteId}
           token={token}
           projectBaseUrl={project?.baseUrl}

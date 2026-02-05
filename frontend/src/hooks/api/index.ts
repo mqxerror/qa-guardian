@@ -99,3 +99,6 @@ export {
   useFailureClusters,
   analyticsKeys,
 } from './useAnalytics';
+
+// Real-time cache invalidation (Feature #96)
+export { useRealtimeCacheInvalidation } from './useRealtimeCacheInvalidation';

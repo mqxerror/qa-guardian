@@ -1,7 +1,10 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { useAuthStore } from '../stores/authStore';
+import { useSocketStore } from '../stores/socketStore';
+// Feature #96: Real-time cache invalidation via WebSocket
+import { useRealtimeCacheInvalidation } from '../hooks/api/useRealtimeCacheInvalidation';
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,6 +15,24 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Feature #96: Connect to WebSocket and join organization room for real-time updates
+  const { connect, joinOrg, isConnected } = useSocketStore();
+
+  useEffect(() => {
+    // Connect to WebSocket when Layout mounts (user is authenticated)
+    connect();
+  }, [connect]);
+
+  useEffect(() => {
+    // Join organization room when connected and user has organization_id
+    if (isConnected && user?.organization_id) {
+      joinOrg(user.organization_id);
+    }
+  }, [isConnected, user?.organization_id, joinOrg]);
+
+  // Feature #96: Enable real-time cache invalidation via WebSocket events
+  useRealtimeCacheInvalidation();
 
   const handleLogout = async () => {
     await logout();

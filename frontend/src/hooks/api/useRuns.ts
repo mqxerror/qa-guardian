@@ -102,7 +102,8 @@ export function useRunsPaginated(params: RunsQueryParams = {}) {
       return fetchWithAuth(url, token) as Promise<PaginatedRunsResponse>;
     },
     enabled: !!token,
-    staleTime: 30 * 1000, // 30 seconds
+    // Feature #95: Reduced from 30s to 5s for faster updates on frequently changing run data
+    staleTime: 5 * 1000, // 5 seconds
   });
 }
 
@@ -153,7 +154,10 @@ export function useRun(runId: string | undefined) {
     queryKey: runKeys.detail(runId || ''),
     queryFn: () => fetchWithAuth(`/api/v1/runs/${runId}`, token),
     enabled: !!token && !!runId,
-    staleTime: 10 * 1000, // 10 seconds for active runs
+    // Feature #95: Reduced from 10s to 2s for real-time run status updates
+    staleTime: 2 * 1000, // 2 seconds for active runs
+    // Feature #95: Auto-refetch every 10s for run detail pages
+    refetchInterval: 10 * 1000, // 10 seconds
   });
 }
 
@@ -167,7 +171,8 @@ export function useRunsByTest(testId: string | undefined) {
     queryKey: runKeys.byTest(testId || ''),
     queryFn: () => fetchWithAuth(`/api/v1/tests/${testId}/runs`, token),
     enabled: !!token && !!testId,
-    staleTime: 30 * 1000,
+    // Feature #95: Reduced from 30s to 5s for faster run history updates
+    staleTime: 5 * 1000, // 5 seconds
   });
 }
 
@@ -181,7 +186,8 @@ export function useRunsBySuite(suiteId: string | undefined) {
     queryKey: runKeys.bySuite(suiteId || ''),
     queryFn: () => fetchWithAuth(`/api/v1/suites/${suiteId}/runs`, token),
     enabled: !!token && !!suiteId,
-    staleTime: 30 * 1000,
+    // Feature #95: Reduced from 30s to 5s for faster run history updates
+    staleTime: 5 * 1000, // 5 seconds
   });
 }
 
