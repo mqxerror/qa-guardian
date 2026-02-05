@@ -48,6 +48,7 @@ services:
       - .env
     environment:
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
+      - NODE_OPTIONS=--max-old-space-size=2048
     volumes:
       - backend_data:/app/data
     depends_on:
