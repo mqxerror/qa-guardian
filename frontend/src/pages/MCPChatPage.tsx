@@ -4,6 +4,7 @@
 // Updated to use REAL AI via backend MCP tools API
 // Feature #1701: Integrated modular SlashCommandSystem
 // Feature #1769: Now uses UnifiedAIService for consistent behavior
+// Feature #78: Migrated to React Query for caching
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -14,7 +15,8 @@ import {
   getSlashCommandHelpText,
   SlashCommandSuggestion,
 } from '../components/mcp-chat';
-import { UnifiedAIService, AIStatusResponse } from '../services/UnifiedAIService';
+import { UnifiedAIService } from '../services/UnifiedAIService';
+import { useAIStatus, useChatMutation } from '../hooks/api/useMCPChat';
 import {
   useAIModelPreferencesStore,
   MODELS,
@@ -152,15 +154,18 @@ export function MCPChatPage() {
   const location = useLocation();
   const [messages, setMessages] = useState<MCPChatMessage[]>([]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string>(`conv_${Date.now()}`);
-  const [aiStatus, setAiStatus] = useState<AIStatusResponse | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // Feature #1694: Slash command autocomplete state
   const [showCommandSuggestions, setShowCommandSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
   const [commandSuggestions, setCommandSuggestions] = useState<Array<{ command: string; description: string; params: string[] }>>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Feature #78: React Query hooks for AI status and chat
+  const { data: aiStatus } = useAIStatus();
+  const chatMutation = useChatMutation();
+  const isLoading = chatMutation.isPending;
 
   // Feature #2074: AI Model Selection for Different Tasks
   const { preferences, setTaskPreference, getEffectivePreference } = useAIModelPreferencesStore();
@@ -178,19 +183,8 @@ export function MCPChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Feature #1769: Set token on UnifiedAIService when auth changes
-  useEffect(() => {
-    UnifiedAIService.setToken(token || null);
-  }, [token]);
-
-  // Check AI status on mount using UnifiedAIService
-  useEffect(() => {
-    const checkAIStatus = async () => {
-      const status = await UnifiedAIService.checkStatus();
-      setAiStatus(status);
-    };
-    checkAIStatus();
-  }, []);
+  // Feature #78: Token is now set automatically in useChatMutation
+  // AI status is now fetched via useAIStatus React Query hook
 
   // Add welcome message on mount
   useEffect(() => {
@@ -212,6 +206,7 @@ Just type naturally and I'll help you manage your QA workflows!`,
 
   // Feature #1769: Call AI via UnifiedAIService for consistent behavior
   // Feature #2074: Pass user's model preferences to the API
+  // Feature #78: Now uses React Query mutation
   const callMCPChatAPI = async (userMessage: string): Promise<{
     content: string;
     toolCalled?: string;
@@ -229,10 +224,14 @@ Just type naturally and I'll help you manage your QA workflows!`,
     // Get the effective model preferences (resolves 'auto' to actual provider/model)
     const effectivePrefs = getEffectivePreference('chat');
 
-    // Use UnifiedAIService.chat() for consistent behavior
-    const response = await UnifiedAIService.chat(userMessage, conversationId, {
-      provider: effectivePrefs.provider,
-      model: effectivePrefs.model,
+    // Use React Query mutation for chat
+    const response = await chatMutation.mutateAsync({
+      message: userMessage,
+      conversationId,
+      modelPreferences: {
+        provider: effectivePrefs.provider,
+        model: effectivePrefs.model,
+      },
     });
 
     // Generate quick action buttons based on the tool and result
@@ -274,6 +273,7 @@ Just type naturally and I'll help you manage your QA workflows!`,
     return null;
   };
 
+  // Feature #78: handleSend now uses React Query mutation (isPending tracks loading state)
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -286,7 +286,6 @@ Just type naturally and I'll help you manage your QA workflows!`,
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setIsLoading(true);
 
     try {
       // First check for local responses (help, etc.)
@@ -305,7 +304,7 @@ Just type naturally and I'll help you manage your QA workflows!`,
           messageToSend = `[SLASH COMMAND: ${slashCommand.command}]\n\nIMPORTANT: The user used a slash command. Execute this action using the specified tools.\n\n${slashCommand.formattedPrompt}\n\nOriginal command: ${userMessage.content}`;
         }
 
-        // Call the real AI API
+        // Call the real AI API via React Query mutation
         response = await callMCPChatAPI(messageToSend);
       }
 
@@ -330,8 +329,6 @@ Just type naturally and I'll help you manage your QA workflows!`,
         content: 'Sorry, I encountered an error processing your request. Please try again.',
         timestamp: new Date()
       }]);
-    } finally {
-      setIsLoading(false);
     }
   };
 
