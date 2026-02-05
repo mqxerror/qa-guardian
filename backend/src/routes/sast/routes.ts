@@ -38,6 +38,11 @@ import {
   generateId,
 } from './stores';
 
+import {
+  getDashboardSummary,
+  getDashboardFindings,
+} from '../../services/repositories/sast';
+
 /**
  * Run a real Semgrep CLI scan against a target directory.
  * Parses JSON output and maps results to SASTFinding format.
@@ -666,7 +671,13 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // ========== Organization-wide Security Dashboard ==========
 
-  // Get all SAST findings across all projects in the organization
+  /**
+   * Get all SAST findings across all projects in the organization.
+   * Feature #86: Optimized to prevent memory overflow by using:
+   * - Database-level pagination with LIMIT/OFFSET
+   * - Efficient queries using DISTINCT ON for latest scans
+   * - Summary calculation without loading all findings into memory
+   */
   app.get<{
     Querystring: {
       severity?: string;
@@ -689,118 +700,40 @@ export async function coreRoutes(app: FastifyInstance) {
       offset = '0',
     } = request.query;
 
-    const limitNum = parseInt(limit, 10);
-    const offsetNum = parseInt(offset, 10);
+    // Parse and validate pagination params - enforce max limit to prevent memory issues
+    const limitNum = Math.min(parseInt(limit, 10) || 50, 100);
+    const offsetNum = parseInt(offset, 10) || 0;
+
+    // Parse filters
+    const severityFilter = severity ? severity.toUpperCase().split(',') : undefined;
+    const categoryFilter = category ? category.toLowerCase().split(',') : undefined;
 
     // Get all projects in the user's organization
     const orgProjectsList = await listProjects(user.organization_id);
-    const orgProjects = orgProjectsList.map(p => ({ id: p.id, name: p.name, slug: p.slug }));
+    const projectIds = orgProjectsList.map(p => p.id);
+    const projectMap = new Map(orgProjectsList.map(p => [p.id, { name: p.name, slug: p.slug }]));
 
-    // Collect all findings from all projects
-    interface DashboardFinding {
-      id: string;
-      projectId: string;
-      projectName: string;
-      projectSlug: string;
-      scanId: string;
-      scanDate: string;
-      ruleId: string;
-      ruleName: string;
-      severity: SASTSeverity;
-      category: string;
-      message: string;
-      filePath: string;
-      line: number;
-      column?: number;
-      snippet?: string;
-      cweId?: string;
-      owaspCategory?: string;
-      suggestion?: string;
-      isFalsePositive?: boolean;
-    }
+    // Get summary stats using optimized aggregation
+    const summary = await getDashboardSummary(projectIds, severityFilter, categoryFilter);
 
-    const allFindings: DashboardFinding[] = [];
-
-    for (const project of orgProjects) {
-      const projectScans = await getSastScansByProject(project.id);
-      // Get the most recent completed scan for each project
-      const latestScan = projectScans.find(s => s.status === 'completed');
-      if (latestScan) {
-        for (const finding of latestScan.findings) {
-          allFindings.push({
-            ...finding,
-            projectId: project.id,
-            projectName: project.name,
-            projectSlug: project.slug,
-            scanId: latestScan.id,
-            scanDate: latestScan.completedAt || latestScan.startedAt,
-          });
-        }
-      }
-    }
-
-    // Apply filters
-    let filteredFindings = allFindings;
-
-    if (severity) {
-      const severities = severity.toUpperCase().split(',');
-      filteredFindings = filteredFindings.filter(f => severities.includes(f.severity));
-    }
-
-    if (category) {
-      const categories = category.toLowerCase().split(',');
-      filteredFindings = filteredFindings.filter(f => categories.includes(f.category.toLowerCase()));
-    }
-
-    // Apply sorting
-    const severityOrder: Record<SASTSeverity, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
-
-    filteredFindings.sort((a, b) => {
-      let comparison = 0;
-      switch (sortBy) {
-        case 'severity':
-          comparison = severityOrder[b.severity] - severityOrder[a.severity];
-          break;
-        case 'project':
-          comparison = a.projectName.localeCompare(b.projectName);
-          break;
-        case 'date':
-        default:
-          comparison = new Date(b.scanDate).getTime() - new Date(a.scanDate).getTime();
-          break;
-      }
-      return sortOrder === 'asc' ? -comparison : comparison;
+    // Get paginated findings
+    const { findings, total } = await getDashboardFindings(projectIds, projectMap, {
+      severityFilter,
+      categoryFilter,
+      sortBy: sortBy as 'date' | 'severity' | 'project',
+      sortOrder: sortOrder as 'asc' | 'desc',
+      limit: limitNum,
+      offset: offsetNum,
     });
 
-    // Calculate summary stats
-    const summary = {
-      total: filteredFindings.length,
-      bySeverity: {
-        critical: filteredFindings.filter(f => f.severity === 'CRITICAL').length,
-        high: filteredFindings.filter(f => f.severity === 'HIGH').length,
-        medium: filteredFindings.filter(f => f.severity === 'MEDIUM').length,
-        low: filteredFindings.filter(f => f.severity === 'LOW').length,
-      },
-      byCategory: filteredFindings.reduce((acc, f) => {
-        acc[f.category] = (acc[f.category] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
-      projectsScanned: (await Promise.all(orgProjects.map(async p => (await getSastScansByProject(p.id)).some(s => s.status === 'completed')))).filter(Boolean).length,
-      totalProjects: orgProjects.length,
-      falsePositives: filteredFindings.filter(f => f.isFalsePositive).length,
-    };
-
-    // Apply pagination
-    const paginatedFindings = filteredFindings.slice(offsetNum, offsetNum + limitNum);
-
     return {
-      findings: paginatedFindings,
+      findings,
       summary,
       pagination: {
-        total: filteredFindings.length,
+        total,
         limit: limitNum,
         offset: offsetNum,
-        hasMore: offsetNum + limitNum < filteredFindings.length,
+        hasMore: offsetNum + limitNum < total,
       },
     };
   });

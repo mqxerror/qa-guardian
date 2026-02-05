@@ -668,3 +668,261 @@ function parseSecretPatternRow(row: any): SecretPattern {
     updatedAt: row.updated_at?.toISOString() || row.updated_at,
   };
 }
+
+// ============================================
+// Dashboard Aggregation Queries (Feature #86)
+// ============================================
+
+export interface DashboardSummary {
+  total: number;
+  bySeverity: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  byCategory: Record<string, number>;
+  projectsScanned: number;
+  totalProjects: number;
+  falsePositives: number;
+}
+
+export interface DashboardFinding {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectSlug: string;
+  scanId: string;
+  scanDate: string;
+  ruleId: string;
+  ruleName: string;
+  severity: string;
+  category: string;
+  message: string;
+  filePath: string;
+  line: number;
+  column?: number;
+  snippet?: string;
+  cweId?: string;
+  owaspCategory?: string;
+  suggestion?: string;
+  isFalsePositive?: boolean;
+}
+
+/**
+ * Get the latest completed scan for each project in an organization.
+ * Uses a subquery with DISTINCT ON to get only the most recent scan per project.
+ */
+export async function getLatestScansForOrganization(projectIds: string[]): Promise<Map<string, SASTScanResult>> {
+  if (!isDatabaseConnected() || projectIds.length === 0) {
+    return new Map();
+  }
+
+  // Use DISTINCT ON to get only the latest completed scan per project
+  const result = await query<any>(
+    `SELECT DISTINCT ON (project_id) *
+     FROM sast_scans
+     WHERE project_id = ANY($1) AND status = 'completed'
+     ORDER BY project_id, completed_at DESC NULLS LAST`,
+    [projectIds]
+  );
+
+  const scanMap = new Map<string, SASTScanResult>();
+  if (result) {
+    for (const row of result.rows) {
+      scanMap.set(row.project_id, parseSastScanRow(row));
+    }
+  }
+  return scanMap;
+}
+
+/**
+ * Get summary statistics for SAST findings across an organization.
+ * Uses database aggregation instead of loading all findings into memory.
+ */
+export async function getDashboardSummary(
+  projectIds: string[],
+  severityFilter?: string[],
+  categoryFilter?: string[]
+): Promise<DashboardSummary> {
+  if (!isDatabaseConnected() || projectIds.length === 0) {
+    return {
+      total: 0,
+      bySeverity: { critical: 0, high: 0, medium: 0, low: 0 },
+      byCategory: {},
+      projectsScanned: 0,
+      totalProjects: projectIds.length,
+      falsePositives: 0,
+    };
+  }
+
+  // Get the latest scan IDs for the organization
+  const latestScans = await getLatestScansForOrganization(projectIds);
+  const scanIds = Array.from(latestScans.values()).map(s => s.id);
+
+  if (scanIds.length === 0) {
+    return {
+      total: 0,
+      bySeverity: { critical: 0, high: 0, medium: 0, low: 0 },
+      byCategory: {},
+      projectsScanned: 0,
+      totalProjects: projectIds.length,
+      falsePositives: 0,
+    };
+  }
+
+  // Calculate totals by iterating through the scan findings
+  // Since findings are stored as JSON, we need to process them in JS but only for summary counts
+  let total = 0;
+  const bySeverity = { critical: 0, high: 0, medium: 0, low: 0 };
+  const byCategory: Record<string, number> = {};
+  let falsePositives = 0;
+
+  for (const scan of latestScans.values()) {
+    for (const finding of scan.findings) {
+      // Apply filters
+      if (severityFilter && severityFilter.length > 0) {
+        if (!severityFilter.includes(finding.severity.toUpperCase())) {
+          continue;
+        }
+      }
+      if (categoryFilter && categoryFilter.length > 0) {
+        if (!categoryFilter.includes(finding.category.toLowerCase())) {
+          continue;
+        }
+      }
+
+      total++;
+
+      // Count by severity
+      const sev = finding.severity.toLowerCase() as keyof typeof bySeverity;
+      if (sev in bySeverity) {
+        bySeverity[sev]++;
+      }
+
+      // Count by category
+      byCategory[finding.category] = (byCategory[finding.category] || 0) + 1;
+
+      // Count false positives
+      if (finding.isFalsePositive) {
+        falsePositives++;
+      }
+    }
+  }
+
+  return {
+    total,
+    bySeverity,
+    byCategory,
+    projectsScanned: latestScans.size,
+    totalProjects: projectIds.length,
+    falsePositives,
+  };
+}
+
+/**
+ * Get paginated findings for the dashboard.
+ * Processes findings from latest scans with pagination.
+ */
+export async function getDashboardFindings(
+  projectIds: string[],
+  projectMap: Map<string, { name: string; slug: string }>,
+  options: {
+    severityFilter?: string[];
+    categoryFilter?: string[];
+    sortBy?: 'date' | 'severity' | 'project';
+    sortOrder?: 'asc' | 'desc';
+    limit?: number;
+    offset?: number;
+  }
+): Promise<{ findings: DashboardFinding[]; total: number }> {
+  const {
+    severityFilter,
+    categoryFilter,
+    sortBy = 'date',
+    sortOrder = 'desc',
+    limit = 50,
+    offset = 0,
+  } = options;
+
+  if (!isDatabaseConnected() || projectIds.length === 0) {
+    return { findings: [], total: 0 };
+  }
+
+  // Get the latest scans for all projects
+  const latestScans = await getLatestScansForOrganization(projectIds);
+
+  if (latestScans.size === 0) {
+    return { findings: [], total: 0 };
+  }
+
+  // Collect and filter findings
+  const allFindings: DashboardFinding[] = [];
+
+  for (const [projectId, scan] of latestScans) {
+    const projectInfo = projectMap.get(projectId);
+    if (!projectInfo) continue;
+
+    for (const finding of scan.findings) {
+      // Apply filters
+      if (severityFilter && severityFilter.length > 0) {
+        if (!severityFilter.includes(finding.severity.toUpperCase())) {
+          continue;
+        }
+      }
+      if (categoryFilter && categoryFilter.length > 0) {
+        if (!categoryFilter.includes(finding.category.toLowerCase())) {
+          continue;
+        }
+      }
+
+      allFindings.push({
+        id: finding.id,
+        projectId,
+        projectName: projectInfo.name,
+        projectSlug: projectInfo.slug,
+        scanId: scan.id,
+        scanDate: scan.completedAt || scan.startedAt,
+        ruleId: finding.ruleId,
+        ruleName: finding.ruleName,
+        severity: finding.severity,
+        category: finding.category,
+        message: finding.message,
+        filePath: finding.filePath,
+        line: finding.line,
+        column: finding.column,
+        snippet: finding.snippet,
+        cweId: finding.cweId,
+        owaspCategory: finding.owaspCategory,
+        suggestion: finding.suggestion,
+        isFalsePositive: finding.isFalsePositive,
+      });
+    }
+  }
+
+  // Sort findings
+  const severityOrder: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+
+  allFindings.sort((a, b) => {
+    let comparison = 0;
+    switch (sortBy) {
+      case 'severity':
+        comparison = (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0);
+        break;
+      case 'project':
+        comparison = a.projectName.localeCompare(b.projectName);
+        break;
+      case 'date':
+      default:
+        comparison = new Date(b.scanDate).getTime() - new Date(a.scanDate).getTime();
+        break;
+    }
+    return sortOrder === 'asc' ? -comparison : comparison;
+  });
+
+  // Apply pagination
+  const total = allFindings.length;
+  const paginatedFindings = allFindings.slice(offset, offset + limit);
+
+  return { findings: paginatedFindings, total };
+}
