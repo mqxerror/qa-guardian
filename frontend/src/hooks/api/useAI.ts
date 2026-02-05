@@ -1,0 +1,388 @@
+/**
+ * React Query hooks for AI-related pages
+ * Feature #82: Migrate all AI-related pages to React Query with caching
+ *
+ * This file provides hooks for:
+ * - AITestGeneratorPage: generation history
+ * - AITestReviewPage: review queue, approval stats
+ * - AIUsageAnalyticsDashboard: usage analytics
+ * - AICostTrackingPage: cost tracking
+ * - AILearningPage: learning stats
+ */
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '../../stores/authStore';
+
+// API base URL
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
+
+// Types for AI Test Generator
+export interface GenerationHistoryItem {
+  id: string;
+  test_name: string;
+  description: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  generated_code?: string;
+}
+
+// Types for AI Test Review
+export interface ReviewQueueItem {
+  id: string;
+  test_name: string;
+  description: string;
+  confidence: number;
+  generated_code: string;
+  created_at: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface ApprovalStats {
+  total_generated: number;
+  pending_review: number;
+  approved: number;
+  rejected: number;
+  approval_rate: number;
+}
+
+// Types for AI Usage Analytics
+export interface AIUsageAnalytics {
+  total_requests: number;
+  total_tokens: number;
+  estimated_cost: number;
+  requests_by_feature: Record<string, number>;
+  top_users: Array<{ user: string; requests: number }>;
+}
+
+// Types for AI Cost Tracking
+export interface CostSummary {
+  total_cost: number;
+  budget: number;
+  budget_used_percentage: number;
+  cost_by_provider: Record<string, number>;
+}
+
+// Types for AI Learning
+export interface LearningStats {
+  patterns_learned: number;
+  accuracy: number;
+  recent_improvements: string[];
+}
+
+// API helper
+const fetchWithAuth = async (url: string, token: string | null, options?: RequestInit) => {
+  if (!token) throw new Error('Not authenticated');
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.message || data.error || `API error: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// Query keys factory for cache management
+export const aiKeys = {
+  all: ['ai'] as const,
+  // Generation history
+  generationHistory: (params?: { status?: string }) => [...aiKeys.all, 'generationHistory', params] as const,
+  // Review queue
+  reviewQueue: () => [...aiKeys.all, 'reviewQueue'] as const,
+  approvalStats: () => [...aiKeys.all, 'approvalStats'] as const,
+  // Usage analytics
+  analytics: (period: string) => [...aiKeys.all, 'analytics', period] as const,
+  comparison: (period: string) => [...aiKeys.all, 'comparison', period] as const,
+  trends: (period: string) => [...aiKeys.all, 'trends', period] as const,
+  exports: () => [...aiKeys.all, 'exports'] as const,
+  // Cost tracking
+  costSummary: (period: string) => [...aiKeys.all, 'costSummary', period] as const,
+  budget: () => [...aiKeys.all, 'budget'] as const,
+  costHistory: () => [...aiKeys.all, 'costHistory'] as const,
+  pricing: () => [...aiKeys.all, 'pricing'] as const,
+  costByUser: (period: string) => [...aiKeys.all, 'costByUser', period] as const,
+  costByProject: (period: string) => [...aiKeys.all, 'costByProject', period] as const,
+  // Learning
+  learningStats: () => [...aiKeys.all, 'learningStats'] as const,
+};
+
+// ============== AI Test Generator Hooks ==============
+
+/**
+ * Hook to fetch generation history
+ */
+export function useGenerationHistory(params?: { status?: string }) {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: aiKeys.generationHistory(params),
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      if (params?.status) searchParams.set('status', params.status);
+      const queryString = searchParams.toString();
+      const url = `/api/v1/ai/generation-history${queryString ? `?${queryString}` : ''}`;
+      const data = await fetchWithAuth(url, token);
+      return (data.history || []) as GenerationHistoryItem[];
+    },
+    enabled: !!token,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+}
+
+/**
+ * Hook to save generation to history
+ */
+export function useSaveGenerationHistory() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { test_name: string; description: string; generated_code: string }) =>
+      fetchWithAuth('/api/v1/ai/generation-history', token, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: aiKeys.generationHistory() });
+    },
+  });
+}
+
+// ============== AI Test Review Hooks ==============
+
+/**
+ * Hook to fetch review queue
+ */
+export function useReviewQueue() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: aiKeys.reviewQueue(),
+    queryFn: async () => {
+      const data = await fetchWithAuth('/api/v1/ai/review-queue', token);
+      return (data.queue || []) as ReviewQueueItem[];
+    },
+    enabled: !!token,
+    staleTime: 30 * 1000, // 30 seconds - queue changes often
+  });
+}
+
+/**
+ * Hook to fetch approval stats
+ */
+export function useApprovalStats() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: aiKeys.approvalStats(),
+    queryFn: () => fetchWithAuth('/api/v1/ai/approval-stats', token) as Promise<ApprovalStats>,
+    enabled: !!token,
+    staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+/**
+ * Hook to approve/reject a test
+ */
+export function useApproveTest() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ testId, approved }: { testId: string; approved: boolean }) =>
+      fetchWithAuth(`/api/v1/ai/generation-history/${testId}/approve`, token, {
+        method: 'POST',
+        body: JSON.stringify({ approved }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: aiKeys.reviewQueue() });
+      queryClient.invalidateQueries({ queryKey: aiKeys.approvalStats() });
+      queryClient.invalidateQueries({ queryKey: aiKeys.generationHistory() });
+    },
+  });
+}
+
+// ============== AI Usage Analytics Hooks ==============
+
+/**
+ * Hook to fetch AI analytics
+ */
+export function useAIAnalytics(period: string = '7d') {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: aiKeys.analytics(period),
+    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics?period=${period}`, token) as Promise<AIUsageAnalytics>,
+    enabled: !!token,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+}
+
+/**
+ * Hook to fetch AI analytics comparison
+ */
+export function useAIAnalyticsComparison(period: string = '7d') {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: aiKeys.comparison(period),
+    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics/comparison?period=${period}`, token),
+    enabled: !!token,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+}
+
+/**
+ * Hook to fetch AI analytics trends
+ */
+export function useAIAnalyticsTrends(period: string = '7d') {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: aiKeys.trends(period),
+    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics/trends?period=${period}`, token),
+    enabled: !!token,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+}
+
+/**
+ * Hook to fetch AI export history
+ */
+export function useAIExports() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: aiKeys.exports(),
+    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics/exports`, token),
+    enabled: !!token,
+    staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+/**
+ * Hook to export AI analytics
+ */
+export function useExportAIAnalytics() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ period, format }: { period: string; format: string }) =>
+      fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics/export`, token, {
+        method: 'POST',
+        body: JSON.stringify({ period, format }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: aiKeys.exports() });
+    },
+  });
+}
+
+// ============== AI Cost Tracking Hooks ==============
+
+/**
+ * Hook to fetch cost summary
+ */
+export function useCostSummary(period: string = '7d') {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: aiKeys.costSummary(period),
+    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/costs/summary?period=${period}`, token) as Promise<CostSummary>,
+    enabled: !!token,
+    staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+/**
+ * Hook to fetch budget
+ */
+export function useBudget() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: aiKeys.budget(),
+    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/costs/budget`, token),
+    enabled: !!token,
+    staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+/**
+ * Hook to fetch cost history
+ */
+export function useCostHistory() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: aiKeys.costHistory(),
+    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/costs?limit=20`, token),
+    enabled: !!token,
+    staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+/**
+ * Hook to update budget
+ */
+export function useUpdateBudget() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (budget: { monthly_limit: number; alert_threshold: number }) =>
+      fetchWithAuth(`${API_BASE_URL}/api/v1/ai/costs/budget`, token, {
+        method: 'PUT',
+        body: JSON.stringify(budget),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: aiKeys.budget() });
+    },
+  });
+}
+
+// ============== AI Learning Hooks ==============
+
+/**
+ * Hook to fetch learning stats
+ */
+export function useLearningStats() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: aiKeys.learningStats(),
+    queryFn: () => fetchWithAuth('/api/v1/ai-insights/learning-stats', token) as Promise<LearningStats>,
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000, // 5 minutes - learning stats don't change often
+  });
+}
+
+// ============== Invalidation Hooks ==============
+
+/**
+ * Hook to invalidate AI queries
+ */
+export function useInvalidateAI() {
+  const queryClient = useQueryClient();
+
+  return {
+    invalidateAll: () => queryClient.invalidateQueries({ queryKey: aiKeys.all }),
+    invalidateGenerationHistory: () => queryClient.invalidateQueries({ queryKey: aiKeys.generationHistory() }),
+    invalidateReviewQueue: () => queryClient.invalidateQueries({ queryKey: aiKeys.reviewQueue() }),
+    invalidateAnalytics: () => queryClient.invalidateQueries({ queryKey: aiKeys.analytics('7d') }),
+    invalidateCosts: () => {
+      queryClient.invalidateQueries({ queryKey: aiKeys.costSummary('7d') });
+      queryClient.invalidateQueries({ queryKey: aiKeys.budget() });
+      queryClient.invalidateQueries({ queryKey: aiKeys.costHistory() });
+    },
+  };
+}
