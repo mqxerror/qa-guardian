@@ -5,6 +5,8 @@ import { FastifyInstance } from 'fastify';
 import { authenticate } from '../../middleware/auth';
 import { Test } from './types';
 import { getTestSuite, getTest, updateTest, updateTestSuite, listTests } from './stores';
+// Feature #89: Redis caching for review settings
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
 
 // Review action body interface
 interface ReviewTestBody {
@@ -168,32 +170,65 @@ export async function reviewRoutes(app: FastifyInstance) {
   });
 
   // Get suite's review settings
+  // Feature #89: Add caching (5 min TTL), proper error handling, and default values
   app.get<{ Params: { suiteId: string } }>('/api/v1/suites/:suiteId/review-settings', {
     preHandler: [authenticate],
-  }, async (request) => {
+  }, async (request, reply) => {
     const { suiteId } = request.params;
+    const cache = getCache();
 
-    const suite = await getTestSuite(suiteId);
-    if (!suite) {
-      throw { statusCode: 404, message: 'Test suite not found' };
-    }
-
-    // Count pending review tests
-    const suiteTests = await listTests(suiteId);
-    const pendingReview = suiteTests.filter(t => t.review_status === 'pending_review').length;
-    const approved = suiteTests.filter(t => t.review_status === 'approved').length;
-    const rejected = suiteTests.filter(t => t.review_status === 'rejected').length;
-    const aiGenerated = suiteTests.filter(t => t.ai_generated).length;
-
-    return {
-      require_human_review: suite.require_human_review || false,
+    // Default response for when suite or data is not available
+    const defaultResponse = {
+      require_human_review: false,
       stats: {
-        total_tests: suiteTests.length,
-        ai_generated: aiGenerated,
-        pending_review: pendingReview,
-        approved,
-        rejected,
+        total_tests: 0,
+        ai_generated: 0,
+        pending_review: 0,
+        approved: 0,
+        rejected: 0,
       },
     };
+
+    try {
+      // Feature #89: Check cache first (5 minute TTL)
+      const cacheKey = CacheKeys.review.settings(suiteId);
+      const cached = await cache.get<typeof defaultResponse>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
+      const suite = await getTestSuite(suiteId);
+      if (!suite) {
+        // Return defaults instead of erroring - suite might not exist yet
+        return defaultResponse;
+      }
+
+      // Count pending review tests
+      const suiteTests = await listTests(suiteId);
+      const pendingReview = suiteTests.filter(t => t.review_status === 'pending_review').length;
+      const approved = suiteTests.filter(t => t.review_status === 'approved').length;
+      const rejected = suiteTests.filter(t => t.review_status === 'rejected').length;
+      const aiGenerated = suiteTests.filter(t => t.ai_generated).length;
+
+      const response = {
+        require_human_review: suite.require_human_review || false,
+        stats: {
+          total_tests: suiteTests.length,
+          ai_generated: aiGenerated,
+          pending_review: pendingReview,
+          approved,
+          rejected,
+        },
+      };
+
+      // Feature #89: Cache for 5 minutes
+      await cache.set(cacheKey, response, CacheTTL.MEDIUM);
+
+      return response;
+    } catch (error) {
+      // Feature #89: Return defaults on any error instead of 502
+      console.error('[ReviewSettings] Error fetching review settings:', error);
+      return defaultResponse;
+    }
   });
 }

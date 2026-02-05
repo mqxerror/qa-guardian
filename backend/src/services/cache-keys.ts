@@ -106,6 +106,12 @@ export const CacheKeys = {
       `visual:pending:count:${orgId}${projectId ? `:${projectId}` : ''}`,
     pattern: 'visual:*',
   },
+
+  // Review Settings (Feature #89)
+  review: {
+    settings: (suiteId: string) => `review:settings:${suiteId}`,
+    pattern: 'review:*',
+  },
 } as const;
 
 // Default TTL values in seconds
