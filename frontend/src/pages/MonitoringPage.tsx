@@ -1,4 +1,5 @@
 // MonitoringPage - Extracted from App.tsx (Feature #1441)
+// Feature #75: Migrated summary to React Query with caching
 // Synthetic monitoring: uptime checks, transaction monitoring, performance testing
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +7,7 @@ import { Layout } from "../components/Layout";
 import { useAuthStore } from "../stores/authStore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { toast } from "../stores/toastStore";
+import { useMonitoringSummary } from "../hooks/api/useMonitoring";
 
 // Feature #47: Import modular components and types for performance optimization
 // Eliminates ~600 lines of duplicate type definitions
@@ -152,6 +154,13 @@ function MonitoringPage() {
     createMaintenanceWindow,
     deleteMaintenanceWindow,
   } = useUptimeCheckHandlers(token, filterTag, filterGroup, openEditModal);
+
+  // Feature #75: Use React Query for summary with caching
+  // This provides instant load on page revisit while keeping existing hook structure
+  const { data: cachedSummary, isLoading: isSummaryLoading } = useMonitoringSummary();
+  // Use cached summary if available, otherwise fall back to hook's summary
+  const displaySummary = cachedSummary || summary;
+  const summaryLoading = isSummaryLoading && isLoading;
 
   // Tab state
   const [activeTab, setActiveTab] = useState<'checks' | 'transactions' | 'performance' | 'webhooks' | 'dns' | 'tcp' | 'settings'>('checks');
@@ -980,7 +989,8 @@ function MonitoringPage() {
         </div>
 
         {/* Summary Cards - Using modular component (Feature #47) */}
-        <MonitoringSummaryCards summary={summary} isLoading={isLoading} />
+        {/* Feature #75: Using React Query cached summary for instant load */}
+        <MonitoringSummaryCards summary={displaySummary} isLoading={summaryLoading} />
 
         {/* Uptime Checks Tab Content - Using modular component (Feature #47) */}
         {activeTab === 'checks' && (
