@@ -158,6 +158,45 @@ export interface StepResult {
       screenshot_base64: string;
       label?: string;
     }>;
+    // Feature #67: Both mobile and desktop results
+    mobileResults?: {
+      device: 'mobile';
+      performance_score: number;
+      accessibility_score: number;
+      best_practices_score: number;
+      seo_score: number;
+      metrics: {
+        first_contentful_paint: number;
+        largest_contentful_paint: number;
+        cumulative_layout_shift: number;
+        total_blocking_time: number;
+        speed_index: number;
+        time_to_interactive?: number;
+        time_to_first_byte?: number;
+      };
+      opportunities?: any[];
+      diagnostics?: any[];
+      passed_audits?: any[];
+    };
+    desktopResults?: {
+      device: 'desktop';
+      performance_score: number;
+      accessibility_score: number;
+      best_practices_score: number;
+      seo_score: number;
+      metrics: {
+        first_contentful_paint: number;
+        largest_contentful_paint: number;
+        cumulative_layout_shift: number;
+        total_blocking_time: number;
+        speed_index: number;
+        time_to_interactive?: number;
+        time_to_first_byte?: number;
+      };
+      opportunities?: any[];
+      diagnostics?: any[];
+      passed_audits?: any[];
+    };
   };
   // Feature #1137: Additional step metadata for detailed reporting
   name?: string; // Human-readable step name

@@ -412,7 +412,12 @@ const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
             )}
           </div>
           <div className="flex items-center gap-2">
-            {lighthouse.device && (
+            {/* Feature #67: Show both mobile AND desktop badges when both results are available */}
+            {lighthouse.mobileResults && lighthouse.desktopResults ? (
+              <span className="px-2 py-1 text-xs bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg text-blue-700 dark:text-blue-300 font-medium">
+                📱 Mobile + 🖥️ Desktop
+              </span>
+            ) : lighthouse.device && (
               <span className="px-2 py-1 text-xs bg-muted rounded-lg text-muted-foreground">
                 {lighthouse.device === 'mobile' ? '📱 Mobile' : '🖥️ Desktop'}
               </span>
@@ -557,27 +562,120 @@ const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
           )}
         </div>
 
-        {/* Score Gauges in Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          {[
-            { label: 'Performance', value: lighthouse.performance, icon: '⚡' },
-            { label: 'Accessibility', value: lighthouse.accessibility, icon: '♿' },
-            { label: 'Best Practices', value: lighthouse.best_practices || lighthouse.bestPractices, icon: '✓' },
-            { label: 'SEO', value: lighthouse.seo, icon: '🔍' },
-          ].filter(m => m.value !== undefined).map(metric => (
-            <div key={metric.label} className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 text-center">
-              <div className="text-2xl mb-1">{metric.icon}</div>
-              <div className={`text-3xl font-bold ${
-                (metric.value || 0) >= 90 ? 'text-green-600' :
-                (metric.value || 0) >= 50 ? 'text-yellow-600' :
-                'text-red-600'
-              }`}>
-                {metric.value}
+        {/* Feature #67: Score Gauges in Summary - Side-by-side Mobile & Desktop when both available */}
+        {lighthouse.mobileResults && lighthouse.desktopResults ? (
+          <div className="mb-4">
+            {/* Device Comparison Headers */}
+            <div className="grid grid-cols-2 gap-4 mb-3">
+              <div className="flex items-center justify-center gap-2 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg border-b-2 border-blue-400">
+                <span className="text-xl">📱</span>
+                <span className="font-semibold text-blue-700 dark:text-blue-300">Mobile</span>
               </div>
-              <div className="text-sm text-muted-foreground font-medium">{metric.label}</div>
+              <div className="flex items-center justify-center gap-2 py-2 bg-purple-50 dark:bg-purple-900/20 rounded-t-lg border-b-2 border-purple-400">
+                <span className="text-xl">🖥️</span>
+                <span className="font-semibold text-purple-700 dark:text-purple-300">Desktop</span>
+              </div>
             </div>
-          ))}
-        </div>
+
+            {/* Side-by-side Score Comparison */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Mobile Scores */}
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: 'Performance', value: lighthouse.mobileResults.performance_score, icon: '⚡' },
+                  { label: 'Accessibility', value: lighthouse.mobileResults.accessibility_score, icon: '♿' },
+                  { label: 'Best Practices', value: lighthouse.mobileResults.best_practices_score, icon: '✓' },
+                  { label: 'SEO', value: lighthouse.mobileResults.seo_score, icon: '🔍' },
+                ].map(metric => (
+                  <div key={metric.label} className="bg-blue-50/50 dark:bg-blue-900/10 rounded-lg p-3 text-center border border-blue-200/50 dark:border-blue-800/50">
+                    <div className="text-lg mb-0.5">{metric.icon}</div>
+                    <div className={`text-2xl font-bold ${
+                      (metric.value || 0) >= 90 ? 'text-green-600' :
+                      (metric.value || 0) >= 50 ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {metric.value}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">{metric.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Scores */}
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: 'Performance', value: lighthouse.desktopResults.performance_score, icon: '⚡' },
+                  { label: 'Accessibility', value: lighthouse.desktopResults.accessibility_score, icon: '♿' },
+                  { label: 'Best Practices', value: lighthouse.desktopResults.best_practices_score, icon: '✓' },
+                  { label: 'SEO', value: lighthouse.desktopResults.seo_score, icon: '🔍' },
+                ].map(metric => (
+                  <div key={metric.label} className="bg-purple-50/50 dark:bg-purple-900/10 rounded-lg p-3 text-center border border-purple-200/50 dark:border-purple-800/50">
+                    <div className="text-lg mb-0.5">{metric.icon}</div>
+                    <div className={`text-2xl font-bold ${
+                      (metric.value || 0) >= 90 ? 'text-green-600' :
+                      (metric.value || 0) >= 50 ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {metric.value}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">{metric.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Score Comparison Summary */}
+            <div className="mt-3 p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <span>📊</span>
+                  <span className="text-muted-foreground">Performance Comparison:</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-blue-600 dark:text-blue-400 font-medium">
+                    📱 {lighthouse.mobileResults.performance_score}
+                  </span>
+                  <span className="text-muted-foreground">vs</span>
+                  <span className="text-purple-600 dark:text-purple-400 font-medium">
+                    🖥️ {lighthouse.desktopResults.performance_score}
+                  </span>
+                  {lighthouse.desktopResults.performance_score > lighthouse.mobileResults.performance_score && (
+                    <span className="text-xs text-green-600 dark:text-green-400">
+                      (+{lighthouse.desktopResults.performance_score - lighthouse.mobileResults.performance_score} desktop)
+                    </span>
+                  )}
+                  {lighthouse.mobileResults.performance_score > lighthouse.desktopResults.performance_score && (
+                    <span className="text-xs text-green-600 dark:text-green-400">
+                      (+{lighthouse.mobileResults.performance_score - lighthouse.desktopResults.performance_score} mobile)
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Original single-device view */
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            {[
+              { label: 'Performance', value: lighthouse.performance, icon: '⚡' },
+              { label: 'Accessibility', value: lighthouse.accessibility, icon: '♿' },
+              { label: 'Best Practices', value: lighthouse.best_practices || lighthouse.bestPractices, icon: '✓' },
+              { label: 'SEO', value: lighthouse.seo, icon: '🔍' },
+            ].filter(m => m.value !== undefined).map(metric => (
+              <div key={metric.label} className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 text-center">
+                <div className="text-2xl mb-1">{metric.icon}</div>
+                <div className={`text-3xl font-bold ${
+                  (metric.value || 0) >= 90 ? 'text-green-600' :
+                  (metric.value || 0) >= 50 ? 'text-yellow-600' :
+                  'text-red-600'
+                }`}>
+                  {metric.value}
+                </div>
+                <div className="text-sm text-muted-foreground font-medium">{metric.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Top 3 Issues to Fix */}
         {topOpportunities.length > 0 && (
@@ -738,22 +836,73 @@ const LighthouseOverviewTab: React.FC<LighthouseOverviewTabProps> = ({
   toggleDiagnostic,
 }) => (
   <>
-    {/* Circular Gauges for main scores */}
-    <div className="flex justify-center gap-8 flex-wrap mb-8">
-      {[
-        { label: 'Performance', value: lighthouse.performance },
-        { label: 'Accessibility', value: lighthouse.accessibility },
-        { label: 'Best Practices', value: lighthouse.best_practices || lighthouse.bestPractices },
-        { label: 'SEO', value: lighthouse.seo },
-      ].filter(m => m.value !== undefined).map(metric => (
-        <CircularGauge
-          key={metric.label}
-          score={metric.value || 0}
-          label={metric.label}
-          size={100}
-        />
-      ))}
-    </div>
+    {/* Feature #67: Side-by-side Circular Gauges when both mobile and desktop available */}
+    {lighthouse.mobileResults && lighthouse.desktopResults ? (
+      <div className="mb-8">
+        {/* Mobile Gauges */}
+        <div className="mb-6">
+          <div className="flex items-center justify-center gap-2 mb-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <span className="text-xl">📱</span>
+            <span className="font-semibold text-blue-700 dark:text-blue-300">Mobile Results</span>
+          </div>
+          <div className="flex justify-center gap-6 flex-wrap">
+            {[
+              { label: 'Performance', value: lighthouse.mobileResults.performance_score },
+              { label: 'Accessibility', value: lighthouse.mobileResults.accessibility_score },
+              { label: 'Best Practices', value: lighthouse.mobileResults.best_practices_score },
+              { label: 'SEO', value: lighthouse.mobileResults.seo_score },
+            ].map(metric => (
+              <CircularGauge
+                key={`mobile-${metric.label}`}
+                score={metric.value || 0}
+                label={metric.label}
+                size={80}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop Gauges */}
+        <div>
+          <div className="flex items-center justify-center gap-2 mb-4 py-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+            <span className="text-xl">🖥️</span>
+            <span className="font-semibold text-purple-700 dark:text-purple-300">Desktop Results</span>
+          </div>
+          <div className="flex justify-center gap-6 flex-wrap">
+            {[
+              { label: 'Performance', value: lighthouse.desktopResults.performance_score },
+              { label: 'Accessibility', value: lighthouse.desktopResults.accessibility_score },
+              { label: 'Best Practices', value: lighthouse.desktopResults.best_practices_score },
+              { label: 'SEO', value: lighthouse.desktopResults.seo_score },
+            ].map(metric => (
+              <CircularGauge
+                key={`desktop-${metric.label}`}
+                score={metric.value || 0}
+                label={metric.label}
+                size={80}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    ) : (
+      /* Original single-device view */
+      <div className="flex justify-center gap-8 flex-wrap mb-8">
+        {[
+          { label: 'Performance', value: lighthouse.performance },
+          { label: 'Accessibility', value: lighthouse.accessibility },
+          { label: 'Best Practices', value: lighthouse.best_practices || lighthouse.bestPractices },
+          { label: 'SEO', value: lighthouse.seo },
+        ].filter(m => m.value !== undefined).map(metric => (
+          <CircularGauge
+            key={metric.label}
+            score={metric.value || 0}
+            label={metric.label}
+            size={100}
+          />
+        ))}
+      </div>
+    )}
 
     {/* Core Web Vitals with visual gauges */}
     {lighthouse.metrics && (
@@ -988,59 +1137,217 @@ const LighthouseSEOTab: React.FC<LighthouseSEOTabProps> = ({
   </>
 );
 
-// Core Web Vitals Section
-const CoreWebVitalsSection: React.FC<{ lighthouse: any }> = ({ lighthouse }) => (
-  <div className="border border-border rounded-lg p-4 mb-6">
-    <div className="flex items-center justify-between mb-4">
-      <h4 className="font-medium text-foreground flex items-center gap-2">
-        <span>⚡</span> Core Web Vitals
-      </h4>
-      <div className="flex gap-4">
-        <span className="flex items-center gap-1 text-xs text-green-600">
-          <span className="w-2 h-2 rounded-full bg-green-500"></span> Good
-        </span>
-        <span className="flex items-center gap-1 text-xs text-yellow-600">
-          <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Needs Improvement
-        </span>
-        <span className="flex items-center gap-1 text-xs text-red-600">
-          <span className="w-2 h-2 rounded-full bg-red-500"></span> Poor
-        </span>
+// Core Web Vitals Section - Feature #67: Updated to show side-by-side metrics
+const CoreWebVitalsSection: React.FC<{ lighthouse: any }> = ({ lighthouse }) => {
+  // Helper to render a single metric card
+  const renderMetricCard = (
+    metric: { label: string; value: number; format: (v: number) => string; threshold: { good: number; poor: number } },
+    prefix: string = ''
+  ) => {
+    const value = metric.value || 0;
+    const status = value <= metric.threshold.good ? 'good' : value <= metric.threshold.poor ? 'needs-improvement' : 'poor';
+    return (
+      <div
+        key={`${prefix}${metric.label}`}
+        className={`p-3 rounded-lg ${
+          status === 'good' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' :
+          status === 'needs-improvement' ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' :
+          'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+        }`}
+      >
+        <div className="text-xs font-medium text-muted-foreground mb-1">{metric.label}</div>
+        <div className={`text-xl font-bold ${
+          status === 'good' ? 'text-green-600 dark:text-green-400' :
+          status === 'needs-improvement' ? 'text-yellow-600 dark:text-yellow-400' :
+          'text-red-600 dark:text-red-400'
+        }`}>
+          {metric.format(value)}
+        </div>
       </div>
-    </div>
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {[
-        { label: 'LCP', fullName: 'Largest Contentful Paint', value: lighthouse.metrics.lcp, format: (v: number) => `${(v / 1000).toFixed(2)}s`, threshold: { good: 2500, poor: 4000, max: 8000 }, description: 'Measures loading performance' },
-        { label: 'FCP', fullName: 'First Contentful Paint', value: lighthouse.metrics.fcp, format: (v: number) => `${(v / 1000).toFixed(2)}s`, threshold: { good: 1800, poor: 3000, max: 6000 }, description: 'First content visible' },
-        { label: 'CLS', fullName: 'Cumulative Layout Shift', value: lighthouse.metrics.cls, format: (v: number) => v.toFixed(3), threshold: { good: 0.1, poor: 0.25, max: 0.5 }, description: 'Visual stability' },
-        { label: 'TBT', fullName: 'Total Blocking Time', value: lighthouse.metrics.tbt, format: (v: number) => `${v}ms`, threshold: { good: 200, poor: 600, max: 1200 }, description: 'Main thread blocking' },
-      ].filter(m => m.value !== undefined).map(metric => {
-        const value = metric.value || 0;
-        const status = value <= metric.threshold.good ? 'good' : value <= metric.threshold.poor ? 'needs-improvement' : 'poor';
+    );
+  };
 
-        return (
-          <div
-            key={metric.label}
-            className={`p-4 rounded-lg ${
-              status === 'good' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' :
-              status === 'needs-improvement' ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' :
-              'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
-            }`}
-          >
-            <div className="text-xs font-medium text-muted-foreground mb-1">{metric.label}</div>
-            <div className={`text-2xl font-bold ${
-              status === 'good' ? 'text-green-600 dark:text-green-400' :
-              status === 'needs-improvement' ? 'text-yellow-600 dark:text-yellow-400' :
-              'text-red-600 dark:text-red-400'
-            }`}>
-              {metric.format(value)}
+  // Feature #67: Check if both mobile and desktop metrics are available
+  const hasBothDevices = lighthouse.mobileResults?.metrics && lighthouse.desktopResults?.metrics;
+
+  return (
+    <div className="border border-border rounded-lg p-4 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="font-medium text-foreground flex items-center gap-2">
+          <span>⚡</span> Core Web Vitals
+          {hasBothDevices && (
+            <span className="text-xs text-muted-foreground ml-2">(Mobile vs Desktop)</span>
+          )}
+        </h4>
+        <div className="flex gap-4">
+          <span className="flex items-center gap-1 text-xs text-green-600">
+            <span className="w-2 h-2 rounded-full bg-green-500"></span> Good
+          </span>
+          <span className="flex items-center gap-1 text-xs text-yellow-600">
+            <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Needs Improvement
+          </span>
+          <span className="flex items-center gap-1 text-xs text-red-600">
+            <span className="w-2 h-2 rounded-full bg-red-500"></span> Poor
+          </span>
+        </div>
+      </div>
+
+      {hasBothDevices ? (
+        /* Feature #67: Side-by-side Core Web Vitals comparison */
+        <div className="space-y-4">
+          {/* LCP Comparison */}
+          <div className="grid grid-cols-3 gap-2 items-center">
+            <div className="text-center">
+              {renderMetricCard({
+                label: '📱 LCP',
+                value: lighthouse.mobileResults.metrics.largest_contentful_paint,
+                format: (v: number) => `${(v / 1000).toFixed(2)}s`,
+                threshold: { good: 2500, poor: 4000 }
+              }, 'mobile-')}
             </div>
-            <div className="text-[10px] text-muted-foreground mt-1">{metric.description}</div>
+            <div className="text-center text-sm text-muted-foreground">
+              Largest Contentful Paint
+            </div>
+            <div className="text-center">
+              {renderMetricCard({
+                label: '🖥️ LCP',
+                value: lighthouse.desktopResults.metrics.largest_contentful_paint,
+                format: (v: number) => `${(v / 1000).toFixed(2)}s`,
+                threshold: { good: 2500, poor: 4000 }
+              }, 'desktop-')}
+            </div>
           </div>
-        );
-      })}
+
+          {/* FCP Comparison */}
+          <div className="grid grid-cols-3 gap-2 items-center">
+            <div className="text-center">
+              {renderMetricCard({
+                label: '📱 FCP',
+                value: lighthouse.mobileResults.metrics.first_contentful_paint,
+                format: (v: number) => `${(v / 1000).toFixed(2)}s`,
+                threshold: { good: 1800, poor: 3000 }
+              }, 'mobile-')}
+            </div>
+            <div className="text-center text-sm text-muted-foreground">
+              First Contentful Paint
+            </div>
+            <div className="text-center">
+              {renderMetricCard({
+                label: '🖥️ FCP',
+                value: lighthouse.desktopResults.metrics.first_contentful_paint,
+                format: (v: number) => `${(v / 1000).toFixed(2)}s`,
+                threshold: { good: 1800, poor: 3000 }
+              }, 'desktop-')}
+            </div>
+          </div>
+
+          {/* CLS Comparison */}
+          <div className="grid grid-cols-3 gap-2 items-center">
+            <div className="text-center">
+              {renderMetricCard({
+                label: '📱 CLS',
+                value: lighthouse.mobileResults.metrics.cumulative_layout_shift,
+                format: (v: number) => v.toFixed(3),
+                threshold: { good: 0.1, poor: 0.25 }
+              }, 'mobile-')}
+            </div>
+            <div className="text-center text-sm text-muted-foreground">
+              Cumulative Layout Shift
+            </div>
+            <div className="text-center">
+              {renderMetricCard({
+                label: '🖥️ CLS',
+                value: lighthouse.desktopResults.metrics.cumulative_layout_shift,
+                format: (v: number) => v.toFixed(3),
+                threshold: { good: 0.1, poor: 0.25 }
+              }, 'desktop-')}
+            </div>
+          </div>
+
+          {/* TBT Comparison */}
+          <div className="grid grid-cols-3 gap-2 items-center">
+            <div className="text-center">
+              {renderMetricCard({
+                label: '📱 TBT',
+                value: lighthouse.mobileResults.metrics.total_blocking_time,
+                format: (v: number) => `${Math.round(v)}ms`,
+                threshold: { good: 200, poor: 600 }
+              }, 'mobile-')}
+            </div>
+            <div className="text-center text-sm text-muted-foreground">
+              Total Blocking Time
+            </div>
+            <div className="text-center">
+              {renderMetricCard({
+                label: '🖥️ TBT',
+                value: lighthouse.desktopResults.metrics.total_blocking_time,
+                format: (v: number) => `${Math.round(v)}ms`,
+                threshold: { good: 200, poor: 600 }
+              }, 'desktop-')}
+            </div>
+          </div>
+
+          {/* Speed Index Comparison */}
+          <div className="grid grid-cols-3 gap-2 items-center">
+            <div className="text-center">
+              {renderMetricCard({
+                label: '📱 SI',
+                value: lighthouse.mobileResults.metrics.speed_index,
+                format: (v: number) => `${(v / 1000).toFixed(2)}s`,
+                threshold: { good: 3400, poor: 5800 }
+              }, 'mobile-')}
+            </div>
+            <div className="text-center text-sm text-muted-foreground">
+              Speed Index
+            </div>
+            <div className="text-center">
+              {renderMetricCard({
+                label: '🖥️ SI',
+                value: lighthouse.desktopResults.metrics.speed_index,
+                format: (v: number) => `${(v / 1000).toFixed(2)}s`,
+                threshold: { good: 3400, poor: 5800 }
+              }, 'desktop-')}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Original single-device view */
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'LCP', fullName: 'Largest Contentful Paint', value: lighthouse.metrics?.lcp, format: (v: number) => `${(v / 1000).toFixed(2)}s`, threshold: { good: 2500, poor: 4000, max: 8000 }, description: 'Measures loading performance' },
+            { label: 'FCP', fullName: 'First Contentful Paint', value: lighthouse.metrics?.fcp, format: (v: number) => `${(v / 1000).toFixed(2)}s`, threshold: { good: 1800, poor: 3000, max: 6000 }, description: 'First content visible' },
+            { label: 'CLS', fullName: 'Cumulative Layout Shift', value: lighthouse.metrics?.cls, format: (v: number) => v.toFixed(3), threshold: { good: 0.1, poor: 0.25, max: 0.5 }, description: 'Visual stability' },
+            { label: 'TBT', fullName: 'Total Blocking Time', value: lighthouse.metrics?.tbt, format: (v: number) => `${v}ms`, threshold: { good: 200, poor: 600, max: 1200 }, description: 'Main thread blocking' },
+          ].filter(m => m.value !== undefined).map(metric => {
+            const value = metric.value || 0;
+            const status = value <= metric.threshold.good ? 'good' : value <= metric.threshold.poor ? 'needs-improvement' : 'poor';
+
+            return (
+              <div
+                key={metric.label}
+                className={`p-4 rounded-lg ${
+                  status === 'good' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' :
+                  status === 'needs-improvement' ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' :
+                  'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                }`}
+              >
+                <div className="text-xs font-medium text-muted-foreground mb-1">{metric.label}</div>
+                <div className={`text-2xl font-bold ${
+                  status === 'good' ? 'text-green-600 dark:text-green-400' :
+                  status === 'needs-improvement' ? 'text-yellow-600 dark:text-yellow-400' :
+                  'text-red-600 dark:text-red-400'
+                }`}>
+                  {metric.format(value)}
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-1">{metric.description}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 // Filmstrip Section
 const FilmstripSection: React.FC<{ lighthouse: any }> = ({ lighthouse }) => (

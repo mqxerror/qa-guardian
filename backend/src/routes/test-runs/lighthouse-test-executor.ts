@@ -70,6 +70,30 @@ export interface FilmstripFrame {
 }
 
 /**
+ * Device-specific Lighthouse results for Feature #67
+ */
+export interface DeviceLighthouseResults {
+  device: 'mobile' | 'desktop';
+  performance_score: number;
+  accessibility_score: number;
+  best_practices_score: number;
+  seo_score: number;
+  metrics: {
+    first_contentful_paint: number;
+    largest_contentful_paint: number;
+    cumulative_layout_shift: number;
+    total_blocking_time: number;
+    speed_index: number;
+    time_to_interactive?: number;
+    time_to_first_byte?: number;
+  };
+  opportunities: any[];
+  diagnostics: any[];
+  passed_audits: any[];
+  filmstrip?: FilmstripFrame[];
+}
+
+/**
  * Result from Lighthouse test execution
  */
 export interface LighthouseTestResult {
@@ -77,6 +101,9 @@ export interface LighthouseTestResult {
   testError?: string;
   stepResults: StepResult[];
   lighthouseResults?: any;
+  // Feature #67: Both mobile and desktop results
+  mobileResults?: DeviceLighthouseResults;
+  desktopResults?: DeviceLighthouseResults;
   screenshot_base64?: string;
   // Feature #1893: Filmstrip view of page load
   filmstrip?: FilmstripFrame[];
@@ -210,19 +237,81 @@ export async function executeLighthouseTest(
       testId: test.id,
       stepIndex: 0,
       stepId: 'lighthouse_audit',
-      progress: 30,
-      message: 'Analyzing page performance...',
+      progress: 20,
+      message: 'Running mobile Lighthouse audit...',
       phase: 'auditing',
     });
 
-    // Run real Lighthouse CLI audit against the target URL
-    const devicePreset = test.device_preset || 'desktop';
+    // Feature #67: Run BOTH mobile AND desktop audits regardless of device_preset
     const auditTimeout = test.audit_timeout || 120000;
-    const audit = await runRealLighthouseAudit(test.target_url, devicePreset, auditTimeout);
 
-    const { scores, metrics, opportunities, diagnostics, passedAudits } = audit;
+    // Run mobile audit first
+    console.log(`[Lighthouse] Starting mobile audit for ${test.target_url}`);
+    const mobileAudit = await runRealLighthouseAudit(test.target_url, 'mobile', auditTimeout);
+
+    // Emit progress for desktop audit
+    emitRunEvent(runId, orgId, 'step-progress', {
+      testId: test.id,
+      stepIndex: 0,
+      stepId: 'lighthouse_audit',
+      progress: 60,
+      message: 'Running desktop Lighthouse audit...',
+      phase: 'auditing',
+    });
+
+    // Run desktop audit
+    console.log(`[Lighthouse] Starting desktop audit for ${test.target_url}`);
+    const desktopAudit = await runRealLighthouseAudit(test.target_url, 'desktop', auditTimeout);
+
+    // Create device-specific results for Feature #67
+    const mobileResults: DeviceLighthouseResults = {
+      device: 'mobile',
+      performance_score: mobileAudit.scores.performance,
+      accessibility_score: mobileAudit.scores.accessibility,
+      best_practices_score: mobileAudit.scores.bestPractices,
+      seo_score: mobileAudit.scores.seo,
+      metrics: {
+        first_contentful_paint: mobileAudit.metrics.firstContentfulPaint,
+        largest_contentful_paint: mobileAudit.metrics.largestContentfulPaint,
+        cumulative_layout_shift: mobileAudit.metrics.cumulativeLayoutShift,
+        total_blocking_time: mobileAudit.metrics.totalBlockingTime,
+        speed_index: mobileAudit.metrics.speedIndex,
+        time_to_interactive: mobileAudit.metrics.timeToInteractive,
+        time_to_first_byte: mobileAudit.metrics.timeToFirstByte,
+      },
+      opportunities: mobileAudit.opportunities,
+      diagnostics: mobileAudit.diagnostics,
+      passed_audits: mobileAudit.passedAudits,
+    };
+
+    const desktopResults: DeviceLighthouseResults = {
+      device: 'desktop',
+      performance_score: desktopAudit.scores.performance,
+      accessibility_score: desktopAudit.scores.accessibility,
+      best_practices_score: desktopAudit.scores.bestPractices,
+      seo_score: desktopAudit.scores.seo,
+      metrics: {
+        first_contentful_paint: desktopAudit.metrics.firstContentfulPaint,
+        largest_contentful_paint: desktopAudit.metrics.largestContentfulPaint,
+        cumulative_layout_shift: desktopAudit.metrics.cumulativeLayoutShift,
+        total_blocking_time: desktopAudit.metrics.totalBlockingTime,
+        speed_index: desktopAudit.metrics.speedIndex,
+        time_to_interactive: desktopAudit.metrics.timeToInteractive,
+        time_to_first_byte: desktopAudit.metrics.timeToFirstByte,
+      },
+      opportunities: desktopAudit.opportunities,
+      diagnostics: desktopAudit.diagnostics,
+      passed_audits: desktopAudit.passedAudits,
+    };
+
+    // Use the configured device preset (or default) to determine which scores to use for thresholds
+    // But still show both sets of results
+    const primaryDevice = test.device_preset || 'desktop';
+    const primaryAudit = primaryDevice === 'mobile' ? mobileAudit : desktopAudit;
+    const { scores, metrics, opportunities, diagnostics, passedAudits } = primaryAudit;
     const performanceScore = scores.performance;
 
+    // Keep backward compatible lighthouseResults structure with primary device results
     lighthouseResults = {
       performance_score: performanceScore,
       accessibility_score: scores.accessibility,
@@ -238,24 +327,27 @@ export async function executeLighthouseTest(
       opportunities,
       diagnostics,
       passed_audits: passedAudits,
-      device_preset: devicePreset,
+      device_preset: primaryDevice,
+      // Feature #67: Include both mobile and desktop results
+      mobileResults,
+      desktopResults,
     };
 
-    // Check thresholds against real scores
+    // Check thresholds against primary device scores
     const performanceThreshold = test.performance_threshold || 80;
     if (performanceScore < performanceThreshold) {
       testStatus = 'failed';
-      testError = `Performance score ${performanceScore} is below threshold ${performanceThreshold}`;
+      testError = `Performance score ${performanceScore} (${primaryDevice}) is below threshold ${performanceThreshold}`;
     }
 
     if (test.lcp_threshold && metrics.largestContentfulPaint > test.lcp_threshold) {
       testStatus = 'failed';
-      testError = `LCP ${Math.round(metrics.largestContentfulPaint)}ms exceeds threshold ${test.lcp_threshold}ms`;
+      testError = `LCP ${Math.round(metrics.largestContentfulPaint)}ms (${primaryDevice}) exceeds threshold ${test.lcp_threshold}ms`;
     }
 
     if (test.cls_threshold && metrics.cumulativeLayoutShift > test.cls_threshold) {
       testStatus = 'failed';
-      testError = `CLS ${metrics.cumulativeLayoutShift.toFixed(3)} exceeds threshold ${test.cls_threshold}`;
+      testError = `CLS ${metrics.cumulativeLayoutShift.toFixed(3)} (${primaryDevice}) exceeds threshold ${test.cls_threshold}`;
     }
 
     // Emit progress
@@ -264,7 +356,7 @@ export async function executeLighthouseTest(
       stepIndex: 0,
       stepId: 'lighthouse_audit',
       progress: 100,
-      message: 'Audit complete',
+      message: 'Both mobile and desktop audits complete',
       phase: 'complete',
     });
 
@@ -303,7 +395,7 @@ export async function executeLighthouseTest(
       performanceScore,
     });
 
-    // Feature #1966: Include real lighthouse metrics in step result for frontend display
+    // Feature #1966 & #67: Include both mobile and desktop metrics in step result for frontend display
     stepResults.push({
       id: 'lighthouse_audit',
       action: 'lighthouse_audit',
@@ -331,6 +423,9 @@ export async function executeLighthouseTest(
         diagnostics: lighthouseResults.diagnostics,
         passedAudits: Array.isArray(lighthouseResults.passed_audits) ? lighthouseResults.passed_audits : undefined,
         filmstrip: lighthouseResults.filmstrip,
+        // Feature #67: Include both device results
+        mobileResults: lighthouseResults.mobileResults,
+        desktopResults: lighthouseResults.desktopResults,
       } : undefined,
     });
 
@@ -354,6 +449,8 @@ export async function executeLighthouseTest(
     testError,
     stepResults,
     lighthouseResults,
+    mobileResults: lighthouseResults?.mobileResults,
+    desktopResults: lighthouseResults?.desktopResults,
     screenshot_base64,
     filmstrip, // Feature #1893: Include filmstrip in result
   };
