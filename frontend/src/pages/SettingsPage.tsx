@@ -1,7 +1,8 @@
 // SettingsPage - Unified settings page with tabbed navigation
 // Feature #1832: Consolidate Admin menu into single Settings page
+// Feature #80: Migrated to React Query for caching
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
@@ -22,6 +23,31 @@ import {
   type AIModel,
   type AITaskType,
 } from '../stores/aiModelPreferencesStore';
+// Feature #80: React Query hooks for settings
+import {
+  useMembers,
+  useInvitations,
+  useSendInvitation,
+  useCancelInvitation,
+  useRemoveMember,
+  useUpdateMemberRole,
+  useApiKeys,
+  useCreateApiKey,
+  useDeleteApiKey,
+  useWebhooks,
+  useCreateWebhook,
+  useDeleteWebhook,
+  useToggleWebhook,
+  useAuditLogs,
+  useAuditLogActions,
+  useAuditLogResourceTypes,
+  useAIStatus,
+  type Member,
+  type Invitation,
+  type ApiKey,
+  type Webhook,
+  type AuditLog,
+} from '../hooks/api/useSettings';
 
 // Tab types for the settings page
 type SettingsTab = 'team' | 'general' | 'ai-config' | 'billing' | 'api-keys' | 'webhooks' | 'audit-logs' | 'notifications';
@@ -111,45 +137,36 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; requiredRol
 ];
 
 // ============== Team Tab Content ==============
-interface Invitation {
-  id: string;
-  email: string;
-  role: string;
-  status: string;
-  created_at: string;
-}
-
-interface Member {
-  id: string;
-  user_id: string;
-  organization_id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+// Types imported from useSettings hook
 
 function TeamTabContent() {
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const { formatDate } = useTimezoneStore();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'developer' | 'viewer'>('developer');
   const [inviteError, setInviteError] = useState('');
   const [inviteSuccess, setInviteSuccess] = useState('');
-  const [isInviting, setIsInviting] = useState(false);
-  const [pendingInvitations, setPendingInvitations] = useState<Invitation[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [isLoadingMembers, setIsLoadingMembers] = useState(true);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
-  const [isRemoving, setIsRemoving] = useState(false);
   const [showEditRoleModal, setShowEditRoleModal] = useState(false);
   const [memberToEdit, setMemberToEdit] = useState<Member | null>(null);
   const [newRole, setNewRole] = useState<'admin' | 'developer' | 'viewer'>('developer');
-  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [editRoleError, setEditRoleError] = useState('');
 
   const canManageMembers = user?.role === 'owner' || user?.role === 'admin';
+
+  // Feature #80: React Query hooks for team data
+  const { data: members = [], isLoading: isLoadingMembers } = useMembers(1);
+  const { data: pendingInvitations = [] } = useInvitations(1);
+  const sendInvitationMutation = useSendInvitation(1);
+  const cancelInvitationMutation = useCancelInvitation(1);
+  const removeMemberMutation = useRemoveMember(1);
+  const updateRoleMutation = useUpdateMemberRole(1);
+
+  const isInviting = sendInvitationMutation.isPending;
+  const isRemoving = removeMemberMutation.isPending;
+  const isUpdatingRole = updateRoleMutation.isPending;
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -163,153 +180,56 @@ function TeamTabContent() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [showInviteModal, showRemoveModal, showEditRoleModal]);
 
-  useEffect(() => {
-    const fetchMembers = async () => {
-      try {
-        const response = await fetch('/api/v1/organizations/1/members', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setMembers(data.members || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch members:', err);
-      } finally {
-        setIsLoadingMembers(false);
-      }
-    };
-    fetchMembers();
-  }, [token]);
-
-  useEffect(() => {
-    const fetchInvitations = async () => {
-      if (!canManageMembers) return;
-      try {
-        const response = await fetch('/api/v1/organizations/1/invitations', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setPendingInvitations(data.invitations || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch invitations:', err);
-      }
-    };
-    fetchInvitations();
-  }, [token, canManageMembers]);
-
+  // Feature #80: Handler functions using React Query mutations
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setInviteError('');
     setInviteSuccess('');
-    setIsInviting(true);
 
     try {
-      const response = await fetch('/api/v1/organizations/1/invitations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to send invitation');
-      }
-
-      const data = await response.json();
+      await sendInvitationMutation.mutateAsync({ email: inviteEmail, role: inviteRole });
       setInviteSuccess(`Invitation sent to ${inviteEmail}`);
       setInviteEmail('');
-      if (data.invitation) {
-        setPendingInvitations(prev => [...prev, data.invitation]);
-      }
       setTimeout(() => {
         setShowInviteModal(false);
         setInviteSuccess('');
       }, 2000);
     } catch (err) {
       setInviteError(err instanceof Error ? err.message : 'Failed to send invitation');
-    } finally {
-      setIsInviting(false);
     }
   };
 
   const handleRemoveMember = async () => {
     if (!memberToRemove) return;
-    setIsRemoving(true);
 
     try {
-      const response = await fetch(`/api/v1/organizations/1/members/${memberToRemove.user_id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        setMembers(members.filter(m => m.user_id !== memberToRemove.user_id));
-        toast.success(`${memberToRemove.name} has been removed from the team`);
-        setShowRemoveModal(false);
-        setMemberToRemove(null);
-      } else {
-        const data = await response.json();
-        toast.error(data.message || 'Failed to remove member');
-      }
+      await removeMemberMutation.mutateAsync(memberToRemove.user_id);
+      toast.success(`${memberToRemove.name} has been removed from the team`);
+      setShowRemoveModal(false);
+      setMemberToRemove(null);
     } catch (err) {
-      toast.error('Failed to remove member');
-    } finally {
-      setIsRemoving(false);
+      toast.error(err instanceof Error ? err.message : 'Failed to remove member');
     }
   };
 
   const handleUpdateRole = async () => {
     if (!memberToEdit) return;
-    setIsUpdatingRole(true);
     setEditRoleError('');
 
     try {
-      const response = await fetch(`/api/v1/organizations/1/members/${memberToEdit.user_id}/role`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ role: newRole }),
-      });
-
-      if (response.ok) {
-        setMembers(members.map(m =>
-          m.user_id === memberToEdit.user_id ? { ...m, role: newRole } : m
-        ));
-        toast.success(`Role updated for ${memberToEdit.name}`);
-        setShowEditRoleModal(false);
-        setMemberToEdit(null);
-      } else {
-        const data = await response.json();
-        setEditRoleError(data.message || 'Failed to update role');
-      }
+      await updateRoleMutation.mutateAsync({ userId: memberToEdit.user_id, role: newRole });
+      toast.success(`Role updated for ${memberToEdit.name}`);
+      setShowEditRoleModal(false);
+      setMemberToEdit(null);
     } catch (err) {
-      setEditRoleError('Failed to update role');
-    } finally {
-      setIsUpdatingRole(false);
+      setEditRoleError(err instanceof Error ? err.message : 'Failed to update role');
     }
   };
 
   const handleCancelInvitation = async (invitationId: string) => {
     try {
-      const response = await fetch(`/api/v1/organizations/1/invitations/${invitationId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        setPendingInvitations(pendingInvitations.filter(inv => inv.id !== invitationId));
-        toast.success('Invitation cancelled');
-      } else {
-        toast.error('Failed to cancel invitation');
-      }
+      await cancelInvitationMutation.mutateAsync(invitationId);
+      toast.success('Invitation cancelled');
     } catch (err) {
       toast.error('Failed to cancel invitation');
     }
@@ -886,15 +806,7 @@ function BillingTabContent() {
 }
 
 // ============== API Keys Tab Content ==============
-interface ApiKey {
-  id: string;
-  name: string;
-  key?: string;
-  key_prefix: string;
-  scopes: string[];
-  expires_at: string | null;
-  created_at: string;
-}
+// ApiKey type imported from useSettings hook
 
 function ApiKeysTabContent() {
   const { user, token } = useAuthStore();
@@ -1154,13 +1066,7 @@ function ApiKeysTabContent() {
 }
 
 // ============== Webhooks Tab Content ==============
-interface Webhook {
-  id: string;
-  url: string;
-  events: string[];
-  active: boolean;
-  created_at: string;
-}
+// Webhook type imported from useSettings hook
 
 function WebhooksTabContent() {
   const { user, token } = useAuthStore();
