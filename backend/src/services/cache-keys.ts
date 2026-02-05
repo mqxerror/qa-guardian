@@ -99,6 +99,13 @@ export const CacheKeys = {
     dastScans: (projectId: string) => `security:dast:scans:${projectId}`,
     pattern: 'security:*',
   },
+
+  // Visual Regression
+  visual: {
+    pendingCount: (orgId: string, projectId?: string) =>
+      `visual:pending:count:${orgId}${projectId ? `:${projectId}` : ''}`,
+    pattern: 'visual:*',
+  },
 } as const;
 
 // Default TTL values in seconds

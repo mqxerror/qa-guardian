@@ -25,6 +25,8 @@ import {
 // Import testRuns store from execution module
 import { testRuns, TestRun } from './execution';
 import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
+// Feature #88: Redis caching for pending count
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
 
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
@@ -172,37 +174,69 @@ export async function visualBatchRoutes(app: FastifyInstance) {
   });
 
   // Feature #481: Get count of pending visual approvals for sidebar badge
+  // Feature #88: Add Redis caching (60s TTL) and optimize query
   app.get<{ Querystring: PendingQueryParams }>('/api/v1/visual/pending/count', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const orgId = getOrganizationId(request);
     const { project_id } = request.query;
+    const cache = getCache();
+
+    // Feature #88: Check cache first (60 second TTL)
+    const cacheKey = CacheKeys.visual.pendingCount(orgId, project_id);
+    const cached = await cache.get<{ count: number; has_pending: boolean }>(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     let count = 0;
 
-    // Count test runs with visual regression tests that have diff_detected status
+    // Feature #88: Optimized approach - batch load data to avoid N+1 queries
+    // 1. Get all failed runs with visual comparison data
     const allRunsForCount = await getMergedTestRuns(orgId);
-    for (const run of allRunsForCount) {
-      const runId = run.id;
-      if (run.organization_id !== orgId) continue;
-      if (run.status !== 'failed') continue;
-      if (!run.results) continue;
+    const failedRunsWithVisual = allRunsForCount.filter(run =>
+      run.organization_id === orgId &&
+      run.status === 'failed' &&
+      run.results?.some(r =>
+        r.visual_comparison?.diffPercentage !== undefined &&
+        r.visual_comparison.diffPercentage > 0 &&
+        r.status === 'failed'
+      )
+    );
 
-      for (const result of run.results) {
+    // 2. Batch load all tests and suites we'll need (avoid per-result async calls)
+    const testIds = new Set<string>();
+    const suiteIds = new Set<string>();
+    for (const run of failedRunsWithVisual) {
+      suiteIds.add(run.suite_id);
+      for (const result of run.results || []) {
+        if (result.visual_comparison?.diffPercentage && result.visual_comparison.diffPercentage > 0) {
+          testIds.add(result.test_id);
+        }
+      }
+    }
+
+    // Batch fetch tests and suites
+    const testsMap = await getTestsMap();
+    const suitesMap = await getTestSuitesMap();
+
+    // 3. Count pending changes efficiently
+    for (const run of failedRunsWithVisual) {
+      const suite = suitesMap.get(run.suite_id);
+      // Filter by project if specified
+      if (project_id && suite?.project_id !== project_id) continue;
+
+      for (const result of run.results || []) {
         if (result.visual_comparison &&
             result.visual_comparison.diffPercentage !== undefined &&
             result.visual_comparison.diffPercentage > 0 &&
             result.status === 'failed') {
 
-          const test = await getTest(result.test_id);
+          const test = testsMap.get(result.test_id);
           if (!test || test.test_type !== 'visual_regression') continue;
 
-          // Filter by project if specified
-          const suite = await getTestSuite(run.suite_id);
-          if (project_id && suite?.project_id !== project_id) continue;
-
-          // Check if already rejected
-          const rejection = getRejectionMetadata(runId, result.test_id, 'single');
+          // Check if already rejected (this is sync so it's fast)
+          const rejection = getRejectionMetadata(run.id, result.test_id, 'single');
           if (rejection) continue;
 
           count++;
@@ -210,10 +244,15 @@ export async function visualBatchRoutes(app: FastifyInstance) {
       }
     }
 
-    return {
+    const response = {
       count,
       has_pending: count > 0,
     };
+
+    // Feature #88: Cache the result for 60 seconds
+    await cache.set(cacheKey, response, CacheTTL.SHORT);
+
+    return response;
   });
 
   // DEV ONLY: Create mock pending visual changes for testing the badge
