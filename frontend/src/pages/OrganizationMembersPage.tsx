@@ -1,48 +1,45 @@
+// Feature #81: Migrated to React Query for caching
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 import { Layout } from '../components/Layout';
 import { toast } from '../stores/toastStore';
-
-interface Invitation {
-  id: string;
-  email: string;
-  role: string;
-  status: string;
-  created_at: string;
-}
-
-interface Member {
-  id: string;
-  user_id: string;
-  organization_id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+import {
+  useMembers,
+  useInvitations,
+  useSendInvitation,
+  useRemoveMember,
+  useUpdateMemberRole,
+  type Member,
+} from '../hooks/api/useSettings';
 
 export function OrganizationMembersPage() {
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const { formatDate } = useTimezoneStore();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'developer' | 'viewer'>('developer');
   const [inviteError, setInviteError] = useState('');
   const [inviteSuccess, setInviteSuccess] = useState('');
-  const [isInviting, setIsInviting] = useState(false);
-  const [pendingInvitations, setPendingInvitations] = useState<Invitation[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [isLoadingMembers, setIsLoadingMembers] = useState(true);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
-  const [isRemoving, setIsRemoving] = useState(false);
   const [showEditRoleModal, setShowEditRoleModal] = useState(false);
   const [memberToEdit, setMemberToEdit] = useState<Member | null>(null);
   const [newRole, setNewRole] = useState<'admin' | 'developer' | 'viewer'>('developer');
-  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [editRoleError, setEditRoleError] = useState('');
 
   const canManageMembers = user?.role === 'owner' || user?.role === 'admin';
+
+  // Feature #81: React Query hooks for cached data
+  const { data: members = [], isLoading: isLoadingMembers } = useMembers(1);
+  const { data: pendingInvitations = [] } = useInvitations(1);
+  const sendInvitationMutation = useSendInvitation(1);
+  const removeMemberMutation = useRemoveMember(1);
+  const updateRoleMutation = useUpdateMemberRole(1);
+
+  const isInviting = sendInvitationMutation.isPending;
+  const isRemoving = removeMemberMutation.isPending;
+  const isUpdatingRole = updateRoleMutation.isPending;
 
   // Handle Escape key to close modals
   useEffect(() => {
@@ -57,147 +54,49 @@ export function OrganizationMembersPage() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [showInviteModal, showRemoveModal, showEditRoleModal]);
 
-  // Fetch members from API
-  useEffect(() => {
-    const fetchMembers = async () => {
-      try {
-        const response = await fetch('/api/v1/organizations/1/members', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setMembers(data.members || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch members:', err);
-      } finally {
-        setIsLoadingMembers(false);
-      }
-    };
-    fetchMembers();
-  }, [token]);
-
-  // Fetch pending invitations
-  useEffect(() => {
-    const fetchInvitations = async () => {
-      if (!canManageMembers) return;
-      try {
-        const response = await fetch('/api/v1/organizations/1/invitations', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setPendingInvitations(data.invitations || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch invitations:', err);
-      }
-    };
-    fetchInvitations();
-  }, [token, canManageMembers]);
-
+  // Feature #81: Handler functions using React Query mutations
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setInviteError('');
     setInviteSuccess('');
-    setIsInviting(true);
 
     try {
-      const response = await fetch('/api/v1/organizations/1/invitations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to send invitation');
-      }
-
-      const data = await response.json();
+      await sendInvitationMutation.mutateAsync({ email: inviteEmail, role: inviteRole });
       setInviteSuccess(`Invitation sent to ${inviteEmail}`);
       setInviteEmail('');
-      // Add the new invitation to the list
-      if (data.invitation) {
-        setPendingInvitations(prev => [...prev, data.invitation]);
-      }
       setTimeout(() => {
         setShowInviteModal(false);
         setInviteSuccess('');
       }, 2000);
     } catch (err) {
       setInviteError(err instanceof Error ? err.message : 'Failed to send invitation');
-    } finally {
-      setIsInviting(false);
     }
   };
 
   const handleRemoveMember = async () => {
     if (!memberToRemove) return;
-    setIsRemoving(true);
 
     try {
-      const response = await fetch(`/api/v1/organizations/1/members/${memberToRemove.user_id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to remove member');
-      }
-
-      // Remove from local state
-      setMembers(prev => prev.filter(m => m.user_id !== memberToRemove.user_id));
+      await removeMemberMutation.mutateAsync(memberToRemove.user_id);
       setShowRemoveModal(false);
       setMemberToRemove(null);
+      toast.success(`${memberToRemove.name} has been removed from the team`);
     } catch (err) {
-      console.error('Failed to remove member:', err);
-    } finally {
-      setIsRemoving(false);
+      toast.error(err instanceof Error ? err.message : 'Failed to remove member');
     }
   };
 
   const handleUpdateRole = async () => {
     if (!memberToEdit) return;
-    setIsUpdatingRole(true);
     setEditRoleError('');
 
     try {
-      const response = await fetch(`/api/v1/organizations/1/members/${memberToEdit.user_id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ role: newRole }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to update role');
-      }
-
-      // Update local state
-      setMembers(prev => prev.map(m =>
-        m.user_id === memberToEdit.user_id ? { ...m, role: newRole } : m
-      ));
+      await updateRoleMutation.mutateAsync({ userId: memberToEdit.user_id, role: newRole });
       setShowEditRoleModal(false);
       setMemberToEdit(null);
       toast.success(`Role updated to ${newRole} successfully!`);
     } catch (err) {
       setEditRoleError(err instanceof Error ? err.message : 'Failed to update role');
-    } finally {
-      setIsUpdatingRole(false);
     }
   };
 
