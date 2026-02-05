@@ -5,6 +5,9 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
+// Feature #91: Import query keys for cross-cache invalidation
+import { dashboardKeys } from './useDashboard';
+import { suiteKeys } from './useSuites';
 
 // Types
 export interface TestStep {
@@ -232,14 +235,20 @@ export function useCreateTest() {
       }
     },
     // Always refetch after error or success to get fresh data
+    // Feature #91: Invalidate all related caches when test count changes
     onSettled: (_, __, { suiteId }) => {
       queryClient.invalidateQueries({ queryKey: testKeys.listBySuite(suiteId) });
+      // Invalidate dashboard stats (test count changed)
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
+      // Invalidate suite detail (may show test count)
+      queryClient.invalidateQueries({ queryKey: suiteKeys.detail(suiteId) });
     },
   });
 }
 
 /**
  * Hook to update a test
+ * Feature #91: Enhanced cache invalidation for immediate UI updates
  */
 export function useUpdateTest() {
   const token = useAuthStore(state => state.token);
@@ -251,42 +260,69 @@ export function useUpdateTest() {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
-    onSuccess: (_, { id }) => {
+    onSuccess: (updatedTest: Test, { id }) => {
+      // Invalidate the specific test detail
       queryClient.invalidateQueries({ queryKey: testKeys.detail(id) });
+      // Invalidate all test lists (test might have moved suites or changed)
       queryClient.invalidateQueries({ queryKey: testKeys.lists() });
+      // Feature #91: Also invalidate suite detail if test belongs to a suite
+      if (updatedTest?.suite_id) {
+        queryClient.invalidateQueries({ queryKey: suiteKeys.detail(updatedTest.suite_id) });
+      }
     },
   });
 }
 
 /**
  * Hook to delete a test
+ * Feature #91: Enhanced cache invalidation including dashboard stats and suite
  */
 export function useDeleteTest() {
   const token = useAuthStore(state => state.token);
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) =>
+    mutationFn: ({ id, suiteId }: { id: string; suiteId?: string }) =>
       fetchWithAuth(`/api/v1/tests/${id}`, token, {
         method: 'DELETE',
       }),
-    onSuccess: () => {
+    onSuccess: (_, { suiteId }) => {
+      // Invalidate all test lists
       queryClient.invalidateQueries({ queryKey: testKeys.lists() });
+      // Feature #91: Invalidate dashboard stats (test count changed)
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
+      // Feature #91: Invalidate suite detail if provided
+      if (suiteId) {
+        queryClient.invalidateQueries({ queryKey: suiteKeys.detail(suiteId) });
+      }
     },
   });
 }
 
 /**
  * Hook to invalidate test queries
+ * Feature #91: Enhanced to also invalidate dashboard stats and suite details
  */
 export function useInvalidateTests() {
   const queryClient = useQueryClient();
 
   return {
-    invalidateAll: () => queryClient.invalidateQueries({ queryKey: testKeys.all }),
-    invalidateLists: () => queryClient.invalidateQueries({ queryKey: testKeys.lists() }),
+    invalidateAll: () => {
+      queryClient.invalidateQueries({ queryKey: testKeys.all });
+      // Feature #91: Also invalidate dashboard when all tests are invalidated
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
+    },
+    invalidateLists: () => {
+      queryClient.invalidateQueries({ queryKey: testKeys.lists() });
+      // Feature #91: Also invalidate dashboard stats
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
+    },
     invalidateTest: (id: string) => queryClient.invalidateQueries({ queryKey: testKeys.detail(id) }),
-    invalidateBySuite: (suiteId: string) =>
-      queryClient.invalidateQueries({ queryKey: testKeys.listBySuite(suiteId) }),
+    invalidateBySuite: (suiteId: string) => {
+      queryClient.invalidateQueries({ queryKey: testKeys.listBySuite(suiteId) });
+      // Feature #91: Also invalidate dashboard stats and suite detail
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: suiteKeys.detail(suiteId) });
+    },
   };
 }
