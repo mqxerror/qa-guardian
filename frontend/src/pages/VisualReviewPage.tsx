@@ -1,9 +1,15 @@
-import { useState, useEffect } from 'react';
+// Feature #77: Migrated to React Query with caching
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
+import {
+  usePendingVisualChanges,
+  useBatchApproveChanges,
+  useBatchRejectChanges,
+} from '../hooks/api/useVisualReview';
 
 // Types for Visual Review
 interface PendingVisualChange {
@@ -54,12 +60,15 @@ export default function VisualReviewPage() {
   const navigate = useNavigate();
   const { addNotification } = useNotificationStore();
   const { decrementCount } = useVisualReviewStore();
-  const [pendingChanges, setPendingChanges] = useState<PendingVisualChange[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Feature #77: React Query hooks for data fetching
+  const { data: pendingChanges = [], isLoading, refetch: refetchPending } = usePendingVisualChanges();
+  const batchApproveMutation = useBatchApproveChanges();
+  const batchRejectMutation = useBatchRejectChanges();
+
+  // UI state
   const [selectedChanges, setSelectedChanges] = useState<Set<string>>(new Set());
-  const [isBatchApproving, setIsBatchApproving] = useState(false);
   const [showBatchApproveModal, setShowBatchApproveModal] = useState(false);
-  const [isBatchRejecting, setIsBatchRejecting] = useState(false);
   const [showBatchRejectModal, setShowBatchRejectModal] = useState(false);
   const [batchRejectReason, setBatchRejectReason] = useState('');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -119,74 +128,7 @@ export default function VisualReviewPage() {
     }
   });
 
-  // Fetch pending visual changes
-  useEffect(() => {
-    const fetchPendingChanges = async () => {
-      if (!token) return;
-      setIsLoading(true);
-
-      try {
-        const response = await fetch('/api/v1/visual/pending', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          let pending = data.pending || [];
-
-          // Feature #1251: Add demo data for AI Impact Analysis if no pending changes
-          if (pending.length === 0) {
-            pending = [
-              {
-                runId: 'demo-run-1',
-                testId: 'demo-test-1',
-                testName: 'Homepage Layout - Desktop',
-                projectId: 'demo-project',
-                projectName: 'E-Commerce App',
-                suiteId: 'demo-suite-1',
-                suiteName: 'Visual Regression Suite',
-                diffPercentage: 12.45,
-                startedAt: new Date().toISOString(),
-                viewport: '1920x1080'
-              },
-              {
-                runId: 'demo-run-2',
-                testId: 'demo-test-2',
-                testName: 'Button Theme Colors',
-                projectId: 'demo-project',
-                projectName: 'E-Commerce App',
-                suiteId: 'demo-suite-1',
-                suiteName: 'Visual Regression Suite',
-                diffPercentage: 1.8,
-                startedAt: new Date(Date.now() - 3600000).toISOString(),
-                viewport: '1280x720'
-              },
-              {
-                runId: 'demo-run-3',
-                testId: 'demo-test-3',
-                testName: 'Login Form Layout',
-                projectId: 'demo-project',
-                projectName: 'Auth Portal',
-                suiteId: 'demo-suite-2',
-                suiteName: 'Login Flow Tests',
-                diffPercentage: 5.7,
-                startedAt: new Date(Date.now() - 7200000).toISOString(),
-                viewport: '375x667'
-              }
-            ];
-          }
-
-          setPendingChanges(pending);
-        }
-      } catch (error) {
-        console.error('Failed to fetch pending changes:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPendingChanges();
-  }, [token]);
+  // Feature #77: Data fetching is now handled by React Query (usePendingVisualChanges hook)
 
   // Generate unique key for a change
   const getChangeKey = (change: PendingVisualChange) => `${change.runId}-${change.testId}`;
@@ -214,49 +156,28 @@ export default function VisualReviewPage() {
     }
   };
 
-  // Handle batch approve
+  // Feature #77: Handle batch approve using React Query mutation
   const handleBatchApprove = async () => {
     if (selectedChanges.size === 0) return;
 
-    setIsBatchApproving(true);
+    const changesToApprove = pendingChanges
+      .filter(c => selectedChanges.has(getChangeKey(c)))
+      .map(c => ({
+        runId: c.runId,
+        testId: c.testId,
+      }));
 
-    try {
-      const changesToApprove = pendingChanges
-        .filter(c => selectedChanges.has(getChangeKey(c)))
-        .map(c => ({
-          runId: c.runId,
-          testId: c.testId,
-          viewport: c.viewport || 'single',
-        }));
-
-      const response = await fetch('/api/v1/visual/batch-approve', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ changes: changesToApprove }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        // Remove approved changes from the list
-        const approvedKeys = new Set(
-          data.results
-            .filter((r: {success: boolean}) => r.success)
-            .map((r: {runId: string; testId: string}) => `${r.runId}-${r.testId}`)
-        );
-
+    batchApproveMutation.mutate({ changes: changesToApprove }, {
+      onSuccess: (data) => {
         // Update global pending count for sidebar badge
-        const approvedCount = data.results.filter((r: {success: boolean}) => r.success).length;
+        const approvedCount = data.results?.filter((r: {success: boolean}) => r.success).length || 0;
         for (let i = 0; i < approvedCount; i++) {
           decrementCount();
         }
 
-        setPendingChanges(prev => prev.filter(c => !approvedKeys.has(getChangeKey(c))));
         setSelectedChanges(new Set());
         setShowBatchApproveModal(false);
+        refetchPending();
 
         addNotification({
           type: 'success',
@@ -264,25 +185,16 @@ export default function VisualReviewPage() {
           message: data.message,
           duration: 5000,
         });
-      } else {
-        const error = await response.json();
+      },
+      onError: (error) => {
         addNotification({
           type: 'error',
           title: 'Batch Approval Failed',
-          message: error.message || 'Failed to batch approve changes',
+          message: error instanceof Error ? error.message : 'Failed to batch approve changes',
           duration: 5000,
         });
-      }
-    } catch (error) {
-      addNotification({
-        type: 'error',
-        title: 'Error',
-        message: 'An error occurred during batch approval',
-        duration: 5000,
-      });
-    } finally {
-      setIsBatchApproving(false);
-    }
+      },
+    });
   };
 
   // Feature #1952: Resize and compress diff image for Vision API
@@ -535,53 +447,32 @@ Respond in this JSON format:
     }
   };
 
-  // Handle batch reject
+  // Feature #77: Handle batch reject using React Query mutation
   const handleBatchReject = async () => {
     if (selectedChanges.size === 0) return;
 
-    setIsBatchRejecting(true);
+    const changesToReject = pendingChanges
+      .filter(c => selectedChanges.has(getChangeKey(c)))
+      .map(c => ({
+        runId: c.runId,
+        testId: c.testId,
+      }));
 
-    try {
-      const changesToReject = pendingChanges
-        .filter(c => selectedChanges.has(getChangeKey(c)))
-        .map(c => ({
-          runId: c.runId,
-          testId: c.testId,
-          viewport: c.viewport || 'single',
-        }));
-
-      const response = await fetch('/api/v1/visual/batch-reject', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          changes: changesToReject,
-          reason: batchRejectReason.trim() || undefined,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        // Remove rejected changes from the list
-        const rejectedKeys = new Set(
-          data.results
-            .filter((r: {success: boolean}) => r.success)
-            .map((r: {runId: string; testId: string}) => `${r.runId}-${r.testId}`)
-        );
-
+    batchRejectMutation.mutate({
+      changes: changesToReject,
+      reason: batchRejectReason.trim() || undefined,
+    }, {
+      onSuccess: (data) => {
         // Update global pending count for sidebar badge
-        const rejectedCount = data.results.filter((r: {success: boolean}) => r.success).length;
+        const rejectedCount = data.results?.filter((r: {success: boolean}) => r.success).length || 0;
         for (let i = 0; i < rejectedCount; i++) {
           decrementCount();
         }
 
-        setPendingChanges(prev => prev.filter(c => !rejectedKeys.has(getChangeKey(c))));
         setSelectedChanges(new Set());
         setShowBatchRejectModal(false);
         setBatchRejectReason('');
+        refetchPending();
 
         addNotification({
           type: 'success',
@@ -589,25 +480,16 @@ Respond in this JSON format:
           message: data.message,
           duration: 5000,
         });
-      } else {
-        const error = await response.json();
+      },
+      onError: (error) => {
         addNotification({
           type: 'error',
           title: 'Batch Rejection Failed',
-          message: error.message || 'Failed to batch reject changes',
+          message: error instanceof Error ? error.message : 'Failed to batch reject changes',
           duration: 5000,
         });
-      }
-    } catch (error) {
-      addNotification({
-        type: 'error',
-        title: 'Error',
-        message: 'An error occurred during batch rejection',
-        duration: 5000,
-      });
-    } finally {
-      setIsBatchRejecting(false);
-    }
+      },
+    });
   };
 
   return (
@@ -1052,7 +934,7 @@ Respond in this JSON format:
         {showBatchApproveModal && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && !isBatchApproving && setShowBatchApproveModal(false)}
+            onClick={(e) => e.target === e.currentTarget && !batchApproveMutation.isPending && setShowBatchApproveModal(false)}
           >
             <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg">
               <div className="flex items-center gap-3 mb-4">
@@ -1073,16 +955,16 @@ Respond in this JSON format:
                 <button
                   onClick={() => setShowBatchApproveModal(false)}
                   className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  disabled={isBatchApproving}
+                  disabled={batchApproveMutation.isPending}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleBatchApprove}
-                  disabled={isBatchApproving}
+                  disabled={batchApproveMutation.isPending}
                   className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
                 >
-                  {isBatchApproving ? (
+                  {batchApproveMutation.isPending ? (
                     <span className="flex items-center gap-2">
                       <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -1103,7 +985,7 @@ Respond in this JSON format:
         {showBatchRejectModal && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && !isBatchRejecting && setShowBatchRejectModal(false)}
+            onClick={(e) => e.target === e.currentTarget && !batchRejectMutation.isPending && setShowBatchRejectModal(false)}
           >
             <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg">
               <div className="flex items-center gap-3 mb-4">
@@ -1142,16 +1024,16 @@ Respond in this JSON format:
                     setBatchRejectReason('');
                   }}
                   className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  disabled={isBatchRejecting}
+                  disabled={batchRejectMutation.isPending}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleBatchReject}
-                  disabled={isBatchRejecting}
+                  disabled={batchRejectMutation.isPending}
                   className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
                 >
-                  {isBatchRejecting ? (
+                  {batchRejectMutation.isPending ? (
                     <span className="flex items-center gap-2">
                       <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
