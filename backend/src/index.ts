@@ -29,6 +29,7 @@ import { reportsRoutes } from './routes/reports'; // Feature #1732
 import { servicesStatusRoutes, setServicesSocketIO } from './routes/services-status'; // Feature #2127
 import { setRecordingSocketIO } from './routes/test-runs/recording-routes'; // Feature #26: Playwright recording
 import { stepTemplateRoutes } from './routes/step-templates'; // Feature #31: Reusable Step Templates
+import { requestTimeoutHook } from './middleware/timeout'; // Feature #90: Request timeout middleware
 
 // Socket.IO server instance (will be initialized after server starts)
 let io: SocketIOServer | null = null;
@@ -181,6 +182,10 @@ async function registerPlugins() {
       statusCode,
     });
   });
+
+  // Feature #90: Request timeout middleware - prevent 502 gateway timeouts
+  // This hook must be added BEFORE other hooks to ensure timeout applies first
+  app.addHook('onRequest', requestTimeoutHook);
 
   // Rate limiting hook - applies to all API routes
   app.addHook('onRequest', async (request, reply) => {
