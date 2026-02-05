@@ -1,11 +1,25 @@
 // Feature #1441: FlakyTestsDashboardPage extracted from App.tsx (~1,575 lines)
 // Features #1102-1107: Flaky test management, quarantine, suggestions, impact report
+// Feature #76: Migrated to React Query with caching
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
+import {
+  useFlakyTests,
+  useFlakyImpactReport,
+  useAutoQuarantineSettings,
+  useRetryStrategySettings,
+  useRetryStrategyPreview,
+  useRemediationSuggestions,
+  useQuarantineTest,
+  useReleaseFromQuarantine,
+  useRunAutoQuarantine,
+  useUpdateAutoQuarantineSettings,
+  useUpdateRetryStrategySettings,
+} from '../hooks/api/useFlakyTests';
 
 // FlakyTest interface
 interface FlakyTest {
@@ -54,63 +68,45 @@ interface FlakyTest {
 export function FlakyTestsDashboardPage() {
   const { token } = useAuthStore();
   const navigate = useNavigate();
-  const [flakyTests, setFlakyTests] = useState<FlakyTest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Feature #76: React Query hooks for data fetching with caching
+  const { data: flakyTestsData, isLoading: isLoadingFlakyTests, refetch: refetchFlakyTests } = useFlakyTests();
+  const { data: impactReportData, isLoading: isLoadingImpactReport } = useFlakyImpactReport();
+  const { data: autoQuarantineData, refetch: refetchAutoQuarantine } = useAutoQuarantineSettings();
+  const { data: retryStrategyData, refetch: refetchRetryStrategy } = useRetryStrategySettings();
+  const { data: retryPreviewData, refetch: refetchRetryPreview } = useRetryStrategyPreview();
+
+  // React Query mutations
+  const updateAutoQuarantineMutation = useUpdateAutoQuarantineSettings();
+  const updateRetryStrategyMutation = useUpdateRetryStrategySettings();
+  const quarantineTestMutation = useQuarantineTest();
+  const releaseQuarantineMutation = useReleaseFromQuarantine();
+  const runAutoQuarantineMutation = useRunAutoQuarantine();
+
+  // Use React Query data with defaults
+  const flakyTests = flakyTestsData?.flakyTests || [];
+  const projects = flakyTestsData?.projects || [];
+  const suites = flakyTestsData?.suites || [];
+  const isLoading = isLoadingFlakyTests;
+  const impactReport = impactReportData || null;
+  const isLoadingImpact = isLoadingImpactReport;
+  const autoQuarantineSettings = autoQuarantineData || null;
+  const retryStrategySettings = retryStrategyData || null;
+  const retryStrategyPreview = retryPreviewData || null;
+
+  // UI state (filters, modals, etc.)
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [suiteFilter, setSuiteFilter] = useState<string>('all');
   const [severityFilter, setSeverityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [sortBy, setSortBy] = useState<'score' | 'name' | 'runs'>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
-  const [suites, setSuites] = useState<Array<{ id: string; name: string; project_id: string }>>([]);
 
-  // Feature #1102: Flaky Test Impact Report state
-  const [impactReport, setImpactReport] = useState<{
-    report_period: { start: string; end: string; days: number };
-    summary: { total_flaky_tests: number; total_test_runs: number; average_flakiness_score: number };
-    impact: {
-      ci_time_wasted: { minutes: number; hours: number; cost_usd: number };
-      developer_time_investigating: { minutes: number; hours: number; cost_usd: number };
-      false_failure_alerts: { count: number; estimated_noise_percentage: number };
-      total_cost_impact: { usd: number; monthly_projection_usd: number; annual_projection_usd: number };
-    };
-    top_offenders: Array<{
-      test_id: string;
-      test_name: string;
-      flakiness_score: number;
-      total_runs: number;
-      failures: number;
-      retries: number;
-      ci_time_wasted_minutes: number;
-      investigation_incidents: number;
-      estimated_dev_time_minutes: number;
-      estimated_cost: number;
-    }>;
-    weekly_trend: Array<{
-      week_start: string;
-      retries: number;
-      investigation_incidents: number;
-      ci_time_minutes: number;
-      estimated_cost: number;
-    }>;
-    recommendations: Array<{
-      priority: string;
-      action: string;
-      description: string;
-      estimated_savings_usd: number;
-    }>;
-  } | null>(null);
-  const [isLoadingImpact, setIsLoadingImpact] = useState(true);
+  // Feature #1102: Flaky Test Impact Report UI state
+  // (impactReport and isLoadingImpact now come from React Query)
   const [showImpactReport, setShowImpactReport] = useState(true);
 
-  // Feature #1104: Auto-quarantine settings state
-  const [autoQuarantineSettings, setAutoQuarantineSettings] = useState<{
-    enabled: boolean;
-    threshold: number;
-    min_runs: number;
-    notify_on_quarantine: boolean;
-    quarantine_reason_prefix: string;
-  } | null>(null);
+  // Feature #1104: Auto-quarantine settings UI state
+  // (autoQuarantineSettings now comes from React Query)
   const [showAutoQuarantineSettings, setShowAutoQuarantineSettings] = useState(false);
   const [isLoadingAutoQuarantine, setIsLoadingAutoQuarantine] = useState(false);
   const [autoQuarantineResult, setAutoQuarantineResult] = useState<{
@@ -123,23 +119,9 @@ export function FlakyTestsDashboardPage() {
     }>;
   } | null>(null);
 
-  // Feature #1105: Retry strategy settings state
-  const [retryStrategySettings, setRetryStrategySettings] = useState<{
-    enabled: boolean;
-    rules: Array<{ min_score: number; max_score: number; retries: number }>;
-    default_retries: number;
-    max_retries: number;
-  } | null>(null);
+  // Feature #1105: Retry strategy settings UI state
+  // (retryStrategySettings and retryStrategyPreview now come from React Query)
   const [showRetryStrategySettings, setShowRetryStrategySettings] = useState(false);
-  const [retryStrategyPreview, setRetryStrategyPreview] = useState<{
-    total_flaky_tests: number;
-    by_rule: Array<{
-      range: string;
-      retries: number;
-      test_count: number;
-      tests: Array<{ test_id: string; test_name: string; flakiness_percentage: number }>;
-    }>;
-  } | null>(null);
 
   // Feature #1106: Flakiness remediation suggestions state
   const [showSuggestionsModal, setShowSuggestionsModal] = useState(false);
@@ -189,136 +171,26 @@ export function FlakyTestsDashboardPage() {
   const [flakinessAnalysis, setFlakinessAnalysis] = useState<string | null>(null);
   const [flakinessAnalysisCache, setFlakinessAnalysisCache] = useState<Record<string, { analysis: string; timestamp: number }>>({});
 
-  // Fetch flaky tests
-  useEffect(() => {
-    const fetchFlakyTests = async () => {
-      if (!token) return;
-      try {
-        const response = await fetch('https://qa.pixelcraftedmedia.com/api/v1/analytics/flaky-tests', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setFlakyTests(data.flaky_tests || []);
-          // Extract unique projects and suites
-          const projectMap = new Map<string, string>();
-          const suiteMap = new Map<string, { name: string; project_id: string }>();
-          (data.flaky_tests || []).forEach((t: FlakyTest) => {
-            projectMap.set(t.project_id, t.project_name);
-            suiteMap.set(t.suite_id, { name: t.suite_name, project_id: t.project_id });
-          });
-          setProjects(Array.from(projectMap.entries()).map(([id, name]) => ({ id, name })));
-          setSuites(Array.from(suiteMap.entries()).map(([id, { name, project_id }]) => ({ id, name, project_id })));
-        }
-      } catch (error) {
-        console.error('Failed to fetch flaky tests:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchFlakyTests();
-  }, [token]);
-
-  // Feature #1102: Fetch flaky test impact report
-  useEffect(() => {
-    const fetchImpactReport = async () => {
-      if (!token) return;
-      try {
-        const response = await fetch('/api/v1/ai-insights/flaky-impact-report', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setImpactReport(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch impact report:', error);
-      } finally {
-        setIsLoadingImpact(false);
-      }
-    };
-    fetchImpactReport();
-  }, [token]);
-
-  // Feature #1104: Fetch auto-quarantine settings
-  useEffect(() => {
-    const fetchAutoQuarantineSettings = async () => {
-      if (!token) return;
-      try {
-        const response = await fetch('/api/v1/organization/auto-quarantine-settings', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setAutoQuarantineSettings(data.settings);
-        }
-      } catch (error) {
-        console.error('Failed to fetch auto-quarantine settings:', error);
-      }
-    };
-    fetchAutoQuarantineSettings();
-  }, [token]);
-
-  // Feature #1105: Fetch retry strategy settings
-  useEffect(() => {
-    const fetchRetryStrategySettings = async () => {
-      if (!token) return;
-      try {
-        const response = await fetch('/api/v1/organization/retry-strategy-settings', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setRetryStrategySettings(data.settings);
-        }
-      } catch (error) {
-        console.error('Failed to fetch retry strategy settings:', error);
-      }
-    };
-    fetchRetryStrategySettings();
-  }, [token]);
-
-  // Feature #1105: Fetch retry strategy preview
-  const fetchRetryStrategyPreview = async () => {
-    if (!token) return;
-    try {
-      const response = await fetch('/api/v1/organization/retry-strategy-preview', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setRetryStrategyPreview(data.preview);
-      }
-    } catch (error) {
-      console.error('Failed to fetch retry strategy preview:', error);
-    }
-  };
+  // Feature #76: Data fetching is now handled by React Query hooks:
+  // - useFlakyTests() for flaky tests list, projects, and suites
+  // - useFlakyImpactReport() for impact report
+  // - useAutoQuarantineSettings() for auto-quarantine settings
+  // - useRetryStrategySettings() for retry strategy settings
+  // - useRetryStrategyPreview() for retry strategy preview
 
   // Feature #1105: Update retry strategy settings
+  // Feature #76: Use React Query mutation for updating retry strategy settings
   const handleUpdateRetryStrategySettings = async (updates: Partial<typeof retryStrategySettings>) => {
-    if (!token) return;
-    try {
-      const response = await fetch('/api/v1/organization/retry-strategy-settings', {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updates),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setRetryStrategySettings(data.settings);
+    updateRetryStrategyMutation.mutate(updates, {
+      onSuccess: () => {
         toast.success('Retry strategy settings updated');
-        // Refresh preview
-        fetchRetryStrategyPreview();
-      } else {
+        refetchRetryStrategy();
+        refetchRetryPreview();
+      },
+      onError: () => {
         toast.error('Failed to update retry strategy settings');
-      }
-    } catch (error) {
-      console.error('Failed to update retry strategy settings:', error);
-      toast.error('Failed to update retry strategy settings');
-    }
+      },
+    });
   };
 
   // Feature #1105: Update a specific rule's retry count
@@ -329,65 +201,40 @@ export function FlakyTestsDashboardPage() {
     handleUpdateRetryStrategySettings({ rules: updatedRules });
   };
 
-  // Feature #1104: Run auto-quarantine check
+  // Feature #1104: Run auto-quarantine check - using React Query mutation
   const handleRunAutoQuarantine = async () => {
-    if (!token) return;
     setIsLoadingAutoQuarantine(true);
-    try {
-      const response = await fetch('/api/v1/ai-insights/check-auto-quarantine', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
+    runAutoQuarantineMutation.mutate(undefined, {
+      onSuccess: (data) => {
         setAutoQuarantineResult(data);
         if (data.tests_quarantined > 0) {
           toast.success(`Auto-quarantined ${data.tests_quarantined} test(s) exceeding threshold`);
           // Refresh flaky tests list to update quarantine status
-          const flakyResponse = await fetch('https://qa.pixelcraftedmedia.com/api/v1/analytics/flaky-tests', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (flakyResponse.ok) {
-            const flakyData = await flakyResponse.json();
-            setFlakyTests(flakyData.flaky_tests || []);
-          }
+          refetchFlakyTests();
         } else {
           toast.info('No tests exceeded the auto-quarantine threshold');
         }
-      } else {
+      },
+      onError: () => {
         toast.error('Failed to run auto-quarantine check');
-      }
-    } catch (error) {
-      console.error('Failed to run auto-quarantine:', error);
-      toast.error('Failed to run auto-quarantine check');
-    } finally {
-      setIsLoadingAutoQuarantine(false);
-    }
+      },
+      onSettled: () => {
+        setIsLoadingAutoQuarantine(false);
+      },
+    });
   };
 
-  // Feature #1104: Update auto-quarantine settings
+  // Feature #1104: Update auto-quarantine settings - using React Query mutation
   const handleUpdateAutoQuarantineSettings = async (updates: Partial<typeof autoQuarantineSettings>) => {
-    if (!token) return;
-    try {
-      const response = await fetch('/api/v1/organization/auto-quarantine-settings', {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updates),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAutoQuarantineSettings(data.settings);
+    updateAutoQuarantineMutation.mutate(updates, {
+      onSuccess: () => {
         toast.success('Auto-quarantine settings updated');
-      } else {
+        refetchAutoQuarantine();
+      },
+      onError: () => {
         toast.error('Failed to update settings');
-      }
-    } catch (error) {
-      console.error('Failed to update auto-quarantine settings:', error);
-      toast.error('Failed to update settings');
-    }
+      },
+    });
   };
 
   // Filter and sort tests
@@ -418,59 +265,31 @@ export function FlakyTestsDashboardPage() {
   // Available suites based on project filter
   const availableSuites = projectFilter === 'all' ? suites : suites.filter(s => s.project_id === projectFilter);
 
-  // Handle quick actions
+  // Handle quick actions - Feature #76: using React Query mutations
   // Feature #1103: Quarantine a flaky test
   const handleQuarantine = async (testId: string) => {
-    if (!token) return;
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}/quarantine`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ reason: 'Flaky test - investigating' }),
-      });
-      if (response.ok) {
-        const data = await response.json();
+    quarantineTestMutation.mutate({ testId, reason: 'Flaky test - investigating' }, {
+      onSuccess: (data) => {
         toast.success(`Test "${data.test_name}" quarantined successfully`);
-        // Update local state to show quarantine status
-        setFlakyTests(prev => prev.map(t =>
-          t.test_id === testId ? { ...t, quarantined: true } : t
-        ));
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to quarantine test');
-      }
-    } catch (error) {
-      console.error('Failed to quarantine test:', error);
-      toast.error('Failed to quarantine test');
-    }
+        refetchFlakyTests();
+      },
+      onError: (error) => {
+        toast.error(error instanceof Error ? error.message : 'Failed to quarantine test');
+      },
+    });
   };
 
   // Feature #1103: Unquarantine a test
   const handleUnquarantine = async (testId: string) => {
-    if (!token) return;
-    try {
-      const response = await fetch(`/api/v1/tests/${testId}/unquarantine`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
+    releaseQuarantineMutation.mutate(testId, {
+      onSuccess: (data) => {
         toast.success(`Test "${data.test_name}" removed from quarantine`);
-        // Update local state
-        setFlakyTests(prev => prev.map(t =>
-          t.test_id === testId ? { ...t, quarantined: false } : t
-        ));
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to unquarantine test');
-      }
-    } catch (error) {
-      console.error('Failed to unquarantine test:', error);
-      toast.error('Failed to unquarantine test');
-    }
+        refetchFlakyTests();
+      },
+      onError: (error) => {
+        toast.error(error instanceof Error ? error.message : 'Failed to unquarantine test');
+      },
+    });
   };
 
   // ===========================================
@@ -485,36 +304,25 @@ export function FlakyTestsDashboardPage() {
     setShowReleaseConfirmModal(true);
   };
 
+  // Feature #76: Use React Query mutation for release from quarantine
   const confirmReleaseFromQuarantine = async () => {
-    if (!token || !testToRelease) return;
+    if (!testToRelease) return;
     setIsReleasingFromQuarantine(true);
 
-    try {
-      const response = await fetch(`/api/v1/tests/${testToRelease.test_id}/unquarantine`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
+    releaseQuarantineMutation.mutate(testToRelease.test_id, {
+      onSuccess: (data) => {
         toast.success(`Test "${data.test_name}" released from quarantine and is now running normally`, 5000);
-        // Update local state
-        setFlakyTests(prev => prev.map(t =>
-          t.test_id === testToRelease.test_id
-            ? { ...t, quarantined: false, released_from_quarantine_at: new Date().toISOString() }
-            : t
-        ));
+        refetchFlakyTests();
         setShowReleaseConfirmModal(false);
         setTestToRelease(null);
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to release test from quarantine');
-      }
-    } catch (error) {
-      console.error('Failed to release test from quarantine:', error);
-      toast.error('Failed to release test from quarantine');
-    } finally {
-      setIsReleasingFromQuarantine(false);
-    }
+      },
+      onError: (error) => {
+        toast.error(error instanceof Error ? error.message : 'Failed to release test from quarantine');
+      },
+      onSettled: () => {
+        setIsReleasingFromQuarantine(false);
+      },
+    });
   };
 
   const handleInvestigate = (testId: string) => {
@@ -683,7 +491,7 @@ Please provide:
               onClick={() => {
                 setShowRetryStrategySettings(!showRetryStrategySettings);
                 if (!showRetryStrategySettings) {
-                  fetchRetryStrategyPreview();
+                  refetchRetryPreview();
                 }
               }}
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
