@@ -37,7 +37,8 @@ import {
 import { generatePlaywrightCode } from './utils';
 // Feature #1958: Import testRuns for run metadata on test list
 import { testRuns } from '../test-runs/execution';
-import { listTestRunsBySuite } from '../../services/repositories/test-runs';
+// Feature #87: Use optimized aggregated query instead of loading all runs
+import { getTestRunMetadataForSuite } from '../../services/repositories/test-runs';
 
 export async function coreRoutes(app: FastifyInstance) {
   // List test suites for a project
@@ -347,37 +348,20 @@ export async function coreRoutes(app: FastifyInstance) {
     const testList = allTests.slice(offset, offset + limitNum);
 
     // Feature #1958: Compute run metadata for each test
-    // Feature #2108: Use async DB call instead of Map iteration
-    const suiteRuns = await listTestRunsBySuite(suiteId, orgId);
+    // Feature #87: Use optimized aggregated query instead of loading ALL runs into memory
+    // This prevents memory overflow and timeouts on suites with many runs
+    const testIds = testList.map(t => t.id);
+    const runMetadataMap = await getTestRunMetadataForSuite(suiteId, testIds, orgId);
+
     const testsWithRunMetadata = testList.map(test => {
-      // Get all runs for this test from the suite runs
-      const testRunsForTest = suiteRuns
-        .filter(run => run.test_id === test.id)
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-      const runCount = testRunsForTest.length;
-      const lastRun = testRunsForTest[0];
-
-      // Calculate last result from the most recent run
-      // Feature #2051: Expand type to include all TestRunStatus values (including visual statuses)
-      let lastResult: 'pending' | 'running' | 'paused' | 'passed' | 'failed' | 'warning' | 'error' | 'cancelled' | 'cancelling' | 'visual_approved' | 'visual_rejected' | null = null;
-      if (lastRun) {
-        lastResult = lastRun.status;
-      }
-
-      // Calculate average duration from completed runs
-      const completedRuns = testRunsForTest.filter(run => run.duration_ms && run.duration_ms > 0);
-      const avgDuration = completedRuns.length > 0
-        ? Math.round(completedRuns.reduce((sum, run) => sum + (run.duration_ms || 0), 0) / completedRuns.length)
-        : null;
-
+      const metadata = runMetadataMap.get(test.id);
       return {
         ...test,
-        // Run metadata
-        run_count: runCount,
-        last_run_at: lastRun?.completed_at || lastRun?.started_at || null,
-        last_result: lastResult,
-        avg_duration_ms: avgDuration,
+        // Run metadata from optimized aggregated query
+        run_count: metadata?.run_count || 0,
+        last_run_at: metadata?.last_run_at || null,
+        last_result: metadata?.last_result || null,
+        avg_duration_ms: metadata?.avg_duration_ms || null,
       };
     });
 

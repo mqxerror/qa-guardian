@@ -778,3 +778,156 @@ export async function listHealedSelectorHistory(testId: string): Promise<HealedS
 
 // Memory store accessors removed in Feature #2121
 // All data access is now through async DB functions above
+
+// ============================================================================
+// Feature #87: Optimized Test Run Metadata Functions
+// ============================================================================
+
+/**
+ * Interface for aggregated test run metadata (used by suite tests endpoint)
+ */
+export interface TestRunMetadata {
+  test_id: string;
+  run_count: number;
+  last_run_at: Date | null;
+  last_result: TestRunStatus | null;
+  avg_duration_ms: number | null;
+}
+
+/**
+ * Feature #87: Get aggregated run metadata for tests in a suite
+ * This replaces loading ALL runs into memory with a single efficient SQL query
+ * that computes: run_count, last_run_at, last_result, avg_duration per test
+ */
+export async function getTestRunMetadataForSuite(
+  suiteId: string,
+  testIds: string[],
+  orgId?: string
+): Promise<Map<string, TestRunMetadata>> {
+  const metadataMap = new Map<string, TestRunMetadata>();
+
+  // Initialize empty metadata for all tests
+  for (const testId of testIds) {
+    metadataMap.set(testId, {
+      test_id: testId,
+      run_count: 0,
+      last_run_at: null,
+      last_result: null,
+      avg_duration_ms: null,
+    });
+  }
+
+  if (testIds.length === 0) {
+    return metadataMap;
+  }
+
+  if (isDatabaseConnected()) {
+    try {
+      // Single aggregated query that computes all metadata at database level
+      // Uses window functions and aggregations to avoid loading all runs into memory
+      let queryText = `
+        WITH run_stats AS (
+          SELECT
+            test_id,
+            COUNT(*) as run_count,
+            MAX(COALESCE(completed_at, started_at, created_at)) as last_run_at,
+            AVG(CASE WHEN duration_ms > 0 THEN duration_ms END) as avg_duration_ms
+          FROM test_runs
+          WHERE suite_id = $1 AND test_id = ANY($2)
+      `;
+      const params: any[] = [suiteId, testIds];
+      let paramIndex = 3;
+
+      if (orgId) {
+        queryText += ` AND organization_id = $${paramIndex}`;
+        params.push(orgId);
+        paramIndex++;
+      }
+
+      queryText += `
+          GROUP BY test_id
+        ),
+        latest_runs AS (
+          SELECT DISTINCT ON (test_id)
+            test_id,
+            status as last_result
+          FROM test_runs
+          WHERE suite_id = $1 AND test_id = ANY($2)
+      `;
+
+      if (orgId) {
+        queryText += ` AND organization_id = $${paramIndex - 1}`;
+      }
+
+      queryText += `
+          ORDER BY test_id, created_at DESC
+        )
+        SELECT
+          rs.test_id,
+          rs.run_count,
+          rs.last_run_at,
+          lr.last_result,
+          rs.avg_duration_ms
+        FROM run_stats rs
+        LEFT JOIN latest_runs lr ON rs.test_id = lr.test_id
+      `;
+
+      const result = await query<any>(queryText, params);
+
+      if (result && result.rows) {
+        for (const row of result.rows) {
+          metadataMap.set(row.test_id, {
+            test_id: row.test_id,
+            run_count: parseInt(row.run_count, 10) || 0,
+            last_run_at: row.last_run_at ? new Date(row.last_run_at) : null,
+            last_result: row.last_result as TestRunStatus | null,
+            avg_duration_ms: row.avg_duration_ms ? Math.round(parseFloat(row.avg_duration_ms)) : null,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('[TestRunsRepo] Failed to get test run metadata from database:', error);
+      // Fall through to fallback
+    }
+  }
+
+  // Fallback: compute from in-memory map (less efficient but still works)
+  // Only used when DB is unavailable
+  if (!isDatabaseConnected()) {
+    const map = getTestRunsMap();
+    const testRunsByTest = new Map<string, TestRun[]>();
+
+    // Group runs by test_id
+    for (const run of map.values()) {
+      if (run.suite_id !== suiteId) continue;
+      if (orgId && run.organization_id !== orgId) continue;
+      if (!testIds.includes(run.test_id || '')) continue;
+
+      const testId = run.test_id || '';
+      if (!testRunsByTest.has(testId)) {
+        testRunsByTest.set(testId, []);
+      }
+      testRunsByTest.get(testId)!.push(run);
+    }
+
+    // Compute metadata for each test
+    for (const [testId, runs] of testRunsByTest) {
+      runs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      const lastRun = runs[0];
+      const completedRuns = runs.filter(r => r.duration_ms && r.duration_ms > 0);
+      const avgDuration = completedRuns.length > 0
+        ? Math.round(completedRuns.reduce((sum, r) => sum + (r.duration_ms || 0), 0) / completedRuns.length)
+        : null;
+
+      metadataMap.set(testId, {
+        test_id: testId,
+        run_count: runs.length,
+        last_run_at: lastRun?.completed_at || lastRun?.started_at || null,
+        last_result: lastRun?.status || null,
+        avg_duration_ms: avgDuration,
+      });
+    }
+  }
+
+  return metadataMap;
+}
