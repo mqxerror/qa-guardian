@@ -1,6 +1,7 @@
 // Test Suites Module - Core CRUD Routes
 // Handles test suite and test CRUD operations, plus test steps
 // Feature #61: Redis caching integration
+// Feature #108: WebSocket events for real-time cache invalidation
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
@@ -9,6 +10,8 @@ import { logAuditEntry } from '../audit-logs';
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
 // Feature #1305: Import webhook function for test.created event
 import { sendTestCreatedWebhook } from '../test-runs/webhook-events';
+// Feature #108: WebSocket events for real-time cache invalidation
+import { emitSuiteCreated, emitSuiteUpdated, emitSuiteDeleted, emitTestCreated, emitTestUpdated, emitTestDeleted } from '../../services/websocket-events';
 import {
   TestSuite,
   Test,
@@ -200,6 +203,9 @@ export async function coreRoutes(app: FastifyInstance) {
     // Log audit entry
     logAuditEntry(request, 'create', 'test_suite', id, savedSuite.name, { projectId, type, base_url, browser: defaultBrowser, browsers, viewport_width, viewport_height });
 
+    // Feature #108: Emit WebSocket event for real-time cache invalidation
+    emitSuiteCreated(orgId, id, projectId);
+
     return reply.status(201).send({ suite: savedSuite });
   });
 
@@ -258,6 +264,9 @@ export async function coreRoutes(app: FastifyInstance) {
     // Log audit entry
     logAuditEntry(request, 'update', 'test_suite', suiteId, updatedSuite?.name || existingSuite.name, { updates: Object.keys(updates) });
 
+    // Feature #108: Emit WebSocket event for real-time cache invalidation
+    emitSuiteUpdated(existingSuite.organization_id, suiteId, existingSuite.project_id);
+
     return { suite: updatedSuite || existingSuite };
   });
 
@@ -302,6 +311,9 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Log audit entry
     logAuditEntry(request, 'delete', 'test_suite', suiteId, suiteName);
+
+    // Feature #108: Emit WebSocket event for real-time cache invalidation
+    emitSuiteDeleted(suite.organization_id, suiteId, projectId);
 
     return { message: 'Test suite deleted successfully' };
   });
@@ -672,6 +684,9 @@ export async function coreRoutes(app: FastifyInstance) {
       console.error('[WEBHOOK] Failed to send test.created webhook:', err);
     });
 
+    // Feature #108: Emit WebSocket event for real-time cache invalidation
+    emitTestCreated(orgId, id, suiteId);
+
     return reply.status(201).send({ test: savedTest });
   });
 
@@ -755,6 +770,9 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Log audit entry
     logAuditEntry(request, 'update', 'test', testId, updatedTest?.name || existingTest.name, { updates: Object.keys(updates) });
+
+    // Feature #108: Emit WebSocket event for real-time cache invalidation
+    emitTestUpdated(existingTest.organization_id, testId, existingTest.suite_id);
 
     return { test: updatedTest || existingTest };
   });
@@ -1150,6 +1168,9 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Log audit entry
     logAuditEntry(request, 'delete', 'test', testId, testName);
+
+    // Feature #108: Emit WebSocket event for real-time cache invalidation
+    emitTestDeleted(existingTest.organization_id, testId, suiteId);
 
     return { message: 'Test deleted successfully' };
   });

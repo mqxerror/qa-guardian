@@ -44,6 +44,7 @@ import { initializeCleanupJob, stopCleanupJob, getCleanupStats } from './jobs/cl
 import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, registerExecutionCallback } from './services/execution-queue'; // Feature #155: BullMQ execution queue
 import { initializeErrorHandlers, getErrorMetrics } from './services/error-tracking'; // Feature #164: Error tracking
 import { registerMetricsHooks, getMetricsSummary } from './services/metrics'; // Feature #165: API response time tracking
+import { setWebSocketIO } from './services/websocket-events'; // Feature #108: WebSocket CRUD events
 
 // Socket.IO server instance (will be initialized after server starts)
 let io: SocketIOServer | null = null;
@@ -768,10 +769,11 @@ async function start() {
       });
     });
 
-    // Share Socket.IO instance with test-runs module, services status, and recording
+    // Share Socket.IO instance with test-runs module, services status, recording, and WebSocket events
     setSocketIO(io);
     setServicesSocketIO(io);
     setRecordingSocketIO(io);
+    setWebSocketIO(io); // Feature #108: WebSocket CRUD events
 
     // Feature #154: Initialize data retention cleanup job
     initializeCleanupJob();

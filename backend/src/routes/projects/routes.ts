@@ -2,6 +2,7 @@
 // Handles CRUD operations for projects and environment variables
 // Feature #61: Integrated Redis caching
 // Feature #122: Zod validation for request bodies
+// Feature #108: WebSocket events for real-time cache invalidation
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, JwtPayload, ApiKeyPayload, getOrganizationId } from '../../middleware/auth';
@@ -36,6 +37,8 @@ import { hasProjectAccess } from './utils';
 import { testRuns, BrowserType } from '../test-runs/execution';
 // Feature #61: Redis caching
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
+// Feature #108: WebSocket events for real-time cache invalidation
+import { emitProjectCreated, emitProjectUpdated, emitProjectDeleted } from '../../services/websocket-events';
 
 export async function coreRoutes(app: FastifyInstance) {
   // List all projects (requires authentication, only from user's organization)
@@ -202,6 +205,9 @@ export async function coreRoutes(app: FastifyInstance) {
     // Log audit entry
     logAuditEntry(request, 'create', 'project', id, project.name, { description, base_url });
 
+    // Feature #108: Emit WebSocket event for real-time cache invalidation
+    emitProjectCreated(orgId, id);
+
     return reply.status(201).send({ project });
   });
 
@@ -256,6 +262,9 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Log audit entry
     logAuditEntry(request, 'update', 'project', id, updatedProject?.name || project.name, { updates });
+
+    // Feature #108: Emit WebSocket event for real-time cache invalidation
+    emitProjectUpdated(project.organization_id, id);
 
     return { project: updatedProject };
   });
@@ -314,6 +323,9 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Log audit entry
     logAuditEntry(request, 'delete', 'project', id, projectName);
+
+    // Feature #108: Emit WebSocket event for real-time cache invalidation
+    emitProjectDeleted(project.organization_id, id);
 
     return { message: 'Project deleted successfully' };
   });
