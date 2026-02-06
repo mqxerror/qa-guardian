@@ -1,11 +1,40 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 120/167 features passing (71.9%)**
+- **Progress: 123/167 features passing (73.7%)**
 - **Last Updated**: 2026-02-06
-- **Status**: Operations infrastructure - backup, monitoring, logging
+- **Status**: Scalability infrastructure - execution queue
 - **TestSuitePage**: 3,072 lines (target <1,500) - down from 5,752
 - **TestDetailPage**: Completed (1,371 lines)
+
+=== Session 2026-02-06 (Session 117) - Scalability Features ===
+Progress: 123/167 (73.7%)
+
+Implemented 2 features:
+
+1. Feature #154: Add data retention cleanup job for old test runs, screenshots, and traces
+   - Fixed stale cleanup status file that was causing error
+   - Cleanup job runs on startup and daily via setInterval
+   - Deletes test_runs older than RETENTION_DAYS (default 90)
+   - Cleans up traces, videos, screenshots older than retention period
+   - Stats exposed via /health endpoint (cleanup.status, deletedRuns, etc.)
+   - Verified working: lastRun shows success, scheduled for next day
+
+2. Feature #155: Add BullMQ execution queue for test runs with concurrency limits
+   - Created backend/src/services/execution-queue.ts with BullMQ
+   - Configured max 2 concurrent workers (EXECUTION_MAX_CONCURRENCY env var)
+   - Integrated with run trigger routes via enqueueOrExecute()
+   - Queue stats in /health endpoint: waiting, active, completed, failed, delayed
+   - Supports job position tracking, cancellation, graceful shutdown
+   - Fallback to direct execution when queue unavailable
+
+Commits:
+- f2cd57a: feat(#155): Add BullMQ execution queue for test runs with concurrency limits
+
+Verification:
+- Backend logs show: "[ExecutionQueue] Initialized with max concurrency: 2"
+- Health endpoint shows executionQueue.status="healthy", maxConcurrency=2
+- Zero console errors across all pages tested
 
 === Session 2026-02-06 (Session 116) - Operations Infrastructure ===
 Progress: 120/167 (71.9%)
@@ -33897,3 +33926,37 @@ Screenshots captured:
 
 Status: APPLICATION IS PRODUCTION-READY
 All 90 features passing (100% complete)
+
+
+
+=== Session 2026-02-06 (Session 117 continued) - Operations Features ===
+Progress: 124/167 (74.3%)
+
+Features Completed This Session:
+1. Feature #154: Data Retention Cleanup Job - PASSING
+2. Feature #155: BullMQ Execution Queue - PASSING  
+3. Feature #156: Docker Memory Limits - PASSING
+
+Commits:
+- f2cd57a: feat(#155): Add BullMQ execution queue
+- 2ffd5b6: feat(#156): Add Docker resource constraints
+
+Status: 3 features implemented, continuing with next feature
+
+
+Features #157-#159 completed:
+- #157: Database connection pool tuning (min=2, max=20, pool stats in health)
+- #158: Redis maxmemory monitoring (400mb limit, allkeys-lru, memory stats in health)
+- #159: TypeScript compilation for production (tsc build, node dist/index.js)
+- #163: Database composite indexes added (5 new indexes for query optimization)
+
+
+Features #162, #164 completed:
+- #162: Database migration system (node-pg-migrate, initial schema migration)
+- #164: Error tracking (uncaughtException/unhandledRejection handlers, webhook alerts)
+
+Session Summary (2026-02-06):
+- Started at 123/167 (73.7%)
+- Completed: #154, #155, #156, #157, #158, #159, #162, #163, #164
+- Ended at 130/167 (77.8%)
+- 7 features implemented this session
