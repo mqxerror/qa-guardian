@@ -308,21 +308,46 @@ export class CacheService {
   }
 
   /**
-   * Get cache statistics
+   * Feature #158: Enhanced cache statistics with memory usage
    */
   async stats(): Promise<{
     redisConnected: boolean;
     memoryCacheSize: number;
     redisKeyCount?: number;
+    // Feature #158: Redis memory stats
+    redisMemory?: {
+      usedBytes: number;
+      usedHuman: string;
+      peakBytes: number;
+      peakHuman: string;
+      maxBytes: number | null;
+      maxHuman: string | null;
+      usedPercent: number | null;
+    };
   }> {
-    const stats = {
+    const stats: {
+      redisConnected: boolean;
+      memoryCacheSize: number;
+      redisKeyCount?: number;
+      redisMemory?: {
+        usedBytes: number;
+        usedHuman: string;
+        peakBytes: number;
+        peakHuman: string;
+        maxBytes: number | null;
+        maxHuman: string | null;
+        usedPercent: number | null;
+      };
+    } = {
       redisConnected: this.connected,
       memoryCacheSize: this.memoryCache.size,
-      redisKeyCount: undefined as number | undefined,
+      redisKeyCount: undefined,
+      redisMemory: undefined,
     };
 
     if (this.redis && this.connected) {
       try {
+        // Get key count
         let count = 0;
         let cursor = '0';
         do {
@@ -331,6 +356,31 @@ export class CacheService {
           count += keys.length;
         } while (cursor !== '0');
         stats.redisKeyCount = count;
+
+        // Feature #158: Get memory stats from Redis INFO
+        const info = await this.redis.info('memory');
+        const usedMatch = info.match(/used_memory:(\d+)/);
+        const peakMatch = info.match(/used_memory_peak:(\d+)/);
+        const usedHumanMatch = info.match(/used_memory_human:([^\r\n]+)/);
+        const peakHumanMatch = info.match(/used_memory_peak_human:([^\r\n]+)/);
+        const maxMatch = info.match(/maxmemory:(\d+)/);
+        const maxHumanMatch = info.match(/maxmemory_human:([^\r\n]+)/);
+
+        if (usedMatch && peakMatch) {
+          const usedBytes = parseInt(usedMatch[1], 10);
+          const peakBytes = parseInt(peakMatch[1], 10);
+          const maxBytes = maxMatch ? parseInt(maxMatch[1], 10) : null;
+
+          stats.redisMemory = {
+            usedBytes,
+            usedHuman: usedHumanMatch?.[1]?.trim() || `${Math.round(usedBytes / 1024 / 1024)}MB`,
+            peakBytes,
+            peakHuman: peakHumanMatch?.[1]?.trim() || `${Math.round(peakBytes / 1024 / 1024)}MB`,
+            maxBytes: maxBytes && maxBytes > 0 ? maxBytes : null,
+            maxHuman: maxHumanMatch?.[1]?.trim() || null,
+            usedPercent: maxBytes && maxBytes > 0 ? Math.round((usedBytes / maxBytes) * 100) : null,
+          };
+        }
       } catch (err) {
         console.warn('[CacheService] Redis stats error:', err);
       }

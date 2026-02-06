@@ -476,10 +476,12 @@ app.get('/health', async (request, reply) => {
       pool: dbCheck.pool,
     },
     // Feature #60: Include cache status in health check
+    // Feature #158: Enhanced with Redis memory usage
     cache: {
       redisConnected: cacheStats.redisConnected,
       memoryCacheSize: cacheStats.memoryCacheSize,
       redisKeyCount: cacheStats.redisKeyCount,
+      redisMemory: cacheStats.redisMemory,
     },
     // Feature #152: Disk space info
     disk: diskSpace,
