@@ -16,6 +16,8 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
 import { getProject as dbGetProject } from '../projects/stores';
+// Feature #123: Import cache service for read-heavy endpoints
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
 
 // ============================================================================
 // Type Definitions
@@ -349,12 +351,22 @@ export async function securityRoutes(app: FastifyInstance) {
     securityScans.set(scanId, scan);
 
     // Simulate scan completion after a short delay
-    setTimeout(() => {
+    setTimeout(async () => {
       const completedScan = securityScans.get(scanId);
       if (completedScan && completedScan.status === 'running') {
         completedScan.status = 'completed';
         completedScan.completed_at = new Date();
         securityScans.set(scanId, completedScan);
+
+        // Feature #123: Invalidate vulnerabilities cache when scan completes
+        try {
+          const cache = getCache();
+          await cache.invalidate(`security:vulnerabilities:${orgId}*`);
+          await cache.invalidate(CacheKeys.security.pattern);
+        } catch (e) {
+          // Cache invalidation failure is non-critical
+          console.warn('Failed to invalidate security cache:', e);
+        }
       }
     }, 2000);
 
@@ -414,61 +426,68 @@ export async function securityRoutes(app: FastifyInstance) {
     const { project_id, severity, scan_type, limit } = request.query;
     const orgId = getOrganizationId(request);
 
-    // Collect all findings from scans belonging to this org
-    const allFindings: {
-      id: string;
-      scan_id: string;
-      project_id: string;
-      severity: string;
-      type: string;
-      message: string;
-      location?: string;
-      line?: number;
-      found_at: string;
-    }[] = [];
+    // Feature #123: Cache vulnerabilities list for 60 seconds
+    const cache = getCache();
+    const filterStr = [project_id, severity, scan_type, limit].filter(Boolean).join(':');
+    const cacheKey = `security:vulnerabilities:${orgId}${filterStr ? `:${filterStr}` : ''}`;
 
-    securityScans.forEach(scan => {
-      if (scan.organization_id !== orgId) return;
-      if (project_id && scan.project_id !== project_id) return;
+    return cache.getOrSet(cacheKey, async () => {
+      // Collect all findings from scans belonging to this org
+      const allFindings: {
+        id: string;
+        scan_id: string;
+        project_id: string;
+        severity: string;
+        type: string;
+        message: string;
+        location?: string;
+        line?: number;
+        found_at: string;
+      }[] = [];
 
-      scan.findings.forEach((finding, index) => {
-        if (severity && finding.severity !== severity) return;
-        if (scan_type && finding.type.toLowerCase() !== scan_type.toLowerCase()) return;
+      securityScans.forEach(scan => {
+        if (scan.organization_id !== orgId) return;
+        if (project_id && scan.project_id !== project_id) return;
 
-        // Generate unique vulnerability ID from scan ID and finding index
-        const vulnId = `${scan.id}-vuln-${index}`;
-        allFindings.push({
-          id: vulnId,
-          scan_id: scan.id,
-          project_id: scan.project_id,
-          severity: finding.severity,
-          type: finding.type,
-          message: finding.message,
-          location: finding.location,
-          line: finding.line,
-          found_at: scan.started_at.toISOString(),
+        scan.findings.forEach((finding, index) => {
+          if (severity && finding.severity !== severity) return;
+          if (scan_type && finding.type.toLowerCase() !== scan_type.toLowerCase()) return;
+
+          // Generate unique vulnerability ID from scan ID and finding index
+          const vulnId = `${scan.id}-vuln-${index}`;
+          allFindings.push({
+            id: vulnId,
+            scan_id: scan.id,
+            project_id: scan.project_id,
+            severity: finding.severity,
+            type: finding.type,
+            message: finding.message,
+            location: finding.location,
+            line: finding.line,
+            found_at: scan.started_at.toISOString(),
+          });
         });
       });
-    });
 
-    // Sort by severity (critical first)
-    const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
-    allFindings.sort((a, b) => severityOrder[a.severity as keyof typeof severityOrder] - severityOrder[b.severity as keyof typeof severityOrder]);
+      // Sort by severity (critical first)
+      const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+      allFindings.sort((a, b) => severityOrder[a.severity as keyof typeof severityOrder] - severityOrder[b.severity as keyof typeof severityOrder]);
 
-    // Apply limit
-    const maxResults = Math.min(parseInt(limit || '100', 10), 500);
-    const limitedFindings = allFindings.slice(0, maxResults);
+      // Apply limit
+      const maxResults = Math.min(parseInt(limit || '100', 10), 500);
+      const limitedFindings = allFindings.slice(0, maxResults);
 
-    return {
-      vulnerabilities: limitedFindings,
-      total: allFindings.length,
-      returned: limitedFindings.length,
-      filters_applied: {
-        project_id,
-        severity,
-        scan_type,
-      },
-    };
+      return {
+        vulnerabilities: limitedFindings,
+        total: allFindings.length,
+        returned: limitedFindings.length,
+        filters_applied: {
+          project_id,
+          severity,
+          scan_type,
+        },
+      };
+    }, CacheTTL.SHORT); // 60 second TTL
   });
 
   // Get vulnerability details

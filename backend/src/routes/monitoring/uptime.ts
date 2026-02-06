@@ -31,6 +31,8 @@ import {
   listDeletedCheckHistory,
 } from './stores';
 import { MONITORING_LOCATIONS, runCheckFromAllLocations, startCheckInterval, stopCheckInterval, formatDuration } from './helpers';
+// Feature #123: Import cache service for read-heavy endpoints
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
 
 export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
   // Get available monitoring locations
@@ -53,37 +55,45 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const orgId = getOrganizationId(request);
       const { enabled, tag, group } = request.query;
-      let checks = await listUptimeChecks(orgId);
-      if (enabled !== undefined) {
-        checks = checks.filter(check => check.enabled === (enabled === 'true'));
-      }
-      if (tag) { checks = checks.filter(check => check.tags && check.tags.includes(tag)); }
-      if (group) { checks = checks.filter(check => check.group === group); }
-      checks.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
-      const checksWithStatus = await Promise.all(checks.map(async (check) => {
-        const latestResult = await getLatestCheckResult(check.id);
-        return {
-          ...check,
-          created_at: check.created_at.toISOString(),
-          updated_at: check.updated_at.toISOString(),
-          latest_status: latestResult?.status || 'unknown',
-          latest_response_time: latestResult?.response_time,
-          latest_checked_at: latestResult?.checked_at.toISOString(),
-        };
-      }));
 
-      // Get all unique tags and groups for filter options
-      const allChecks = await listUptimeChecks(orgId);
-      const allTags = [...new Set(allChecks.flatMap(c => c.tags || []))].sort();
-      const allGroups = [...new Set(allChecks.map(c => c.group).filter(Boolean))].sort() as string[];
+      // Feature #123: Cache uptime checks list for 30 seconds
+      const cache = getCache();
+      const filterStr = [enabled, tag, group].filter(Boolean).join(':');
+      const cacheKey = `${CacheKeys.monitoring.uptimeChecks(orgId)}${filterStr ? `:${filterStr}` : ''}`;
 
-      return {
-        checks: checksWithStatus,
-        filters: {
-          tags: allTags,
-          groups: allGroups,
+      return cache.getOrSet(cacheKey, async () => {
+        let checks = await listUptimeChecks(orgId);
+        if (enabled !== undefined) {
+          checks = checks.filter(check => check.enabled === (enabled === 'true'));
         }
-      };
+        if (tag) { checks = checks.filter(check => check.tags && check.tags.includes(tag)); }
+        if (group) { checks = checks.filter(check => check.group === group); }
+        checks.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+        const checksWithStatus = await Promise.all(checks.map(async (check) => {
+          const latestResult = await getLatestCheckResult(check.id);
+          return {
+            ...check,
+            created_at: check.created_at.toISOString(),
+            updated_at: check.updated_at.toISOString(),
+            latest_status: latestResult?.status || 'unknown',
+            latest_response_time: latestResult?.response_time,
+            latest_checked_at: latestResult?.checked_at?.toISOString(),
+          };
+        }));
+
+        // Get all unique tags and groups for filter options
+        const allChecks = await listUptimeChecks(orgId);
+        const allTags = [...new Set(allChecks.flatMap(c => c.tags || []))].sort();
+        const allGroups = [...new Set(allChecks.map(c => c.group).filter(Boolean))].sort() as string[];
+
+        return {
+          checks: checksWithStatus,
+          filters: {
+            tags: allTags,
+            groups: allGroups,
+          }
+        };
+      }, 30); // 30 second TTL
     }
   );
 
@@ -177,6 +187,10 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       };
 
       await createUptimeCheck(check);
+
+      // Feature #123: Invalidate monitoring caches on create
+      const cache = getCache();
+      await cache.invalidate(CacheKeys.monitoring.byOrg(orgId));
 
       // Start running the check
       startCheckInterval(check);
@@ -302,6 +316,11 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
 
       await updateUptimeCheck(checkId, updatedCheck);
 
+      // Feature #123: Invalidate monitoring caches on update
+      const cacheInvalidate = getCache();
+      await cacheInvalidate.invalidate(CacheKeys.monitoring.byOrg(orgId));
+      await cacheInvalidate.delete(CacheKeys.monitoring.uptimeDetail(checkId));
+
       // Restart interval if interval changed or enabled status changed
       if (updates.interval !== undefined || updates.enabled !== undefined) {
         if (updatedCheck.enabled) {
@@ -391,6 +410,11 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
 
       // Delete check and results
       await dbDeleteUptimeCheck(checkId);
+
+      // Feature #123: Invalidate monitoring caches on delete
+      const cacheDelete = getCache();
+      await cacheDelete.invalidate(CacheKeys.monitoring.byOrg(orgId));
+      await cacheDelete.delete(CacheKeys.monitoring.uptimeDetail(checkId));
 
       // Log audit entry
       logAuditEntry(
@@ -962,39 +986,45 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const orgId = getOrganizationId(request);
 
-      const checks = await listUptimeChecks(orgId);
+      // Feature #123: Cache summary for 30 seconds (status changes need to be visible soon)
+      const cache = getCache();
+      const cacheKey = CacheKeys.monitoring.summary(orgId);
 
-      let upCount = 0;
-      let downCount = 0;
-      let degradedCount = 0;
-      let unknownCount = 0;
+      return cache.getOrSet(cacheKey, async () => {
+        const checks = await listUptimeChecks(orgId);
 
-      for (const check of checks) {
-        const latestResult = await getLatestCheckResult(check.id);
-        if (!latestResult) {
-          unknownCount++;
-        } else if (latestResult.status === 'up') {
-          upCount++;
-        } else if (latestResult.status === 'down') {
-          downCount++;
-        } else {
-          degradedCount++;
+        let upCount = 0;
+        let downCount = 0;
+        let degradedCount = 0;
+        let unknownCount = 0;
+
+        for (const check of checks) {
+          const latestResult = await getLatestCheckResult(check.id);
+          if (!latestResult) {
+            unknownCount++;
+          } else if (latestResult.status === 'up') {
+            upCount++;
+          } else if (latestResult.status === 'down') {
+            downCount++;
+          } else {
+            degradedCount++;
+          }
         }
-      }
 
-      return {
-        total_checks: checks.length,
-        enabled_checks: checks.filter(c => c.enabled).length,
-        status_summary: {
-          up: upCount,
-          down: downCount,
-          degraded: degradedCount,
-          unknown: unknownCount,
-        },
-        uptime_percentage: checks.length > 0
-          ? Math.round((upCount / checks.length) * 100)
-          : 100,
-      };
+        return {
+          total_checks: checks.length,
+          enabled_checks: checks.filter(c => c.enabled).length,
+          status_summary: {
+            up: upCount,
+            down: downCount,
+            degraded: degradedCount,
+            unknown: unknownCount,
+          },
+          uptime_percentage: checks.length > 0
+            ? Math.round((upCount / checks.length) * 100)
+            : 100,
+        };
+      }, 30); // 30 second TTL
     }
   );
 }

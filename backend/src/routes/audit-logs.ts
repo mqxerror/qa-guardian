@@ -10,6 +10,9 @@ import {
   getUniqueResourceTypes,
 } from '../services/repositories/audit-logs';
 
+// Feature #123: Import cache service for read-heavy endpoints
+import { getCache, CacheKeys, CacheTTL } from '../services/cache';
+
 // Re-export interface for backward compatibility
 export { AuditLogEntry };
 
@@ -63,6 +66,10 @@ export async function logAuditEntry(
   // Store via repository (async)
   await createAuditLog(entry);
 
+  // Feature #123: Invalidate audit log cache when new entry is created
+  const cache = getCache();
+  await cache.invalidate(CacheKeys.auditLogs.byOrg(orgId));
+
   console.log(`[AUDIT] ${entry.user_email} ${action} ${resourceType} ${resourceId} (${resourceName || 'unnamed'}) from ${entry.ip_address}`);
 }
 
@@ -90,6 +97,21 @@ export async function auditLogRoutes(app: FastifyInstance) {
       const limitNum = parseInt(limit, 10);
       const offsetNum = parseInt(offset, 10);
 
+      // Feature #123: Build cache key with filters
+      const filterStr = [action, resource_type, limit, offset].filter(Boolean).join(':');
+      const cacheKey = CacheKeys.auditLogs.list(orgId, filterStr);
+      const cache = getCache();
+
+      // Try cache first
+      const cached = await cache.get<{ logs: unknown[]; total: number }>(cacheKey);
+      if (cached) {
+        return {
+          ...cached,
+          limit: limitNum,
+          offset: offsetNum,
+        };
+      }
+
       const { logs, total } = await listAuditLogsRepo(orgId, {
         action,
         resourceType: resource_type,
@@ -97,7 +119,7 @@ export async function auditLogRoutes(app: FastifyInstance) {
         offset: offsetNum,
       });
 
-      return {
+      const result = {
         logs: logs.map(log => ({
           id: log.id,
           user_id: log.user_id,
@@ -112,6 +134,13 @@ export async function auditLogRoutes(app: FastifyInstance) {
           created_at: log.created_at.toISOString(),
         })),
         total,
+      };
+
+      // Feature #123: Cache for 60 seconds (audit logs change frequently)
+      await cache.set(cacheKey, result, CacheTTL.SHORT);
+
+      return {
+        ...result,
         limit: limitNum,
         offset: offsetNum,
       };
@@ -135,7 +164,16 @@ export async function auditLogRoutes(app: FastifyInstance) {
         });
       }
 
-      const actions = await getUniqueActions(orgId);
+      // Feature #123: Cache actions list for 5 minutes (rarely changes)
+      const cache = getCache();
+      const cacheKey = CacheKeys.auditLogs.actions(orgId);
+
+      const actions = await cache.getOrSet(
+        cacheKey,
+        () => getUniqueActions(orgId),
+        CacheTTL.MEDIUM
+      );
+
       return { actions };
     }
   );
@@ -157,7 +195,16 @@ export async function auditLogRoutes(app: FastifyInstance) {
         });
       }
 
-      const resourceTypes = await getUniqueResourceTypes(orgId);
+      // Feature #123: Cache resource types for 5 minutes (rarely changes)
+      const cache = getCache();
+      const cacheKey = CacheKeys.auditLogs.resourceTypes(orgId);
+
+      const resourceTypes = await cache.getOrSet(
+        cacheKey,
+        () => getUniqueResourceTypes(orgId),
+        CacheTTL.MEDIUM
+      );
+
       return { resource_types: resourceTypes };
     }
   );

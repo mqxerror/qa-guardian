@@ -97,7 +97,30 @@ export const CacheKeys = {
     sastScans: (projectId: string) => `security:sast:scans:${projectId}`,
     dastConfig: (projectId: string) => `security:dast:config:${projectId}`,
     dastScans: (projectId: string) => `security:dast:scans:${projectId}`,
+    // Feature #123: Dashboard cache keys
+    dashboard: (orgId: string) => `security:dashboard:${orgId}`,
+    sastDashboard: (orgId: string) => `security:sast:dashboard:${orgId}`,
+    dastDashboard: (orgId: string) => `security:dast:dashboard:${orgId}`,
     pattern: 'security:*',
+  },
+
+  // Feature #123: Audit Logs
+  auditLogs: {
+    list: (orgId: string, filters?: string) => `auditlogs:list:${orgId}${filters ? `:${filters}` : ''}`,
+    actions: (orgId: string) => `auditlogs:actions:${orgId}`,
+    resourceTypes: (orgId: string) => `auditlogs:resourcetypes:${orgId}`,
+    pattern: 'auditlogs:*',
+    byOrg: (orgId: string) => `auditlogs:*:${orgId}*`,
+  },
+
+  // Feature #123: Monitoring
+  monitoring: {
+    summary: (orgId: string) => `monitoring:summary:${orgId}`,
+    uptimeChecks: (orgId: string) => `monitoring:uptime:list:${orgId}`,
+    uptimeDetail: (checkId: string) => `monitoring:uptime:detail:${checkId}`,
+    uptimeResults: (checkId: string) => `monitoring:uptime:results:${checkId}`,
+    pattern: 'monitoring:*',
+    byOrg: (orgId: string) => `monitoring:*:${orgId}*`,
   },
 
   // Visual Regression
