@@ -124,6 +124,43 @@ services:
     networks:
       - qa-network
 
+# Feature #151: Database backup service (runs daily via cron)
+  backup:
+    image: postgres:15-alpine
+    container_name: qa-guardian-backup
+    volumes:
+      - ./scripts/backup-db.sh:/usr/local/bin/backup-db.sh:ro
+      - backup_data:/opt/backups
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-qa_guardian}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-QaGuardian2024Secure}
+      POSTGRES_DB: ${POSTGRES_DB:-qa_guardian}
+      BACKUP_DIR: /opt/backups
+      RETENTION_DAYS: "30"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - qa-network
+    # Run backup daily at 2 AM, then sleep
+    entrypoint: /bin/sh
+    command: >
+      -c "
+        apk add --no-cache bash coreutils &&
+        chmod +x /usr/local/bin/backup-db.sh &&
+        echo 'Running initial backup...' &&
+        /usr/local/bin/backup-db.sh &&
+        echo 'Initial backup complete. Starting cron schedule...' &&
+        while true; do
+          sleep 86400;
+          echo 'Running scheduled backup...' &&
+          /usr/local/bin/backup-db.sh;
+        done
+      "
+    restart: unless-stopped
+
 networks:
   qa-network:
     driver: bridge
@@ -132,3 +169,5 @@ volumes:
   postgres_data:
   redis_data:
   backend_data:
+  # Feature #151: Database backup volume
+  backup_data:

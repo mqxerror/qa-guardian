@@ -343,10 +343,51 @@ app.get('/health', async () => {
       memoryCacheSize: cacheStats.memoryCacheSize,
       redisKeyCount: cacheStats.redisKeyCount,
     },
+    // Feature #151: Include backup status in health check
+    backup: await getBackupStatus(),
     version: '1.0.0',
     uptime: process.uptime(),
   };
 });
+
+// Feature #151: Get backup status from status file
+async function getBackupStatus(): Promise<{
+  configured: boolean;
+  lastBackup: string | null;
+  status: string;
+  backupsCount: number;
+  retentionDays: number;
+}> {
+  const fs = require('fs');
+  const path = require('path');
+
+  const backupDir = process.env.BACKUP_DIR || '/opt/backups';
+  const statusFile = path.join(backupDir, '.backup_status.json');
+
+  try {
+    if (fs.existsSync(statusFile)) {
+      const content = fs.readFileSync(statusFile, 'utf-8');
+      const status = JSON.parse(content);
+      return {
+        configured: true,
+        lastBackup: status.last_backup || null,
+        status: status.status || 'unknown',
+        backupsCount: status.backups_count || 0,
+        retentionDays: status.retention_days || 30,
+      };
+    }
+  } catch (e) {
+    // Status file not readable
+  }
+
+  return {
+    configured: false,
+    lastBackup: null,
+    status: 'not_configured',
+    backupsCount: 0,
+    retentionDays: 30,
+  };
+}
 
 // API v1 prefix
 app.get('/api/v1', async () => {

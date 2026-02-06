@@ -163,6 +163,59 @@ npm run lint           # Run ESLint
 npm run format         # Run Prettier
 ```
 
+### Database Backup and Restore
+
+QA Guardian includes automated database backup with a 30-day retention policy.
+
+#### Manual Backup
+
+```bash
+# Create a backup
+./scripts/backup-db.sh
+
+# List all backups
+./scripts/backup-db.sh --list
+
+# Verify latest backup
+./scripts/backup-db.sh --verify
+
+# Check backup status
+./scripts/backup-db.sh --status
+```
+
+#### Restore from Backup
+
+```bash
+# Restore from a specific backup file
+./scripts/backup-db.sh --restore /opt/backups/qa_guardian_20260206_020000.sql.gz
+```
+
+**Warning:** Restore will overwrite the current database. Always verify you have a recent backup before restoring.
+
+#### Docker Backup Service
+
+When running with Docker Compose, backups are automated:
+
+```bash
+# Start all services including backup
+docker compose up -d
+
+# Check backup service logs
+docker logs qa-guardian-backup
+
+# Manual backup via Docker
+docker exec qa-guardian-backup /usr/local/bin/backup-db.sh --list
+```
+
+#### Backup Configuration
+
+Environment variables:
+- `BACKUP_DIR` - Where to store backups (default: `/opt/backups`)
+- `RETENTION_DAYS` - Days to keep backups (default: `30`)
+- `POSTGRES_*` - Database connection settings
+
+Backups are stored as compressed SQL files (`qa_guardian_YYYYMMDD_HHMMSS.sql.gz`).
+
 ## API Documentation
 
 API documentation is available via Swagger UI at `/api/docs` when the backend is running.
