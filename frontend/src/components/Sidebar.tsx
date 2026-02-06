@@ -1,10 +1,11 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useSidebarStore, SidebarSection } from '../stores/sidebarStore';
 import { useNotificationStore, InAppNotification } from '../stores/notificationStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
 import { ConnectionStatusIndicator } from './ConnectionStatusIndicator'; // Feature #167
+import { usePrefetch } from '../hooks/usePrefetch'; // Feature #134
 
 // Icons as simple SVG components
 const DashboardIcon = () => (
@@ -481,15 +482,23 @@ interface NavItemProps {
   isPinned?: boolean;
   onTogglePin?: (path: string) => void;
   showPinIcon?: boolean;
+  // Feature #134: Route prefetching
+  onPrefetch?: () => void;
 }
 
-function NavItem({ to, icon, label, collapsed, isActive, isPinned, onTogglePin, showPinIcon = true }: NavItemProps) {
+function NavItem({ to, icon, label, collapsed, isActive, isPinned, onTogglePin, showPinIcon = true, onPrefetch }: NavItemProps) {
   const [isHovered, setIsHovered] = useState(false);
+
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true);
+    // Feature #134: Prefetch route data on hover
+    onPrefetch?.();
+  }, [onPrefetch]);
 
   return (
     <div
       className="relative group"
-      onMouseEnter={() => setIsHovered(true)}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link
@@ -905,6 +914,7 @@ export function Sidebar() {
   const { pendingCount, fetchPendingCount } = useVisualReviewStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const prefetch = usePrefetch(); // Feature #134: Route prefetching
 
   // Feature #1502: Security alert count for badge
   const [securityAlertCount, setSecurityAlertCount] = useState(0);
@@ -1281,6 +1291,7 @@ export function Sidebar() {
           isActive={isActive('/dashboard')}
           isPinned={isPinned('/dashboard')}
           onTogglePin={togglePin}
+          onPrefetch={prefetch.dashboard}  // Feature #134: Prefetch dashboard data
         />
 
         {/* Feature #1501: Collapsible Testing group */}
@@ -1305,6 +1316,7 @@ export function Sidebar() {
               isActive={isActive(item.path) || (item.path === '/projects' && location.pathname.startsWith('/projects/'))}
               isPinned={isPinned(item.path)}
               onTogglePin={togglePin}
+              onPrefetch={item.path === '/projects' ? prefetch.projects : undefined}  // Feature #134
             />
           ))}
           {/* Visual Review with badge - inside Testing group */}
