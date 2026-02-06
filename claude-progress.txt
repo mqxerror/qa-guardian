@@ -34960,3 +34960,48 @@ Code review of features #168-#171 found #168 was good but #169, #170, #171 had c
 **#171: Backend Tests - 4 issues fixed** (Critical Bug Fix)  
 - Problem: Failing test due to Date.now() ID collision; vitest in watch mode; statistics test passing by accident; defaultTTL ignored in cache mock
 - Fix: Counter-based IDs, "vitest run" in package.json, proper statistics test, defaultTTL applied when no explicit TTL. All 70 tests pass.
+
+
+=== Session 2026-02-06 (Session 138) - Feature #175: NodeNext moduleResolution ===
+Progress: 175/177 (98.9%)
+
+### Feature #175: Switch tsconfig to NodeNext and add .js extensions to all imports - COMPLETED
+
+**Changes Made:**
+
+1. **tsconfig.json Updates:**
+   - Changed `module` from `ESNext` to `NodeNext`
+   - Changed `moduleResolution` from `bundler` to `NodeNext`
+
+2. **Import Extensions Added:**
+   - Created `scripts/add-js-extensions.mjs` utility script
+   - Script handles both file imports (`./foo` → `./foo.js`) and directory imports (`./routes/api-keys` → `./routes/api-keys/index.js`)
+   - Important: Script checks for file existence FIRST, then directory (Node ESM resolution order)
+   - Processed 374 TypeScript files
+   - Modified 221 files with ~952 relative imports
+
+3. **ESM Interop Fixes:**
+   - `cache.ts`: Changed `import Redis from 'ioredis'` to `import { Redis } from 'ioredis'`
+   - `execution-queue.ts`: Changed `import IORedis from 'ioredis'` to `import { Redis as IORedis } from 'ioredis'`
+   - `migrations.ts`: Changed `.then(m => m.default)` to destructured `{ runner }` import
+
+**Verification:**
+
+1. **TypeScript Compilation:** `npx tsc --noEmit` = SUCCESS (zero errors)
+2. **Backend Startup:** Backend starts with `npm run dev`, health endpoint responds OK
+3. **Frontend Verification:** 
+   - Landing page loads with Aceternity UI
+   - Login flow works (owner@example.com / Owner123!)
+   - Dashboard loads correctly after authentication
+   - Zero JavaScript console errors
+
+**Screenshots:**
+- session138-landing-page-nodenext-verified.png
+- session138-dashboard-nodenext-verified.png
+
+**Commit:** 1bd320f - Feature #175: Switch tsconfig to NodeNext and add .js extensions to all imports
+
+### Remaining Features: 2
+- Feature #176: TBD
+- Feature #177: TBD
+
