@@ -8,7 +8,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate } from '../../middleware/auth.js';
+import { authenticate } from '../../middleware/auth';
 
 // =============================================================================
 // Interfaces

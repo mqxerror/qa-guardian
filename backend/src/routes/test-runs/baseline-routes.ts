@@ -15,9 +15,9 @@
 import { FastifyInstance } from 'fastify';
 import * as fs from 'fs';
 import * as path from 'path';
-import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
-import { getTest } from '../test-suites.js';
-import { testRuns } from './execution.js';
+import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
+import { getTest } from '../test-suites';
+import { testRuns } from './execution';
 import {
   getBaselinePath,
   getBaselineMetadata,
@@ -31,7 +31,7 @@ import {
   getRejectionMetadata,
   setRejectionMetadata,
   loadBaseline,
-} from './visual-regression.js';
+} from './visual-regression';
 
 // Types for failed uploads
 export interface FailedUpload {

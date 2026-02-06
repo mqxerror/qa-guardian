@@ -2,8 +2,8 @@
 // Feature #1144: AI regenerate test with feedback
 
 import { FastifyInstance } from 'fastify';
-import { authenticate } from '../../middleware/auth.js';
-import { generatePlaywrightCode } from './utils.js';
+import { authenticate } from '../../middleware/auth';
+import { generatePlaywrightCode } from './utils';
 
 // Feature #1144: Interface for regeneration with feedback
 interface AIRegenerateWithFeedbackBody {

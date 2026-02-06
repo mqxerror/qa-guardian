@@ -4,7 +4,7 @@
  * MCP tools for managing test suites in QA Guardian.
  */
 
-import { ToolDefinition } from '../types.js';
+import { ToolDefinition } from '../types';
 
 export const TEST_SUITE_TOOLS: ToolDefinition[] = [
   {

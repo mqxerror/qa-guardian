@@ -4,7 +4,7 @@
  * Tools for AI-powered selector healing, root cause analysis, and failure analysis.
  */
 
-import { ToolDefinition } from '../types.js';
+import { ToolDefinition } from '../types';
 
 export const HEALING_TOOLS: ToolDefinition[] = [
   // Feature #1066: Get healing history MCP tool

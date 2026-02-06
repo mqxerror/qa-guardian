@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
-import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../middleware/auth.js';
+import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../middleware/auth';
 
 // Feature #2119: Import only async repository functions (no getMemory* calls)
 import {
@@ -7,11 +7,11 @@ import {
   listAuditLogs as listAuditLogsRepo,
   getUniqueActions,
   getUniqueResourceTypes,
-} from '../services/repositories/audit-logs.js';
-import type { AuditLogEntry } from '../services/repositories/audit-logs.js';
+} from '../services/repositories/audit-logs';
+import type { AuditLogEntry } from '../services/repositories/audit-logs';
 
 // Feature #123: Import cache service for read-heavy endpoints
-import { getCache, CacheKeys, CacheTTL } from '../services/cache.js';
+import { getCache, CacheKeys, CacheTTL } from '../services/cache';
 
 // Re-export interface for backward compatibility
 export type { AuditLogEntry };

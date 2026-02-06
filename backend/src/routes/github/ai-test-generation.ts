@@ -17,8 +17,8 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate } from '../../middleware/auth.js';
-import { AITestGenerationService } from '../../services/ai-test-generation-service.js';
+import { authenticate } from '../../middleware/auth';
+import { AITestGenerationService } from '../../services/ai-test-generation-service';
 
 // =============================================================================
 // Interfaces

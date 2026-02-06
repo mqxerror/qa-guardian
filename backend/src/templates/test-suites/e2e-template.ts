@@ -9,8 +9,8 @@
  * - Button clicks and actions
  */
 
-import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest, TestStep } from './types.js';
-import type { SiteAnalysis } from '../../services/crawl4ai.js';
+import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest, TestStep } from './types';
+import type { SiteAnalysis } from '../../services/crawl4ai';
 
 export function generateE2ETemplate(options: TemplateGeneratorOptions): TestSuiteTemplate {
   const { baseUrl, siteAnalysis, projectName } = options;

@@ -1,11 +1,11 @@
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth.js';
-import { getTestSuite } from './test-suites.js';
-import { listTestRunsBySchedule, createTestRun } from '../services/repositories/test-runs.js';
-import { sendScheduleTriggeredWebhook } from './test-runs/webhook-events.js';
+import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth';
+import { getTestSuite } from './test-suites';
+import { listTestRunsBySchedule, createTestRun } from '../services/repositories/test-runs';
+import { sendScheduleTriggeredWebhook } from './test-runs/webhook-events';
 // Feature #145: Cache invalidation for schedule mutations
-import { getCache } from '../services/cache.js';
-import { CacheKeys } from '../services/cache-keys.js';
+import { getCache } from '../services/cache';
+import { CacheKeys } from '../services/cache-keys';
 
 // Feature #2117: Import only async repository functions (no getMemory* calls)
 import {
@@ -15,7 +15,7 @@ import {
   updateSchedule as updateScheduleRepo,
   deleteSchedule as deleteScheduleRepo,
   listSchedules as listSchedulesRepo,
-} from '../services/repositories/schedules.js';
+} from '../services/repositories/schedules';
 
 // Calculate next run time from cron expression (simplified implementation)
 function calculateNextRun(cronExpression: string, timezone: string): Date | undefined {

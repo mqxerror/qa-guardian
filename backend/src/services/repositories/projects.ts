@@ -10,8 +10,8 @@
  * - DELETE: return false
  */
 
-import { query, isDatabaseConnected, transaction } from '../database.js';
-import { Project, ProjectMember, EnvironmentVariable, ProjectVisualSettings, ProjectHealingSettings } from '../../routes/projects/types.js';
+import { query, isDatabaseConnected, transaction } from '../database';
+import { Project, ProjectMember, EnvironmentVariable, ProjectVisualSettings, ProjectHealingSettings } from '../../routes/projects/types';
 
 // Feature #2097: UUID validation helper for defensive programming
 // Allows both standard UUIDs (versions 1-5) and zero/nil UUIDs used for seeded test data

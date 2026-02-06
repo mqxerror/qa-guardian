@@ -13,11 +13,11 @@
 import { FastifyInstance } from 'fastify';
 import * as fs from 'fs';
 import * as path from 'path';
-import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
-import { testRuns, TestRun } from './execution.js';
-import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
-import { getTestSuite } from '../test-suites.js';
-import { getProject as dbGetProject } from '../projects/stores.js';
+import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
+import { testRuns, TestRun } from './execution';
+import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
+import { getTestSuite } from '../test-suites';
+import { getProject as dbGetProject } from '../projects/stores';
 
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
@@ -40,12 +40,12 @@ async function getMergedTestRuns(orgId: string): Promise<TestRun[]> {
 import {
   artifactRetentionSettings,
   TRACES_DIR,
-} from './storage.js';
+} from './storage';
 import {
   getDiffColors,
   setDiffColors,
   DiffColorConfig,
-} from './visual-regression.js';
+} from './visual-regression';
 
 /**
  * Register organization settings routes

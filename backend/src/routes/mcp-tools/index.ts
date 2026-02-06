@@ -6,5 +6,5 @@
  * instead of using mock/template responses.
  */
 
-export { default } from './routes.js';
-export * from './types.js';
+export { default } from './routes';
+export * from './types';

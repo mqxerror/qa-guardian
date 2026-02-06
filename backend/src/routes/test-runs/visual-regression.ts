@@ -14,7 +14,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { PNG } from 'pngjs';
-import { IgnoreRegion } from '../test-suites.js';
+import { IgnoreRegion } from '../test-suites';
 
 // Baselines directory for visual regression baseline screenshots
 export const BASELINES_DIR = path.join(process.cwd(), 'baselines');

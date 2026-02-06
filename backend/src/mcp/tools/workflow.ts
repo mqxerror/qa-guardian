@@ -5,7 +5,7 @@
  * Includes batch test triggering and workflow orchestration capabilities.
  */
 
-import { ToolDefinition } from '../types.js';
+import { ToolDefinition } from '../types';
 
 export const WORKFLOW_TOOLS: ToolDefinition[] = [
   // Feature #1218: MCP tool batch-trigger-tests - Trigger multiple test suites at once

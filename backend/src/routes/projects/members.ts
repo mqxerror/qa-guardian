@@ -2,8 +2,8 @@
 // Handles project-level permissions and member management
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
-import { getProject, getProjectMembers, addProjectMember, removeProjectMember } from './stores.js';
+import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
+import { getProject, getProjectMembers, addProjectMember, removeProjectMember } from './stores';
 
 export async function memberRoutes(app: FastifyInstance) {
   // Get project members

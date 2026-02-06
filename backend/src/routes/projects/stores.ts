@@ -29,12 +29,12 @@ import {
   DEFAULT_PROJECT_HEALING_SETTINGS as DB_DEFAULT_HEALING_SETTINGS,
   // Feature #139: Batch function to eliminate N+1 queries
   batchGetProjects as dbBatchGetProjects,
-} from '../../services/repositories/projects.js';
+} from '../../services/repositories/projects';
 
 import {
   ProjectVisualSettings,
   ProjectHealingSettings,
-} from './types.js';
+} from './types';
 
 // Export default settings
 export const DEFAULT_PROJECT_VISUAL_SETTINGS: ProjectVisualSettings = DB_DEFAULT_VISUAL_SETTINGS;

@@ -20,12 +20,12 @@ import type {
   HistoricalPatternMatch,
   AffectedTest,
   CrossTestCorrelation,
-} from './root-cause-helpers.js';
+} from './root-cause-helpers';
 
 import {
   parseStackTrace,
   extractSelector,
-} from './root-cause-helpers.js';
+} from './root-cause-helpers';
 
 // Re-export types for convenience (must use 'export type' for ESM compatibility with Node.js 20+)
 export type {

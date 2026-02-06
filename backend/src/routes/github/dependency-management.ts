@@ -11,8 +11,8 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload } from '../../middleware/auth.js';
-import { getProject as dbGetProject } from '../projects/stores.js';
+import { authenticate, JwtPayload } from '../../middleware/auth';
+import { getProject as dbGetProject } from '../projects/stores';
 
 // ============================================================
 // Feature #777: Dependency Allowlist/Blocklist Types

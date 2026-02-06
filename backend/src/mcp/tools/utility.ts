@@ -5,7 +5,7 @@
  * Includes documentation access, tool listing, and API key validation.
  */
 
-import { ToolDefinition } from '../types.js';
+import { ToolDefinition } from '../types';
 
 export const UTILITY_TOOLS: ToolDefinition[] = [
   // Feature #1434: Removed get_help, list_all_tools, validate_api_key

@@ -13,10 +13,10 @@ import {
   GitHubTestFile,
   DemoRepository,
   DemoPullRequest,
-} from './types.js';
+} from './types';
 
 // Import repository functions
-import * as githubRepo from '../../services/repositories/github.js';
+import * as githubRepo from '../../services/repositories/github';
 
 // Re-export repository functions for database access
 export const createGithubConnection = githubRepo.createGithubConnection;

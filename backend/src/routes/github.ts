@@ -23,8 +23,8 @@
 import { FastifyInstance } from 'fastify';
 
 // Re-export all types and stores for backward compatibility
-export * from './github/types.js';
-export * from './github/stores.js';
+export * from './github/types';
+export * from './github/stores';
 
 // Import route modules
 import {
@@ -37,7 +37,7 @@ import {
   naturalLanguageTestRoutes,
   aiAnalysisRoutes,
   aiBestPracticesRoutes,
-} from './github/index.js';
+} from './github/index';
 
 // Combined GitHub routes function that registers all sub-routes
 export async function githubRoutes(app: FastifyInstance) {

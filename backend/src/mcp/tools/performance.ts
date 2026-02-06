@@ -4,7 +4,7 @@
  * MCP tools for Lighthouse audits, performance budgets, and load testing (K6).
  */
 
-import { ToolDefinition } from '../types.js';
+import { ToolDefinition } from '../types';
 
 export const PERFORMANCE_TOOLS: ToolDefinition[] = [
   // Lighthouse / Performance Audits

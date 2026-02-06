@@ -2,11 +2,11 @@
 // Feature #1146: AI test variation suggestions
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId } from '../../middleware/auth.js';
-import { getTestSuite, createTest } from './stores.js';
-import { Test } from './types.js';
-import { generatePlaywrightCode } from './utils.js';
-import { logAuditEntry } from '../audit-logs.js';
+import { authenticate, getOrganizationId } from '../../middleware/auth';
+import { getTestSuite, createTest } from './stores';
+import { Test } from './types';
+import { generatePlaywrightCode } from './utils';
+import { logAuditEntry } from '../audit-logs';
 
 // Feature #1146: Interface for test variation suggestion
 interface TestVariationSuggestion {

@@ -9,14 +9,14 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
-import { getTest, getTestSuite, getTestsMap, updateTest } from '../test-suites.js';
+import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
+import { getTest, getTestSuite, getTestsMap, updateTest } from '../test-suites';
 // Type-only imports (required for ESM compatibility)
 import type {
   PendingHealingApproval,
   HealingRecord,
   DOMChangeContext,
-} from './healing.js';
+} from './healing';
 // Value imports
 import {
   // In-Memory Stores
@@ -30,9 +30,9 @@ import {
   getSelectorHistory,
   getHealingHistory,
   getHealingStats,
-} from './healing.js';
-import { testRuns, TestRun } from './execution.js';
-import { getTestRun } from '../../services/repositories/test-runs.js';
+} from './healing';
+import { testRuns, TestRun } from './execution';
+import { getTestRun } from '../../services/repositories/test-runs';
 
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.

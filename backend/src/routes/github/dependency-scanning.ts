@@ -13,8 +13,8 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload } from '../../middleware/auth.js';
-import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores.js';
+import { authenticate, JwtPayload } from '../../middleware/auth';
+import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores';
 // TODO: sendSecurityVulnerabilityWebhook not yet implemented in test-runs module
 async function sendSecurityVulnerabilityWebhook(..._args: unknown[]): Promise<void> {
   console.log('[WEBHOOK] sendSecurityVulnerabilityWebhook: stub - not yet implemented');
@@ -24,13 +24,13 @@ import {
   prStatusChecks,
   prDependencyScans,
   demoPullRequests,
-} from './stores.js';
+} from './stores';
 import {
   PRDependencyScanResult,
   PRDependencyVulnerability,
   PRStatusCheck,
   ProjectParams,
-} from './types.js';
+} from './types';
 
 // ============================================================
 // Feature #769: Vulnerable Dependency Alerts - Interfaces

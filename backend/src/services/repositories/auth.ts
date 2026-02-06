@@ -6,7 +6,7 @@
  * Memory maps restored to support no-DB development mode.
  */
 
-import { query, isDatabaseConnected } from '../database.js';
+import { query, isDatabaseConnected } from '../database';
 import bcrypt from 'bcryptjs';
 
 // ============================================================================

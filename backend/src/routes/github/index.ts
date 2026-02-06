@@ -21,19 +21,19 @@
  */
 
 // Re-export all types
-export * from './types.js';
+export * from './types';
 
 // Re-export all stores
-export * from './stores.js';
+export * from './stores';
 
 // Re-export route modules
-export { coreGithubRoutes } from './core.js';
-export { dependencyScanningRoutes } from './dependency-scanning.js';
-export { dependencyManagementRoutes } from './dependency-management.js';
-export { vulnerabilityTrackingRoutes } from './vulnerability-tracking.js';
-export { aiProviderRoutes } from './ai-providers.js';
-export { aiTestGenerationRoutes } from './ai-test-generation.js';
-export { naturalLanguageTestRoutes } from './natural-language-tests.js';
-export { aiAnalysisRoutes } from './ai-analysis.js';
-export { aiCostAnalyticsRoutes } from './ai-cost-analytics.js';
-export { aiBestPracticesRoutes } from './ai-best-practices.js';
+export { coreGithubRoutes } from './core';
+export { dependencyScanningRoutes } from './dependency-scanning';
+export { dependencyManagementRoutes } from './dependency-management';
+export { vulnerabilityTrackingRoutes } from './vulnerability-tracking';
+export { aiProviderRoutes } from './ai-providers';
+export { aiTestGenerationRoutes } from './ai-test-generation';
+export { naturalLanguageTestRoutes } from './natural-language-tests';
+export { aiAnalysisRoutes } from './ai-analysis';
+export { aiCostAnalyticsRoutes } from './ai-cost-analytics';
+export { aiBestPracticesRoutes } from './ai-best-practices';

@@ -1,12 +1,12 @@
 // DAST Utility Functions
 
-import { DASTConfig, OpenAPISpec } from './types.js';
+import { DASTConfig, OpenAPISpec } from './types';
 import {
   getDastConfig,
   saveDastConfig,
   getOpenApiSpecsByProject,
   DEFAULT_DAST_CONFIG,
-} from './stores.js';
+} from './stores';
 
 // Generate unique ID (UUID v4 format for PostgreSQL compatibility)
 export function generateId(): string {

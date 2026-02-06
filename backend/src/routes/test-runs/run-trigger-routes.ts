@@ -11,13 +11,13 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireScopes, getOrganizationId } from '../../middleware/auth.js';
-import { getTestSuite, getTest, listTests } from '../test-suites.js';
-import { testRuns, BrowserType, createTestRun as dbCreateTestRun } from './execution.js';
+import { authenticate, requireScopes, getOrganizationId } from '../../middleware/auth';
+import { getTestSuite, getTest, listTests } from '../test-suites';
+import { testRuns, BrowserType, createTestRun as dbCreateTestRun } from './execution';
 // Feature #61: Redis caching
-import { getCache, CacheKeys } from '../../services/cache.js';
+import { getCache, CacheKeys } from '../../services/cache';
 // Feature #155: Execution queue for concurrency limits
-import { enqueueOrExecute } from '../../services/execution-queue.js';
+import { enqueueOrExecute } from '../../services/execution-queue';
 
 // Type definitions for route params/body
 interface RunParams {

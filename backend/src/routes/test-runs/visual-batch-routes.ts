@@ -9,9 +9,9 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
-import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites.js';
-import { getProject as dbGetProject } from '../projects/stores.js';
+import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
+import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites';
+import { getProject as dbGetProject } from '../projects/stores';
 import {
   BaselineMetadata,
   RejectionMetadata,
@@ -20,13 +20,13 @@ import {
   getRejectionMetadata,
   setRejectionMetadata,
   saveBaseline,
-} from './visual-regression.js';
+} from './visual-regression';
 
 // Import testRuns store from execution module
-import { testRuns, TestRun } from './execution.js';
-import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
+import { testRuns, TestRun } from './execution';
+import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
 // Feature #88: Redis caching for pending count
-import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
 
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.

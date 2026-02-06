@@ -4,7 +4,7 @@
  * MCP tools for K6 load testing, script management, and performance trends.
  */
 
-import { ToolDefinition } from '../types.js';
+import { ToolDefinition } from '../types';
 
 export const LOAD_TESTING_TOOLS: ToolDefinition[] = [
   {

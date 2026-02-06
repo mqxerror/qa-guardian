@@ -5,7 +5,7 @@
  * Extracted from server.ts to reduce file size (Feature #1356).
  */
 
-import { ToolHandler, HandlerModule } from './types.js';
+import { ToolHandler, HandlerModule } from './types';
 
 /**
  * Feature #1757: Blocklist of forbidden example/demo URLs

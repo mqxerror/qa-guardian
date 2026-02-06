@@ -13,11 +13,11 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId } from '../../middleware/auth.js';
+import { authenticate, getOrganizationId } from '../../middleware/auth';
 
 // Import from extracted modules
-import { testRuns, TestRun } from './execution.js';
-import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
+import { testRuns, TestRun } from './execution';
+import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
 // testSuites Map removed in Feature #2110 - use async DB functions instead
 
 /**
@@ -41,24 +41,24 @@ async function getMergedTestRuns(orgId: string): Promise<TestRun[]> {
 import {
   generateRelatedCommits,
   generateCommitDetails,
-} from './root-cause-helpers.js';
+} from './root-cause-helpers';
 import {
   generateRootCauseAnalysis,
   generateEvidenceArtifacts,
   generateSuggestedActions,
   generateHistoricalPatternMatch,
-} from './root-cause-analysis.js';
+} from './root-cause-analysis';
 import {
   generateHumanReadableExplanation,
   generateTechnicalExplanation,
   generateExecutiveSummary,
-} from './explanations.js';
+} from './explanations';
 import {
   generateLLMRootCauseAnalysis,
   generateErrorHash,
   llmExplanationCache,
   getLLMCacheStats,
-} from './ai-analysis.js';
+} from './ai-analysis';
 
 // ============================================================================
 // Route Definitions

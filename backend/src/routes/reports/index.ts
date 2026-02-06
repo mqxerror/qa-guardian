@@ -4,9 +4,9 @@
  */
 
 import { FastifyInstance, FastifyRequest } from 'fastify';
-import { getReport, listReports, deleteReport } from './stores.js';
-import { generateReport } from './generator.js';
-import { GenerateReportRequest } from './types.js';
+import { getReport, listReports, deleteReport } from './stores';
+import { generateReport } from './generator';
+import { GenerateReportRequest } from './types';
 
 export async function reportsRoutes(fastify: FastifyInstance) {
   // Generate a new comprehensive report

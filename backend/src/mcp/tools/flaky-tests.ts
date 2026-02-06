@@ -5,7 +5,7 @@
  * Includes quarantine functionality and AI-powered fix suggestions.
  */
 
-import { ToolDefinition } from '../types.js';
+import { ToolDefinition } from '../types';
 
 export const FLAKY_TESTS_TOOLS: ToolDefinition[] = [
   // Feature #996: Get flaky tests MCP tool

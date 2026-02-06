@@ -5,7 +5,7 @@
  * Extracted from server.ts to reduce file size (Feature #1356).
  */
 
-import { ToolHandler, HandlerModule } from './types.js';
+import { ToolHandler, HandlerModule } from './types';
 
 // CWV thresholds based on Google's recommendations
 const CWV_THRESHOLDS = {

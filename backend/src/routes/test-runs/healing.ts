@@ -6,8 +6,8 @@
  */
 
 import { Server as SocketIOServer } from 'socket.io';
-import { getTest, updateTest } from '../test-suites.js';
-import { getProjectHealingSettings } from '../projects.js';
+import { getTest, updateTest } from '../test-suites';
+import { getProjectHealingSettings } from '../projects';
 
 // Socket.IO reference (set from test-runs.ts)
 let io: SocketIOServer | null = null;

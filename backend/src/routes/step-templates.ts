@@ -2,8 +2,8 @@
 // CRUD operations for step templates that can be shared across tests
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth.js';
-import { query } from '../services/database.js';
+import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth';
+import { query } from '../services/database';
 import crypto from 'crypto';
 
 // Types

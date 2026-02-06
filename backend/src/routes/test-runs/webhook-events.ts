@@ -17,15 +17,15 @@
  * - accessibility.issue.found
  */
 
-import { getProject as dbGetProject } from '../projects/stores.js';
+import { getProject as dbGetProject } from '../projects/stores';
 import {
   WebhookSubscription,
   webhookSubscriptions,
   subscriptionMatchesProject,
   subscriptionMatchesAnyResultStatus,
   deliverOrBatchWebhook,
-} from './webhooks.js';
-import { webhookLog, WebhookLogEntry } from './alerts.js';
+} from './webhooks';
+import { webhookLog, WebhookLogEntry } from './alerts';
 
 // ============================================================================
 // Types

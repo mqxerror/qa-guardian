@@ -1,7 +1,7 @@
 // Projects Module Utility Functions
 // Feature #2116: Migrated to async DB calls
 
-import { ProjectVisualSettings, ProjectHealingSettings } from './types.js';
+import { ProjectVisualSettings, ProjectHealingSettings } from './types';
 import {
   getProjectVisualSettings as dbGetProjectVisualSettings,
   updateProjectVisualSettings as dbUpdateProjectVisualSettings,
@@ -11,7 +11,7 @@ import {
   isProjectMember as dbIsProjectMember,
   DEFAULT_PROJECT_VISUAL_SETTINGS,
   DEFAULT_PROJECT_HEALING_SETTINGS,
-} from './stores.js';
+} from './stores';
 
 // Helper to get project visual settings with defaults (async DB call)
 export async function getProjectVisualSettings(projectId: string): Promise<ProjectVisualSettings> {

@@ -10,7 +10,7 @@
  * Restored: Memory maps re-added for no-DB dev mode
  */
 
-import { query, isDatabaseConnected } from '../database.js';
+import { query, isDatabaseConnected } from '../database';
 
 // ============================================================================
 // Types

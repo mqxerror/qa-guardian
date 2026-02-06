@@ -8,8 +8,8 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate } from '../../middleware/auth.js';
-import { DEVICE_PRESETS, getDevicePresetsForApi, getDevicePresetsByCategory } from './device-presets.js';
+import { authenticate } from '../../middleware/auth';
+import { DEVICE_PRESETS, getDevicePresetsForApi, getDevicePresetsByCategory } from './device-presets';
 
 // Browser type definitions
 interface BrowserInfo {

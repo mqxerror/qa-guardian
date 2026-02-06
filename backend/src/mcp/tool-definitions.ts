@@ -10,8 +10,8 @@
  * - tool-definitions-part2.ts: K6, Accessibility, Analytics, Settings, AI tools
  */
 
-import { TOOLS_PART1A } from './tool-definitions-part1a.js';
-import { TOOLS_PART2 } from './tool-definitions-part2.js';
+import { TOOLS_PART1A } from './tool-definitions-part1a';
+import { TOOLS_PART2 } from './tool-definitions-part2';
 
 // Tool input schema type
 interface ToolInputSchema {

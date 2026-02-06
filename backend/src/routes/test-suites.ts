@@ -14,7 +14,7 @@ export type {
   CreateSuiteBody,
   CreateTestBody,
   UpdateTestBody,
-} from './test-suites/types.js';
+} from './test-suites/types';
 
 // Re-export stores (async functions only - Maps removed in Feature #2110)
 // Use async functions: getTestSuite(), getTest(), listAllTestSuites(), listAllTests()
@@ -33,10 +33,10 @@ export {
   listAllTests,
   getTestSuitesMap,
   getTestsMap,
-} from './test-suites/stores.js';
+} from './test-suites/stores';
 
 // Re-export utility functions
-export { generatePlaywrightCode, stepToPlaywrightCode } from './test-suites/utils.js';
+export { generatePlaywrightCode, stepToPlaywrightCode } from './test-suites/utils';
 
 // Re-export main routes function
-export { testSuiteRoutes } from './test-suites/index.js';
+export { testSuiteRoutes } from './test-suites/index';

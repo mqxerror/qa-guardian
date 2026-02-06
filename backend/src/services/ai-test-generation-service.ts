@@ -12,9 +12,9 @@
  * service fixes that by delegating to the real MCP handlers.
  */
 
-import { handlers as aiGenerationHandlers } from '../mcp/handlers/ai-generation.js';
-import { handlers as aiAnalysisHandlers } from '../mcp/handlers/ai-analysis.js';
-import { HandlerContext } from '../mcp/handlers/types.js';
+import { handlers as aiGenerationHandlers } from '../mcp/handlers/ai-generation';
+import { handlers as aiAnalysisHandlers } from '../mcp/handlers/ai-analysis';
+import { HandlerContext } from '../mcp/handlers/types';
 
 // =============================================================================
 // Types

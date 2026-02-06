@@ -2,9 +2,9 @@
 // Feature #1070: Selector healing suggestions for test suites
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId } from '../../middleware/auth.js';
-import { SuiteParams } from './types.js';
-import { getTestSuite, listTests } from './stores.js';
+import { authenticate, getOrganizationId } from '../../middleware/auth';
+import { SuiteParams } from './types';
+import { getTestSuite, listTests } from './stores';
 
 // Selector suggestion interface
 interface SelectorSuggestion {

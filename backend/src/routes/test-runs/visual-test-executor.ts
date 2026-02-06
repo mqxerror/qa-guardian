@@ -16,7 +16,7 @@ import {
   StepResult,
   VIEWPORT_PRESETS,
   resolveViewport,
-} from './execution.js';
+} from './execution';
 
 import {
   VisualComparisonResult,
@@ -24,11 +24,11 @@ import {
   compareScreenshots,
   loadBaseline,
   saveBaseline,
-} from './visual-regression.js';
+} from './visual-regression';
 
 import {
   getSimulatedBrowserCrash,
-} from './test-simulation.js';
+} from './test-simulation';
 
 import {
   ScreenshotCaptureResult,
@@ -36,11 +36,11 @@ import {
   saveCrashDump,
   captureScreenshotWithTimeout,
   getIgnoreRegionsFromSelectors,
-} from './execute-test-helpers.js';
+} from './execute-test-helpers';
 
-import { getTestSuite, IgnoreRegion } from '../test-suites.js';
-import { getProjectVisualSettings } from '../projects.js';
-import { sendVisualDiffWebhook } from './webhook-events.js';
+import { getTestSuite, IgnoreRegion } from '../test-suites';
+import { getProjectVisualSettings } from '../projects';
+import { sendVisualDiffWebhook } from './webhook-events';
 
 /**
  * Configuration for a visual regression test

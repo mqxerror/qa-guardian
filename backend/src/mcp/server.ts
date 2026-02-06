@@ -12,20 +12,20 @@ import * as path from 'path';
 import { randomUUID } from 'crypto';
 
 // Feature #1356: Import tool and resource definitions from extracted modules
-import { TOOLS } from './tool-definitions.js';
-import { RESOURCES } from './resource-definitions.js';
+import { TOOLS } from './tool-definitions';
+import { RESOURCES } from './resource-definitions';
 
 // Feature #1356: Import handler registry for extracted tool handlers
-import { hasHandler, executeHandler, HandlerContext } from './handlers.js';
+import { hasHandler, executeHandler, HandlerContext } from './handlers';
 
 // Feature #1356: Import tool permissions from extracted module
-import { TOOL_SCOPE_MAP } from './tool-permissions.js';
+import { TOOL_SCOPE_MAP } from './tool-permissions';
 
 // Feature #1356: Import string utilities from extracted module
-import { findSimilarStrings, levenshteinDistance } from './string-utils.js';
+import { findSimilarStrings, levenshteinDistance } from './string-utils';
 
 // Feature #1356: Import cron utilities from extracted module
-import { calculateNextCronRun, describeCronExpression } from './cron-utils.js';
+import { calculateNextCronRun, describeCronExpression } from './cron-utils';
 
 // Feature #1356: Import validation utilities from extracted module
 import {
@@ -35,17 +35,17 @@ import {
   validateK6Script,
   validateParameterTypes,
   findMissingRequiredParams,
-} from './validation-utils.js';
+} from './validation-utils';
 
 // Feature #1356: Import hash utilities from extracted module
 import {
   generateRequestHash,
   generateStreamId,
   generateOperationId,
-} from './hash-utils.js';
+} from './hash-utils';
 
 // Feature #1356: Import insights utilities from extracted module
-import { generateVisualTrendInsights as generateVisualTrendInsightsUtil } from './insights-utils.js';
+import { generateVisualTrendInsights as generateVisualTrendInsightsUtil } from './insights-utils';
 
 // Feature #1356: Import API versioning from extracted module
 import {
@@ -60,7 +60,7 @@ import {
   getSupportedVersions,
   getCurrentApiVersion,
   addVersionWarnings,
-} from './api-versioning.js';
+} from './api-versioning';
 
 // Feature #1356: Import webhook callback utilities from extracted module
 import {
@@ -70,7 +70,7 @@ import {
   parseWebhookCallback,
   createSuccessPayload,
   createErrorPayload,
-} from './webhook-callbacks.js';
+} from './webhook-callbacks';
 
 // MCP Protocol version
 const MCP_PROTOCOL_VERSION = '2024-11-05';

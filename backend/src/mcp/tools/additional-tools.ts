@@ -5,7 +5,7 @@
  * Features: #1658, #1659, #1660, #1663, #1665, #1672, #1677, #1678, #1679
  */
 
-import { ToolDefinition } from '../types.js';
+import { ToolDefinition } from '../types';
 
 export const ADDITIONAL_TOOLS: ToolDefinition[] = [
   // Feature #1658: Bulk update tests

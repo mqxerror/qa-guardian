@@ -2,8 +2,8 @@
 
 import { FastifyInstance } from 'fastify';
 import crypto from 'crypto';
-import { authenticate, requireRoles, JwtPayload } from '../../middleware/auth.js';
-import { ApiKey, CreateApiKeyBody, OrgParams, KeyParams } from './types.js';
+import { authenticate, requireRoles, JwtPayload } from '../../middleware/auth';
+import { ApiKey, CreateApiKeyBody, OrgParams, KeyParams } from './types';
 import {
   dbCreateApiKey,
   dbGetApiKeyById,
@@ -11,8 +11,8 @@ import {
   dbListApiKeysByOrg,
   dbUpdateApiKey,
   dbRevokeApiKey,
-} from './stores.js';
-import { generateApiKey } from './utils.js';
+} from './stores';
+import { generateApiKey } from './utils';
 
 export async function registerApiKeyRoutes(app: FastifyInstance) {
   // List API keys for organization (only shows prefix, not full key)

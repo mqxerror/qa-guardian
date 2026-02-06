@@ -16,7 +16,7 @@ export type {
   CreateSuiteBody,
   CreateTestBody,
   UpdateTestBody,
-} from './types.js';
+} from './types';
 
 // Re-export stores (Feature #2111: Proxy Map exports removed, async functions only)
 export {
@@ -34,25 +34,25 @@ export {
   listAllTests,
   getTestSuitesMap,
   getTestsMap,
-} from './stores.js';
+} from './stores';
 
 // Re-export utility functions
-export { generatePlaywrightCode, stepToPlaywrightCode } from './utils.js';
+export { generatePlaywrightCode, stepToPlaywrightCode } from './utils';
 
 // Re-export AI refine types (using type-only exports for interfaces)
-export type { ClarifyingQuestion, AIAnalyzeDescriptionBody, AIRefineTestBody } from './ai-refine.js';
+export type { ClarifyingQuestion, AIAnalyzeDescriptionBody, AIRefineTestBody } from './ai-refine';
 
 // Import route modules
-import { coreRoutes } from './routes.js';
-import { healingRoutes } from './healing.js';
-import { reviewRoutes } from './review.js';
-import { aiGenerationRoutes } from './ai-generation.js';
-import { aiSelectorsRoutes } from './ai-selectors.js';
-import { aiAssertionsRoutes } from './ai-assertions.js';
-import { aiRefineRoutes } from './ai-refine.js';
-import { aiFeedbackRoutes } from './ai-feedback.js';
-import { aiVariationsRoutes } from './ai-variations.js';
-import { aiCoverageRoutes } from './ai-coverage.js';
+import { coreRoutes } from './routes';
+import { healingRoutes } from './healing';
+import { reviewRoutes } from './review';
+import { aiGenerationRoutes } from './ai-generation';
+import { aiSelectorsRoutes } from './ai-selectors';
+import { aiAssertionsRoutes } from './ai-assertions';
+import { aiRefineRoutes } from './ai-refine';
+import { aiFeedbackRoutes } from './ai-feedback';
+import { aiVariationsRoutes } from './ai-variations';
+import { aiCoverageRoutes } from './ai-coverage';
 
 // Combined test suite routes function that registers all sub-routes
 export async function testSuiteRoutes(app: FastifyInstance) {

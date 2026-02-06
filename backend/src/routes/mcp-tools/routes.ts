@@ -6,15 +6,15 @@
  */
 
 import { FastifyInstance, FastifyRequest } from 'fastify';
-import { executeHandler, getRegisteredToolNames, hasHandler, HANDLER_STATS } from '../../mcp/handlers/index.js';
+import { executeHandler, getRegisteredToolNames, hasHandler, HANDLER_STATS } from '../../mcp/handlers/index';
 import { aiRouter } from '../../services/providers/ai-router.js';
-import { HandlerContext } from '../../mcp/handlers/types.js';
+import { HandlerContext } from '../../mcp/handlers/types';
 import type {
   ExecuteToolRequest,
   ExecuteToolResponse,
   AIStatusResponse,
   AvailableToolsResponse,
-} from './types.js';
+} from './types';
 
 // Simple logger that works consistently
 const logger = {

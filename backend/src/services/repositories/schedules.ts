@@ -8,7 +8,7 @@
  * - Test schedules with cron expressions or one-time runs
  */
 
-import { query, isDatabaseConnected } from '../database.js';
+import { query, isDatabaseConnected } from '../database';
 
 // Schedule interface matching the original
 export interface Schedule {

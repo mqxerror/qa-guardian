@@ -10,12 +10,12 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
-import { getTestSuite } from '../test-suites.js';
+import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
+import { getTestSuite } from '../test-suites';
 import { chromium, Browser, Page, BrowserContext } from 'playwright';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 // Feature #36: Import device presets for mobile emulation
-import { TestDeviceConfig, resolveDeviceConfig } from './device-presets.js';
+import { TestDeviceConfig, resolveDeviceConfig } from './device-presets';
 
 // Max concurrent recording sessions (configurable via env var)
 const MAX_RECORDING_SESSIONS = parseInt(process.env.MAX_RECORDING_SESSIONS || '3', 10);

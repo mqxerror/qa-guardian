@@ -12,12 +12,12 @@
 import { FastifyInstance } from 'fastify';
 import * as fs from 'fs';
 import * as path from 'path';
-import { authenticate, getOrganizationId } from '../../middleware/auth.js';
+import { authenticate, getOrganizationId } from '../../middleware/auth';
 import {
   calculateTotalStorageUsage,
   DEFAULT_STORAGE_QUOTA,
-} from './storage.js';
-import { BASELINES_DIR } from './visual-regression.js';
+} from './storage';
+import { BASELINES_DIR } from './visual-regression';
 
 /**
  * Register visual storage routes

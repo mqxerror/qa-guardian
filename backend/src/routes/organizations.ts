@@ -1,13 +1,13 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
-import { authenticate, requireRoles, JwtPayload, getOrganizationId } from '../middleware/auth.js';
+import { authenticate, requireRoles, JwtPayload, getOrganizationId } from '../middleware/auth';
 // Feature #2116: Use async DB calls instead of synchronous Map
-import { dbGetUserByEmail } from './auth.js';
-import { getUserById as dbGetUserById } from '../services/repositories/auth.js';
+import { dbGetUserByEmail } from './auth';
+import { getUserById as dbGetUserById } from '../services/repositories/auth';
 // projects Map removed in Feature #2110 - using async DB functions
 // testSuites/tests Maps removed in Feature #2110 - using async DB functions
-import { testRuns } from './test-runs.js';
-import { listAuditLogsRepo } from './audit-logs.js';
+import { testRuns } from './test-runs';
+import { listAuditLogsRepo } from './audit-logs';
 import {
   listAllTestSuites as dbListAllTestSuites,
   listAllTests as dbListAllTests,
@@ -15,9 +15,9 @@ import {
   deleteTest as dbDeleteTestAsync,
   getTestSuite as dbGetTestSuiteAsync,
   getTest as dbGetTestAsync,
-} from './test-suites/stores.js';
-import { getProject as dbGetProjectAsync, listProjects as dbListProjectsAsync, deleteProject as dbDeleteProjectAsync } from './projects/stores.js';
-import { listTestRunsByOrg as dbListTestRunsByOrg } from '../services/repositories/test-runs.js';
+} from './test-suites/stores';
+import { getProject as dbGetProjectAsync, listProjects as dbListProjectsAsync, deleteProject as dbDeleteProjectAsync } from './projects/stores';
+import { listTestRunsByOrg as dbListTestRunsByOrg } from '../services/repositories/test-runs';
 
 // Feature #2109: Fully migrated to async DB calls - no more in-memory Maps
 import {
@@ -52,7 +52,7 @@ import {
   getRetryStrategySettings as repoGetRetryStrategySettings,
   setRetryStrategySettings as repoSetRetryStrategySettings,
   getRetriesForFlakinessScore as repoGetRetriesForFlakinessScore,
-} from '../services/repositories/organizations.js';
+} from '../services/repositories/organizations';
 
 // Re-export types for backward compatibility
 export type { AutoQuarantineSettings, RetryStrategySettings, RetryStrategyRule };
@@ -71,7 +71,7 @@ export const setAutoQuarantineSettings = repoSetAutoQuarantineSettings;
 import {
   getUserOrganization as dbGetUserOrganization,
   getUserOrganizations as dbGetUserOrganizations,
-} from '../services/repositories/organizations.js';
+} from '../services/repositories/organizations';
 
 // Feature #2109: Fully async DB-backed organization lookup
 export async function getUserOrganization(userId: string): Promise<string | null> {

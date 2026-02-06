@@ -10,8 +10,8 @@
  * - analyze_test_maintenance: Test maintenance cost analysis
  */
 
-import { ToolHandler, HandlerModule } from './types.js';
-import { aiService } from '../../services/ai-service.js';
+import { ToolHandler, HandlerModule } from './types';
+import { aiService } from '../../services/ai-service';
 
 /**
  * Natural language interface to entire platform

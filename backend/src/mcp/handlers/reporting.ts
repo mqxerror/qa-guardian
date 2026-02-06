@@ -3,7 +3,7 @@
  * Feature #1732: MCP handlers for report generation
  */
 
-import { ToolHandler, HandlerModule } from './types.js';
+import { ToolHandler, HandlerModule } from './types';
 
 /**
  * Generate comprehensive report combining all test types (Feature #1732)

@@ -4,7 +4,7 @@
  * MCP tools for managing test artifacts (screenshots, videos, traces, logs).
  */
 
-import { ToolDefinition } from '../types.js';
+import { ToolDefinition } from '../types';
 
 export const ARTIFACT_TOOLS: ToolDefinition[] = [
   {

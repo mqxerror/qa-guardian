@@ -6,7 +6,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate } from '../../middleware/auth.js';
+import { authenticate } from '../../middleware/auth';
 
 /**
  * Register stub DNS and TCP monitoring routes that return 410 Gone

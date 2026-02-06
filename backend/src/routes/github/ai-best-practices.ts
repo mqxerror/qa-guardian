@@ -10,8 +10,8 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
-import { aiService } from '../../services/ai-service.js';
+import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
+import { aiService } from '../../services/ai-service';
 
 // ============================================================================
 // Type Definitions

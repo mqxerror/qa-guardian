@@ -12,8 +12,8 @@
 import { FastifyInstance } from 'fastify';
 
 // Re-export all types and stores for backward compatibility
-export * from './sast/types.js';
-export * from './sast/stores.js';
+export * from './sast/types';
+export * from './sast/stores';
 
 // Import route modules
 import {
@@ -25,7 +25,7 @@ import {
   secretPatternsRoutes,  // Feature #1558
   secretVerificationRoutes,  // Feature #1565
   secretRemediationRoutes,  // Feature #1566
-} from './sast/index.js';
+} from './sast/index';
 
 // Combined SAST routes function that registers all sub-routes
 export async function sastRoutes(app: FastifyInstance) {

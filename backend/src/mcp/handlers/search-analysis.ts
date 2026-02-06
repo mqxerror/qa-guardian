@@ -5,7 +5,7 @@
  * Extracted from server.ts to reduce file size (Feature #1356).
  */
 
-import { ToolHandler, HandlerModule } from './types.js';
+import { ToolHandler, HandlerModule } from './types';
 
 /**
  * Helper to parse result_id into run_id and test_id

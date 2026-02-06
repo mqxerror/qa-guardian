@@ -7,7 +7,7 @@
  */
 
 import Redis from 'ioredis';
-import { CacheTTL } from './cache-keys.js';
+import { CacheTTL } from './cache-keys';
 
 // Cache service singleton
 let cacheInstance: CacheService | null = null;
@@ -447,4 +447,4 @@ export async function closeCache(): Promise<void> {
 }
 
 // Export the CacheTTL and CacheKeys for convenience
-export { CacheTTL, CacheKeys } from './cache-keys.js';
+export { CacheTTL, CacheKeys } from './cache-keys';

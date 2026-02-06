@@ -10,8 +10,8 @@
  * - API endpoint load testing
  */
 
-import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest } from './types.js';
-import type { SiteAnalysis } from '../../services/crawl4ai.js';
+import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest } from './types';
+import type { SiteAnalysis } from '../../services/crawl4ai';
 
 export function generateLoadTemplate(options: TemplateGeneratorOptions): TestSuiteTemplate {
   const { baseUrl, siteAnalysis, projectName } = options;

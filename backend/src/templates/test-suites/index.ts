@@ -6,22 +6,22 @@
  * test suites based on site analysis from Crawl4AI.
  */
 
-import { SiteAnalysis } from '../../services/crawl4ai.js';
-import { TestSuiteTemplate, TemplateGeneratorOptions } from './types.js';
-import { generateE2ETemplate } from './e2e-template.js';
-import { generateVisualTemplate } from './visual-template.js';
-import { generateAccessibilityTemplate } from './accessibility-template.js';
-import { generatePerformanceTemplate } from './performance-template.js';
-import { generateLoadTemplate } from './load-template.js';
-import { generateSecurityTemplate } from './security-template.js';
+import { SiteAnalysis } from '../../services/crawl4ai';
+import { TestSuiteTemplate, TemplateGeneratorOptions } from './types';
+import { generateE2ETemplate } from './e2e-template';
+import { generateVisualTemplate } from './visual-template';
+import { generateAccessibilityTemplate } from './accessibility-template';
+import { generatePerformanceTemplate } from './performance-template';
+import { generateLoadTemplate } from './load-template';
+import { generateSecurityTemplate } from './security-template';
 
-export * from './types.js';
-export { generateE2ETemplate } from './e2e-template.js';
-export { generateVisualTemplate } from './visual-template.js';
-export { generateAccessibilityTemplate } from './accessibility-template.js';
-export { generatePerformanceTemplate } from './performance-template.js';
-export { generateLoadTemplate } from './load-template.js';
-export { generateSecurityTemplate } from './security-template.js';
+export * from './types';
+export { generateE2ETemplate } from './e2e-template';
+export { generateVisualTemplate } from './visual-template';
+export { generateAccessibilityTemplate } from './accessibility-template';
+export { generatePerformanceTemplate } from './performance-template';
+export { generateLoadTemplate } from './load-template';
+export { generateSecurityTemplate } from './security-template';
 
 /**
  * Suite type identifiers

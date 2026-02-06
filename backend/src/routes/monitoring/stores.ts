@@ -9,7 +9,7 @@
  */
 
 // Import repository for database operations
-import * as monitoringRepo from '../../services/repositories/monitoring.js';
+import * as monitoringRepo from '../../services/repositories/monitoring';
 
 // =============================
 // ASYNC DATABASE FUNCTIONS
@@ -144,7 +144,7 @@ import {
   AlertRateLimitConfig, AlertRateLimitState,
   AlertCorrelationConfig, AlertCorrelation, AlertRunbook,
   ManagedIncident,
-} from './types.js';
+} from './types';
 
 export const uptimeChecks = new Map<string, UptimeCheck>();
 export const checkResults = new Map<string, CheckResult[]>();

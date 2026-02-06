@@ -1,9 +1,9 @@
 // DAST Route Handlers
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireScopes, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
-import { getProject, listProjects } from '../../services/repositories/projects.js';
-import { logAuditEntry } from '../audit-logs.js';
+import { authenticate, requireScopes, JwtPayload, getOrganizationId } from '../../middleware/auth';
+import { getProject, listProjects } from '../../services/repositories/projects';
+import { logAuditEntry } from '../audit-logs';
 
 import {
   DASTConfig,
@@ -12,7 +12,7 @@ import {
   OpenAPISpec,
   ReportFormat,
   GraphQLScanConfig,
-} from './types.js';
+} from './types';
 import {
   getDastScansByProject,
   getDastScan, // Feature #124: Use direct scan lookup to avoid N+1 queries
@@ -26,23 +26,23 @@ import {
   deleteOpenApiSpec,
   ZAP_SCAN_PROFILES,
   SCHEDULE_FREQUENCIES,
-} from './stores.js';
+} from './stores';
 import {
   generateId,
   getDASTConfig,
   updateDASTConfig,
   generateCronExpression,
   calculateDASTNextRun,
-} from './utils.js';
-import { runZAPScan, parseOpenAPISpec, getOpenAPISpec } from './scanner.js';
-import { runLightweightScan, isZAPAvailable } from './lightweight-scanner.js';
-import { generateHTMLReport, generateJSONReport, generatePDFReport } from './reports.js';
+} from './utils';
+import { runZAPScan, parseOpenAPISpec, getOpenAPISpec } from './scanner';
+import { runLightweightScan, isZAPAvailable } from './lightweight-scanner';
+import { generateHTMLReport, generateJSONReport, generatePDFReport } from './reports';
 import {
   startGraphQLScan,
   getGraphQLScan,
   listGraphQLScans,
   performGraphQLIntrospection,
-} from './graphql.js';
+} from './graphql';
 
 // DAST Routes
 export async function dastRoutes(app: FastifyInstance) {

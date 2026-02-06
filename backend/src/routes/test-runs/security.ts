@@ -14,10 +14,10 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
-import { getProject as dbGetProject } from '../projects/stores.js';
+import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
+import { getProject as dbGetProject } from '../projects/stores';
 // Feature #123: Import cache service for read-heavy endpoints
-import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
 
 // ============================================================================
 // Type Definitions

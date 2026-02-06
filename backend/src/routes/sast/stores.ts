@@ -13,11 +13,11 @@ import {
   SASTPRComment,
   SecretPattern,
   SecretPatternTemplate,
-} from './types.js';
-import { generateSimpleId } from '../../utils.js';
+} from './types';
+import { generateSimpleId } from '../../utils';
 
 // Import repository functions
-import * as sastRepo from '../../services/repositories/sast.js';
+import * as sastRepo from '../../services/repositories/sast';
 
 // Re-export repository functions for database access
 export const getSASTConfig = sastRepo.getSASTConfig;

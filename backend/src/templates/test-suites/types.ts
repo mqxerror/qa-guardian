@@ -3,7 +3,7 @@
  * Feature #1731: Type definitions for test suite template generation
  */
 
-import { SiteAnalysis } from '../../services/crawl4ai.js';
+import { SiteAnalysis } from '../../services/crawl4ai';
 
 export interface TestSuiteTemplate {
   name: string;

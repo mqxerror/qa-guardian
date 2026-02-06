@@ -6,7 +6,7 @@
  * Combined with Part 2A for full TOOLS_PART2 export
  */
 
-import { TOOLS_PART2A } from './tool-definitions-part2a.js';
+import { TOOLS_PART2A } from './tool-definitions-part2a';
 
 // Tool input schema type
 interface ToolInputSchema {

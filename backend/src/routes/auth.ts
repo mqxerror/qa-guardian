@@ -1,11 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import bcrypt from 'bcryptjs';
-import { getUserOrganization, DEFAULT_ORG_ID } from './organizations.js';
+import { getUserOrganization, DEFAULT_ORG_ID } from './organizations';
 import {
   seedDefaultOrganizations,
   createOrganization as repoCreateOrganization,
   addOrganizationMember as repoAddOrganizationMember,
-} from '../services/repositories/organizations.js';
+} from '../services/repositories/organizations';
 
 // Feature #2116: Import only async repository functions (no getMemory* calls)
 import {
@@ -27,7 +27,7 @@ import {
   getResetToken as dbGetResetToken,
   markResetTokenUsed as dbMarkResetTokenUsed,
   seedTestUsers,
-} from '../services/repositories/auth.js';
+} from '../services/repositories/auth';
 
 // Re-export types for backward compatibility
 export type { User, Session, ResetToken };

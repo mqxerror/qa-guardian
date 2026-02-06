@@ -8,7 +8,7 @@
  * - Audit log entries for tracking user actions
  */
 
-import { query, isDatabaseConnected } from '../database.js';
+import { query, isDatabaseConnected } from '../database';
 
 // Audit log entry interface
 export interface AuditLogEntry {

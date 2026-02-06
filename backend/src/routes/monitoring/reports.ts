@@ -7,11 +7,11 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
+import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth';
 import {
   UptimeCheck,
   ManagedIncident,
-} from './types.js';
+} from './types';
 import {
   getUptimeCheck,
   listUptimeChecks,
@@ -19,8 +19,8 @@ import {
   // managedIncidents / incidentsByOrg have no async DB functions yet; keep deprecated Map imports
   managedIncidents,
   incidentsByOrg,
-} from './stores.js';
-import { formatDuration } from './helpers.js';
+} from './stores';
+import { formatDuration } from './helpers';
 
 export async function reportRoutes(app: FastifyInstance): Promise<void> {
   // Feature #955: Generate uptime report for multiple checks

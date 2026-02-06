@@ -12,26 +12,26 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireRoles, getOrganizationId } from '../../middleware/auth.js';
+import { authenticate, requireRoles, getOrganizationId } from '../../middleware/auth';
 
 import {
   AlertCorrelationConfig,
   CorrelatedAlert,
   AlertCorrelation,
   AlertRunbook,
-} from './types.js';
+} from './types';
 
 import {
   alertCorrelationConfigs,
   alertCorrelations,
   alertToCorrelation,
   alertRunbooks,
-} from './stores.js';
+} from './stores';
 
 import {
   correlateAlert,
   findRunbookForAlert,
-} from './helpers.js';
+} from './helpers';
 
 export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void> {
   // ============================================================

@@ -14,7 +14,7 @@
  * - analyze_screenshot: Use Claude Vision to analyze screenshots and identify UI elements
  */
 
-import { ToolHandler, HandlerModule } from './types.js';
+import { ToolHandler, HandlerModule } from './types';
 import { aiRouter } from '../../services/providers/ai-router.js';
 import { modelSelector } from '../../services/providers/model-selector.js';
 

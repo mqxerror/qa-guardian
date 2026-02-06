@@ -12,9 +12,9 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload } from '../../middleware/auth.js';
-import { getProject as dbGetProject } from '../projects/stores.js';
-import { createTestSuite as dbCreateTestSuite, createTest as dbCreateTest } from '../test-suites/stores.js';
+import { authenticate, JwtPayload } from '../../middleware/auth';
+import { getProject as dbGetProject } from '../projects/stores';
+import { createTestSuite as dbCreateTestSuite, createTest as dbCreateTest } from '../test-suites/stores';
 
 import {
   GitHubConnection,
@@ -22,7 +22,7 @@ import {
   PRComment,
   ProjectParams,
   ConnectRepoBody,
-} from './types.js';
+} from './types';
 
 import {
   githubConnections,
@@ -33,7 +33,7 @@ import {
   demoRepositories,
   demoTestFiles,
   getTestFilesForBranch,
-} from './stores.js';
+} from './stores';
 
 export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
   // Check if user has GitHub connected (simulated OAuth)

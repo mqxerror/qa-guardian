@@ -6,12 +6,12 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId } from '../../middleware/auth.js';
-import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites.js';
-import { testRuns, runningBrowsers, TestRun, BrowserType, TestRunResult } from './execution.js';
-import { getTestRun as dbGetTestRun, listTestRunsBySuite as dbListTestRunsBySuite, listTestRunsByOrg as dbListTestRunsByOrg, listTestRunsByTestId as dbListTestRunsByTestId, listTestRunsPaginated } from '../../services/repositories/test-runs.js';
+import { authenticate, getOrganizationId } from '../../middleware/auth';
+import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites';
+import { testRuns, runningBrowsers, TestRun, BrowserType, TestRunResult } from './execution';
+import { getTestRun as dbGetTestRun, listTestRunsBySuite as dbListTestRunsBySuite, listTestRunsByOrg as dbListTestRunsByOrg, listTestRunsByTestId as dbListTestRunsByTestId, listTestRunsPaginated } from '../../services/repositories/test-runs';
 // Feature #61: Redis caching
-import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
 
 // Helper: get test run from Map first, then fall back to DB
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {

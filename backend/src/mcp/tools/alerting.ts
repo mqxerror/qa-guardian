@@ -4,7 +4,7 @@
  * MCP tools for alert management, on-call schedules, and maintenance windows.
  */
 
-import { ToolDefinition } from '../types.js';
+import { ToolDefinition } from '../types';
 
 export const ALERTING_TOOLS: ToolDefinition[] = [
   // Feature #1425: Removed unsnooze_alert tool

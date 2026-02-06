@@ -12,7 +12,7 @@
  * - LLM explanation cache management
  */
 
-import { aiService } from '../../services/ai-service.js';
+import { aiService } from '../../services/ai-service';
 
 // ============================================
 // Types and Interfaces

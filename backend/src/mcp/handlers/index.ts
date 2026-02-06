@@ -9,68 +9,68 @@
  * - toolNames: string[] - list of tool names the module handles
  */
 
-import { ToolHandler, HandlerContext, HandlerRegistry } from './types.js';
-import { projectHandlers } from './projects.js';
-import { testSuiteHandlers } from './test-suites.js';
-import { testExecutionHandlers } from './test-execution.js';
-import { testResultsHandlers } from './test-results.js';
-import { artifactsHandlers } from './artifacts.js';
-import { searchAnalysisHandlers } from './search-analysis.js';
-import { testManagementHandlers } from './test-management.js';
-import { securityHandlers } from './security.js';
-import { monitoringHandlers } from './monitoring.js';
-import { visualRegressionHandlers } from './visual-regression.js';
-import { performanceHandlers } from './performance.js';
-import { lighthouseHandlers } from './lighthouse.js';
-import { accessibilityHandlers } from './accessibility.js';
-import { loadTestingHandlers } from './load-testing.js';
-import { k6ScriptsHandlers } from './k6-scripts.js';
-import { aiProviderHandlers } from './ai-provider.js';
-import { aiAnalysisHandlers } from './ai-analysis.js';
-import { analyticsHandlers } from './analytics.js';
-import { flakyTestsHandlers } from './flaky-tests.js';
-import { organizationHandlers } from './organization.js';
-import { analyticsExtendedHandlers } from './analytics-extended.js';
-import { settingsHandlers } from './settings.js';
-import { aiGenerationHandlers } from './ai-generation.js';
-import { aiChatHandlers } from './ai-chat.js';
-import { coreWebVitalsHandlers } from './core-web-vitals.js';
-import { additionalToolsHandlers } from './additional-tools.js';
-import { siteAnalysisHandlers } from './site-analysis.js';
-import { reportingHandlers } from './reporting.js'; // Feature #1732
+import { ToolHandler, HandlerContext, HandlerRegistry } from './types';
+import { projectHandlers } from './projects';
+import { testSuiteHandlers } from './test-suites';
+import { testExecutionHandlers } from './test-execution';
+import { testResultsHandlers } from './test-results';
+import { artifactsHandlers } from './artifacts';
+import { searchAnalysisHandlers } from './search-analysis';
+import { testManagementHandlers } from './test-management';
+import { securityHandlers } from './security';
+import { monitoringHandlers } from './monitoring';
+import { visualRegressionHandlers } from './visual-regression';
+import { performanceHandlers } from './performance';
+import { lighthouseHandlers } from './lighthouse';
+import { accessibilityHandlers } from './accessibility';
+import { loadTestingHandlers } from './load-testing';
+import { k6ScriptsHandlers } from './k6-scripts';
+import { aiProviderHandlers } from './ai-provider';
+import { aiAnalysisHandlers } from './ai-analysis';
+import { analyticsHandlers } from './analytics';
+import { flakyTestsHandlers } from './flaky-tests';
+import { organizationHandlers } from './organization';
+import { analyticsExtendedHandlers } from './analytics-extended';
+import { settingsHandlers } from './settings';
+import { aiGenerationHandlers } from './ai-generation';
+import { aiChatHandlers } from './ai-chat';
+import { coreWebVitalsHandlers } from './core-web-vitals';
+import { additionalToolsHandlers } from './additional-tools';
+import { siteAnalysisHandlers } from './site-analysis';
+import { reportingHandlers } from './reporting'; // Feature #1732
 
 // Re-export types
-export * from './types.js';
+export * from './types';
 
 // Re-export handler modules
-export { projectHandlers } from './projects.js';
-export { testSuiteHandlers } from './test-suites.js';
-export { testExecutionHandlers } from './test-execution.js';
-export { testResultsHandlers } from './test-results.js';
-export { artifactsHandlers } from './artifacts.js';
-export { searchAnalysisHandlers } from './search-analysis.js';
-export { testManagementHandlers } from './test-management.js';
-export { securityHandlers } from './security.js';
-export { monitoringHandlers } from './monitoring.js';
-export { visualRegressionHandlers } from './visual-regression.js';
-export { performanceHandlers } from './performance.js';
-export { lighthouseHandlers } from './lighthouse.js';
-export { accessibilityHandlers } from './accessibility.js';
-export { loadTestingHandlers } from './load-testing.js';
-export { k6ScriptsHandlers } from './k6-scripts.js';
-export { aiProviderHandlers } from './ai-provider.js';
-export { aiAnalysisHandlers } from './ai-analysis.js';
-export { analyticsHandlers } from './analytics.js';
-export { flakyTestsHandlers } from './flaky-tests.js';
-export { organizationHandlers } from './organization.js';
-export { analyticsExtendedHandlers } from './analytics-extended.js';
-export { settingsHandlers } from './settings.js';
-export { aiGenerationHandlers } from './ai-generation.js';
-export { aiChatHandlers } from './ai-chat.js';
-export { coreWebVitalsHandlers } from './core-web-vitals.js';
-export { additionalToolsHandlers } from './additional-tools.js';
-export { siteAnalysisHandlers } from './site-analysis.js';
-export { reportingHandlers } from './reporting.js'; // Feature #1732
+export { projectHandlers } from './projects';
+export { testSuiteHandlers } from './test-suites';
+export { testExecutionHandlers } from './test-execution';
+export { testResultsHandlers } from './test-results';
+export { artifactsHandlers } from './artifacts';
+export { searchAnalysisHandlers } from './search-analysis';
+export { testManagementHandlers } from './test-management';
+export { securityHandlers } from './security';
+export { monitoringHandlers } from './monitoring';
+export { visualRegressionHandlers } from './visual-regression';
+export { performanceHandlers } from './performance';
+export { lighthouseHandlers } from './lighthouse';
+export { accessibilityHandlers } from './accessibility';
+export { loadTestingHandlers } from './load-testing';
+export { k6ScriptsHandlers } from './k6-scripts';
+export { aiProviderHandlers } from './ai-provider';
+export { aiAnalysisHandlers } from './ai-analysis';
+export { analyticsHandlers } from './analytics';
+export { flakyTestsHandlers } from './flaky-tests';
+export { organizationHandlers } from './organization';
+export { analyticsExtendedHandlers } from './analytics-extended';
+export { settingsHandlers } from './settings';
+export { aiGenerationHandlers } from './ai-generation';
+export { aiChatHandlers } from './ai-chat';
+export { coreWebVitalsHandlers } from './core-web-vitals';
+export { additionalToolsHandlers } from './additional-tools';
+export { siteAnalysisHandlers } from './site-analysis';
+export { reportingHandlers } from './reporting'; // Feature #1732
 
 /**
  * Build the complete handler registry from all handler modules

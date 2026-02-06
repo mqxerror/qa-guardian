@@ -18,7 +18,7 @@ import type {
   TechnicalExplanation,
   AffectedFeature,
   ExecutiveSummary,
-} from './root-cause-helpers.js';
+} from './root-cause-helpers';
 
 // Re-export types for convenience (must use 'export type' for ESM compatibility with Node.js 20+)
 export type {

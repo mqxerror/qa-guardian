@@ -12,9 +12,9 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../../middleware/auth.js';
-import { logAuditEntry } from '../audit-logs.js';
-import { UptimeCheck, MaintenanceWindow } from './types.js';
+import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../../middleware/auth';
+import { logAuditEntry } from '../audit-logs';
+import { UptimeCheck, MaintenanceWindow } from './types';
 import {
   getUptimeCheck,
   listUptimeChecks,
@@ -23,8 +23,8 @@ import {
   getMaintenanceWindows,
   createMaintenanceWindow as dbCreateMaintenanceWindow,
   deleteMaintenanceWindow as dbDeleteMaintenanceWindow,
-} from './stores.js';
-import { startCheckInterval, stopCheckInterval } from './helpers.js';
+} from './stores';
+import { startCheckInterval, stopCheckInterval } from './helpers';
 
 export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
   // Get maintenance windows for a check

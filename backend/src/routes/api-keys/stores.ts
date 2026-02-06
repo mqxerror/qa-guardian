@@ -18,7 +18,7 @@ import {
   getMcpToolCallsByOrg as dbGetMcpToolCallsByOrg,
   createMcpAuditLog as dbCreateMcpAuditLog,
   getMcpAuditLogs as dbGetMcpAuditLogs,
-} from '../../services/repositories/api-keys.js';
+} from '../../services/repositories/api-keys';
 
 // ===== ASYNC DATABASE FUNCTIONS =====
 // All data access goes through these async functions

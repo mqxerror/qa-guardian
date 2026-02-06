@@ -436,7 +436,7 @@ import {
   upsertHealedSelectorEntry as dbUpsertHealedSelectorEntry,
   getHealedSelectorEntry as dbGetHealedSelectorEntry,
   listHealedSelectorHistory as dbListHealedSelectorHistory,
-} from '../../services/repositories/test-runs.js';
+} from '../../services/repositories/test-runs';
 
 /**
  * Store for in-flight test runs (active/running state only)

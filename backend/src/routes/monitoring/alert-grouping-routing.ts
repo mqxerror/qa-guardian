@@ -12,8 +12,8 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../../middleware/auth.js';
-import { logAuditEntry } from '../audit-logs.js';
+import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../../middleware/auth';
+import { logAuditEntry } from '../audit-logs';
 
 import {
   AlertGroupingRule,
@@ -24,7 +24,7 @@ import {
   AlertRoutingRule,
   AlertRoutingLog,
   AlertRateLimitConfig,
-} from './types.js';
+} from './types';
 
 import {
   alertGroupingRules,
@@ -33,11 +33,11 @@ import {
   alertRoutingLogs,
   alertRateLimitConfigs,
   alertRateLimitStates,
-} from './stores.js';
+} from './stores';
 
 import {
   checkAlertRateLimit,
-} from './helpers.js';
+} from './helpers';
 
 export async function alertGroupingRoutingRoutes(app: FastifyInstance): Promise<void> {
   // ==================== Alert Grouping Routes ====================

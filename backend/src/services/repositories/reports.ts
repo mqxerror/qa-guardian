@@ -9,8 +9,8 @@
  * - Report summaries for list views
  */
 
-import { query, isDatabaseConnected } from '../database.js';
-import { ComprehensiveReport, ReportSummary } from '../../routes/reports/types.js';
+import { query, isDatabaseConnected } from '../database';
+import { ComprehensiveReport, ReportSummary } from '../../routes/reports/types';
 
 // ============================================
 // Deprecated Memory Store Accessor

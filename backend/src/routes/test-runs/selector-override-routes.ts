@@ -14,10 +14,10 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
-import { testRuns, selectorOverrides, healedSelectorHistory, SelectorOverride, TestRun } from './execution.js';
-import { getTestRun } from '../../services/repositories/test-runs.js';
-import { getTest } from '../test-suites.js';
+import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
+import { testRuns, selectorOverrides, healedSelectorHistory, SelectorOverride, TestRun } from './execution';
+import { getTestRun } from '../../services/repositories/test-runs';
+import { getTest } from '../test-suites';
 
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.

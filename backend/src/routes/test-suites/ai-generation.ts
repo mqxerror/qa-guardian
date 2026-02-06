@@ -2,11 +2,11 @@
 // Feature #1137: AI generates Playwright test code from natural language description
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
-import { logAuditEntry } from '../audit-logs.js';
-import { Test, TestStep } from './types.js';
-import { getTestSuite, createTest } from './stores.js';
-import { generatePlaywrightCode } from './utils.js';
+import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
+import { logAuditEntry } from '../audit-logs';
+import { Test, TestStep } from './types';
+import { getTestSuite, createTest } from './stores';
+import { generatePlaywrightCode } from './utils';
 
 // Feature #1137: Request body for AI test generation
 interface AIGenerateTestBody {

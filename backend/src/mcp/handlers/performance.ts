@@ -5,7 +5,7 @@
  * Extracted from server.ts to reduce file size (Feature #1356).
  */
 
-import { ToolHandler, HandlerModule } from './types.js';
+import { ToolHandler, HandlerModule } from './types';
 
 /**
  * Run Lighthouse audit (Feature #974)

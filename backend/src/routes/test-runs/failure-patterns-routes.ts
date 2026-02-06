@@ -7,9 +7,9 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId } from '../../middleware/auth.js';
-import { getTestSuite } from '../test-suites.js';
-import { testRuns } from './execution.js';
+import { authenticate, getOrganizationId } from '../../middleware/auth';
+import { getTestSuite } from '../test-suites';
+import { testRuns } from './execution';
 
 // Type definitions for failure pattern analysis
 interface FailurePattern {

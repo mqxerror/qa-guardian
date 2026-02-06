@@ -21,7 +21,7 @@
  * - Managed incidents
  */
 
-import { query, isDatabaseConnected } from '../database.js';
+import { query, isDatabaseConnected } from '../database';
 import {
   UptimeCheck,
   CheckResult,
@@ -54,7 +54,7 @@ import {
   AlertCorrelation,
   AlertRunbook,
   ManagedIncident,
-} from '../../routes/monitoring/types.js';
+} from '../../routes/monitoring/types';
 
 // =============================
 // Feature #2105: IN-MEMORY STORES REMOVED

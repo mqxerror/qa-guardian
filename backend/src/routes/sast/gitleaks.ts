@@ -16,16 +16,16 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload } from '../../middleware/auth.js';
-import { getProject } from '../../services/repositories/projects.js';
+import { authenticate, JwtPayload } from '../../middleware/auth';
+import { getProject } from '../../services/repositories/projects';
 import { exec, execSync, spawn } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { SecretPattern } from './types.js';
-import { getSecretPatterns } from './stores.js';
-import * as gitleaksRepo from '../../services/repositories/gitleaks.js';
+import { SecretPattern } from './types';
+import { getSecretPatterns } from './stores';
+import * as gitleaksRepo from '../../services/repositories/gitleaks';
 
 const execAsync = promisify(exec);
 

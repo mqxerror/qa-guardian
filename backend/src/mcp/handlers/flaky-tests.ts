@@ -7,7 +7,7 @@
  * Feature #1356: Extracted from server.ts switch statement
  */
 
-import { ToolHandler, HandlerModule, HandlerContext } from './types.js';
+import { ToolHandler, HandlerModule, HandlerContext } from './types';
 
 /**
  * Get flaky tests for a project

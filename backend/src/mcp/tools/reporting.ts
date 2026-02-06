@@ -5,7 +5,7 @@
  * Includes SLA reports, cost analytics, audit logs, and scheduled reporting.
  */
 
-import { ToolDefinition } from '../types.js';
+import { ToolDefinition } from '../types';
 
 export const REPORTING_TOOLS: ToolDefinition[] = [
   // Feature #1435: Unified export_data tool replaces generate_report, export_analytics_csv, export_results, export_accessibility_report

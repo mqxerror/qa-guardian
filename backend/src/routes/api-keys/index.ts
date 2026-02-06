@@ -2,12 +2,12 @@
 // Re-exports all types, stores, and helpers for external use
 
 import { FastifyInstance } from 'fastify';
-import { startConnectionCleanup } from './mcp-connections.js';
-import { registerApiKeyRoutes } from './api-key-routes.js';
-import { registerMcpRoutes } from './mcp-routes.js';
+import { startConnectionCleanup } from './mcp-connections';
+import { registerApiKeyRoutes } from './api-key-routes';
+import { registerMcpRoutes } from './mcp-routes';
 
 // Re-export all types
-export * from './types.js';
+export * from './types';
 
 // Re-export async DB functions from stores
 export {
@@ -26,17 +26,17 @@ export {
   dbGetMcpToolCallsByOrg,
   dbCreateMcpAuditLog,
   dbGetMcpAuditLogs,
-} from './stores.js';
+} from './stores';
 
 // DEPRECATED: Empty Map exports for backward compatibility until route migration (#2120)
-import { ApiKey, McpConnection, McpToolCall, McpAuditLogEntry } from './types.js';
+import { ApiKey, McpConnection, McpToolCall, McpAuditLogEntry } from './types';
 export const apiKeys = new Map<string, ApiKey>();
 export const mcpConnections = new Map<string, McpConnection>();
 export const mcpToolCalls = new Map<string, McpToolCall[]>();
 export const mcpAuditLogs = new Map<string, McpAuditLogEntry[]>();
 
 // Re-export utilities
-export { generateApiKey, formatDuration } from './utils.js';
+export { generateApiKey, formatDuration } from './utils';
 
 // Re-export MCP connection helpers
 export {
@@ -44,13 +44,13 @@ export {
   updateMcpActivity,
   unregisterMcpConnection,
   startConnectionCleanup,
-} from './mcp-connections.js';
+} from './mcp-connections';
 
 // Re-export MCP analytics
-export { trackMcpToolCall, getMcpAnalytics } from './mcp-analytics.js';
+export { trackMcpToolCall, getMcpAnalytics } from './mcp-analytics';
 
 // Re-export MCP audit
-export { logMcpAuditEntry, getMcpAuditLogs } from './mcp-audit.js';
+export { logMcpAuditEntry, getMcpAuditLogs } from './mcp-audit';
 
 // Start the connection cleanup interval
 startConnectionCleanup();

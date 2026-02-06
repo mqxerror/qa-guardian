@@ -12,13 +12,13 @@ export type {
   ProjectHealingSettings,
   CreateProjectBody,
   ProjectParams,
-} from './types.js';
+} from './types';
 
 // Re-export stores and constants
 export {
   DEFAULT_PROJECT_VISUAL_SETTINGS,
   DEFAULT_PROJECT_HEALING_SETTINGS,
-} from './stores.js';
+} from './stores';
 
 // Re-export utility functions
 export {
@@ -28,15 +28,15 @@ export {
   setProjectHealingSettings,
   hasProjectAccess,
   getProjectRole,
-} from './utils.js';
+} from './utils';
 
 // Import route modules
-import { coreRoutes } from './routes.js';
-import { analyticsRoutes } from './analytics.js';
-import { flakyTestsRoutes } from './flaky-tests.js';
-import { remediationRoutes } from './remediation.js';
-import { memberRoutes } from './members.js';
-import { settingsRoutes } from './settings.js';
+import { coreRoutes } from './routes';
+import { analyticsRoutes } from './analytics';
+import { flakyTestsRoutes } from './flaky-tests';
+import { remediationRoutes } from './remediation';
+import { memberRoutes } from './members';
+import { settingsRoutes } from './settings';
 
 // Combined project routes function that registers all sub-routes
 export async function projectRoutes(app: FastifyInstance) {

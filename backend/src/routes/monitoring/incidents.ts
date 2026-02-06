@@ -10,20 +10,20 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId, JwtPayload, ApiKeyPayload } from '../../middleware/auth.js';
-import { logAuditEntry } from '../audit-logs.js';
+import { authenticate, getOrganizationId, JwtPayload, ApiKeyPayload } from '../../middleware/auth';
+import { logAuditEntry } from '../audit-logs';
 
 import {
   IncidentNote,
   IncidentTimeline,
   IncidentResponder,
   ManagedIncident,
-} from './types.js';
+} from './types';
 
 import {
   managedIncidents,
   incidentsByOrg,
-} from './stores.js';
+} from './stores';
 
 export async function incidentRoutes(app: FastifyInstance): Promise<void> {
   // ================================
