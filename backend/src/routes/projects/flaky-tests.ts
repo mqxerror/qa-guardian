@@ -8,6 +8,12 @@ import { getProject, batchGetProjects } from './stores';
 import { getTest, getTestSuite, listAllTests, batchGetTests, batchGetTestSuites } from '../test-suites/stores';
 import { listTestRunsByOrg } from '../../services/repositories/test-runs';
 
+// Feature #142: Default to last 30 days for flaky test analysis
+const FLAKY_ANALYSIS_DAYS = 30;
+function getThirtyDaysAgo(): Date {
+  return new Date(Date.now() - FLAKY_ANALYSIS_DAYS * 24 * 60 * 60 * 1000);
+}
+
 export async function flakyTestsRoutes(app: FastifyInstance) {
   // Get flaky tests - tests with inconsistent results (some pass, some fail)
   app.get('/api/v1/analytics/flaky-tests', {
@@ -15,8 +21,8 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
   }, async (request) => {
     const orgId = getOrganizationId(request);
 
-    // Get all test runs for this organization (async DB call)
-    const allOrgRuns = await listTestRunsByOrg(orgId);
+    // Feature #142: Get recent test runs (last 30 days) for flaky analysis
+    const allOrgRuns = await listTestRunsByOrg(orgId, { since: getThirtyDaysAgo(), limit: 1000 });
     const orgRuns = allOrgRuns.filter(r => r.results);
 
     // Track pass/fail count per test
@@ -459,8 +465,8 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
     }
 
-    // Get all runs for this test (async DB call)
-    const allOrgRuns = await listTestRunsByOrg(orgId);
+    // Feature #142: Get recent runs for this test (last 30 days)
+    const allOrgRuns = await listTestRunsByOrg(orgId, { since: getThirtyDaysAgo(), limit: 1000 });
     const testRunData: Array<{ date: Date; result: 'passed' | 'failed'; run_id: string; duration_ms?: number }> = [];
 
     for (const run of allOrgRuns) {
@@ -621,9 +627,8 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // Get all runs for this organization in the last 30 days (async DB call)
-    const allOrgRuns = await listTestRunsByOrg(orgId);
-    const recentRuns = allOrgRuns.filter(r => r.created_at >= thirtyDaysAgo);
+    // Feature #142: Get only last 30 days runs directly from DB (no JS filtering needed)
+    const recentRuns = await listTestRunsByOrg(orgId, { since: thirtyDaysAgo, limit: 1000 });
 
     // Get all tests to determine flaky ones (async DB call)
     const orgTests = await listAllTests(orgId);
@@ -999,8 +1004,8 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
       };
     }
 
-    // Get all test runs for this organization to calculate flakiness (async DB call)
-    const allOrgRuns = await listTestRunsByOrg(orgId);
+    // Feature #142: Get recent test runs (last 30 days) for flakiness calculation
+    const allOrgRuns = await listTestRunsByOrg(orgId, { since: getThirtyDaysAgo(), limit: 1000 });
     const orgRuns = allOrgRuns.filter(r => r.results);
 
     // Feature #139: Batch load all tests BEFORE the loop

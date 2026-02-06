@@ -373,16 +373,40 @@ export async function listTestRunsByProject(projectId: string, orgId?: string): 
 
 /**
  * List all test runs for an organization
+ * Feature #142: Added optional 'since' date filter to prevent loading years of historical data
  */
-export async function listTestRunsByOrg(orgId: string, limit?: number): Promise<TestRun[]> {
+export interface ListTestRunsByOrgOptions {
+  limit?: number;
+  since?: Date;
+}
+
+export async function listTestRunsByOrg(
+  orgId: string,
+  optionsOrLimit?: number | ListTestRunsByOrgOptions
+): Promise<TestRun[]> {
+  // Handle both old signature (limit: number) and new signature (options object)
+  const options: ListTestRunsByOrgOptions = typeof optionsOrLimit === 'number'
+    ? { limit: optionsOrLimit }
+    : optionsOrLimit || {};
+
   if (isDatabaseConnected()) {
     try {
-      let queryText = 'SELECT * FROM test_runs WHERE organization_id = $1 ORDER BY created_at DESC';
+      let queryText = 'SELECT * FROM test_runs WHERE organization_id = $1';
       const params: any[] = [orgId];
+      let paramIndex = 2;
 
-      if (limit) {
-        queryText += ' LIMIT $2';
-        params.push(limit);
+      // Feature #142: Add date filter to prevent loading years of data
+      if (options.since) {
+        queryText += ` AND created_at >= $${paramIndex}`;
+        params.push(options.since);
+        paramIndex++;
+      }
+
+      queryText += ' ORDER BY created_at DESC';
+
+      if (options.limit) {
+        queryText += ` LIMIT $${paramIndex}`;
+        params.push(options.limit);
       }
 
       const result = await query<any>(queryText, params);
@@ -398,12 +422,13 @@ export async function listTestRunsByOrg(orgId: string, limit?: number): Promise<
   const map = getTestRunsMap();
   let runs: TestRun[] = [];
   for (const run of map.values()) {
-    if (run.organization_id === orgId) {
-      runs.push(run);
-    }
+    if (run.organization_id !== orgId) continue;
+    // Feature #142: Apply date filter in memory fallback
+    if (options.since && new Date(run.created_at) < options.since) continue;
+    runs.push(run);
   }
   runs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  if (limit) runs = runs.slice(0, limit);
+  if (options.limit) runs = runs.slice(0, options.limit);
   return runs;
 }
 
