@@ -66,8 +66,94 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
+// Feature #153: Structured JSON logging with request correlation IDs
+// Fastify uses pino internally - configure it for production-grade logging
 const app = Fastify({
-  logger: true,
+  logger: {
+    // Use LOG_LEVEL env var or default based on environment
+    level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+    // Transport for pretty printing in development, JSON in production
+    ...(process.env.NODE_ENV !== 'production' && {
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          translateTime: 'HH:MM:ss Z',
+          ignore: 'pid,hostname',
+          colorize: true,
+        },
+      },
+    }),
+    // Serialize objects in logs
+    serializers: {
+      req(request) {
+        return {
+          method: request.method,
+          url: request.url,
+          path: request.routeOptions?.url || request.url,
+          parameters: request.params,
+          headers: {
+            host: request.headers.host,
+            'user-agent': request.headers['user-agent'],
+            'x-request-id': request.headers['x-request-id'],
+            'x-forwarded-for': request.headers['x-forwarded-for'],
+          },
+        };
+      },
+      res(reply) {
+        return {
+          statusCode: reply.statusCode,
+        };
+      },
+    },
+  },
+  // Feature #153: Generate request IDs for correlation
+  genReqId: (req) => {
+    // Use client-provided X-Request-ID if present, otherwise generate one
+    const clientRequestId = req.headers['x-request-id'];
+    if (clientRequestId && typeof clientRequestId === 'string') {
+      return clientRequestId;
+    }
+    // Generate a unique request ID
+    return `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  },
+  // Disable request logging for certain paths (logged separately)
+  disableRequestLogging: false,
+});
+
+// Feature #153: Add request ID to response headers for correlation
+app.addHook('onRequest', async (request, reply) => {
+  // Set the request ID in response headers
+  reply.header('X-Request-ID', request.id);
+
+  // Store request start time for duration calculation
+  (request as any).startTime = process.hrtime();
+});
+
+// Feature #153: Log request completion with duration
+app.addHook('onResponse', async (request, reply) => {
+  // Skip logging for certain paths to reduce noise
+  const skipPaths = ['/health', '/favicon.ico'];
+  if (skipPaths.some(path => request.url.startsWith(path))) {
+    return;
+  }
+
+  // Calculate request duration
+  const startTime = (request as any).startTime;
+  let durationMs = 0;
+  if (startTime) {
+    const diff = process.hrtime(startTime);
+    durationMs = Math.round((diff[0] * 1e9 + diff[1]) / 1e6);
+  }
+
+  // Log with correlation ID and duration
+  request.log.info({
+    msg: 'request completed',
+    requestId: request.id,
+    method: request.method,
+    url: request.url,
+    statusCode: reply.statusCode,
+    durationMs,
+  });
 });
 
 // Register plugins
