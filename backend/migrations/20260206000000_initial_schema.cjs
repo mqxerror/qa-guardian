@@ -97,6 +97,7 @@ function up(pgm) {
                 description: { type: 'text' },
                 base_url: { type: 'text' },
                 archived: { type: 'boolean', default: false },
+                archived_at: { type: 'timestamptz', default: null },
                 settings: { type: 'jsonb', default: '{}' },
                 visual_settings: { type: 'jsonb', default: '{}' },
                 healing_settings: { type: 'jsonb', default: '{}' },
