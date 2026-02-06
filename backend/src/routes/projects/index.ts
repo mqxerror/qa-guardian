@@ -3,8 +3,8 @@
 
 import { FastifyInstance } from 'fastify';
 
-// Re-export all types
-export {
+// Re-export all types (using type-only exports for interfaces)
+export type {
   Project,
   ProjectMember,
   EnvironmentVariable,

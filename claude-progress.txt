@@ -1,11 +1,41 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 123/167 features passing (73.7%)**
+- **Progress: 162/167 features passing (97.0%)**
 - **Last Updated**: 2026-02-06
-- **Status**: Scalability infrastructure - execution queue
+- **Status**: Frontend Performance - React Query migration
 - **TestSuitePage**: 3,072 lines (target <1,500) - down from 5,752
 - **TestDetailPage**: Completed (1,371 lines)
+
+=== Session 2026-02-06 (Session 118) - Frontend Performance ===
+Progress: 162/167 (97.0%)
+
+Implemented Feature #144: Convert raw fetch() in ProjectDetailPage to React Query
+
+1. Created 7 new React Query hooks in frontend/src/hooks/api/useProjects.ts:
+   - useProjectMembers: Fetches project members with caching
+   - useAlertChannels: Fetches alert channels with caching
+   - useAlertHistory: Fetches global alert history with caching
+   - useEnvVars: Fetches environment variables with caching
+   - useHealingSettings: Fetches healing settings with caching
+   - useSastConfig: Consolidates 5 parallel fetch calls (config, rulesets, scans, custom-rules, patterns)
+   - useDastConfig: Consolidates 4 parallel fetch calls (config, scans, openapi-spec, schedules)
+   - useInvalidateProjectSettings: Cache invalidation helpers
+
+2. Updated ProjectDetailPage.tsx:
+   - Replaced ~80 lines of raw fetch() useEffects with React Query hooks
+   - Settings tab uses lazy loading (queries enabled only when tab is active)
+   - Security tab SAST/DAST data uses React Query hooks
+   - Removed settingsDataLoaded state (React Query handles loading)
+
+Commits:
+- 79a07a7: feat(#144): Convert ProjectDetailPage raw fetch() to React Query hooks
+
+Technical notes:
+- Backend was unavailable due to npm registry 403 errors
+- Frontend build verified: npm run build completed successfully (5.35s)
+- All TypeScript types properly re-exported from project-detail/types.ts
+- Code stats: 372 insertions, 182 deletions
 
 === Session 2026-02-06 (Session 117) - Scalability Features ===
 Progress: 123/167 (73.7%)
@@ -33960,3 +33990,41 @@ Session Summary (2026-02-06):
 - Completed: #154, #155, #156, #157, #158, #159, #162, #163, #164
 - Ended at 130/167 (77.8%)
 - 7 features implemented this session
+
+
+=== Session 2026-02-06 (Session 120) - Critical Backend Startup Issue ===
+Progress: 165/167 (98.8%)
+
+CRITICAL ISSUE: Backend fails to start with Node.js 20 ESM loader errors
+
+Error: SyntaxError - "The requested module does not provide an export named..."
+
+Root Cause:
+1. Codebase uses TypeScript interfaces with regular export syntax
+2. Node.js 20 ESM loader is strict about type-only exports
+3. TypeScript interfaces compile to nothing at runtime
+4. Node fails importing re-exported interfaces that dont exist at runtime
+
+Affected: ~95 files with interface imports from ./types
+
+Failed Fixes Attempted:
+- Different tsconfig moduleResolution (NodeNext, Bundler, ESNext)
+- Different tsx versions (4.7.0 vs 4.21.0)
+- node --import tsx approach
+- Reinstalling dependencies
+- isolatedModules, verbatimModuleSyntax options
+
+Required Fix (Large Scope):
+- Change all type exports to use export type syntax
+- Example: export { MyInterface } -> export type { MyInterface }
+
+Workarounds:
+1. Use Docker with Node.js 18
+2. Build with esbuild bundler
+3. Use ts-node instead of tsx
+
+Files Created:
+- backend/src/jobs/cleanup.ts (Feature #154 cleanup job)
+
+Status: BLOCKED - Backend cannot start in dev mode
+Next session should fix type exports or use bundler approach

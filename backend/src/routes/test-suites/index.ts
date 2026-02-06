@@ -3,8 +3,8 @@
 
 import { FastifyInstance } from 'fastify';
 
-// Re-export all types
-export {
+// Re-export all types (using type-only exports for interfaces)
+export type {
   K6Threshold,
   TestSuite,
   Test,
@@ -39,8 +39,8 @@ export {
 // Re-export utility functions
 export { generatePlaywrightCode, stepToPlaywrightCode } from './utils';
 
-// Re-export AI refine types
-export { ClarifyingQuestion, AIAnalyzeDescriptionBody, AIRefineTestBody } from './ai-refine';
+// Re-export AI refine types (using type-only exports for interfaces)
+export type { ClarifyingQuestion, AIAnalyzeDescriptionBody, AIRefineTestBody } from './ai-refine';
 
 // Import route modules
 import { coreRoutes } from './routes';

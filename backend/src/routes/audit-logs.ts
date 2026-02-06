@@ -3,18 +3,18 @@ import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayloa
 
 // Feature #2119: Import only async repository functions (no getMemory* calls)
 import {
-  AuditLogEntry,
   createAuditLog,
   listAuditLogs as listAuditLogsRepo,
   getUniqueActions,
   getUniqueResourceTypes,
 } from '../services/repositories/audit-logs';
+import type { AuditLogEntry } from '../services/repositories/audit-logs';
 
 // Feature #123: Import cache service for read-heavy endpoints
 import { getCache, CacheKeys, CacheTTL } from '../services/cache';
 
 // Re-export interface for backward compatibility
-export { AuditLogEntry };
+export type { AuditLogEntry };
 
 // Feature #2119: Map removed — all access now through async repository functions
 // Re-export listAuditLogsRepo for other files that need audit log data
