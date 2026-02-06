@@ -2,16 +2,19 @@
  * Test Status Badge Component
  * Feature #1787: Extract test list components from TestSuitePage
  * Feature #111: Wrapped with React.memo for performance
+ * Feature #130: Uses centralized color system
  */
 
 import { memo } from 'react';
 import { TestStatusBadgeProps } from './types';
+import { getStatusColor } from '../../constants/colors';
 
+// Map test status to standard status colors
 const statusStyles = {
-  active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  draft: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-  disabled: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300',
-  archived: 'bg-gray-100 text-gray-500 dark:bg-gray-900/30 dark:text-gray-400',
+  active: getStatusColor('passed').badge,
+  draft: getStatusColor('pending').badge,
+  disabled: getStatusColor('cancelled').badge,
+  archived: getStatusColor('skipped').badge,
 };
 
 export const TestStatusBadge = memo(function TestStatusBadge({ status, size = 'sm' }: TestStatusBadgeProps) {

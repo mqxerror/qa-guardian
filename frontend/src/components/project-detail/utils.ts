@@ -1,9 +1,11 @@
 /**
  * Utility functions for Project Detail Page
  * Extracted from ProjectDetailPage.tsx for modularity (Feature #49)
+ * Feature #130: Now uses centralized color system from constants/colors.ts
  */
 
 import { DEVICE_PRESETS, type SASTSeverity, type DASTRisk } from './types';
+import { getSeverityColor, getStatusColor } from '../../constants/colors';
 
 /**
  * Helper function to extract error messages from unknown error types
@@ -31,37 +33,41 @@ export function getDevicePresetDimensions(preset: string): { width: number; heig
 
 /**
  * Get CSS class for SAST severity badge
+ * Uses centralized color system (Feature #130)
  */
 export function getSASTSeverityClass(severity: SASTSeverity): string {
+  // Map SAST severity to our standard severity levels
   switch (severity) {
     case 'CRITICAL':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+      return getSeverityColor('critical').badge;
     case 'HIGH':
-      return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+      return getSeverityColor('high').badge;
     case 'MEDIUM':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+      return getSeverityColor('medium').badge;
     case 'LOW':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      return getSeverityColor('low').badge;
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+      return getSeverityColor('info').badge;
   }
 }
 
 /**
  * Get CSS class for DAST risk level
+ * Uses centralized color system (Feature #130)
  */
 export function getDASTRiskClass(risk: DASTRisk): string {
+  // Map DAST risk to our standard severity levels
   switch (risk) {
     case 'High':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+      return getSeverityColor('critical').badge;
     case 'Medium':
-      return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+      return getSeverityColor('high').badge;
     case 'Low':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+      return getSeverityColor('medium').badge;
     case 'Informational':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      return getSeverityColor('low').badge;
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+      return getSeverityColor('info').badge;
   }
 }
 
@@ -99,19 +105,21 @@ export function getAlertConditionLabel(condition: 'any_failure' | 'all_failures'
 
 /**
  * Get CSS class for scan status
+ * Uses centralized color system (Feature #130)
  */
 export function getScanStatusClass(status: 'pending' | 'running' | 'completed' | 'failed'): string {
+  // Map scan status to our standard status colors
   switch (status) {
     case 'completed':
-      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      return getStatusColor('passed').badge;
     case 'failed':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+      return getStatusColor('failed').badge;
     case 'running':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      return getStatusColor('running').badge;
     case 'pending':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+      return getStatusColor('pending').badge;
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+      return getStatusColor('pending').badge;
   }
 }
 
@@ -135,19 +143,20 @@ export function getScanStatusIcon(status: 'pending' | 'running' | 'completed' | 
 
 /**
  * Get CSS class for healing strategy badge
+ * Uses centralized color system (Feature #130)
  */
 export function getHealingStrategyClass(strategy: string): string {
   switch (strategy) {
     case 'selector_fallback':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      return getSeverityColor('low').badge; // blue
     case 'visual_match':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'; // purple not in standard
     case 'text_match':
-      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      return getStatusColor('passed').badge; // green
     case 'attribute_match':
-      return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+      return getSeverityColor('high').badge; // orange
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+      return getSeverityColor('info').badge;
   }
 }
 
@@ -201,15 +210,16 @@ export function isValidWebhookUrl(url: string): boolean {
 
 /**
  * Get member role badge class
+ * Uses centralized color system (Feature #130)
  */
 export function getMemberRoleClass(role: 'developer' | 'viewer'): string {
   switch (role) {
     case 'developer':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      return getSeverityColor('low').badge; // blue
     case 'viewer':
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+      return getSeverityColor('info').badge; // gray
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+      return getSeverityColor('info').badge;
   }
 }
 

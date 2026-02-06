@@ -1,10 +1,12 @@
 /**
  * Utility functions for Test Run Results
  * Extracted from TestRunResultPage.tsx for modularity (Feature #46)
+ * Feature #130: Now uses centralized color system from constants/colors.ts
  */
 
 import { SimpleErrorPattern, ErrorAnalysis } from './types';
 import { logger } from '../../utils/logger';
+import { getStatusColor, getSeverityColor } from '../../constants/colors';
 
 // Format duration in human-readable form
 export const formatDuration = (ms?: number): string => {
@@ -81,20 +83,9 @@ export const detectSimpleError = (errorMessage?: string): ErrorAnalysis => {
   return { isSimple: false };
 };
 
-// Get status badge class
+// Get status badge class - uses centralized color system (Feature #130)
 export const getStatusBadgeClass = (status: string): string => {
-  switch (status) {
-    case 'passed':
-      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
-    case 'failed':
-      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-    case 'running':
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
-    default:
-      return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
-  }
+  return getStatusColor(status).badge;
 };
 
 // Get score color class for Lighthouse scores
@@ -111,19 +102,20 @@ export const getScoreBgClass = (score: number): string => {
   return 'bg-red-500';
 };
 
-// Get impact badge class for accessibility violations
+// Get impact badge class for accessibility violations - uses centralized colors (Feature #130)
 export const getImpactBadgeClass = (impact: string): string => {
+  // Map accessibility impact levels to severity colors
   switch (impact) {
     case 'critical':
-      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+      return getSeverityColor('critical').badge;
     case 'serious':
-      return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+      return getSeverityColor('high').badge;
     case 'moderate':
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+      return getSeverityColor('medium').badge;
     case 'minor':
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+      return getSeverityColor('low').badge;
     default:
-      return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
+      return getSeverityColor('info').badge;
   }
 };
 
