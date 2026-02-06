@@ -68,9 +68,10 @@ const PROJECT_MEMBER_COLUMNS = [
 
 /**
  * Explicit column list for project_env_vars table.
+ * Note: Database schema uses 'is_secret' column (not 'encrypted')
  */
 const PROJECT_ENV_VAR_COLUMNS = [
-  'id', 'project_id', 'key', 'value', 'encrypted', 'created_at', 'updated_at'
+  'id', 'project_id', 'key', 'value', 'is_secret', 'created_at', 'updated_at'
 ].join(', ');
 
 // ===== PROJECTS =====
