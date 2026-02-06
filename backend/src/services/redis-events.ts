@@ -41,6 +41,24 @@ let subClient: Redis | null = null;
 let publisherInitialized = false;
 let subscriberInitialized = false;
 
+// Feature #224: Reconnection state for exponential backoff
+const INITIAL_RECONNECT_DELAY_MS = 1000;
+const MAX_RECONNECT_DELAY_MS = 30000;
+let publisherReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let publisherReconnectAttempts = 0;
+let subscriberReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let subscriberReconnectAttempts = 0;
+let cachedIO: SocketIOServer | null = null;
+
+/**
+ * Feature #224: Calculate reconnect delay with exponential backoff and jitter
+ */
+function getReconnectDelay(attempt: number): number {
+  const delay = Math.min(INITIAL_RECONNECT_DELAY_MS * Math.pow(2, attempt), MAX_RECONNECT_DELAY_MS);
+  // Add 0-20% jitter to prevent thundering herd
+  return delay + Math.random() * delay * 0.2;
+}
+
 /**
  * Get Redis connection options from environment
  */
@@ -107,6 +125,21 @@ export async function initializeEventPublisher(): Promise<boolean> {
     pubClient.on('close', () => {
       console.log('[RedisEvents] Publisher connection closed');
       publisherInitialized = false;
+
+      // Feature #224: Schedule reconnection with exponential backoff
+      if (publisherReconnectTimer) {
+        clearTimeout(publisherReconnectTimer);
+      }
+      const delay = getReconnectDelay(publisherReconnectAttempts);
+      console.log(`[RedisEvents] Publisher scheduling reconnection in ${Math.round(delay)}ms (attempt ${publisherReconnectAttempts + 1})`);
+      publisherReconnectTimer = setTimeout(async () => {
+        publisherReconnectAttempts++;
+        const success = await initializeEventPublisher();
+        if (success) {
+          console.log('[RedisEvents] Publisher reconnected successfully');
+          publisherReconnectAttempts = 0; // Reset on success
+        }
+      }, delay);
     });
 
     // Wait for connection
@@ -180,6 +213,9 @@ export async function initializeEventSubscriber(io: SocketIOServer): Promise<boo
     return true;
   }
 
+  // Feature #224: Cache IO instance for reconnection
+  cachedIO = io;
+
   try {
     const options = getRedisOptions();
     subClient = new Redis(options);
@@ -195,6 +231,25 @@ export async function initializeEventSubscriber(io: SocketIOServer): Promise<boo
     subClient.on('close', () => {
       console.log('[RedisEvents] Subscriber connection closed');
       subscriberInitialized = false;
+
+      // Feature #224: Schedule reconnection with exponential backoff
+      if (subscriberReconnectTimer) {
+        clearTimeout(subscriberReconnectTimer);
+      }
+      const delay = getReconnectDelay(subscriberReconnectAttempts);
+      console.log(`[RedisEvents] Subscriber scheduling reconnection in ${Math.round(delay)}ms (attempt ${subscriberReconnectAttempts + 1})`);
+      subscriberReconnectTimer = setTimeout(async () => {
+        subscriberReconnectAttempts++;
+        if (cachedIO) {
+          const success = await initializeEventSubscriber(cachedIO);
+          if (success) {
+            console.log('[RedisEvents] Subscriber reconnected successfully');
+            subscriberReconnectAttempts = 0; // Reset on success
+          }
+        } else {
+          console.error('[RedisEvents] Cannot reconnect subscriber - no cached IO instance');
+        }
+      }, delay);
     });
 
     // Subscribe to the socket events channel
@@ -255,6 +310,13 @@ export function isSubscriberAvailable(): boolean {
  * Close publisher connection (call on worker shutdown)
  */
 export async function closePublisher(): Promise<void> {
+  // Feature #224: Clear any pending reconnect timer
+  if (publisherReconnectTimer) {
+    clearTimeout(publisherReconnectTimer);
+    publisherReconnectTimer = null;
+  }
+  publisherReconnectAttempts = 0;
+
   if (pubClient) {
     await pubClient.quit();
     pubClient = null;
@@ -267,6 +329,14 @@ export async function closePublisher(): Promise<void> {
  * Close subscriber connection (call on API server shutdown)
  */
 export async function closeSubscriber(): Promise<void> {
+  // Feature #224: Clear any pending reconnect timer
+  if (subscriberReconnectTimer) {
+    clearTimeout(subscriberReconnectTimer);
+    subscriberReconnectTimer = null;
+  }
+  subscriberReconnectAttempts = 0;
+  cachedIO = null;
+
   if (subClient) {
     await subClient.unsubscribe(SOCKET_EVENTS_CHANNEL);
     await subClient.quit();
