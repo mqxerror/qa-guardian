@@ -289,9 +289,10 @@ export function useUpdateSuite() {
       }
     },
     // Always refetch after error or success
+    // Feature #110: Narrow scope - only invalidate the specific project's suites
     onSettled: (_, __, { id, projectId }) => {
       queryClient.invalidateQueries({ queryKey: suiteKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: suiteKeys.lists() });
+      // Feature #110: Only invalidate the project-specific list, not all suites
       if (projectId) {
         queryClient.invalidateQueries({ queryKey: suiteKeys.listByProject(projectId) });
       }
@@ -350,14 +351,14 @@ export function useDeleteSuite() {
       }
     },
     // Always refetch after error or success
+    // Feature #110: Narrow scope - only invalidate the specific project's suites
     onSettled: (_, __, { projectId }) => {
-      queryClient.invalidateQueries({ queryKey: suiteKeys.lists() });
-      // Feature #143: Invalidate dashboard stats (suite count changed)
-      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
-      // Invalidate project suites if projectId provided
+      // Feature #110: Only invalidate the project-specific list, not all suites
       if (projectId) {
         queryClient.invalidateQueries({ queryKey: suiteKeys.listByProject(projectId) });
       }
+      // Feature #143: Invalidate dashboard stats (suite count changed)
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
     },
   });
 }

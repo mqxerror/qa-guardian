@@ -5,6 +5,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
+// Feature #110: Import runKeys for cross-cache invalidation
+import { runKeys } from './useRuns';
 
 // Types matching VisualReviewPage interfaces
 export interface PendingVisualChange {
@@ -163,6 +165,7 @@ export function usePendingVisualChanges() {
 
 /**
  * Hook to batch approve visual changes
+ * Feature #110: Also invalidate run details for affected runs
  */
 export function useBatchApproveChanges() {
   const token = useAuthStore(state => state.token);
@@ -174,15 +177,20 @@ export function useBatchApproveChanges() {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    onSuccess: () => {
+    onSuccess: (_, data) => {
       // Invalidate pending changes to refresh the list
       queryClient.invalidateQueries({ queryKey: visualReviewKeys.pending() });
+      // Feature #110: Invalidate run details for affected runs
+      data.changes.forEach(({ runId }) => {
+        queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) });
+      });
     },
   });
 }
 
 /**
  * Hook to batch reject visual changes
+ * Feature #110: Also invalidate run details for affected runs
  */
 export function useBatchRejectChanges() {
   const token = useAuthStore(state => state.token);
@@ -194,9 +202,13 @@ export function useBatchRejectChanges() {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    onSuccess: () => {
+    onSuccess: (_, data) => {
       // Invalidate pending changes to refresh the list
       queryClient.invalidateQueries({ queryKey: visualReviewKeys.pending() });
+      // Feature #110: Invalidate run details for affected runs
+      data.changes.forEach(({ runId }) => {
+        queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) });
+      });
     },
   });
 }

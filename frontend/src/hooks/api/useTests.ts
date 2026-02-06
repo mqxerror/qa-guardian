@@ -326,11 +326,11 @@ export function useUpdateTest() {
     onSettled: (updatedTest, _err, { id, suiteId }) => {
       // Invalidate the specific test detail
       queryClient.invalidateQueries({ queryKey: testKeys.detail(id) });
-      // Invalidate all test lists (test might have moved suites or changed)
-      queryClient.invalidateQueries({ queryKey: testKeys.lists() });
-      // Feature #91: Also invalidate suite detail if test belongs to a suite
+      // Feature #110: Narrow scope - only invalidate the specific suite's tests, not all tests
       const effectiveSuiteId = (updatedTest as Test)?.suite_id || suiteId;
       if (effectiveSuiteId) {
+        queryClient.invalidateQueries({ queryKey: testKeys.listBySuite(effectiveSuiteId) });
+        // Feature #91: Also invalidate suite detail if test belongs to a suite
         queryClient.invalidateQueries({ queryKey: suiteKeys.detail(effectiveSuiteId) });
       }
     },
@@ -389,14 +389,14 @@ export function useDeleteTest() {
     },
     // Always refetch after error or success
     onSettled: (_, __, { suiteId }) => {
-      // Invalidate all test lists
-      queryClient.invalidateQueries({ queryKey: testKeys.lists() });
-      // Feature #91: Invalidate dashboard stats (test count changed)
-      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
-      // Feature #91: Invalidate suite detail if provided
+      // Feature #110: Narrow scope - only invalidate the specific suite's tests
       if (suiteId) {
+        queryClient.invalidateQueries({ queryKey: testKeys.listBySuite(suiteId) });
+        // Feature #91: Invalidate suite detail (test count changed)
         queryClient.invalidateQueries({ queryKey: suiteKeys.detail(suiteId) });
       }
+      // Feature #91: Invalidate dashboard stats (test count changed)
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
     },
   });
 }

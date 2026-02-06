@@ -295,6 +295,7 @@ export function useSecretsDashboard(params: SecretsQueryParams = {}) {
 
 /**
  * Hook to trigger secret scanning
+ * Feature #110: Also invalidate security alerts and trends after scan
  */
 export function useScanSecrets() {
   const token = useAuthStore(state => state.token);
@@ -309,6 +310,11 @@ export function useScanSecrets() {
     onSuccess: () => {
       // Invalidate secrets dashboard to refresh after scan
       queryClient.invalidateQueries({ queryKey: securityKeys.secrets() });
+      // Feature #110: Also invalidate security trends and alerts
+      queryClient.invalidateQueries({ queryKey: securityKeys.trends() });
+      queryClient.invalidateQueries({ queryKey: securityKeys.alerts() });
+      // Also invalidate dashboard since finding counts may change
+      queryClient.invalidateQueries({ queryKey: securityKeys.dashboard() });
     },
   });
 }
