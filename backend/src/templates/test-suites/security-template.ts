@@ -11,7 +11,7 @@
  * - Sensitive data exposure
  */
 
-import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest } from './types';
+import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest } from './types.js';
 
 export function generateSecurityTemplate(options: TemplateGeneratorOptions): TestSuiteTemplate {
   const { baseUrl, siteAnalysis, projectName } = options;

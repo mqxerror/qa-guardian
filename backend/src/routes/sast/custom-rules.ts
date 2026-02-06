@@ -12,11 +12,11 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload } from '../../middleware/auth';
-import { getProject } from '../../services/repositories/projects';
-import { logAuditEntry } from '../audit-logs';
-import { CustomRule } from './types';
-import { getSASTConfig, updateSASTConfig, generateId } from './stores';
+import { authenticate, JwtPayload } from '../../middleware/auth.js';
+import { getProject } from '../../services/repositories/projects.js';
+import { logAuditEntry } from '../audit-logs.js';
+import { CustomRule } from './types.js';
+import { getSASTConfig, updateSASTConfig, generateId } from './stores.js';
 
 export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
   // Get custom rules for a project

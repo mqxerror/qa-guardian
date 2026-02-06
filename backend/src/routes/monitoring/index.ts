@@ -26,22 +26,22 @@
  */
 
 // Re-export all types
-export * from './types';
+export * from './types.js';
 
 // Re-export all stores
-export * from './stores';
+export * from './stores.js';
 
 // Re-export all helpers
-export * from './helpers';
+export * from './helpers.js';
 
 // Re-export route modules
-export { uptimeRoutes } from './uptime';
-export { maintenanceRoutes } from './maintenance';
-export { webhookRoutes } from './webhooks';
-export { dnsTcpRoutes } from './dns-tcp';
-export { statusPageRoutes } from './status-pages';
-export { onCallEscalationRoutes } from './on-call-escalation';
-export { alertGroupingRoutingRoutes } from './alert-grouping-routing';
-export { alertCorrelationRoutes } from './alert-correlation';
-export { incidentRoutes } from './incidents';
-export { reportRoutes } from './reports';
+export { uptimeRoutes } from './uptime.js';
+export { maintenanceRoutes } from './maintenance.js';
+export { webhookRoutes } from './webhooks.js';
+export { dnsTcpRoutes } from './dns-tcp.js';
+export { statusPageRoutes } from './status-pages.js';
+export { onCallEscalationRoutes } from './on-call-escalation.js';
+export { alertGroupingRoutingRoutes } from './alert-grouping-routing.js';
+export { alertCorrelationRoutes } from './alert-correlation.js';
+export { incidentRoutes } from './incidents.js';
+export { reportRoutes } from './reports.js';

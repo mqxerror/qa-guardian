@@ -14,9 +14,9 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { logAuditEntry } from '../audit-logs';
-import { WebhookCheck, WebhookEvent } from './types';
+import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
+import { logAuditEntry } from '../audit-logs.js';
+import { WebhookCheck, WebhookEvent } from './types.js';
 import {
   createWebhookCheck,
   getWebhookCheck,
@@ -25,7 +25,7 @@ import {
   deleteWebhookCheck,
   addWebhookEvent,
   getWebhookEvents,
-} from './stores';
+} from './stores.js';
 
 export async function webhookRoutes(app: FastifyInstance): Promise<void> {
   // Get all webhook checks

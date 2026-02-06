@@ -3,7 +3,7 @@
  * Test script for MCP enhanced rate limiting feature
  */
 
-import { MCPServer } from './server';
+import { MCPServer } from './server.js';
 
 const API_KEY = 'qg_zbJqQw3Lnnw7zsI2p2EvNzO16npkIs74Oaobt3y3SzA';
 

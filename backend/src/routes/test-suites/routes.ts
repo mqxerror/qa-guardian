@@ -4,14 +4,14 @@
 // Feature #108: WebSocket events for real-time cache invalidation
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
-import { logAuditEntry } from '../audit-logs';
+import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
+import { logAuditEntry } from '../audit-logs.js';
 // Feature #61: Redis caching
-import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
 // Feature #1305: Import webhook function for test.created event
-import { sendTestCreatedWebhook } from '../test-runs/webhook-events';
+import { sendTestCreatedWebhook } from '../test-runs/webhook-events.js';
 // Feature #108: WebSocket events for real-time cache invalidation
-import { emitSuiteCreated, emitSuiteUpdated, emitSuiteDeleted, emitTestCreated, emitTestUpdated, emitTestDeleted } from '../../services/websocket-events';
+import { emitSuiteCreated, emitSuiteUpdated, emitSuiteDeleted, emitTestCreated, emitTestUpdated, emitTestDeleted } from '../../services/websocket-events.js';
 import {
   TestSuite,
   Test,
@@ -23,7 +23,7 @@ import {
   CreateTestBody,
   UpdateTestBody,
   UpdateSuiteBody,
-} from './types';
+} from './types.js';
 // Import async database functions
 import {
   listTestSuites as dbListTestSuites,
@@ -38,12 +38,12 @@ import {
   createTest as dbCreateTest,
   updateTest as dbUpdateTest,
   deleteTest as dbDeleteTest,
-} from './stores';
-import { generatePlaywrightCode } from './utils';
+} from './stores.js';
+import { generatePlaywrightCode } from './utils.js';
 // Feature #1958: Import testRuns for run metadata on test list
-import { testRuns } from '../test-runs/execution';
+import { testRuns } from '../test-runs/execution.js';
 // Feature #87: Use optimized aggregated query instead of loading all runs
-import { getTestRunMetadataForSuite } from '../../services/repositories/test-runs';
+import { getTestRunMetadataForSuite } from '../../services/repositories/test-runs.js';
 
 export async function coreRoutes(app: FastifyInstance) {
   // List test suites for a project

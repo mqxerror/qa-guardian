@@ -10,7 +10,7 @@ export type {
   ProjectHealingSettings,
   CreateProjectBody,
   ProjectParams,
-} from './projects/types';
+} from './projects/types.js';
 
 // Re-export stores and constants (Maps removed in Feature #2112, only constants and async functions)
 export {
@@ -20,7 +20,7 @@ export {
   listProjects,
   getProjectMembers,
   getProjectEnvVars,
-} from './projects/stores';
+} from './projects/stores.js';
 
 // Re-export utility functions
 export {
@@ -30,7 +30,7 @@ export {
   setProjectHealingSettings,
   hasProjectAccess,
   getProjectRole,
-} from './projects/utils';
+} from './projects/utils.js';
 
 // Re-export main routes function
-export { projectRoutes } from './projects/index';
+export { projectRoutes } from './projects/index.js';

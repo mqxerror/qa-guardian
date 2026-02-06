@@ -7,13 +7,13 @@ import {
   GraphQLScan,
   GraphQLScanConfig,
   DASTRisk,
-} from './types';
+} from './types.js';
 import {
   createGraphqlScan,
   getGraphqlScan,
   updateGraphqlScan,
   listGraphqlScans as dbListGraphqlScans,
-} from './stores';
+} from './stores.js';
 
 // Simulate GraphQL introspection
 export function performGraphQLIntrospection(endpoint: string, authHeader?: string): GraphQLSchema {

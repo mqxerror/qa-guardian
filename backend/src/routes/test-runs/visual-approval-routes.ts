@@ -7,10 +7,10 @@
 import { FastifyInstance } from 'fastify';
 import * as fs from 'fs';
 import * as path from 'path';
-import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { getTest, getTestSuite } from '../test-suites';
-import { testRuns, TestRun } from './execution';
-import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
+import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
+import { getTest, getTestSuite } from '../test-suites.js';
+import { testRuns, TestRun } from './execution.js';
+import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
 
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
@@ -30,8 +30,8 @@ import {
   getBaselinePath,
   getRejectionMetadata,
   setRejectionMetadata,
-} from './visual-regression';
-import { sendBaselineApprovedWebhook } from './webhook-events';
+} from './visual-regression.js';
+import { sendBaselineApprovedWebhook } from './webhook-events.js';
 
 // Helper to get user from request
 function getUser(request: any): JwtPayload | undefined {
@@ -41,7 +41,7 @@ function getUser(request: any): JwtPayload | undefined {
 // Import saveBaseline from test-runs.ts - we need to re-export it
 // Note: This is a local function in test-runs.ts that handles quota checking
 // For now, we'll import the simpler version and add quota handling inline
-import { saveBaseline as saveBaselineToFile } from './visual-regression';
+import { saveBaseline as saveBaselineToFile } from './visual-regression.js';
 
 /**
  * Register visual approval routes

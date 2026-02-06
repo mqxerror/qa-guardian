@@ -4,7 +4,7 @@
  * MCP tools for security scanning (SAST, DAST, dependency scanning, secrets detection).
  */
 
-import { ToolDefinition } from '../types';
+import { ToolDefinition } from '../types/index.js';
 
 export const SECURITY_TOOLS: ToolDefinition[] = [
   {

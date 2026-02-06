@@ -13,9 +13,9 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload } from '../../middleware/auth';
-import { getProject, listProjects } from '../../services/repositories/projects';
-import { logAuditEntry } from '../audit-logs';
+import { authenticate, JwtPayload } from '../../middleware/auth.js';
+import { getProject, listProjects } from '../../services/repositories/projects.js';
+import { logAuditEntry } from '../audit-logs.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -25,7 +25,7 @@ import {
   SASTConfig,
   SASTFinding,
   SASTScanResult,
-} from './types';
+} from './types.js';
 
 import {
   getSASTConfig,
@@ -36,12 +36,12 @@ import {
   getSastScansByProject,
   getFalsePositives,
   generateId,
-} from './stores';
+} from './stores.js';
 
 import {
   getDashboardSummary,
   getDashboardFindings,
-} from '../../services/repositories/sast';
+} from '../../services/repositories/sast.js';
 
 /**
  * Run a real Semgrep CLI scan against a target directory.

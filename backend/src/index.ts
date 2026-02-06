@@ -12,39 +12,39 @@ if (!process.env.JWT_SECRET) {
 }
 
 import Fastify from 'fastify';
-import { initializeDatabase, isDatabaseConnected, healthCheck as dbHealthCheck, closeDatabase } from './services/database';
-import { initializeCache, closeCache, getCache } from './services/cache'; // Feature #60: Redis cache service
-import { runMigrations, getMigrationStatus } from './services/migrations'; // Feature #162: Database migrations
+import { initializeDatabase, isDatabaseConnected, healthCheck as dbHealthCheck, closeDatabase } from './services/database.js';
+import { initializeCache, closeCache, getCache } from './services/cache.js'; // Feature #60: Redis cache service
+import { runMigrations, getMigrationStatus } from './services/migrations.js'; // Feature #162: Database migrations
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { Server as SocketIOServer } from 'socket.io';
-import { authRoutes, initTestUsers } from './routes/auth';
-import { organizationRoutes } from './routes/organizations';
-import { projectRoutes } from './routes/projects';
-import { apiKeyRoutes } from './routes/api-keys';
-import { testRunRoutes, setSocketIO } from './routes/test-runs';
-import { testSuiteRoutes } from './routes/test-suites';
-import { scheduleRoutes } from './routes/schedules';
-import { auditLogRoutes } from './routes/audit-logs';
-import { githubRoutes } from './routes/github'; // Feature #1542: AI best practices routes
-import { sastRoutes } from './routes/sast';
-import { dastRoutes } from './routes/dast';
-import { monitoringRoutes } from './routes/monitoring';
-import aiTestGeneratorRoutes from './routes/ai-test-generator';
-import mcpToolsRoutes from './routes/mcp-tools';
-import { reportsRoutes } from './routes/reports'; // Feature #1732
-import { servicesStatusRoutes, setServicesSocketIO } from './routes/services-status'; // Feature #2127
-import { setRecordingSocketIO } from './routes/test-runs/recording-routes'; // Feature #26: Playwright recording
-import { stepTemplateRoutes } from './routes/step-templates'; // Feature #31: Reusable Step Templates
+import { authRoutes, initTestUsers } from './routes/auth.js';
+import { organizationRoutes } from './routes/organizations.js';
+import { projectRoutes } from './routes/projects.js';
+import { apiKeyRoutes } from './routes/api-keys/index.js';
+import { testRunRoutes, setSocketIO } from './routes/test-runs.js';
+import { testSuiteRoutes } from './routes/test-suites.js';
+import { scheduleRoutes } from './routes/schedules.js';
+import { auditLogRoutes } from './routes/audit-logs.js';
+import { githubRoutes } from './routes/github.js'; // Feature #1542: AI best practices routes
+import { sastRoutes } from './routes/sast.js';
+import { dastRoutes } from './routes/dast.js';
+import { monitoringRoutes } from './routes/monitoring.js';
+import aiTestGeneratorRoutes from './routes/ai-test-generator/index.js';
+import mcpToolsRoutes from './routes/mcp-tools/index.js';
+import { reportsRoutes } from './routes/reports/index.js'; // Feature #1732
+import { servicesStatusRoutes, setServicesSocketIO } from './routes/services-status.js'; // Feature #2127
+import { setRecordingSocketIO } from './routes/test-runs/recording-routes.js'; // Feature #26: Playwright recording
+import { stepTemplateRoutes } from './routes/step-templates.js'; // Feature #31: Reusable Step Templates
 import { errorsRoutes } from './routes/errors/index.js'; // Feature #166: Frontend error reporting
-import { requestTimeoutHook } from './middleware/timeout'; // Feature #90: Request timeout middleware
-import { initializeCleanupJob, stopCleanupJob, getCleanupStats } from './jobs/cleanup'; // Feature #154: Data retention cleanup
-import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, registerExecutionCallback } from './services/execution-queue'; // Feature #155: BullMQ execution queue
-import { initializeErrorHandlers, getErrorMetrics } from './services/error-tracking'; // Feature #164: Error tracking
-import { registerMetricsHooks, getMetricsSummary } from './services/metrics'; // Feature #165: API response time tracking
-import { setWebSocketIO } from './services/websocket-events'; // Feature #108: WebSocket CRUD events
+import { requestTimeoutHook } from './middleware/timeout.js'; // Feature #90: Request timeout middleware
+import { initializeCleanupJob, stopCleanupJob, getCleanupStats } from './jobs/cleanup.js'; // Feature #154: Data retention cleanup
+import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, registerExecutionCallback } from './services/execution-queue.js'; // Feature #155: BullMQ execution queue
+import { initializeErrorHandlers, getErrorMetrics } from './services/error-tracking.js'; // Feature #164: Error tracking
+import { registerMetricsHooks, getMetricsSummary } from './services/metrics.js'; // Feature #165: API response time tracking
+import { setWebSocketIO } from './services/websocket-events.js'; // Feature #108: WebSocket CRUD events
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

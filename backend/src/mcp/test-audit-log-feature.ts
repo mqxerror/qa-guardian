@@ -3,7 +3,7 @@
  * Test script for MCP Request Logging and Audit Trail Feature #846
  */
 
-import { MCPServer } from './server';
+import { MCPServer } from './server.js';
 
 const API_KEY = process.env.QA_GUARDIAN_API_KEY || '';
 

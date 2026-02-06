@@ -4,7 +4,7 @@
  * Tools for managing incidents including creation, tracking, and resolution.
  */
 
-import { ToolDefinition } from '../types';
+import { ToolDefinition } from '../types/index.js';
 
 export const INCIDENTS_TOOLS: ToolDefinition[] = [
   {

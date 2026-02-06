@@ -16,11 +16,11 @@
 
 import { FastifyInstance } from 'fastify';
 import * as crypto from 'crypto';
-import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { getTestSuite } from '../test-suites';
-import { getProject as dbGetProject } from '../projects/stores';
-import { testRuns, TestRun } from './execution';
-import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
+import { authenticate, getOrganizationId } from '../../middleware/auth.js';
+import { getTestSuite } from '../test-suites.js';
+import { getProject as dbGetProject } from '../projects/stores.js';
+import { testRuns, TestRun } from './execution.js';
+import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
 
 // Helper: get test run from Map first, then fall back to DB
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {

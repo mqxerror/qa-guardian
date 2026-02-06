@@ -17,14 +17,14 @@ import {
   DASTConfig,
   DASTRisk,
   DASTConfidence,
-} from './types';
+} from './types.js';
 import {
   createDastScan,
   updateDastScan,
   getDastFalsePositives,
   saveDastConfig,
-} from './stores';
-import { generateId, getDASTConfig, isUrlInScope } from './utils';
+} from './stores.js';
+import { generateId, getDASTConfig, isUrlInScope } from './utils.js';
 
 // ---------------------------------------------------------------------------
 // Security check definitions

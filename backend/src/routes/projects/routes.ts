@@ -5,10 +5,10 @@
 // Feature #108: WebSocket events for real-time cache invalidation
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireScopes, JwtPayload, ApiKeyPayload, getOrganizationId } from '../../middleware/auth';
-import { validateBody } from '../../validation/middleware';
-import { createProjectSchema, updateProjectSchema, projectIdParamsSchema, CreateProjectInput, UpdateProjectInput } from '../../validation/schemas';
-import { TestSuite, Test } from '../test-suites';
+import { authenticate, requireScopes, JwtPayload, ApiKeyPayload, getOrganizationId } from '../../middleware/auth.js';
+import { validateBody } from '../../validation/middleware.js';
+import { createProjectSchema, updateProjectSchema, projectIdParamsSchema, CreateProjectInput, UpdateProjectInput } from '../../validation/schemas.js';
+import { TestSuite, Test } from '../test-suites.js';
 import {
   listTestSuites as dbListTestSuitesByProject,
   listTests as dbListTestsBySuite,
@@ -17,10 +17,10 @@ import {
   createTestSuite as dbCreateTestSuiteAsync,
   createTest as dbCreateTestAsync,
   listAllTestSuites as dbListAllTestSuites,
-} from '../test-suites/stores';
-import { createTestRun as dbCreateTestRunAsync } from '../../services/repositories/test-runs';
-import { logAuditEntry } from '../audit-logs';
-import { Project, CreateProjectBody, ProjectParams, EnvironmentVariable } from './types';
+} from '../test-suites/stores.js';
+import { createTestRun as dbCreateTestRunAsync } from '../../services/repositories/test-runs.js';
+import { logAuditEntry } from '../audit-logs.js';
+import { Project, CreateProjectBody, ProjectParams, EnvironmentVariable } from './types.js';
 import {
   createProject as dbCreateProject,
   getProject as dbGetProject,
@@ -32,13 +32,13 @@ import {
   addProjectEnvVar as dbAddProjectEnvVar,
   getProjectEnvVars as dbGetProjectEnvVars,
   deleteProjectEnvVar as dbDeleteProjectEnvVar,
-} from './stores';
-import { hasProjectAccess } from './utils';
-import { testRuns, BrowserType } from '../test-runs/execution';
+} from './stores.js';
+import { hasProjectAccess } from './utils.js';
+import { testRuns, BrowserType } from '../test-runs/execution.js';
 // Feature #61: Redis caching
-import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
 // Feature #108: WebSocket events for real-time cache invalidation
-import { emitProjectCreated, emitProjectUpdated, emitProjectDeleted } from '../../services/websocket-events';
+import { emitProjectCreated, emitProjectUpdated, emitProjectDeleted } from '../../services/websocket-events.js';
 
 export async function coreRoutes(app: FastifyInstance) {
   // List all projects (requires authentication, only from user's organization)

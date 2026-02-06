@@ -12,7 +12,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate } from '../../middleware/auth';
+import { authenticate } from '../../middleware/auth.js';
 
 // ============================================================
 // Types

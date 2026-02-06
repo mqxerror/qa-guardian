@@ -5,7 +5,7 @@
  * and tracking accessibility improvements over time.
  */
 
-import { ToolDefinition } from '../types';
+import { ToolDefinition } from '../types/index.js';
 
 export const ACCESSIBILITY_TOOLS: ToolDefinition[] = [
   // Feature #988: Run accessibility scan MCP tool

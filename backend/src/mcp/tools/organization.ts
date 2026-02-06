@@ -4,7 +4,7 @@
  * Tools for managing organization settings, team members, API keys, and integrations.
  */
 
-import { ToolDefinition } from '../types';
+import { ToolDefinition } from '../types/index.js';
 
 export const ORGANIZATION_TOOLS: ToolDefinition[] = [
   // Feature #1014: Get organization info MCP tool

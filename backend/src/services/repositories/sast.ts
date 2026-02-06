@@ -16,7 +16,7 @@
  * Database connection is now required for all operations.
  */
 
-import { query, isDatabaseConnected } from '../database';
+import { query, isDatabaseConnected } from '../database.js';
 import {
   SASTConfig,
   SASTScanResult,
@@ -24,7 +24,7 @@ import {
   SASTPRCheck,
   SASTPRComment,
   SecretPattern,
-} from '../../routes/sast/types';
+} from '../../routes/sast/types.js';
 
 // Default SAST config
 const DEFAULT_SAST_CONFIG: SASTConfig = {

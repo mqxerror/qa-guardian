@@ -1,7 +1,7 @@
 /**
  * Simple test for MCP Server
  */
-import { MCPServer } from './server';
+import { MCPServer } from './server.js';
 
 async function testMCPServer() {
   console.log('Testing MCP Server...');

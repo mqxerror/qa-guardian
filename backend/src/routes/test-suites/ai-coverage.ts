@@ -3,11 +3,11 @@
 // Feature #1148: AI Auto-Suggest Tests for Code Changes
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { logAuditEntry } from '../audit-logs';
-import { getTestSuite, createTest, listAllTests } from './stores';
-import { Test, TestStep } from './types';
-import { generatePlaywrightCode } from './utils';
+import { authenticate, getOrganizationId } from '../../middleware/auth.js';
+import { logAuditEntry } from '../audit-logs.js';
+import { getTestSuite, createTest, listAllTests } from './stores.js';
+import { Test, TestStep } from './types.js';
+import { generatePlaywrightCode } from './utils.js';
 
 // Feature #1147: Interface for coverage gap
 interface CoverageGap {

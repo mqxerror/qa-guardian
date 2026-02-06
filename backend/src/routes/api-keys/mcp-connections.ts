@@ -1,14 +1,14 @@
 // MCP Connection management functions
 
 import crypto from 'crypto';
-import { McpConnection } from './types';
+import { McpConnection } from './types.js';
 import {
   dbCreateMcpConnection,
   dbGetMcpConnection,
   dbUpdateMcpConnectionActivity,
   dbDeleteMcpConnection,
   dbCleanupStaleMcpConnections,
-} from './stores';
+} from './stores.js';
 
 // Helper to register an MCP connection (async)
 export async function registerMcpConnection(

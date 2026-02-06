@@ -48,7 +48,7 @@ export {
 
   // Screenshot Comparison
   compareScreenshots,
-} from './visual-regression';
+} from './visual-regression.js';
 
 // Alerts Module
 export {
@@ -78,7 +78,7 @@ export {
   sendEmailAlert,
   sendWebhookAlert,
   checkAndSendAlerts,
-} from './alerts';
+} from './alerts.js';
 
 // Storage Module (Feature #1371)
 export {
@@ -110,7 +110,7 @@ export {
 
   // Utility Functions
   formatBytes,
-} from './storage';
+} from './storage.js';
 
 // AI Analysis Module (Feature #1372)
 export {
@@ -146,7 +146,7 @@ export {
   getLLMCacheStats,
   clearLLMCacheEntry,
   clearAllLLMCache,
-} from './ai-analysis';
+} from './ai-analysis.js';
 
 // Healing Module (Feature #1356 - Code Quality)
 // Type-only exports (required for ESM compatibility)
@@ -156,7 +156,7 @@ export type {
   SelectorHistoryEntry,
   HealingEventEntry,
   DOMChangeContext,
-} from './healing';
+} from './healing.js';
 
 // Value exports
 export {
@@ -193,7 +193,7 @@ export {
   trackHealingSuccess,
   trackHealingFailure,
   getHealingStats,
-} from './healing';
+} from './healing.js';
 
 // Webhooks Module (Feature #1356 - Code Quality)
 export {
@@ -232,7 +232,7 @@ export {
   // Template Functions
   interpolateTemplate,
   applyPayloadTemplate,
-} from './webhooks';
+} from './webhooks.js';
 
 // Execution Module (Feature #1368)
 export {
@@ -273,7 +273,7 @@ export {
   markRunResumed,
   getRunningBrowser,
   closeBrowser,
-} from './execution';
+} from './execution.js';
 
 // Root Cause Helpers Module (Feature #1356)
 export {
@@ -315,7 +315,7 @@ export {
   // Functions - Simulation
   generateSimulatedConsoleLogs,
   generateSimulatedNetworkRequests,
-} from './root-cause-helpers';
+} from './root-cause-helpers.js';
 
 // Root Cause Analysis Module (Feature #1356)
 export {
@@ -323,7 +323,7 @@ export {
   generateEvidenceArtifacts,
   generateSuggestedActions,
   generateHistoricalPatternMatch,
-} from './root-cause-analysis';
+} from './root-cause-analysis.js';
 
 // Explanations Module (Feature #1356)
 export {
@@ -331,7 +331,7 @@ export {
   generateHumanReadableExplanation,
   generateTechnicalExplanation,
   generateExecutiveSummary,
-} from './explanations';
+} from './explanations.js';
 
 // Security Module (Feature #1356 - Code Quality)
 export {
@@ -355,7 +355,7 @@ export {
 
   // Route Registration
   securityRoutes,
-} from './security';
+} from './security.js';
 
 // Security Advanced Module (Feature #1356 - Code Quality)
 export {
@@ -371,7 +371,7 @@ export {
 
   // Route Registration
   securityAdvancedRoutes,
-} from './security-advanced';
+} from './security-advanced.js';
 
 // Webhook Subscriptions Module (Feature #1356 - Code Quality)
 export {
@@ -380,25 +380,25 @@ export {
 
   // Route Registration
   webhookSubscriptionRoutes,
-} from './webhook-subscriptions';
+} from './webhook-subscriptions.js';
 
 // Slack Integration Module (Feature #1356 - Code Quality)
 export {
   // Route Registration
   slackIntegrationRoutes,
-} from './slack-integration';
+} from './slack-integration.js';
 
 // Alert Channels Module (Feature #1356 - Code Quality)
 export {
   // Route Registration
   alertChannelRoutes,
-} from './alert-channels';
+} from './alert-channels.js';
 
 // AI Failure Analysis Module (Feature #1356 - Code Quality)
 export {
   // Route Registration
   aiFailureAnalysisRoutes,
-} from './ai-failure-analysis';
+} from './ai-failure-analysis.js';
 
 // Webhook Events Module (Feature #1356 - Code Quality)
 export {
@@ -421,7 +421,7 @@ export {
   sendFlakyTestWebhook,
   sendAccessibilityIssueWebhook,
   sendTestCreatedWebhook,
-} from './webhook-events';
+} from './webhook-events.js';
 
 // Baseline Routes Module (Feature #1356 - Code Quality)
 export {
@@ -433,13 +433,13 @@ export {
 
   // Route Registration
   baselineRoutes,
-} from './baseline-routes';
+} from './baseline-routes.js';
 
 // Organization Settings Routes Module (Feature #1356 - Code Quality)
 export {
   // Route Registration
   organizationSettingsRoutes,
-} from './organization-settings';
+} from './organization-settings.js';
 
 // Test Simulation Routes Module (Feature #1356 - Code Quality)
 export {
@@ -480,7 +480,7 @@ export {
 
   // Route Registration
   testSimulationRoutes,
-} from './test-simulation';
+} from './test-simulation.js';
 
 // Healing Routes Module (Feature #1356 - Code Quality)
 export {
@@ -488,13 +488,13 @@ export {
   healingRoutes,
   // Healing event history map (shared with test-runs.ts)
   healingEventHistory,
-} from './healing-routes';
+} from './healing-routes.js';
 
 // Artifact Routes Module (Feature #1356 - Code Quality)
 export {
   // Route Registration
   artifactRoutes,
-} from './artifact-routes';
+} from './artifact-routes.js';
 
 // Results Routes Module (Feature #1356 - Code Quality)
 export {
@@ -503,25 +503,25 @@ export {
   // In-memory stores
   annotations,
   sharedResults,
-} from './results-routes';
+} from './results-routes.js';
 
 // Visual Batch Routes Module (Feature #1356 - Code Quality)
 export {
   // Route Registration
   visualBatchRoutes,
-} from './visual-batch-routes';
+} from './visual-batch-routes.js';
 
 // Browser and Viewport Routes Module (Feature #1356 - Code Quality)
 export {
   // Route Registration
   browserViewportRoutes,
-} from './browser-viewport-routes';
+} from './browser-viewport-routes.js';
 
 // Failure Patterns Routes Module (Feature #1356 - Code Quality)
 export {
   // Route Registration
   failurePatternsRoutes,
-} from './failure-patterns-routes';
+} from './failure-patterns-routes.js';
 
 // Recording Routes Module (Feature #1356 - Code Quality)
 export {
@@ -531,7 +531,7 @@ export {
   recordingSessions,
   // Route Registration
   recordingRoutes,
-} from './recording-routes';
+} from './recording-routes.js';
 
 // Run Core Routes Module (Feature #1356 - Code Quality)
 export {
@@ -539,7 +539,7 @@ export {
   setRunCoreEmitter,
   // Route Registration
   runCoreRoutes,
-} from './run-core-routes';
+} from './run-core-routes.js';
 
 // Run Control Routes Module (Feature #1356 - Code Quality)
 export {
@@ -547,37 +547,37 @@ export {
   setRunControlEmitter,
   // Route Registration
   runControlRoutes,
-} from './run-control-routes';
+} from './run-control-routes.js';
 
 // Visual Storage Routes Module (Feature #1356 - Code Quality)
 export {
   // Route Registration
   visualStorageRoutes,
-} from './visual-storage-routes';
+} from './visual-storage-routes.js';
 
 // Review and Export Routes Module (Feature #1356 - Code Quality)
 export {
   // Route Registration
   reviewExportRoutes,
-} from './review-export-routes';
+} from './review-export-routes.js';
 
 // Selector Override Routes Module (Feature #1356 - Code Quality)
 export {
   // Route Registration
   selectorOverrideRoutes,
-} from './selector-override-routes';
+} from './selector-override-routes.js';
 
 // Run Data Routes Module (Feature #1356 - Code Quality)
 export {
   // Route Registration
   runDataRoutes,
-} from './run-data-routes';
+} from './run-data-routes.js';
 
 // Visual Approval Routes Module (Feature #1356 - Code Quality)
 export {
   // Route Registration
   visualApprovalRoutes,
-} from './visual-approval-routes';
+} from './visual-approval-routes.js';
 
 // Execute Test Helpers Module (Feature #1356 - Code Quality)
 export {
@@ -616,10 +616,10 @@ export {
 
   // Functions - Ignore Regions
   getIgnoreRegionsFromSelectors,
-} from './execute-test-helpers';
+} from './execute-test-helpers.js';
 
 // Run Trigger Routes Module (Feature #1356 - Code Quality)
-export { createRunTriggerRoutes } from './run-trigger-routes';
+export { createRunTriggerRoutes } from './run-trigger-routes.js';
 
 // K6 Helpers Module (Feature #1356 - Code Quality)
 export {
@@ -647,7 +647,7 @@ export {
   detectRequiredEnvVars,
   detectCustomMetrics,
   generateCustomMetricValues,
-} from './k6-helpers';
+} from './k6-helpers.js';
 
 // Lighthouse Executor Module (Feature #1356 - Code Quality)
 export {
@@ -677,7 +677,7 @@ export {
   runRealLighthouseAudit,
   classifyLighthouseError,
   generateLighthouseErrorMessage,
-} from './lighthouse-executor';
+} from './lighthouse-executor.js';
 
 // Accessibility Helpers Module (Feature #1356 - Code Quality)
 export {
@@ -700,4 +700,4 @@ export {
   countViolationsByImpact,
   checkA11yThresholds,
   buildTestEngineInfo,
-} from './accessibility-helpers';
+} from './accessibility-helpers.js';

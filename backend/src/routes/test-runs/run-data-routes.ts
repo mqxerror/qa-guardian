@@ -5,11 +5,11 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { getTest, getTestSuite, getTestsMap } from '../test-suites';
-import { getProjectEnvVars } from '../projects';
-import { testRuns, TestRun } from './execution';
-import { getTestRun as dbGetTestRun } from '../../services/repositories/test-runs';
+import { authenticate, getOrganizationId } from '../../middleware/auth.js';
+import { getTest, getTestSuite, getTestsMap } from '../test-suites.js';
+import { getProjectEnvVars } from '../projects.js';
+import { testRuns, TestRun } from './execution.js';
+import { getTestRun as dbGetTestRun } from '../../services/repositories/test-runs.js';
 
 // Helper: get test run from Map first, then fall back to DB
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {

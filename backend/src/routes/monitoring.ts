@@ -26,9 +26,9 @@
 import { FastifyInstance } from 'fastify';
 
 // Re-export all types and stores for backward compatibility
-export * from './monitoring/types';
-export * from './monitoring/stores';
-export * from './monitoring/helpers';
+export * from './monitoring/types.js';
+export * from './monitoring/stores.js';
+export * from './monitoring/helpers.js';
 
 // Import route modules
 import {
@@ -42,7 +42,7 @@ import {
   alertCorrelationRoutes,
   incidentRoutes,
   reportRoutes,
-} from './monitoring/index';
+} from './monitoring/index.js';
 
 // Combined monitoring routes function that registers all sub-routes
 export async function monitoringRoutes(app: FastifyInstance) {

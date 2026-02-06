@@ -1,7 +1,7 @@
 // Test Suites Module - Utility Functions
 // Helper functions for test suite operations
 
-import { TestStep } from './types';
+import { TestStep } from './types.js';
 
 // Feature #875: Generate Playwright code from test steps
 export function generatePlaywrightCode(

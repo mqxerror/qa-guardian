@@ -13,10 +13,10 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { testRuns, TestRun } from './execution';
-import { getTestRun } from '../../services/repositories/test-runs';
-import { getTestSuite } from '../test-suites';
+import { authenticate, getOrganizationId } from '../../middleware/auth.js';
+import { testRuns, TestRun } from './execution.js';
+import { getTestRun } from '../../services/repositories/test-runs.js';
+import { getTestSuite } from '../test-suites.js';
 
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.

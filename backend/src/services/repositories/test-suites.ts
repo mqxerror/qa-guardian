@@ -10,8 +10,8 @@
  * - DELETE: return false
  */
 
-import { query, isDatabaseConnected } from '../database';
-import { TestSuite, Test } from '../../routes/test-suites/types';
+import { query, isDatabaseConnected } from '../database.js';
+import { TestSuite, Test } from '../../routes/test-suites/types.js';
 
 // In-memory fallback stores for when PostgreSQL is not available
 const memTestSuites = new Map<string, TestSuite>();

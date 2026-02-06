@@ -4,7 +4,7 @@
  * MCP tools for uptime monitoring, health checks, and alerting.
  */
 
-import { ToolDefinition } from '../types';
+import { ToolDefinition } from '../types/index.js';
 
 export const MONITORING_TOOLS: ToolDefinition[] = [
   {

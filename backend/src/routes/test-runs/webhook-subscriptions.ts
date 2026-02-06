@@ -3,10 +3,10 @@
  * Extracted from test-runs.ts for code quality (#1356)
  */
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { getProject as dbGetProject } from '../projects/stores';
-import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate } from './webhooks';
-import { WebhookLogEntry, webhookLog } from './alerts';
+import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
+import { getProject as dbGetProject } from '../projects/stores.js';
+import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate } from './webhooks.js';
+import { WebhookLogEntry, webhookLog } from './alerts.js';
 
 /**
  * Log webhook delivery details for debugging and monitoring

@@ -16,14 +16,14 @@ import { AxeBuilder } from '@axe-core/playwright';
 
 import {
   StepResult,
-} from './execution';
+} from './execution.js';
 
 import {
   A11yViolation,
   calculateA11yScore,
   countViolationsByImpact,
   checkA11yThresholds,
-} from './accessibility-helpers';
+} from './accessibility-helpers.js';
 
 /**
  * Configuration for an accessibility test

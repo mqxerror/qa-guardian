@@ -11,7 +11,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { BASELINES_DIR } from './visual-regression';
+import { BASELINES_DIR } from './visual-regression.js';
 
 // ============================================
 // Directory Constants

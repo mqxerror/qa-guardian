@@ -1,7 +1,7 @@
 // DAST Report Generation Functions
 
-import { DASTScanResult, DASTAlert, ReportFormat } from './types';
-import { escapeHTML } from './utils';
+import { DASTScanResult, DASTAlert, ReportFormat } from './types.js';
+import { escapeHTML } from './utils.js';
 
 // Generate HTML report content
 export function generateHTMLReport(scan: DASTScanResult, projectName: string): string {

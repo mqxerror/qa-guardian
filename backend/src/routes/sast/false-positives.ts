@@ -11,16 +11,16 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload } from '../../middleware/auth';
-import { getProject } from '../../services/repositories/projects';
-import { logAuditEntry } from '../audit-logs';
-import { FalsePositive } from './types';
+import { authenticate, JwtPayload } from '../../middleware/auth.js';
+import { getProject } from '../../services/repositories/projects.js';
+import { logAuditEntry } from '../audit-logs.js';
+import { FalsePositive } from './types.js';
 import {
   generateId,
   getFalsePositives,
   addFalsePositive,
   removeFalsePositive,
-} from './stores';
+} from './stores.js';
 
 export async function falsePositivesRoutes(app: FastifyInstance) {
   // Get all false positives for a project

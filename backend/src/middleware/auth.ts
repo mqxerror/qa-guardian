@@ -1,8 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import crypto from 'crypto';
 // Feature #2116: Use async DB call instead of synchronous Map
-import { dbIsTokenBlacklisted } from '../routes/auth';
-import { apiKeys } from '../routes/api-keys';
+import { dbIsTokenBlacklisted } from '../routes/auth.js';
+import { apiKeys } from '../routes/api-keys/index.js';
 
 // Internal service token for service-to-service communication (MCP -> Backend)
 const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;

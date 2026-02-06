@@ -16,8 +16,8 @@
  * a PostgreSQL database connection to function.
  */
 
-import { query, isDatabaseConnected } from '../database';
-import { AIGeneratedTest, ApprovalStatus, ApprovalInfo } from '../../routes/ai-test-generator/types';
+import { query, isDatabaseConnected } from '../database.js';
+import { AIGeneratedTest, ApprovalStatus, ApprovalInfo } from '../../routes/ai-test-generator/types.js';
 
 // ============================================
 // Deprecated Memory Store Accessors

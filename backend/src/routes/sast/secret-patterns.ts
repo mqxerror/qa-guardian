@@ -15,10 +15,10 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload } from '../../middleware/auth';
-import { getProject } from '../../services/repositories/projects';
-import { logAuditEntry } from '../audit-logs';
-import { SecretPattern, SASTSeverity } from './types';
+import { authenticate, JwtPayload } from '../../middleware/auth.js';
+import { getProject } from '../../services/repositories/projects.js';
+import { logAuditEntry } from '../audit-logs.js';
+import { SecretPattern, SASTSeverity } from './types.js';
 import {
   getSecretPatterns,
   addSecretPattern,
@@ -26,7 +26,7 @@ import {
   removeSecretPattern,
   generateId,
   SECRET_PATTERN_TEMPLATES,
-} from './stores';
+} from './stores.js';
 
 export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> {
   // Get common rule templates

@@ -4,10 +4,10 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores';
-import { runGitleaksScan, checkGitleaksAvailability } from '../sast/gitleaks';
-import type { GitleaksFinding } from '../sast/gitleaks';
+import { authenticate, getOrganizationId } from '../../middleware/auth.js';
+import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores.js';
+import { runGitleaksScan, checkGitleaksAvailability } from '../sast/gitleaks.js';
+import type { GitleaksFinding } from '../sast/gitleaks.js';
 
 // ============================================================================
 // Type Definitions

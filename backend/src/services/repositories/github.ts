@@ -14,13 +14,13 @@
  * - User GitHub OAuth tokens
  */
 
-import { query, isDatabaseConnected } from '../database';
+import { query, isDatabaseConnected } from '../database.js';
 import {
   GitHubConnection,
   PRStatusCheck,
   PRComment,
   PRDependencyScanResult,
-} from '../../routes/github/types';
+} from '../../routes/github/types.js';
 
 
 // =============================

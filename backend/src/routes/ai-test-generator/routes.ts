@@ -22,7 +22,7 @@ import {
   ApproveTestBody,
   ReviewQueueResponse,
   ApprovalStatus,
-} from './types';
+} from './types.js';
 import {
   createAiGeneratedTest,
   getAiGeneratedTest,
@@ -38,7 +38,7 @@ import {
   getTestsByApprovalStatus,
   approveTest,
   rejectTest,
-} from './stores';
+} from './stores.js';
 
 export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
   /**

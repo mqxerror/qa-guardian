@@ -49,7 +49,7 @@ export async function runMigrations(): Promise<boolean> {
 
   try {
     // Dynamically import node-pg-migrate to avoid requiring it when not needed
-    const runner = await import('node-pg-migrate').then(m => m.default);
+    const { runner } = await import('node-pg-migrate');
 
     console.log('[Migrations] Running pending migrations...');
 

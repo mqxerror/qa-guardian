@@ -4,7 +4,7 @@
  * MCP tools for retrieving and analyzing test results.
  */
 
-import { ToolDefinition } from '../types';
+import { ToolDefinition } from '../types/index.js';
 
 export const TEST_RESULTS_TOOLS: ToolDefinition[] = [
   // Feature #1429: Unified get_result tool replaces get_test_results, get_result_details, get_result_timeline

@@ -2,9 +2,9 @@
 // Handles visual settings and healing settings
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
-import { ProjectVisualSettings, ProjectHealingSettings } from './types';
-import { getProject } from './stores';
+import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
+import { ProjectVisualSettings, ProjectHealingSettings } from './types.js';
+import { getProject } from './stores.js';
 import {
   getProjectVisualSettings,
   setProjectVisualSettings,
@@ -12,7 +12,7 @@ import {
   setProjectHealingSettings,
   hasProjectAccess,
   getProjectRole,
-} from './utils';
+} from './utils.js';
 
 // Settings routes use :projectId param
 interface ProjectIdParams {

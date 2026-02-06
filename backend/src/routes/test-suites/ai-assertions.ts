@@ -2,7 +2,7 @@
 // Feature #1140: AI Assertion Generation for test suites
 
 import { FastifyInstance } from 'fastify';
-import { authenticate } from '../../middleware/auth';
+import { authenticate } from '../../middleware/auth.js';
 
 // Feature #1140: Interface for generated assertion
 interface GeneratedAssertion {

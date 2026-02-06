@@ -35,7 +35,7 @@ import {
   VIEWPORT_PRESETS,
   isRunCancelled as isRunCancelledHelper,
   isRunPaused as isRunPausedHelper,
-} from './execution';
+} from './execution.js';
 
 import {
   VisualComparisonResult,
@@ -55,7 +55,7 @@ import {
   hasBaseline,
   saveBaseline as saveBaselineToFile,
   AntiAliasingOptions,
-} from './visual-regression';
+} from './visual-regression.js';
 
 import {
   SCREENSHOTS_DIR,
@@ -64,7 +64,7 @@ import {
   StorageQuotaExceededError,
   checkStorageQuota,
   getSimulatedStorageQuotaExceeded,
-} from './storage';
+} from './storage.js';
 
 import {
   getAutoHealThreshold,
@@ -78,7 +78,7 @@ import {
   getSelectorHistory,
   recordHealingEvent,
   PendingHealingApproval,
-} from './healing';
+} from './healing.js';
 
 import {
   simulatedLighthouseError,
@@ -94,7 +94,7 @@ import {
   getSimulatedOversizedPage,
   setSimulatedOversizedPage,
   getCrashDumpsDir,
-} from './test-simulation';
+} from './test-simulation.js';
 
 import {
   CrashDumpData,
@@ -113,7 +113,7 @@ import {
   checkPageDimensions,
   captureScreenshotWithTimeout,
   getIgnoreRegionsFromSelectors,
-} from './execute-test-helpers';
+} from './execute-test-helpers.js';
 
 import {
   detectCircularImports,
@@ -123,7 +123,7 @@ import {
   detectRequiredEnvVars,
   detectCustomMetrics,
   generateCustomMetricValues,
-} from './k6-helpers';
+} from './k6-helpers.js';
 
 import {
   detectCspIssues,
@@ -133,29 +133,29 @@ import {
   runRealLighthouseAudit,
   classifyLighthouseError,
   generateLighthouseErrorMessage,
-} from './lighthouse-executor';
+} from './lighthouse-executor.js';
 
 import {
   DeviceConfig,
   TestDeviceConfig,
   resolveDeviceConfig,
   DEVICE_PRESETS,
-} from './device-presets';
+} from './device-presets.js';
 
 import {
   calculateA11yScore,
   countViolationsByImpact,
   checkA11yThresholds,
-} from './accessibility-helpers';
+} from './accessibility-helpers.js';
 
-import { getTestSuite, IgnoreRegion } from '../test-suites';
-import { getProject, getProjectVisualSettings, getProjectHealingSettings } from '../projects';
+import { getTestSuite, IgnoreRegion } from '../test-suites.js';
+import { getProject, getProjectVisualSettings, getProjectHealingSettings } from '../projects.js';
 
 // Import extracted test type executors
-import { executeVisualTest, VisualTestConfig } from './visual-test-executor';
-import { executeLighthouseTest, LighthouseTestConfig } from './lighthouse-test-executor';
-import { executeLoadTest, LoadTestConfig } from './load-test-executor';
-import { executeAccessibilityTest, AccessibilityTestConfig } from './accessibility-test-executor';
+import { executeVisualTest, VisualTestConfig } from './visual-test-executor.js';
+import { executeLighthouseTest, LighthouseTestConfig } from './lighthouse-test-executor.js';
+import { executeLoadTest, LoadTestConfig } from './load-test-executor.js';
+import { executeAccessibilityTest, AccessibilityTestConfig } from './accessibility-test-executor.js';
 
 // Event emitter type - will be passed in from test-runs.ts
 export type EmitRunEventFn = (runId: string, orgId: string, event: string, data: any) => void;

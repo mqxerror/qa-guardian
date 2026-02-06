@@ -2,11 +2,11 @@
 // Feature #1151: Human review workflow for AI-generated tests
 
 import { FastifyInstance } from 'fastify';
-import { authenticate } from '../../middleware/auth';
-import { Test } from './types';
-import { getTestSuite, getTest, updateTest, updateTestSuite, listTests, batchGetTests } from './stores';
+import { authenticate } from '../../middleware/auth.js';
+import { Test } from './types.js';
+import { getTestSuite, getTest, updateTest, updateTestSuite, listTests, batchGetTests } from './stores.js';
 // Feature #89: Redis caching for review settings
-import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
 
 // Review action body interface
 interface ReviewTestBody {

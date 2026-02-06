@@ -8,13 +8,13 @@
  * Feature #2110: Remove in-memory Map stores (DB-only migration)
  */
 
-import { query, isDatabaseConnected } from '../database';
+import { query, isDatabaseConnected } from '../database.js';
 import {
   ApiKey,
   McpConnection,
   McpToolCall,
   McpAuditLogEntry
-} from '../../routes/api-keys/types';
+} from '../../routes/api-keys/types.js';
 import crypto from 'crypto';
 
 // ============================================

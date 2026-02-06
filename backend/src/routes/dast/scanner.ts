@@ -7,19 +7,19 @@ import {
   DASTConfig,
   OpenAPISpec,
   OpenAPIEndpoint,
-} from './types';
+} from './types.js';
 import {
   createDastScan,
   updateDastScan,
   getDastFalsePositives,
   getOpenApiSpecsByProject,
   saveDastConfig,
-} from './stores';
+} from './stores.js';
 import {
   generateId,
   getDASTConfig,
   isUrlInScope,
-} from './utils';
+} from './utils.js';
 
 /** Base URL for the ZAP daemon API. Defaults to the Docker service name. */
 const ZAP_BASE_URL = process.env.ZAP_API_URL || 'http://zap:8080';

@@ -5,7 +5,7 @@
  * Features: #1658, #1659, #1660, #1663, #1665, #1672, #1677, #1678, #1679
  */
 
-import { ToolHandler, HandlerModule } from './types';
+import { ToolHandler, HandlerModule } from './types.js';
 
 /**
  * Bulk update tests (Feature #1658)

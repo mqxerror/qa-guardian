@@ -10,7 +10,7 @@
 
 import * as http from 'http';
 import * as crypto from 'crypto';
-import { dbCreateApiKey, dbRevokeApiKey } from '../routes/api-keys/stores';
+import { dbCreateApiKey, dbRevokeApiKey } from '../routes/api-keys/stores.js';
 
 // Test configuration
 const BACKEND_PORT = 3001;

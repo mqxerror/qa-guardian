@@ -13,7 +13,7 @@
  */
 
 import { Queue, Worker, Job, QueueEvents, JobsOptions } from 'bullmq';
-import IORedis from 'ioredis';
+import { Redis as IORedis } from 'ioredis';
 
 // ============================================================================
 // Types and Interfaces

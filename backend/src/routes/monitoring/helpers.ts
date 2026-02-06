@@ -25,7 +25,7 @@ import {
   AlertRateLimitConfig,
   AlertRateLimitState,
   AlertRunbook,
-} from './types';
+} from './types.js';
 
 import {
   // Async DB functions
@@ -49,7 +49,7 @@ import {
   alertRateLimitConfigs,
   alertRateLimitStates,
   alertRunbooks,
-} from './stores';
+} from './stores.js';
 
 // Global monitoring locations
 export const MONITORING_LOCATIONS: { id: MonitoringLocation; name: string; region: string; city: string }[] = [

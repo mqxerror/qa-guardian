@@ -9,7 +9,7 @@
  * NOTE: runningBrowsers stays in-memory as it contains runtime state (Browser instances)
  */
 
-import { query, isDatabaseConnected } from '../database';
+import { query, isDatabaseConnected } from '../database.js';
 import type {
   TestRun,
   TestRunStatus,
@@ -19,7 +19,7 @@ import type {
   TestRunResult,
   SelectorOverride,
   HealedSelectorEntry,
-} from '../../routes/test-runs/execution';
+} from '../../routes/test-runs/execution.js';
 
 // In-memory fallback: import the testRuns Map from execution module
 // This allows reads to work even when PostgreSQL is not connected

@@ -20,17 +20,17 @@
  */
 
 // Re-export all types
-export * from './types';
+export * from './types.js';
 
 // Re-export all stores
-export * from './stores';
+export * from './stores.js';
 
 // Re-export route modules
-export { coreRoutes } from './routes';
-export { customRulesRoutes } from './custom-rules';
-export { falsePositivesRoutes } from './false-positives';
-export { prIntegrationRoutes } from './pr-integration';
-export { gitleaksRoutes } from './gitleaks';
-export { secretPatternsRoutes } from './secret-patterns';  // Feature #1558
-export { secretVerificationRoutes } from './secret-verification';  // Feature #1565
-export { secretRemediationRoutes } from './secret-remediation';  // Feature #1566
+export { coreRoutes } from './routes.js';
+export { customRulesRoutes } from './custom-rules.js';
+export { falsePositivesRoutes } from './false-positives.js';
+export { prIntegrationRoutes } from './pr-integration.js';
+export { gitleaksRoutes } from './gitleaks.js';
+export { secretPatternsRoutes } from './secret-patterns.js';  // Feature #1558
+export { secretVerificationRoutes } from './secret-verification.js';  // Feature #1565
+export { secretRemediationRoutes } from './secret-remediation.js';  // Feature #1566
