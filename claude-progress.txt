@@ -35585,3 +35585,29 @@ To complete Feature #191, the user needs to:
 3. Wait for ZAP to be healthy at http://zap:8080
 4. Then run a full ZAP DAST scan
 
+
+
+=== Session 2026-02-06 (Session 149) - Feature #191 ZAP DAST Re-investigation ===
+Progress: 198/199 passing (99.5%)
+
+### Session Summary
+Fresh context window. Re-verified Feature #191 (ZAP DAST) status.
+
+### Key Findings
+1. Started backend/frontend servers successfully
+2. Health endpoint shows all services healthy (PostgreSQL 4ms, Redis connected)
+3. Services page confirms OWASP ZAP: Unavailable
+4. Docker daemon not running - cannot start ZAP container
+5. Lightweight DAST scanner working - ran new scan, now 5 completed scans
+
+### Feature #191 Status: SKIPPED
+- Requires Docker with ZAP container (external infrastructure)
+- Feature skipped and moved to end of priority queue
+
+### Screenshots
+- session149-dashboard-regression.png
+- session149-services-zap-unavailable.png
+- session149-dast-scan-completed.png
+
+### Final Status: 198/199 (99.5%)
+
