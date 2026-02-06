@@ -117,7 +117,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       // Feature #155: Queue test execution with concurrency limits
       // enqueueOrExecute will queue the job if queue is available, otherwise execute directly
       const queueResult = await enqueueOrExecute(id, 'e2e', {
-        triggeredBy: request.user?.id,
+        triggeredBy: (request.user as any)?.id,
       });
 
       // Update status to 'queued' if the run was queued (not executed directly)
@@ -196,7 +196,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       // Determine test type for queue prioritization
       const testType = test.test_type || 'e2e';
       const queueResult = await enqueueOrExecute(id, testType as any, {
-        triggeredBy: request.user?.id,
+        triggeredBy: (request.user as any)?.id,
       });
 
       // Update status if queued
@@ -289,7 +289,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
 
       // Feature #155: Queue test execution with concurrency limits
       const queueResult = await enqueueOrExecute(id, 'e2e', {
-        triggeredBy: request.user?.id,
+        triggeredBy: (request.user as any)?.id,
       });
 
       if (queueResult.queued) {
