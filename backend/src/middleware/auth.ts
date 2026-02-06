@@ -30,11 +30,19 @@ export interface InternalServicePayload {
 }
 
 // Helper to validate internal service token
+// Feature #228: Use timing-safe comparison to prevent timing attacks
 function validateInternalServiceToken(token: string): InternalServicePayload | null {
   if (!INTERNAL_SERVICE_TOKEN) {
     return null;
   }
-  if (token === INTERNAL_SERVICE_TOKEN) {
+
+  // Feature #228: Use crypto.timingSafeEqual for constant-time comparison
+  // This prevents timing attacks that could leak token information
+  const tokenBuf = Buffer.from(token);
+  const expectedBuf = Buffer.from(INTERNAL_SERVICE_TOKEN);
+
+  // timingSafeEqual throws if buffers have different lengths, so check first
+  if (tokenBuf.length === expectedBuf.length && crypto.timingSafeEqual(tokenBuf, expectedBuf)) {
     return {
       id: 'internal-service',
       organization_id: 'system',
