@@ -12,6 +12,31 @@ import { Pool } from 'pg';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+/**
+ * Detect if running from compiled JavaScript (dist/) or TypeScript source (src/)
+ *
+ * Priority:
+ * 1. RUNTIME_MODE env var (explicit: "compiled" or "interpreted")
+ * 2. Path detection fallback (checks if running from dist/ directory)
+ *
+ * @param currentDirname - The __dirname of the calling module
+ * @returns true if running compiled JS, false if running TS source
+ */
+function detectCompiledMode(currentDirname: string): boolean {
+  const runtimeMode = process.env.RUNTIME_MODE?.toLowerCase();
+
+  // Explicit env var takes precedence
+  if (runtimeMode === 'compiled') {
+    return true;
+  }
+  if (runtimeMode === 'interpreted' || runtimeMode === 'source') {
+    return false;
+  }
+
+  // Fallback: detect from path (running from dist/ = compiled)
+  return currentDirname.includes('/dist/');
+}
+
 // Migration status interface for health endpoint
 export interface MigrationStatus {
   enabled: boolean;
@@ -64,8 +89,10 @@ export async function runMigrations(): Promise<boolean> {
 
     // Detect if we're running from compiled JS (dist/) or from source (src/)
     // When compiled, use .cjs migrations; when using tsx, use .ts migrations
-    const isCompiled = __dirname.includes('/dist/');
-    console.log(`[Migrations] Running from ${isCompiled ? 'compiled (dist/)' : 'source (src/)'}, using ${isCompiled ? '.cjs' : '.ts'} migrations`);
+    // Uses RUNTIME_MODE env var if set, otherwise falls back to path detection
+    const isCompiled = detectCompiledMode(__dirname);
+    const detectionMethod = process.env.RUNTIME_MODE ? 'env var' : 'path detection';
+    console.log(`[Migrations] Running from ${isCompiled ? 'compiled (dist/)' : 'source (src/)'}, using ${isCompiled ? '.cjs' : '.ts'} migrations (detected via ${detectionMethod})`);
 
     const result = await runner({
       databaseUrl,

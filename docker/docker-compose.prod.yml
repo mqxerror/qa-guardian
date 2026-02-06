@@ -130,6 +130,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
+      # Feature #180: Explicit runtime mode for compiled JavaScript
+      RUNTIME_MODE: compiled
       # Database
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/qa_guardian
       # Redis
@@ -204,6 +206,8 @@ services:
     command: ["node", "dist/worker.js"]  # Override CMD to run worker (Feature #177)
     environment:
       NODE_ENV: production
+      # Feature #180: Explicit runtime mode for compiled JavaScript
+      RUNTIME_MODE: compiled
       # Database
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/qa_guardian
       # Redis
