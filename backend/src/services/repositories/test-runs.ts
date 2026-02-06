@@ -408,6 +408,56 @@ export async function listTestRunsByOrg(orgId: string, limit?: number): Promise<
 }
 
 /**
+ * Feature #135: List test runs for a specific test
+ * Queries directly by test_id instead of loading all org runs
+ * Also handles batch/suite runs that include this test in their results
+ */
+export async function listTestRunsByTestId(testId: string, orgId: string, limit: number = 20): Promise<TestRun[]> {
+  if (isDatabaseConnected()) {
+    try {
+      // Query test_runs where:
+      // 1. test_id matches directly (single test run), OR
+      // 2. It's a suite run (test_id IS NULL) with results containing this test
+      // We use JSONB containment to check if any result has this test_id
+      const result = await query<any>(
+        `SELECT * FROM test_runs
+         WHERE organization_id = $1
+         AND (
+           test_id = $2
+           OR (test_id IS NULL AND results @> $3::jsonb)
+         )
+         ORDER BY created_at DESC
+         LIMIT $4`,
+        [orgId, testId, JSON.stringify([{ test_id: testId }]), limit]
+      );
+      if (result && result.rows) {
+        return result.rows.map(rowToTestRun);
+      }
+    } catch (error) {
+      console.error('[TestRunsRepo] Failed to list test runs by test ID from database:', error);
+    }
+  }
+
+  // Fallback: filter from in-memory Map when DB unavailable
+  const map = getTestRunsMap();
+  let runs: TestRun[] = [];
+  for (const run of map.values()) {
+    if (run.organization_id !== orgId) continue;
+    // Direct single-test run
+    if (run.test_id === testId) {
+      runs.push(run);
+      continue;
+    }
+    // Suite/batch run that includes this test in results
+    if (run.results && run.results.some(result => result.test_id === testId)) {
+      runs.push(run);
+    }
+  }
+  runs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return runs.slice(0, limit);
+}
+
+/**
  * Get recent test runs with pagination
  */
 export async function getRecentTestRuns(

@@ -9,7 +9,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth';
 import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites';
 import { testRuns, runningBrowsers, TestRun, BrowserType, TestRunResult } from './execution';
-import { getTestRun as dbGetTestRun, listTestRunsBySuite as dbListTestRunsBySuite, listTestRunsByOrg as dbListTestRunsByOrg, listTestRunsPaginated } from '../../services/repositories/test-runs';
+import { getTestRun as dbGetTestRun, listTestRunsBySuite as dbListTestRunsBySuite, listTestRunsByOrg as dbListTestRunsByOrg, listTestRunsByTestId as dbListTestRunsByTestId, listTestRunsPaginated } from '../../services/repositories/test-runs';
 // Feature #61: Redis caching
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
 
@@ -366,6 +366,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
 
   // List test runs for a specific test
   // Feature #61: Cached for 1 minute (runs change frequently)
+  // Feature #135: Use direct SQL query by test_id instead of loading all org runs
   app.get<{ Params: TestIdParams }>('/api/v1/tests/:testId/runs', {
     preHandler: [authenticate],
   }, async (request, reply) => {
@@ -384,48 +385,41 @@ export async function runCoreRoutes(app: FastifyInstance) {
 
     // Feature #61: Try to get runs list from cache first
     const cacheKey = CacheKeys.runs.byTest(testId);
-    let allOrgRuns = await cache.get<any[]>(cacheKey);
-    if (!allOrgRuns) {
-      // Feature #1984: Include batch runs that contain results for this test
-      // Check both direct test_id match (single test run) AND results array for suite runs
-      allOrgRuns = await dbListTestRunsByOrg(orgId);
+    let testRuns = await cache.get<TestRun[]>(cacheKey);
+    if (!testRuns) {
+      // Feature #135: Query directly by test_id (not loading all org runs)
+      // This function handles both direct test_id match AND suite runs containing this test
+      testRuns = await dbListTestRunsByTestId(testId, orgId, 50);
       // Cache with SHORT TTL since runs change frequently
-      await cache.set(cacheKey, allOrgRuns, CacheTTL.SHORT);
+      await cache.set(cacheKey, testRuns, CacheTTL.SHORT);
     }
-    const runs = allOrgRuns
-      .filter(r => {
-        // Direct single-test run
-        if (r.test_id === testId) return true;
-        // Suite/batch run that includes this test in results
-        if (r.results && r.results.some(result => result.test_id === testId)) return true;
-        return false;
-      })
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .map(r => {
-        // For suite runs, extract only the result for this specific test
-        const testResult = r.test_id === testId
-          ? r.results?.[0] // Single test run - use first result
-          : r.results?.find(result => result.test_id === testId) || null; // Suite run - find matching result
-        // Feature #68: Handle both Date objects and ISO strings (from cache)
-        const createdAt = r.created_at instanceof Date ? r.created_at : new Date(r.created_at);
-        const startedAt = r.started_at ? (r.started_at instanceof Date ? r.started_at : new Date(r.started_at)) : null;
-        const completedAt = r.completed_at ? (r.completed_at instanceof Date ? r.completed_at : new Date(r.completed_at)) : null;
-        return {
-          id: r.id,
-          suite_id: r.suite_id,
-          test_id: r.test_id || testId, // Use testId for suite runs
-          status: testResult?.status || r.status, // Use test-specific status if available
-          browser: r.browser,
-          branch: r.branch,
-          created_at: createdAt.toISOString(),
-          started_at: startedAt?.toISOString(),
-          completed_at: completedAt?.toISOString(),
-          duration_ms: testResult?.duration_ms || r.duration_ms,
-          result: testResult || null,
-          is_batch_run: !r.test_id, // Flag to indicate this was part of a batch/suite run
-          batch_run_id: !r.test_id ? r.id : undefined, // Link to the full batch run
-        };
-      });
+
+    // Transform runs to response format (SQL already handled filtering and sorting)
+    const runs = testRuns.map(r => {
+      // For suite runs, extract only the result for this specific test
+      const testResult = r.test_id === testId
+        ? r.results?.[0] // Single test run - use first result
+        : r.results?.find(result => result.test_id === testId) || null; // Suite run - find matching result
+      // Feature #68: Handle both Date objects and ISO strings (from cache)
+      const createdAt = r.created_at instanceof Date ? r.created_at : new Date(r.created_at);
+      const startedAt = r.started_at ? (r.started_at instanceof Date ? r.started_at : new Date(r.started_at)) : null;
+      const completedAt = r.completed_at ? (r.completed_at instanceof Date ? r.completed_at : new Date(r.completed_at)) : null;
+      return {
+        id: r.id,
+        suite_id: r.suite_id,
+        test_id: r.test_id || testId, // Use testId for suite runs
+        status: testResult?.status || r.status, // Use test-specific status if available
+        browser: r.browser,
+        branch: r.branch,
+        created_at: createdAt.toISOString(),
+        started_at: startedAt?.toISOString(),
+        completed_at: completedAt?.toISOString(),
+        duration_ms: testResult?.duration_ms || r.duration_ms,
+        result: testResult || null,
+        is_batch_run: !r.test_id, // Flag to indicate this was part of a batch/suite run
+        batch_run_id: !r.test_id ? r.id : undefined, // Link to the full batch run
+      };
+    });
 
     return {
       test_id: testId,
