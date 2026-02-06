@@ -545,51 +545,48 @@ function ProjectDetailPage() {
   useEffect(() => {
     if (activeTab !== 'security') return;
 
+    // Feature #146: Parallelize SAST data fetching for faster load
     const fetchSastData = async () => {
       setIsLoadingSast(true);
       try {
-        // Fetch SAST config
-        const configResponse = await fetch(`/api/v1/projects/${id}/sast/config`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (configResponse.ok) {
-          const configData = await configResponse.json();
+        // Fetch all SAST data in parallel instead of sequentially
+        const [configRes, rulesetsRes, scansRes, customRulesRes, patternsRes] = await Promise.all([
+          fetch(`/api/v1/projects/${id}/sast/config`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+          fetch('/api/v1/sast/rulesets', {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+          fetch(`/api/v1/projects/${id}/sast/scans?limit=10`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+          fetch(`/api/v1/projects/${id}/sast/custom-rules`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+          fetch(`/api/v1/projects/${id}/sast/patterns`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+        ]);
+
+        // Process responses (each can fail independently)
+        if (configRes.ok) {
+          const configData = await configRes.json();
           setSastConfig(configData.config);
         }
-
-        // Fetch SAST rulesets
-        const rulesetsResponse = await fetch('/api/v1/sast/rulesets', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (rulesetsResponse.ok) {
-          const rulesetsData = await rulesetsResponse.json();
+        if (rulesetsRes.ok) {
+          const rulesetsData = await rulesetsRes.json();
           setSastRulesets(rulesetsData.rulesets);
         }
-
-        // Fetch recent scans
-        const scansResponse = await fetch(`/api/v1/projects/${id}/sast/scans?limit=10`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (scansResponse.ok) {
-          const scansData = await scansResponse.json();
+        if (scansRes.ok) {
+          const scansData = await scansRes.json();
           setSastScans(scansData.scans);
         }
-
-        // Fetch custom rules
-        const customRulesResponse = await fetch(`/api/v1/projects/${id}/sast/custom-rules`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (customRulesResponse.ok) {
-          const customRulesData = await customRulesResponse.json();
+        if (customRulesRes.ok) {
+          const customRulesData = await customRulesRes.json();
           setCustomRules(customRulesData.rules || []);
         }
-
-        // Fetch custom secret patterns
-        const patternsResponse = await fetch(`/api/v1/projects/${id}/sast/patterns`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (patternsResponse.ok) {
-          const patternsData = await patternsResponse.json();
+        if (patternsRes.ok) {
+          const patternsData = await patternsRes.json();
           setSecretPatterns(patternsData.patterns || []);
         }
       } catch (err) {
@@ -601,46 +598,44 @@ function ProjectDetailPage() {
 
     fetchSastData();
 
-    // Also fetch DAST data when security tab is active
+    // Feature #146: Parallelize DAST data fetching for faster load
     const fetchDastData = async () => {
       setIsLoadingDast(true);
       try {
-        // Fetch DAST config
-        const configResponse = await fetch(`/api/v1/projects/${id}/dast/config`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (configResponse.ok) {
-          const configData = await configResponse.json();
+        // Fetch all DAST data in parallel instead of sequentially
+        const [configRes, scansRes, specRes, schedulesRes] = await Promise.all([
+          fetch(`/api/v1/projects/${id}/dast/config`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+          fetch(`/api/v1/projects/${id}/dast/scans?limit=10`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+          fetch(`/api/v1/projects/${id}/dast/openapi-spec`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+          fetch(`/api/v1/projects/${id}/dast/schedules`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+        ]);
+
+        // Process responses (each can fail independently)
+        if (configRes.ok) {
+          const configData = await configRes.json();
           setDastConfig(configData.config);
           setDastTargetUrl(configData.config.targetUrl || '');
         }
-
-        // Fetch recent DAST scans
-        const scansResponse = await fetch(`/api/v1/projects/${id}/dast/scans?limit=10`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (scansResponse.ok) {
-          const scansData = await scansResponse.json();
+        if (scansRes.ok) {
+          const scansData = await scansRes.json();
           setDastScans(scansData.scans);
         }
-
-        // Fetch OpenAPI spec if available
-        const specResponse = await fetch(`/api/v1/projects/${id}/dast/openapi-spec`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (specResponse.ok) {
-          const specData = await specResponse.json();
+        if (specRes.ok) {
+          const specData = await specRes.json();
           setOpenApiSpec(specData.spec);
         } else {
           setOpenApiSpec(null);
         }
-
-        // Fetch DAST schedules
-        const schedulesResponse = await fetch(`/api/v1/projects/${id}/dast/schedules`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (schedulesResponse.ok) {
-          const schedulesData = await schedulesResponse.json();
+        if (schedulesRes.ok) {
+          const schedulesData = await schedulesRes.json();
           setDastSchedules(schedulesData.schedules || []);
         }
       } catch (err) {
