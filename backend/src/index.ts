@@ -472,6 +472,8 @@ app.get('/health', async (request, reply) => {
       connected: isDatabaseConnected(),
       latency: dbCheck.latency,
       error: dbCheck.error,
+      // Feature #157: Include pool stats from health check
+      pool: dbCheck.pool,
     },
     // Feature #60: Include cache status in health check
     cache: {
