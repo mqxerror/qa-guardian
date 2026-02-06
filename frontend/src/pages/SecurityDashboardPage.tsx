@@ -7,6 +7,8 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { SkeletonSecurityDashboard } from '../components/ui/Skeleton';
+// Feature #126: Reusable empty state components
+import { EmptyState, EmptyStateIcons, EmptyStates } from '../components/ui/EmptyState';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import {
   useSecurityDashboard,
@@ -466,18 +468,22 @@ export function SecurityDashboardPage() {
                 </div>
               )}
 
-              {/* Secrets List */}
+              {/* Feature #126: Secrets List with reusable empty states */}
               <div className="space-y-4">
                 {secretsData.secrets.length === 0 ? (
-                  <div className="text-center py-12 rounded-lg border border-border bg-card">
-                    <div className="text-4xl mb-4">🔐</div>
-                    <h3 className="text-lg font-semibold text-foreground">No Secrets Detected</h3>
-                    <p className="text-muted-foreground mt-2">
-                      {secretsProjectFilter !== 'all' || secretsTypeFilter !== 'all'
-                        ? 'No secrets match your current filters'
-                        : 'Run secret detection scans on your projects to detect exposed secrets'}
-                    </p>
-                  </div>
+                  secretsProjectFilter !== 'all' || secretsTypeFilter !== 'all' ? (
+                    EmptyStates.noSearchResults(
+                      secretsTypeFilter !== 'all' ? secretsTypeFilter : secretsProjectFilter,
+                      () => { setSecretsProjectFilter('all'); setSecretsTypeFilter('all'); }
+                    )
+                  ) : (
+                    <EmptyState
+                      icon="🔐"
+                      title="No Secrets Detected"
+                      description="Run secret detection scans on your projects to detect exposed secrets."
+                      action={{ label: 'Scan All', onClick: () => scanForSecrets(true, true) }}
+                    />
+                  )
                 ) : (
                   secretsData.secrets.map((secret) => (
                     <div
@@ -622,13 +628,12 @@ export function SecurityDashboardPage() {
               Failed to load trends data
             </div>
           ) : trendsData.trends.length === 0 ? (
-            <div className="text-center py-12 rounded-lg border border-border bg-card">
-              <div className="text-4xl mb-4">📊</div>
-              <h3 className="text-lg font-semibold text-foreground">No Trend Data</h3>
-              <p className="text-muted-foreground mt-2">
-                Run multiple SAST scans over time to see security trends
-              </p>
-            </div>
+            /* Feature #126: Reusable empty state for trends */
+            <EmptyState
+              icon={EmptyStateIcons.analytics}
+              title="No Trend Data"
+              description="Run multiple SAST scans over time to see security trends."
+            />
           ) : (
             <>
               {/* Trend Summary Cards */}
@@ -926,18 +931,17 @@ export function SecurityDashboardPage() {
               </div>
             )}
 
-            {/* Findings List */}
+            {/* Feature #126: Findings List with reusable empty states */}
             <div className="space-y-4">
               {data.findings.length === 0 ? (
-                <div className="text-center py-12 rounded-lg border border-border bg-card">
-                  <div className="text-4xl mb-4">🛡️</div>
-                  <h3 className="text-lg font-semibold text-foreground">No Findings</h3>
-                  <p className="text-muted-foreground mt-2">
-                    {severityFilter.length > 0 || categoryFilter.length > 0
-                      ? 'No findings match your current filters'
-                      : 'Run SAST scans on your projects to see security findings here'}
-                  </p>
-                </div>
+                severityFilter.length > 0 || categoryFilter.length > 0 ? (
+                  EmptyStates.noSearchResults(
+                    severityFilter.length > 0 ? severityFilter.join(', ') : categoryFilter.join(', '),
+                    () => { setSeverityFilter([]); setCategoryFilter([]); }
+                  )
+                ) : (
+                  EmptyStates.noSecurityFindings()
+                )
               ) : (
                 data.findings.map(finding => (
                   <div

@@ -1,5 +1,6 @@
 // Feature #1357: Extracted ProjectsPage for code quality compliance (400 line limit)
 // Feature #71: Migrated to React Query for caching
+// Feature #126: Added empty states with CTA
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
@@ -8,6 +9,8 @@ import { toast } from '../stores/toastStore';
 import { getErrorMessage, isNetworkError, isOffline } from '../utils/errorHandling';
 // Feature #71: Import React Query hooks for caching
 import { useProjects, useCreateProject, useInvalidateProjects } from '../hooks/api/useProjects';
+// Feature #126: Empty state component
+import { EmptyStates } from '../components/ui/EmptyState';
 
 interface Project {
   id: string;
@@ -231,24 +234,12 @@ export function ProjectsPage() {
           {isLoading ? (
             <p className="text-muted-foreground">Loading projects...</p>
           ) : filteredProjects.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border bg-card p-12 text-center">
-              <h3 className="text-lg font-semibold text-foreground">
-                {projects.length === 0 ? 'No projects yet' : 'No matching projects'}
-              </h3>
-              <p className="mt-2 text-muted-foreground">
-                {projects.length === 0
-                  ? 'Create your first project to start testing.'
-                  : 'Try selecting a different filter.'}
-              </p>
-              {canCreateProject && projects.length === 0 && (
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="mt-4 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  Create Project
-                </button>
-              )}
-            </div>
+            /* Feature #126: Reusable empty state with CTA */
+            projects.length === 0 ? (
+              EmptyStates.noProjects(canCreateProject ? () => setShowCreateModal(true) : undefined)
+            ) : (
+              EmptyStates.noSearchResults(selectedProjectFilter, () => setSelectedProjectFilter('all'))
+            )
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredProjects.map((project) => (

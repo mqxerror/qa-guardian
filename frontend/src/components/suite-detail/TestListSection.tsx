@@ -11,6 +11,8 @@ import { useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { TestType } from './types';
 import { formatRelativeTime } from './utils';
+// Feature #126: Reusable empty state components
+import { EmptyStates } from '../ui/EmptyState';
 
 // Local sort field type matching TestSuitePage.tsx
 type LocalSortField = 'name' | 'status' | 'last_run' | 'last_result' | 'run_count' | 'avg_duration';
@@ -144,34 +146,11 @@ export function TestListSection({
         )}
       </div>
 
+      {/* Feature #126: Reusable empty states with CTA */}
       {tests.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">
-          <h3 className="text-lg font-semibold text-foreground">No tests yet</h3>
-          <p className="mt-2 text-muted-foreground">
-            Create your first test in this suite.
-          </p>
-          {canCreateTest && (
-            <button
-              onClick={onOpenCreateTestModal}
-              className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Create Test
-            </button>
-          )}
-        </div>
+        EmptyStates.noTests(canCreateTest ? onOpenCreateTestModal : undefined)
       ) : filteredTests.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">
-          <h3 className="text-lg font-semibold text-foreground">No tests found</h3>
-          <p className="mt-2 text-muted-foreground">
-            No tests match your search "{searchQuery}".
-          </p>
-          <button
-            onClick={() => onSearchChange('')}
-            className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Clear Search
-          </button>
-        </div>
+        EmptyStates.noSearchResults(searchQuery, () => onSearchChange(''))
       ) : (
         <VirtualizedTestList
           tests={tests}

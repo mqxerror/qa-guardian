@@ -13,6 +13,8 @@ import { useRunsPaginated, useRunsInfinite, useProjects, type TestRun } from '..
 import { InfiniteScrollContainer } from '../components/ui/InfiniteScrollContainer';
 import { VirtualTable } from '../components/ui/VirtualList';
 import { SkeletonRunHistory } from '../components/ui/Skeleton';
+// Feature #126: Reusable empty state components
+import { EmptyStates } from '../components/ui/EmptyState';
 
 function RunHistoryPage() {
   const { formatDate } = useTimezoneStore();
@@ -305,17 +307,14 @@ function RunHistoryPage() {
         {/* Loading State - Feature #125: Skeleton loader for better perceived performance */}
         {loading && <SkeletonRunHistory />}
 
-        {/* Empty State */}
+        {/* Feature #126: Reusable empty state with CTA */}
         {!loading && !error && filteredRuns.length === 0 && (
-          <div className="text-center py-12 bg-card rounded-lg border border-border">
-            <svg className="mx-auto h-12 w-12 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h3 className="mt-4 text-lg font-medium text-foreground">No runs found</h3>
-            <p className="mt-2 text-muted-foreground">
-              {runs.length === 0 ? 'No test runs have been executed yet.' : 'No runs match your current filters.'}
-            </p>
-          </div>
+          runs.length === 0
+            ? EmptyStates.noRuns()
+            : EmptyStates.noSearchResults(
+                searchQuery || statusFilter || dateFilter,
+                () => { setSearchQuery(''); setStatusFilter('all'); setDateFilter('all'); }
+              )
         )}
 
         {/* Runs Table */}
