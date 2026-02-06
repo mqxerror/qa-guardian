@@ -19,7 +19,7 @@ export type {
   GraphQLScanConfig,
   GraphQLFinding,
   GraphQLScan,
-} from './dast/types';
+} from './dast/types.js';
 
 export {
   // Stores
@@ -32,7 +32,7 @@ export {
   DEFAULT_DAST_CONFIG,
   ZAP_SCAN_PROFILES,
   SCHEDULE_FREQUENCIES,
-} from './dast/stores';
+} from './dast/stores.js';
 
 export {
   // Utility Functions
@@ -44,21 +44,21 @@ export {
   generateCronExpression,
   calculateDASTNextRun,
   escapeHTML,
-} from './dast/utils';
+} from './dast/utils.js';
 
 export {
   // Scanner Functions
   runZAPScan,
   parseOpenAPISpec,
   getOpenAPISpec,
-} from './dast/scanner';
+} from './dast/scanner.js';
 
 export {
   // Report Generation
   generateHTMLReport,
   generateJSONReport,
   generatePDFReport,
-} from './dast/reports';
+} from './dast/reports.js';
 
 export {
   // GraphQL Scanning
@@ -67,9 +67,9 @@ export {
   startGraphQLScan,
   getGraphQLScan,
   listGraphQLScans,
-} from './dast/graphql';
+} from './dast/graphql.js';
 
 export {
   // Routes
   dastRoutes,
-} from './dast/routes';
+} from './dast/routes.js';

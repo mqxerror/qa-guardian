@@ -5,7 +5,7 @@
  * Report generation tools are in reporting.ts
  */
 
-import { ToolDefinition } from '../types';
+import { ToolDefinition } from '../types.js';
 
 export const ANALYTICS_TOOLS: ToolDefinition[] = [
   // Feature #994: Get dashboard summary MCP tool

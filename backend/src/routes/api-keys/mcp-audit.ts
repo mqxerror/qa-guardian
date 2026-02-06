@@ -1,11 +1,11 @@
 // MCP Audit logging functions
 
 import crypto from 'crypto';
-import { McpAuditLogEntry } from './types';
+import { McpAuditLogEntry } from './types.js';
 import {
   dbCreateMcpAuditLog,
   dbGetMcpAuditLogs,
-} from './stores';
+} from './stores.js';
 
 // Track an MCP audit log entry (async)
 export async function logMcpAuditEntry(entry: Omit<McpAuditLogEntry, 'id' | 'timestamp'>): Promise<void> {

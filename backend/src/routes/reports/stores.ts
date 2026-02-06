@@ -4,7 +4,7 @@
  */
 
 // Import repository functions
-import * as reportsRepo from '../../services/repositories/reports';
+import * as reportsRepo from '../../services/repositories/reports.js';
 
 // ===== ASYNC DATABASE FUNCTIONS =====
 export const storeReport = reportsRepo.storeReport;

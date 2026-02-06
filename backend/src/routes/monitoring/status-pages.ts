@@ -11,8 +11,8 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { logAuditEntry } from '../audit-logs';
+import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
+import { logAuditEntry } from '../audit-logs.js';
 import {
   StatusPage,
   StatusPageCheck,
@@ -21,7 +21,7 @@ import {
   StatusPageSubscription,
   UptimeCheck,
   CheckResult,
-} from './types';
+} from './types.js';
 import {
   // Async DB functions for status pages
   createStatusPage as dbCreateStatusPage,
@@ -50,7 +50,7 @@ import {
   // Deprecated Maps still needed for incidents/subscriptions (no DB functions yet)
   statusPageIncidents,
   statusPageSubscriptions,
-} from './stores';
+} from './stores.js';
 
 // ================================
 // HELPER FUNCTIONS

@@ -7,7 +7,7 @@
  * Updated to use aiRouter for cost tracking and failover (Feature #1480)
  */
 
-import { ToolHandler, HandlerModule } from './types';
+import { ToolHandler, HandlerModule } from './types.js';
 import { aiRouter } from '../../services/providers/ai-router.js';
 import { modelSelector } from '../../services/providers/model-selector.js';
 

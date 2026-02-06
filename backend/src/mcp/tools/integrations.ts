@@ -6,7 +6,7 @@
  * Note: For issue tracking (Jira, Linear, etc.), use webhooks + n8n/Zapier.
  */
 
-import { ToolDefinition } from '../types';
+import { ToolDefinition } from '../types.js';
 
 export const INTEGRATIONS_TOOLS: ToolDefinition[] = [
   // Feature #1226: MCP tool get_related_prs - Get GitHub PRs related to failures

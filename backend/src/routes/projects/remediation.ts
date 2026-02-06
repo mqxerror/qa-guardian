@@ -2,10 +2,10 @@
 // Feature #1106: AI suggests fixes for flaky tests based on patterns
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
-import { getProject } from './stores';
-import { getTest, getTestSuite } from '../test-suites/stores';
-import { listTestRunsByOrg } from '../../services/repositories/test-runs';
+import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
+import { getProject } from './stores.js';
+import { getTest, getTestSuite } from '../test-suites/stores.js';
+import { listTestRunsByOrg } from '../../services/repositories/test-runs.js';
 
 // Remediation suggestion interface
 interface RemediationSuggestion {

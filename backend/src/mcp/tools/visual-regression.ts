@@ -5,7 +5,7 @@
  * Visual approval/baseline management requires human judgment and is done via UI.
  */
 
-import { ToolDefinition } from '../types';
+import { ToolDefinition } from '../types.js';
 
 export const VISUAL_REGRESSION_TOOLS: ToolDefinition[] = [
   {

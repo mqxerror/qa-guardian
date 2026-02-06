@@ -4,7 +4,7 @@
  * MCP tools for managing projects in QA Guardian.
  */
 
-import { ToolDefinition } from '../types';
+import { ToolDefinition } from '../types.js';
 
 export const PROJECT_TOOLS: ToolDefinition[] = [
   {

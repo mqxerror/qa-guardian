@@ -1,9 +1,9 @@
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireScopes, getOrganizationId, JwtPayload } from '../middleware/auth';
-import { getTestSuite, getTest, listTests, updateTest, IgnoreRegion } from './test-suites';
-import { getProjectEnvVars, getProjectVisualSettings, getProjectHealingSettings } from './projects';
-import { getProject } from './projects/stores';
-import { getTestRun, updateTestRun as dbUpdateTestRun } from '../services/repositories/test-runs';
+import { authenticate, requireScopes, getOrganizationId, JwtPayload } from '../middleware/auth.js';
+import { getTestSuite, getTest, listTests, updateTest, IgnoreRegion } from './test-suites.js';
+import { getProjectEnvVars, getProjectVisualSettings, getProjectHealingSettings } from './projects.js';
+import { getProject } from './projects/stores.js';
+import { getTestRun, updateTestRun as dbUpdateTestRun } from '../services/repositories/test-runs.js';
 import { chromium, firefox, webkit, Browser, Page, BrowserContext } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -65,7 +65,7 @@ import {
   loadBaselineWithValidation,
   hasBaseline,
   saveBaseline as saveBaselineToFile,
-} from './test-runs/visual-regression';
+} from './test-runs/visual-regression.js';
 
 // Feature #1370: Import alerts module
 import {
@@ -89,7 +89,7 @@ import {
   sendEmailAlert,
   sendWebhookAlert,
   checkAndSendAlerts as checkAndSendAlertsBase,
-} from './test-runs/alerts';
+} from './test-runs/alerts.js';
 
 // Feature #1371: Import storage module
 import {
@@ -114,7 +114,7 @@ import {
   getSimulatedStorageQuotaExceeded,
   // Utility Functions
   formatBytes,
-} from './test-runs/storage';
+} from './test-runs/storage.js';
 
 // Feature #1372: Import AI analysis module
 import {
@@ -130,7 +130,7 @@ import {
   generateLLMRootCauseAnalysis,
   getLLMCacheStats,
   clearLLMCacheEntry,
-} from './test-runs/ai-analysis';
+} from './test-runs/ai-analysis.js';
 
 // Feature #1356: Import healing module
 // Type-only imports (required for ESM compatibility)
@@ -140,7 +140,7 @@ import type {
   SelectorHistoryEntry,
   HealingEventEntry,
   DOMChangeContext,
-} from './test-runs/healing';
+} from './test-runs/healing.js';
 
 // Value imports from healing module
 import {
@@ -170,7 +170,7 @@ import {
   trackHealingSuccess,
   trackHealingFailure,
   getHealingStats,
-} from './test-runs/healing';
+} from './test-runs/healing.js';
 
 // Feature #1368: Import execution module types and stores
 // Feature #1356: Migrated stores from local to execution.ts for shared state
@@ -201,14 +201,14 @@ import {
   // Execution state helpers
   isRunCancelled as isRunCancelledHelper,
   isRunPaused as isRunPausedHelper,
-} from './test-runs/execution';
+} from './test-runs/execution.js';
 
 // Feature #1356: Import root cause helpers module
 import {
   // Functions
   generateRelatedCommits,
   generateCommitDetails,
-} from './test-runs/root-cause-helpers';
+} from './test-runs/root-cause-helpers.js';
 
 // Feature #1356: Import root cause analysis module
 import {
@@ -216,7 +216,7 @@ import {
   generateEvidenceArtifacts,
   generateSuggestedActions,
   generateHistoricalPatternMatch,
-} from './test-runs/root-cause-analysis';
+} from './test-runs/root-cause-analysis.js';
 
 // Feature #1356: Import explanations module
 import {
@@ -224,74 +224,74 @@ import {
   generateHumanReadableExplanation,
   generateTechnicalExplanation,
   generateExecutiveSummary,
-} from './test-runs/explanations';
+} from './test-runs/explanations.js';
 
 // Feature #1356: Import security routes modules
-import { securityRoutes } from './test-runs/security';
-import { securityAdvancedRoutes } from './test-runs/security-advanced';
+import { securityRoutes } from './test-runs/security.js';
+import { securityAdvancedRoutes } from './test-runs/security-advanced.js';
 
 // Feature #1356: Import webhook subscription routes module
-import { webhookSubscriptionRoutes } from './test-runs/webhook-subscriptions';
+import { webhookSubscriptionRoutes } from './test-runs/webhook-subscriptions.js';
 
 // Feature #1356: Import slack integration routes module
-import { slackIntegrationRoutes } from './test-runs/slack-integration';
+import { slackIntegrationRoutes } from './test-runs/slack-integration.js';
 
 // Feature #1356: Import alert channels routes module
-import { alertChannelRoutes } from './test-runs/alert-channels';
+import { alertChannelRoutes } from './test-runs/alert-channels.js';
 
 // Feature #1356: Import AI failure analysis routes module
-import { aiFailureAnalysisRoutes } from './test-runs/ai-failure-analysis';
+import { aiFailureAnalysisRoutes } from './test-runs/ai-failure-analysis.js';
 
 // Feature #1356: Import baseline routes module
-import { baselineRoutes, failedUploads as failedUploadsFromModule } from './test-runs/baseline-routes';
+import { baselineRoutes, failedUploads as failedUploadsFromModule } from './test-runs/baseline-routes.js';
 
 // Feature #1356: Import organization settings routes module
-import { organizationSettingsRoutes } from './test-runs/organization-settings';
+import { organizationSettingsRoutes } from './test-runs/organization-settings.js';
 
 // Feature #1356: Import healing routes module
-import { healingRoutes } from './test-runs/healing-routes';
+import { healingRoutes } from './test-runs/healing-routes.js';
 
 // Feature #1356: Import artifact routes module
-import { artifactRoutes } from './test-runs/artifact-routes';
+import { artifactRoutes } from './test-runs/artifact-routes.js';
 
 // Feature #1356: Import results routes module
-import { resultsRoutes } from './test-runs/results-routes';
+import { resultsRoutes } from './test-runs/results-routes.js';
 
 // Feature #1356: Import visual batch routes module
-import { visualBatchRoutes } from './test-runs/visual-batch-routes';
+import { visualBatchRoutes } from './test-runs/visual-batch-routes.js';
 
 // Feature #1356: Import browser/viewport routes module
-import { browserViewportRoutes } from './test-runs/browser-viewport-routes';
+import { browserViewportRoutes } from './test-runs/browser-viewport-routes.js';
 
 // Feature #1356: Import failure patterns routes module
-import { failurePatternsRoutes } from './test-runs/failure-patterns-routes';
+import { failurePatternsRoutes } from './test-runs/failure-patterns-routes.js';
 
 // Feature #1356: Import recording routes module
-import { recordingRoutes } from './test-runs/recording-routes';
+import { recordingRoutes } from './test-runs/recording-routes.js';
 
 // Feature #1356: Import run core routes module
-import { runCoreRoutes, setRunCoreEmitter } from './test-runs/run-core-routes';
+import { runCoreRoutes, setRunCoreEmitter } from './test-runs/run-core-routes.js';
 
 // Feature #1356: Import run control routes module
-import { runControlRoutes, setRunControlEmitter } from './test-runs/run-control-routes';
+import { runControlRoutes, setRunControlEmitter } from './test-runs/run-control-routes.js';
 
 // Feature #1356: Import visual storage routes module
-import { visualStorageRoutes } from './test-runs/visual-storage-routes';
+import { visualStorageRoutes } from './test-runs/visual-storage-routes.js';
 
 // Feature #1356: Import review and export routes module
-import { reviewExportRoutes } from './test-runs/review-export-routes';
+import { reviewExportRoutes } from './test-runs/review-export-routes.js';
 
 // Feature #1356: Import selector override routes module
-import { selectorOverrideRoutes } from './test-runs/selector-override-routes';
+import { selectorOverrideRoutes } from './test-runs/selector-override-routes.js';
 
 // Feature #1356: Import run data routes module (logs, console, network, metrics, environment, compare)
-import { runDataRoutes } from './test-runs/run-data-routes';
+import { runDataRoutes } from './test-runs/run-data-routes.js';
 
 // Feature #1356: Import visual approval routes module
-import { visualApprovalRoutes } from './test-runs/visual-approval-routes';
+import { visualApprovalRoutes } from './test-runs/visual-approval-routes.js';
 
 // Feature #1356: Import run trigger routes module (POST routes for suites/:suiteId/runs, tests/:testId/runs)
-import { createRunTriggerRoutes } from './test-runs/run-trigger-routes';
+import { createRunTriggerRoutes } from './test-runs/run-trigger-routes.js';
 
 // Feature #1356: Import test simulation routes module
 import {
@@ -311,7 +311,7 @@ import {
   getSimulatedOversizedPage,
   setSimulatedOversizedPage,
   getCrashDumpsDir,
-} from './test-runs/test-simulation';
+} from './test-runs/test-simulation.js';
 
 // Feature #1356: Import webhook events module
 import {
@@ -325,7 +325,7 @@ import {
   sendScheduleTriggeredWebhook,
   sendFlakyTestWebhook,
   sendAccessibilityIssueWebhook,
-} from './test-runs/webhook-events';
+} from './test-runs/webhook-events.js';
 
 // Feature #1356: Import execute test helpers module
 import {
@@ -352,7 +352,7 @@ import {
   checkPageDimensions,
   captureScreenshotWithTimeout,
   getIgnoreRegionsFromSelectors,
-} from './test-runs/execute-test-helpers';
+} from './test-runs/execute-test-helpers.js';
 
 // Feature #1356: Import K6 helper functions from extracted module
 import {
@@ -378,7 +378,7 @@ import {
   detectRequiredEnvVars,
   detectCustomMetrics,
   generateCustomMetricValues,
-} from './test-runs/k6-helpers';
+} from './test-runs/k6-helpers.js';
 
 // Feature #1356: Import Lighthouse helper functions from extracted module
 import {
@@ -396,14 +396,14 @@ import {
   runRealLighthouseAudit,
   classifyLighthouseError,
   generateLighthouseErrorMessage,
-} from './test-runs/lighthouse-executor';
+} from './test-runs/lighthouse-executor.js';
 
 // Feature #155: Import execution queue for concurrency-limited test runs
 import {
   registerExecutionCallback,
   enqueueOrExecute,
   isQueueReady,
-} from '../services/execution-queue';
+} from '../services/execution-queue.js';
 
 // Re-export healing types for external use
 export {
@@ -416,7 +416,7 @@ export {
 
 // Feature #1356: Re-export stores from execution.ts for backwards compatibility
 // Other modules that import from test-runs.ts will continue to work
-export { testRuns, runningBrowsers, selectorOverrides, healedSelectorHistory } from './test-runs/execution';
+export { testRuns, runningBrowsers, selectorOverrides, healedSelectorHistory } from './test-runs/execution.js';
 
 // Socket.IO server instance (set by index.ts after server starts)
 let io: SocketIOServer | null = null;
@@ -447,10 +447,10 @@ function emitRunEvent(runId: string, orgId: string, event: string, data: any) {
 const failedUploads = failedUploadsFromModule;
 
 // Re-exports for backwards compatibility
-export { artifactRetentionSettings } from './test-runs/storage';
+export { artifactRetentionSettings } from './test-runs/storage.js';
 // Type exports (must use 'export type' for ESM compatibility with Node.js 20+)
-export type { AlertCondition, AlertChannelType, AlertChannel, SlackConnection, SlackChannel, WebhookLogEntry } from './test-runs/alerts';
-export { alertChannels, emailLog, slackConnections, slackLog, webhookLog } from './test-runs/alerts';
+export type { AlertCondition, AlertChannelType, AlertChannel, SlackConnection, SlackChannel, WebhookLogEntry } from './test-runs/alerts.js';
+export { alertChannels, emailLog, slackConnections, slackLog, webhookLog } from './test-runs/alerts.js';
 
 // Feature #1356: Import webhooks module
 import {
@@ -472,11 +472,11 @@ import {
   getWebhookDeliveryLogs,
   // Template Functions
   applyPayloadTemplate,
-} from './test-runs/webhooks';
+} from './test-runs/webhooks.js';
 
 // Re-export webhooks types (must use 'export type' for ESM compatibility with Node.js 20+)
-export type { WebhookSubscription } from './test-runs/webhooks';
-export { webhookSubscriptions } from './test-runs/webhooks';
+export type { WebhookSubscription } from './test-runs/webhooks.js';
+export { webhookSubscriptions } from './test-runs/webhooks.js';
 
 // Feature #1356: Import test executor module (extracted ~4600 lines)
 import {
@@ -484,7 +484,7 @@ import {
   launchBrowser as launchBrowserFromExecutor,
   setTestExecutorEmitter,
   ExecuteTestConfig,
-} from './test-runs/test-executor';
+} from './test-runs/test-executor.js';
 
 
 // Webhook infrastructure in ./test-runs/webhooks.ts, event functions in ./test-runs/webhook-events.ts

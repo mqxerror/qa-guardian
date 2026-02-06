@@ -27,7 +27,7 @@ import {
   // Feature #139: Batch functions to eliminate N+1 queries
   batchGetTests as dbBatchGetTests,
   batchGetTestSuites as dbBatchGetTestSuites,
-} from '../../services/repositories/test-suites';
+} from '../../services/repositories/test-suites.js';
 
 // ===== ASYNC DATABASE FUNCTIONS =====
 // All data access goes through these async functions

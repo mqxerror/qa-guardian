@@ -4,10 +4,10 @@
  * Empty Maps kept for backward compatibility until route migration.
  */
 
-import { AIGeneratedTest, ApprovalStatus } from './types';
+import { AIGeneratedTest, ApprovalStatus } from './types.js';
 
 // Import repository functions
-import * as aiTestGenRepo from '../../services/repositories/ai-test-generator';
+import * as aiTestGenRepo from '../../services/repositories/ai-test-generator.js';
 
 // Re-export repository functions for database access
 export const createAiGeneratedTest = aiTestGenRepo.createAiGeneratedTest;

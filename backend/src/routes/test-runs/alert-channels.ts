@@ -6,8 +6,8 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores';
+import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
+import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores.js';
 import {
   AlertCondition,
   AlertChannelType,
@@ -16,7 +16,7 @@ import {
   emailLog,
   webhookLog,
   slackConnections,
-} from './alerts';
+} from './alerts.js';
 
 // ============================================================================
 // Route Registration
@@ -466,5 +466,5 @@ export type {
   AlertCondition,
   AlertChannelType,
   AlertChannel,
-} from './alerts';
-export { alertChannels } from './alerts';
+} from './alerts.js';
+export { alertChannels } from './alerts.js';

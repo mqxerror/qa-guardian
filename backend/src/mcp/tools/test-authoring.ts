@@ -5,7 +5,7 @@
  * Includes import/export functionality for test portability.
  */
 
-import { ToolDefinition } from '../types';
+import { ToolDefinition } from '../types.js';
 
 export const TEST_AUTHORING_TOOLS: ToolDefinition[] = [
   // Feature #1730: Get test by ID

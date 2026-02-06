@@ -5,8 +5,8 @@
  * Extracted from server.ts to reduce file size (Feature #1356).
  */
 
-import { ToolHandler, HandlerModule } from './types';
-import { aiService } from '../../services/ai-service';
+import { ToolHandler, HandlerModule } from './types.js';
+import { aiService } from '../../services/ai-service.js';
 import { aiRouterService } from '../../services/providers/ai-router-service.js';
 import { aiRouter } from '../../services/providers/ai-router.js';
 

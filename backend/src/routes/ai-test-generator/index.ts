@@ -3,6 +3,6 @@
  * Feature #1499: Add test generation history and versioning
  */
 
-export { default } from './routes';
-export * from './types';
-export * from './stores';
+export { default } from './routes.js';
+export * from './types.js';
+export * from './stores.js';

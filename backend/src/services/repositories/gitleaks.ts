@@ -8,8 +8,8 @@
  * - Gitleaks scan results with findings
  */
 
-import { query, isDatabaseConnected } from '../database';
-import { GitleaksConfig, GitleaksScan } from '../../routes/sast/gitleaks';
+import { query, isDatabaseConnected } from '../database.js';
+import { GitleaksConfig, GitleaksScan } from '../../routes/sast/gitleaks.js';
 
 // Default Gitleaks configuration
 const DEFAULT_GITLEAKS_CONFIG: GitleaksConfig = {

@@ -2,10 +2,10 @@
 //
 // Feature #2114: Map exports REMOVED. Only async DB functions exported.
 
-import { DASTConfig, DASTScanResult, DASTFalsePositive, OpenAPISpec, DASTSchedule, GraphQLScan } from './types';
+import { DASTConfig, DASTScanResult, DASTFalsePositive, OpenAPISpec, DASTSchedule, GraphQLScan } from './types.js';
 
 // Import repository functions
-import * as dastRepo from '../../services/repositories/dast';
+import * as dastRepo from '../../services/repositories/dast.js';
 
 // Re-export repository functions for database access
 export const getDastConfig = dastRepo.getDastConfig;

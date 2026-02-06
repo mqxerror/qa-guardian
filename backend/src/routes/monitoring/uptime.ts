@@ -13,9 +13,9 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../../middleware/auth';
-import { logAuditEntry } from '../audit-logs';
-import { UptimeCheck, CheckResult, Incident, DeletedCheckHistory, MonitoringLocation, UptimeAssertion } from './types';
+import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../../middleware/auth.js';
+import { logAuditEntry } from '../audit-logs.js';
+import { UptimeCheck, CheckResult, Incident, DeletedCheckHistory, MonitoringLocation, UptimeAssertion } from './types.js';
 import {
   getUptimeCheck,
   listUptimeChecks,
@@ -29,10 +29,10 @@ import {
   addDeletedCheckHistory,
   getDeletedCheckHistory,
   listDeletedCheckHistory,
-} from './stores';
-import { MONITORING_LOCATIONS, runCheckFromAllLocations, startCheckInterval, stopCheckInterval, formatDuration } from './helpers';
+} from './stores.js';
+import { MONITORING_LOCATIONS, runCheckFromAllLocations, startCheckInterval, stopCheckInterval, formatDuration } from './helpers.js';
 // Feature #123: Import cache service for read-heavy endpoints
-import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
+import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
 
 export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
   // Get available monitoring locations

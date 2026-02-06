@@ -10,8 +10,8 @@
  * - Form labels and ARIA
  */
 
-import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest } from './types';
-import type { SiteAnalysis } from '../../services/crawl4ai';
+import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest } from './types.js';
+import type { SiteAnalysis } from '../../services/crawl4ai.js';
 
 export function generateAccessibilityTemplate(options: TemplateGeneratorOptions): TestSuiteTemplate {
   const { baseUrl, siteAnalysis, projectName } = options;

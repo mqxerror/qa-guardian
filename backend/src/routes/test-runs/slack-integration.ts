@@ -6,14 +6,14 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
-import { listProjects as dbListProjects } from '../projects/stores';
+import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
+import { listProjects as dbListProjects } from '../projects/stores.js';
 import {
   SlackConnection,
   SlackChannel,
   slackConnections,
   slackLog,
-} from './alerts';
+} from './alerts.js';
 
 // ============================================================================
 // Route Registration
@@ -225,5 +225,5 @@ export async function slackIntegrationRoutes(app: FastifyInstance) {
 }
 
 // Re-export types for consumers (must use 'export type' for ESM compatibility with Node.js 20+)
-export type { SlackConnection, SlackChannel } from './alerts';
-export { slackConnections, slackLog } from './alerts';
+export type { SlackConnection, SlackChannel } from './alerts.js';
+export { slackConnections, slackLog } from './alerts.js';

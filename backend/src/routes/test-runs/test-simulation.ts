@@ -22,13 +22,13 @@
 import { FastifyInstance } from 'fastify';
 import fs from 'fs';
 import path from 'path';
-import { authenticate, getOrganizationId } from '../../middleware/auth';
+import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import {
   setSimulatedStorageQuotaExceeded,
   getSimulatedStorageQuotaExceeded,
-} from './storage';
-import { getBaselinePath } from './visual-regression';
-import { failedUploads } from './baseline-routes';
+} from './storage.js';
+import { getBaselinePath } from './visual-regression.js';
+import { failedUploads } from './baseline-routes.js';
 
 // ============================================
 // Simulation State Variables

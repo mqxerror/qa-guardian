@@ -11,16 +11,16 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload } from '../../middleware/auth';
-import { getProject } from '../../services/repositories/projects';
-import { logAuditEntry } from '../audit-logs';
+import { authenticate, JwtPayload } from '../../middleware/auth.js';
+import { getProject } from '../../services/repositories/projects.js';
+import { logAuditEntry } from '../audit-logs.js';
 import {
   SASTConfig,
   SASTFinding,
   SASTScanResult,
   SASTPRCheck,
   SASTPRComment,
-} from './types';
+} from './types.js';
 import {
   createSastScan,
   createSastPRCheck,
@@ -31,7 +31,7 @@ import {
   getSASTConfig,
   updateSASTConfig,
   generateId,
-} from './stores';
+} from './stores.js';
 
 /**
  * Run Semgrep scan function type

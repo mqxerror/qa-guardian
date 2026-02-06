@@ -7,12 +7,12 @@ import { FastifyInstance } from 'fastify';
 import * as fs from 'fs';
 import * as path from 'path';
 import archiver from 'archiver';
-import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { getTestSuite, getTestSuitesMap } from '../test-suites';
-import { getProject as dbGetProject } from '../projects/stores';
-import { TRACES_DIR, VIDEOS_DIR } from './storage';
-import { testRuns, TestRun } from './execution';
-import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs';
+import { authenticate, getOrganizationId } from '../../middleware/auth.js';
+import { getTestSuite, getTestSuitesMap } from '../test-suites.js';
+import { getProject as dbGetProject } from '../projects/stores.js';
+import { TRACES_DIR, VIDEOS_DIR } from './storage.js';
+import { testRuns, TestRun } from './execution.js';
+import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
 
 // Helper: get test run from Map first, then fall back to DB
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {

@@ -7,19 +7,19 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../../middleware/auth';
-import { logAuditEntry } from '../audit-logs';
+import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../../middleware/auth.js';
+import { logAuditEntry } from '../audit-logs.js';
 import {
   OnCallSchedule,
   OnCallMember,
   EscalationLevel,
   EscalationTarget,
   EscalationPolicy,
-} from './types';
+} from './types.js';
 import {
   onCallSchedules,
   escalationPolicies,
-} from './stores';
+} from './stores.js';
 
 // ================================
 // ON-CALL AND ESCALATION ROUTES

@@ -12,7 +12,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { aiRouter } from '../services/providers/ai-router';
+import { aiRouter } from '../services/providers/ai-router.js';
 
 async function testAIIntegration() {
   console.log('\n========================================');

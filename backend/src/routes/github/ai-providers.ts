@@ -4,7 +4,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate } from '../../middleware/auth';
+import { authenticate } from '../../middleware/auth.js';
 
 // Feature #1321: Kie.ai Provider Integration - Types
 

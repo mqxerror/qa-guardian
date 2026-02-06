@@ -16,7 +16,7 @@
  * Database connection is now required for all operations.
  */
 
-import { query, isDatabaseConnected } from '../database';
+import { query, isDatabaseConnected } from '../database.js';
 import {
   DASTConfig,
   DASTScanResult,
@@ -24,7 +24,7 @@ import {
   OpenAPISpec,
   DASTSchedule,
   GraphQLScan,
-} from '../../routes/dast/types';
+} from '../../routes/dast/types.js';
 
 // ============================================
 // Memory Store Accessors (DEPRECATED - return empty Maps)

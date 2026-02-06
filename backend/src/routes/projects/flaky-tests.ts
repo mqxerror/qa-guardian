@@ -2,14 +2,14 @@
 // Includes flaky test detection, trends, impact report, quarantine, and remediation
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
-import { getAutoQuarantineSettings } from '../organizations';
-import { getProject, batchGetProjects } from './stores';
-import { getTest, getTestSuite, listAllTests, batchGetTests, batchGetTestSuites } from '../test-suites/stores';
-import { listTestRunsByOrg } from '../../services/repositories/test-runs';
+import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
+import { getAutoQuarantineSettings } from '../organizations.js';
+import { getProject, batchGetProjects } from './stores.js';
+import { getTest, getTestSuite, listAllTests, batchGetTests, batchGetTestSuites } from '../test-suites/stores.js';
+import { listTestRunsByOrg } from '../../services/repositories/test-runs.js';
 // Feature #145: Cache invalidation for quarantine mutations
-import { getCache } from '../../services/cache';
-import { CacheKeys } from '../../services/cache-keys';
+import { getCache } from '../../services/cache.js';
+import { CacheKeys } from '../../services/cache-keys.js';
 
 // Feature #142: Default to last 30 days for flaky test analysis
 const FLAKY_ANALYSIS_DAYS = 30;

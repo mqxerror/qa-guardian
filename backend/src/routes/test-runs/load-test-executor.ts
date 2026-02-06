@@ -20,15 +20,15 @@ import * as os from 'os';
 
 import {
   StepResult,
-} from './execution';
+} from './execution.js';
 
 import {
   simulatedK6RuntimeError,
   simulatedK6ServerUnavailable,
   simulatedK6ResourceExhaustion,
-} from './test-simulation';
+} from './test-simulation.js';
 
-import { formatBytes } from './storage';
+import { formatBytes } from './storage.js';
 
 import {
   detectCircularImports,
@@ -39,7 +39,7 @@ import {
   detectCustomMetrics,
   generateCustomMetricValues,
   CustomMetricDefinition,
-} from './k6-helpers';
+} from './k6-helpers.js';
 
 // ============================================================================
 // Threshold Evaluation (Feature #45)

@@ -1,7 +1,7 @@
 // DAST Module Index - Re-exports all DAST functionality
 
 // Types
-export * from './types';
+export * from './types.js';
 
 // Stores and Constants
 export {
@@ -14,7 +14,7 @@ export {
   DEFAULT_DAST_CONFIG,
   ZAP_SCAN_PROFILES,
   SCHEDULE_FREQUENCIES,
-} from './stores';
+} from './stores.js';
 
 // Utility Functions
 export {
@@ -26,27 +26,27 @@ export {
   generateCronExpression,
   calculateDASTNextRun,
   escapeHTML,
-} from './utils';
+} from './utils.js';
 
 // Scanner Functions
 export {
   runZAPScan,
   parseOpenAPISpec,
   getOpenAPISpec,
-} from './scanner';
+} from './scanner.js';
 
 // Lightweight Scanner (fallback when ZAP/Docker unavailable)
 export {
   runLightweightScan,
   isZAPAvailable,
-} from './lightweight-scanner';
+} from './lightweight-scanner.js';
 
 // Report Generation
 export {
   generateHTMLReport,
   generateJSONReport,
   generatePDFReport,
-} from './reports';
+} from './reports.js';
 
 // GraphQL Scanning
 export {
@@ -55,7 +55,7 @@ export {
   startGraphQLScan,
   getGraphQLScan,
   listGraphQLScans,
-} from './graphql';
+} from './graphql.js';
 
 // Routes
-export { dastRoutes } from './routes';
+export { dastRoutes } from './routes.js';

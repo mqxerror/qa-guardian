@@ -1,13 +1,13 @@
 // MCP Tool tracking and analytics functions
 
 import crypto from 'crypto';
-import { McpToolCall } from './types';
+import { McpToolCall } from './types.js';
 import {
   dbGetMcpConnection,
   dbCreateMcpToolCall,
   dbGetMcpToolCallsByOrg,
   dbGetApiKeyById,
-} from './stores';
+} from './stores.js';
 
 // Track a tool call (async)
 export async function trackMcpToolCall(

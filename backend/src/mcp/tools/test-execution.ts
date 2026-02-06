@@ -4,7 +4,7 @@
  * MCP tools for running tests and managing test execution.
  */
 
-import { ToolDefinition } from '../types';
+import { ToolDefinition } from '../types.js';
 
 export const TEST_EXECUTION_TOOLS: ToolDefinition[] = [
   {

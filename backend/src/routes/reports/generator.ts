@@ -16,10 +16,10 @@ import {
   LoadReportSection,
   SecurityReportSection,
   GenerateReportRequest,
-} from './types';
-import { generateReportId, storeReport } from './stores';
-import { query, isDatabaseConnected } from '../../services/database';
-import { getProject } from '../../services/repositories/projects';
+} from './types.js';
+import { generateReportId, storeReport } from './stores.js';
+import { query, isDatabaseConnected } from '../../services/database.js';
+import { getProject } from '../../services/repositories/projects.js';
 
 // ============================================================================
 // Database-backed section generators

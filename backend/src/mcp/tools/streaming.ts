@@ -5,7 +5,7 @@
  * Provides live progress updates and alert subscription capabilities.
  */
 
-import { ToolDefinition } from '../types';
+import { ToolDefinition } from '../types.js';
 
 export const STREAMING_TOOLS: ToolDefinition[] = [
   // Feature #1216: MCP tool stream-test-run - Get streaming updates during test execution

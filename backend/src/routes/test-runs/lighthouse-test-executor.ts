@@ -15,7 +15,7 @@ import { Page, Browser } from 'playwright';
 
 import {
   StepResult,
-} from './execution';
+} from './execution.js';
 
 import {
   simulatedLighthouseError,
@@ -23,7 +23,7 @@ import {
   simulatedAuditTimeout,
   simulatedLighthouseBrowserCrash,
   simulatedLighthouseNonHtmlResponse,
-} from './test-simulation';
+} from './test-simulation.js';
 
 import {
   detectCspIssues,
@@ -31,7 +31,7 @@ import {
   detectLoginPage,
   detectMixedContent,
   runRealLighthouseAudit,
-} from './lighthouse-executor';
+} from './lighthouse-executor.js';
 
 /**
  * Configuration for a Lighthouse performance test

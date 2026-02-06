@@ -2,11 +2,11 @@
 // Feature #1141: AI-powered description analysis and test refinement
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId } from '../../middleware/auth';
-import { logAuditEntry } from '../audit-logs';
-import { getTestSuite, createTest } from './stores';
-import { Test, TestStep } from './types';
-import { generatePlaywrightCode } from './utils';
+import { authenticate, getOrganizationId } from '../../middleware/auth.js';
+import { logAuditEntry } from '../audit-logs.js';
+import { getTestSuite, createTest } from './stores.js';
+import { Test, TestStep } from './types.js';
+import { generatePlaywrightCode } from './utils.js';
 
 // Feature #1141: Interface for clarifying question
 export interface ClarifyingQuestion {

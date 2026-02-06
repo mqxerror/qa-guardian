@@ -22,23 +22,23 @@ import { Locator } from 'playwright';
 import {
   SCREENSHOTS_DIR,
   checkStorageQuota,
-} from './storage';
+} from './storage.js';
 
 import {
   VisualMatchResult,
   extractRegion,
   getBaselinePath,
-} from './visual-regression';
+} from './visual-regression.js';
 
 import {
   getCrashDumpsDir,
   getSimulatedOversizedPage,
-} from './test-simulation';
+} from './test-simulation.js';
 
-import { failedUploads } from './baseline-routes';
+import { failedUploads } from './baseline-routes.js';
 
 // Import IgnoreRegion from test-suites
-import { IgnoreRegion } from '../test-suites';
+import { IgnoreRegion } from '../test-suites.js';
 
 // ============================================================================
 // Types and Interfaces

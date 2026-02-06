@@ -6,7 +6,7 @@
  */
 
 // Import types from execution module
-import { NetworkRequest, StepResult } from './execution';
+import { NetworkRequest, StepResult } from './execution.js';
 import { Page } from 'playwright';
 import { execFile } from 'child_process';
 import * as path from 'path';

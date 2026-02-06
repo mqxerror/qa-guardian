@@ -2,22 +2,22 @@
 
 import { FastifyInstance } from 'fastify';
 import crypto from 'crypto';
-import { authenticate, requireRoles, JwtPayload } from '../../middleware/auth';
-import { ApiKey, McpConnection, OrgParams } from './types';
+import { authenticate, requireRoles, JwtPayload } from '../../middleware/auth.js';
+import { ApiKey, McpConnection, OrgParams } from './types.js';
 import {
   dbGetApiKeyByHash,
   dbUpdateApiKey,
   dbGetMcpConnection,
-} from './stores';
-import { query, isDatabaseConnected } from '../../services/database';
-import { formatDuration } from './utils';
+} from './stores.js';
+import { query, isDatabaseConnected } from '../../services/database.js';
+import { formatDuration } from './utils.js';
 import {
   registerMcpConnection,
   updateMcpActivity,
   unregisterMcpConnection,
-} from './mcp-connections';
-import { trackMcpToolCall, getMcpAnalytics } from './mcp-analytics';
-import { logMcpAuditEntry, getMcpAuditLogs } from './mcp-audit';
+} from './mcp-connections.js';
+import { trackMcpToolCall, getMcpAnalytics } from './mcp-analytics.js';
+import { logMcpAuditEntry, getMcpAuditLogs } from './mcp-audit.js';
 
 export async function registerMcpRoutes(app: FastifyInstance) {
   // Feature #405: Register MCP connection

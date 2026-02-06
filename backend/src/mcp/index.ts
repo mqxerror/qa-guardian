@@ -12,7 +12,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { MCPServer, ServerConfig, loadConfigFile } from './server';
+import { MCPServer, ServerConfig, loadConfigFile } from './server.js';
 
 // Parse environment variables as base config
 const config: ServerConfig = {
