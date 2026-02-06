@@ -3,6 +3,14 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Feature #147: Require JWT_SECRET - security critical, fail fast if missing
+if (!process.env.JWT_SECRET) {
+  console.error('[FATAL] JWT_SECRET environment variable is required but not set.');
+  console.error('Please set JWT_SECRET in your .env file with a secure random string.');
+  console.error('Example: JWT_SECRET=your-256-bit-secret-key-here');
+  process.exit(1);
+}
+
 import Fastify from 'fastify';
 import { initializeDatabase, isDatabaseConnected, healthCheck as dbHealthCheck, closeDatabase } from './services/database';
 import { initializeCache, closeCache, getCache } from './services/cache'; // Feature #60: Redis cache service
@@ -103,8 +111,9 @@ async function registerPlugins() {
   });
 
   // JWT Authentication
+  // Feature #147: JWT_SECRET is validated at startup, so we can safely use it here
   await app.register(jwt, {
-    secret: process.env.JWT_SECRET || 'default-secret-change-in-production',
+    secret: process.env.JWT_SECRET!,
   });
 
   // Swagger Documentation
