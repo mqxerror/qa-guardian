@@ -70,6 +70,11 @@ function getSocketUrl(): string {
   return 'https://qa.pixelcraftedmedia.com';
 }
 
+// Feature #201: Get authentication token for Socket.IO connection
+function getAuthToken(): string | null {
+  return localStorage.getItem('token');
+}
+
 export const useSocketStore = create<SocketState>((set, get) => {
   // Feature #167: Heartbeat timer reference
   let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
@@ -226,10 +231,13 @@ export const useSocketStore = create<SocketState>((set, get) => {
       const socketUrl = getSocketUrl();
       logger.socket.debug('Connecting to:', socketUrl);
 
+      // Feature #201: Pass JWT token for authentication
+      const token = getAuthToken();
       const newSocket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         reconnection: false, // We handle reconnection ourselves
         timeout: SOCKET_CONNECT_TIMEOUT_MS,
+        auth: token ? { token } : undefined, // Pass token if available
       });
 
       newSocket.on('connect', () => {
@@ -279,8 +287,27 @@ export const useSocketStore = create<SocketState>((set, get) => {
 
         set({ connectionStatus: 'disconnected' });
 
+        // Feature #201: Check if authentication failed
+        if (error.message.includes('Authentication failed')) {
+          console.warn('[Socket.IO] Authentication failed - token may be expired');
+          // Don't auto-reconnect on auth failure - user needs to login again
+          // or the token needs to be refreshed
+          logReconnectionEvent({
+            attempt: get().reconnectAttempt,
+            delay: 0,
+            reason: 'Authentication failed',
+            success: false,
+          });
+          return;
+        }
+
         // Feature #167: Attempt reconnect on connection error
         attemptReconnect();
+      });
+
+      // Feature #201: Handle server-side errors (e.g., unauthorized org join)
+      newSocket.on('error', (error: { message: string }) => {
+        console.warn('[Socket.IO] Server error:', error.message);
       });
 
       // Feature #167: Handle pong response for heartbeat

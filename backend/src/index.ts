@@ -19,7 +19,8 @@ import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
-import { Server as SocketIOServer } from 'socket.io';
+import { Server as SocketIOServer, Socket } from 'socket.io';
+import { createVerifier } from 'fast-jwt'; // Feature #201: Socket.IO JWT authentication
 import { authRoutes, initTestUsers } from './routes/auth.js';
 import { organizationRoutes } from './routes/organizations.js';
 import { projectRoutes } from './routes/projects.js';
@@ -733,12 +734,77 @@ async function start() {
       },
     });
 
-    // Socket.IO connection handling
-    io.on('connection', (socket) => {
-      console.log(`[Socket.IO] Client connected: ${socket.id}`);
+    // Feature #201: Socket.IO JWT Authentication Middleware
+    // Create JWT verifier using the same secret as Fastify JWT
+    const jwtSecret = process.env.JWT_SECRET!;
+    const verifyJwt = createVerifier({ key: jwtSecret });
 
-      // Join organization room for targeted broadcasts
+    // Extended Socket interface with user data
+    interface AuthenticatedSocket extends Socket {
+      data: {
+        userId?: string;
+        email?: string;
+        role?: string;
+        organizationId?: string;
+        authenticated?: boolean;
+      };
+    }
+
+    // Feature #201: Authentication middleware - verify JWT before allowing connection
+    io.use((socket: AuthenticatedSocket, next) => {
+      try {
+        // Extract token from handshake auth
+        const token = socket.handshake.auth?.token;
+
+        if (!token) {
+          console.log(`[Socket.IO] Client ${socket.id} - no token provided, allowing unauthenticated connection`);
+          // Allow connection but mark as unauthenticated
+          // This enables backward compatibility while we migrate clients
+          socket.data.authenticated = false;
+          return next();
+        }
+
+        // Verify the JWT token
+        const decoded = verifyJwt(token) as {
+          id: string;
+          email: string;
+          role: string;
+          organization_id: string;
+          iat?: number;
+          exp?: number;
+        };
+
+        // Attach user info to socket.data
+        socket.data.userId = decoded.id;
+        socket.data.email = decoded.email;
+        socket.data.role = decoded.role;
+        socket.data.organizationId = decoded.organization_id;
+        socket.data.authenticated = true;
+
+        console.log(`[Socket.IO] Client ${socket.id} authenticated as ${decoded.email} (org: ${decoded.organization_id})`);
+        next();
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        console.warn(`[Socket.IO] Authentication failed for ${socket.id}: ${errorMessage}`);
+        // Reject connection with invalid token
+        next(new Error('Authentication failed: Invalid or expired token'));
+      }
+    });
+
+    // Socket.IO connection handling
+    io.on('connection', (socket: AuthenticatedSocket) => {
+      const authStatus = socket.data.authenticated ? 'authenticated' : 'unauthenticated';
+      console.log(`[Socket.IO] Client connected: ${socket.id} (${authStatus})`);
+
+      // Feature #201: Join organization room with authorization check
       socket.on('join-org', (orgId: string) => {
+        // If authenticated, verify the user belongs to this organization
+        if (socket.data.authenticated && socket.data.organizationId !== orgId) {
+          console.warn(`[Socket.IO] Client ${socket.id} tried to join unauthorized org: ${orgId} (belongs to: ${socket.data.organizationId})`);
+          socket.emit('error', { message: 'Unauthorized: You do not belong to this organization' });
+          return;
+        }
+
         socket.join(`org:${orgId}`);
         console.log(`[Socket.IO] Client ${socket.id} joined org:${orgId}`);
       });
