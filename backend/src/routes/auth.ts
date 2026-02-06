@@ -31,6 +31,11 @@ import {
   getResetToken as dbGetResetToken,
   markResetTokenUsed as dbMarkResetTokenUsed,
   seedTestUsers,
+  // Feature #221: Refresh token persistence
+  storeRefreshTokenHash,
+  isRefreshTokenHashValid,
+  revokeRefreshTokenHash,
+  cleanupExpiredRefreshTokens,
 } from '../services/repositories/auth.js';
 
 // Re-export types for backward compatibility
@@ -122,9 +127,8 @@ const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET 
 const signRefreshToken = createSigner({ key: REFRESH_SECRET, expiresIn: REFRESH_TOKEN_EXPIRY });
 const verifyRefreshToken = createVerifier({ key: REFRESH_SECRET });
 
-// Store for refresh tokens (for production, store hash in sessions table)
-// Feature #213: Simple in-memory store for refresh token hashes (mapped to user_id)
-const refreshTokenHashes = new Map<string, { userId: string; expiresAt: Date }>();
+// Feature #221: Refresh tokens now stored in PostgreSQL (see repositories/auth.ts)
+// Memory fallback removed - DB is primary storage for session persistence across restarts
 
 /**
  * Feature #213: Generate a refresh token for a user
@@ -140,37 +144,28 @@ function generateRefreshToken(userId: string, email: string, organizationId: str
 }
 
 /**
- * Feature #213: Store refresh token hash for later validation
+ * Feature #221: Store refresh token hash in PostgreSQL
  */
-function storeRefreshToken(token: string, userId: string): void {
-  // Hash the token for secure storage
+async function storeRefreshToken(token: string, userId: string): Promise<void> {
   const hash = createHash('sha256').update(token).digest('hex');
-  refreshTokenHashes.set(hash, {
-    userId,
-    expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY),
-  });
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY);
+  await storeRefreshTokenHash(hash, userId, expiresAt);
 }
 
 /**
- * Feature #213: Revoke a refresh token
+ * Feature #221: Revoke a refresh token (marks as revoked in DB)
  */
-function revokeRefreshToken(token: string): boolean {
+async function revokeRefreshToken(token: string): Promise<void> {
   const hash = createHash('sha256').update(token).digest('hex');
-  return refreshTokenHashes.delete(hash);
+  await revokeRefreshTokenHash(hash);
 }
 
 /**
- * Feature #213: Check if a refresh token is valid (not revoked)
+ * Feature #221: Check if a refresh token is valid (DB lookup)
  */
-function isRefreshTokenValid(token: string): boolean {
+async function isRefreshTokenValid(token: string): Promise<boolean> {
   const hash = createHash('sha256').update(token).digest('hex');
-  const stored = refreshTokenHashes.get(hash);
-  if (!stored) return false;
-  if (stored.expiresAt < new Date()) {
-    refreshTokenHashes.delete(hash);
-    return false;
-  }
-  return true;
+  return await isRefreshTokenHashValid(hash);
 }
 
 // Feature #2099: Seeding completion guard to prevent race conditions
@@ -184,6 +179,11 @@ export async function initTestUsers(): Promise<void> {
   console.log('[Auth] Starting test user seeding...');
   await seedDefaultOrganizations();
   await seedTestUsers();
+  // Feature #221: Clean up expired refresh tokens on startup
+  const cleanedUp = await cleanupExpiredRefreshTokens();
+  if (cleanedUp > 0) {
+    console.log(`[Auth] Cleaned up ${cleanedUp} expired refresh tokens`);
+  }
   seedingComplete = true;
   console.log('[Auth] Test user seeding complete');
 }
@@ -265,7 +265,8 @@ export async function authRoutes(app: FastifyInstance) {
 
     // Feature #213: Generate long-lived refresh token (7 days)
     const refreshToken = generateRefreshToken(user.id, user.email, organizationId);
-    storeRefreshToken(refreshToken, user.id);
+    // Feature #221: Store in PostgreSQL for persistence across restarts
+    await storeRefreshToken(refreshToken, user.id);
 
     // Feature #2116: Create session using async DB call
     const session = await createSessionForUser(user.id, token, request);
@@ -397,7 +398,8 @@ export async function authRoutes(app: FastifyInstance) {
 
     // Feature #213: Generate long-lived refresh token (7 days)
     const refreshToken = generateRefreshToken(user.id, user.email, orgId);
-    storeRefreshToken(refreshToken, user.id);
+    // Feature #221: Store in PostgreSQL for persistence across restarts
+    await storeRefreshToken(refreshToken, user.id);
 
     // Feature #2116: Create session using async DB call
     const session = await createSessionForUser(user.id, token, request);
@@ -490,7 +492,8 @@ export async function authRoutes(app: FastifyInstance) {
     // Feature #213: Also revoke the refresh token if provided
     const { refresh_token } = request.body || {};
     if (refresh_token) {
-      revokeRefreshToken(refresh_token);
+      // Feature #221: Revoke in PostgreSQL
+      await revokeRefreshToken(refresh_token);
     }
 
     return { message: 'Logged out successfully' };
@@ -507,8 +510,8 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    // Verify the refresh token is not revoked
-    if (!isRefreshTokenValid(refresh_token)) {
+    // Feature #221: Verify the refresh token is not revoked (DB lookup)
+    if (!await isRefreshTokenValid(refresh_token)) {
       return reply.status(401).send({
         error: 'Unauthorized',
         message: 'Refresh token has been revoked or expired',
@@ -537,7 +540,8 @@ export async function authRoutes(app: FastifyInstance) {
     // Get user to ensure they still exist and are valid
     const user = await dbGetUserByEmail(payload.email);
     if (!user) {
-      revokeRefreshToken(refresh_token);
+      // Feature #221: Revoke in PostgreSQL
+      await revokeRefreshToken(refresh_token);
       return reply.status(401).send({
         error: 'Unauthorized',
         message: 'User not found',
@@ -547,7 +551,8 @@ export async function authRoutes(app: FastifyInstance) {
     // Get current organization (may have changed)
     const organizationId = await getUserOrganization(user.id);
     if (!organizationId) {
-      revokeRefreshToken(refresh_token);
+      // Feature #221: Revoke in PostgreSQL
+      await revokeRefreshToken(refresh_token);
       return reply.status(403).send({
         error: 'Forbidden',
         message: 'User is not associated with any organization',

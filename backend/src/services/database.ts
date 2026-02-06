@@ -350,6 +350,16 @@ async function initializeSchema(): Promise<void> {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
 
+    -- Refresh Tokens table (Feature #221: Persist refresh tokens)
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      token_hash VARCHAR(64) UNIQUE NOT NULL,
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      revoked_at TIMESTAMP WITH TIME ZONE
+    );
+
     -- Invitations table (Feature #2085: Organization invitations)
     CREATE TABLE IF NOT EXISTS invitations (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -1082,6 +1092,8 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires ON token_blacklist(expires_at);
     CREATE INDEX IF NOT EXISTS idx_reset_tokens_email ON reset_tokens(user_email);
     CREATE INDEX IF NOT EXISTS idx_reset_tokens_expires ON reset_tokens(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
+    CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at);
     CREATE INDEX IF NOT EXISTS idx_invitations_organization ON invitations(organization_id);
     CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email);
     CREATE INDEX IF NOT EXISTS idx_visual_baselines_test ON visual_baselines(test_id);

@@ -602,6 +602,116 @@ export async function markResetTokenUsed(token: string): Promise<void> {
 }
 
 // ============================================================================
+// Refresh Token Functions (Feature #221)
+// ============================================================================
+
+// Memory map for refresh tokens (fallback when DB not available)
+const memoryRefreshTokens: Map<string, { userId: string; expiresAt: Date }> = new Map();
+
+/**
+ * Store a refresh token hash in the database
+ */
+export async function storeRefreshTokenHash(hash: string, userId: string, expiresAt: Date): Promise<void> {
+  // Always store in memory as fallback
+  memoryRefreshTokens.set(hash, { userId, expiresAt });
+
+  if (!isDatabaseConnected()) {
+    return;
+  }
+
+  try {
+    await query(
+      `INSERT INTO refresh_tokens (token_hash, user_id, expires_at)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (token_hash) DO UPDATE SET expires_at = $3`,
+      [hash, userId, expiresAt]
+    );
+  } catch (error) {
+    console.error('[AuthRepo] Failed to store refresh token in database:', error);
+    // Memory fallback will be used
+  }
+}
+
+/**
+ * Check if a refresh token hash is valid (not expired, not revoked)
+ */
+export async function isRefreshTokenHashValid(hash: string): Promise<boolean> {
+  if (!isDatabaseConnected()) {
+    const entry = memoryRefreshTokens.get(hash);
+    return entry !== undefined && entry.expiresAt > new Date();
+  }
+
+  try {
+    const result = await query<any>(
+      `SELECT 1 FROM refresh_tokens
+       WHERE token_hash = $1 AND expires_at > NOW() AND revoked_at IS NULL`,
+      [hash]
+    );
+    if (result && result.rows.length > 0) {
+      return true;
+    }
+  } catch (error) {
+    console.error('[AuthRepo] Failed to check refresh token validity:', error);
+    // Fall back to memory
+    const entry = memoryRefreshTokens.get(hash);
+    return entry !== undefined && entry.expiresAt > new Date();
+  }
+
+  return false;
+}
+
+/**
+ * Revoke a refresh token hash
+ */
+export async function revokeRefreshTokenHash(hash: string): Promise<void> {
+  // Remove from memory
+  memoryRefreshTokens.delete(hash);
+
+  if (!isDatabaseConnected()) {
+    return;
+  }
+
+  try {
+    await query(
+      'UPDATE refresh_tokens SET revoked_at = NOW() WHERE token_hash = $1',
+      [hash]
+    );
+  } catch (error) {
+    console.error('[AuthRepo] Failed to revoke refresh token:', error);
+  }
+}
+
+/**
+ * Clean up expired and revoked refresh tokens
+ */
+export async function cleanupExpiredRefreshTokens(): Promise<number> {
+  // Clean up memory
+  const now = new Date();
+  for (const [hash, entry] of memoryRefreshTokens.entries()) {
+    if (entry.expiresAt < now) {
+      memoryRefreshTokens.delete(hash);
+    }
+  }
+
+  if (!isDatabaseConnected()) {
+    return 0;
+  }
+
+  try {
+    const result = await query(
+      'DELETE FROM refresh_tokens WHERE expires_at < NOW() OR revoked_at IS NOT NULL'
+    );
+    if (result && result.rowCount !== null) {
+      return result.rowCount;
+    }
+  } catch (error) {
+    console.error('[AuthRepo] Failed to cleanup expired refresh tokens:', error);
+  }
+
+  return 0;
+}
+
+// ============================================================================
 // Cleanup Functions
 // ============================================================================
 
