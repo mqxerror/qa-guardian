@@ -149,6 +149,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      # Feature #220: Encryption key for sensitive data (GitHub tokens, env vars)
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
       # Frontend URL for CORS
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
       # AI Configuration (optional)
@@ -228,6 +230,8 @@ services:
       AI_PROVIDER_FALLBACK: ${AI_PROVIDER_FALLBACK:-anthropic}
       KIE_API_KEY: ${KIE_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Feature #220: Encryption key for sensitive data (GitHub tokens, env vars)
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
     depends_on:
       postgres:
         condition: service_healthy
