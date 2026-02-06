@@ -38,6 +38,7 @@ import { reportsRoutes } from './routes/reports'; // Feature #1732
 import { servicesStatusRoutes, setServicesSocketIO } from './routes/services-status'; // Feature #2127
 import { setRecordingSocketIO } from './routes/test-runs/recording-routes'; // Feature #26: Playwright recording
 import { stepTemplateRoutes } from './routes/step-templates'; // Feature #31: Reusable Step Templates
+import { errorsRoutes } from './routes/errors/index.js'; // Feature #166: Frontend error reporting
 import { requestTimeoutHook } from './middleware/timeout'; // Feature #90: Request timeout middleware
 import { initializeCleanupJob, stopCleanupJob, getCleanupStats } from './jobs/cleanup'; // Feature #154: Data retention cleanup
 import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, registerExecutionCallback } from './services/execution-queue'; // Feature #155: BullMQ execution queue
@@ -308,6 +309,7 @@ async function registerPlugins() {
   await app.register(reportsRoutes); // Feature #1732
   await app.register(servicesStatusRoutes); // Feature #2127
   await app.register(stepTemplateRoutes); // Feature #31: Reusable Step Templates
+  await app.register(errorsRoutes); // Feature #166: Frontend error reporting
 
   // Global error handler - don't expose stack traces to clients
   app.setErrorHandler((error, request, reply) => {

@@ -1,9 +1,10 @@
 /**
  * Error Boundary Component for catching and handling React errors
  * Feature #101: Add Error Boundaries to all route components
+ * Feature #166: Report errors to backend for tracking
  *
  * Catches JavaScript errors in child component tree, logs them,
- * and displays a fallback UI instead of crashing the whole app.
+ * reports them to the backend, and displays a fallback UI.
  */
 
 import { Component, ErrorInfo, ReactNode } from 'react';
@@ -20,6 +21,58 @@ interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  errorReported: boolean;
+}
+
+/**
+ * Feature #166: Report error to backend API
+ * Sends error details to /api/v1/errors for tracking and debugging
+ */
+async function reportErrorToBackend(
+  error: Error,
+  errorInfo: ErrorInfo | null
+): Promise<void> {
+  try {
+    // Get auth token from localStorage if available
+    const authStore = localStorage.getItem('qa-guardian-auth');
+    const token = authStore ? JSON.parse(authStore).state?.token : null;
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Collect environment info
+    const screenResolution = `${window.screen.width}x${window.screen.height}`;
+
+    await fetch('/api/v1/errors', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo?.componentStack,
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        screenResolution,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          errorName: error.name,
+          pathname: window.location.pathname,
+          search: window.location.search,
+          referrer: document.referrer,
+          // Performance timing if available
+          loadTime: performance.timing?.loadEventEnd - performance.timing?.navigationStart,
+        },
+      }),
+    });
+  } catch (reportError) {
+    // Don't let reporting errors cause more issues
+    console.warn('[ErrorBoundary] Failed to report error to backend:', reportError);
+  }
 }
 
 /**
@@ -28,7 +81,7 @@ interface ErrorBoundaryState {
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { hasError: false, error: null, errorInfo: null, errorReported: false };
   }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
@@ -42,12 +95,18 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     console.error('[ErrorBoundary] Caught error:', error);
     console.error('[ErrorBoundary] Error info:', errorInfo);
 
+    // Feature #166: Report error to backend (only once per error)
+    if (!this.state.errorReported) {
+      this.setState({ errorReported: true });
+      reportErrorToBackend(error, errorInfo);
+    }
+
     // Call optional error handler
     this.props.onError?.(error, errorInfo);
   }
 
   handleReset = (): void => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
+    this.setState({ hasError: false, error: null, errorInfo: null, errorReported: false });
     this.props.onReset?.();
   };
 
@@ -116,8 +175,13 @@ export function ErrorFallback({
         <h2 className="text-xl font-semibold text-foreground mb-2">{title}</h2>
 
         {/* Error Message */}
-        <p className="text-muted-foreground mb-6">
+        <p className="text-muted-foreground mb-4">
           {error?.message || 'An unexpected error occurred while rendering this page.'}
+        </p>
+
+        {/* Feature #166: Error has been reported notice */}
+        <p className="text-xs text-muted-foreground mb-6">
+          This error has been automatically reported to our team.
         </p>
 
         {/* Action Buttons */}

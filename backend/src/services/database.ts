@@ -1277,6 +1277,33 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
 
+    -- Frontend Errors table (Feature #166: Frontend error reporting)
+    CREATE TABLE IF NOT EXISTS frontend_errors (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+      user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+      error_message TEXT NOT NULL,
+      error_stack TEXT,
+      component_stack TEXT,
+      url TEXT NOT NULL,
+      user_agent TEXT,
+      browser VARCHAR(100),
+      os VARCHAR(100),
+      screen_resolution VARCHAR(50),
+      metadata JSONB DEFAULT '{}',
+      resolved BOOLEAN DEFAULT FALSE,
+      resolved_at TIMESTAMP WITH TIME ZONE,
+      resolved_by UUID REFERENCES users(id) ON DELETE SET NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Frontend Errors indexes (Feature #166)
+    CREATE INDEX IF NOT EXISTS idx_frontend_errors_organization ON frontend_errors(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_frontend_errors_user ON frontend_errors(user_id);
+    CREATE INDEX IF NOT EXISTS idx_frontend_errors_created ON frontend_errors(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_frontend_errors_resolved ON frontend_errors(resolved);
+    CREATE INDEX IF NOT EXISTS idx_frontend_errors_url ON frontend_errors(url);
+
     -- Step Templates table (Feature #31: Reusable Step Templates)
     CREATE TABLE IF NOT EXISTS step_templates (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
