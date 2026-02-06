@@ -1,5 +1,5 @@
 # QA Guardian Backend - Production Dockerfile
-# Uses tsx for direct TypeScript execution (skips build step)
+# Feature #159: Uses tsc to compile TypeScript, runs compiled JS for better performance
 
 FROM node:20-slim
 
@@ -61,6 +61,10 @@ RUN npx playwright install chromium
 # Copy source code
 COPY . .
 
+# Feature #159: Compile TypeScript to JavaScript for production
+# This reduces startup time and memory usage compared to tsx runtime
+RUN npm run build
+
 # Create directories for runtime data
 RUN mkdir -p /app/uploads /app/logs /app/data /app/screenshots /app/traces /app/videos /app/baselines
 
@@ -78,5 +82,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the application using tsx (no build needed)
-CMD ["npx", "tsx", "src/index.ts"]
+# Feature #159: Start the application using compiled JavaScript
+CMD ["node", "dist/index.js"]
