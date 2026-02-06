@@ -194,6 +194,7 @@ export function useRunsBySuite(suiteId: string | undefined) {
 /**
  * Hook to start a test run
  * Feature #92: Mutation hook with cache invalidation for immediate UI updates
+ * Feature #138: Added optimistic update for instant UI feedback
  */
 export function useStartRun() {
   const token = useAuthStore(state => state.token);
@@ -205,6 +206,50 @@ export function useStartRun() {
         method: 'POST',
         body: JSON.stringify({ branch: branch || 'main' }),
       }),
+    // Feature #138: Optimistic update - show pending run immediately
+    onMutate: async ({ testId, branch }) => {
+      // Cancel any outgoing refetches for this test's runs
+      await queryClient.cancelQueries({ queryKey: runKeys.byTest(testId) });
+
+      // Snapshot the previous value for rollback
+      const previousRuns = queryClient.getQueryData(runKeys.byTest(testId));
+
+      // Create an optimistic run object
+      const optimisticRun: TestRun = {
+        id: `temp-${Date.now()}`, // Temporary ID until server responds
+        suite_id: '', // Will be set by server
+        suite_name: '',
+        project_id: '',
+        test_id: testId,
+        test_name: '',
+        status: 'pending',
+        browser: 'chromium',
+        branch: branch || 'main',
+        created_at: new Date().toISOString(),
+        results_count: 0,
+        passed_count: 0,
+        failed_count: 0,
+        skipped_count: 0,
+      };
+
+      // Optimistically add the new run at the beginning of the list
+      queryClient.setQueryData(runKeys.byTest(testId), (old: { runs?: TestRun[] } | undefined) => {
+        if (!old) return { runs: [optimisticRun] };
+        return {
+          ...old,
+          runs: [optimisticRun, ...(old.runs || [])],
+        };
+      });
+
+      // Return context with previous value for rollback
+      return { previousRuns, testId };
+    },
+    // Feature #138: Rollback on error
+    onError: (_err, _vars, context) => {
+      if (context?.previousRuns !== undefined && context?.testId) {
+        queryClient.setQueryData(runKeys.byTest(context.testId), context.previousRuns);
+      }
+    },
     onSuccess: (data, { testId }) => {
       // Invalidate the runs list for this test
       queryClient.invalidateQueries({ queryKey: runKeys.byTest(testId) });
