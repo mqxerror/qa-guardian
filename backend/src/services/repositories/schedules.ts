@@ -42,6 +42,19 @@ export function getMemorySchedules(): Map<string, Schedule> {
 }
 
 // ============================================
+// Column Constants (Feature #100: Replace SELECT * with explicit columns)
+// ============================================
+
+/**
+ * Explicit column list for schedules table.
+ */
+const SCHEDULE_COLUMNS = [
+  'id', 'organization_id', 'suite_id', 'name', 'description', 'cron_expression',
+  'run_at', 'timezone', 'enabled', 'browsers', 'notify_on_failure',
+  'created_at', 'updated_at', 'created_by', 'next_run_at', 'last_run_id', 'run_count'
+].join(', ');
+
+// ============================================
 // Helper Functions
 // ============================================
 
@@ -118,7 +131,7 @@ export async function createSchedule(schedule: Schedule): Promise<Schedule> {
 export async function getSchedule(scheduleId: string): Promise<Schedule | undefined> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM schedules WHERE id = $1',
+      `SELECT ${SCHEDULE_COLUMNS} FROM schedules WHERE id = $1`,
       [scheduleId]
     );
     if (result && result.rows[0]) {
@@ -229,7 +242,7 @@ export async function deleteSchedule(scheduleId: string): Promise<boolean> {
 export async function listSchedules(organizationId: string): Promise<Schedule[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM schedules WHERE organization_id = $1 ORDER BY created_at DESC',
+      `SELECT ${SCHEDULE_COLUMNS} FROM schedules WHERE organization_id = $1 ORDER BY created_at DESC`,
       [organizationId]
     );
     if (result) {
@@ -248,7 +261,7 @@ export async function listSchedules(organizationId: string): Promise<Schedule[]>
 export async function getEnabledSchedules(): Promise<Schedule[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM schedules WHERE enabled = true ORDER BY next_run_at ASC NULLS LAST',
+      `SELECT ${SCHEDULE_COLUMNS} FROM schedules WHERE enabled = true ORDER BY next_run_at ASC NULLS LAST`,
       []
     );
     if (result) {
@@ -267,7 +280,7 @@ export async function getEnabledSchedules(): Promise<Schedule[]> {
 export async function getSchedulesBySuiteId(suiteId: string): Promise<Schedule[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM schedules WHERE suite_id = $1 ORDER BY created_at DESC',
+      `SELECT ${SCHEDULE_COLUMNS} FROM schedules WHERE suite_id = $1 ORDER BY created_at DESC`,
       [suiteId]
     );
     if (result) {
@@ -312,7 +325,7 @@ export async function getSchedulesDueToRun(): Promise<Schedule[]> {
 
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM schedules
+      `SELECT ${SCHEDULE_COLUMNS} FROM schedules
        WHERE enabled = true
        AND next_run_at IS NOT NULL
        AND next_run_at <= $1

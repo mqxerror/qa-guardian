@@ -11,11 +11,14 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth';
 import { getTest, getTestSuite, getTestsMap, updateTest } from '../test-suites';
-import {
-  // Types
+// Type-only imports (required for ESM compatibility)
+import type {
   PendingHealingApproval,
   HealingRecord,
   DOMChangeContext,
+} from './healing';
+// Value imports
+import {
   // In-Memory Stores
   pendingHealingApprovals,
   pendingHealingUpdates,

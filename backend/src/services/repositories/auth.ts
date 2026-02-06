@@ -53,6 +53,33 @@ const memoryUserSessions: Map<string, Session[]> = new Map();
 const memoryResetTokens: Map<string, ResetToken> = new Map();
 
 // ============================================================================
+// Column Constants (Feature #100: Replace SELECT * with explicit columns)
+// ============================================================================
+
+/**
+ * Explicit column list for users table.
+ */
+const USER_COLUMNS = [
+  'id', 'email', 'password_hash', 'name', 'avatar_url', 'role',
+  'email_verified', 'created_at'
+].join(', ');
+
+/**
+ * Explicit column list for sessions table.
+ */
+const SESSION_COLUMNS = [
+  'id', 'user_id', 'token_hash', 'device', 'browser', 'ip_address',
+  'last_active', 'created_at'
+].join(', ');
+
+/**
+ * Explicit column list for reset_tokens table.
+ */
+const RESET_TOKEN_COLUMNS = [
+  'email', 'token_hash', 'created_at', 'used'
+].join(', ');
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
@@ -140,7 +167,7 @@ export async function getUserByEmail(email: string): Promise<User | undefined> {
 
   try {
     const result = await query<any>(
-      'SELECT * FROM users WHERE email = $1',
+      `SELECT ${USER_COLUMNS} FROM users WHERE email = $1`,
       [email]
     );
     if (result && result.rows[0]) {
@@ -164,7 +191,7 @@ export async function getUserById(id: string): Promise<User | undefined> {
 
   try {
     const result = await query<any>(
-      'SELECT * FROM users WHERE id = $1',
+      `SELECT ${USER_COLUMNS} FROM users WHERE id = $1`,
       [id]
     );
     if (result && result.rows[0]) {
@@ -361,7 +388,7 @@ export async function getUserSessions(userId: string): Promise<Session[]> {
 
   try {
     const result = await query<any>(
-      'SELECT * FROM sessions WHERE user_id = $1 ORDER BY last_active DESC',
+      `SELECT ${SESSION_COLUMNS} FROM sessions WHERE user_id = $1 ORDER BY last_active DESC`,
       [userId]
     );
     if (result && result.rows) {
@@ -497,7 +524,7 @@ export async function getResetToken(token: string): Promise<ResetToken | undefin
 
   try {
     const result = await query<any>(
-      'SELECT * FROM reset_tokens WHERE token_hash = $1',
+      `SELECT ${RESET_TOKEN_COLUMNS} FROM reset_tokens WHERE token_hash = $1`,
       [token]
     );
     if (result && result.rows[0]) {

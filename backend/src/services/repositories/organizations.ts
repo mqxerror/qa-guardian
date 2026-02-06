@@ -114,6 +114,18 @@ export function getMemoryRetryStrategySettings(): Map<string, RetryStrategySetti
 }
 
 // ============================================================================
+// Column Constants (Feature #100: Replace SELECT * with explicit columns)
+// ============================================================================
+
+/**
+ * Explicit column list for invitations table.
+ */
+const INVITATION_COLUMNS = [
+  'id', 'organization_id', 'email', 'role', 'invited_by',
+  'created_at', 'status', 'accepted_at', 'accepted_by'
+].join(', ');
+
+// ============================================================================
 // Organization Functions
 // ============================================================================
 
@@ -474,7 +486,7 @@ export async function getInvitationById(id: string): Promise<Invitation | null> 
 
   try {
     const result = await query<Invitation>(
-      `SELECT * FROM invitations WHERE id = $1`,
+      `SELECT ${INVITATION_COLUMNS} FROM invitations WHERE id = $1`,
       [id]
     );
     if (result && result.rows.length > 0) {
@@ -499,7 +511,7 @@ export async function getInvitationsByOrg(organizationId: string): Promise<Invit
 
   try {
     const result = await query<Invitation>(
-      `SELECT * FROM invitations WHERE organization_id = $1`,
+      `SELECT ${INVITATION_COLUMNS} FROM invitations WHERE organization_id = $1`,
       [organizationId]
     );
     if (result) {

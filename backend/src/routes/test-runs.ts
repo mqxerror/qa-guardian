@@ -133,13 +133,17 @@ import {
 } from './test-runs/ai-analysis';
 
 // Feature #1356: Import healing module
-import {
-  // Types
+// Type-only imports (required for ESM compatibility)
+import type {
   PendingHealingApproval,
   HealingRecord,
   SelectorHistoryEntry,
   HealingEventEntry,
   DOMChangeContext,
+} from './test-runs/healing';
+
+// Value imports from healing module
+import {
   // In-Memory Stores
   pendingHealingApprovals,
   pendingHealingUpdates,
@@ -444,8 +448,9 @@ const failedUploads = failedUploadsFromModule;
 
 // Re-exports for backwards compatibility
 export { artifactRetentionSettings } from './test-runs/storage';
-export { AlertCondition, AlertChannelType, AlertChannel, alertChannels, emailLog, slackConnections, SlackConnection, SlackChannel, slackLog } from './test-runs/alerts';
-export { WebhookLogEntry, webhookLog } from './test-runs/alerts';
+// Type exports (must use 'export type' for ESM compatibility with Node.js 20+)
+export type { AlertCondition, AlertChannelType, AlertChannel, SlackConnection, SlackChannel, WebhookLogEntry } from './test-runs/alerts';
+export { alertChannels, emailLog, slackConnections, slackLog, webhookLog } from './test-runs/alerts';
 
 // Feature #1356: Import webhooks module
 import {
@@ -469,8 +474,9 @@ import {
   applyPayloadTemplate,
 } from './test-runs/webhooks';
 
-// Re-export webhooks types
-export { WebhookSubscription, webhookSubscriptions } from './test-runs/webhooks';
+// Re-export webhooks types (must use 'export type' for ESM compatibility with Node.js 20+)
+export type { WebhookSubscription } from './test-runs/webhooks';
+export { webhookSubscriptions } from './test-runs/webhooks';
 
 // Feature #1356: Import test executor module (extracted ~4600 lines)
 import {

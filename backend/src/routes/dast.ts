@@ -1,8 +1,8 @@
 // DAST Routes - Re-exports from modular implementation
 // This file maintains backward compatibility while actual code lives in dast/ directory
 
-export {
-  // Types
+// Type-only exports (required for ESM compatibility)
+export type {
   DASTConfig,
   DASTScanResult,
   DASTAlert,

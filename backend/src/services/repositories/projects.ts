@@ -48,6 +48,31 @@ export const DEFAULT_PROJECT_HEALING_SETTINGS: ProjectHealingSettings = {
   auto_heal_confidence_threshold: 0.85,
 };
 
+// ===== Column Constants (Feature #100: Replace SELECT * with explicit columns) =====
+
+/**
+ * Explicit column list for projects table.
+ */
+const PROJECT_COLUMNS = [
+  'id', 'organization_id', 'name', 'slug', 'description', 'base_url',
+  'archived', 'archived_at', 'settings', 'visual_settings', 'healing_settings',
+  'created_at', 'updated_at'
+].join(', ');
+
+/**
+ * Explicit column list for project_members table.
+ */
+const PROJECT_MEMBER_COLUMNS = [
+  'project_id', 'user_id', 'role', 'added_at', 'added_by'
+].join(', ');
+
+/**
+ * Explicit column list for project_env_vars table.
+ */
+const PROJECT_ENV_VAR_COLUMNS = [
+  'id', 'project_id', 'key', 'value', 'encrypted', 'created_at', 'updated_at'
+].join(', ');
+
 // ===== PROJECTS =====
 
 export async function createProject(project: Project): Promise<Project> {
@@ -82,7 +107,7 @@ export async function getProject(id: string): Promise<Project | undefined> {
   }
 
   const result = await query<Project>(
-    `SELECT * FROM projects WHERE id = $1`,
+    `SELECT ${PROJECT_COLUMNS} FROM projects WHERE id = $1`,
     [id]
   );
   if (result && result.rows[0]) {
@@ -157,7 +182,7 @@ export async function listProjects(organizationId: string): Promise<Project[]> {
   }
 
   const result = await query<Project>(
-    `SELECT * FROM projects WHERE organization_id = $1 ORDER BY created_at DESC`,
+    `SELECT ${PROJECT_COLUMNS} FROM projects WHERE organization_id = $1 ORDER BY created_at DESC`,
     [organizationId]
   );
   if (result) {
@@ -183,7 +208,7 @@ export async function getProjectBySlug(organizationId: string, slug: string): Pr
   }
 
   const result = await query<Project>(
-    `SELECT * FROM projects WHERE organization_id = $1 AND slug = $2`,
+    `SELECT ${PROJECT_COLUMNS} FROM projects WHERE organization_id = $1 AND slug = $2`,
     [organizationId, slug]
   );
   if (result && result.rows[0]) {
@@ -209,7 +234,7 @@ export async function getProjectByName(organizationId: string, name: string): Pr
   }
 
   const result = await query<Project>(
-    `SELECT * FROM projects WHERE organization_id = $1 AND LOWER(name) = LOWER($2)`,
+    `SELECT ${PROJECT_COLUMNS} FROM projects WHERE organization_id = $1 AND LOWER(name) = LOWER($2)`,
     [organizationId, name]
   );
   if (result && result.rows[0]) {
@@ -245,7 +270,7 @@ export async function batchGetProjects(ids: string[]): Promise<Map<string, Proje
 
   // Single query using ANY($1) instead of N separate queries
   const queryResult = await query<Project>(
-    `SELECT * FROM projects WHERE id = ANY($1)`,
+    `SELECT ${PROJECT_COLUMNS} FROM projects WHERE id = ANY($1)`,
     [uniqueIds]
   );
 
@@ -301,7 +326,7 @@ export async function getProjectMembers(projectId: string): Promise<ProjectMembe
   }
 
   const result = await query<ProjectMember>(
-    `SELECT * FROM project_members WHERE project_id = $1`,
+    `SELECT ${PROJECT_MEMBER_COLUMNS} FROM project_members WHERE project_id = $1`,
     [projectId]
   );
   if (result) {
@@ -444,7 +469,7 @@ export async function getProjectEnvVars(projectId: string): Promise<EnvironmentV
   }
 
   const result = await query<EnvironmentVariable>(
-    `SELECT * FROM project_env_vars WHERE project_id = $1 ORDER BY key`,
+    `SELECT ${PROJECT_ENV_VAR_COLUMNS} FROM project_env_vars WHERE project_id = $1 ORDER BY key`,
     [projectId]
   );
   if (result) {
@@ -481,7 +506,7 @@ export async function deleteProjectEnvVar(projectId: string, envVarId: string): 
  */
 export async function getProjectsMap(): Promise<Map<string, Project>> {
   if (isDatabaseConnected()) {
-    const result = await query<Project>(`SELECT * FROM projects ORDER BY created_at DESC`);
+    const result = await query<Project>(`SELECT ${PROJECT_COLUMNS} FROM projects ORDER BY created_at DESC`);
     const map = new Map<string, Project>();
     if (result) {
       for (const row of result.rows) {

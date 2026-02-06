@@ -17,6 +17,24 @@ import { TestSuite, Test } from '../../routes/test-suites/types';
 const memTestSuites = new Map<string, TestSuite>();
 const memTests = new Map<string, Test>();
 
+// ===== Column Constants (Feature #100: Replace SELECT * with explicit columns) =====
+
+/**
+ * Explicit column list for test_suites table.
+ */
+const TEST_SUITE_COLUMNS = [
+  'id', 'project_id', 'name', 'description', 'type', 'config', 'tags',
+  'created_at', 'updated_at'
+].join(', ');
+
+/**
+ * Explicit column list for tests table.
+ */
+const TEST_COLUMNS = [
+  'id', 'suite_id', 'project_id', 'name', 'description', 'type', 'config',
+  'code', 'enabled', 'priority', 'tags', 'created_at', 'updated_at'
+].join(', ');
+
 // ===== TEST SUITES =====
 
 export async function createTestSuite(suite: TestSuite): Promise<TestSuite> {
@@ -64,7 +82,7 @@ export async function getTestSuite(id: string): Promise<TestSuite | undefined> {
   }
 
   const result = await query<any>(
-    `SELECT * FROM test_suites WHERE id = $1`,
+    `SELECT ${TEST_SUITE_COLUMNS} FROM test_suites WHERE id = $1`,
     [id]
   );
   if (result && result.rows[0]) {
@@ -146,7 +164,7 @@ export async function listTestSuites(projectId: string, organizationId: string):
   }
 
   const result = await query<any>(
-    `SELECT * FROM test_suites WHERE project_id = $1 ORDER BY created_at DESC`,
+    `SELECT ${TEST_SUITE_COLUMNS} FROM test_suites WHERE project_id = $1 ORDER BY created_at DESC`,
     [projectId]
   );
   if (result) {
@@ -180,7 +198,7 @@ export async function listTestSuitesPaginated(
 
   // Feature #124: Single query with window function instead of separate COUNT + SELECT
   const result = await query<any>(
-    `SELECT *, COUNT(*) OVER() as total_count
+    `SELECT ${TEST_SUITE_COLUMNS}, COUNT(*) OVER() as total_count
      FROM test_suites
      WHERE project_id = $1 AND config->>'organization_id' = $2
      ORDER BY created_at DESC
@@ -199,7 +217,7 @@ export async function listAllTestSuites(organizationId: string): Promise<TestSui
   }
 
   const result = await query<any>(
-    `SELECT * FROM test_suites ORDER BY created_at DESC`
+    `SELECT ${TEST_SUITE_COLUMNS} FROM test_suites ORDER BY created_at DESC`
   );
   if (result) {
     return result.rows
@@ -351,7 +369,7 @@ export async function listTests(suiteId: string): Promise<Test[]> {
   const orgId = suite?.organization_id || '';
 
   const result = await query<any>(
-    `SELECT * FROM tests WHERE suite_id = $1 ORDER BY priority ASC, created_at ASC`,
+    `SELECT ${TEST_COLUMNS} FROM tests WHERE suite_id = $1 ORDER BY priority ASC, created_at ASC`,
     [suiteId]
   );
   if (result) {
@@ -385,7 +403,7 @@ export async function listTestsPaginated(
 
   // Feature #124: Single query with window function instead of separate COUNT + SELECT
   const result = await query<any>(
-    `SELECT *, COUNT(*) OVER() as total_count
+    `SELECT ${TEST_COLUMNS}, COUNT(*) OVER() as total_count
      FROM tests
      WHERE suite_id = $1
      ORDER BY priority ASC, created_at ASC
@@ -503,7 +521,7 @@ export async function batchGetTestSuites(ids: string[]): Promise<Map<string, Tes
 
   // Single query using ANY($1) instead of N separate queries
   const queryResult = await query<any>(
-    `SELECT * FROM test_suites WHERE id = ANY($1)`,
+    `SELECT ${TEST_SUITE_COLUMNS} FROM test_suites WHERE id = ANY($1)`,
     [uniqueIds]
   );
 
@@ -719,7 +737,7 @@ export async function getTestSuitesMap(): Promise<Map<string, TestSuite>> {
     return new Map(memTestSuites);
   }
 
-  const result = await query<any>(`SELECT * FROM test_suites ORDER BY created_at DESC`);
+  const result = await query<any>(`SELECT ${TEST_SUITE_COLUMNS} FROM test_suites ORDER BY created_at DESC`);
   if (result) {
     for (const row of result.rows) {
       const suite = rowToTestSuite(row);

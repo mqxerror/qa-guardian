@@ -149,14 +149,17 @@ export {
 } from './ai-analysis';
 
 // Healing Module (Feature #1356 - Code Quality)
-export {
-  // Types
+// Type-only exports (required for ESM compatibility)
+export type {
   PendingHealingApproval,
   HealingRecord,
   SelectorHistoryEntry,
   HealingEventEntry,
   DOMChangeContext,
+} from './healing';
 
+// Value exports
+export {
   // In-Memory Stores
   pendingHealingApprovals,
   pendingHealingUpdates,
