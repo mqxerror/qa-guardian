@@ -1270,6 +1270,14 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_project_env_vars_project ON project_env_vars(project_id);
     CREATE INDEX IF NOT EXISTS idx_visual_baselines_project ON visual_baselines(project_id);
     CREATE INDEX IF NOT EXISTS idx_webhooks_project ON webhooks(project_id);
+
+    -- Feature #163: Additional composite indexes for common query patterns
+    -- These indexes optimize queries that filter by multiple columns together
+    CREATE INDEX IF NOT EXISTS idx_tests_suite_enabled ON tests(suite_id, enabled);
+    CREATE INDEX IF NOT EXISTS idx_tests_project_enabled ON tests(project_id, enabled);
+    CREATE INDEX IF NOT EXISTS idx_test_suites_project_type ON test_suites(project_id, type);
+    CREATE INDEX IF NOT EXISTS idx_test_runs_org_test_created ON test_runs(organization_id, test_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_flaky_tests_project_quarantined ON flaky_tests(project_id, quarantined);
   `;
 
   try {
