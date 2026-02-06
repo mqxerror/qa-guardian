@@ -1,4 +1,7 @@
 // Feature #48: DeleteTestModal component extracted from TestDetailPage.tsx
+// Feature #119: Added focus trap for keyboard navigation
+
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 
 interface DeleteTestModalProps {
   testName: string;
@@ -15,12 +18,21 @@ export function DeleteTestModal({
   onClose,
   onDelete,
 }: DeleteTestModalProps) {
+  // Feature #119: Focus trap for keyboard navigation
+  const dialogRef = useFocusTrap<HTMLDivElement>({
+    isOpen: true,
+    onClose,
+    autoFocus: true,
+    restoreFocus: true,
+  });
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="delete-test-title"

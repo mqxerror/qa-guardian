@@ -49,6 +49,14 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="flex min-h-screen">
+      {/* Skip to main content link - visible only when focused */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+
       {/* Desktop Sidebar */}
       <Sidebar />
 
@@ -188,7 +196,7 @@ export function Layout({ children }: LayoutProps) {
         </header>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto">
+        <main id="main-content" className="flex-1 overflow-auto" tabIndex={-1}>
           {children}
         </main>
       </div>
