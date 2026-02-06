@@ -1,3 +1,11 @@
+# =============================================================================
+# QA Guardian - Development Docker Compose
+# =============================================================================
+# SECURITY NOTICE: Default passwords in this file are for LOCAL DEVELOPMENT ONLY.
+# For production deployments, use docker/docker-compose.prod.yml with proper
+# environment variables set (no defaults). Never use these defaults in production!
+# =============================================================================
+
 version: "3.8"
 
 services:
@@ -9,6 +17,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-qa_guardian}
+      # DEV ONLY: Default password for local development. Override in production!
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-QaGuardian2024Secure}
       POSTGRES_DB: ${POSTGRES_DB:-qa_guardian}
     # Feature #165: Slow query logging (queries > 1 second)
@@ -38,6 +47,7 @@ services:
     restart: unless-stopped
     # Feature #148: Add password authentication for Redis
     # Feature #156: Add maxmemory policy to prevent OOM
+    # DEV ONLY: Default password for local development. Override in production!
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-QaGuardianRedis2024} --maxmemory 400mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
@@ -72,6 +82,8 @@ services:
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
       # Feature #156: Limit Node.js heap to 1.5GB to leave room for other processes
       - NODE_OPTIONS=--max-old-space-size=1536
+      # Feature #209: ZAP API key for DAST scanning
+      - ZAP_API_KEY=${ZAP_API_KEY:-dev-zap-key-change-in-prod}
     volumes:
       - backend_data:/app/data
     depends_on:
@@ -97,18 +109,25 @@ services:
   zap:
     image: ghcr.io/zaproxy/zaproxy:stable
     container_name: qa-guardian-zap
+    # Feature #209: Secure ZAP API with key and restrict access to backend only
+    # - api.key requires all API requests to include the ZAP_API_KEY
+    # - api.addrs restricts access to Docker internal network (backend container)
+    # - No host port mapping - ZAP only accessible from internal network
     command: >
       zap.sh -daemon -host 0.0.0.0 -port 8080
-      -config api.disablekey=true
-      -config api.addrs.addr.name=.*
-      -config api.addrs.addr.regex=true
-    ports:
-      - "8090:8080"
+      -config api.key=${ZAP_API_KEY:-dev-zap-key-change-in-prod}
+      -config api.addrs.addr.name=qa-guardian-backend
+      -config api.addrs.addr.regex=false
+    environment:
+      # DEV ONLY: Default API key for local development. Override in production!
+      ZAP_API_KEY: ${ZAP_API_KEY:-dev-zap-key-change-in-prod}
+    # No host port mapping - ZAP only needs to be accessible from backend container
     networks:
       - qa-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/JSON/core/view/version/"]
+      # Include API key in health check
+      test: ["CMD", "curl", "-f", "http://localhost:8080/JSON/core/view/version/?apikey=${ZAP_API_KEY:-dev-zap-key-change-in-prod}"]
       interval: 30s
       timeout: 10s
       retries: 3

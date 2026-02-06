@@ -24,6 +24,9 @@ import {
 /** Base URL for the ZAP daemon API. Defaults to the Docker service name. */
 const ZAP_BASE_URL = process.env.ZAP_API_URL || 'http://zap:8080';
 
+/** Feature #209: ZAP API key for authenticated requests. */
+const ZAP_API_KEY = process.env.ZAP_API_KEY || '';
+
 /** Maximum time to wait for the spider phase (seconds). */
 const SPIDER_TIMEOUT_SECONDS = 120;
 
@@ -46,18 +49,24 @@ const PASSIVE_SCAN_SETTLE_MS = 5000;
 /**
  * Send a GET request to the ZAP REST API and parse the JSON response.
  * Throws a descriptive error if ZAP is unreachable or returns invalid data.
+ * Feature #209: Includes API key in all requests for authentication.
  */
 async function zapGet(path: string): Promise<any> {
   return new Promise((resolve, reject) => {
-    const url = `${ZAP_BASE_URL}${path}`;
-    const req = http.get(url, { timeout: 10_000 }, (res) => {
+    // Append API key to the request URL
+    const separator = path.includes('?') ? '&' : '?';
+    const urlWithKey = ZAP_API_KEY
+      ? `${ZAP_BASE_URL}${path}${separator}apikey=${encodeURIComponent(ZAP_API_KEY)}`
+      : `${ZAP_BASE_URL}${path}`;
+    const displayUrl = `${ZAP_BASE_URL}${path}`; // Don't log the API key
+    const req = http.get(urlWithKey, { timeout: 10_000 }, (res) => {
       let data = '';
       res.on('data', (chunk: string) => { data += chunk; });
       res.on('end', () => {
         try {
           resolve(JSON.parse(data));
         } catch {
-          reject(new Error(`Invalid JSON response from ZAP at ${url}: ${data.substring(0, 200)}`));
+          reject(new Error(`Invalid JSON response from ZAP at ${displayUrl}: ${data.substring(0, 200)}`));
         }
       });
     });
@@ -72,7 +81,7 @@ async function zapGet(path: string): Promise<any> {
 
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error(`Request to ZAP timed out: ${url}`));
+      reject(new Error(`Request to ZAP timed out: ${displayUrl}`));
     });
   });
 }
