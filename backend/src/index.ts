@@ -72,8 +72,15 @@ const app = Fastify({
 
 // Register plugins
 async function registerPlugins() {
-  // CORS - Allow multiple origins for development and production
+  // Feature #149: CORS - Configurable allowed origins for security
+  // Parse CORS_ORIGINS env var (comma-separated list) or use defaults
+  const corsOriginsEnv = process.env.CORS_ORIGINS;
+  const configuredOrigins = corsOriginsEnv
+    ? corsOriginsEnv.split(',').map(o => o.trim()).filter(Boolean)
+    : [];
+
   const allowedOrigins = [
+    ...configuredOrigins,
     process.env.FRONTEND_URL || 'http://localhost:5173',
     'http://localhost:5173',  // Vite default (development)
     'http://localhost:3000',  // Alternative React dev server
@@ -85,7 +92,10 @@ async function registerPlugins() {
   ];
 
   // Log allowed origins for debugging (helpful for CORS troubleshooting)
-  console.log('CORS allowed origins:', allowedOrigins);
+  console.log('[CORS] Allowed origins:', allowedOrigins);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[CORS] Development mode: allowing all origins');
+  }
 
   await app.register(cors, {
     origin: (origin, cb) => {
