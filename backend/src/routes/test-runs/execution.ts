@@ -448,8 +448,113 @@ import {
  * Key: runId
  * NOTE: This Map holds only in-flight test state for fast synchronous access during execution.
  * Use the db* functions above for persistent storage operations.
+ * Feature #211: TTL eviction added - completed runs are removed after 5 minutes
  */
 export const testRuns: Map<string, TestRun> = new Map();
+
+/**
+ * Feature #211: Track completion timestamps for TTL eviction
+ * Key: runId, Value: completion timestamp (ms)
+ */
+const runCompletionTimes: Map<string, number> = new Map();
+
+/** Feature #211: Time to keep completed runs in memory (5 minutes) */
+const RUN_TTL_MS = 5 * 60 * 1000;
+
+/** Feature #211: Interval for periodic cleanup (60 seconds) */
+const CLEANUP_INTERVAL_MS = 60 * 1000;
+
+/** Feature #211: Max age for stale runs before forced eviction (10 minutes) */
+const MAX_RUN_AGE_MS = 10 * 60 * 1000;
+
+/**
+ * Feature #211: Mark a run as completed for TTL tracking
+ * Call this when a run transitions to a terminal state (passed, failed, error, cancelled)
+ */
+export function markRunCompleted(runId: string): void {
+  runCompletionTimes.set(runId, Date.now());
+}
+
+/**
+ * Feature #211: Terminal states that trigger TTL eviction
+ */
+const TERMINAL_STATES: TestRunStatus[] = ['passed', 'failed', 'error', 'cancelled', 'visual_approved', 'visual_rejected'];
+
+/**
+ * Feature #211: Set a test run in memory and track completion for TTL eviction
+ * Use this instead of testRuns.set() directly to enable automatic cleanup
+ */
+export function setTestRun(runId: string, run: TestRun): void {
+  testRuns.set(runId, run);
+
+  // Track completion time if run is in a terminal state
+  if (TERMINAL_STATES.includes(run.status)) {
+    markRunCompleted(runId);
+  }
+}
+
+/**
+ * Feature #211: Clean up expired runs from the testRuns Map
+ * Removes runs that:
+ * - Have been completed for more than RUN_TTL_MS (5 min)
+ * - Are older than MAX_RUN_AGE_MS (10 min) regardless of status
+ */
+export function cleanupExpiredRuns(): number {
+  const now = Date.now();
+  let cleaned = 0;
+
+  // Clean runs based on completion time
+  for (const [runId, completionTime] of runCompletionTimes) {
+    if (now - completionTime > RUN_TTL_MS) {
+      testRuns.delete(runId);
+      runCompletionTimes.delete(runId);
+      cleaned++;
+    }
+  }
+
+  // Clean stale runs without completion time (stuck/orphaned runs)
+  for (const [runId, run] of testRuns) {
+    if (!runCompletionTimes.has(runId)) {
+      const runAge = now - new Date(run.started_at).getTime();
+      if (runAge > MAX_RUN_AGE_MS) {
+        testRuns.delete(runId);
+        cleaned++;
+      }
+    }
+  }
+
+  if (cleaned > 0) {
+    console.log(`[Execution] TTL cleanup: removed ${cleaned} expired run(s) from memory. Active: ${testRuns.size}`);
+  }
+
+  return cleaned;
+}
+
+// Feature #211: Start periodic cleanup
+let cleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Feature #211: Start the periodic cleanup interval
+ */
+export function startRunCleanup(): void {
+  if (cleanupInterval) return;
+  cleanupInterval = setInterval(cleanupExpiredRuns, CLEANUP_INTERVAL_MS);
+  console.log('[Execution] Started TTL cleanup interval (every 60s)');
+}
+
+/**
+ * Feature #211: Stop the periodic cleanup interval (for graceful shutdown)
+ */
+export function stopRunCleanup(): void {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+    console.log('[Execution] Stopped TTL cleanup interval');
+  }
+}
+
+// Auto-start cleanup on module load
+startRunCleanup();
 
 /**
  * Track running browsers for cancellation and pause

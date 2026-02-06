@@ -148,9 +148,9 @@ function rowToOrganization(row: OrganizationRow): Organization {
 }
 
 export async function createOrganization(org: Organization): Promise<Organization> {
-  // Always store in memory
-  memoryOrganizations.set(org.id, org);
+  // Feature #211: Only write to memory when DB is not connected (avoids dual-write)
   if (!isDatabaseConnected()) {
+    memoryOrganizations.set(org.id, org);
     return org;
   }
 
@@ -275,11 +275,11 @@ export async function listOrganizations(): Promise<Organization[]> {
 // ============================================================================
 
 export async function addOrganizationMember(member: OrganizationMember): Promise<void> {
-  // Always store in memory
-  const members = memoryOrganizationMembers.get(member.organization_id) || [];
-  members.push(member);
-  memoryOrganizationMembers.set(member.organization_id, members);
+  // Feature #211: Only write to memory when DB is not connected (avoids dual-write)
   if (!isDatabaseConnected()) {
+    const members = memoryOrganizationMembers.get(member.organization_id) || [];
+    members.push(member);
+    memoryOrganizationMembers.set(member.organization_id, members);
     return;
   }
 

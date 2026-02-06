@@ -123,10 +123,9 @@ function rowToSession(row: any): Session {
  * Create a new user
  */
 export async function createUser(user: User): Promise<User> {
-  // Always store in memory for fallback
-  memoryUsers.set(user.email, user);
-
+  // Feature #211: Only write to memory when DB is not connected (avoids dual-write)
   if (!isDatabaseConnected()) {
+    memoryUsers.set(user.email, user);
     return user;
   }
 
@@ -208,9 +207,10 @@ export async function getUserById(id: string): Promise<User | undefined> {
  * Update a user
  */
 export async function updateUser(email: string, updates: Partial<User>): Promise<User | undefined> {
-  const existing = memoryUsers.get(email);
-  if (existing) { memoryUsers.set(email, { ...existing, ...updates }); }
+  // Feature #211: Only write to memory when DB is not connected (avoids dual-write)
   if (!isDatabaseConnected()) {
+    const existing = memoryUsers.get(email);
+    if (existing) { memoryUsers.set(email, { ...existing, ...updates }); }
     return memoryUsers.get(email);
   }
 
@@ -346,12 +346,11 @@ export async function isTokenBlacklisted(token: string): Promise<boolean> {
  * Create a new session
  */
 export async function createSession(session: Session): Promise<Session> {
-  // Add to memory
-  const sessions = memoryUserSessions.get(session.user_id) || [];
-  sessions.push(session);
-  memoryUserSessions.set(session.user_id, sessions);
-
+  // Feature #211: Only write to memory when DB is not connected (avoids dual-write)
   if (!isDatabaseConnected()) {
+    const sessions = memoryUserSessions.get(session.user_id) || [];
+    sessions.push(session);
+    memoryUserSessions.set(session.user_id, sessions);
     return session;
   }
 
@@ -455,15 +454,15 @@ export async function deleteSession(sessionId: string, userId: string): Promise<
  * Delete all sessions for a user except current
  */
 export async function deleteOtherSessions(userId: string, currentSessionId: string): Promise<number> {
-  // Remove from memory
-  const memSessions = memoryUserSessions.get(userId);
-  let deletedCount = 0;
-  if (memSessions) {
-    const newSessions = memSessions.filter(s => s.id === currentSessionId);
-    deletedCount = memSessions.length - newSessions.length;
-    memoryUserSessions.set(userId, newSessions);
-  }
+  // Feature #211: Only write to memory when DB is not connected (avoids dual-write)
   if (!isDatabaseConnected()) {
+    const memSessions = memoryUserSessions.get(userId);
+    let deletedCount = 0;
+    if (memSessions) {
+      const newSessions = memSessions.filter(s => s.id === currentSessionId);
+      deletedCount = memSessions.length - newSessions.length;
+      memoryUserSessions.set(userId, newSessions);
+    }
     return deletedCount;
   }
 
