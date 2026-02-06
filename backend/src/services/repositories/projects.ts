@@ -11,6 +11,7 @@
  */
 
 import { query, isDatabaseConnected, transaction } from '../database.js';
+import { encrypt, decrypt } from '../encryption.js'; // Feature #217: Encrypt sensitive data
 import { Project, ProjectMember, EnvironmentVariable, ProjectVisualSettings, ProjectHealingSettings } from '../../routes/projects/types.js';
 
 // Feature #2097: UUID validation helper for defensive programming
@@ -447,16 +448,21 @@ export async function addProjectEnvVar(envVar: EnvironmentVariable): Promise<Env
     )
   `);
 
+  // Feature #217: Encrypt value if marked as secret
+  const valueToStore = envVar.is_secret ? encrypt(envVar.value) : envVar.value;
+
   const result = await query<EnvironmentVariable>(
     `INSERT INTO project_env_vars (id, project_id, key, value, is_secret, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
      ON CONFLICT (project_id, key) DO UPDATE SET value = $4, is_secret = $5, updated_at = $7
      RETURNING *`,
-    [envVar.id, envVar.project_id, envVar.key, envVar.value, envVar.is_secret, envVar.created_at, envVar.updated_at]
+    [envVar.id, envVar.project_id, envVar.key, valueToStore, envVar.is_secret, envVar.created_at, envVar.updated_at]
   );
   if (result && result.rows[0]) {
     return {
       ...result.rows[0],
+      // Return the original value (not encrypted) to the caller
+      value: envVar.value,
       created_at: new Date(result.rows[0].created_at),
       updated_at: new Date(result.rows[0].updated_at),
     };
@@ -476,6 +482,8 @@ export async function getProjectEnvVars(projectId: string): Promise<EnvironmentV
   if (result) {
     return result.rows.map(row => ({
       ...row,
+      // Feature #217: Decrypt value if marked as secret
+      value: row.is_secret ? decrypt(row.value) : row.value,
       created_at: new Date(row.created_at),
       updated_at: new Date(row.updated_at),
     }));

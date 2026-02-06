@@ -15,6 +15,7 @@
  */
 
 import { query, isDatabaseConnected } from '../database.js';
+import { encrypt, decrypt } from '../encryption.js'; // Feature #217: Encrypt sensitive data
 import {
   GitHubConnection,
   PRStatusCheck,
@@ -418,11 +419,13 @@ function parsePRDependencyScanRow(row: any): PRDependencyScanResult {
 
 export async function setUserGithubToken(userId: string, token: string): Promise<void> {
   if (isDatabaseConnected()) {
+    // Feature #217: Encrypt the token before storing
+    const encryptedToken = encrypt(token);
     await query(
       `INSERT INTO user_github_tokens (user_id, access_token, updated_at)
        VALUES ($1, $2, NOW())
        ON CONFLICT (user_id) DO UPDATE SET access_token = $2, updated_at = NOW()`,
-      [userId, token]
+      [userId, encryptedToken]
     );
     return;
   }
@@ -435,7 +438,8 @@ export async function getUserGithubToken(userId: string): Promise<string | undef
       [userId]
     );
     if (result && result.rows[0]) {
-      return result.rows[0].access_token;
+      // Feature #217: Decrypt the token when reading
+      return decrypt(result.rows[0].access_token);
     }
     return undefined;
   }
