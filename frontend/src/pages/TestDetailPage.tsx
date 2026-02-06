@@ -804,6 +804,7 @@ function TestDetailPage() {
     setCurrentRun,
     setLiveProgress,
     setIsCancellingRun,
+    setLiveScreenshot, // Feature #204: Pass live screenshot setter for step:screenshot events
     fetchRuns,
   });
 

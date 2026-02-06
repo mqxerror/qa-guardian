@@ -46,6 +46,8 @@ export interface UseRunHandlersProps {
   setCurrentRun: (run: TestRunType | null | ((prev: TestRunType | null) => TestRunType | null)) => void;
   setLiveProgress: (progress: LiveProgress | null | ((prev: LiveProgress | null) => LiveProgress | null)) => void;
   setIsCancellingRun: (value: boolean) => void;
+  // Feature #204: Live screenshot state setter
+  setLiveScreenshot?: (screenshot: string | null) => void;
   // Data refresh function
   fetchRuns: () => Promise<void>;
 }
@@ -71,6 +73,7 @@ export function useRunHandlers({
   setCurrentRun,
   setLiveProgress,
   setIsCancellingRun,
+  setLiveScreenshot,
   fetchRuns,
 }: UseRunHandlersProps): RunHandlers {
 
@@ -280,12 +283,29 @@ export function useRunHandlers({
       }
     };
 
+    // Feature #204: Handle live screenshots from step execution
+    const handleStepScreenshot = (data: {
+      runId: string;
+      testId: string;
+      testName: string;
+      stepIndex: number;
+      stepAction: string;
+      base64: string;
+    }) => {
+      logger.websocket.debug('step:screenshot event:', { runId: data.runId, stepIndex: data.stepIndex });
+      if (data.runId === currentRun.id && setLiveScreenshot) {
+        // Set the base64 screenshot for display in LiveExecutionPanel
+        setLiveScreenshot(data.base64);
+      }
+    };
+
     socket.on('run-start', handleRunStart);
     socket.on('run-progress', handleRunProgress);
     socket.on('step-start', handleStepStart);
     socket.on('step-complete', handleStepComplete);
     socket.on('step-progress', handleStepProgress);
     socket.on('run-complete', handleRunComplete);
+    socket.on('step:screenshot', handleStepScreenshot);
 
     return () => {
       socket.off('run-start', handleRunStart);
@@ -294,8 +314,9 @@ export function useRunHandlers({
       socket.off('step-complete', handleStepComplete);
       socket.off('step-progress', handleStepProgress);
       socket.off('run-complete', handleRunComplete);
+      socket.off('step:screenshot', handleStepScreenshot);
     };
-  }, [socket, currentRun, testType, leaveRun, fetchRuns, setIsRunning, setLiveProgress, setCurrentRun]);
+  }, [socket, currentRun, testType, leaveRun, fetchRuns, setIsRunning, setLiveProgress, setCurrentRun, setLiveScreenshot]);
 
   return {
     handleRunTest,
