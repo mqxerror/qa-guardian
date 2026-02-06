@@ -9,6 +9,8 @@
  */
 
 import { Pool } from 'pg';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 // Migration status interface for health endpoint
 export interface MigrationStatus {
@@ -53,14 +55,32 @@ export async function runMigrations(): Promise<boolean> {
 
     console.log('[Migrations] Running pending migrations...');
 
+    // Resolve migrations directory relative to the project root
+    // This works both when running from src/ (tsx) and dist/ (compiled)
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    // Go up from services/ to src/ or dist/, then to backend/, then to migrations/
+    const migrationsDir = join(__dirname, '..', '..', 'migrations');
+
+    // Detect if we're running from compiled JS (dist/) or from source (src/)
+    // When compiled, use .cjs migrations; when using tsx, use .ts migrations
+    const isCompiled = __dirname.includes('/dist/');
+    console.log(`[Migrations] Running from ${isCompiled ? 'compiled (dist/)' : 'source (src/)'}, using ${isCompiled ? '.cjs' : '.ts'} migrations`);
+
     const result = await runner({
       databaseUrl,
-      dir: 'migrations',
+      dir: migrationsDir,
       migrationsTable: 'pgmigrations',
       direction: 'up',
       count: Infinity, // Run all pending migrations
       log: (msg) => console.log('[Migrations]', msg),
       verbose: process.env.NODE_ENV !== 'production',
+      // Only use appropriate file types based on runtime mode
+      // Ignore .ts when compiled (use .cjs), ignore .cjs/.js when using tsx (use .ts)
+      // Always ignore .gitkeep and other non-migration files
+      ignorePattern: isCompiled
+        ? '(.*\\.ts$|\\.gitkeep)' // Compiled mode: ignore .ts and .gitkeep, use .cjs
+        : '(.*\\.(cjs|js)$|\\.gitkeep)', // Dev mode: ignore .cjs/.js and .gitkeep, use .ts
     });
 
     // Get migration status

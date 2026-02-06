@@ -201,7 +201,7 @@ services:
     image: qa-guardian-backend:${VERSION:-latest}  # Same image as backend
     container_name: qa-guardian-worker
     restart: unless-stopped
-    command: ["npx", "tsx", "src/worker.ts"]  # Override CMD to run worker
+    command: ["node", "dist/worker.js"]  # Override CMD to run worker (Feature #177)
     environment:
       NODE_ENV: production
       # Database

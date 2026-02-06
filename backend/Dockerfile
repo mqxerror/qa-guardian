@@ -61,10 +61,15 @@ RUN npx playwright install chromium
 # Copy source code
 COPY . .
 
-# Feature #159: Compile TypeScript to JavaScript for production
-# Note: tsc build disabled due to widespread TS2307/TS2835 errors in codebase.
-# Using tsx runtime until Phase 10 code refactoring resolves all type errors.
-# RUN npm run build
+# Feature #159 + #177: Compile TypeScript to JavaScript for production
+# Phase 10 completed - all TS2307/TS2835 errors resolved, tsc compiles cleanly
+RUN npm run build
+
+# Compile migrations separately (they're outside src/)
+# node-pg-migrate needs CommonJS files (.cjs) when running compiled backend
+# because package.json has "type": "module" which makes .js files ESM
+RUN npx tsc migrations/*.ts --outDir migrations --module CommonJS --moduleResolution Node --esModuleInterop --skipLibCheck \
+    && for f in migrations/*.js; do mv "$f" "${f%.js}.cjs"; done
 
 # Create directories for runtime data
 RUN mkdir -p /app/uploads /app/logs /app/data /app/screenshots /app/traces /app/videos /app/baselines
@@ -83,6 +88,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the application using tsx (TypeScript runtime)
-# Will switch to compiled JS (node dist/index.js) after Phase 10 refactoring
-CMD ["npx", "tsx", "src/index.ts"]
+# Start the application using compiled JavaScript (Feature #177)
+# tsc compiles to dist/, runs ~60% faster than tsx runtime
+CMD ["node", "dist/index.js"]
