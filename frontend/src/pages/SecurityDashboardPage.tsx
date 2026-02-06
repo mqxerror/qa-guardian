@@ -2,6 +2,7 @@
 // Feature #1441: Extracted from App.tsx for code quality compliance
 // Feature #73: Migrated to React Query with caching for faster loading
 // Feature #125: Added skeleton loaders for better perceived performance
+// Feature #129: URL state for filters and tabs
 
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +10,8 @@ import { Layout } from '../components/Layout';
 import { SkeletonSecurityDashboard } from '../components/ui/Skeleton';
 // Feature #126: Reusable empty state components
 import { EmptyState, EmptyStateIcons, EmptyStates } from '../components/ui/EmptyState';
+// Feature #129: URL state for shareable links
+import { useUrlState, useUrlStateArray, useUrlTab } from '../hooks/useUrlState';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import {
   useSecurityDashboard,
@@ -27,17 +30,18 @@ import {
 export function SecurityDashboardPage() {
   const navigate = useNavigate();
 
-  // Filter and UI state
-  const [severityFilter, setSeverityFilter] = useState<string[]>([]);
-  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'date' | 'severity' | 'project'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  // Feature #129: Filter and UI state stored in URL for shareable links
+  const [severityFilter, setSeverityFilter] = useUrlStateArray('severity', []);
+  const [categoryFilter, setCategoryFilter] = useUrlStateArray('category', []);
+  const [sortBy, setSortBy] = useUrlState('sortBy', 'date') as ['date' | 'severity' | 'project', (value: string) => void];
+  const [sortOrder, setSortOrder] = useUrlState('sortOrder', 'desc') as ['asc' | 'desc', (value: string) => void];
   const [expandedFindings, setExpandedFindings] = useState<Set<string>>(new Set());
   const [expandedSecrets, setExpandedSecrets] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState<'findings' | 'trends' | 'secrets'>('findings');
-  const [secretsProjectFilter, setSecretsProjectFilter] = useState<string>('all');
-  const [secretsTypeFilter, setSecretsTypeFilter] = useState<string>('all');
-  const [secretsSortBy, setSecretsSortBy] = useState<'date' | 'severity' | 'project' | 'type'>('date');
+  // Feature #129: Active tab in URL
+  const [activeTab, setActiveTab] = useUrlTab<'findings' | 'trends' | 'secrets'>('findings');
+  const [secretsProjectFilter, setSecretsProjectFilter] = useUrlState('secretsProject', 'all');
+  const [secretsTypeFilter, setSecretsTypeFilter] = useUrlState('secretsType', 'all');
+  const [secretsSortBy, setSecretsSortBy] = useUrlState('secretsSort', 'date') as ['date' | 'severity' | 'project' | 'type', (value: string) => void];
   const [verifyingSecrets, setVerifyingSecrets] = useState<Set<string>>(new Set());
   const [scanResult, setScanResult] = useState<{ message: string; secretsFound: number } | null>(null);
 
@@ -211,18 +215,18 @@ export function SecurityDashboardPage() {
   };
 
   const toggleSeverityFilter = (severity: string) => {
-    setSeverityFilter(prev =>
-      prev.includes(severity)
-        ? prev.filter(s => s !== severity)
-        : [...prev, severity]
+    setSeverityFilter(
+      severityFilter.includes(severity)
+        ? severityFilter.filter(s => s !== severity)
+        : [...severityFilter, severity]
     );
   };
 
   const toggleCategoryFilter = (category: string) => {
-    setCategoryFilter(prev =>
-      prev.includes(category)
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
+    setCategoryFilter(
+      categoryFilter.includes(category)
+        ? categoryFilter.filter(c => c !== category)
+        : [...categoryFilter, category]
     );
   };
 
@@ -447,7 +451,7 @@ export function SecurityDashboardPage() {
                     <option value="type">Type</option>
                   </select>
                   <button
-                    onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                     className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-muted"
                     title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
                   >
@@ -910,7 +914,7 @@ export function SecurityDashboardPage() {
                   <option value="project">Project</option>
                 </select>
                 <button
-                  onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-muted"
                   title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
                 >

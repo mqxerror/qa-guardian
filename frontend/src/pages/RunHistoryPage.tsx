@@ -5,6 +5,7 @@
 // Feature #113: Added virtual scrolling for large run lists
 // Feature #125: Added skeleton loaders for better perceived performance
 // Feature #127: Mobile responsive design - card layout on mobile
+// Feature #129: URL state for filters and pagination
 
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -16,22 +17,25 @@ import { VirtualTable } from '../components/ui/VirtualList';
 import { SkeletonRunHistory } from '../components/ui/Skeleton';
 // Feature #126: Reusable empty state components
 import { EmptyStates } from '../components/ui/EmptyState';
+// Feature #129: URL state for shareable links
+import { useUrlState, useUrlStateNumber, useUrlStateBoolean } from '../hooks/useUrlState';
 
 function RunHistoryPage() {
   const { formatDate } = useTimezoneStore();
 
-  // Filters
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [projectFilter, setProjectFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  // Feature #129: Filters stored in URL for shareable links
+  const [statusFilter, setStatusFilter] = useUrlState('status', 'all');
+  const [projectFilter, setProjectFilter] = useUrlState('project', 'all');
+  const [dateFilter, setDateFilter] = useUrlState('date', 'all');
+  const [searchQuery, setSearchQuery] = useState(''); // Keep search local (not shareable)
 
-  // Pagination - server-side via React Query
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  // Feature #129: Pagination stored in URL
+  const [currentPage, setCurrentPage] = useUrlStateNumber('page', 1);
+  const [itemsPerPage, setItemsPerPage] = useUrlStateNumber('limit', 10);
 
   // Feature #64: Toggle between pagination and infinite scroll
-  const [useInfiniteScroll, setUseInfiniteScroll] = useState(false);
+  // Feature #129: Store in URL so users can share infinite scroll preference
+  const [useInfiniteScroll, setUseInfiniteScroll] = useUrlStateBoolean('infinite', false);
 
   // Fetch projects using React Query
   const { data: projectsData } = useProjects();
@@ -619,7 +623,7 @@ function RunHistoryPage() {
                         &laquo;&laquo;
                       </button>
                       <button
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                         disabled={currentPage === 1 || (pagination && !pagination.hasPrev)}
                         className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                       >
@@ -627,7 +631,7 @@ function RunHistoryPage() {
                       </button>
                       <span className="px-3 py-1">{currentPage} / {totalPages || 1}</span>
                       <button
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                         disabled={currentPage >= totalPages || (pagination && !pagination.hasNext)}
                         className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                       >
