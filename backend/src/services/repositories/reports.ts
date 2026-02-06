@@ -13,6 +13,34 @@ import { query, isDatabaseConnected } from '../database.js';
 import { ComprehensiveReport, ReportSummary } from '../../routes/reports/types.js';
 
 // ============================================
+// Column Constants (Feature #210: Replace SELECT *)
+// ============================================
+
+/**
+ * Columns for full report retrieval (includes JSONB sections and executive_summary)
+ */
+const REPORT_FULL_COLUMNS = [
+  'id', 'project_id', 'project_name', 'created_at', 'created_by',
+  'title', 'description', 'period', 'executive_summary', 'sections',
+  'generated_by', 'format', 'view_url', 'organization_id'
+].join(', ');
+
+/**
+ * Feature #210: Lightweight columns for list views (excludes heavy JSONB sections)
+ * - Excludes: sections (heavy JSONB with all test data)
+ * - Excludes: period (not needed for list view)
+ * - Includes: executive_summary for overallScore/overallStatus extraction
+ * - Uses (SELECT array_agg...) subquery to get section keys
+ */
+const REPORT_SUMMARY_COLUMNS = `
+  id, project_id, project_name, created_at, created_by,
+  title, description, generated_by, format, view_url, organization_id,
+  executive_summary->>'overallScore' as overall_score,
+  executive_summary->>'overallStatus' as overall_status,
+  (SELECT array_agg(key) FROM jsonb_object_keys(COALESCE(sections, '{}'::jsonb)) as key) as section_types
+`.trim();
+
+// ============================================
 // Deprecated Memory Store Accessor
 // ============================================
 
@@ -74,6 +102,24 @@ function createSummaryFromReport(report: ComprehensiveReport): ReportSummary {
   };
 }
 
+/**
+ * Feature #210: Parse lightweight summary row (from REPORT_SUMMARY_COLUMNS query)
+ */
+function parseSummaryRow(row: any): ReportSummary {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    projectName: row.project_name,
+    title: row.title,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+    createdBy: row.created_by,
+    overallScore: row.overall_score ? parseFloat(row.overall_score) : 0,
+    overallStatus: row.overall_status || 'warning',
+    sectionTypes: row.section_types || [],
+    viewUrl: row.view_url,
+  };
+}
+
 // ============================================
 // Report CRUD Operations
 // ============================================
@@ -115,12 +161,12 @@ export async function storeReport(report: ComprehensiveReport): Promise<Comprehe
 }
 
 /**
- * Get a report by ID
+ * Get a report by ID (full data including JSONB sections)
  */
 export async function getReport(reportId: string): Promise<ComprehensiveReport | undefined> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM reports WHERE id = $1',
+      `SELECT ${REPORT_FULL_COLUMNS} FROM reports WHERE id = $1`,
       [reportId]
     );
     if (result && result.rows[0]) {
@@ -134,22 +180,25 @@ export async function getReport(reportId: string): Promise<ComprehensiveReport |
 /**
  * List reports with optional project filter
  * Returns summaries sorted by creation date descending
+ * Feature #210: Uses lightweight columns, excludes heavy JSONB sections
  */
-export async function listReports(projectId?: string): Promise<ReportSummary[]> {
+export async function listReports(projectId?: string, limit: number = 100): Promise<ReportSummary[]> {
   if (isDatabaseConnected()) {
-    let sql = 'SELECT * FROM reports';
+    let sql = `SELECT ${REPORT_SUMMARY_COLUMNS} FROM reports`;
     const params: any[] = [];
+    let paramIndex = 1;
 
     if (projectId) {
-      sql += ' WHERE project_id = $1';
+      sql += ` WHERE project_id = $${paramIndex++}`;
       params.push(projectId);
     }
 
-    sql += ' ORDER BY created_at DESC';
+    sql += ` ORDER BY created_at DESC LIMIT $${paramIndex}`;
+    params.push(limit);
 
     const result = await query<any>(sql, params);
     if (result) {
-      return result.rows.map((row: any) => createSummaryFromReport(parseReportRow(row)));
+      return result.rows.map(parseSummaryRow);
     }
     return [];
   }
@@ -198,15 +247,16 @@ export async function getReportCount(projectId?: string): Promise<number> {
 
 /**
  * Get reports by organization
+ * Feature #210: Uses lightweight columns, excludes heavy JSONB sections
  */
-export async function getReportsByOrganization(organizationId: string): Promise<ReportSummary[]> {
+export async function getReportsByOrganization(organizationId: string, limit: number = 100): Promise<ReportSummary[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM reports WHERE organization_id = $1 ORDER BY created_at DESC',
-      [organizationId]
+      `SELECT ${REPORT_SUMMARY_COLUMNS} FROM reports WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      [organizationId, limit]
     );
     if (result) {
-      return result.rows.map((row: any) => createSummaryFromReport(parseReportRow(row)));
+      return result.rows.map(parseSummaryRow);
     }
     return [];
   }
@@ -216,15 +266,16 @@ export async function getReportsByOrganization(organizationId: string): Promise<
 
 /**
  * Get recent reports (for dashboard)
+ * Feature #210: Uses lightweight columns, excludes heavy JSONB sections
  */
 export async function getRecentReports(limit: number = 10): Promise<ReportSummary[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM reports ORDER BY created_at DESC LIMIT $1',
+      `SELECT ${REPORT_SUMMARY_COLUMNS} FROM reports ORDER BY created_at DESC LIMIT $1`,
       [limit]
     );
     if (result) {
-      return result.rows.map((row: any) => createSummaryFromReport(parseReportRow(row)));
+      return result.rows.map(parseSummaryRow);
     }
     return [];
   }

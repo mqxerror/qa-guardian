@@ -62,6 +62,42 @@ import {
 // This repository now requires PostgreSQL. getMemory*() functions return empty Maps.
 // =============================
 
+// =============================
+// Feature #210: Explicit Column Lists (Replace SELECT *)
+// =============================
+
+/** Columns for uptime_checks table */
+const UPTIME_CHECK_COLUMNS = `
+  id, organization_id, name, url, method, interval_seconds, timeout_ms,
+  expected_status, headers, body, locations, assertions,
+  ssl_expiry_warning_days, consecutive_failures_threshold, tags, group_name,
+  enabled, paused_at, paused_by, pause_reason, pause_expires_at,
+  created_by, created_at, updated_at
+`.trim().replace(/\s+/g, ' ');
+
+/** Columns for check_results table */
+const CHECK_RESULT_COLUMNS = `
+  id, check_id, location, status, response_time_ms, status_code,
+  error, assertion_results, assertions_passed, assertions_failed,
+  ssl_info, checked_at
+`.trim().replace(/\s+/g, ' ');
+
+/** Columns for check_incidents table */
+const CHECK_INCIDENT_COLUMNS = `
+  id, check_id, status, started_at, ended_at, duration_seconds, error, affected_locations
+`.trim().replace(/\s+/g, ' ');
+
+/** Columns for transaction_checks table */
+const TRANSACTION_CHECK_COLUMNS = `
+  id, organization_id, name, description, steps, interval_seconds, enabled,
+  created_by, created_at, updated_at
+`.trim().replace(/\s+/g, ' ');
+
+/** Columns for performance_checks table */
+const PERFORMANCE_CHECK_COLUMNS = `
+  id, organization_id, name, url, device, interval_seconds, enabled,
+  created_by, created_at, updated_at
+`.trim().replace(/\s+/g, ' ');
 
 // =============================
 // UPTIME CHECKS CRUD
@@ -100,7 +136,7 @@ export async function createUptimeCheck(check: UptimeCheck): Promise<UptimeCheck
 export async function getUptimeCheck(id: string): Promise<UptimeCheck | undefined> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM uptime_checks WHERE id = $1`,
+      `SELECT ${UPTIME_CHECK_COLUMNS} FROM uptime_checks WHERE id = $1`,
       [id]
     );
     if (result && result.rows[0]) {
@@ -163,7 +199,7 @@ export async function deleteUptimeCheck(id: string): Promise<boolean> {
 export async function listUptimeChecks(organizationId: string): Promise<UptimeCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM uptime_checks WHERE organization_id = $1 ORDER BY created_at DESC`,
+      `SELECT ${UPTIME_CHECK_COLUMNS} FROM uptime_checks WHERE organization_id = $1 ORDER BY created_at DESC`,
       [organizationId]
     );
     if (result) {
@@ -176,7 +212,7 @@ export async function listUptimeChecks(organizationId: string): Promise<UptimeCh
 
 export async function getAllUptimeChecks(): Promise<UptimeCheck[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(`SELECT * FROM uptime_checks ORDER BY created_at DESC`);
+    const result = await query<any>(`SELECT ${UPTIME_CHECK_COLUMNS} FROM uptime_checks ORDER BY created_at DESC`);
     if (result) {
       return result.rows.map(parseUptimeCheckRow);
     }
@@ -247,7 +283,7 @@ export async function addCheckResult(result: CheckResult): Promise<CheckResult> 
 export async function getCheckResults(checkId: string, limit: number = 100): Promise<CheckResult[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM check_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT $2`,
+      `SELECT ${CHECK_RESULT_COLUMNS} FROM check_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT $2`,
       [checkId, limit]
     );
     if (result) {
@@ -261,7 +297,7 @@ export async function getCheckResults(checkId: string, limit: number = 100): Pro
 export async function getLatestCheckResult(checkId: string): Promise<CheckResult | undefined> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM check_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT 1`,
+      `SELECT ${CHECK_RESULT_COLUMNS} FROM check_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT 1`,
       [checkId]
     );
     if (result && result.rows[0]) {
@@ -331,7 +367,7 @@ export async function createIncident(incident: Incident): Promise<Incident> {
 export async function getActiveIncident(checkId: string): Promise<Incident | undefined> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM check_incidents WHERE check_id = $1 AND ended_at IS NULL ORDER BY started_at DESC LIMIT 1`,
+      `SELECT ${CHECK_INCIDENT_COLUMNS} FROM check_incidents WHERE check_id = $1 AND ended_at IS NULL ORDER BY started_at DESC LIMIT 1`,
       [checkId]
     );
     if (result && result.rows[0]) {
@@ -364,7 +400,7 @@ export async function resolveIncident(incidentId: string, endedAt: Date): Promis
   if (isDatabaseConnected()) {
     // Calculate duration
     const existing = await query<any>(
-      `SELECT * FROM check_incidents WHERE id = $1`,
+      `SELECT ${CHECK_INCIDENT_COLUMNS} FROM check_incidents WHERE id = $1`,
       [incidentId]
     );
     if (!existing || !existing.rows[0]) return undefined;
@@ -388,7 +424,7 @@ export async function resolveIncident(incidentId: string, endedAt: Date): Promis
 export async function getCheckIncidents(checkId: string): Promise<Incident[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM check_incidents WHERE check_id = $1 ORDER BY started_at DESC`,
+      `SELECT ${CHECK_INCIDENT_COLUMNS} FROM check_incidents WHERE check_id = $1 ORDER BY started_at DESC`,
       [checkId]
     );
     if (result) {
@@ -528,7 +564,7 @@ export async function createTransactionCheck(check: TransactionCheck): Promise<T
 export async function getTransactionCheck(id: string): Promise<TransactionCheck | undefined> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM transaction_checks WHERE id = $1`,
+      `SELECT ${TRANSACTION_CHECK_COLUMNS} FROM transaction_checks WHERE id = $1`,
       [id]
     );
     if (result && result.rows[0]) {
@@ -571,7 +607,7 @@ export async function deleteTransactionCheck(id: string): Promise<boolean> {
 export async function listTransactionChecks(organizationId: string): Promise<TransactionCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM transaction_checks WHERE organization_id = $1 ORDER BY created_at DESC`,
+      `SELECT ${TRANSACTION_CHECK_COLUMNS} FROM transaction_checks WHERE organization_id = $1 ORDER BY created_at DESC`,
       [organizationId]
     );
     if (result) return result.rows.map(parseTransactionCheckRow);
@@ -660,7 +696,7 @@ export async function createPerformanceCheck(check: PerformanceCheck): Promise<P
 
 export async function getPerformanceCheck(id: string): Promise<PerformanceCheck | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(`SELECT * FROM performance_checks WHERE id = $1`, [id]);
+    const result = await query<any>(`SELECT ${PERFORMANCE_CHECK_COLUMNS} FROM performance_checks WHERE id = $1`, [id]);
     if (result && result.rows[0]) return parsePerformanceCheckRow(result.rows[0]);
     return undefined;
   }
@@ -696,7 +732,7 @@ export async function deletePerformanceCheck(id: string): Promise<boolean> {
 export async function listPerformanceChecks(organizationId: string): Promise<PerformanceCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM performance_checks WHERE organization_id = $1 ORDER BY created_at DESC`,
+      `SELECT ${PERFORMANCE_CHECK_COLUMNS} FROM performance_checks WHERE organization_id = $1 ORDER BY created_at DESC`,
       [organizationId]
     );
     if (result) return result.rows.map(parsePerformanceCheckRow);
