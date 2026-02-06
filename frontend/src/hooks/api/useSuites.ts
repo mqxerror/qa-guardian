@@ -222,20 +222,79 @@ export function useCreateSuite() {
 
 /**
  * Hook to update a suite
+ * Feature #109: Added optimistic updates for immediate UI feedback
  */
 export function useUpdateSuite() {
   const token = useAuthStore(state => state.token);
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateSuiteInput }) =>
+    mutationFn: ({ id, data, projectId }: { id: string; data: UpdateSuiteInput; projectId?: string }) =>
       fetchWithAuth(`/api/v1/suites/${id}`, token, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
-    onSuccess: (_, { id }) => {
+    // Feature #109: Optimistic update
+    onMutate: async ({ id, data, projectId }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: suiteKeys.detail(id) });
+      if (projectId) {
+        await queryClient.cancelQueries({ queryKey: suiteKeys.listByProject(projectId) });
+      }
+
+      // Snapshot previous values for rollback
+      const previousSuite = queryClient.getQueryData<{ suite: TestSuite }>(
+        suiteKeys.detail(id)
+      );
+      const previousSuites = projectId
+        ? queryClient.getQueryData<PaginatedSuitesResponse>(suiteKeys.listByProject(projectId))
+        : undefined;
+
+      // Optimistically update suite detail
+      if (previousSuite) {
+        queryClient.setQueryData<{ suite: TestSuite }>(suiteKeys.detail(id), {
+          suite: {
+            ...previousSuite.suite,
+            ...data,
+            updated_at: new Date().toISOString(),
+          },
+        });
+      }
+
+      // Optimistically update suite in list
+      if (previousSuites && projectId) {
+        queryClient.setQueryData<PaginatedSuitesResponse>(
+          suiteKeys.listByProject(projectId),
+          {
+            ...previousSuites,
+            data: previousSuites.data.map((s) =>
+              s.id === id ? { ...s, ...data, updated_at: new Date().toISOString() } : s
+            ),
+            suites: (previousSuites.suites || []).map((s) =>
+              s.id === id ? { ...s, ...data, updated_at: new Date().toISOString() } : s
+            ),
+          }
+        );
+      }
+
+      return { previousSuite, previousSuites, projectId };
+    },
+    // Rollback on error
+    onError: (_err, { id, projectId }, context) => {
+      if (context?.previousSuite) {
+        queryClient.setQueryData(suiteKeys.detail(id), context.previousSuite);
+      }
+      if (context?.previousSuites && projectId) {
+        queryClient.setQueryData(suiteKeys.listByProject(projectId), context.previousSuites);
+      }
+    },
+    // Always refetch after error or success
+    onSettled: (_, __, { id, projectId }) => {
       queryClient.invalidateQueries({ queryKey: suiteKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: suiteKeys.lists() });
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: suiteKeys.listByProject(projectId) });
+      }
     },
   });
 }
@@ -243,6 +302,7 @@ export function useUpdateSuite() {
 /**
  * Hook to delete a suite
  * Feature #143: Enhanced with dashboard invalidation
+ * Feature #109: Added optimistic updates for immediate UI feedback
  */
 export function useDeleteSuite() {
   const token = useAuthStore(state => state.token);
@@ -253,7 +313,44 @@ export function useDeleteSuite() {
       fetchWithAuth(`/api/v1/suites/${id}`, token, {
         method: 'DELETE',
       }),
-    onSuccess: (_, { projectId }) => {
+    // Feature #109: Optimistic update - remove suite immediately
+    onMutate: async ({ id, projectId }) => {
+      // Cancel any outgoing refetches
+      if (projectId) {
+        await queryClient.cancelQueries({ queryKey: suiteKeys.listByProject(projectId) });
+      }
+
+      // Snapshot previous values for rollback
+      const previousSuites = projectId
+        ? queryClient.getQueryData<PaginatedSuitesResponse>(suiteKeys.listByProject(projectId))
+        : undefined;
+
+      // Optimistically remove the suite from list
+      if (previousSuites && projectId) {
+        queryClient.setQueryData<PaginatedSuitesResponse>(
+          suiteKeys.listByProject(projectId),
+          {
+            ...previousSuites,
+            data: previousSuites.data.filter((s) => s.id !== id),
+            suites: (previousSuites.suites || []).filter((s) => s.id !== id),
+            pagination: {
+              ...previousSuites.pagination,
+              total: Math.max(0, (previousSuites.pagination?.total || 0) - 1),
+            },
+          }
+        );
+      }
+
+      return { previousSuites, projectId };
+    },
+    // Rollback on error
+    onError: (_err, { projectId }, context) => {
+      if (context?.previousSuites && projectId) {
+        queryClient.setQueryData(suiteKeys.listByProject(projectId), context.previousSuites);
+      }
+    },
+    // Always refetch after error or success
+    onSettled: (_, __, { projectId }) => {
       queryClient.invalidateQueries({ queryKey: suiteKeys.lists() });
       // Feature #143: Invalidate dashboard stats (suite count changed)
       queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });

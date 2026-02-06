@@ -171,6 +171,7 @@ export function useCreateProject() {
 
 /**
  * Hook to update a project
+ * Feature #109: Added optimistic updates for immediate UI feedback
  */
 export function useUpdateProject() {
   const token = useAuthStore(state => state.token);
@@ -182,7 +183,53 @@ export function useUpdateProject() {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
-    onSuccess: (_, { id }) => {
+    // Feature #109: Optimistic update
+    onMutate: async ({ id, data }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: projectKeys.detail(id) });
+      await queryClient.cancelQueries({ queryKey: projectKeys.lists() });
+
+      // Snapshot previous values for rollback
+      const previousProject = queryClient.getQueryData<{ project: Project }>(
+        projectKeys.detail(id)
+      );
+      const previousProjects = queryClient.getQueryData<ProjectsResponse>(
+        projectKeys.list(false)
+      );
+
+      // Optimistically update project detail
+      if (previousProject) {
+        queryClient.setQueryData<{ project: Project }>(projectKeys.detail(id), {
+          project: {
+            ...previousProject.project,
+            ...data,
+            updated_at: new Date().toISOString(),
+          },
+        });
+      }
+
+      // Optimistically update project in list
+      if (previousProjects) {
+        queryClient.setQueryData<ProjectsResponse>(projectKeys.list(false), {
+          projects: previousProjects.projects.map((p) =>
+            p.id === id ? { ...p, ...data, updated_at: new Date().toISOString() } : p
+          ),
+        });
+      }
+
+      return { previousProject, previousProjects };
+    },
+    // Rollback on error
+    onError: (_err, { id }, context) => {
+      if (context?.previousProject) {
+        queryClient.setQueryData(projectKeys.detail(id), context.previousProject);
+      }
+      if (context?.previousProjects) {
+        queryClient.setQueryData(projectKeys.list(false), context.previousProjects);
+      }
+    },
+    // Always refetch after error or success
+    onSettled: (_, __, { id }) => {
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
     },
@@ -191,6 +238,7 @@ export function useUpdateProject() {
 
 /**
  * Hook to delete a project
+ * Feature #109: Added optimistic updates for immediate UI feedback
  */
 export function useDeleteProject() {
   const token = useAuthStore(state => state.token);
@@ -201,7 +249,33 @@ export function useDeleteProject() {
       fetchWithAuth(`/api/v1/projects/${id}`, token, {
         method: 'DELETE',
       }),
-    onSuccess: () => {
+    // Feature #109: Optimistic update - remove project immediately
+    onMutate: async (id) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: projectKeys.lists() });
+
+      // Snapshot previous values for rollback
+      const previousProjects = queryClient.getQueryData<ProjectsResponse>(
+        projectKeys.list(false)
+      );
+
+      // Optimistically remove the project from list
+      if (previousProjects) {
+        queryClient.setQueryData<ProjectsResponse>(projectKeys.list(false), {
+          projects: previousProjects.projects.filter((p) => p.id !== id),
+        });
+      }
+
+      return { previousProjects };
+    },
+    // Rollback on error
+    onError: (_err, _id, context) => {
+      if (context?.previousProjects) {
+        queryClient.setQueryData(projectKeys.list(false), context.previousProjects);
+      }
+    },
+    // Always refetch after error or success
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
     },
   });

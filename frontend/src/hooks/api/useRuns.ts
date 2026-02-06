@@ -272,6 +272,7 @@ export function useStartRun() {
 /**
  * Hook to cancel a test run
  * Feature #92: Mutation hook with cache invalidation
+ * Feature #109: Added optimistic updates for immediate UI feedback
  */
 export function useCancelRun() {
   const token = useAuthStore(state => state.token);
@@ -282,7 +283,61 @@ export function useCancelRun() {
       fetchWithAuth(`/api/v1/runs/${runId}/cancel`, token, {
         method: 'POST',
       }),
-    onSuccess: (_, runId) => {
+    // Feature #109: Optimistic update - immediately show cancelled status
+    onMutate: async (runId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: runKeys.detail(runId) });
+      await queryClient.cancelQueries({ queryKey: runKeys.lists() });
+
+      // Snapshot previous values for rollback
+      const previousRunDetail = queryClient.getQueryData<{ run: TestRun }>(
+        runKeys.detail(runId)
+      );
+
+      // Optimistically update run detail to show cancelled status
+      if (previousRunDetail) {
+        queryClient.setQueryData<{ run: TestRun }>(runKeys.detail(runId), {
+          run: {
+            ...previousRunDetail.run,
+            status: 'cancelled',
+            completed_at: new Date().toISOString(),
+          },
+        });
+      }
+
+      // Also update the run in any list caches where it appears
+      queryClient.setQueriesData<PaginatedRunsResponse>(
+        { queryKey: runKeys.lists() },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            data: old.data?.map((run) =>
+              run.id === runId
+                ? { ...run, status: 'cancelled' as const, completed_at: new Date().toISOString() }
+                : run
+            ),
+            runs: old.runs?.map((run) =>
+              run.id === runId
+                ? { ...run, status: 'cancelled' as const, completed_at: new Date().toISOString() }
+                : run
+            ),
+          };
+        }
+      );
+
+      return { previousRunDetail, runId };
+    },
+    // Feature #109: Rollback on error
+    onError: (_err, runId, context) => {
+      if (context?.previousRunDetail) {
+        queryClient.setQueryData(runKeys.detail(runId), context.previousRunDetail);
+      }
+      // Invalidate lists to restore their state
+      queryClient.invalidateQueries({ queryKey: runKeys.lists() });
+    },
+    // Always refetch after error or success to get fresh data
+    onSettled: (_, __, runId) => {
       // Invalidate this specific run detail
       queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) });
       // Invalidate all run lists

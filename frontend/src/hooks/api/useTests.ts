@@ -256,25 +256,82 @@ export function useCreateTest() {
 /**
  * Hook to update a test
  * Feature #91: Enhanced cache invalidation for immediate UI updates
+ * Feature #109: Added optimistic updates for immediate UI feedback
  */
 export function useUpdateTest() {
   const token = useAuthStore(state => state.token);
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateTestInput }) =>
+    mutationFn: ({ id, data, suiteId }: { id: string; data: UpdateTestInput; suiteId?: string }) =>
       fetchWithAuth(`/api/v1/tests/${id}`, token, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
-    onSuccess: (updatedTest: Test, { id }) => {
+    // Feature #109: Optimistic update
+    onMutate: async ({ id, data, suiteId }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: testKeys.detail(id) });
+      if (suiteId) {
+        await queryClient.cancelQueries({ queryKey: testKeys.listBySuite(suiteId) });
+      }
+
+      // Snapshot previous values for rollback
+      const previousTest = queryClient.getQueryData<{ test: Test }>(
+        testKeys.detail(id)
+      );
+      const previousTests = suiteId
+        ? queryClient.getQueryData<PaginatedTestsResponse>(testKeys.listBySuite(suiteId))
+        : undefined;
+
+      // Optimistically update test detail
+      if (previousTest) {
+        queryClient.setQueryData<{ test: Test }>(testKeys.detail(id), {
+          test: {
+            ...previousTest.test,
+            ...data,
+            updated_at: new Date().toISOString(),
+          },
+        });
+      }
+
+      // Optimistically update test in list
+      if (previousTests && suiteId) {
+        queryClient.setQueryData<PaginatedTestsResponse>(
+          testKeys.listBySuite(suiteId),
+          {
+            ...previousTests,
+            data: previousTests.data.map((t) =>
+              t.id === id ? { ...t, ...data, updated_at: new Date().toISOString() } : t
+            ),
+            tests: (previousTests.tests || []).map((t) =>
+              t.id === id ? { ...t, ...data, updated_at: new Date().toISOString() } : t
+            ),
+          }
+        );
+      }
+
+      return { previousTest, previousTests, suiteId };
+    },
+    // Rollback on error
+    onError: (_err, { id, suiteId }, context) => {
+      if (context?.previousTest) {
+        queryClient.setQueryData(testKeys.detail(id), context.previousTest);
+      }
+      if (context?.previousTests && suiteId) {
+        queryClient.setQueryData(testKeys.listBySuite(suiteId), context.previousTests);
+      }
+    },
+    // Always refetch after error or success
+    onSettled: (updatedTest, _err, { id, suiteId }) => {
       // Invalidate the specific test detail
       queryClient.invalidateQueries({ queryKey: testKeys.detail(id) });
       // Invalidate all test lists (test might have moved suites or changed)
       queryClient.invalidateQueries({ queryKey: testKeys.lists() });
       // Feature #91: Also invalidate suite detail if test belongs to a suite
-      if (updatedTest?.suite_id) {
-        queryClient.invalidateQueries({ queryKey: suiteKeys.detail(updatedTest.suite_id) });
+      const effectiveSuiteId = (updatedTest as Test)?.suite_id || suiteId;
+      if (effectiveSuiteId) {
+        queryClient.invalidateQueries({ queryKey: suiteKeys.detail(effectiveSuiteId) });
       }
     },
   });
@@ -283,6 +340,7 @@ export function useUpdateTest() {
 /**
  * Hook to delete a test
  * Feature #91: Enhanced cache invalidation including dashboard stats and suite
+ * Feature #109: Added optimistic updates for immediate UI feedback
  */
 export function useDeleteTest() {
   const token = useAuthStore(state => state.token);
@@ -293,7 +351,44 @@ export function useDeleteTest() {
       fetchWithAuth(`/api/v1/tests/${id}`, token, {
         method: 'DELETE',
       }),
-    onSuccess: (_, { suiteId }) => {
+    // Feature #109: Optimistic update - remove test immediately
+    onMutate: async ({ id, suiteId }) => {
+      // Cancel any outgoing refetches
+      if (suiteId) {
+        await queryClient.cancelQueries({ queryKey: testKeys.listBySuite(suiteId) });
+      }
+
+      // Snapshot previous values for rollback
+      const previousTests = suiteId
+        ? queryClient.getQueryData<PaginatedTestsResponse>(testKeys.listBySuite(suiteId))
+        : undefined;
+
+      // Optimistically remove the test from list
+      if (previousTests && suiteId) {
+        queryClient.setQueryData<PaginatedTestsResponse>(
+          testKeys.listBySuite(suiteId),
+          {
+            ...previousTests,
+            data: previousTests.data.filter((t) => t.id !== id),
+            tests: (previousTests.tests || []).filter((t) => t.id !== id),
+            pagination: {
+              ...previousTests.pagination,
+              total: Math.max(0, (previousTests.pagination?.total || 0) - 1),
+            },
+          }
+        );
+      }
+
+      return { previousTests, suiteId };
+    },
+    // Rollback on error
+    onError: (_err, { suiteId }, context) => {
+      if (context?.previousTests && suiteId) {
+        queryClient.setQueryData(testKeys.listBySuite(suiteId), context.previousTests);
+      }
+    },
+    // Always refetch after error or success
+    onSettled: (_, __, { suiteId }) => {
       // Invalidate all test lists
       queryClient.invalidateQueries({ queryKey: testKeys.lists() });
       // Feature #91: Invalidate dashboard stats (test count changed)
