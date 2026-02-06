@@ -2,7 +2,8 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import crypto from 'crypto';
 // Feature #2116: Use async DB call instead of synchronous Map
 import { dbIsTokenBlacklisted } from '../routes/auth.js';
-import { apiKeys } from '../routes/api-keys/index.js';
+// Feature #202: Use async DB lookup for API key validation (deprecated empty Map removed)
+import { getApiKeyByHash as dbGetApiKeyByHash, updateApiKey as dbUpdateApiKey } from '../services/repositories/api-keys.js';
 
 // Internal service token for service-to-service communication (MCP -> Backend)
 const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
@@ -44,31 +45,33 @@ function validateInternalServiceToken(token: string): InternalServicePayload | n
   return null;
 }
 
-// Helper to validate API key
-function validateApiKey(apiKey: string): ApiKeyPayload | null {
+// Feature #202: Async API key validation using PostgreSQL database lookup
+async function validateApiKey(apiKey: string): Promise<ApiKeyPayload | null> {
   // Hash the provided key
   const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
 
-  // Find matching API key
-  for (const [, key] of apiKeys) {
-    if (key.key_hash === keyHash && !key.revoked_at) {
-      // Check if expired
-      if (key.expires_at && new Date(key.expires_at) < new Date()) {
-        return null;
-      }
-
-      // Update last_used_at
-      key.last_used_at = new Date();
-
-      return {
-        id: key.id,
-        organization_id: key.organization_id,
-        scopes: key.scopes,
-        type: 'api_key',
-      };
-    }
+  // Look up API key in database (already filters out revoked keys)
+  const key = await dbGetApiKeyByHash(keyHash);
+  if (!key) {
+    return null;
   }
-  return null;
+
+  // Check if expired
+  if (key.expires_at && new Date(key.expires_at) < new Date()) {
+    return null;
+  }
+
+  // Update last_used_at (async, don't wait for it)
+  dbUpdateApiKey(key.id, { last_used_at: new Date() }).catch((err) => {
+    console.error('[Auth] Failed to update API key last_used_at:', err);
+  });
+
+  return {
+    id: key.id,
+    organization_id: key.organization_id,
+    scopes: key.scopes,
+    type: 'api_key',
+  };
 }
 
 // Middleware to verify JWT or API key
@@ -88,8 +91,9 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
   }
 
   // Try API key authentication first
+  // Feature #202: await the async database lookup
   if (apiKeyHeader) {
-    const apiKeyPayload = validateApiKey(apiKeyHeader);
+    const apiKeyPayload = await validateApiKey(apiKeyHeader);
     if (apiKeyPayload) {
       request.user = apiKeyPayload;
       return;
