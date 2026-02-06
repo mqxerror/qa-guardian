@@ -4,9 +4,18 @@ import path from 'path';
 
 // https://vitejs.dev/config/
 // Feature #161: Bundle optimization configuration
-// - recharts: Separate chunk via manualChunks, loaded only on pages that use charts
-// - jsPDF: Dynamically imported in reportGenerators.ts, loaded only when export is triggered
-// - react-query: Separate chunk for query library
+// Feature #133: Optimized vendor chunk splitting for better caching
+//
+// Chunk strategy:
+// - vendor: React core (stable, rarely updated)
+// - ui-vendor: Radix UI (UI components)
+// - ui-motion: Framer Motion (animations)
+// - charts: Recharts (loaded only on chart pages)
+// - query: React Query (data fetching)
+// - utils: Utility libraries (zustand, socket.io, etc.)
+// - icons: Lucide icons
+// - pdf: jsPDF + html2canvas (loaded on demand)
+// - zip: JSZip (loaded on demand)
 //
 // Bundle analysis: Use `npx vite-bundle-visualizer` to analyze bundle
 export default defineConfig({
@@ -19,13 +28,63 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Feature #161: Vendor chunk for React core (cached separately)
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          // Feature #161: Charts chunk loaded on demand when chart pages are accessed
-          charts: ['recharts'],
-          // Feature #161: Query library chunk
-          query: ['@tanstack/react-query'],
+        manualChunks(id) {
+          // Feature #133: Optimized chunk splitting
+
+          // React core - very stable, good cache longevity
+          if (id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/react-router-dom/') ||
+              id.includes('node_modules/scheduler/')) {
+            return 'vendor';
+          }
+
+          // Radix UI components - UI library, changes infrequently
+          if (id.includes('node_modules/@radix-ui/')) {
+            return 'ui-vendor';
+          }
+
+          // Animation library
+          if (id.includes('node_modules/framer-motion/')) {
+            return 'ui-motion';
+          }
+
+          // Charts - large, loaded only on pages with charts
+          if (id.includes('node_modules/recharts/') ||
+              id.includes('node_modules/d3-') ||
+              id.includes('node_modules/victory-')) {
+            return 'charts';
+          }
+
+          // Query library - data fetching
+          if (id.includes('node_modules/@tanstack/')) {
+            return 'query';
+          }
+
+          // Utilities - small, stable libraries
+          if (id.includes('node_modules/zustand/') ||
+              id.includes('node_modules/socket.io-client/') ||
+              id.includes('node_modules/clsx/') ||
+              id.includes('node_modules/tailwind-merge/') ||
+              id.includes('node_modules/class-variance-authority/')) {
+            return 'utils';
+          }
+
+          // Lucide icons - icon library
+          if (id.includes('node_modules/lucide-react/')) {
+            return 'icons';
+          }
+
+          // PDF generation - loaded on demand
+          if (id.includes('node_modules/jspdf/') ||
+              id.includes('node_modules/html2canvas/')) {
+            return 'pdf';
+          }
+
+          // ZIP functionality - loaded on demand
+          if (id.includes('node_modules/jszip/')) {
+            return 'zip';
+          }
         },
       },
     },
