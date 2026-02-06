@@ -64,6 +64,10 @@ const MAX_CONCURRENCY = parseInt(process.env.EXECUTION_MAX_CONCURRENCY || '2', 1
 const JOB_TIMEOUT = parseInt(process.env.EXECUTION_JOB_TIMEOUT || '600000', 10); // 10 minutes default
 const JOB_RETRY_ATTEMPTS = parseInt(process.env.EXECUTION_RETRY_ATTEMPTS || '1', 10);
 
+// Feature #169: When EXECUTION_MAX_CONCURRENCY=0, the API server only enqueues jobs
+// and does NOT start a worker. A separate worker container handles execution.
+const API_ONLY_MODE = MAX_CONCURRENCY === 0;
+
 // ============================================================================
 // Module State
 // ============================================================================
@@ -142,41 +146,48 @@ export async function initializeExecutionQueue(): Promise<boolean> {
     // Create queue events for monitoring
     queueEvents = new QueueEvents(QUEUE_NAME, { connection: redisOptions });
 
-    // Create worker with concurrency limit
-    worker = new Worker(
-      QUEUE_NAME,
-      async (job: Job<ExecutionJobData>) => {
-        console.log(`[ExecutionQueue] Processing job ${job.id} for run ${job.data.runId}`);
+    // Feature #169: In API-only mode, skip worker creation
+    // A separate worker container will handle job processing
+    if (API_ONLY_MODE) {
+      console.log('[ExecutionQueue] API-only mode (EXECUTION_MAX_CONCURRENCY=0) - worker NOT started');
+      console.log('[ExecutionQueue] Jobs will be processed by separate worker container');
+    } else {
+      // Create worker with concurrency limit
+      worker = new Worker(
+        QUEUE_NAME,
+        async (job: Job<ExecutionJobData>) => {
+          console.log(`[ExecutionQueue] Processing job ${job.id} for run ${job.data.runId}`);
 
-        if (!executeTestRunCallback) {
-          throw new Error('Test execution callback not registered');
+          if (!executeTestRunCallback) {
+            throw new Error('Test execution callback not registered');
+          }
+
+          // Execute the test run
+          await executeTestRunCallback(job.data.runId);
+
+          lastJobProcessedAt = new Date().toISOString();
+          console.log(`[ExecutionQueue] Completed job ${job.id} for run ${job.data.runId}`);
+        },
+        {
+          connection: redisOptions,
+          concurrency: MAX_CONCURRENCY,
+          lockDuration: JOB_TIMEOUT,
         }
+      );
 
-        // Execute the test run
-        await executeTestRunCallback(job.data.runId);
+      // Set up event handlers
+      worker.on('completed', (job) => {
+        console.log(`[ExecutionQueue] Job ${job.id} completed successfully`);
+      });
 
-        lastJobProcessedAt = new Date().toISOString();
-        console.log(`[ExecutionQueue] Completed job ${job.id} for run ${job.data.runId}`);
-      },
-      {
-        connection: redisOptions,
-        concurrency: MAX_CONCURRENCY,
-        lockDuration: JOB_TIMEOUT,
-      }
-    );
+      worker.on('failed', (job, err) => {
+        console.error(`[ExecutionQueue] Job ${job?.id} failed:`, err.message);
+      });
 
-    // Set up event handlers
-    worker.on('completed', (job) => {
-      console.log(`[ExecutionQueue] Job ${job.id} completed successfully`);
-    });
-
-    worker.on('failed', (job, err) => {
-      console.error(`[ExecutionQueue] Job ${job?.id} failed:`, err.message);
-    });
-
-    worker.on('error', (err) => {
-      console.error('[ExecutionQueue] Worker error:', err);
-    });
+      worker.on('error', (err) => {
+        console.error('[ExecutionQueue] Worker error:', err);
+      });
+    }
 
     queueEvents.on('waiting', ({ jobId }) => {
       console.log(`[ExecutionQueue] Job ${jobId} is waiting`);
@@ -188,7 +199,8 @@ export async function initializeExecutionQueue(): Promise<boolean> {
 
     startedAt = new Date();
     isInitialized = true;
-    console.log(`[ExecutionQueue] Initialized with max concurrency: ${MAX_CONCURRENCY}`);
+    const modeStr = API_ONLY_MODE ? 'API-only (enqueue only)' : `max concurrency: ${MAX_CONCURRENCY}`;
+    console.log(`[ExecutionQueue] Initialized - ${modeStr}`);
 
     return true;
   } catch (error) {

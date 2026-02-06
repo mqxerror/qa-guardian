@@ -134,6 +134,8 @@ services:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/qa_guardian
       # Redis
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      # Feature #169: API server only enqueues jobs, worker container executes them
+      EXECUTION_MAX_CONCURRENCY: '0'
       # Storage (MinIO)
       STORAGE_ENDPOINT: minio
       STORAGE_PORT: 9000
@@ -182,6 +184,68 @@ services:
           memory: 2G
         reservations:
           memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ===========================================================================
+  # Test Execution Worker (Feature #169)
+  # ===========================================================================
+  # Separate worker for test execution to prevent Chromium OOM from killing API
+  worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    image: qa-guardian-backend:${VERSION:-latest}  # Same image as backend
+    container_name: qa-guardian-worker
+    restart: unless-stopped
+    command: ["node", "dist/worker.js"]  # Override CMD to run worker
+    environment:
+      NODE_ENV: production
+      # Database
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/qa_guardian
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      # Worker-specific config
+      EXECUTION_MAX_CONCURRENCY: '2'
+      EXECUTION_JOB_TIMEOUT: '600000'
+      WORKER_HEALTH_PORT: '3002'
+      # Storage (MinIO) - needed for artifact storage
+      STORAGE_ENDPOINT: minio
+      STORAGE_PORT: 9000
+      STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
+      STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-qa-guardian-artifacts}
+      STORAGE_USE_SSL: 'false'
+      # AI Configuration (optional - for AI-assisted test healing)
+      AI_PROVIDER_PRIMARY: ${AI_PROVIDER_PRIMARY:-kie}
+      AI_PROVIDER_FALLBACK: ${AI_PROVIDER_FALLBACK:-anthropic}
+      KIE_API_KEY: ${KIE_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 3G  # Extra memory for Chromium headroom
+        reservations:
+          memory: 1G
     logging:
       driver: "json-file"
       options:
