@@ -34831,3 +34831,69 @@ Progress: 168/171 (98.2%) - Feature #168 COMPLETED
 - Feature #169: Separate test execution into worker container
 - Feature #170: Add external uptime monitoring watchdog
 - Feature #171: Write backend smoke tests
+
+
+=== Session 2026-02-06 (Session 136 Continued) - Production Hardening Complete ===
+Progress: 171/171 (100%) - ALL FEATURES COMPLETE!
+
+### Features Completed This Session
+
+**Feature #168: Fix CI/CD pipeline to block on failures** - COMPLETED
+- Removed || echo fallback patterns from lint and test steps
+- Health checks now fail deployment on error with exit 1
+- Production verification has retry logic (3 attempts)
+- Added backend/.eslintrc.json for ESLint config
+- Added backend/vitest.config.ts with passWithNoTests: true initially
+- Commit: d849ae9
+
+**Feature #169: Separate test execution into worker container** - COMPLETED
+- Created backend/src/worker.ts standalone BullMQ worker entry point
+- Worker connects to PostgreSQL, Redis, processes test-execution queue
+- Has health endpoint on port 3002 for container health checks
+- Modified execution-queue.ts to support API-only mode (EXECUTION_MAX_CONCURRENCY=0)
+- Added worker service to docker-compose.prod.yml with 3G memory, 2 CPU
+- Backend now only enqueues, worker executes (Chromium OOM isolated)
+- Added start:worker and dev:worker npm scripts
+- Commit: 10e2a25
+
+**Feature #170: Add external uptime monitoring watchdog** - COMPLETED
+- Created scripts/health-monitor.sh polling script
+- Tracks consecutive failures, alerts after threshold (default: 2)
+- Sends Discord/Slack webhook alerts on outage and recovery
+- Calculates and reports downtime duration
+- Added healthcheck-monitor service to docker-compose.prod.yml (alpine/curl)
+- Added ALERT_WEBHOOK_URL, HEALTH_CHECK_INTERVAL, ALERT_THRESHOLD to .env.example
+- Commit: 5068e49
+
+**Feature #171: Write backend smoke tests and make them block CI** - COMPLETED
+- Created 5 test files (1582 lines total):
+  1. health.test.ts - Health endpoint tests
+  2. auth.test.ts - Authentication flow tests
+  3. api-routes.test.ts - CRUD endpoint tests
+  4. execution-queue.test.ts - Queue operation tests
+  5. cache.test.ts - Cache service tests
+- Updated vitest.config.ts with passWithNoTests: false
+- All tests use mocked services for isolation and speed
+- Commit: e8452c9
+
+### Production Hardening Summary
+
+The QA Guardian platform now has:
+1. **CI/CD Pipeline**: Lint, tests, and health checks block deployment on failure
+2. **Worker Isolation**: Test execution in separate container prevents API OOM
+3. **Uptime Monitoring**: External watchdog alerts on outages via webhooks
+4. **Backend Tests**: Smoke tests covering health, auth, CRUD, queue, cache
+
+### Git Commits This Session
+- d849ae9: Feature #168: Make CI/CD pipeline block on failures
+- 5854c0b: docs: Update progress notes for Feature #168 completion
+- 10e2a25: Feature #169: Separate test execution into worker container
+- 5068e49: Feature #170: Add external uptime monitoring watchdog
+- e8452c9: Feature #171: Add backend smoke tests
+
+### Final Status
+- Total Features: 171
+- Passing: 171
+- Completion: 100%
+
+The QA Guardian platform is now production-ready with all planned features implemented.
