@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { RoleProtectedRoute } from './components/RoleProtectedRoute';
 import { Navigation } from './components/Navigation';
 import { Layout } from './components/Layout';
+import { RouteErrorBoundary, ErrorFallback } from './components/ErrorBoundary';
 import { AIInsightsHub, AIInsightsIndex } from './components/AIInsightsHub';
 import { MCPHub, MCPHubIndex } from './components/MCPHub';
 import { QAChatWidget } from './components/QAChatWidget';
@@ -1116,6 +1117,8 @@ function App() {
       <QAChatWidget />
       <AICommandPalette />
       {/* Feature #1420: AI Suggestions sidebar removed */}
+      {/* Feature #101: RouteErrorBoundary catches render errors and React Query errors */}
+      <RouteErrorBoundary>
       <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Public routes */}
@@ -1593,6 +1596,7 @@ function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       </Suspense>
+      </RouteErrorBoundary>
     </div>
   );
 }
