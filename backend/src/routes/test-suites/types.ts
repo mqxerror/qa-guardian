@@ -36,6 +36,10 @@ export interface TestSuite {
 export interface Test {
   id: string;
   suite_id: string;
+  // Feature #137: Include suite/project info to eliminate waterfall fetches
+  suite_name?: string; // Populated from test_suites JOIN
+  project_id?: string; // Populated from test_suites JOIN
+  project_name?: string; // Populated from projects JOIN
   organization_id: string;
   name: string;
   description?: string;

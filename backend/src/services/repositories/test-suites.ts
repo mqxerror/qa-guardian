@@ -253,22 +253,40 @@ export async function createTest(test: Test): Promise<Test> {
   throw new Error('Failed to create test in database');
 }
 
+/**
+ * Feature #137: Enhanced getTest with JOIN to eliminate frontend waterfall
+ * OLD: Frontend needed 3 sequential calls: getTest -> getSuite -> getProject
+ * NEW: Single call returns test + suite_name + project_id + project_name
+ */
 export async function getTest(id: string): Promise<Test | undefined> {
   if (!isDatabaseConnected()) {
     return memTests.get(id);
   }
 
+  // JOIN test_suites AND projects to get suite_name, project_id, project_name in single query
   const result = await query<any>(
-    `SELECT t.*, ts.config as suite_config FROM tests t
-     LEFT JOIN test_suites ts ON t.suite_id = ts.id
+    `SELECT t.*,
+            ts.config as suite_config,
+            ts.name as suite_name,
+            ts.project_id as project_id,
+            p.name as project_name
+     FROM tests t
+     INNER JOIN test_suites ts ON t.suite_id = ts.id
+     INNER JOIN projects p ON ts.project_id = p.id
      WHERE t.id = $1`,
     [id]
   );
   if (result && result.rows[0]) {
+    const row = result.rows[0];
     // Extract organization_id from suite config
-    const suiteConfig = result.rows[0].suite_config;
+    const suiteConfig = row.suite_config;
     const orgId = suiteConfig?.organization_id || '';
-    return rowToTest(result.rows[0], orgId);
+    const test = rowToTest(row, orgId);
+    // Add the enriched fields (suite_name, project_id, project_name)
+    test.suite_name = row.suite_name;
+    test.project_id = row.project_id;
+    test.project_name = row.project_name;
+    return test;
   }
   return undefined;
 }

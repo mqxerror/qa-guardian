@@ -88,11 +88,18 @@ function TestDetailPage() {
   const { data: testData, isLoading: testLoading, error: testError, refetch: refetchTest } = useTest(testId);
   const { data: runsData, isLoading: runsLoading, refetch: refetchRuns } = useRunsByTest(testId);
 
-  // Derived state from React Query - suite and project fetching
+  // Feature #137: Eliminated 3-level waterfall by using enriched test data
+  // OLD: useTest(id) -> wait -> useSuite(suiteId) -> wait -> useProject(projectId)
+  // NEW: Single useTest call returns suite_name, project_id, project_name via SQL JOIN
   const suiteId = testData?.test?.suite_id;
-  const { data: suiteData, isLoading: suiteLoading } = useSuite(suiteId);
-  const projectId = suiteData?.suite?.project_id;
-  const { data: projectData, isLoading: projectLoading } = useProject(projectId);
+  const projectId = testData?.test?.project_id;
+
+  // Keep useSuite/useProject for cache warming (prefetches data for suite/project pages)
+  // but don't wait on them for rendering - use enriched test data instead
+  const { data: suiteData } = useSuite(suiteId);
+  const { data: projectData } = useProject(projectId);
+  const suiteLoading = false; // No longer blocking on suite load
+  const projectLoading = false; // No longer blocking on project load
 
   // Feature #68: Invalidation helpers for cache updates
   const { invalidateTest } = useInvalidateTests();
@@ -100,7 +107,8 @@ function TestDetailPage() {
 
   // Local state derived from React Query data
   const [test, setTest] = useState<TestType | null>(null);
-  const [suite, setSuite] = useState<TestSuite | null>(null);
+  // Feature #137: Simplified suite type - only need id/name for breadcrumb, not full TestSuite
+  const [suite, setSuite] = useState<{ id: string; name: string } | null>(null);
   const [project, setProject] = useState<{ id: string; name: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -917,17 +925,29 @@ function TestDetailPage() {
     }
   }, [runsData]);
 
+  // Feature #137: Use enriched test data for suite/project info (eliminates waterfall)
+  // Primary source: testData.test.suite_name, project_id, project_name from SQL JOIN
+  // Fallback: suiteData/projectData if enriched fields not available
   useEffect(() => {
-    if (suiteData?.suite) {
-      setSuite(suiteData.suite);
-    }
-  }, [suiteData]);
+    const testObj = testData?.test;
+    if (testObj) {
+      // Use enriched fields if available, otherwise fall back to separate API calls
+      const suiteName = testObj.suite_name || suiteData?.suite?.name;
+      if (testObj.suite_id && suiteName) {
+        setSuite({ id: testObj.suite_id, name: suiteName });
+      } else if (suiteData?.suite) {
+        setSuite(suiteData.suite);
+      }
 
-  useEffect(() => {
-    if (projectData?.project) {
-      setProject(projectData.project);
+      const projectName = testObj.project_name || projectData?.project?.name;
+      const projId = testObj.project_id || projectData?.project?.id;
+      if (projId && projectName) {
+        setProject({ id: projId, name: projectName });
+      } else if (projectData?.project) {
+        setProject(projectData.project);
+      }
     }
-  }, [projectData]);
+  }, [testData, suiteData, projectData]);
 
   // Feature #68: Update loading state based on React Query
   useEffect(() => {

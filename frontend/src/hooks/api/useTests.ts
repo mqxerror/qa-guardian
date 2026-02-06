@@ -22,6 +22,10 @@ export interface TestStep {
 export interface Test {
   id: string;
   suite_id: string;
+  // Feature #137: Enriched fields from JOIN to eliminate waterfall fetches
+  suite_name?: string;
+  project_id?: string;
+  project_name?: string;
   organization_id: string;
   name: string;
   description?: string;
