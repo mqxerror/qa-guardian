@@ -3,6 +3,8 @@ import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 // Feature #70: Import React Query hooks for dashboard caching
 import { useDashboardStats } from '../hooks/api/useDashboard';
+// Feature #125: Skeleton loaders for better perceived performance
+import { Skeleton, SkeletonCard } from '../components/ui/Skeleton';
 
 export function DashboardPage() {
   const { user } = useAuthStore();
@@ -28,65 +30,73 @@ export function DashboardPage() {
         <p className="mt-2 text-muted-foreground">
           Welcome to your QA Guardian dashboard, {user?.name || 'User'}!
         </p>
+        {/* Feature #125: Skeleton loaders while stats load */}
         <div className="mt-8 grid gap-4 md:grid-cols-4">
-          <div className="rounded-lg border border-border bg-card p-6">
-            <h3 className="text-lg font-semibold text-foreground">Projects</h3>
-            <p className="mt-1 text-3xl font-bold text-primary">
-              {isLoading ? '...' : displayStats.projects}
-            </p>
-          </div>
-          <div className="rounded-lg border border-border bg-card p-6">
-            <h3 className="text-lg font-semibold text-foreground">Test Suites</h3>
-            <p className="mt-1 text-3xl font-bold text-primary">
-              {isLoading ? '...' : displayStats.test_suites}
-            </p>
-          </div>
-          <div className="rounded-lg border border-border bg-card p-6">
-            <h3 className="text-lg font-semibold text-foreground">Total Tests</h3>
-            <p className="mt-1 text-3xl font-bold text-primary">
-              {isLoading ? '...' : displayStats.tests}
-            </p>
-          </div>
-          <div className="rounded-lg border border-border bg-card p-6">
-            <h3 className="text-lg font-semibold text-foreground">Test Runs</h3>
-            <p className="mt-1 text-3xl font-bold text-primary">
-              {isLoading ? '...' : displayStats.test_runs}
-            </p>
-          </div>
+          {isLoading ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : (
+            <>
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h3 className="text-lg font-semibold text-foreground">Projects</h3>
+                <p className="mt-1 text-3xl font-bold text-primary">{displayStats.projects}</p>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h3 className="text-lg font-semibold text-foreground">Test Suites</h3>
+                <p className="mt-1 text-3xl font-bold text-primary">{displayStats.test_suites}</p>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h3 className="text-lg font-semibold text-foreground">Total Tests</h3>
+                <p className="mt-1 text-3xl font-bold text-primary">{displayStats.tests}</p>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h3 className="text-lg font-semibold text-foreground">Test Runs</h3>
+                <p className="mt-1 text-3xl font-bold text-primary">{displayStats.test_runs}</p>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Pass Rate Analytics */}
         <div className="mt-8">
           <h3 className="text-xl font-semibold text-foreground mb-4">Test Results</h3>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h4 className="text-lg font-semibold text-foreground">Pass Rate</h4>
-              <p className={`mt-1 text-3xl font-bold ${
-                displayStats.pass_rate >= 80 ? 'text-green-600' :
-                displayStats.pass_rate >= 50 ? 'text-yellow-600' :
-                'text-red-600'
-              }`}>
-                {isLoading ? '...' : `${displayStats.pass_rate}%`}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {isLoading ? '' : `${displayStats.passed_runs + displayStats.failed_runs} completed runs`}
-              </p>
+          {isLoading ? (
+            <div className="grid gap-4 md:grid-cols-3">
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
             </div>
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h4 className="text-lg font-semibold text-foreground">Passed</h4>
-              <p className="mt-1 text-3xl font-bold text-green-600">
-                {isLoading ? '...' : displayStats.passed_runs}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">successful runs</p>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h4 className="text-lg font-semibold text-foreground">Pass Rate</h4>
+                <p className={`mt-1 text-3xl font-bold ${
+                  displayStats.pass_rate >= 80 ? 'text-green-600' :
+                  displayStats.pass_rate >= 50 ? 'text-yellow-600' :
+                  'text-red-600'
+                }`}>
+                  {displayStats.pass_rate}%
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {displayStats.passed_runs + displayStats.failed_runs} completed runs
+                </p>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h4 className="text-lg font-semibold text-foreground">Passed</h4>
+                <p className="mt-1 text-3xl font-bold text-green-600">{displayStats.passed_runs}</p>
+                <p className="mt-1 text-sm text-muted-foreground">successful runs</p>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h4 className="text-lg font-semibold text-foreground">Failed</h4>
+                <p className="mt-1 text-3xl font-bold text-red-600">{displayStats.failed_runs}</p>
+                <p className="mt-1 text-sm text-muted-foreground">failed runs</p>
+              </div>
             </div>
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h4 className="text-lg font-semibold text-foreground">Failed</h4>
-              <p className="mt-1 text-3xl font-bold text-red-600">
-                {isLoading ? '...' : displayStats.failed_runs}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">failed runs</p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Feature #1510: Quick Access Hub Cards */}

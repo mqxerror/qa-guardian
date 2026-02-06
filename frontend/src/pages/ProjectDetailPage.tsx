@@ -1,9 +1,11 @@
 // ProjectDetailPage - Extracted from App.tsx (Feature #1441)
 // Project details with test suites, test management, and GitHub integration
 // Feature #58: Migrated to React Query for parallel data loading
+// Feature #125: Added skeleton loaders for better perceived performance
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Layout } from "../components/Layout";
+import { SkeletonProjectDetail } from "../components/ui/Skeleton";
 import { useAuthStore } from "../stores/authStore";
 import { useTimezoneStore } from "../stores/timezoneStore";
 import { useTestDefaultsStore } from "../stores/testDefaultsStore";
@@ -682,11 +684,12 @@ function ProjectDetailPage() {
     return orgMembers.find(m => m.user_id === userId);
   };
 
+  // Feature #125: Skeleton loader for better perceived performance
   if (isLoading) {
     return (
       <Layout>
         <div className="p-8">
-          <p className="text-muted-foreground">Loading project...</p>
+          <SkeletonProjectDetail />
         </div>
       </Layout>
     );

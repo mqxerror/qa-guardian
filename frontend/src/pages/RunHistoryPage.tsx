@@ -3,6 +3,7 @@
 // Feature #57: Migrated to React Query with server-side pagination
 // Feature #64: Added infinite scroll as alternative to pagination
 // Feature #113: Added virtual scrolling for large run lists
+// Feature #125: Added skeleton loaders for better perceived performance
 
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -11,6 +12,7 @@ import { useTimezoneStore } from '../stores/timezoneStore';
 import { useRunsPaginated, useRunsInfinite, useProjects, type TestRun } from '../hooks/api';
 import { InfiniteScrollContainer } from '../components/ui/InfiniteScrollContainer';
 import { VirtualTable } from '../components/ui/VirtualList';
+import { SkeletonRunHistory } from '../components/ui/Skeleton';
 
 function RunHistoryPage() {
   const { formatDate } = useTimezoneStore();
@@ -300,12 +302,8 @@ function RunHistoryPage() {
           </div>
         )}
 
-        {/* Loading State */}
-        {loading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        )}
+        {/* Loading State - Feature #125: Skeleton loader for better perceived performance */}
+        {loading && <SkeletonRunHistory />}
 
         {/* Empty State */}
         {!loading && !error && filteredRuns.length === 0 && (

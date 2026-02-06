@@ -1,8 +1,10 @@
 // TestSuitePage - Test suite management with recording, AI generation, and execution
 // Feature #59: Migrated to React Query for paginated test loading
+// Feature #125: Added skeleton loaders for better perceived performance
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { SkeletonTestSuitePage } from '../components/ui/Skeleton';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { getErrorMessage } from '../utils/errorHandling';
@@ -1007,11 +1009,12 @@ function TestSuitePage() {
     };
   }, [suiteRunPolling, suiteRun?.id]);
 
+  // Feature #125: Skeleton loader for better perceived performance
   if (isLoading) {
     return (
       <Layout>
         <div className="p-8">
-          <p className="text-muted-foreground">Loading test suite...</p>
+          <SkeletonTestSuitePage />
         </div>
       </Layout>
     );

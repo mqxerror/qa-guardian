@@ -1,10 +1,12 @@
 // SecurityDashboardPage - SAST findings dashboard across all projects
 // Feature #1441: Extracted from App.tsx for code quality compliance
 // Feature #73: Migrated to React Query with caching for faster loading
+// Feature #125: Added skeleton loaders for better perceived performance
 
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { SkeletonSecurityDashboard } from '../components/ui/Skeleton';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import {
   useSecurityDashboard,
@@ -673,8 +675,9 @@ export function SecurityDashboardPage() {
 
               {/* Findings Over Time Chart */}
               <div className="rounded-lg border border-border bg-card p-6 mb-8">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Findings Over Time</h3>
-                <div className="h-80">
+                <h3 id="findings-over-time-title" className="text-lg font-semibold text-foreground mb-4">Findings Over Time</h3>
+                <div className="h-80" role="img" aria-labelledby="findings-over-time-title" aria-describedby="findings-over-time-desc">
+                  <span id="findings-over-time-desc" className="sr-only">Line chart showing security findings trends over time by severity level</span>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={trendsData.trends} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -802,9 +805,8 @@ export function SecurityDashboardPage() {
         ) : (
           /* Findings Tab Content */
           isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
+            /* Feature #125: Skeleton loader for better perceived performance */
+            <SkeletonSecurityDashboard />
           ) : !data ? (
             <div className="text-center py-12 text-muted-foreground">
               Failed to load security data
