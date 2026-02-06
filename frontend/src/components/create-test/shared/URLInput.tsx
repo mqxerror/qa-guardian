@@ -10,12 +10,8 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-
-/**
- * URL validation regex patterns
- */
-const URL_REGEX = /^https?:\/\/[^\s<>"']+$/i;
-const DOMAIN_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z]{2,})+(?:\/[^\s]*)?$/i;
+// Feature #116: Use shared validation regex patterns
+import { URL_REGEX, DOMAIN_REGEX } from '../../../constants/validation';
 
 /**
  * Validation state

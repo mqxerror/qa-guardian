@@ -22,34 +22,26 @@ import { CustomTestWizard } from './CustomTestWizard';
 // Feature #97: Toast for run started notification
 import { toast } from '../../stores/toastStore';
 import { devLog } from '../../utils/logger';
-
-// URL validation regex
-const URL_REGEX = /^https?:\/\/[^\s<>"']+$/i;
-const DOMAIN_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z]{2,})+(?:\/[^\s]*)?$/i;
+import { URL_REGEX, normalizeUrl as normalizeUrlBase } from '../../constants/validation';
 
 /**
- * Validate and normalize URL
+ * Validate and normalize URL with error message
+ * Feature #116: Uses constants from validation.ts
  */
-function normalizeUrl(input: string): { url: string | null; error: string | null } {
+function normalizeUrlWithError(input: string): { url: string | null; error: string | null } {
   const trimmed = input.trim();
 
   if (!trimmed) {
     return { url: null, error: null };
   }
 
-  // Check if it's already a valid URL
-  if (URL_REGEX.test(trimmed)) {
-    return { url: trimmed, error: null };
-  }
-
-  // Try adding https:// prefix
-  if (DOMAIN_REGEX.test(trimmed)) {
-    return { url: `https://${trimmed}`, error: null };
+  const normalized = normalizeUrlBase(trimmed);
+  if (normalized) {
+    return { url: normalized, error: null };
   }
 
   // Check if it looks like a URL with typo
   if (trimmed.includes('.') && !trimmed.includes(' ')) {
-    // Try to fix common issues
     let fixed = trimmed;
     if (!fixed.startsWith('http')) {
       fixed = `https://${fixed}`;
@@ -182,7 +174,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
 
   // Generate tests from URL
   const handleGenerateTests = useCallback(async () => {
-    const { url, error } = normalizeUrl(quickUrl);
+    const { url, error } = normalizeUrlWithError(quickUrl);
 
     if (error || !url) {
       setUrlError(error || 'Please enter a URL');

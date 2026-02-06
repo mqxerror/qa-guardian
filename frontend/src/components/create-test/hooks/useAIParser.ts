@@ -15,6 +15,8 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { UnifiedAIService, type ParsedTestIntent } from '../../../services/UnifiedAIService';
+// Feature #116: Use shared validation patterns
+import { URL_EXTRACT_REGEX, DOMAIN_EXTRACT_REGEX } from '../../../constants/validation';
 
 /**
  * Detected test type
@@ -86,12 +88,6 @@ const VIEWPORT_KEYWORDS: Record<ViewportPreset, string[]> = {
 };
 
 /**
- * URL regex pattern
- */
-const URL_REGEX = /https?:\/\/[^\s<>"']+/i;
-const DOMAIN_REGEX = /\b([a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}\b/i;
-
-/**
  * Parse natural language input to extract test configuration
  */
 function parseInput(input: string): ParsedResult {
@@ -123,12 +119,12 @@ function parseInput(input: string): ParsedResult {
   let url: string | null = null;
   let urlConfidence = 0;
 
-  const urlMatch = input.match(URL_REGEX);
+  const urlMatch = input.match(URL_EXTRACT_REGEX);
   if (urlMatch) {
     url = urlMatch[0];
     urlConfidence = 0.95;
   } else {
-    const domainMatch = input.match(DOMAIN_REGEX);
+    const domainMatch = input.match(DOMAIN_EXTRACT_REGEX);
     if (domainMatch) {
       url = `https://${domainMatch[0]}`;
       urlConfidence = 0.75;

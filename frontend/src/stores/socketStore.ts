@@ -50,10 +50,15 @@ interface SocketState {
 }
 
 // Feature #167: Heartbeat and reconnect configuration
-const HEARTBEAT_INTERVAL_MS = 30000; // 30 seconds
-const HEARTBEAT_TIMEOUT_MS = 60000; // 60 seconds (2 missed heartbeats)
-const INITIAL_RECONNECT_DELAY_MS = 1000; // 1 second
-const MAX_RECONNECT_DELAY_MS = 30000; // 30 seconds
+// Feature #116: Uses constants from timeouts.ts
+import {
+  HEARTBEAT_INTERVAL_MS,
+  HEARTBEAT_TIMEOUT_MS,
+  INITIAL_RECONNECT_DELAY_MS,
+  MAX_RECONNECT_DELAY_MS,
+  SOCKET_CONNECT_TIMEOUT_MS,
+} from '../constants/timeouts';
+
 const MAX_RECONNECTION_EVENTS = 50; // Keep last 50 events
 
 // Get the WebSocket server URL
@@ -224,7 +229,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
       const newSocket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         reconnection: false, // We handle reconnection ourselves
-        timeout: 10000,
+        timeout: SOCKET_CONNECT_TIMEOUT_MS,
       });
 
       newSocket.on('connect', () => {

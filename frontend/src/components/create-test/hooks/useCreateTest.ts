@@ -11,6 +11,8 @@
 
 import { create } from 'zustand';
 import { TestType, TestFormData, DEFAULT_FORM_DATA, QuickTestSelection } from '../types';
+// Feature #116: Use shared validation patterns
+import { URL_REGEX } from '../../../constants/validation';
 
 // API base URL
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
@@ -154,11 +156,6 @@ const DEFAULT_QUICK_TESTS: QuickTestSelection = {
  * Wizard step order
  */
 const WIZARD_STEPS: WizardStep[] = ['type', 'url', 'settings', 'review'];
-
-/**
- * URL validation regex
- */
-const URL_REGEX = /^https?:\/\/[^\s<>"']+$/i;
 
 /**
  * Create the zustand store
