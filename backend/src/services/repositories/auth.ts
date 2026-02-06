@@ -7,6 +7,8 @@
  */
 
 import { query, isDatabaseConnected } from '../database.js';
+import { getCache } from '../cache.js'; // Feature #216: Redis-backed token blacklist
+import { createHash } from 'node:crypto'; // Feature #216: Fast token hashing for Redis key
 import bcrypt from 'bcryptjs';
 
 // ============================================================================
@@ -302,20 +304,42 @@ export async function getUserCount(): Promise<number> {
 
 /**
  * Add a token to the blacklist
+ * Feature #216: Store in Redis for persistence across server restarts
  */
 export async function blacklistToken(token: string, expiresAt?: Date): Promise<void> {
-  // Always add to runtime cache (fast lookup, cleared on restart)
+  // Always add to runtime cache (fast lookup for current session)
   memoryTokenBlacklist.add(token);
 
+  // Feature #216: Create a fast SHA256 hash for Redis key (not bcrypt - too slow)
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+  const redisKey = `blacklist:${tokenHash}`;
+
+  // Calculate TTL in seconds (default 1 hour to match new access token expiry)
+  const defaultExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  const expiry = expiresAt || defaultExpiry;
+  const ttlMs = Math.max(0, expiry.getTime() - Date.now());
+  const ttlSeconds = Math.ceil(ttlMs / 1000);
+
+  // Feature #216: Store in Redis with TTL for persistence
+  const cache = getCache();
+  if (cache.isRedisConnected() && ttlSeconds > 0) {
+    try {
+      await cache.set(redisKey, { blacklisted: true, createdAt: new Date().toISOString() }, ttlSeconds);
+    } catch (error) {
+      console.error('[AuthRepo] Failed to blacklist token in Redis:', error);
+    }
+  }
+
+  // Also store in database for audit trail (optional)
   if (isDatabaseConnected()) {
     try {
-      // Hash the token for storage
-      const tokenHash = await bcrypt.hash(token.substring(0, 30), 5); // Quick hash of first 30 chars
+      // Use bcrypt for database storage (for consistency)
+      const dbTokenHash = await bcrypt.hash(token.substring(0, 30), 5);
       await query(
         `INSERT INTO token_blacklist (token_hash, expires_at, created_at)
          VALUES ($1, $2, NOW())
          ON CONFLICT (token_hash) DO NOTHING`,
-        [tokenHash, expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)] // Default 7 day expiry
+        [dbTokenHash, expiry]
       );
     } catch (error) {
       console.error('[AuthRepo] Failed to blacklist token in database:', error);
@@ -325,16 +349,31 @@ export async function blacklistToken(token: string, expiresAt?: Date): Promise<v
 
 /**
  * Check if a token is blacklisted
+ * Feature #216: Check Redis after memory for persistence across restarts
  */
 export async function isTokenBlacklisted(token: string): Promise<boolean> {
-  // Check memory first (fast path)
+  // Check memory first (fast path for current session)
   if (memoryTokenBlacklist.has(token)) {
     return true;
   }
 
-  // For database, we'd need to check by hash - this is expensive
-  // For now, rely on memory blacklist (cleared on restart)
-  // In production with Redis, this would be fast
+  // Feature #216: Check Redis (persists across server restarts)
+  const cache = getCache();
+  if (cache.isRedisConnected()) {
+    try {
+      const tokenHash = createHash('sha256').update(token).digest('hex');
+      const redisKey = `blacklist:${tokenHash}`;
+      const exists = await cache.exists(redisKey);
+      if (exists) {
+        // Warm up memory cache for future fast-path lookups
+        memoryTokenBlacklist.add(token);
+        return true;
+      }
+    } catch (error) {
+      console.error('[AuthRepo] Failed to check token blacklist in Redis:', error);
+    }
+  }
+
   return false;
 }
 
