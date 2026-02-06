@@ -5,7 +5,13 @@
 // - k6Templates: Predefined K6 script templates
 // - highlightJavaScript: Syntax highlighting for JavaScript/K6 code
 
-import type { TestType } from './types';
+import type { TestType, TestStep } from './types';
+
+// Extended step type for accessibility checks (optional properties not in base TestStep)
+interface A11yStep extends TestStep {
+  a11y_wcag_level?: string;
+  a11y_threshold?: number;
+}
 
 /**
  * Generate Playwright code from test steps
@@ -51,8 +57,10 @@ export function generatePlaywrightCode(
         lines.push(`${indent}await page.screenshot({ path: '${screenshotName}.png' });`);
         break;
       case 'accessibility_check':
-        const a11yLevel = (step as any).a11y_wcag_level || 'AA';
-        const a11yThreshold = (step as any).a11y_threshold || 0;
+        // Cast to A11yStep for accessibility-specific properties
+        const a11yStep = step as A11yStep;
+        const a11yLevel = a11yStep.a11y_wcag_level || 'AA';
+        const a11yThreshold = a11yStep.a11y_threshold || 0;
         lines.push(`${indent}// Accessibility check - WCAG ${a11yLevel} (threshold: ${a11yThreshold})`);
         lines.push(`${indent}const a11yResults_${index} = await new AxeBuilder({ page })`);
         lines.push(`${indent}  .withTags(['wcag2a', 'wcag2aa'${a11yLevel === 'AAA' ? ", 'wcag2aaa'" : ''}])`);

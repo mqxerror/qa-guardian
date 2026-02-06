@@ -1124,7 +1124,7 @@ function TestDetailPage() {
             testName={test?.name || ''}
             approvingBaseline={approvingBaseline}
             approveBaselineError={approveBaselineError}
-            currentRun={currentRun as any}
+            currentRun={currentRun ?? undefined}
             testId={test?.id}
             runId={approveBaselineRunId}
             onClose={() => {
@@ -1218,7 +1218,8 @@ function TestDetailPage() {
         {/* Test Details - Feature #48: Using extracted TestDetailsCard component */}
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <TestDetailsCard
-            test={test as any}
+            // Type cast needed: hide_selectors is string[] in types.ts but string in TestDetailsCard
+            test={test as unknown as Parameters<typeof TestDetailsCard>[0]['test']}
             suiteName={suite?.name}
             formatDate={formatDate}
           />

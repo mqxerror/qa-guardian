@@ -441,15 +441,15 @@ interface ProviderChangeLog {
 
 interface ProviderSwitchResult {
   success: boolean;
-  previous_provider: string;
-  new_provider: string;
-  switch_id: string;
-  switched_at: string;
-  reason: string;
-  requests_drained: number;
-  switch_duration_ms: number;
-  service_interruption_ms: number;
-  message: string;
+  previous_provider?: string;
+  new_provider?: string;
+  switch_id?: string;
+  switched_at?: string;
+  reason?: string;
+  requests_drained?: number;
+  switch_duration_ms?: number;
+  service_interruption_ms?: number;
+  message?: string;
   error?: string;
 }
 
@@ -1490,7 +1490,7 @@ function AIRouterPage() {
         success: false,
         error: 'Failed to switch provider',
         message: 'Network error occurred',
-      } as any);
+      });
     }
     setIsSwitching(false);
   };
@@ -3017,7 +3017,7 @@ function AIRouterPage() {
                 <label className="text-sm text-gray-600">Primary Provider</label>
                 <select
                   value={config.primary_provider}
-                  onChange={(e) => updateConfig({ primary_provider: e.target.value as any })}
+                  onChange={(e) => updateConfig({ primary_provider: e.target.value as 'kie' | 'anthropic' })}
                   disabled={isSaving}
                   className="mt-1 w-full border rounded p-2"
                 >
@@ -3030,7 +3030,7 @@ function AIRouterPage() {
                 <label className="text-sm text-gray-600">Fallback Provider</label>
                 <select
                   value={config.fallback_provider}
-                  onChange={(e) => updateConfig({ fallback_provider: e.target.value as any })}
+                  onChange={(e) => updateConfig({ fallback_provider: e.target.value as 'anthropic' | 'kie' | 'none' })}
                   disabled={isSaving}
                   className="mt-1 w-full border rounded p-2"
                 >
@@ -3053,11 +3053,11 @@ function AIRouterPage() {
 
               <div className="border-t pt-3">
                 <div className="text-sm font-medium mb-2">Fallback Triggers</div>
-                {['on_timeout', 'on_rate_limit', 'on_error', 'on_server_error'].map((key) => (
+                {(['on_timeout', 'on_rate_limit', 'on_error', 'on_server_error'] as const).map((key) => (
                   <label key={key} className="flex items-center gap-2 text-sm mb-1">
                     <input
                       type="checkbox"
-                      checked={(config.fallback_conditions as any)[key]}
+                      checked={config.fallback_conditions[key]}
                       onChange={(e) =>
                         updateConfig({
                           fallback_conditions: { ...config.fallback_conditions, [key]: e.target.checked },
@@ -4662,9 +4662,10 @@ function AIRouterPage() {
                   <select
                     value={editingFallbackRule.source_provider}
                     onChange={(e) => {
-                      const updated = { ...editingFallbackRule, source_provider: e.target.value as any };
+                      const value = e.target.value as 'kie' | 'anthropic' | 'any';
+                      const updated = { ...editingFallbackRule, source_provider: value };
                       setEditingFallbackRule(updated);
-                      updateFallbackRule(editingFallbackRule.id, { source_provider: e.target.value as any });
+                      updateFallbackRule(editingFallbackRule.id, { source_provider: value });
                     }}
                     className="w-full px-3 py-2 border rounded"
                   >
@@ -4678,9 +4679,10 @@ function AIRouterPage() {
                   <select
                     value={editingFallbackRule.target_provider}
                     onChange={(e) => {
-                      const updated = { ...editingFallbackRule, target_provider: e.target.value as any };
+                      const value = e.target.value as 'kie' | 'anthropic' | 'none';
+                      const updated = { ...editingFallbackRule, target_provider: value };
                       setEditingFallbackRule(updated);
-                      updateFallbackRule(editingFallbackRule.id, { target_provider: e.target.value as any });
+                      updateFallbackRule(editingFallbackRule.id, { target_provider: value });
                     }}
                     className="w-full px-3 py-2 border rounded"
                   >

@@ -289,18 +289,19 @@ export function useRecordingState({
         setRecordingConnected(false);
       });
 
-      socket.io.on('reconnect_attempt' as any, (attempt: number) => {
+      // Socket.IO Manager reconnection events
+      socket.io.on('reconnect_attempt', (attempt: number) => {
         setReconnectAttempt(attempt);
       });
 
-      socket.io.on('reconnect' as any, () => {
+      socket.io.on('reconnect', () => {
         setRecordingConnected(true);
         setReconnectAttempt(0);
         setReconnectFailed(false);
         socket.emit('recording:join', { sessionId: data.session_id });
       });
 
-      socket.io.on('reconnect_failed' as any, () => {
+      socket.io.on('reconnect_failed', () => {
         setReconnectFailed(true);
       });
 

@@ -62,11 +62,14 @@ export default function TransactionModal({
     }
   };
 
-  const updateStep = (index: number, field: keyof TransactionStepInput, value: unknown) => {
-    const updated = [...txnSteps];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (updated[index] as any)[field] = value;
-    setTxnSteps(updated);
+  const updateStep = <K extends keyof TransactionStepInput>(
+    index: number,
+    field: K,
+    value: TransactionStepInput[K]
+  ) => {
+    setTxnSteps(prev => prev.map((step, i) =>
+      i === index ? { ...step, [field]: value } : step
+    ));
   };
 
   const addAssertionToStep = (stepIndex: number) => {
@@ -79,11 +82,22 @@ export default function TransactionModal({
     setTxnSteps(updated);
   };
 
-  const updateAssertion = (stepIndex: number, assertionIndex: number, field: keyof TransactionStepAssertion, value: unknown) => {
-    const updated = [...txnSteps];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (updated[stepIndex].assertions[assertionIndex] as any)[field] = value;
-    setTxnSteps(updated);
+  const updateAssertion = <K extends keyof TransactionStepAssertion>(
+    stepIndex: number,
+    assertionIndex: number,
+    field: K,
+    value: TransactionStepAssertion[K]
+  ) => {
+    setTxnSteps(prev => prev.map((step, sIdx) =>
+      sIdx === stepIndex
+        ? {
+            ...step,
+            assertions: step.assertions.map((assertion, aIdx) =>
+              aIdx === assertionIndex ? { ...assertion, [field]: value } : assertion
+            ),
+          }
+        : step
+    ));
   };
 
   const removeAssertion = (stepIndex: number, assertionIndex: number) => {
@@ -242,7 +256,7 @@ export default function TransactionModal({
                         <label className="block text-xs text-muted-foreground mb-1">Method</label>
                         <select
                           value={step.method}
-                          onChange={e => updateStep(stepIndex, 'method', e.target.value)}
+                          onChange={e => updateStep(stepIndex, 'method', e.target.value as TransactionStepInput['method'])}
                           className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
                         >
                           <option value="GET">GET</option>
@@ -319,7 +333,7 @@ export default function TransactionModal({
                           <div key={assertionIndex} className="flex items-center gap-2 rounded border border-border p-2">
                             <select
                               value={assertion.type}
-                              onChange={e => updateAssertion(stepIndex, assertionIndex, 'type', e.target.value)}
+                              onChange={e => updateAssertion(stepIndex, assertionIndex, 'type', e.target.value as TransactionStepAssertion['type'])}
                               className="rounded border border-input bg-background px-2 py-1 text-xs"
                             >
                               <option value="status">Status Code</option>
@@ -329,7 +343,7 @@ export default function TransactionModal({
                             </select>
                             <select
                               value={assertion.operator || 'equals'}
-                              onChange={e => updateAssertion(stepIndex, assertionIndex, 'operator', e.target.value)}
+                              onChange={e => updateAssertion(stepIndex, assertionIndex, 'operator', e.target.value as TransactionStepAssertion['operator'])}
                               className="rounded border border-input bg-background px-2 py-1 text-xs"
                             >
                               <option value="equals">equals</option>

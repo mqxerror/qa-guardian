@@ -154,7 +154,7 @@ export function TestImprovementAnalyzerPage() {
             <label className="block text-sm font-medium text-foreground mb-1">Test Type</label>
             <select
               value={testType}
-              onChange={(e) => setTestType(e.target.value as any)}
+              onChange={(e) => setTestType(e.target.value as 'e2e' | 'unit' | 'integration' | 'visual' | 'api')}
               className="w-full p-2 rounded-md border border-input bg-background text-foreground"
             >
               <option value="e2e">End-to-End</option>
@@ -168,7 +168,7 @@ export function TestImprovementAnalyzerPage() {
             <label className="block text-sm font-medium text-foreground mb-1">Framework</label>
             <select
               value={framework}
-              onChange={(e) => setFramework(e.target.value as any)}
+              onChange={(e) => setFramework(e.target.value as 'playwright' | 'cypress' | 'selenium' | 'jest' | 'mocha')}
               className="w-full p-2 rounded-md border border-input bg-background text-foreground"
             >
               <option value="playwright">Playwright</option>

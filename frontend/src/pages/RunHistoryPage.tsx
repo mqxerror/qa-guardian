@@ -65,8 +65,8 @@ function RunHistoryPage() {
   const pagination = useInfiniteScroll ? null : runsData?.pagination;
   const loading = useInfiniteScroll ? infiniteLoading : paginationLoading;
   const error = useInfiniteScroll
-    ? (infiniteError ? (infiniteError as Error).message : null)
-    : (runsError ? (runsError as Error).message : null);
+    ? (infiniteError instanceof Error ? infiniteError.message : infiniteError ? String(infiniteError) : null)
+    : (runsError instanceof Error ? runsError.message : runsError ? String(runsError) : null);
 
   // Get unique suites from runs
   const uniqueSuites = useMemo(() => {

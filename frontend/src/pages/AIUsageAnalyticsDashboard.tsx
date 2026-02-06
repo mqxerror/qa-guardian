@@ -196,7 +196,7 @@ export function AIUsageAnalyticsDashboard() {
           <div className="flex items-center gap-4">
             <select
               value={period}
-              onChange={(e) => setPeriod(e.target.value as any)}
+              onChange={(e) => setPeriod(e.target.value as 'day' | 'week' | 'month' | 'quarter')}
               className="px-4 py-2 border rounded-lg"
             >
               <option value="day">Last 24 Hours</option>
@@ -207,7 +207,7 @@ export function AIUsageAnalyticsDashboard() {
             <div className="flex items-center gap-2">
               <select
                 value={exportType}
-                onChange={(e) => setExportType(e.target.value as any)}
+                onChange={(e) => setExportType(e.target.value as 'csv' | 'pdf' | 'json')}
                 className="px-3 py-2 border rounded-lg text-sm"
               >
                 <option value="csv">CSV</option>

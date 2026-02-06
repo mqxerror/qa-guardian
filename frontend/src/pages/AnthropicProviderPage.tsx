@@ -363,7 +363,7 @@ export function AnthropicProviderPage() {
                 <label className="text-xs text-gray-600">Rate Limit Handling</label>
                 <select
                   value={config.rate_limit_handling}
-                  onChange={(e) => updateConfig({ rate_limit_handling: e.target.value as any })}
+                  onChange={(e) => updateConfig({ rate_limit_handling: e.target.value as 'retry' | 'queue' | 'fail' })}
                   disabled={isSaving}
                   className="mt-1 w-full border rounded p-1.5 text-sm"
                 >

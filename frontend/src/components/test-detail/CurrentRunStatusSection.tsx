@@ -156,7 +156,7 @@ export function CurrentRunStatusSection({
 
         {/* Live Execution Panel */}
         <LiveExecutionPanel
-          currentRun={currentRun as any}
+          currentRun={currentRun}
           test={test}
           liveProgress={liveProgress}
           liveScreenshot={liveScreenshot}
@@ -171,7 +171,8 @@ export function CurrentRunStatusSection({
             {currentRun.results!.map((result) => (
               <TestResultCard
                 key={result.test_id}
-                result={result as any}
+                // Type cast needed: TestRunResult.steps differs from TestResult.steps (step_id field)
+                result={result as unknown as TestResult}
                 testType={test?.test_type}
                 token={token}
                 comparisonViewMode={comparisonViewMode}
@@ -191,12 +192,14 @@ export function CurrentRunStatusSection({
                 onOpenLightbox={onOpenLightbox}
                 onApproveBaseline={onApproveBaseline}
                 onRejectChanges={onRejectChanges}
-                a11ySeverityFilter={a11ySeverityFilter as any}
-                setA11ySeverityFilter={setA11ySeverityFilter as any}
-                a11yCategoryFilter={a11yCategoryFilter as any}
-                setA11yCategoryFilter={setA11yCategoryFilter as any}
-                a11ySearchQuery={a11ySearchQuery as any}
-                setA11ySearchQuery={setA11ySearchQuery as any}
+                a11ySeverityFilter={a11ySeverityFilter as Record<string, string>}
+                // Type cast needed: SetStateAction union types incompatible with string record setter
+                setA11ySeverityFilter={setA11ySeverityFilter as unknown as (filters: Record<string, string>) => void}
+                a11yCategoryFilter={a11yCategoryFilter as Record<string, string>}
+                // Type cast needed: SetStateAction union types incompatible with string record setter
+                setA11yCategoryFilter={setA11yCategoryFilter as unknown as (filters: Record<string, string>) => void}
+                a11ySearchQuery={a11ySearchQuery}
+                setA11ySearchQuery={setA11ySearchQuery}
                 formatDateTime={formatDateTime}
               />
             ))}

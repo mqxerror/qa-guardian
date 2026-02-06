@@ -453,7 +453,8 @@ function TestSuitePage() {
           name: `${test.name} (Copy)`,
           description: test.description,
           test_type: test.test_type || test.type,
-          steps: test.steps as any, // Steps type varies between component and hook
+          // Type cast needed: suite-detail/types.ts TestStep lacks 'order' field required by useTests.ts
+          steps: test.steps as Parameters<typeof duplicateTestMutation.mutateAsync>[0]['data']['steps'],
           target_url: test.target_url,
         },
       });
