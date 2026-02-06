@@ -229,7 +229,7 @@ export function OrganizationMembersPage() {
           >
             <div role="dialog" aria-modal="true" aria-labelledby="invite-modal-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
               <h3 id="invite-modal-title" className="text-lg font-semibold text-foreground">Invite Team Member</h3>
-              <form onSubmit={handleInvite} className="mt-4 space-y-4">
+              <form onSubmit={handleInvite} className="mt-4 space-y-4" noValidate>
                 {inviteError && (
                   <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
                     {inviteError}

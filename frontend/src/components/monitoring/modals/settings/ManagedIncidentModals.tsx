@@ -100,7 +100,7 @@ export function CreateManagedIncidentModal({
         <h2 id="create-managed-incident-modal-title" className="text-lg font-semibold text-foreground mb-4">
           🔥 Declare Incident
         </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Incident Title *</label>
             <input

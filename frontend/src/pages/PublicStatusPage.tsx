@@ -283,7 +283,7 @@ export function PublicStatusPage() {
             ) : null}
 
             {!subscribeResult?.success && (
-              <form onSubmit={handleSubscribe}>
+              <form onSubmit={handleSubscribe} noValidate>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-foreground mb-1">Email Address</label>
                   <input

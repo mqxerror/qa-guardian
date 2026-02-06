@@ -151,7 +151,7 @@ export const OnCallScheduleModal: React.FC<OnCallScheduleModalProps> = ({
         <h2 id="on-call-schedule-modal-title" className="text-lg font-semibold text-foreground mb-4">
           {editingSchedule ? 'Edit On-Call Schedule' : 'Create On-Call Schedule'}
         </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Schedule Name *</label>

@@ -376,7 +376,7 @@ function TeamTabContent() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowInviteModal(false)}>
           <div className="bg-card rounded-lg p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-foreground mb-4">Invite Team Member</h3>
-            <form onSubmit={handleInvite} className="space-y-4">
+            <form onSubmit={handleInvite} className="space-y-4" noValidate>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Email</label>
                 <input
