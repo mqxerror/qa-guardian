@@ -24,7 +24,7 @@ import {
 
 // Import testRuns store from execution module
 import { testRuns, TestRun } from './execution.js';
-import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
+import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg, ListTestRunsByOrgOptions } from '../../services/repositories/test-runs.js';
 // Feature #88: Redis caching for pending count
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
 
@@ -39,10 +39,17 @@ async function getTestRunWithFallback(runId: string): Promise<TestRun | undefine
 
 /**
  * Get merged test runs from in-memory (in-flight) + DB for an organization.
+ * Feature #183: Accept optional ListTestRunsByOrgOptions (e.g. { since }) to
+ * limit the DB query and prevent timeouts on orgs with large run histories.
  */
-async function getMergedTestRuns(orgId: string): Promise<TestRun[]> {
-  const dbRuns = await dbListTestRunsByOrg(orgId);
-  const memRuns = Array.from(testRuns.values()).filter(r => r.organization_id === orgId);
+async function getMergedTestRuns(orgId: string, options?: ListTestRunsByOrgOptions): Promise<TestRun[]> {
+  const dbRuns = await dbListTestRunsByOrg(orgId, options);
+  let memRuns = Array.from(testRuns.values()).filter(r => r.organization_id === orgId);
+  // Apply the same date filter to in-memory runs for consistency
+  if (options?.since) {
+    const sinceTime = options.since.getTime();
+    memRuns = memRuns.filter(r => new Date(r.created_at).getTime() >= sinceTime);
+  }
   const seenIds = new Set(memRuns.map(r => r.id));
   return [...memRuns, ...dbRuns.filter(r => !seenIds.has(r.id))];
 }
@@ -167,6 +174,8 @@ export async function visualBatchRoutes(app: FastifyInstance) {
       return bTime - aTime;
     });
 
+    // Feature #193: Guard against timeout middleware having already sent a 504
+    if (reply.sent) return;
     return {
       pending: pendingChanges,
       total: pendingChanges.length,
@@ -186,14 +195,18 @@ export async function visualBatchRoutes(app: FastifyInstance) {
     const cacheKey = CacheKeys.visual.pendingCount(orgId, project_id);
     const cached = await cache.get<{ count: number; has_pending: boolean }>(cacheKey);
     if (cached) {
+      // Feature #193: Guard against timeout middleware having already sent a 504
+      if (reply.sent) return;
       return cached;
     }
 
     let count = 0;
 
     // Feature #88: Optimized approach - batch load data to avoid N+1 queries
+    // Feature #183: Limit to last 30 days to prevent timeout on orgs with many runs
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     // 1. Get all failed runs with visual comparison data
-    const allRunsForCount = await getMergedTestRuns(orgId);
+    const allRunsForCount = await getMergedTestRuns(orgId, { since: thirtyDaysAgo });
     const failedRunsWithVisual = allRunsForCount.filter(run =>
       run.organization_id === orgId &&
       run.status === 'failed' &&
@@ -252,6 +265,8 @@ export async function visualBatchRoutes(app: FastifyInstance) {
     // Feature #88: Cache the result for 60 seconds
     await cache.set(cacheKey, response, CacheTTL.SHORT);
 
+    // Feature #193: Guard against timeout middleware having already sent a 504
+    if (reply.sent) return;
     return response;
   });
 
@@ -478,6 +493,8 @@ export async function visualBatchRoutes(app: FastifyInstance) {
     const successCount = results.filter(r => r.success).length;
     const failedCount = results.filter(r => !r.success).length;
 
+    // Feature #193: Guard against timeout middleware having already sent a 504
+    if (reply.sent) return;
     return {
       success: true,
       message: `Batch approved ${successCount} of ${changes.length} visual changes`,
@@ -555,6 +572,8 @@ export async function visualBatchRoutes(app: FastifyInstance) {
     const successCount = results.filter(r => r.success).length;
     const failedCount = results.filter(r => !r.success).length;
 
+    // Feature #193: Guard against timeout middleware having already sent a 504
+    if (reply.sent) return;
     return {
       success: true,
       message: `Batch rejected ${successCount} of ${changes.length} visual changes`,

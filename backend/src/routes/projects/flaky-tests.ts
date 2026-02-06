@@ -9,7 +9,7 @@ import { getTest, getTestSuite, listAllTests, batchGetTests, batchGetTestSuites 
 import { listTestRunsByOrg } from '../../services/repositories/test-runs.js';
 // Feature #145: Cache invalidation for quarantine mutations
 import { getCache } from '../../services/cache.js';
-import { CacheKeys } from '../../services/cache-keys.js';
+import { CacheKeys, CacheTTL } from '../../services/cache-keys.js';
 
 // Feature #142: Default to last 30 days for flaky test analysis
 const FLAKY_ANALYSIS_DAYS = 30;
@@ -468,157 +468,163 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
     }
 
-    // Feature #142: Get recent runs for this test (last 30 days)
-    const allOrgRuns = await listTestRunsByOrg(orgId, { since: getThirtyDaysAgo(), limit: 1000 });
-    const testRunData: Array<{ date: Date; result: 'passed' | 'failed'; run_id: string; duration_ms?: number }> = [];
+    // Feature #184: Cache the heavy flakiness-trend computation (5 min TTL)
+    const cache = getCache();
+    const cacheKey = CacheKeys.flakyTests.trend(orgId, testId);
 
-    for (const run of allOrgRuns) {
-      if (!run.results) continue;
+    return cache.getOrSet(cacheKey, async () => {
+      // Feature #142: Get recent runs for this test (last 30 days)
+      const allOrgRuns = await listTestRunsByOrg(orgId, { since: getThirtyDaysAgo(), limit: 1000 });
+      const testRunData: Array<{ date: Date; result: 'passed' | 'failed'; run_id: string; duration_ms?: number }> = [];
 
-      for (const result of run.results) {
-        if (result.test_id !== testId) continue;
+      for (const run of allOrgRuns) {
+        if (!run.results) continue;
 
-        const runTime = run.completed_at || run.created_at;
-        if (result.status === 'passed' || result.status === 'failed' || result.status === 'error') {
-          testRunData.push({
-            date: runTime,
-            result: result.status === 'passed' ? 'passed' : 'failed',
-            run_id: run.id,
-            duration_ms: result.duration_ms,
+        for (const result of run.results) {
+          if (result.test_id !== testId) continue;
+
+          const runTime = run.completed_at || run.created_at;
+          if (result.status === 'passed' || result.status === 'failed' || result.status === 'error') {
+            testRunData.push({
+              date: runTime,
+              result: result.status === 'passed' ? 'passed' : 'failed',
+              run_id: run.id,
+              duration_ms: result.duration_ms,
+            });
+          }
+        }
+      }
+
+      // Sort by date
+      testRunData.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+      // Calculate flakiness trend by day (group runs by day and calculate daily flakiness)
+      const dailyStats: Map<string, { date: string; passes: number; failures: number }> = new Map();
+
+      for (const run of testRunData) {
+        const dateKey = run.date.toISOString().split('T')[0] || ''; // YYYY-MM-DD
+        const existing = dailyStats.get(dateKey) || { date: dateKey, passes: 0, failures: 0 };
+        if (run.result === 'passed') {
+          existing.passes++;
+        } else {
+          existing.failures++;
+        }
+        dailyStats.set(dateKey, existing);
+      }
+
+      // Convert to trend array with flakiness score
+      const trend = Array.from(dailyStats.values())
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map(d => {
+          const total = d.passes + d.failures;
+          const passRate = total > 0 ? d.passes / total : 1;
+          // Flakiness score: 0 = consistent, 1 = maximum flakiness (50/50)
+          const flakiness_score = Math.min(passRate, 1 - passRate) * 2;
+          return {
+            date: d.date,
+            passes: d.passes,
+            failures: d.failures,
+            total: total,
+            pass_rate: Math.round(passRate * 100),
+            flakiness_score: parseFloat(flakiness_score.toFixed(2)),
+          };
+        });
+
+      // Find when flakiness started (first day with both pass and fail, or first failure after passes)
+      let flakiness_started: string | null = null;
+      let previous_all_pass = true;
+      for (const day of trend) {
+        const has_both = day.passes > 0 && day.failures > 0;
+        const has_failure_after_passes = day.failures > 0 && previous_all_pass;
+        if (has_both || has_failure_after_passes) {
+          flakiness_started = day.date;
+          break;
+        }
+        if (day.passes > 0) {
+          previous_all_pass = true;
+        }
+      }
+
+      // Calculate weekly trend (rolling 7-day window)
+      const weeklyTrend: Array<{ week_start: string; passes: number; failures: number; flakiness_score: number }> = [];
+      if (trend.length > 0) {
+        // Group by ISO week
+        const weeklyStats: Map<string, { passes: number; failures: number }> = new Map();
+        for (const day of trend) {
+          const date = new Date(day.date);
+          // Get ISO week start (Monday)
+          const dayOfWeek = date.getDay();
+          const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+          const weekStart = new Date(date.setDate(diff)).toISOString().split('T')[0] || '';
+
+          const existing = weeklyStats.get(weekStart) || { passes: 0, failures: 0 };
+          existing.passes += day.passes;
+          existing.failures += day.failures;
+          weeklyStats.set(weekStart, existing);
+        }
+
+        for (const [weekStart, stats] of Array.from(weeklyStats.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
+          const total = stats.passes + stats.failures;
+          const passRate = total > 0 ? stats.passes / total : 1;
+          const flakiness_score = Math.min(passRate, 1 - passRate) * 2;
+          weeklyTrend.push({
+            week_start: weekStart,
+            passes: stats.passes,
+            failures: stats.failures,
+            flakiness_score: parseFloat(flakiness_score.toFixed(2)),
           });
         }
       }
-    }
 
-    // Sort by date
-    testRunData.sort((a, b) => a.date.getTime() - b.date.getTime());
+      // Get individual runs for detailed view (last 50)
+      const runs = testRunData.slice(-50).map(r => ({
+        date: r.date.toISOString(),
+        result: r.result,
+        run_id: r.run_id,
+        duration_ms: r.duration_ms,
+      }));
 
-    // Calculate flakiness trend by day (group runs by day and calculate daily flakiness)
-    const dailyStats: Map<string, { date: string; passes: number; failures: number }> = new Map();
+      // Feature #1101: Code changes correlation
+      // In production this would come from git integration - returns empty until configured
+      const code_changes: Array<{
+        date: string;
+        commit_id: string;
+        message: string;
+        author: string;
+        files_changed: string[];
+      }> = [];
 
-    for (const run of testRunData) {
-      const dateKey = run.date.toISOString().split('T')[0] || ''; // YYYY-MM-DD
-      const existing = dailyStats.get(dateKey) || { date: dateKey, passes: 0, failures: 0 };
-      if (run.result === 'passed') {
-        existing.passes++;
-      } else {
-        existing.failures++;
-      }
-      dailyStats.set(dateKey, existing);
-    }
+      // Calculate overall stats
+      const total_runs = testRunData.length;
+      const total_passes = testRunData.filter(r => r.result === 'passed').length;
+      const total_failures = testRunData.filter(r => r.result === 'failed').length;
+      const overall_flakiness = total_runs > 0
+        ? Math.min(total_passes / total_runs, total_failures / total_runs) * 2
+        : 0;
 
-    // Convert to trend array with flakiness score
-    const trend = Array.from(dailyStats.values())
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .map(d => {
-        const total = d.passes + d.failures;
-        const passRate = total > 0 ? d.passes / total : 1;
-        // Flakiness score: 0 = consistent, 1 = maximum flakiness (50/50)
-        const flakiness_score = Math.min(passRate, 1 - passRate) * 2;
-        return {
-          date: d.date,
-          passes: d.passes,
-          failures: d.failures,
-          total: total,
-          pass_rate: Math.round(passRate * 100),
-          flakiness_score: parseFloat(flakiness_score.toFixed(2)),
-        };
-      });
-
-    // Find when flakiness started (first day with both pass and fail, or first failure after passes)
-    let flakiness_started: string | null = null;
-    let previous_all_pass = true;
-    for (const day of trend) {
-      const has_both = day.passes > 0 && day.failures > 0;
-      const has_failure_after_passes = day.failures > 0 && previous_all_pass;
-      if (has_both || has_failure_after_passes) {
-        flakiness_started = day.date;
-        break;
-      }
-      if (day.passes > 0) {
-        previous_all_pass = true;
-      }
-    }
-
-    // Calculate weekly trend (rolling 7-day window)
-    const weeklyTrend: Array<{ week_start: string; passes: number; failures: number; flakiness_score: number }> = [];
-    if (trend.length > 0) {
-      // Group by ISO week
-      const weeklyStats: Map<string, { passes: number; failures: number }> = new Map();
-      for (const day of trend) {
-        const date = new Date(day.date);
-        // Get ISO week start (Monday)
-        const dayOfWeek = date.getDay();
-        const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-        const weekStart = new Date(date.setDate(diff)).toISOString().split('T')[0] || '';
-
-        const existing = weeklyStats.get(weekStart) || { passes: 0, failures: 0 };
-        existing.passes += day.passes;
-        existing.failures += day.failures;
-        weeklyStats.set(weekStart, existing);
-      }
-
-      for (const [weekStart, stats] of Array.from(weeklyStats.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
-        const total = stats.passes + stats.failures;
-        const passRate = total > 0 ? stats.passes / total : 1;
-        const flakiness_score = Math.min(passRate, 1 - passRate) * 2;
-        weeklyTrend.push({
-          week_start: weekStart,
-          passes: stats.passes,
-          failures: stats.failures,
-          flakiness_score: parseFloat(flakiness_score.toFixed(2)),
-        });
-      }
-    }
-
-    // Get individual runs for detailed view (last 50)
-    const runs = testRunData.slice(-50).map(r => ({
-      date: r.date.toISOString(),
-      result: r.result,
-      run_id: r.run_id,
-      duration_ms: r.duration_ms,
-    }));
-
-    // Feature #1101: Code changes correlation
-    // In production this would come from git integration - returns empty until configured
-    const code_changes: Array<{
-      date: string;
-      commit_id: string;
-      message: string;
-      author: string;
-      files_changed: string[];
-    }> = [];
-
-    // Calculate overall stats
-    const total_runs = testRunData.length;
-    const total_passes = testRunData.filter(r => r.result === 'passed').length;
-    const total_failures = testRunData.filter(r => r.result === 'failed').length;
-    const overall_flakiness = total_runs > 0
-      ? Math.min(total_passes / total_runs, total_failures / total_runs) * 2
-      : 0;
-
-    return {
-      test_id: testId,
-      test_name: test.name,
-      suite_id: suite.id,
-      suite_name: suite.name,
-      project_id: project.id,
-      project_name: project.name,
-      summary: {
-        total_runs,
-        total_passes,
-        total_failures,
-        overall_pass_rate: total_runs > 0 ? Math.round((total_passes / total_runs) * 100) : 100,
-        overall_flakiness_score: parseFloat(overall_flakiness.toFixed(2)),
-        flakiness_started,
-        first_run: testRunData[0]?.date.toISOString() || null,
-        last_run: testRunData[testRunData.length - 1]?.date.toISOString() || null,
-      },
-      daily_trend: trend,
-      weekly_trend: weeklyTrend,
-      runs,
-      code_changes,
-    };
+      return {
+        test_id: testId,
+        test_name: test.name,
+        suite_id: suite.id,
+        suite_name: suite.name,
+        project_id: project.id,
+        project_name: project.name,
+        summary: {
+          total_runs,
+          total_passes,
+          total_failures,
+          overall_pass_rate: total_runs > 0 ? Math.round((total_passes / total_runs) * 100) : 100,
+          overall_flakiness_score: parseFloat(overall_flakiness.toFixed(2)),
+          flakiness_started,
+          first_run: testRunData[0]?.date.toISOString() || null,
+          last_run: testRunData[testRunData.length - 1]?.date.toISOString() || null,
+        },
+        daily_trend: trend,
+        weekly_trend: weeklyTrend,
+        runs,
+        code_changes,
+      };
+    }, CacheTTL.MEDIUM);
   });
 
   // Feature #1102: Flaky Test Impact Report

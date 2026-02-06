@@ -147,6 +147,8 @@ export const CacheKeys = {
   flakyTests: {
     list: (orgId: string) => `flaky:list:${orgId}`,
     quarantine: (testId: string) => `flaky:quarantine:${testId}`,
+    // Feature #184: Flakiness trend cache per org+test
+    trend: (orgId: string, testId: string) => `flaky:trend:${orgId}:${testId}`,
     pattern: 'flaky:*',
   },
 } as const;

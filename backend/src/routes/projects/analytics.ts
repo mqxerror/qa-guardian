@@ -13,7 +13,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
   // Feature #140: Parallelized independent DB queries with Promise.all
   app.get('/api/v1/stats', {
     preHandler: [authenticate],
-  }, async (request) => {
+  }, async (request, reply) => {
     const orgId = getOrganizationId(request);
 
     // Feature #140: Run all 4 independent queries in parallel (was sequential)
@@ -41,6 +41,8 @@ export async function analyticsRoutes(app: FastifyInstance) {
       ? Math.round((passedRuns.length / completedRuns.length) * 100)
       : 0;
 
+    // Feature #193: Guard against timeout middleware having already sent a 504
+    if (reply.sent) return;
     return {
       projects: projectCount,
       test_suites: suiteCount,

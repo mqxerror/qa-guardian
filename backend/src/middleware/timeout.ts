@@ -19,12 +19,16 @@ const EXTENDED_TIMEOUT_PATHS: { pattern: RegExp; timeout: number }[] = [
   { pattern: /\/api\/v1\/runs\/.*\/performance/, timeout: 3 * 60 * 1000 }, // 3 minutes
   // Security scans (DAST/SAST) can take time
   { pattern: /\/api\/v1\/(dast|sast)\/scan/, timeout: 5 * 60 * 1000 }, // 5 minutes
+  // Feature #183: Visual pending count can be slow for orgs with many runs
+  { pattern: /\/api\/v1\/visual\/pending\/count/, timeout: 60 * 1000 }, // 1 minute
   // AI test generation
   { pattern: /\/api\/v1\/ai\/generate/, timeout: 2 * 60 * 1000 }, // 2 minutes
   // MCP chat (AI responses)
   { pattern: /\/api\/v1\/mcp\/chat/, timeout: 2 * 60 * 1000 }, // 2 minutes
   // Test run execution
   { pattern: /\/api\/v1\/runs\/start/, timeout: 3 * 60 * 1000 }, // 3 minutes
+  // Feature #184: Flakiness trend analytics can be slow on large datasets
+  { pattern: /\/api\/v1\/tests\/.*\/flakiness-trend/, timeout: 60 * 1000 }, // 1 minute
 ];
 
 // Paths that should be excluded from timeout middleware
