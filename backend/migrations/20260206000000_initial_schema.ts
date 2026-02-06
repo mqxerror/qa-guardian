@@ -46,16 +46,13 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
-  // Organization Members
+  // Organization Members (composite primary key defined inline)
   pgm.createTable('organization_members', {
-    user_id: { type: 'uuid', notNull: true },
-    organization_id: { type: 'uuid', notNull: true, references: 'organizations', onDelete: 'CASCADE' },
+    user_id: { type: 'uuid', notNull: true, primaryKey: true },
+    organization_id: { type: 'uuid', notNull: true, primaryKey: true, references: 'organizations', onDelete: 'CASCADE' },
     role: { type: 'varchar(50)', notNull: true, default: 'viewer' },
     created_at: { type: 'timestamptz', default: pgm.func('NOW()') },
   }, { ifNotExists: true });
-  pgm.addConstraint('organization_members', 'organization_members_pkey', {
-    primaryKey: ['user_id', 'organization_id'],
-  });
 
   // Projects
   pgm.createTable('projects', {
@@ -72,21 +69,22 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     created_at: { type: 'timestamptz', default: pgm.func('NOW()') },
     updated_at: { type: 'timestamptz', default: pgm.func('NOW()') },
   }, { ifNotExists: true });
-  pgm.addConstraint('projects', 'projects_org_slug_unique', {
-    unique: ['organization_id', 'slug'],
-  });
+  // Add unique constraint idempotently using raw SQL
+  pgm.sql(`
+    DO $$ BEGIN
+      ALTER TABLE "projects" ADD CONSTRAINT "projects_org_slug_unique" UNIQUE ("organization_id", "slug");
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
 
-  // Project Members
+  // Project Members (composite primary key defined inline)
   pgm.createTable('project_members', {
-    project_id: { type: 'uuid', references: 'projects', onDelete: 'CASCADE' },
-    user_id: { type: 'uuid', references: 'users', onDelete: 'CASCADE' },
+    project_id: { type: 'uuid', primaryKey: true, references: 'projects', onDelete: 'CASCADE' },
+    user_id: { type: 'uuid', primaryKey: true, references: 'users', onDelete: 'CASCADE' },
     role: { type: 'varchar(50)', notNull: true },
     added_at: { type: 'timestamptz', default: pgm.func('NOW()') },
     added_by: { type: 'uuid' },
   }, { ifNotExists: true });
-  pgm.addConstraint('project_members', 'project_members_pkey', {
-    primaryKey: ['project_id', 'user_id'],
-  });
 
   // Test Suites
   pgm.createTable('test_suites', {
@@ -163,15 +161,15 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   pgm.createIndex('test_runs', 'suite_id', { ifNotExists: true, name: 'idx_test_runs_suite' });
   pgm.createIndex('test_runs', 'project_id', { ifNotExists: true, name: 'idx_test_runs_project' });
   pgm.createIndex('test_runs', 'status', { ifNotExists: true, name: 'idx_test_runs_status' });
-  pgm.createIndex('test_runs', ['created_at', { order: 'DESC' }], { ifNotExists: true, name: 'idx_test_runs_created' });
+  pgm.createIndex('test_runs', [{ name: 'created_at', sort: 'DESC' }], { ifNotExists: true, name: 'idx_test_runs_created' });
   pgm.createIndex('test_runs', 'organization_id', { ifNotExists: true, name: 'idx_test_runs_organization' });
 
   // Feature #62: Composite indexes for common query patterns
-  pgm.createIndex('test_runs', ['organization_id', { name: 'created_at', order: 'DESC' }], { ifNotExists: true, name: 'idx_test_runs_org_created' });
-  pgm.createIndex('test_runs', ['suite_id', { name: 'created_at', order: 'DESC' }], { ifNotExists: true, name: 'idx_test_runs_suite_created' });
-  pgm.createIndex('test_runs', ['project_id', { name: 'created_at', order: 'DESC' }], { ifNotExists: true, name: 'idx_test_runs_project_created' });
+  pgm.createIndex('test_runs', ['organization_id', { name: 'created_at', sort: 'DESC' }], { ifNotExists: true, name: 'idx_test_runs_org_created' });
+  pgm.createIndex('test_runs', ['suite_id', { name: 'created_at', sort: 'DESC' }], { ifNotExists: true, name: 'idx_test_runs_suite_created' });
+  pgm.createIndex('test_runs', ['project_id', { name: 'created_at', sort: 'DESC' }], { ifNotExists: true, name: 'idx_test_runs_project_created' });
   pgm.createIndex('test_runs', ['organization_id', 'status'], { ifNotExists: true, name: 'idx_test_runs_org_status' });
-  pgm.createIndex('test_runs', ['test_id', { name: 'created_at', order: 'DESC' }], { ifNotExists: true, name: 'idx_test_runs_test_created' });
+  pgm.createIndex('test_runs', ['test_id', { name: 'created_at', sort: 'DESC' }], { ifNotExists: true, name: 'idx_test_runs_test_created' });
 
   // Note: Additional tables (sessions, api_keys, visual_baselines, flaky_tests, webhooks,
   // monitoring tables, security tables, etc.) should be added in subsequent migrations
