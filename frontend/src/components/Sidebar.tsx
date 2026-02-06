@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useSidebarStore, SidebarSection } from '../stores/sidebarStore';
 import { useNotificationStore, InAppNotification } from '../stores/notificationStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
+import { ConnectionStatusIndicator } from './ConnectionStatusIndicator'; // Feature #167
 
 // Icons as simple SVG components
 const DashboardIcon = () => (
@@ -1456,6 +1457,15 @@ export function Sidebar() {
 
       {/* User section */}
       <div className="border-t border-border p-2">
+        {/* Feature #167: Connection status indicator */}
+        {collapsed ? (
+          <div className="flex justify-center mb-2 py-2">
+            <ConnectionStatusIndicator collapsed={true} />
+          </div>
+        ) : (
+          <ConnectionStatusIndicator collapsed={false} />
+        )}
+
         {!collapsed && (
           <div className="mb-2 px-3 py-2">
             <div className="text-sm font-medium text-foreground">{user?.name}</div>

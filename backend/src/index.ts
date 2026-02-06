@@ -758,6 +758,11 @@ async function start() {
         console.log(`[Socket.IO] Client ${socket.id} left run:${runId}`);
       });
 
+      // Feature #167: Heartbeat ping/pong for connection health monitoring
+      socket.on('ping', () => {
+        socket.emit('pong');
+      });
+
       socket.on('disconnect', () => {
         console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
       });
