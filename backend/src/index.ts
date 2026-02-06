@@ -41,6 +41,7 @@ import { stepTemplateRoutes } from './routes/step-templates'; // Feature #31: Re
 import { requestTimeoutHook } from './middleware/timeout'; // Feature #90: Request timeout middleware
 import { initializeCleanupJob, stopCleanupJob, getCleanupStats } from './jobs/cleanup'; // Feature #154: Data retention cleanup
 import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, registerExecutionCallback } from './services/execution-queue'; // Feature #155: BullMQ execution queue
+import { initializeErrorHandlers, getErrorMetrics } from './services/error-tracking'; // Feature #164: Error tracking
 
 // Socket.IO server instance (will be initialized after server starts)
 let io: SocketIOServer | null = null;
@@ -496,6 +497,8 @@ app.get('/health', async (request, reply) => {
     executionQueue: await getQueueHealth(),
     // Feature #162: Include migration status in health check
     migrations: getMigrationStatus(),
+    // Feature #164: Include error tracking metrics in health check
+    errors: getErrorMetrics(),
     // Feature #152: Version and build info
     version: versionInfo.version,
     build: {
@@ -799,23 +802,32 @@ async function start() {
   }
 }
 
-start();
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('[Shutdown] SIGTERM received, closing connections...');
+// Feature #164: Graceful shutdown function used by error handlers
+async function gracefulShutdown(): Promise<void> {
+  console.log('[Shutdown] Closing connections gracefully...');
   stopCleanupJob(); // Feature #154: Stop cleanup job
+  await shutdownExecutionQueue(); // Feature #155: Stop execution queue
   await closeCache(); // Feature #60: Close cache connection
   await closeDatabase();
   await app.close();
+  console.log('[Shutdown] All connections closed');
+}
+
+// Feature #164: Initialize global error handlers BEFORE starting server
+initializeErrorHandlers(gracefulShutdown);
+
+start();
+
+// Graceful shutdown on signals
+process.on('SIGTERM', async () => {
+  console.log('[Shutdown] SIGTERM received...');
+  await gracefulShutdown();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  console.log('[Shutdown] SIGINT received, closing connections...');
-  await closeCache(); // Feature #60: Close cache connection
-  await closeDatabase();
-  await app.close();
+  console.log('[Shutdown] SIGINT received...');
+  await gracefulShutdown();
   process.exit(0);
 });
 
