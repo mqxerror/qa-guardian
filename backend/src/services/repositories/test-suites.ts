@@ -389,24 +389,33 @@ export async function listTestsPaginated(
   return { data, total, organizationId: orgId };
 }
 
-export async function listAllTests(organizationId: string): Promise<Test[]> {
+/**
+ * Feature #136: Fixed critical security + performance issue
+ * OLD: Loaded ALL tests from ALL orgs, then filtered in JS - data leak + full table scan
+ * NEW: Uses WHERE clause with organization_id for proper data isolation and efficient query
+ */
+export async function listAllTests(organizationId: string, limit: number = 1000): Promise<Test[]> {
   if (!isDatabaseConnected()) {
     return Array.from(memTests.values()).filter(t => t.organization_id === organizationId);
   }
 
+  // SECURITY FIX: Filter by organization_id at database level, not in JavaScript
+  // PERFORMANCE FIX: Use WHERE clause instead of full table scan + JS filter
+  // The organization_id is stored in test_suites.config JSONB column
   const result = await query<any>(
     `SELECT t.*, ts.config as suite_config FROM tests t
-     LEFT JOIN test_suites ts ON t.suite_id = ts.id
-     ORDER BY t.created_at DESC`
+     INNER JOIN test_suites ts ON t.suite_id = ts.id
+     WHERE ts.config->>'organization_id' = $1
+     ORDER BY t.created_at DESC
+     LIMIT $2`,
+    [organizationId, limit]
   );
   if (result) {
-    return result.rows
-      .map(row => {
-        const suiteConfig = row.suite_config;
-        const orgId = suiteConfig?.organization_id || '';
-        return rowToTest(row, orgId);
-      })
-      .filter(test => test.organization_id === organizationId);
+    return result.rows.map(row => {
+      const suiteConfig = row.suite_config;
+      const orgId = suiteConfig?.organization_id || organizationId;
+      return rowToTest(row, orgId);
+    });
   }
   return [];
 }
