@@ -211,18 +211,20 @@ export async function listTestSuitesPaginated(
   return { data, total };
 }
 
-export async function listAllTestSuites(organizationId: string): Promise<TestSuite[]> {
+export async function listAllTestSuites(organizationId: string, limit: number = 100): Promise<TestSuite[]> {
   if (!isDatabaseConnected()) {
-    return Array.from(memTestSuites.values()).filter(s => s.organization_id === organizationId);
+    return Array.from(memTestSuites.values())
+      .filter(s => s.organization_id === organizationId)
+      .slice(0, limit);
   }
 
+  // Feature #215: Move org filtering to SQL WHERE clause instead of JS filter
   const result = await query<any>(
-    `SELECT ${TEST_SUITE_COLUMNS} FROM test_suites ORDER BY created_at DESC`
+    `SELECT ${TEST_SUITE_COLUMNS} FROM test_suites WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+    [organizationId, limit]
   );
   if (result) {
-    return result.rows
-      .map(row => rowToTestSuite(row))
-      .filter(suite => suite.organization_id === organizationId);
+    return result.rows.map(row => rowToTestSuite(row));
   }
   return [];
 }

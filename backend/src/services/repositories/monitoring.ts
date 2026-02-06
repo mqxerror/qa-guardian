@@ -196,11 +196,11 @@ export async function deleteUptimeCheck(id: string): Promise<boolean> {
   return false;
 }
 
-export async function listUptimeChecks(organizationId: string): Promise<UptimeCheck[]> {
+export async function listUptimeChecks(organizationId: string, limit: number = 100): Promise<UptimeCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT ${UPTIME_CHECK_COLUMNS} FROM uptime_checks WHERE organization_id = $1 ORDER BY created_at DESC`,
-      [organizationId]
+      `SELECT ${UPTIME_CHECK_COLUMNS} FROM uptime_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      [organizationId, limit]
     );
     if (result) {
       return result.rows.map(parseUptimeCheckRow);
@@ -210,9 +210,9 @@ export async function listUptimeChecks(organizationId: string): Promise<UptimeCh
   return [];
 }
 
-export async function getAllUptimeChecks(): Promise<UptimeCheck[]> {
+export async function getAllUptimeChecks(limit: number = 100): Promise<UptimeCheck[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(`SELECT ${UPTIME_CHECK_COLUMNS} FROM uptime_checks ORDER BY created_at DESC`);
+    const result = await query<any>(`SELECT ${UPTIME_CHECK_COLUMNS} FROM uptime_checks ORDER BY created_at DESC LIMIT $1`, [limit]);
     if (result) {
       return result.rows.map(parseUptimeCheckRow);
     }
@@ -604,11 +604,11 @@ export async function deleteTransactionCheck(id: string): Promise<boolean> {
   return false;
 }
 
-export async function listTransactionChecks(organizationId: string): Promise<TransactionCheck[]> {
+export async function listTransactionChecks(organizationId: string, limit: number = 100): Promise<TransactionCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT ${TRANSACTION_CHECK_COLUMNS} FROM transaction_checks WHERE organization_id = $1 ORDER BY created_at DESC`,
-      [organizationId]
+      `SELECT ${TRANSACTION_CHECK_COLUMNS} FROM transaction_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      [organizationId, limit]
     );
     if (result) return result.rows.map(parseTransactionCheckRow);
     return [];
@@ -729,11 +729,11 @@ export async function deletePerformanceCheck(id: string): Promise<boolean> {
   return false;
 }
 
-export async function listPerformanceChecks(organizationId: string): Promise<PerformanceCheck[]> {
+export async function listPerformanceChecks(organizationId: string, limit: number = 100): Promise<PerformanceCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT ${PERFORMANCE_CHECK_COLUMNS} FROM performance_checks WHERE organization_id = $1 ORDER BY created_at DESC`,
-      [organizationId]
+      `SELECT ${PERFORMANCE_CHECK_COLUMNS} FROM performance_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      [organizationId, limit]
     );
     if (result) return result.rows.map(parsePerformanceCheckRow);
     return [];
@@ -875,11 +875,11 @@ export async function deleteWebhookCheck(id: string): Promise<boolean> {
   return false;
 }
 
-export async function listWebhookChecks(organizationId: string): Promise<WebhookCheck[]> {
+export async function listWebhookChecks(organizationId: string, limit: number = 100): Promise<WebhookCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM webhook_checks WHERE organization_id = $1 ORDER BY created_at DESC`,
-      [organizationId]
+      `SELECT * FROM webhook_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      [organizationId, limit]
     );
     if (result) return result.rows.map(parseWebhookCheckRow);
     return [];
@@ -1018,11 +1018,11 @@ export async function deleteDnsCheck(id: string): Promise<boolean> {
   return false;
 }
 
-export async function listDnsChecks(organizationId: string): Promise<DnsCheck[]> {
+export async function listDnsChecks(organizationId: string, limit: number = 100): Promise<DnsCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM dns_checks WHERE organization_id = $1 ORDER BY created_at DESC`,
-      [organizationId]
+      `SELECT * FROM dns_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      [organizationId, limit]
     );
     if (result) return result.rows.map(parseDnsCheckRow);
     return [];
@@ -1155,11 +1155,11 @@ export async function deleteTcpCheck(id: string): Promise<boolean> {
   return false;
 }
 
-export async function listTcpChecks(organizationId: string): Promise<TcpCheck[]> {
+export async function listTcpChecks(organizationId: string, limit: number = 100): Promise<TcpCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM tcp_checks WHERE organization_id = $1 ORDER BY created_at DESC`,
-      [organizationId]
+      `SELECT * FROM tcp_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      [organizationId, limit]
     );
     if (result) return result.rows.map(parseTcpCheckRow);
     return [];
@@ -1305,11 +1305,11 @@ export async function deleteStatusPage(id: string): Promise<boolean> {
   return false;
 }
 
-export async function listStatusPages(organizationId: string): Promise<StatusPage[]> {
+export async function listStatusPages(organizationId: string, limit: number = 100): Promise<StatusPage[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM status_pages WHERE organization_id = $1 ORDER BY created_at DESC`,
-      [organizationId]
+      `SELECT * FROM status_pages WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      [organizationId, limit]
     );
     if (result) return result.rows.map(parseStatusPageRow);
     return [];
@@ -1431,11 +1431,11 @@ export async function getDeletedCheckHistory(checkId: string): Promise<DeletedCh
 }
 
 
-export async function listDeletedCheckHistory(organizationId: string): Promise<DeletedCheckHistory[]> {
+export async function listDeletedCheckHistory(organizationId: string, limit: number = 100): Promise<DeletedCheckHistory[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM deleted_check_history WHERE organization_id = $1 ORDER BY deleted_at DESC`,
-      [organizationId]
+      `SELECT * FROM deleted_check_history WHERE organization_id = $1 ORDER BY deleted_at DESC LIMIT $2`,
+      [organizationId, limit]
     );
     if (result) {
       return result.rows.map((row: any) => ({
