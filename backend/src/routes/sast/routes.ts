@@ -13,12 +13,16 @@
  */
 
 import { FastifyInstance } from 'fastify';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { getProject, listProjects } from '../../services/repositories/projects.js';
 import { logAuditEntry } from '../audit-logs.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+
+const execFileAsync = promisify(execFile);
 
 import {
   SASTSeverity,
@@ -52,9 +56,6 @@ async function runSemgrepScan(
   repoPath: string,
   config: SASTConfig
 ): Promise<SASTFinding[]> {
-  const { execFile } = require('child_process');
-  const { promisify } = require('util');
-  const execFileAsync = promisify(execFile);
 
   // Map ruleset config to Semgrep config strings
   const rulesetMap: Record<string, string> = {

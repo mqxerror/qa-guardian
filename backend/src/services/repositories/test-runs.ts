@@ -24,11 +24,11 @@ import type {
 // In-memory fallback: import the testRuns Map from execution module
 // This allows reads to work even when PostgreSQL is not connected
 let _testRunsMap: Map<string, TestRun> | null = null;
-function getTestRunsMap(): Map<string, TestRun> {
+async function getTestRunsMap(): Promise<Map<string, TestRun>> {
   if (!_testRunsMap) {
     try {
-      // Lazy import to avoid circular dependency at module load time
-      const execution = require('../../routes/test-runs/execution');
+      // Dynamic import to avoid circular dependency at module load time
+      const execution = await import('../../routes/test-runs/execution.js');
       _testRunsMap = execution.testRuns;
     } catch {
       _testRunsMap = new Map();
@@ -204,7 +204,7 @@ export async function createTestRun(run: TestRun): Promise<TestRun> {
   }
 
   // Fallback: store in in-memory Map when DB unavailable
-  const map = getTestRunsMap();
+  const map = await getTestRunsMap();
   map.set(run.id, run);
   return run;
 }
@@ -228,7 +228,7 @@ export async function getTestRun(id: string): Promise<TestRun | undefined> {
   }
 
   // Fallback: read from in-memory Map when DB unavailable
-  const map = getTestRunsMap();
+  const map = await getTestRunsMap();
   return map.get(id);
 }
 
@@ -305,7 +305,7 @@ export async function updateTestRun(id: string, updates: Partial<TestRun>): Prom
   }
 
   // Fallback: update in-memory Map when DB unavailable
-  const map = getTestRunsMap();
+  const map = await getTestRunsMap();
   const existing = map.get(id);
   if (existing) {
     const updated = { ...existing, ...updates };
@@ -357,7 +357,7 @@ export async function listTestRunsBySuite(suiteId: string, orgId?: string): Prom
   }
 
   // Fallback: filter from in-memory Map when DB unavailable
-  const map = getTestRunsMap();
+  const map = await getTestRunsMap();
   const runs: TestRun[] = [];
   for (const run of map.values()) {
     if (run.suite_id === suiteId && (!orgId || run.organization_id === orgId)) {
@@ -393,7 +393,7 @@ export async function listTestRunsByProject(projectId: string, orgId?: string): 
   }
 
   // Fallback: filter from in-memory Map when DB unavailable
-  const map = getTestRunsMap();
+  const map = await getTestRunsMap();
   const runs: TestRun[] = [];
   for (const run of map.values()) {
     if (run.project_id === projectId && (!orgId || run.organization_id === orgId)) {
@@ -451,7 +451,7 @@ export async function listTestRunsByOrg(
   }
 
   // Fallback: filter from in-memory Map when DB unavailable
-  const map = getTestRunsMap();
+  const map = await getTestRunsMap();
   let runs: TestRun[] = [];
   for (const run of map.values()) {
     if (run.organization_id !== orgId) continue;
@@ -487,7 +487,7 @@ export async function listTestRunsBySchedule(scheduleId: string, orgId: string, 
   }
 
   // Fallback: filter from in-memory Map when DB unavailable
-  const map = getTestRunsMap();
+  const map = await getTestRunsMap();
   let runs: TestRun[] = [];
   for (const run of map.values()) {
     if (run.schedule_id === scheduleId && run.organization_id === orgId) {
@@ -530,7 +530,7 @@ export async function listTestRunsByTestId(testId: string, orgId: string, limit:
   }
 
   // Fallback: filter from in-memory Map when DB unavailable
-  const map = getTestRunsMap();
+  const map = await getTestRunsMap();
   let runs: TestRun[] = [];
   for (const run of map.values()) {
     if (run.organization_id !== orgId) continue;
@@ -590,7 +590,7 @@ export async function getRecentTestRuns(
   }
 
   // Fallback: filter from in-memory Map when DB unavailable
-  const map = getTestRunsMap();
+  const map = await getTestRunsMap();
   let runs: TestRun[] = [];
   for (const run of map.values()) {
     if (run.organization_id === orgId) {
@@ -697,7 +697,7 @@ export async function listTestRunsPaginated(
   }
 
   // Fallback: filter from in-memory Map when DB unavailable
-  const map = getTestRunsMap();
+  const map = await getTestRunsMap();
   let runs: TestRun[] = [];
   for (const run of map.values()) {
     if (run.organization_id !== orgId) continue;
@@ -1046,7 +1046,7 @@ export async function getTestRunMetadataForSuite(
   // Fallback: compute from in-memory map (less efficient but still works)
   // Only used when DB is unavailable
   if (!isDatabaseConnected()) {
-    const map = getTestRunsMap();
+    const map = await getTestRunsMap();
     const testRunsByTest = new Map<string, TestRun[]>();
 
     // Group runs by test_id

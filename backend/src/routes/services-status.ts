@@ -10,6 +10,8 @@ import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth.
 import { isDatabaseConnected, healthCheck as dbHealthCheck } from '../services/database.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import * as net from 'net';
+import * as http from 'http';
 
 const execAsync = promisify(exec);
 
@@ -132,7 +134,6 @@ async function checkRedis(): Promise<ServiceInfo> {
   // Try a simple TCP connect to Redis port
   try {
     const url = new URL(redisUrl);
-    const net = require('net');
     const start = Date.now();
     const connected = await new Promise<boolean>((resolve) => {
       const socket = new net.Socket();
@@ -200,7 +201,6 @@ async function checkMinIO(): Promise<ServiceInfo> {
     };
   }
   try {
-    const http = require('http');
     const start = Date.now();
     const reachable = await new Promise<boolean>((resolve) => {
       const req = http.get(`http://${endpoint}:${port || 9000}/minio/health/live`, { timeout: 3000 }, (res: any) => {

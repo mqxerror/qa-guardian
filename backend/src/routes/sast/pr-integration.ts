@@ -11,6 +11,8 @@
  */
 
 import { FastifyInstance } from 'fastify';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { getProject } from '../../services/repositories/projects.js';
 import { logAuditEntry } from '../audit-logs.js';
@@ -33,6 +35,8 @@ import {
   generateId,
 } from './stores.js';
 
+const execFileAsync = promisify(execFile);
+
 /**
  * Run Semgrep scan function type
  * This function is passed in from the main sast.ts module
@@ -48,9 +52,6 @@ type RunSemgrepScanFn = (
  * Used when no scan function is explicitly provided.
  */
 const defaultSemgrepScan: RunSemgrepScanFn = async (_projectId, repoPath, _config) => {
-  const { execFile } = require('child_process');
-  const { promisify } = require('util');
-  const execFileAsync = promisify(execFile);
 
   function parseOutput(stdout: string): SASTFinding[] {
     const results = JSON.parse(stdout);
