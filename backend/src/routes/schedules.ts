@@ -3,6 +3,9 @@ import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth'
 import { getTestSuite } from './test-suites';
 import { listTestRunsBySchedule, createTestRun } from '../services/repositories/test-runs';
 import { sendScheduleTriggeredWebhook } from './test-runs/webhook-events';
+// Feature #145: Cache invalidation for schedule mutations
+import { getCache } from '../services/cache';
+import { CacheKeys } from '../services/cache-keys';
 
 // Feature #2117: Import only async repository functions (no getMemory* calls)
 import {
@@ -191,6 +194,9 @@ export async function scheduleRoutes(app: FastifyInstance) {
 
     await createScheduleRepo(schedule);
 
+    // Feature #145: Invalidate schedule list cache after creation
+    await getCache().delete(CacheKeys.schedules.list(orgId));
+
     return reply.status(201).send({ schedule });
   });
 
@@ -249,6 +255,12 @@ export async function scheduleRoutes(app: FastifyInstance) {
 
     const updatedSchedule = await updateScheduleRepo(id, repoUpdates);
 
+    // Feature #145: Invalidate schedule caches after update
+    await Promise.all([
+      getCache().delete(CacheKeys.schedules.detail(id)),
+      getCache().delete(CacheKeys.schedules.list(orgId)),
+    ]);
+
     return { schedule: updatedSchedule };
   });
 
@@ -277,6 +289,12 @@ export async function scheduleRoutes(app: FastifyInstance) {
     }
 
     await deleteScheduleRepo(id);
+
+    // Feature #145: Invalidate schedule caches after deletion
+    await Promise.all([
+      getCache().delete(CacheKeys.schedules.detail(id)),
+      getCache().delete(CacheKeys.schedules.list(orgId)),
+    ]);
 
     return { message: 'Schedule deleted successfully' };
   });

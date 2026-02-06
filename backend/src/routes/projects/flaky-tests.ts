@@ -7,6 +7,9 @@ import { getAutoQuarantineSettings } from '../organizations';
 import { getProject, batchGetProjects } from './stores';
 import { getTest, getTestSuite, listAllTests, batchGetTests, batchGetTestSuites } from '../test-suites/stores';
 import { listTestRunsByOrg } from '../../services/repositories/test-runs';
+// Feature #145: Cache invalidation for quarantine mutations
+import { getCache } from '../../services/cache';
+import { CacheKeys } from '../../services/cache-keys';
 
 // Feature #142: Default to last 30 days for flaky test analysis
 const FLAKY_ANALYSIS_DAYS = 30;
@@ -886,6 +889,13 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     (test as { quarantined_by?: string }).quarantined_by = user.id;
     test.updated_at = now;
 
+    // Feature #145: Invalidate caches after quarantine
+    await Promise.all([
+      getCache().delete(CacheKeys.tests.detail(testId)),
+      getCache().delete(CacheKeys.flakyTests.list(orgId)),
+      getCache().delete(CacheKeys.flakyTests.quarantine(testId)),
+    ]);
+
     return {
       message: 'Test quarantined successfully',
       test_id: testId,
@@ -931,6 +941,13 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     (test as { quarantined_at?: Date }).quarantined_at = undefined;
     (test as { quarantined_by?: string }).quarantined_by = undefined;
     test.updated_at = now;
+
+    // Feature #145: Invalidate caches after unquarantine
+    await Promise.all([
+      getCache().delete(CacheKeys.tests.detail(testId)),
+      getCache().delete(CacheKeys.flakyTests.list(orgId)),
+      getCache().delete(CacheKeys.flakyTests.quarantine(testId)),
+    ]);
 
     return {
       message: 'Test removed from quarantine',

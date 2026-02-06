@@ -112,6 +112,20 @@ export const CacheKeys = {
     settings: (suiteId: string) => `review:settings:${suiteId}`,
     pattern: 'review:*',
   },
+
+  // Feature #145: Schedules
+  schedules: {
+    list: (orgId: string) => `schedules:list:${orgId}`,
+    detail: (scheduleId: string) => `schedules:detail:${scheduleId}`,
+    pattern: 'schedules:*',
+  },
+
+  // Feature #145: Flaky Tests / Quarantine
+  flakyTests: {
+    list: (orgId: string) => `flaky:list:${orgId}`,
+    quarantine: (testId: string) => `flaky:quarantine:${testId}`,
+    pattern: 'flaky:*',
+  },
 } as const;
 
 // Default TTL values in seconds
