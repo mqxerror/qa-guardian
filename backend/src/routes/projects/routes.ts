@@ -1,9 +1,12 @@
 // Projects Module - Core Project Routes
 // Handles CRUD operations for projects and environment variables
 // Feature #61: Integrated Redis caching
+// Feature #122: Zod validation for request bodies
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, JwtPayload, ApiKeyPayload, getOrganizationId } from '../../middleware/auth';
+import { validateBody } from '../../validation/middleware';
+import { createProjectSchema, updateProjectSchema, projectIdParamsSchema, CreateProjectInput, UpdateProjectInput } from '../../validation/schemas';
 import { TestSuite, Test } from '../test-suites';
 import {
   listTestSuites as dbListTestSuitesByProject,
@@ -131,8 +134,9 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // Create project (requires authentication, at least developer role)
   // API keys need 'write' scope
-  app.post<{ Body: CreateProjectBody }>('/api/v1/projects', {
-    preHandler: [authenticate, requireScopes(['write'])],
+  // Feature #122: Zod validation for request body
+  app.post<{ Body: CreateProjectInput }>('/api/v1/projects', {
+    preHandler: [authenticate, requireScopes(['write']), validateBody(createProjectSchema)],
   }, async (request, reply) => {
     const { name, description, base_url } = request.body;
     const user = request.user as JwtPayload | ApiKeyPayload;
@@ -146,26 +150,8 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    // Validate name - trim and check for empty/whitespace-only
-    const trimmedName = name?.trim();
-    if (!trimmedName) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Project name is required',
-      });
-    }
-    if (trimmedName.length < 2) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Project name must be at least 2 characters',
-      });
-    }
-    if (trimmedName.length > 100) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Project name must be less than 100 characters',
-      });
-    }
+    // Name is already validated by Zod schema - just trim for database
+    const trimmedName = name.trim();
 
     // Check for duplicate name within organization (use trimmed name)
     const existingProject = await dbGetProjectByName(orgId, trimmedName);
