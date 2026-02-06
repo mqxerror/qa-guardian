@@ -812,7 +812,7 @@ export async function dependencyManagementRoutes(app: FastifyInstance): Promise<
     else if (tgtMinor > curMinor) updateType = 'minor';
 
     // Generate branch name
-    const branchName = `${config.branch_prefix}${dependency_name}-${target_version}`.replace(/[^a-zA-Z0-9-_\/]/g, '-');
+    const branchName = `${config.branch_prefix}${dependency_name}-${target_version}`.replace(/[^a-zA-Z0-9-_/]/g, '-');
 
     // Generate PR title
     const prTitle = config.pr_title_template
@@ -968,7 +968,7 @@ export async function dependencyManagementRoutes(app: FastifyInstance): Promise<
       if (tgtMajor > curMajor) updateType = 'major';
       else if (tgtMinor > curMinor) updateType = 'minor';
 
-      const branchName = `${config.branch_prefix}${dep.name}-${dep.fixed}`.replace(/[^a-zA-Z0-9-_\/]/g, '-');
+      const branchName = `${config.branch_prefix}${dep.name}-${dep.fixed}`.replace(/[^a-zA-Z0-9-_/]/g, '-');
       const prNumber = Math.floor(Math.random() * 900) + 100;
 
       const prTitle = config.pr_title_template

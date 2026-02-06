@@ -244,7 +244,7 @@ function AICommandPalette() {
       const updated = [trimmed, ...filtered].slice(0, 5); // Keep last 5 unique searches
       try {
         localStorage.setItem('qa-guardian-recent-searches', JSON.stringify(updated));
-      } catch {}
+      } catch { /* storage unavailable */ }
       return updated;
     });
   };
@@ -254,7 +254,7 @@ function AICommandPalette() {
     setRecentSearches([]);
     try {
       localStorage.removeItem('qa-guardian-recent-searches');
-    } catch {}
+    } catch { /* storage unavailable */ }
   };
 
   // AI Commands
@@ -399,7 +399,7 @@ function AICommandPalette() {
         const updated = [currentPath, ...filtered].slice(0, 5);
         try {
           localStorage.setItem('qa-guardian-recent-pages', JSON.stringify(updated));
-        } catch {}
+        } catch { /* storage unavailable */ }
         return updated;
       });
     }
@@ -448,7 +448,7 @@ function AICommandPalette() {
     const textLower = text.toLowerCase();
     const queryLower = query.toLowerCase().trim();
     const matchedIndices: number[] = [];
-    let score = 0;
+    const score = 0;
 
     // Exact match (highest priority)
     if (textLower === queryLower) {

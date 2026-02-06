@@ -1061,7 +1061,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
     const orgId = 'org-001';
     const updates = request.body as Partial<AIRouterConfig>;
 
-    let config = routerConfigs.get(orgId) || {
+    const config = routerConfigs.get(orgId) || {
       primary_provider: 'kie',
       fallback_provider: 'anthropic',
       enabled: true,
@@ -1121,7 +1121,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
     const startTime = Date.now();
 
     const cbKey = `${orgId}:${config.primary_provider}`;
-    let cbState = circuitBreakerStates.get(cbKey);
+    const cbState = circuitBreakerStates.get(cbKey);
 
     let useFallback = false;
     let fallbackReason: 'timeout' | 'rate_limit' | 'error' | 'server_error' | 'manual' | undefined;
@@ -1426,7 +1426,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
   ) {
     if (!config.enabled) return;
 
-    let state = circuitBreakerStates.get(key) || {
+    const state = circuitBreakerStates.get(key) || {
       provider: key.split(':')[1],
       state: 'closed' as const,
       failure_count: 0,
@@ -1473,7 +1473,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
       error: boolean;
     }
   ) {
-    let stats = routerStats.get(orgId) || {
+    const stats = routerStats.get(orgId) || {
       total_requests: 0,
       primary_requests: 0,
       fallback_requests: 0,

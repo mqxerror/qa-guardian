@@ -104,9 +104,10 @@ export function stepToPlaywrightCode(step: TestStep): string {
       }
       return `await page.evaluate(() => window.scrollBy(0, ${value || 500}));`;
 
-    case 'wait':
+    case 'wait': {
       const ms = parseInt(value || '1000', 10);
       return `await page.waitForTimeout(${ms});`;
+    }
 
     case 'assert':
       if (!selector) return `// assert: no selector provided`;

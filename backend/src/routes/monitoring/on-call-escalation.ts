@@ -605,13 +605,14 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
             case 'user':
               notifications.push(`Notify user: ${target.user_name} (${target.user_email})`);
               break;
-            case 'on_call_schedule':
+            case 'on_call_schedule': {
               const schedule = onCallSchedules.get(target.schedule_id || '');
               if (schedule && schedule.members.length > 0) {
                 const currentOnCall = schedule.members[schedule.current_on_call_index];
                 notifications.push(`Notify on-call: ${currentOnCall.user_name} from "${schedule.name}" schedule`);
               }
               break;
+            }
             case 'email':
               notifications.push(`Send email to: ${target.user_email}`);
               break;

@@ -590,7 +590,7 @@ export function validateK6ScriptSyntax(script: string): K6SyntaxValidationResult
     // Pre-process K6 script to convert ES module imports to something parseable
     // K6 uses ES module syntax (import/export) which Function() doesn't support
     // We'll convert imports to variable declarations for syntax checking
-    let processedScript = script
+    const processedScript = script
       // Convert import statements to variable declarations
       .replace(/import\s+(\w+)\s+from\s+['"][^'"]+['"]/g, 'const $1 = {}')
       .replace(/import\s+\{([^}]+)\}\s+from\s+['"][^'"]+['"]/g, (_, imports) => {
@@ -759,7 +759,7 @@ export function generateCustomMetricValues(metrics: CustomMetricDefinition[], to
           unit: 'value',
         };
       case 'trend':
-      default:
+      default: {
         // Trends track timing distributions
         const avg = Math.floor(50 + Math.random() * 200); // 50-250ms avg
         return {
@@ -774,6 +774,7 @@ export function generateCustomMetricValues(metrics: CustomMetricDefinition[], to
           },
           unit: 'ms',
         };
+      }
     }
   });
 }

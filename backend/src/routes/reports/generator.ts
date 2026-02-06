@@ -384,10 +384,10 @@ async function generatePerformanceSection(
     const tti = m.tti ?? m.time_to_interactive ?? 0;
     const speedIndex = m.speedIndex ?? m.speed_index ?? 0;
 
-    function rateMetric(value: number, good: number, poor: number): 'good' | 'needs-improvement' | 'poor' {
+    const rateMetric = (value: number, good: number, poor: number): 'good' | 'needs-improvement' | 'poor' => {
       if (value <= 0) return 'poor';
       return value < good ? 'good' : value < poor ? 'needs-improvement' : 'poor';
-    }
+    };
 
     const audits: PerformanceReportSection['audits'] = [];
 

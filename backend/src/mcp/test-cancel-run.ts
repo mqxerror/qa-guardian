@@ -56,6 +56,8 @@ async function testEnhancedCancelRun() {
     });
     const projectsData = (await projectsResponse.json()) as { projects: Array<{ id: string; name: string }> };
 
+    let suite: { id: string; name: string };
+
     if (!projectsData.projects || projectsData.projects.length === 0) {
       console.log('No projects found. Creating test project and suite...');
 
@@ -106,7 +108,7 @@ async function testEnhancedCancelRun() {
       });
 
       console.log('Created test project, suite, and test');
-      var suite = suiteData.suite;
+      suite = suiteData.suite;
     } else {
       // Get suites from first project
       const project = projectsData.projects[0];
@@ -119,7 +121,7 @@ async function testEnhancedCancelRun() {
         console.log('No suites found. Please create a suite and test first via the UI.');
         return;
       }
-      var suite = suitesData.suites[0];
+      suite = suitesData.suites[0];
     }
 
     console.log(`2. Found suite: ${suite.name} (${suite.id})`);

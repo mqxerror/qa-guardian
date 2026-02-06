@@ -202,7 +202,7 @@ Please identify:
                   if (run) {
                     try {
                       localStorage.removeItem(`ai_batch_batch_${run.id}`);
-                    } catch (e) {}
+                    } catch (e) { /* storage unavailable */ }
                   }
                   setBatchAnalysisCached(false);
                   setBatchAnalysisResult(null);

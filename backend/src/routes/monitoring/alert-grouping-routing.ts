@@ -832,7 +832,7 @@ export async function alertGroupingRoutingRoutes(app: FastifyInstance): Promise<
         // Find existing group within time window
         const now = new Date();
         const timeWindowMs = rule.time_window_minutes * 60 * 1000;
-        let existingGroup = Array.from(alertGroups.values()).find(
+        const existingGroup = Array.from(alertGroups.values()).find(
           g => g.organization_id === orgId &&
                g.rule_id === rule.id &&
                g.group_key === groupKey &&
@@ -842,7 +842,7 @@ export async function alertGroupingRoutingRoutes(app: FastifyInstance): Promise<
         );
 
         let deduplicated = false;
-        let grouped = !!existingGroup;
+        const grouped = !!existingGroup;
 
         if (rule.deduplication_enabled && existingGroup) {
           // Check for duplicate

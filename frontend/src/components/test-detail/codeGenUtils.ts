@@ -52,11 +52,12 @@ export function generatePlaywrightCode(
       case 'assert_text':
         lines.push(`${indent}await expect(page.getByText('${step.value || ''}')).toBeVisible();`);
         break;
-      case 'screenshot':
+      case 'screenshot': {
         const screenshotName = step.value || `step-${index + 1}`;
         lines.push(`${indent}await page.screenshot({ path: '${screenshotName}.png' });`);
         break;
-      case 'accessibility_check':
+      }
+      case 'accessibility_check': {
         // Cast to A11yStep for accessibility-specific properties
         const a11yStep = step as A11yStep;
         const a11yLevel = a11yStep.a11y_wcag_level || 'AA';
@@ -67,6 +68,7 @@ export function generatePlaywrightCode(
         lines.push(`${indent}  .analyze();`);
         lines.push(`${indent}expect(a11yResults_${index}.violations.length).toBeLessThanOrEqual(${a11yThreshold});`);
         break;
+      }
       default:
         lines.push(`${indent}// Unknown action: ${step.action}`);
     }
@@ -424,7 +426,7 @@ export function detectFoldableRegions(code: string): FoldableRegion[] {
     }
 
     // Check for closing braces
-    if (trimmedLine.match(/^\}[\);,]*$/) || trimmedLine === '}') {
+    if (trimmedLine.match(/^\}[);,]*$/) || trimmedLine === '}') {
       const lastOpen = openBraces.pop();
       if (lastOpen && index > lastOpen.line) {
         regions.push({

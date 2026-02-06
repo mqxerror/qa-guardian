@@ -116,14 +116,14 @@ export function Sidebar() {
   useEffect(() => {
     try {
       localStorage.setItem('qa-guardian-show-advanced-features', JSON.stringify(showAdvancedFeatures));
-    } catch {}
+    } catch { /* storage unavailable */ }
   }, [showAdvancedFeatures]);
 
   // Feature #1364: Persist pinned items
   useEffect(() => {
     try {
       localStorage.setItem('qa-guardian-pinned-items', JSON.stringify(pinnedItems));
-    } catch {}
+    } catch { /* storage unavailable */ }
   }, [pinnedItems]);
 
   // Feature #1364: Collapsed sections now persisted via zustand store (removed localStorage effect)
@@ -154,7 +154,7 @@ export function Sidebar() {
       localStorage.removeItem('qa-guardian-pinned-items');
       localStorage.setItem('qa-guardian-collapsed-sections', JSON.stringify(['security']));
       localStorage.removeItem('qa-guardian-show-advanced-features');
-    } catch {}
+    } catch { /* storage unavailable */ }
   };
 
   // Feature #1364: Check if item is pinned

@@ -38,7 +38,7 @@ async function testConfigStore() {
   // Step 3: Get config for org (should return defaults)
   console.log('\nStep 3: Getting config for org (no custom config yet)...');
   const orgId = 'test-org-001';
-  let orgConfig = aiConfigStore.getConfig(orgId);
+  const orgConfig = aiConfigStore.getConfig(orgId);
   console.log(`  - orgId: ${orgConfig.orgId}`);
   console.log(`  - primaryProvider: ${orgConfig.primaryProvider}`);
   console.log(`  - hasCustomConfig: ${aiConfigStore.hasCustomConfig(orgId)} (expected: false)`);

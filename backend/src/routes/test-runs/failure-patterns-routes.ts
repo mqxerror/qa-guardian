@@ -262,7 +262,7 @@ function extractSelector(errorMessage: string): string | null {
     /locator\(['"]([^'"]+)['"]\)/i,
     /getBy\w+\(['"]([^'"]+)['"]\)/i,
     /data-testid=['"]([^'"]+)['"]/i,
-    /\#([\w-]+)/,
+    /#([\w-]+)/,
     /\.([\w-]+)/,
   ];
 

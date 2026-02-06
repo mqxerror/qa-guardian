@@ -1270,7 +1270,7 @@ function generateTestFromAnnotations(
           testSteps.push({ step_number: stepNumber, action: 'click', element_id: elementId, description: `Click on element #${idx + 1}`, playwright_code: playwrightCode });
           break;
 
-        case 'type':
+        case 'type': {
           const typeText = ann.label || 'test input';
           let inputSelector = 'input, textarea';
           if (ann.label?.includes('@')) {
@@ -1282,8 +1282,9 @@ function generateTestFromAnnotations(
           playwrightCode = `await page.locator('${inputSelector}').locator('visible=true').nth(${idx}).fill('${typeText.replace(/'/g, "\\'")}');`;
           testSteps.push({ step_number: stepNumber, action: 'type', element_id: elementId, description: `Type "${typeText}" in input field`, playwright_code: playwrightCode });
           break;
+        }
 
-        case 'expect':
+        case 'expect': {
           const expectText = ann.expectation || 'element is visible';
           const expectLower = expectText.toLowerCase();
           let assertionCode = '';
@@ -1303,6 +1304,7 @@ function generateTestFromAnnotations(
           elements.push({ id: elementId, type: 'text', description: `Assertion: ${expectText}`, suggested_selector: 'body', suggested_action: 'assert', confidence: 0.80, location: { x: ann.x, y: ann.y, width: 150, height: 30 } });
           testSteps.push({ step_number: stepNumber, action: 'assert', element_id: elementId, description: `Verify: ${expectText}`, playwright_code: assertionCode, assertion: expectText });
           break;
+        }
       }
     });
   }

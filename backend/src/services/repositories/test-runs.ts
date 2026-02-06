@@ -488,7 +488,7 @@ export async function listTestRunsBySchedule(scheduleId: string, orgId: string, 
 
   // Fallback: filter from in-memory Map when DB unavailable
   const map = await getTestRunsMap();
-  let runs: TestRun[] = [];
+  const runs: TestRun[] = [];
   for (const run of map.values()) {
     if (run.schedule_id === scheduleId && run.organization_id === orgId) {
       runs.push(run);
@@ -531,7 +531,7 @@ export async function listTestRunsByTestId(testId: string, orgId: string, limit:
 
   // Fallback: filter from in-memory Map when DB unavailable
   const map = await getTestRunsMap();
-  let runs: TestRun[] = [];
+  const runs: TestRun[] = [];
   for (const run of map.values()) {
     if (run.organization_id !== orgId) continue;
     // Direct single-test run

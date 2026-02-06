@@ -103,14 +103,16 @@ function RunHistoryPage() {
         switch (dateFilter) {
           case 'today':
             return runDate >= today;
-          case 'week':
+          case 'week': {
             const weekAgo = new Date(today);
             weekAgo.setDate(weekAgo.getDate() - 7);
             return runDate >= weekAgo;
-          case 'month':
+          }
+          case 'month': {
             const monthAgo = new Date(today);
             monthAgo.setDate(monthAgo.getDate() - 30);
             return runDate >= monthAgo;
+          }
           default:
             return true;
         }

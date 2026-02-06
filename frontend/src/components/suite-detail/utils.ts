@@ -262,11 +262,12 @@ export function sortTests(tests: TestType[], field: SortField, direction: SortDi
       case 'status':
         comparison = (a.last_result || '').localeCompare(b.last_result || '');
         break;
-      case 'last_run_at':
+      case 'last_run_at': {
         const dateA = a.last_run_at ? new Date(a.last_run_at).getTime() : 0;
         const dateB = b.last_run_at ? new Date(b.last_run_at).getTime() : 0;
         comparison = dateA - dateB;
         break;
+      }
       case 'run_count':
         comparison = (a.run_count || 0) - (b.run_count || 0);
         break;

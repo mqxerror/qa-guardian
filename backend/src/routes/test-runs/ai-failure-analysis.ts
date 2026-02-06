@@ -167,7 +167,7 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
 
     for (const failure of failures) {
       // Find matching pattern
-      let matchedPattern = patternMatchers.find(p => p.pattern.test(failure.error_message));
+      const matchedPattern = patternMatchers.find(p => p.pattern.test(failure.error_message));
 
       // Default to "Other" cluster if no pattern matches
       const clusterType = matchedPattern?.type || 'Other';

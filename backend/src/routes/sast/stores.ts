@@ -168,7 +168,7 @@ export const SECRET_PATTERN_TEMPLATES: SecretPatternTemplate[] = [
     id: 'generic-secret-assignment',
     name: 'Generic Secret Assignment',
     description: 'Detect assignments to variables named "secret" or "password"',
-    pattern: '(password|secret|api_key|apikey|api-key)[=:\\s]*[\'"][^\'\"]{8,}[\'"]',
+    pattern: '(password|secret|api_key|apikey|api-key)[=:\\s]*[\'"][^\'"]{8,}[\'"]',
     severity: 'MEDIUM',
     category: 'generic',
   },

@@ -125,7 +125,7 @@ export function K6ScriptTab({
   const getFoldableSections = (script: string) => {
     const lines = script.split('\n');
     const sections: Array<{ start: number; end: number; label: string }> = [];
-    let braceStack: number[] = [];
+    const braceStack: number[] = [];
 
     lines.forEach((line, index) => {
       const openBraces = (line.match(/{/g) || []).length;

@@ -66,7 +66,7 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Feature #99: Cache key now includes page/limit for proper cache scoping
     const cacheKey = `${CacheKeys.suites.list(projectId)}:page=${pageNum}:limit=${limitNum}`;
-    let cachedResult = await cache.get<{ data: TestSuite[]; total: number }>(cacheKey);
+    const cachedResult = await cache.get<{ data: TestSuite[]; total: number }>(cacheKey);
 
     let suites: TestSuite[];
     let total: number;
@@ -356,7 +356,7 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Feature #99: Cache key now includes page/limit for proper cache scoping
     const testsCacheKey = `${CacheKeys.tests.list(suiteId)}:page=${pageNum}:limit=${limitNum}`;
-    let cachedResult = await cache.get<{ data: Test[]; total: number }>(testsCacheKey);
+    const cachedResult = await cache.get<{ data: Test[]; total: number }>(testsCacheKey);
 
     let testList: Test[];
     let total: number;

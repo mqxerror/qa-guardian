@@ -130,11 +130,12 @@ function getMetricValue(
           return loadTestResults.response_times?.avg;
       }
 
-    case 'http_req_failed':
+    case 'http_req_failed': {
       // Failure rate (0-1)
       const failedRequests = loadTestResults.summary?.failed_requests || 0;
       const totalRequests = loadTestResults.summary?.total_requests || 1;
       return failedRequests / totalRequests;
+    }
 
     case 'http_reqs':
       // Request count

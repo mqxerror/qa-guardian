@@ -617,13 +617,14 @@ export const schedulePerformanceAudit: ToolHandler = async (args, context) => {
         nextRunTime.setHours(hours || 2, minutes || 0, 0, 0);
         if (nextRunTime <= now) nextRunTime.setDate(nextRunTime.getDate() + 1);
         break;
-      case 'weekly':
+      case 'weekly': {
         cronExpression = `${minutes || 0} ${hours || 2} * * ${dayOfWeek}`;
         nextRunTime = new Date(now);
         nextRunTime.setHours(hours || 2, minutes || 0, 0, 0);
         const daysUntilNext = (dayOfWeek - now.getDay() + 7) % 7 || 7;
         nextRunTime.setDate(nextRunTime.getDate() + daysUntilNext);
         break;
+      }
       case 'monthly':
         cronExpression = `${minutes || 0} ${hours || 2} 1 * *`;
         nextRunTime = new Date(now.getFullYear(), now.getMonth() + 1, 1, hours || 2, minutes || 0);

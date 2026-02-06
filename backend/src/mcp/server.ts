@@ -2910,7 +2910,7 @@ class MCPServer {
     }
 
     // Check for invalid characters
-    if (uri.match(/[<>{}|\\^`\[\]\s]/)) {
+    if (uri.match(/[<>{}|\\^`[\]\s]/)) {
       validationErrors.push('URI contains invalid characters');
     }
 

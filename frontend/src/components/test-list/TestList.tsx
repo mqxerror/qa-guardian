@@ -92,18 +92,20 @@ export function TestList({
         case 'status':
           comparison = (a.status || '').localeCompare(b.status || '');
           break;
-        case 'last_run':
+        case 'last_run': {
           const aTime = a.last_run_at ? new Date(a.last_run_at).getTime() : 0;
           const bTime = b.last_run_at ? new Date(b.last_run_at).getTime() : 0;
           comparison = aTime - bTime;
           break;
-        case 'last_result':
+        }
+        case 'last_result': {
           // Order: passed > running > failed > error > null
           const resultOrder = { passed: 4, running: 3, failed: 2, error: 1 };
           const aOrder = a.last_result ? resultOrder[a.last_result] || 0 : 0;
           const bOrder = b.last_result ? resultOrder[b.last_result] || 0 : 0;
           comparison = aOrder - bOrder;
           break;
+        }
         case 'run_count':
           comparison = (a.run_count || 0) - (b.run_count || 0);
           break;

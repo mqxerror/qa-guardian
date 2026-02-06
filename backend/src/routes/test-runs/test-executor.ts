@@ -958,12 +958,13 @@ async function executeTest(
               await page.waitForSelector(`text=${step.value}`, { timeout: 10000 });
             }
             break;
-          case 'screenshot':
+          case 'screenshot': {
             // Take screenshot and store
             const buffer = await page.screenshot();
             screenshot_base64 = buffer.toString('base64');
             break;
-          case 'visual_checkpoint':
+          }
+          case 'visual_checkpoint': {
             // Take screenshot and compare against checkpoint baseline
             const checkpointBuffer = await page.screenshot();
             screenshot_base64 = checkpointBuffer.toString('base64');
@@ -1014,7 +1015,8 @@ async function executeTest(
               console.log(`[Visual Checkpoint] Created baseline for "${checkpointName}"`);
             }
             break;
-          case 'accessibility_check':
+          }
+          case 'accessibility_check': {
             // Run real axe-core accessibility scan at this step in the E2E test
             const a11yStepConfig = {
               wcagLevel: (step as any).a11y_wcag_level || 'AA',
@@ -1100,7 +1102,8 @@ async function executeTest(
               console.log(`[Accessibility Check Step] PASSED: ${totalStepViolations} violation(s) found (within threshold)`);
             }
             break;
-          case 'assert_no_console_errors':
+          }
+          case 'assert_no_console_errors': {
             // Feature #1973: Check for console errors captured during test execution
             // Filter console logs for errors only
             const severityLevel = step.value || 'error'; // Default to 'error', can be 'critical' (error only) or 'warn' (error + warn)
@@ -1128,6 +1131,7 @@ async function executeTest(
               console.log(`[Console Errors Check] PASSED: No console errors detected (severity: ${severityLevel})`);
             }
             break;
+          }
           default:
             // Unknown action, skip
             stepStatus = 'skipped';

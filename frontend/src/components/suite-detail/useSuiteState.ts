@@ -220,11 +220,12 @@ export function useSuiteState() {
         case 'status':
           comparison = (a.status || '').localeCompare(b.status || '');
           break;
-        case 'last_run_at':
+        case 'last_run_at': {
           const aTime = a.last_run_at ? new Date(a.last_run_at).getTime() : 0;
           const bTime = b.last_run_at ? new Date(b.last_run_at).getTime() : 0;
           comparison = aTime - bTime;
           break;
+        }
         case 'run_count':
           comparison = (a.run_count || 0) - (b.run_count || 0);
           break;

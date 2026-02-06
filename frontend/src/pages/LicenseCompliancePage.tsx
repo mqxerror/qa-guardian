@@ -317,7 +317,7 @@ export function LicenseCompliancePage() {
       const isProprietary = dep.license.spdxId === 'PROPRIETARY';
       const needsApproval = policy.requireApproval.includes(dep.license.spdxId);
 
-      let warnings = [...dep.warnings];
+      const warnings = [...dep.warnings];
       let isCompliant = !isInDenied && !isUnknown && !isProprietary;
 
       if (policy.warnOnCopyleft && dep.license.copyleft && !warnings.some(w => w.includes('copyleft'))) {

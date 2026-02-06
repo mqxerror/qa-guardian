@@ -1136,7 +1136,7 @@ IMPORTANT for Scenario Outline with Examples:
 - Example pattern:
   const testData = [{ name: 'value1', ... }, { name: 'value2', ... }];
   for (const data of testData) {
-    test(\`Scenario: ${"\${data.description}"}\`, async ({ page }) => { ... });
+    test(\`Scenario: ${"${data.description}"}\`, async ({ page }) => { ... });
   }`;
 
         const userPrompt = `Convert this Gherkin to a Playwright test:

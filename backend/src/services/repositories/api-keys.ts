@@ -566,7 +566,7 @@ export async function getMcpAuditLogs(
 
   if (isDatabaseConnected()) {
     try {
-      let whereClauses = ['organization_id = $1'];
+      const whereClauses = ['organization_id = $1'];
       const params: any[] = [orgId];
       let paramIndex = 2;
 

@@ -81,7 +81,6 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
   if (internalServiceHeader) {
     const internalPayload = validateInternalServiceToken(internalServiceHeader);
     if (internalPayload) {
-      // @ts-ignore - extending user for internal service
       request.user = internalPayload;
       return;
     }
@@ -92,7 +91,6 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
   if (apiKeyHeader) {
     const apiKeyPayload = validateApiKey(apiKeyHeader);
     if (apiKeyPayload) {
-      // @ts-ignore - we're extending the user property to support API keys
       request.user = apiKeyPayload;
       return;
     }

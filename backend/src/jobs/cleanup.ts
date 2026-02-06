@@ -23,7 +23,7 @@ const ARTIFACTS_DIR = process.env.ARTIFACTS_DIR || './artifacts';
 
 // State
 let cleanupInterval: NodeJS.Timeout | null = null;
-let cleanupStats = {
+const cleanupStats = {
   status: 'idle' as 'idle' | 'running' | 'completed' | 'error',
   lastRun: null as Date | null,
   nextRun: null as Date | null,

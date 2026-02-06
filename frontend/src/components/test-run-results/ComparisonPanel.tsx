@@ -53,9 +53,8 @@ export default function ComparisonPanel({
   resultSummary,
   runHistory,
 }: ComparisonPanelProps) {
-  if (!compareMode) return null;
-
   // Calculate compare run summary
+  // Hooks must be called unconditionally (before any early returns)
   const compareRunSummary = useMemo(() => {
     if (!compareRun?.results) return { passed: 0, failed: 0, skipped: 0, total: 0 };
     return {
@@ -108,6 +107,8 @@ export default function ComparisonPanel({
       },
     };
   }, [run, compareRun, resultSummary, compareRunSummary]);
+
+  if (!compareMode) return null;
 
   return (
     <div className="mt-6 pt-6 border-t border-border">

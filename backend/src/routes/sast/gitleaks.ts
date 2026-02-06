@@ -484,7 +484,7 @@ ${pathPatterns}
       if (tempExcludeConfig && fs.existsSync(tempExcludeConfig)) {
         fs.unlinkSync(tempExcludeConfig);
       }
-    } catch {}
+    } catch { /* cleanup errors intentionally ignored */ }
 
     return {
       success: false,

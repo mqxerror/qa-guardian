@@ -146,7 +146,7 @@ export async function runCheck(check: UptimeCheck, location: MonitoringLocation)
   };
 
   let responseBody = '';
-  let responseHeaders: Record<string, string> = {};
+  const responseHeaders: Record<string, string> = {};
 
   try {
     const startTime = performance.now();
