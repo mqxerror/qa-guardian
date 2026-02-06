@@ -810,23 +810,21 @@ export async function authRoutes(app: FastifyInstance) {
     // Get current token to identify current session
     const authHeader = request.headers.authorization;
     const currentToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    // Feature #222: Hash current token to compare with stored hashes
+    const currentTokenHash = currentToken ? createHash('sha256').update(currentToken).digest('hex') : null;
 
-    // Feature #2116: Filter out blacklisted sessions using async check
-    const activeSessionPromises = sessions.map(async (session) => {
-      const isBlacklisted = await dbIsTokenBlacklisted(session.token);
-      if (isBlacklisted) return null;
-      return {
-        id: session.id,
-        device: session.device,
-        browser: session.browser,
-        ip_address: session.ip_address,
-        last_active: session.last_active,
-        created_at: session.created_at,
-        is_current: session.token === currentToken,
-      };
-    });
-    const results = await Promise.all(activeSessionPromises);
-    const activeSessions = results.filter(s => s !== null);
+    // Feature #222: Since session.token is now a hash, we can't check blacklist by hash.
+    // Sessions are removed from DB when invalidated, so we just return all DB sessions.
+    const activeSessions = sessions.map((session) => ({
+      id: session.id,
+      device: session.device,
+      browser: session.browser,
+      ip_address: session.ip_address,
+      last_active: session.last_active,
+      created_at: session.created_at,
+      // Feature #222: Compare hashed token from DB with hashed current token
+      is_current: session.token === currentTokenHash,
+    }));
 
     return { sessions: activeSessions };
   });
@@ -871,10 +869,12 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    // Feature #2116: Add the session's token to the blacklist using async DB call
-    await dbBlacklistToken(session.token);
+    // Feature #222: Since session.token is now a hash, we can't blacklist it directly.
+    // The session deletion below is the primary protection. If someone has the original
+    // JWT cached, it will fail on next DB session lookup (session gone).
+    // Note: For extra security, the frontend should pass the original token to blacklist.
 
-    // Feature #2116: Remove session from DB
+    // Feature #2116: Remove session from DB (primary protection)
     await dbDeleteSession(sessionId, decoded.id);
 
     return { message: 'Session invalidated successfully' };
@@ -910,33 +910,28 @@ export async function authRoutes(app: FastifyInstance) {
     // Feature #2116: Use async DB call instead of Map
     const sessions = await dbGetUserSessions(decoded.id);
 
-    // Get current token
+    // Get current token and hash it for comparison
     const authHeader = request.headers.authorization;
     const currentToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    // Feature #222: Hash current token to compare with stored hashes
+    const currentTokenHash = currentToken ? createHash('sha256').update(currentToken).digest('hex') : null;
 
-    // Feature #2116: Find current session ID for deleteOtherSessions
-    const currentSession = sessions.find(s => s.token === currentToken);
+    // Feature #222: Find current session ID using hashed comparison
+    const currentSession = sessions.find(s => s.token === currentTokenHash);
 
-    // Blacklist all other session tokens
-    let invalidatedCount = 0;
-    for (const session of sessions) {
-      if (session.token !== currentToken) {
-        const isAlreadyBlacklisted = await dbIsTokenBlacklisted(session.token);
-        if (!isAlreadyBlacklisted) {
-          await dbBlacklistToken(session.token);
-          invalidatedCount++;
-        }
-      }
-    }
+    // Feature #222: Since session.token is now a hash, we can't blacklist other sessions
+    // by their stored hash. The DB deletion is the primary protection.
+    // Count sessions to be invalidated (all except current)
+    const otherSessionCount = sessions.filter(s => s.token !== currentTokenHash).length;
 
-    // Feature #2116: Delete other sessions from DB
+    // Feature #2116: Delete other sessions from DB (primary protection)
     if (currentSession) {
       await dbDeleteOtherSessions(decoded.id, currentSession.id);
     }
 
     return {
-      message: `Logged out ${invalidatedCount} other session(s) successfully`,
-      invalidated_count: invalidatedCount,
+      message: `Logged out ${otherSessionCount} other session(s) successfully`,
+      invalidated_count: otherSessionCount,
     };
   });
 }

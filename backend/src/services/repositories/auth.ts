@@ -394,13 +394,15 @@ export async function createSession(session: Session): Promise<Session> {
   }
 
   try {
+    // Feature #222: Hash the token before storing (prevents exposure on DB compromise)
+    const tokenHash = createHash('sha256').update(session.token).digest('hex');
     await query(
       `INSERT INTO sessions (id, user_id, token_hash, device, browser, ip_address, last_active, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         session.id,
         session.user_id,
-        session.token, // In production, this should be hashed
+        tokenHash,
         session.device,
         session.browser,
         session.ip_address,
