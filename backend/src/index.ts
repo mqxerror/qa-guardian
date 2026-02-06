@@ -41,6 +41,7 @@ import { setRecordingSocketIO } from './routes/test-runs/recording-routes.js'; /
 import { stepTemplateRoutes } from './routes/step-templates.js'; // Feature #31: Reusable Step Templates
 import { errorsRoutes } from './routes/errors/index.js'; // Feature #166: Frontend error reporting
 import { requestTimeoutHook } from './middleware/timeout.js'; // Feature #90: Request timeout middleware
+import { authenticate } from './middleware/auth.js'; // Feature #205: Auth for health/metrics endpoints
 import { initializeCleanupJob, stopCleanupJob, getCleanupStats } from './jobs/cleanup.js'; // Feature #154: Data retention cleanup
 import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, registerExecutionCallback } from './services/execution-queue.js'; // Feature #155: BullMQ execution queue
 import { initializeErrorHandlers, getErrorMetrics } from './services/error-tracking.js'; // Feature #164: Error tracking

@@ -396,6 +396,10 @@ export async function getUserOrganization(userId: string): Promise<string | null
   return null;
 }
 
+/**
+ * Feature #208: Fixed N+1 query - now uses single JOIN query instead of
+ * 1 query + N getOrganizationById calls
+ */
 export async function getUserOrganizations(userId: string): Promise<Array<{
   organization_id: string;
   role: string;
@@ -417,28 +421,44 @@ export async function getUserOrganizations(userId: string): Promise<Array<{
   }
 
   try {
-    const result = await query<{ organization_id: string; role: string }>(
-      `SELECT organization_id, role FROM organization_members WHERE user_id = $1`,
+    // Single JOIN query replaces N+1 pattern (1 query for members + N queries for orgs)
+    interface UserOrgRow {
+      organization_id: string;
+      role: string;
+      org_id: string;
+      org_name: string;
+      org_slug: string;
+      org_timezone: string;
+      org_created_at: Date;
+    }
+
+    const result = await query<UserOrgRow>(
+      `SELECT
+         om.organization_id,
+         om.role,
+         o.id as org_id,
+         o.name as org_name,
+         o.slug as org_slug,
+         COALESCE(o.settings->>'timezone', 'UTC') as org_timezone,
+         o.created_at as org_created_at
+       FROM organization_members om
+       JOIN organizations o ON o.id = om.organization_id
+       WHERE om.user_id = $1`,
       [userId]
     );
 
     if (result && result.rows.length > 0) {
-      const userOrgs: Array<{
-        organization_id: string;
-        role: string;
-        organization: Organization | undefined;
-      }> = [];
-
-      for (const row of result.rows) {
-        const org = await getOrganizationById(row.organization_id);
-        userOrgs.push({
-          organization_id: row.organization_id,
-          role: row.role,
-          organization: org || undefined,
-        });
-      }
-
-      return userOrgs;
+      return result.rows.map(row => ({
+        organization_id: row.organization_id,
+        role: row.role,
+        organization: {
+          id: row.org_id,
+          name: row.org_name,
+          slug: row.org_slug,
+          timezone: row.org_timezone || 'UTC',
+          created_at: new Date(row.org_created_at),
+        },
+      }));
     }
   } catch (error) {
     console.error('[Org Repo] Failed to get user organizations:', error);
