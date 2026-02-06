@@ -1,15 +1,18 @@
 /**
  * Feature #48: Export utilities for accessibility reports
  * Extracted from TestDetailPage.tsx
+ * Feature #105: jsPDF is now lazy-loaded for better bundle performance
  */
 
-import jsPDF from 'jspdf';
 import { toast } from '../../stores/toastStore';
 
 /**
  * Export accessibility report as PDF
+ * Feature #105: Lazy loads jsPDF (387KB) only when export is triggered
  */
-export function exportAccessibilityPDF(a11yData: any, testName: string, runDate: string) {
+export async function exportAccessibilityPDF(a11yData: any, testName: string, runDate: string) {
+  // Lazy load jsPDF only when needed
+  const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;

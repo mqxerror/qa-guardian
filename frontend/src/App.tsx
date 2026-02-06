@@ -19,9 +19,8 @@ import { useToastStore, toast } from './stores/toastStore';
 import { useSocketStore } from './stores/socketStore';
 import { useVisualReviewStore } from './stores/visualReviewStore';
 import { useSidebarStore } from './stores/sidebarStore';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { getErrorMessage, isNetworkError, isOffline } from './utils/errorHandling';
-import jsPDF from 'jspdf';
+// Feature #105: Removed dead imports (recharts, jsPDF) - these are lazy-loaded in extracted pages
 // Feature #1357: Extracted pages for code quality compliance (400 line limit)
 // Eager imports: most-visited pages loaded in the main bundle
 import { NotFoundPage } from './pages/NotFoundPage';

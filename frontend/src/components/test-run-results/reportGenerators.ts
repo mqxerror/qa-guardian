@@ -1,11 +1,12 @@
 /**
  * Report Generation Utilities
  * Feature #46: Extracted from TestRunResultPage.tsx for modularity
+ * Feature #105: jsPDF is now lazy-loaded for better bundle performance
  *
  * Contains functions for generating PDF and HTML test reports.
  */
 
-import { jsPDF } from 'jspdf';
+import type { jsPDF } from 'jspdf';
 import { TestRun, ResultSummary, PdfSections } from './types';
 import { formatDuration } from './utils';
 
@@ -82,6 +83,8 @@ export const generatePdfReport = async ({
 
   setGeneratingPdf(true);
   try {
+    // Feature #105: Lazy load jsPDF (387KB) only when export is triggered
+    const { jsPDF } = await import('jspdf');
     const pdf = new jsPDF();
     let yPos = 20;
     const pageWidth = pdf.internal.pageSize.getWidth();

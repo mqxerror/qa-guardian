@@ -2,9 +2,11 @@
  * PDF Export Utilities for Test Run Results
  * Feature #46: Extracted from TestRunResultPage.tsx for modularity
  * Features #1910, #1911: K6 and Lighthouse PDF export functions
+ * Feature #105: jsPDF is now lazy-loaded for better bundle performance
  */
 
-import { jsPDF } from 'jspdf';
+// Type for jsPDF since we're loading it dynamically
+type jsPDF = import('jspdf').jsPDF;
 
 interface PdfHelpers {
   pdf: jsPDF;
@@ -91,10 +93,13 @@ const drawScoreGauge = (helpers: PdfHelpers, score: number, label: string, x: nu
 /**
  * Export K6 Load Test results as PDF
  * Feature #1910
+ * Feature #105: Lazy loads jsPDF (387KB) only when export is triggered
  */
-export const exportK6ResultsPDF = (loadTestData: any, testName: string) => {
+export const exportK6ResultsPDF = async (loadTestData: any, testName: string) => {
   if (!loadTestData) return;
 
+  // Lazy load jsPDF only when needed
+  const { jsPDF } = await import('jspdf');
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
   const margin = 20;
@@ -288,10 +293,13 @@ export const exportK6ResultsPDF = (loadTestData: any, testName: string) => {
 /**
  * Export Lighthouse results as PDF
  * Feature #1911
+ * Feature #105: Lazy loads jsPDF (387KB) only when export is triggered
  */
-export const exportLighthousePDF = (lighthouseData: any, testName: string, url?: string) => {
+export const exportLighthousePDF = async (lighthouseData: any, testName: string, url?: string) => {
   if (!lighthouseData) return;
 
+  // Lazy load jsPDF only when needed
+  const { jsPDF } = await import('jspdf');
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
   const margin = 20;
