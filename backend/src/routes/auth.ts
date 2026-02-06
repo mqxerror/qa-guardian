@@ -1,5 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import bcrypt from 'bcryptjs';
+// Feature #213: Node.js crypto for hashing refresh tokens
+import { createHash } from 'node:crypto';
+// Feature #213: fast-jwt for refresh token handling (separate from app.jwt)
+import { createSigner, createVerifier } from 'fast-jwt';
 import { getUserOrganization, DEFAULT_ORG_ID } from './organizations.js';
 import {
   seedDefaultOrganizations,
@@ -99,6 +103,76 @@ async function createSessionForUser(userId: string, token: string, request: Fast
 
 // Feature #2116: resetTokens now accessed via async dbGetResetToken/dbCreateResetToken
 
+// ============================================================================
+// Feature #213: Refresh Token Configuration
+// ============================================================================
+
+/** Access token expiry: 1 hour (short-lived for security) */
+const ACCESS_TOKEN_EXPIRY = '1h';
+const ACCESS_TOKEN_EXPIRY_SECONDS = 60 * 60; // 1 hour in seconds
+
+/** Refresh token expiry: 7 days */
+const REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
+const REFRESH_TOKEN_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 days in seconds
+
+// Get refresh token secret (fallback to JWT_SECRET in dev)
+const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'dev-refresh-secret';
+
+// Create signer and verifier for refresh tokens
+const signRefreshToken = createSigner({ key: REFRESH_SECRET, expiresIn: REFRESH_TOKEN_EXPIRY });
+const verifyRefreshToken = createVerifier({ key: REFRESH_SECRET });
+
+// Store for refresh tokens (for production, store hash in sessions table)
+// Feature #213: Simple in-memory store for refresh token hashes (mapped to user_id)
+const refreshTokenHashes = new Map<string, { userId: string; expiresAt: Date }>();
+
+/**
+ * Feature #213: Generate a refresh token for a user
+ */
+function generateRefreshToken(userId: string, email: string, organizationId: string): string {
+  const payload = {
+    id: userId,
+    email,
+    organization_id: organizationId,
+    type: 'refresh',
+  };
+  return signRefreshToken(payload);
+}
+
+/**
+ * Feature #213: Store refresh token hash for later validation
+ */
+function storeRefreshToken(token: string, userId: string): void {
+  // Hash the token for secure storage
+  const hash = createHash('sha256').update(token).digest('hex');
+  refreshTokenHashes.set(hash, {
+    userId,
+    expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY),
+  });
+}
+
+/**
+ * Feature #213: Revoke a refresh token
+ */
+function revokeRefreshToken(token: string): boolean {
+  const hash = createHash('sha256').update(token).digest('hex');
+  return refreshTokenHashes.delete(hash);
+}
+
+/**
+ * Feature #213: Check if a refresh token is valid (not revoked)
+ */
+function isRefreshTokenValid(token: string): boolean {
+  const hash = createHash('sha256').update(token).digest('hex');
+  const stored = refreshTokenHashes.get(hash);
+  if (!stored) return false;
+  if (stored.expiresAt < new Date()) {
+    refreshTokenHashes.delete(hash);
+    return false;
+  }
+  return true;
+}
+
 // Feature #2099: Seeding completion guard to prevent race conditions
 let seedingComplete = false;
 
@@ -178,7 +252,7 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    // Generate JWT token with 7 day expiration (configurable)
+    // Feature #213: Generate short-lived access token (1 hour)
     const token = app.jwt.sign(
       {
         id: user.id,
@@ -186,16 +260,22 @@ export async function authRoutes(app: FastifyInstance) {
         role: user.role,
         organization_id: organizationId,
       },
-      { expiresIn: '7d' }
+      { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
+
+    // Feature #213: Generate long-lived refresh token (7 days)
+    const refreshToken = generateRefreshToken(user.id, user.email, organizationId);
+    storeRefreshToken(refreshToken, user.id);
 
     // Feature #2116: Create session using async DB call
     const session = await createSessionForUser(user.id, token, request);
 
     return {
       token,
+      refresh_token: refreshToken,
       session_id: session.id,
-      expiresIn: 7 * 24 * 60 * 60, // 7 days in seconds
+      expiresIn: ACCESS_TOKEN_EXPIRY_SECONDS, // 1 hour in seconds
+      refreshExpiresIn: REFRESH_TOKEN_EXPIRY_SECONDS, // 7 days in seconds
       user: {
         id: user.id,
         email: user.email,
@@ -304,7 +384,7 @@ export async function authRoutes(app: FastifyInstance) {
     user.role = 'owner';
     await dbUpdateUser(email, { role: 'owner' });
 
-    // Generate JWT token with 7 day expiration
+    // Feature #213: Generate short-lived access token (1 hour)
     const token = app.jwt.sign(
       {
         id: user.id,
@@ -312,16 +392,22 @@ export async function authRoutes(app: FastifyInstance) {
         role: user.role,
         organization_id: orgId,
       },
-      { expiresIn: '7d' }
+      { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
+
+    // Feature #213: Generate long-lived refresh token (7 days)
+    const refreshToken = generateRefreshToken(user.id, user.email, orgId);
+    storeRefreshToken(refreshToken, user.id);
 
     // Feature #2116: Create session using async DB call
     const session = await createSessionForUser(user.id, token, request);
 
     return reply.status(201).send({
       token,
+      refresh_token: refreshToken,
       session_id: session.id,
-      expiresIn: 7 * 24 * 60 * 60, // 7 days in seconds
+      expiresIn: ACCESS_TOKEN_EXPIRY_SECONDS, // 1 hour in seconds
+      refreshExpiresIn: REFRESH_TOKEN_EXPIRY_SECONDS, // 7 days in seconds
       user: {
         id: user.id,
         email: user.email,
@@ -382,7 +468,7 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Logout endpoint - invalidates the token by adding to blacklist
-  app.post('/api/v1/auth/logout', {
+  app.post<{ Body: { refresh_token?: string } }>('/api/v1/auth/logout', {
     preHandler: [
       async (request: FastifyRequest, reply: FastifyReply) => {
         try {
@@ -394,13 +480,103 @@ export async function authRoutes(app: FastifyInstance) {
       },
     ],
   }, async (request) => {
-    // Feature #2116: Use async DB call to blacklist token
+    // Feature #2116: Use async DB call to blacklist access token
     const authHeader = request.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       await dbBlacklistToken(token);
     }
+
+    // Feature #213: Also revoke the refresh token if provided
+    const { refresh_token } = request.body || {};
+    if (refresh_token) {
+      revokeRefreshToken(refresh_token);
+    }
+
     return { message: 'Logged out successfully' };
+  });
+
+  // Feature #213: Refresh token endpoint - exchange refresh token for new access token
+  app.post<{ Body: { refresh_token: string } }>('/api/v1/auth/refresh', async (request, reply) => {
+    const { refresh_token } = request.body;
+
+    if (!refresh_token) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Refresh token is required',
+      });
+    }
+
+    // Verify the refresh token is not revoked
+    if (!isRefreshTokenValid(refresh_token)) {
+      return reply.status(401).send({
+        error: 'Unauthorized',
+        message: 'Refresh token has been revoked or expired',
+      });
+    }
+
+    // Verify and decode the refresh token
+    let payload: any;
+    try {
+      payload = verifyRefreshToken(refresh_token);
+    } catch (err) {
+      return reply.status(401).send({
+        error: 'Unauthorized',
+        message: 'Invalid or expired refresh token',
+      });
+    }
+
+    // Ensure it's a refresh token
+    if (payload.type !== 'refresh') {
+      return reply.status(401).send({
+        error: 'Unauthorized',
+        message: 'Invalid token type',
+      });
+    }
+
+    // Get user to ensure they still exist and are valid
+    const user = await dbGetUserByEmail(payload.email);
+    if (!user) {
+      revokeRefreshToken(refresh_token);
+      return reply.status(401).send({
+        error: 'Unauthorized',
+        message: 'User not found',
+      });
+    }
+
+    // Get current organization (may have changed)
+    const organizationId = await getUserOrganization(user.id);
+    if (!organizationId) {
+      revokeRefreshToken(refresh_token);
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'User is not associated with any organization',
+      });
+    }
+
+    // Generate new access token
+    const newAccessToken = app.jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        organization_id: organizationId,
+      },
+      { expiresIn: ACCESS_TOKEN_EXPIRY }
+    );
+
+    return {
+      token: newAccessToken,
+      expiresIn: ACCESS_TOKEN_EXPIRY_SECONDS,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatar_url: user.avatar_url,
+        role: user.role,
+        organization_id: organizationId,
+      },
+    };
   });
 
   // Test endpoint to generate a short-lived token (for testing session expiration)
