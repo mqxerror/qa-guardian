@@ -271,6 +271,41 @@ export async function getDastScansByProject(projectId: string): Promise<DASTScan
   return [];
 }
 
+/**
+ * Feature #124: Get DAST scans for all projects in an organization
+ * Uses a single JOIN query instead of N+1 queries (one per project)
+ */
+export async function getDastScansByOrg(
+  orgId: string,
+  options?: { since?: Date; limit?: number }
+): Promise<DASTScanResult[]> {
+  if (isDatabaseConnected()) {
+    const conditions = ['p.organization_id = $1'];
+    const params: any[] = [orgId];
+    let paramIndex = 2;
+
+    if (options?.since) {
+      conditions.push(`s.started_at >= $${paramIndex++}`);
+      params.push(options.since.toISOString());
+    }
+
+    const limitClause = options?.limit ? `LIMIT ${options.limit}` : '';
+
+    const result = await query<any>(
+      `SELECT s.* FROM dast_scans s
+       INNER JOIN projects p ON s.project_id = p.id
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY s.started_at DESC ${limitClause}`,
+      params
+    );
+    if (result) {
+      return result.rows.map(parseDastScanRow);
+    }
+    return [];
+  }
+  return [];
+}
+
 export async function deleteDastScan(scanId: string): Promise<boolean> {
   if (isDatabaseConnected()) {
     const result = await query(

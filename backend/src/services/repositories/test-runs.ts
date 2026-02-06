@@ -518,6 +518,7 @@ export async function listTestRunsByTestId(testId: string, orgId: string, limit:
 
 /**
  * Get recent test runs with pagination
+ * Feature #124: Use window function COUNT(*) OVER() for single query instead of separate COUNT + SELECT
  */
 export async function getRecentTestRuns(
   orgId: string,
@@ -528,23 +529,27 @@ export async function getRecentTestRuns(
 
   if (isDatabaseConnected()) {
     try {
-      let countQuery = 'SELECT COUNT(*) FROM test_runs WHERE organization_id = $1';
-      let selectQuery = 'SELECT * FROM test_runs WHERE organization_id = $1';
+      // Feature #124: Single query with window function instead of separate COUNT + SELECT
+      let whereClause = 'organization_id = $1';
       const params: any[] = [orgId];
 
       if (options.status) {
-        countQuery += ' AND status = $2';
-        selectQuery += ' AND status = $2';
+        whereClause += ' AND status = $2';
         params.push(options.status);
       }
 
-      selectQuery += ' ORDER BY created_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
+      // Use COUNT(*) OVER() window function to get total in same query as data
+      const combinedQuery = `
+        SELECT *, COUNT(*) OVER() as total_count
+        FROM test_runs
+        WHERE ${whereClause}
+        ORDER BY created_at DESC
+        LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+      `;
 
-      const countResult = await query<any>(countQuery, params.slice(0, options.status ? 2 : 1));
-      const total = countResult?.rows[0]?.count ? parseInt(countResult.rows[0].count, 10) : 0;
-
-      const result = await query<any>(selectQuery, [...params, limit, offset]);
+      const result = await query<any>(combinedQuery, [...params, limit, offset]);
       const runs = result?.rows ? result.rows.map(rowToTestRun) : [];
+      const total = result?.rows[0]?.total_count ? parseInt(result.rows[0].total_count, 10) : 0;
 
       return { runs, total };
     } catch (error) {
@@ -593,6 +598,9 @@ export interface PaginatedTestRunsResult {
   };
 }
 
+/**
+ * Feature #124: Use window function COUNT(*) OVER() for single query instead of separate COUNT + SELECT
+ */
 export async function listTestRunsPaginated(
   orgId: string,
   options: ListTestRunsOptions = {}
@@ -626,15 +634,18 @@ export async function listTestRunsPaginated(
         paramIndex++;
       }
 
-      // Count total matching records
-      const countQuery = `SELECT COUNT(*) FROM test_runs ${whereClause}`;
-      const countResult = await query<any>(countQuery, params);
-      const total = countResult?.rows[0]?.count ? parseInt(countResult.rows[0].count, 10) : 0;
+      // Feature #124: Single query with window function instead of separate COUNT + SELECT
+      const combinedQuery = `
+        SELECT *, COUNT(*) OVER() as total_count
+        FROM test_runs
+        ${whereClause}
+        ORDER BY created_at DESC
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `;
 
-      // Fetch paginated results
-      const selectQuery = `SELECT * FROM test_runs ${whereClause} ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-      const result = await query<any>(selectQuery, [...params, limit, offset]);
+      const result = await query<any>(combinedQuery, [...params, limit, offset]);
       const runs = result?.rows ? result.rows.map(rowToTestRun) : [];
+      const total = result?.rows[0]?.total_count ? parseInt(result.rows[0].total_count, 10) : 0;
 
       const totalPages = Math.ceil(total / limit);
       return {

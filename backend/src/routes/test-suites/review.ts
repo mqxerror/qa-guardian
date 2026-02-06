@@ -4,7 +4,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate } from '../../middleware/auth';
 import { Test } from './types';
-import { getTestSuite, getTest, updateTest, updateTestSuite, listTests } from './stores';
+import { getTestSuite, getTest, updateTest, updateTestSuite, listTests, batchGetTests } from './stores';
 // Feature #89: Redis caching for review settings
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache';
 
@@ -83,6 +83,7 @@ export async function reviewRoutes(app: FastifyInstance) {
   });
 
   // Bulk approve/reject tests
+  // Feature #124: Use batchGetTests to fetch all tests in one query instead of N+1
   app.post<{ Body: BulkReviewBody }>('/api/v1/tests/bulk-review', {
     preHandler: [authenticate],
     schema: {
@@ -103,8 +104,11 @@ export async function reviewRoutes(app: FastifyInstance) {
     const reviewedTests: Test[] = [];
     const errors: { test_id: string; error: string }[] = [];
 
+    // Feature #124: Batch fetch all tests in one query instead of N queries
+    const testsMap = await batchGetTests(test_ids);
+
     for (const testId of test_ids) {
-      const test = await getTest(testId);
+      const test = testsMap.get(testId);
       if (!test) {
         errors.push({ test_id: testId, error: 'Test not found' });
         continue;

@@ -15,7 +15,8 @@ import {
 } from './types';
 import {
   getDastScansByProject,
-  getDastScan,
+  getDastScan, // Feature #124: Use direct scan lookup to avoid N+1 queries
+  getDastScansByOrg, // Feature #124: Org-wide scans without N+1
   getDastFalsePositives,
   addDastFalsePositive,
   deleteDastFalsePositive,
@@ -199,6 +200,7 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Get a specific DAST scan
+  // Feature #124: Use direct scan lookup instead of fetching all + filter
   app.get<{
     Params: { projectId: string; scanId: string };
   }>('/api/v1/projects/:projectId/dast/scans/:scanId', {
@@ -212,10 +214,10 @@ export async function dastRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const scans = await getDastScansByProject(projectId);
-    const scan = scans.find(s => s.id === scanId);
+    // Feature #124: Direct lookup instead of getDastScansByProject + filter
+    const scan = await getDastScan(scanId);
 
-    if (!scan) {
+    if (!scan || scan.projectId !== projectId) {
       return reply.status(404).send({ error: 'Scan not found' });
     }
 
@@ -223,6 +225,7 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Get alerts from a specific scan
+  // Feature #124: Use direct scan lookup instead of fetching all + filter
   app.get<{
     Params: { projectId: string; scanId: string };
     Querystring: { risk?: string; confidence?: string; includeFalsePositives?: string };
@@ -238,10 +241,10 @@ export async function dastRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const scans = await getDastScansByProject(projectId);
-    const scan = scans.find(s => s.id === scanId);
+    // Feature #124: Direct lookup instead of getDastScansByProject + filter
+    const scan = await getDastScan(scanId);
 
-    if (!scan) {
+    if (!scan || scan.projectId !== projectId) {
       return reply.status(404).send({ error: 'Scan not found' });
     }
 
@@ -273,6 +276,7 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Generate and download DAST scan report
+  // Feature #124: Use direct scan lookup instead of fetching all + filter
   app.get<{
     Params: { projectId: string; scanId: string };
     Querystring: { format?: string };
@@ -288,10 +292,10 @@ export async function dastRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    const scans = await getDastScansByProject(projectId);
-    const scan = scans.find(s => s.id === scanId);
+    // Feature #124: Direct lookup instead of getDastScansByProject + filter
+    const scan = await getDastScan(scanId);
 
-    if (!scan) {
+    if (!scan || scan.projectId !== projectId) {
       return reply.status(404).send({ error: 'Scan not found' });
     }
 
@@ -386,6 +390,7 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Mark an alert as false positive
+  // Feature #124: Use direct scan lookup instead of fetching all + filter
   app.post<{
     Params: { projectId: string; scanId: string; alertId: string };
     Body: { reason: string };
@@ -409,10 +414,10 @@ export async function dastRoutes(app: FastifyInstance) {
       });
     }
 
-    const scans = await getDastScansByProject(projectId);
-    const scan = scans.find(s => s.id === scanId);
+    // Feature #124: Direct lookup instead of getDastScansByProject + filter
+    const scan = await getDastScan(scanId);
 
-    if (!scan) {
+    if (!scan || scan.projectId !== projectId) {
       return reply.status(404).send({ error: 'Scan not found' });
     }
 
@@ -517,6 +522,7 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Get organization-wide DAST statistics
+  // Feature #124: Optimized to use single JOIN query instead of N+1 queries
   app.get<{
     Querystring: { days?: string };
   }>('/api/v1/organizations/current/dast/stats', {
@@ -527,43 +533,42 @@ export async function dastRoutes(app: FastifyInstance) {
     const daysNum = parseInt(days) || 30;
     const cutoff = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000);
 
-    const orgProjects = await listProjects(orgId);
+    // Feature #124: Single query to get all scans for org instead of N+1
+    const [orgProjects, allScans] = await Promise.all([
+      listProjects(orgId),
+      getDastScansByOrg(orgId, { since: cutoff }),
+    ]);
 
-    let totalScans = 0;
     let totalAlerts = 0;
     const alertsByRisk = { high: 0, medium: 0, low: 0, informational: 0 };
-    const recentScans: DASTScanResult[] = [];
+    const completedScans: DASTScanResult[] = [];
 
-    for (const project of orgProjects) {
-      const scans = await getDastScansByProject(project.id);
-
-      for (const scan of scans) {
-        if (new Date(scan.startedAt) >= cutoff) {
-          totalScans++;
-          if (scan.status === 'completed') {
-            totalAlerts += scan.summary.total;
-            alertsByRisk.high += scan.summary.byRisk.high;
-            alertsByRisk.medium += scan.summary.byRisk.medium;
-            alertsByRisk.low += scan.summary.byRisk.low;
-            alertsByRisk.informational += scan.summary.byRisk.informational;
-            recentScans.push(scan);
-          }
-        }
+    for (const scan of allScans) {
+      if (scan.status === 'completed') {
+        totalAlerts += scan.summary.total;
+        alertsByRisk.high += scan.summary.byRisk.high;
+        alertsByRisk.medium += scan.summary.byRisk.medium;
+        alertsByRisk.low += scan.summary.byRisk.low;
+        alertsByRisk.informational += scan.summary.byRisk.informational;
+        completedScans.push(scan);
       }
     }
 
-    recentScans.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+    // Get DAST config status for all projects in parallel
+    const configPromises = orgProjects.map(p => getDASTConfig(p.id));
+    const configs = await Promise.all(configPromises);
+    const projectsWithDAST = configs.filter(c => c?.enabled).length;
 
     return reply.send({
       period: { days: daysNum, start: cutoff.toISOString(), end: new Date().toISOString() },
       stats: {
-        totalScans,
+        totalScans: allScans.length,
         totalAlerts,
         alertsByRisk,
-        projectsWithDAST: (await Promise.all(orgProjects.map(async p => (await getDASTConfig(p.id)).enabled))).filter(Boolean).length,
+        projectsWithDAST,
         totalProjects: orgProjects.length,
       },
-      recentScans: recentScans.slice(0, 5).map(s => ({
+      recentScans: completedScans.slice(0, 5).map(s => ({
         id: s.id,
         projectId: s.projectId,
         targetUrl: s.targetUrl,

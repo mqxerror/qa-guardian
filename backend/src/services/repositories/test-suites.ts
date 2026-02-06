@@ -160,6 +160,7 @@ export async function listTestSuites(projectId: string, organizationId: string):
 
 /**
  * Feature #99: Database-level pagination for test suites
+ * Feature #124: Use window function COUNT(*) OVER() for single query instead of separate COUNT + SELECT
  * Returns paginated results directly from database instead of loading all into memory
  */
 export async function listTestSuitesPaginated(
@@ -177,17 +178,10 @@ export async function listTestSuitesPaginated(
     };
   }
 
-  // Get total count first (with organization filter via JSONB)
-  const countResult = await query<{ count: string }>(
-    `SELECT COUNT(*) as count FROM test_suites
-     WHERE project_id = $1 AND config->>'organization_id' = $2`,
-    [projectId, organizationId]
-  );
-  const total = countResult ? parseInt(countResult.rows[0]?.count || '0', 10) : 0;
-
-  // Get paginated results with LIMIT/OFFSET at database level
+  // Feature #124: Single query with window function instead of separate COUNT + SELECT
   const result = await query<any>(
-    `SELECT * FROM test_suites
+    `SELECT *, COUNT(*) OVER() as total_count
+     FROM test_suites
      WHERE project_id = $1 AND config->>'organization_id' = $2
      ORDER BY created_at DESC
      LIMIT $3 OFFSET $4`,
@@ -195,6 +189,7 @@ export async function listTestSuitesPaginated(
   );
 
   const data = result ? result.rows.map(row => rowToTestSuite(row)) : [];
+  const total = result?.rows[0]?.total_count ? parseInt(result.rows[0].total_count, 10) : 0;
   return { data, total };
 }
 
@@ -367,6 +362,7 @@ export async function listTests(suiteId: string): Promise<Test[]> {
 
 /**
  * Feature #99: Database-level pagination for tests
+ * Feature #124: Use window function COUNT(*) OVER() for single query instead of separate COUNT + SELECT
  * Returns paginated results directly from database instead of loading all into memory
  */
 export async function listTestsPaginated(
@@ -387,16 +383,10 @@ export async function listTestsPaginated(
     };
   }
 
-  // Get total count
-  const countResult = await query<{ count: string }>(
-    `SELECT COUNT(*) as count FROM tests WHERE suite_id = $1`,
-    [suiteId]
-  );
-  const total = countResult ? parseInt(countResult.rows[0]?.count || '0', 10) : 0;
-
-  // Get paginated results with LIMIT/OFFSET at database level
+  // Feature #124: Single query with window function instead of separate COUNT + SELECT
   const result = await query<any>(
-    `SELECT * FROM tests
+    `SELECT *, COUNT(*) OVER() as total_count
+     FROM tests
      WHERE suite_id = $1
      ORDER BY priority ASC, created_at ASC
      LIMIT $2 OFFSET $3`,
@@ -404,6 +394,7 @@ export async function listTestsPaginated(
   );
 
   const data = result ? result.rows.map(row => rowToTest(row, orgId)) : [];
+  const total = result?.rows[0]?.total_count ? parseInt(result.rows[0].total_count, 10) : 0;
   return { data, total, organizationId: orgId };
 }
 

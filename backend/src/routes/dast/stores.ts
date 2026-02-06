@@ -16,6 +16,7 @@ export const createDastScan = dastRepo.createDastScan;
 export const getDastScan = dastRepo.getDastScan;
 export const updateDastScan = dastRepo.updateDastScan;
 export const getDastScansByProject = dastRepo.getDastScansByProject;
+export const getDastScansByOrg = dastRepo.getDastScansByOrg; // Feature #124: Org-wide scans
 export const deleteDastScan = dastRepo.deleteDastScan;
 
 export const addDastFalsePositive = dastRepo.addDastFalsePositive;
