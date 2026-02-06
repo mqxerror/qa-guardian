@@ -480,7 +480,7 @@ app.get('/health', async (request, reply) => {
       latency: dbCheck.latency,
       error: dbCheck.error,
       // Feature #157: Include pool stats from health check
-      pool: dbCheck.pool,
+      pool: 'pool' in dbCheck ? dbCheck.pool : undefined,
     },
     // Feature #60: Include cache status in health check
     // Feature #158: Enhanced with Redis memory usage
