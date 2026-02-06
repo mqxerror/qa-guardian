@@ -293,15 +293,43 @@ async function registerPlugins() {
 
 // Health check endpoint with service status
 // Used by Dokploy/Docker health checks and deployment verification
-app.get('/health', async () => {
+// Feature #152: Enhanced with disk space, memory usage, version info, and 503 on critical failures
+app.get('/health', async (request, reply) => {
   const fs = require('fs');
   const path = require('path');
+  const os = require('os');
 
-  // Check database health
-  const dbCheck = await dbHealthCheck();
+  // Check database health with timeout
+  const dbCheck = await Promise.race([
+    dbHealthCheck(),
+    new Promise<{ status: 'error'; latency?: number; error: string }>((resolve) =>
+      setTimeout(() => resolve({ status: 'error', error: 'Database health check timed out (5s)' }), 5000)
+    ),
+  ]);
 
-  // Feature #60: Check cache status
-  const cacheStats = await getCache().stats();
+  // Feature #60: Check cache status with timeout
+  const cacheStats = await Promise.race([
+    getCache().stats(),
+    new Promise<{ redisConnected: boolean; memoryCacheSize: number; redisKeyCount: number }>((resolve) =>
+      setTimeout(() => resolve({ redisConnected: false, memoryCacheSize: 0, redisKeyCount: 0 }), 3000)
+    ),
+  ]);
+
+  // Feature #152: Check disk space
+  const diskSpace = await checkDiskSpace();
+
+  // Feature #152: Get memory usage
+  const memoryUsage = {
+    heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+    heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+    rss: Math.round(process.memoryUsage().rss / 1024 / 1024),
+    external: Math.round(process.memoryUsage().external / 1024 / 1024),
+    systemFree: Math.round(os.freemem() / 1024 / 1024),
+    systemTotal: Math.round(os.totalmem() / 1024 / 1024),
+  };
+
+  // Feature #152: Get application version and build info
+  const versionInfo = getVersionInfo();
 
   const checks = {
     server: true,
@@ -309,6 +337,7 @@ app.get('/health', async () => {
     filesystem: true,
     database: dbCheck.status === 'ok',
     cache: cacheStats.redisConnected || cacheStats.memoryCacheSize >= 0, // Always true with fallback
+    diskSpace: diskSpace.healthy,
   };
 
   // Check filesystem (screenshots/traces/videos directories)
@@ -324,12 +353,31 @@ app.get('/health', async () => {
     checks.filesystem = false;
   }
 
-  // Database is optional - don't require it for health status
-  const criticalChecks = { server: checks.server, socketio: checks.socketio, filesystem: checks.filesystem };
+  // Feature #152: Critical dependencies that must be healthy
+  // Database and Redis are critical in production
+  const isProduction = process.env.NODE_ENV === 'production';
+  const criticalChecks = {
+    server: checks.server,
+    socketio: checks.socketio,
+    filesystem: checks.filesystem,
+    // In production, database must be connected
+    ...(isProduction && { database: checks.database }),
+    // Disk space is always critical
+    diskSpace: checks.diskSpace,
+  };
+
   const allCriticalHealthy = Object.values(criticalChecks).every(Boolean);
 
-  return {
-    status: allCriticalHealthy ? 'ok' : 'degraded',
+  // Feature #152: Determine overall status
+  let status: 'ok' | 'degraded' | 'unhealthy' = 'ok';
+  if (!allCriticalHealthy) {
+    status = 'unhealthy';
+  } else if (!checks.database || !checks.cache) {
+    status = 'degraded';
+  }
+
+  const responseBody = {
+    status,
     timestamp: new Date().toISOString(),
     checks,
     database: {
@@ -343,12 +391,116 @@ app.get('/health', async () => {
       memoryCacheSize: cacheStats.memoryCacheSize,
       redisKeyCount: cacheStats.redisKeyCount,
     },
+    // Feature #152: Disk space info
+    disk: diskSpace,
+    // Feature #152: Memory usage stats
+    memory: memoryUsage,
     // Feature #151: Include backup status in health check
     backup: await getBackupStatus(),
-    version: '1.0.0',
+    // Feature #152: Version and build info
+    version: versionInfo.version,
+    build: {
+      commit: versionInfo.commit,
+      buildTime: versionInfo.buildTime,
+      nodeVersion: process.version,
+    },
     uptime: process.uptime(),
   };
+
+  // Feature #152: Return 503 if any critical dependency is down
+  if (status === 'unhealthy') {
+    reply.status(503);
+  }
+
+  return responseBody;
 });
+
+// Feature #152: Check disk space and warn if < 1GB free
+async function checkDiskSpace(): Promise<{
+  healthy: boolean;
+  freeGB: number;
+  totalGB: number;
+  usedPercent: number;
+  warning: string | null;
+}> {
+  const os = require('os');
+  const fs = require('fs');
+  const path = require('path');
+
+  try {
+    // Use statvfs on Unix-like systems via child_process
+    const { execSync } = require('child_process');
+
+    // Try to get disk space info
+    let freeBytes = 0;
+    let totalBytes = 0;
+
+    try {
+      // Works on Linux/macOS
+      const dfOutput = execSync('df -k . 2>/dev/null || df -k / 2>/dev/null', { encoding: 'utf-8' });
+      const lines = dfOutput.trim().split('\n');
+      if (lines.length >= 2) {
+        const parts = lines[1].split(/\s+/);
+        // df -k outputs in 1K blocks: Filesystem, 1K-blocks, Used, Available, Use%, Mounted
+        totalBytes = parseInt(parts[1], 10) * 1024;
+        freeBytes = parseInt(parts[3], 10) * 1024;
+      }
+    } catch {
+      // Fallback: estimate from OS memory (not accurate but provides a response)
+      totalBytes = os.totalmem();
+      freeBytes = os.freemem();
+    }
+
+    const freeGB = Math.round((freeBytes / 1024 / 1024 / 1024) * 100) / 100;
+    const totalGB = Math.round((totalBytes / 1024 / 1024 / 1024) * 100) / 100;
+    const usedPercent = totalBytes > 0 ? Math.round(((totalBytes - freeBytes) / totalBytes) * 100) : 0;
+
+    // Warning if < 1GB free
+    const warning = freeGB < 1 ? `Low disk space: ${freeGB}GB free` : null;
+    const healthy = freeGB >= 1;
+
+    return { healthy, freeGB, totalGB, usedPercent, warning };
+  } catch (error) {
+    return {
+      healthy: true, // Assume healthy if we can't check
+      freeGB: 0,
+      totalGB: 0,
+      usedPercent: 0,
+      warning: 'Could not determine disk space',
+    };
+  }
+}
+
+// Feature #152: Get version info from package.json and environment
+function getVersionInfo(): {
+  version: string;
+  commit: string | null;
+  buildTime: string | null;
+} {
+  const fs = require('fs');
+  const path = require('path');
+
+  let version = '1.0.0';
+
+  // Try to read version from package.json
+  try {
+    const packageJsonPath = path.join(process.cwd(), 'package.json');
+    if (fs.existsSync(packageJsonPath)) {
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      version = packageJson.version || version;
+    }
+  } catch {
+    // Use default version
+  }
+
+  // Get commit hash from environment (set during Docker build)
+  const commit = process.env.BUILD_COMMIT || process.env.GIT_COMMIT || null;
+
+  // Get build time from environment
+  const buildTime = process.env.BUILD_TIME || null;
+
+  return { version, commit, buildTime };
+}
 
 // Feature #151: Get backup status from status file
 async function getBackupStatus(): Promise<{
