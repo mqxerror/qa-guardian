@@ -10,24 +10,28 @@ import { Project } from './types';
 
 export async function analyticsRoutes(app: FastifyInstance) {
   // Get dashboard statistics
+  // Feature #140: Parallelized independent DB queries with Promise.all
   app.get('/api/v1/stats', {
     preHandler: [authenticate],
   }, async (request) => {
     const orgId = getOrganizationId(request);
 
-    // Count active (non-archived) projects for this organization
-    const projectCount = (await dbListProjects(orgId))
-      .filter(p => !p.archived)
-      .length;
+    // Feature #140: Run all 4 independent queries in parallel (was sequential)
+    const [projects, suites, tests, orgRuns] = await Promise.all([
+      dbListProjects(orgId),
+      listAllTestSuites(orgId),
+      listAllTests(orgId),
+      listTestRunsByOrg(orgId),
+    ]);
 
-    // Count test suites for this organization
-    const suiteCount = (await listAllTestSuites(orgId)).length;
+    // Count active (non-archived) projects
+    const projectCount = projects.filter(p => !p.archived).length;
 
-    // Count tests for this organization
-    const testCount = (await listAllTests(orgId)).length;
+    // Count test suites and tests
+    const suiteCount = suites.length;
+    const testCount = tests.length;
 
-    // Count test runs for this organization
-    const orgRuns = await listTestRunsByOrg(orgId);
+    // Count test runs
     const testRunCount = orgRuns.length;
 
     // Calculate pass rate
@@ -49,17 +53,22 @@ export async function analyticsRoutes(app: FastifyInstance) {
   });
 
   // Get most failing tests
+  // Feature #140: Parallelized independent DB queries
   app.get('/api/v1/analytics/failing-tests', {
     preHandler: [authenticate],
   }, async (request) => {
     const orgId = getOrganizationId(request);
 
+    // Feature #140: Run both independent queries in parallel
+    const [allRuns, orgProjects] = await Promise.all([
+      listTestRunsByOrg(orgId),
+      dbListProjects(orgId),
+    ]);
+
     // Get all test runs for this organization
-    const orgRuns = (await listTestRunsByOrg(orgId))
-      .filter(r => r.results);
+    const orgRuns = allRuns.filter(r => r.results);
 
     // Pre-fetch projects as a map for lookup
-    const orgProjects = await dbListProjects(orgId);
     const projectsMap = new Map<string, Project>();
     for (const p of orgProjects) { projectsMap.set(p.id, p); }
 
@@ -183,18 +192,19 @@ export async function analyticsRoutes(app: FastifyInstance) {
   });
 
   // Get project comparison statistics
+  // Feature #140: Parallelized independent DB queries
   app.get('/api/v1/analytics/project-comparison', {
     preHandler: [authenticate],
   }, async (request) => {
     const orgId = getOrganizationId(request);
 
-    // Get all projects for this organization
-    const orgProjects = (await dbListProjects(orgId));
-
-    // Pre-fetch all suites, tests, and runs for the org
-    const allOrgSuites = await listAllTestSuites(orgId);
-    const allOrgTests = await listAllTests(orgId);
-    const allOrgRuns = await listTestRunsByOrg(orgId);
+    // Feature #140: Run all 4 independent queries in parallel
+    const [orgProjects, allOrgSuites, allOrgTests, allOrgRuns] = await Promise.all([
+      dbListProjects(orgId),
+      listAllTestSuites(orgId),
+      listAllTests(orgId),
+      listTestRunsByOrg(orgId),
+    ]);
 
     // Build comparison data for each project
     const projectStats = orgProjects.map(project => {
@@ -238,6 +248,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
   });
 
   // Get pass rate trends over time
+  // Feature #140: Parallelized independent DB queries
   app.get<{ Querystring: { days?: string; project_id?: string } }>('/api/v1/analytics/pass-rate-trends', {
     preHandler: [authenticate],
   }, async (request) => {
@@ -253,14 +264,18 @@ export async function analyticsRoutes(app: FastifyInstance) {
       };
     }
 
-    // Get all projects for this organization
-    const orgProjects = (await dbListProjects(orgId))
-      .filter(p => !projectIdFilter || p.id === projectIdFilter);
+    // Feature #140: Run independent queries in parallel
+    const [allProjects, allSuites] = await Promise.all([
+      dbListProjects(orgId),
+      listAllTestSuites(orgId),
+    ]);
+
+    // Filter projects
+    const orgProjects = allProjects.filter(p => !projectIdFilter || p.id === projectIdFilter);
 
     // Get all suite IDs for these projects
     const projectIds = orgProjects.map(p => p.id);
-    const orgSuites = (await listAllTestSuites(orgId))
-      .filter(s => projectIds.includes(s.project_id));
+    const orgSuites = allSuites.filter(s => projectIds.includes(s.project_id));
     const suiteIds = orgSuites.map(s => s.id);
 
     // Get all completed test runs for these suites within the date range
@@ -334,6 +349,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
   });
 
   // Get accessibility trends over time
+  // Feature #140: Parallelized independent DB queries
   app.get<{ Querystring: { days?: string; project_id?: string } }>('/api/v1/analytics/accessibility-trends', {
     preHandler: [authenticate],
   }, async (request) => {
@@ -349,14 +365,18 @@ export async function analyticsRoutes(app: FastifyInstance) {
       };
     }
 
-    // Get all projects for this organization
-    const orgProjects = (await dbListProjects(orgId))
-      .filter(p => !projectIdFilter || p.id === projectIdFilter);
+    // Feature #140: Run independent queries in parallel
+    const [allProjects, allSuites] = await Promise.all([
+      dbListProjects(orgId),
+      listAllTestSuites(orgId),
+    ]);
+
+    // Filter projects
+    const orgProjects = allProjects.filter(p => !projectIdFilter || p.id === projectIdFilter);
 
     // Get all suite IDs for these projects
     const projectIds = orgProjects.map(p => p.id);
-    const orgSuites = (await listAllTestSuites(orgId))
-      .filter(s => projectIds.includes(s.project_id));
+    const orgSuites = allSuites.filter(s => projectIds.includes(s.project_id));
     const suiteIds = orgSuites.map(s => s.id);
 
     // Get all completed accessibility test runs within the date range
@@ -499,12 +519,16 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const industry = request.query.industry || 'Software/SaaS';
     const companySize = request.query.company_size || 'mid-market';
 
+    // Feature #140: Run all 4 independent queries in parallel
+    const [allProjects, orgSuites, orgTests, orgRuns] = await Promise.all([
+      dbListProjects(orgId),
+      listAllTestSuites(orgId),
+      listAllTests(orgId),
+      listTestRunsByOrg(orgId),
+    ]);
+
     // Calculate actual organization metrics from test data
-    const orgProjects = (await dbListProjects(orgId))
-      .filter(p => !p.archived);
-    const orgSuites = await listAllTestSuites(orgId);
-    const orgTests = await listAllTests(orgId);
-    const orgRuns = await listTestRunsByOrg(orgId);
+    const orgProjects = allProjects.filter(p => !p.archived);
 
     // Calculate real metrics where possible, fallback to realistic estimates
     const totalTests = orgTests.length || 100;
@@ -714,16 +738,21 @@ export async function analyticsRoutes(app: FastifyInstance) {
    *
    * AI-powered cross-project failure pattern analysis
    */
+  // Feature #140: Parallelized independent DB queries
   app.get('/api/v1/ai-insights/cross-project-patterns', {
     preHandler: [authenticate],
   }, async (request) => {
     const orgId = getOrganizationId(request);
 
+    // Feature #140: Run all 3 independent queries in parallel
+    const [allProjects, orgTests, orgRuns] = await Promise.all([
+      dbListProjects(orgId),
+      listAllTests(orgId),
+      listTestRunsByOrg(orgId),
+    ]);
+
     // Get actual organization data
-    const orgProjects = (await dbListProjects(orgId))
-      .filter(p => !p.archived);
-    const orgTests = await listAllTests(orgId);
-    const orgRuns = await listTestRunsByOrg(orgId);
+    const orgProjects = allProjects.filter(p => !p.archived);
 
     // Calculate project-level metrics
     const projectNames = orgProjects.map(p => p.name);
@@ -881,10 +910,12 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const timeframe = request.query.timeframe || 'today';
     const showAll = request.query.show_all === 'true';
 
-    // Get actual organization data
-    const orgTests = await listAllTests(orgId);
-    const orgRuns = await listTestRunsByOrg(orgId);
-    const orgSuites = await listAllTestSuites(orgId);
+    // Feature #140: Run all 3 independent queries in parallel
+    const [orgTests, orgRuns, orgSuites] = await Promise.all([
+      listAllTests(orgId),
+      listTestRunsByOrg(orgId),
+      listAllTestSuites(orgId),
+    ]);
 
     // Calculate timeframe filter
     const now = new Date();
@@ -1100,15 +1131,18 @@ export async function analyticsRoutes(app: FastifyInstance) {
    *
    * AI-powered team skill gap analysis and training recommendations
    */
+  // Feature #140: Parallelized independent DB queries
   app.get('/api/v1/ai-insights/team-skills', {
     preHandler: [authenticate],
   }, async (request) => {
     const orgId = getOrganizationId(request);
 
-    // Get organization data
-    const orgTests = await listAllTests(orgId);
-    const orgRuns = await listTestRunsByOrg(orgId);
-    const orgSuites = await listAllTestSuites(orgId);
+    // Feature #140: Run all 3 independent queries in parallel
+    const [orgTests, orgRuns, orgSuites] = await Promise.all([
+      listAllTests(orgId),
+      listTestRunsByOrg(orgId),
+      listAllTestSuites(orgId),
+    ]);
 
     // Generate team member skills based on test patterns
     const roles = ['Senior QA Engineer', 'QA Engineer', 'Junior QA Engineer', 'SDET'];
@@ -1256,14 +1290,17 @@ export async function analyticsRoutes(app: FastifyInstance) {
    *
    * AI learning statistics and model training data
    */
+  // Feature #140: Parallelized independent DB queries
   app.get('/api/v1/ai-insights/learning-stats', {
     preHandler: [authenticate],
   }, async (request) => {
     const orgId = getOrganizationId(request);
 
-    // Get organization data
-    const orgTests = await listAllTests(orgId);
-    const orgRuns = await listTestRunsByOrg(orgId);
+    // Feature #140: Run both independent queries in parallel
+    const [orgTests, orgRuns] = await Promise.all([
+      listAllTests(orgId),
+      listTestRunsByOrg(orgId),
+    ]);
 
     // Calculate learning stats from actual data
     const totalInteractions = Math.max(1000, orgRuns.length * 50 + orgTests.length * 10);
@@ -1372,16 +1409,21 @@ export async function analyticsRoutes(app: FastifyInstance) {
    * Returns available releases for the organization based on test run history.
    * These are derived from test execution patterns and suite changes.
    */
+  // Feature #140: Parallelized independent DB queries
   app.get('/api/v1/ai-insights/releases', {
     preHandler: [authenticate],
   }, async (request) => {
     const orgId = getOrganizationId(request);
 
-    // Get organization data
-    const orgTests = await listAllTests(orgId);
-    const orgRuns = (await listTestRunsByOrg(orgId))
-      .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
-    const orgSuites = await listAllTestSuites(orgId);
+    // Feature #140: Run all 3 independent queries in parallel
+    const [orgTests, allRuns, orgSuites] = await Promise.all([
+      listAllTests(orgId),
+      listTestRunsByOrg(orgId),
+      listAllTestSuites(orgId),
+    ]);
+
+    // Get organization data (sort runs after parallel fetch)
+    const orgRuns = allRuns.sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
 
     // Generate version numbers based on actual activity
     const now = Date.now();
