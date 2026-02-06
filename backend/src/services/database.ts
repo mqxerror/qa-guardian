@@ -1351,6 +1351,21 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_test_suites_project_type ON test_suites(project_id, type);
     CREATE INDEX IF NOT EXISTS idx_test_runs_org_test_created ON test_runs(organization_id, test_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_flaky_tests_project_quarantined ON flaky_tests(project_id, quarantined);
+
+    -- Feature #203: Add denormalized count columns to test_runs for fast listing queries
+    -- These columns avoid loading the full results JSONB (up to 114MB) just to count passed/failed/skipped
+    ALTER TABLE test_runs ADD COLUMN IF NOT EXISTS results_count INTEGER DEFAULT 0;
+    ALTER TABLE test_runs ADD COLUMN IF NOT EXISTS passed_count INTEGER DEFAULT 0;
+    ALTER TABLE test_runs ADD COLUMN IF NOT EXISTS failed_count INTEGER DEFAULT 0;
+    ALTER TABLE test_runs ADD COLUMN IF NOT EXISTS skipped_count INTEGER DEFAULT 0;
+
+    -- Feature #203: Backfill existing rows with count values from results JSONB
+    UPDATE test_runs SET
+      results_count = COALESCE(jsonb_array_length(results), 0),
+      passed_count = COALESCE((SELECT COUNT(*) FROM jsonb_array_elements(COALESCE(results, '[]'::jsonb)) r WHERE r->>'status' = 'passed'), 0),
+      failed_count = COALESCE((SELECT COUNT(*) FROM jsonb_array_elements(COALESCE(results, '[]'::jsonb)) r WHERE r->>'status' = 'failed'), 0),
+      skipped_count = COALESCE((SELECT COUNT(*) FROM jsonb_array_elements(COALESCE(results, '[]'::jsonb)) r WHERE r->>'status' = 'skipped'), 0)
+    WHERE results_count = 0 AND results IS NOT NULL AND jsonb_array_length(results) > 0;
   `;
 
   try {

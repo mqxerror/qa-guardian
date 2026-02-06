@@ -58,12 +58,16 @@ const TEST_RUN_COLUMNS = [
  * Excludes 'results' (up to 114 MB), 'accessibility_results', and 'run_env_vars'
  * to prevent 504 timeouts on listing endpoints that don't need full result data.
  * Use this for dashboard/listing queries; use TEST_RUN_COLUMNS for individual run detail views.
+ *
+ * Feature #203: Added denormalized count columns (results_count, passed_count, failed_count, skipped_count)
+ * so listing endpoints can show pass/fail counts without loading full results JSONB.
  */
 const TEST_RUN_COLUMNS_LIGHT = [
   'id', 'suite_id', 'suite_name', 'project_id', 'project_name', 'test_id',
   'schedule_id', 'organization_id', 'browser', 'branch', 'test_type', 'status',
   'started_at', 'completed_at', 'duration_ms', 'created_at',
-  'error_message', 'priority', 'triggered_by', 'user_id', 'pr_number'
+  'error_message', 'priority', 'triggered_by', 'user_id', 'pr_number',
+  'results_count', 'passed_count', 'failed_count', 'skipped_count'
 ].join(', ');
 
 /**
@@ -120,6 +124,11 @@ function rowToTestRun(row: any): TestRun {
     triggered_by: row.triggered_by as TriggerType,
     user_id: row.user_id,
     pr_number: row.pr_number,
+    // Feature #203: Denormalized count columns for fast listing queries
+    results_count: row.results_count ?? 0,
+    passed_count: row.passed_count ?? 0,
+    failed_count: row.failed_count ?? 0,
+    skipped_count: row.skipped_count ?? 0,
   };
 }
 
@@ -291,9 +300,33 @@ export async function updateTestRun(id: string, updates: Partial<TestRun>): Prom
       }
 
       // Handle JSONB fields
+      // Feature #203: Compute denormalized counts when results are provided
       if ('results' in updates) {
         setClauses.push(`results = $${paramIndex}`);
         values.push(JSON.stringify(updates.results || []));
+        paramIndex++;
+
+        // Compute and store count columns
+        const results = updates.results || [];
+        const resultsCount = results.length;
+        const passedCount = results.filter((r: TestRunResult) => r.status === 'passed').length;
+        const failedCount = results.filter((r: TestRunResult) => r.status === 'failed').length;
+        const skippedCount = results.filter((r: TestRunResult) => r.status === 'skipped').length;
+
+        setClauses.push(`results_count = $${paramIndex}`);
+        values.push(resultsCount);
+        paramIndex++;
+
+        setClauses.push(`passed_count = $${paramIndex}`);
+        values.push(passedCount);
+        paramIndex++;
+
+        setClauses.push(`failed_count = $${paramIndex}`);
+        values.push(failedCount);
+        paramIndex++;
+
+        setClauses.push(`skipped_count = $${paramIndex}`);
+        values.push(skippedCount);
         paramIndex++;
       }
       if ('accessibility_results' in updates) {
@@ -502,8 +535,9 @@ export async function listTestRunsByOrg(
 export async function listTestRunsBySchedule(scheduleId: string, orgId: string, limit: number = 50): Promise<TestRun[]> {
   if (isDatabaseConnected()) {
     try {
+      // Feature #203: Use TEST_RUN_COLUMNS_LIGHT to avoid loading heavy results JSONB
       const result = await query<any>(
-        `SELECT ${TEST_RUN_COLUMNS} FROM test_runs
+        `SELECT ${TEST_RUN_COLUMNS_LIGHT} FROM test_runs
          WHERE schedule_id = $1 AND organization_id = $2
          ORDER BY created_at DESC
          LIMIT $3`,
@@ -614,8 +648,9 @@ export async function getRecentTestRuns(
       }
 
       // Use COUNT(*) OVER() window function to get total in same query as data
+      // Feature #203: Use TEST_RUN_COLUMNS_LIGHT to avoid loading heavy results JSONB
       const combinedQuery = `
-        SELECT ${TEST_RUN_COLUMNS}, COUNT(*) OVER() as total_count
+        SELECT ${TEST_RUN_COLUMNS_LIGHT}, COUNT(*) OVER() as total_count
         FROM test_runs
         WHERE ${whereClause}
         ORDER BY created_at DESC
@@ -710,8 +745,9 @@ export async function listTestRunsPaginated(
       }
 
       // Feature #124: Single query with window function instead of separate COUNT + SELECT
+      // Feature #203: Use TEST_RUN_COLUMNS_LIGHT to avoid loading heavy results JSONB
       const combinedQuery = `
-        SELECT ${TEST_RUN_COLUMNS}, COUNT(*) OVER() as total_count
+        SELECT ${TEST_RUN_COLUMNS_LIGHT}, COUNT(*) OVER() as total_count
         FROM test_runs
         ${whereClause}
         ORDER BY created_at DESC

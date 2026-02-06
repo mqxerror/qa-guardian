@@ -359,6 +359,11 @@ export interface TestRun {
   triggered_by?: TriggerType;
   user_id?: string;
   pr_number?: number;
+  // Feature #203: Denormalized count columns for fast listing queries
+  results_count?: number;
+  passed_count?: number;
+  failed_count?: number;
+  skipped_count?: number;
 }
 
 /**
