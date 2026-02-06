@@ -1366,6 +1366,7 @@ async function initializeSchema(): Promise<void> {
 
     -- Feature #203: Add denormalized count columns to test_runs for fast listing queries
     -- These columns avoid loading the full results JSONB (up to 114MB) just to count passed/failed/skipped
+    -- Feature #230: Also managed by migration 20260207100000_add_denormalized_counts (this is idempotent fallback)
     ALTER TABLE test_runs ADD COLUMN IF NOT EXISTS results_count INTEGER DEFAULT 0;
     ALTER TABLE test_runs ADD COLUMN IF NOT EXISTS passed_count INTEGER DEFAULT 0;
     ALTER TABLE test_runs ADD COLUMN IF NOT EXISTS failed_count INTEGER DEFAULT 0;
