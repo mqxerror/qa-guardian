@@ -27,6 +27,8 @@ import {
   deleteProjectEnvVar as dbDeleteProjectEnvVar,
   DEFAULT_PROJECT_VISUAL_SETTINGS as DB_DEFAULT_VISUAL_SETTINGS,
   DEFAULT_PROJECT_HEALING_SETTINGS as DB_DEFAULT_HEALING_SETTINGS,
+  // Feature #139: Batch function to eliminate N+1 queries
+  batchGetProjects as dbBatchGetProjects,
 } from '../../services/repositories/projects';
 
 import {
@@ -67,3 +69,6 @@ export const updateProjectHealingSettings = dbUpdateProjectHealingSettings;
 export const addProjectEnvVar = dbAddProjectEnvVar;
 export const getProjectEnvVars = dbGetProjectEnvVars;
 export const deleteProjectEnvVar = dbDeleteProjectEnvVar;
+
+// Feature #139: Batch function to eliminate N+1 queries
+export const batchGetProjects = dbBatchGetProjects;

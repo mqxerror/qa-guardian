@@ -438,6 +438,93 @@ export async function listAllTests(organizationId: string, limit: number = 1000)
   return [];
 }
 
+// ===== BATCH FUNCTIONS (Feature #139: Fix N+1 queries) =====
+
+/**
+ * Feature #139: Batch load multiple tests by ID in a single query
+ * Eliminates N+1 query patterns when processing multiple test results
+ * @param ids Array of test IDs to fetch
+ * @returns Map of test ID to Test object for efficient lookup
+ */
+export async function batchGetTests(ids: string[]): Promise<Map<string, Test>> {
+  const result = new Map<string, Test>();
+  if (!ids || ids.length === 0) return result;
+
+  // Deduplicate IDs
+  const uniqueIds = [...new Set(ids)];
+
+  if (!isDatabaseConnected()) {
+    for (const id of uniqueIds) {
+      const test = memTests.get(id);
+      if (test) result.set(id, test);
+    }
+    return result;
+  }
+
+  // Single query using ANY($1) instead of N separate queries
+  const queryResult = await query<any>(
+    `SELECT t.*,
+            ts.config as suite_config,
+            ts.name as suite_name,
+            ts.project_id as project_id,
+            p.name as project_name
+     FROM tests t
+     INNER JOIN test_suites ts ON t.suite_id = ts.id
+     INNER JOIN projects p ON ts.project_id = p.id
+     WHERE t.id = ANY($1)`,
+    [uniqueIds]
+  );
+
+  if (queryResult) {
+    for (const row of queryResult.rows) {
+      const suiteConfig = row.suite_config;
+      const orgId = suiteConfig?.organization_id || '';
+      const test = rowToTest(row, orgId);
+      test.suite_name = row.suite_name;
+      test.project_id = row.project_id;
+      test.project_name = row.project_name;
+      result.set(row.id, test);
+    }
+  }
+  return result;
+}
+
+/**
+ * Feature #139: Batch load multiple test suites by ID in a single query
+ * Eliminates N+1 query patterns when processing multiple test results
+ * @param ids Array of suite IDs to fetch
+ * @returns Map of suite ID to TestSuite object for efficient lookup
+ */
+export async function batchGetTestSuites(ids: string[]): Promise<Map<string, TestSuite>> {
+  const result = new Map<string, TestSuite>();
+  if (!ids || ids.length === 0) return result;
+
+  // Deduplicate IDs
+  const uniqueIds = [...new Set(ids)];
+
+  if (!isDatabaseConnected()) {
+    for (const id of uniqueIds) {
+      const suite = memTestSuites.get(id);
+      if (suite) result.set(id, suite);
+    }
+    return result;
+  }
+
+  // Single query using ANY($1) instead of N separate queries
+  const queryResult = await query<any>(
+    `SELECT * FROM test_suites WHERE id = ANY($1)`,
+    [uniqueIds]
+  );
+
+  if (queryResult) {
+    for (const row of queryResult.rows) {
+      const suite = rowToTestSuite(row);
+      result.set(row.id, suite);
+    }
+  }
+  return result;
+}
+
 // ===== HELPER FUNCTIONS =====
 
 /**

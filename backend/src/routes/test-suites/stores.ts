@@ -24,6 +24,9 @@ import {
   listAllTests as dbListAllTests,
   getTestSuitesMap,
   getTestsMap,
+  // Feature #139: Batch functions to eliminate N+1 queries
+  batchGetTests as dbBatchGetTests,
+  batchGetTestSuites as dbBatchGetTestSuites,
 } from '../../services/repositories/test-suites';
 
 // ===== ASYNC DATABASE FUNCTIONS =====
@@ -49,3 +52,7 @@ export const listAllTests = dbListAllTests;
 
 // Async Map accessors (return Promise<Map>)
 export { getTestSuitesMap, getTestsMap };
+
+// Feature #139: Batch functions to eliminate N+1 queries
+export const batchGetTests = dbBatchGetTests;
+export const batchGetTestSuites = dbBatchGetTestSuites;

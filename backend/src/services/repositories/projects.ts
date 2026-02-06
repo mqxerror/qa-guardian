@@ -222,6 +222,47 @@ export async function getProjectByName(organizationId: string, name: string): Pr
   return undefined;
 }
 
+/**
+ * Feature #139: Batch load multiple projects by ID in a single query
+ * Eliminates N+1 query patterns when processing multiple test results
+ * @param ids Array of project IDs to fetch
+ * @returns Map of project ID to Project object for efficient lookup
+ */
+export async function batchGetProjects(ids: string[]): Promise<Map<string, Project>> {
+  const result = new Map<string, Project>();
+  if (!ids || ids.length === 0) return result;
+
+  // Deduplicate IDs
+  const uniqueIds = [...new Set(ids)];
+
+  if (!isDatabaseConnected()) {
+    for (const id of uniqueIds) {
+      const project = memProjects.get(id);
+      if (project) result.set(id, project);
+    }
+    return result;
+  }
+
+  // Single query using ANY($1) instead of N separate queries
+  const queryResult = await query<Project>(
+    `SELECT * FROM projects WHERE id = ANY($1)`,
+    [uniqueIds]
+  );
+
+  if (queryResult) {
+    for (const row of queryResult.rows) {
+      const project: Project = {
+        ...row,
+        created_at: new Date(row.created_at),
+        updated_at: new Date(row.updated_at),
+        archived_at: row.archived_at ? new Date(row.archived_at) : undefined,
+      };
+      result.set(row.id, project);
+    }
+  }
+  return result;
+}
+
 // ===== PROJECT MEMBERS =====
 
 export async function addProjectMember(member: ProjectMember): Promise<ProjectMember> {

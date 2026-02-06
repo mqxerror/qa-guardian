@@ -4,8 +4,8 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth';
 import { getAutoQuarantineSettings } from '../organizations';
-import { getProject } from './stores';
-import { getTest, getTestSuite, listAllTests } from '../test-suites/stores';
+import { getProject, batchGetProjects } from './stores';
+import { getTest, getTestSuite, listAllTests, batchGetTests, batchGetTestSuites } from '../test-suites/stores';
 import { listTestRunsByOrg } from '../../services/repositories/test-runs';
 
 export async function flakyTestsRoutes(app: FastifyInstance) {
@@ -52,19 +52,51 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     }
     const testStats: Map<string, TestStatsEntry> = new Map();
 
-    // Analyze each run's results
+    // Feature #139: Batch load all tests, suites, and projects BEFORE the loop
+    // This eliminates N+1 queries (was: 3 queries per result × N results = 3N queries)
+    // Now: 3 batch queries total regardless of result count
+    const allTestIds = new Set<string>();
+    for (const run of orgRuns) {
+      if (!run.results) continue;
+      for (const result of run.results) {
+        if (result.test_id) allTestIds.add(result.test_id);
+      }
+    }
+
+    // Batch load all tests (single query)
+    const testsMap = await batchGetTests([...allTestIds]);
+
+    // Extract suite IDs from loaded tests
+    const suiteIds = new Set<string>();
+    for (const test of testsMap.values()) {
+      if (test.suite_id) suiteIds.add(test.suite_id);
+    }
+
+    // Batch load all suites (single query)
+    const suitesMap = await batchGetTestSuites([...suiteIds]);
+
+    // Extract project IDs from loaded suites
+    const projectIds = new Set<string>();
+    for (const suite of suitesMap.values()) {
+      if (suite.project_id) projectIds.add(suite.project_id);
+    }
+
+    // Batch load all projects (single query)
+    const projectsMap = await batchGetProjects([...projectIds]);
+
+    // Analyze each run's results (now using Map lookups instead of DB queries)
     for (const run of orgRuns) {
       if (!run.results) continue;
 
       for (const result of run.results) {
         const testId = result.test_id;
-        const test = await getTest(testId);
+        const test = testsMap.get(testId);
         if (!test) continue;
 
-        const suite = await getTestSuite(test.suite_id);
+        const suite = suitesMap.get(test.suite_id);
         if (!suite) continue;
 
-        const project = await getProject(suite.project_id);
+        const project = projectsMap.get(suite.project_id);
         if (!project) continue;
 
         const existingStats: TestStatsEntry = testStats.get(testId) || {
@@ -610,7 +642,18 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
       investigation_incidents: number;
     }> = new Map();
 
-    // Process runs and their results
+    // Feature #139: Batch load all tests BEFORE the loop
+    // Eliminates N+1 query pattern (was: 1 query per result)
+    const impactTestIds = new Set<string>();
+    for (const run of recentRuns) {
+      if (!run.results) continue;
+      for (const result of run.results) {
+        if (result.test_id) impactTestIds.add(result.test_id);
+      }
+    }
+    const impactTestsMap = await batchGetTests([...impactTestIds]);
+
+    // Process runs and their results (now using Map lookup)
     for (const run of recentRuns) {
       if (!run.results) continue;
 
@@ -618,7 +661,7 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
         const testId = result.test_id;
         if (!testId) continue;
 
-        const test = await getTest(testId);
+        const test = impactTestsMap.get(testId);
         if (!test) continue;
 
         const existing = testFlakiness.get(testId) || {
@@ -893,6 +936,7 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
   });
 
   // Feature #1103: Get all quarantined tests
+  // Feature #139: Fixed N+1 queries by batch loading suites and projects
   app.get('/api/v1/ai-insights/quarantined-tests', {
     preHandler: [authenticate],
   }, async (request) => {
@@ -900,21 +944,36 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
 
     const allTests = await listAllTests(orgId);
     const quarantinedTestsList = allTests.filter(t => t.quarantined);
-    const quarantinedTests = await Promise.all(quarantinedTestsList.map(async t => {
-        const suite = await getTestSuite(t.suite_id);
-        const project = suite ? await getProject(suite.project_id) : null;
-        return {
-          test_id: t.id,
-          test_name: t.name,
-          suite_id: t.suite_id,
-          suite_name: suite?.name || 'Unknown',
-          project_id: suite?.project_id || 'Unknown',
-          project_name: project?.name || 'Unknown',
-          quarantine_reason: (t as { quarantine_reason?: string }).quarantine_reason,
-          quarantined_at: (t as { quarantined_at?: Date }).quarantined_at?.toISOString(),
-          quarantined_by: (t as { quarantined_by?: string }).quarantined_by,
-        };
-      }));
+
+    // Feature #139: Batch load all suites and projects BEFORE mapping
+    // Was: 2 queries per quarantined test (getSuite + getProject)
+    // Now: 2 batch queries total
+    const suiteIds = [...new Set(quarantinedTestsList.map(t => t.suite_id).filter(Boolean))];
+    const quarantineSuitesMap = await batchGetTestSuites(suiteIds);
+
+    const projectIds = [...new Set(
+      Array.from(quarantineSuitesMap.values())
+        .map(s => s.project_id)
+        .filter(Boolean)
+    )];
+    const quarantineProjectsMap = await batchGetProjects(projectIds);
+
+    // Now map using lookups (no DB queries in loop)
+    const quarantinedTests = quarantinedTestsList.map(t => {
+      const suite = quarantineSuitesMap.get(t.suite_id);
+      const project = suite ? quarantineProjectsMap.get(suite.project_id) : null;
+      return {
+        test_id: t.id,
+        test_name: t.name,
+        suite_id: t.suite_id,
+        suite_name: suite?.name || 'Unknown',
+        project_id: suite?.project_id || 'Unknown',
+        project_name: project?.name || 'Unknown',
+        quarantine_reason: (t as { quarantine_reason?: string }).quarantine_reason,
+        quarantined_at: (t as { quarantined_at?: Date }).quarantined_at?.toISOString(),
+        quarantined_by: (t as { quarantined_by?: string }).quarantined_by,
+      };
+    });
 
     return {
       quarantined_tests: quarantinedTests,
@@ -944,6 +1003,17 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     const allOrgRuns = await listTestRunsByOrg(orgId);
     const orgRuns = allOrgRuns.filter(r => r.results);
 
+    // Feature #139: Batch load all tests BEFORE the loop
+    // Eliminates N+1 query pattern in auto-quarantine check
+    const autoQuarantineTestIds = new Set<string>();
+    for (const run of orgRuns) {
+      if (!run.results) continue;
+      for (const result of run.results) {
+        if (result.test_id) autoQuarantineTestIds.add(result.test_id);
+      }
+    }
+    const autoQuarantineTestsMap = await batchGetTests([...autoQuarantineTestIds]);
+
     // Track pass/fail count per test
     const testStats: Map<string, {
       test_id: string;
@@ -955,13 +1025,13 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
       flakiness_score: number;
     }> = new Map();
 
-    // Analyze each run's results
+    // Analyze each run's results (now using Map lookup)
     for (const run of orgRuns) {
       if (!run.results) continue;
 
       for (const result of run.results) {
         const testId = result.test_id;
-        const test = await getTest(testId);
+        const test = autoQuarantineTestsMap.get(testId);
         if (!test) continue;
 
         const existingStats = testStats.get(testId) || {
@@ -1005,8 +1075,9 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
       stats.flakiness_score = flakiness_score;
 
       // Check if exceeds threshold
+      // Feature #139: Use pre-loaded test map instead of individual query
       if (flakiness_score >= settings.threshold) {
-        const test = await getTest(stats.test_id);
+        const test = autoQuarantineTestsMap.get(stats.test_id);
         if (!test || test.quarantined) continue; // Skip if already quarantined
 
         testsToQuarantine.push({
@@ -1028,7 +1099,8 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     }> = [];
 
     for (const toQuarantine of testsToQuarantine) {
-      const test = await getTest(toQuarantine.test_id);
+      // Feature #139: Use pre-loaded test map instead of individual query
+      const test = autoQuarantineTestsMap.get(toQuarantine.test_id);
       if (!test) continue;
 
       // Apply quarantine
