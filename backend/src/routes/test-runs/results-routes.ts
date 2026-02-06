@@ -72,7 +72,8 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
     const fromDate = from_date ? new Date(from_date) : null;
     const toDate = to_date ? new Date(to_date) : null;
 
-    const orgRuns = await dbListTestRunsByOrg(orgId);
+    // Feature #198: includeResults needed because search iterates over run.results
+    const orgRuns = await dbListTestRunsByOrg(orgId, { includeResults: true });
 
     interface SearchResult {
       run_id: string;

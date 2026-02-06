@@ -6,7 +6,7 @@ import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/au
 import { getAutoQuarantineSettings } from '../organizations.js';
 import { getProject, batchGetProjects } from './stores.js';
 import { getTest, getTestSuite, listAllTests, batchGetTests, batchGetTestSuites } from '../test-suites/stores.js';
-import { listTestRunsByOrg } from '../../services/repositories/test-runs.js';
+import { listTestRunsByOrg, getFlakinessTrendData } from '../../services/repositories/test-runs.js';
 // Feature #145: Cache invalidation for quarantine mutations
 import { getCache } from '../../services/cache.js';
 import { CacheKeys, CacheTTL } from '../../services/cache-keys.js';
@@ -25,7 +25,8 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Feature #142: Get recent test runs (last 30 days) for flaky analysis
-    const allOrgRuns = await listTestRunsByOrg(orgId, { since: getThirtyDaysAgo(), limit: 1000 });
+    // Feature #198: includeResults needed because this handler iterates over individual test results
+    const allOrgRuns = await listTestRunsByOrg(orgId, { since: getThirtyDaysAgo(), limit: 1000, includeResults: true });
     const orgRuns = allOrgRuns.filter(r => r.results);
 
     // Track pass/fail count per test
@@ -473,29 +474,25 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     const cacheKey = CacheKeys.flakyTests.trend(orgId, testId);
 
     return cache.getOrSet(cacheKey, async () => {
-      // Feature #142: Get recent runs for this test (last 30 days)
-      const allOrgRuns = await listTestRunsByOrg(orgId, { since: getThirtyDaysAgo(), limit: 1000 });
+      // Feature #197: Use targeted SQL query to extract only this test's results
+      // from the JSONB column, instead of loading full results for all org runs.
+      // This avoids transferring up to 114 MB per row over the wire.
+      const trendRows = await getFlakinessTrendData(orgId, testId, getThirtyDaysAgo(), 1000);
       const testRunData: Array<{ date: Date; result: 'passed' | 'failed'; run_id: string; duration_ms?: number }> = [];
 
-      for (const run of allOrgRuns) {
-        if (!run.results) continue;
-
-        for (const result of run.results) {
-          if (result.test_id !== testId) continue;
-
-          const runTime = run.completed_at || run.created_at;
-          if (result.status === 'passed' || result.status === 'failed' || result.status === 'error') {
-            testRunData.push({
-              date: runTime,
-              result: result.status === 'passed' ? 'passed' : 'failed',
-              run_id: run.id,
-              duration_ms: result.duration_ms,
-            });
-          }
+      for (const row of trendRows) {
+        if (row.result_status === 'passed' || row.result_status === 'failed' || row.result_status === 'error') {
+          const runTime = row.completed_at || row.created_at;
+          testRunData.push({
+            date: runTime,
+            result: row.result_status === 'passed' ? 'passed' : 'failed',
+            run_id: row.run_id,
+            duration_ms: row.result_duration_ms ?? undefined,
+          });
         }
       }
 
-      // Sort by date
+      // Sort by date (ascending for trend analysis)
       testRunData.sort((a, b) => a.date.getTime() - b.date.getTime());
 
       // Calculate flakiness trend by day (group runs by day and calculate daily flakiness)
@@ -637,7 +634,8 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Feature #142: Get only last 30 days runs directly from DB (no JS filtering needed)
-    const recentRuns = await listTestRunsByOrg(orgId, { since: thirtyDaysAgo, limit: 1000 });
+    // Feature #198: includeResults needed because impact report iterates over individual test results
+    const recentRuns = await listTestRunsByOrg(orgId, { since: thirtyDaysAgo, limit: 1000, includeResults: true });
 
     // Get all tests to determine flaky ones (async DB call)
     const orgTests = await listAllTests(orgId);
@@ -1028,7 +1026,8 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     }
 
     // Feature #142: Get recent test runs (last 30 days) for flakiness calculation
-    const allOrgRuns = await listTestRunsByOrg(orgId, { since: getThirtyDaysAgo(), limit: 1000 });
+    // Feature #198: includeResults needed because auto-quarantine iterates over individual test results
+    const allOrgRuns = await listTestRunsByOrg(orgId, { since: getThirtyDaysAgo(), limit: 1000, includeResults: true });
     const orgRuns = allOrgRuns.filter(r => r.results);
 
     // Feature #139: Batch load all tests BEFORE the loop

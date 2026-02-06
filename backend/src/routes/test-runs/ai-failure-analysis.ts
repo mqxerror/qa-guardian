@@ -33,7 +33,8 @@ async function getTestRunWithFallback(runId: string): Promise<TestRun | undefine
  * Get merged test runs from in-memory (in-flight) + DB for an organization.
  */
 async function getMergedTestRuns(orgId: string): Promise<TestRun[]> {
-  const dbRuns = await dbListTestRunsByOrg(orgId);
+  // Feature #198: includeResults needed because AI failure analysis iterates over run.results
+  const dbRuns = await dbListTestRunsByOrg(orgId, { includeResults: true });
   const memRuns = Array.from(testRuns.values()).filter(r => r.organization_id === orgId);
   const seenIds = new Set(memRuns.map(r => r.id));
   return [...memRuns, ...dbRuns.filter(r => !seenIds.has(r.id))];

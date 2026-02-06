@@ -71,7 +71,8 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     // Get the test runs to find the screenshot
     // Filter runs that either have test_id matching, or have results containing this test
     // Merge in-memory runs (in-flight) with DB runs
-    const dbRuns = await dbListTestRunsByOrg(orgId);
+    // Feature #198: includeResults needed because we filter on r.results and extract test result data
+    const dbRuns = await dbListTestRunsByOrg(orgId, { includeResults: true });
     const memRuns = Array.from(testRuns.values()).filter(r => r.organization_id === orgId);
     const seenIds = new Set(memRuns.map(r => r.id));
     const mergedRuns = [...memRuns, ...dbRuns.filter(r => !seenIds.has(r.id))];
@@ -259,7 +260,8 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     }
 
     // Get the test runs to find the screenshot
-    const dbRuns = await dbListTestRunsByOrg(orgId);
+    // Feature #198: includeResults needed because we filter on r.results and extract test result data
+    const dbRuns = await dbListTestRunsByOrg(orgId, { includeResults: true });
     const memRuns = Array.from(testRuns.values()).filter(r => r.organization_id === orgId);
     const seenIds = new Set(memRuns.map(r => r.id));
     const mergedRuns = [...memRuns, ...dbRuns.filter(r => !seenIds.has(r.id))];

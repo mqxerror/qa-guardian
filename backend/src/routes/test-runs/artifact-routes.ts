@@ -1369,7 +1369,8 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     const storageLimitBytes = 10 * 1024 * 1024 * 1024; // 10 GB
 
-    const orgRuns = await dbListTestRunsByOrg(orgId);
+    // Feature #198: includeResults needed because storage analysis iterates over run.results
+    const orgRuns = await dbListTestRunsByOrg(orgId, { includeResults: true });
 
     const projectStorage = new Map<string, {
       project_id: string;

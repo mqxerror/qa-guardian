@@ -62,8 +62,9 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     // Feature #140: Run both independent queries in parallel
+    // Feature #198: includeResults needed because this handler iterates over individual test results
     const [allRuns, orgProjects] = await Promise.all([
-      listTestRunsByOrg(orgId),
+      listTestRunsByOrg(orgId, { includeResults: true }),
       dbListProjects(orgId),
     ]);
 
@@ -386,7 +387,8 @@ export async function analyticsRoutes(app: FastifyInstance) {
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
 
-    const relevantRuns = (await listTestRunsByOrg(orgId))
+    // Feature #198: includeResults needed because this handler accesses accessibility_results
+    const relevantRuns = (await listTestRunsByOrg(orgId, { includeResults: true }))
       .filter(r => suiteIds.includes(r.suite_id))
       .filter((r: any) => r.test_type === 'accessibility')
       .filter(r => r.status !== 'pending' && r.status !== 'running')
@@ -522,11 +524,12 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const companySize = request.query.company_size || 'mid-market';
 
     // Feature #140: Run all 4 independent queries in parallel
+    // Feature #198: includeResults needed because this handler accesses accessibility_results
     const [allProjects, orgSuites, orgTests, orgRuns] = await Promise.all([
       dbListProjects(orgId),
       listAllTestSuites(orgId),
       listAllTests(orgId),
-      listTestRunsByOrg(orgId),
+      listTestRunsByOrg(orgId, { includeResults: true }),
     ]);
 
     // Calculate actual organization metrics from test data
@@ -913,9 +916,10 @@ export async function analyticsRoutes(app: FastifyInstance) {
     const showAll = request.query.show_all === 'true';
 
     // Feature #140: Run all 3 independent queries in parallel
+    // Feature #198: includeResults needed because flaky-tests alert iterates over run.results
     const [orgTests, orgRuns, orgSuites] = await Promise.all([
       listAllTests(orgId),
-      listTestRunsByOrg(orgId),
+      listTestRunsByOrg(orgId, { includeResults: true }),
       listAllTestSuites(orgId),
     ]);
 

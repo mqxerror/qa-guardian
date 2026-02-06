@@ -43,7 +43,8 @@ async function getTestRunWithFallback(runId: string): Promise<TestRun | undefine
  * limit the DB query and prevent timeouts on orgs with large run histories.
  */
 async function getMergedTestRuns(orgId: string, options?: ListTestRunsByOrgOptions): Promise<TestRun[]> {
-  const dbRuns = await dbListTestRunsByOrg(orgId, options);
+  // Feature #198: includeResults needed because visual batch routes iterate over run.results
+  const dbRuns = await dbListTestRunsByOrg(orgId, { ...options, includeResults: true });
   let memRuns = Array.from(testRuns.values()).filter(r => r.organization_id === orgId);
   // Apply the same date filter to in-memory runs for consistency
   if (options?.since) {

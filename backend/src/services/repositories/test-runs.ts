@@ -54,6 +54,19 @@ const TEST_RUN_COLUMNS = [
 ].join(', ');
 
 /**
+ * Feature #197: Lightweight column list excluding heavy JSONB columns.
+ * Excludes 'results' (up to 114 MB), 'accessibility_results', and 'run_env_vars'
+ * to prevent 504 timeouts on listing endpoints that don't need full result data.
+ * Use this for dashboard/listing queries; use TEST_RUN_COLUMNS for individual run detail views.
+ */
+const TEST_RUN_COLUMNS_LIGHT = [
+  'id', 'suite_id', 'suite_name', 'project_id', 'project_name', 'test_id',
+  'schedule_id', 'organization_id', 'browser', 'branch', 'test_type', 'status',
+  'started_at', 'completed_at', 'duration_ms', 'created_at',
+  'error_message', 'priority', 'triggered_by', 'user_id', 'pr_number'
+].join(', ');
+
+/**
  * Explicit column list for selector_overrides table.
  */
 const SELECTOR_OVERRIDE_COLUMNS = [
@@ -74,7 +87,9 @@ const HEALED_SELECTOR_COLUMNS = [
 // ============================================================================
 
 /**
- * Convert a database row to a TestRun object
+ * Convert a database row to a TestRun object.
+ * Gracefully handles missing heavy columns (results, accessibility_results, run_env_vars)
+ * which may be absent when using TEST_RUN_COLUMNS_LIGHT for lightweight queries.
  */
 function rowToTestRun(row: any): TestRun {
   return {
@@ -94,10 +109,13 @@ function rowToTestRun(row: any): TestRun {
     completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
     duration_ms: row.duration_ms,
     created_at: new Date(row.created_at),
-    results: row.results || [],
+    // Feature #197: Handle missing heavy columns from lightweight queries.
+    // 'results' defaults to undefined (not []) when column is absent, so callers
+    // that check `run.results` with truthiness or optional chaining work correctly.
+    results: 'results' in row ? (row.results || []) : undefined,
     error: row.error_message,
-    accessibility_results: row.accessibility_results,
-    run_env_vars: row.run_env_vars,
+    accessibility_results: 'accessibility_results' in row ? row.accessibility_results : undefined,
+    run_env_vars: 'run_env_vars' in row ? row.run_env_vars : undefined,
     priority: row.priority,
     triggered_by: row.triggered_by as TriggerType,
     user_id: row.user_id,
@@ -337,7 +355,8 @@ export async function deleteTestRun(id: string): Promise<boolean> {
 export async function listTestRunsBySuite(suiteId: string, orgId?: string): Promise<TestRun[]> {
   if (isDatabaseConnected()) {
     try {
-      let queryText = `SELECT ${TEST_RUN_COLUMNS} FROM test_runs WHERE suite_id = $1`;
+      // Feature #197: Use lightweight columns -- callers only need metadata and counts
+      let queryText = `SELECT ${TEST_RUN_COLUMNS_LIGHT} FROM test_runs WHERE suite_id = $1`;
       const params: any[] = [suiteId];
 
       if (orgId) {
@@ -373,7 +392,8 @@ export async function listTestRunsBySuite(suiteId: string, orgId?: string): Prom
 export async function listTestRunsByProject(projectId: string, orgId?: string): Promise<TestRun[]> {
   if (isDatabaseConnected()) {
     try {
-      let queryText = `SELECT ${TEST_RUN_COLUMNS} FROM test_runs WHERE project_id = $1`;
+      // Feature #197: Use lightweight columns -- callers only need metadata and counts
+      let queryText = `SELECT ${TEST_RUN_COLUMNS_LIGHT} FROM test_runs WHERE project_id = $1`;
       const params: any[] = [projectId];
 
       if (orgId) {
@@ -410,6 +430,13 @@ export async function listTestRunsByProject(projectId: string, orgId?: string): 
 export interface ListTestRunsByOrgOptions {
   limit?: number;
   since?: Date;
+  /**
+   * Feature #198: When true, includes heavy JSONB columns (results, accessibility_results,
+   * run_env_vars) in the query. Defaults to false for lightweight listing queries.
+   * Only set to true when callers need to iterate over individual test results.
+   * Prefer getFlakinessTrendData() for targeted single-test result extraction.
+   */
+  includeResults?: boolean;
 }
 
 export async function listTestRunsByOrg(
@@ -423,7 +450,11 @@ export async function listTestRunsByOrg(
 
   if (isDatabaseConnected()) {
     try {
-      let queryText = `SELECT ${TEST_RUN_COLUMNS} FROM test_runs WHERE organization_id = $1`;
+      // Feature #198: Use lightweight columns by default to avoid loading massive JSONB data
+      // (up to 114 MB/row). Callers that need full results can pass includeResults: true,
+      // or use getFlakinessTrendData() for targeted single-test extraction.
+      const columns = options.includeResults ? TEST_RUN_COLUMNS : TEST_RUN_COLUMNS_LIGHT;
+      let queryText = `SELECT ${columns} FROM test_runs WHERE organization_id = $1`;
       const params: any[] = [orgId];
       let paramIndex = 2;
 
@@ -506,19 +537,31 @@ export async function listTestRunsBySchedule(scheduleId: string, orgId: string, 
 export async function listTestRunsByTestId(testId: string, orgId: string, limit: number = 20): Promise<TestRun[]> {
   if (isDatabaseConnected()) {
     try {
-      // Query test_runs where:
-      // 1. test_id matches directly (single test run), OR
-      // 2. It's a suite run (test_id IS NULL) with results containing this test
-      // We use JSONB containment to check if any result has this test_id
+      // Feature #199: Extract only the matching test's result from JSONB instead of
+      // loading the entire results array (which can be 20-114 MB for suite runs).
+      // For direct test runs (test_id matches), return full results (small, single test).
+      // For suite runs, use jsonb_array_elements to extract only the matching entry.
       const result = await query<any>(
-        `SELECT ${TEST_RUN_COLUMNS} FROM test_runs
-         WHERE organization_id = $1
-         AND (
-           test_id = $2
-           OR (test_id IS NULL AND results @> $3::jsonb)
-         )
-         ORDER BY created_at DESC
-         LIMIT $4`,
+        `SELECT id, suite_id, suite_name, project_id, project_name, test_id,
+          schedule_id, organization_id, browser, branch, test_type, status,
+          started_at, completed_at, duration_ms, created_at,
+          error_message, priority, triggered_by, user_id, pr_number,
+          CASE
+            WHEN test_id = $2 THEN results
+            ELSE (
+              SELECT jsonb_agg(elem)
+              FROM jsonb_array_elements(COALESCE(results, '[]'::jsonb)) elem
+              WHERE elem->>'test_id' = $2
+            )
+          END as results
+        FROM test_runs
+        WHERE organization_id = $1
+        AND (
+          test_id = $2
+          OR (test_id IS NULL AND results @> $3::jsonb)
+        )
+        ORDER BY created_at DESC
+        LIMIT $4`,
         [orgId, testId, JSON.stringify([{ test_id: testId }]), limit]
       );
       if (result && result.rows) {
@@ -930,6 +973,95 @@ export async function listHealedSelectorHistory(testId: string): Promise<HealedS
 
 // Memory store accessors removed in Feature #2121
 // All data access is now through async DB functions above
+
+// ============================================================================
+// Feature #197: Flakiness Trend Data (targeted JSONB extraction)
+// ============================================================================
+
+/**
+ * Row shape returned by the flakiness-trend SQL query.
+ * Each row represents one test result entry extracted from a run's JSONB results.
+ */
+export interface FlakinessTrendRow {
+  run_id: string;
+  created_at: Date;
+  completed_at: Date | null;
+  result_test_id: string;
+  result_status: string;
+  result_duration_ms: number | null;
+}
+
+/**
+ * Feature #197: Get flakiness trend data for a specific test without loading
+ * the entire results JSONB column. Uses jsonb_array_elements to extract only
+ * the matching test's status and duration directly in SQL, avoiding transfer
+ * of up to 114 MB per row over the wire.
+ *
+ * Returns flat rows (one per run that contains the test) instead of full TestRun objects.
+ */
+export async function getFlakinessTrendData(
+  orgId: string,
+  testId: string,
+  since: Date,
+  limit: number = 1000
+): Promise<FlakinessTrendRow[]> {
+  if (isDatabaseConnected()) {
+    try {
+      const result = await query<any>(
+        `SELECT
+          tr.id as run_id,
+          tr.created_at,
+          tr.completed_at,
+          elem->>'test_id' as result_test_id,
+          elem->>'status' as result_status,
+          (elem->>'duration_ms')::int as result_duration_ms
+        FROM test_runs tr,
+          jsonb_array_elements(COALESCE(tr.results, '[]'::jsonb)) elem
+        WHERE tr.organization_id = $1
+          AND tr.created_at >= $2
+          AND elem->>'test_id' = $3
+        ORDER BY tr.created_at DESC
+        LIMIT $4`,
+        [orgId, since, testId, limit]
+      );
+      if (result && result.rows) {
+        return result.rows.map((row: any) => ({
+          run_id: row.run_id,
+          created_at: new Date(row.created_at),
+          completed_at: row.completed_at ? new Date(row.completed_at) : null,
+          result_test_id: row.result_test_id,
+          result_status: row.result_status,
+          result_duration_ms: row.result_duration_ms,
+        }));
+      }
+    } catch (error) {
+      console.error('[TestRunsRepo] Failed to get flakiness trend data from database:', error);
+    }
+  }
+
+  // Fallback: scan in-memory map (less efficient but preserves functionality when DB unavailable)
+  const map = await getTestRunsMap();
+  const rows: FlakinessTrendRow[] = [];
+  for (const run of map.values()) {
+    if (run.organization_id !== orgId) continue;
+    if (new Date(run.created_at) < since) continue;
+    if (!run.results) continue;
+
+    for (const result of run.results) {
+      if (result.test_id !== testId) continue;
+      rows.push({
+        run_id: run.id,
+        created_at: new Date(run.created_at),
+        completed_at: run.completed_at ? new Date(run.completed_at) : null,
+        result_test_id: result.test_id,
+        result_status: result.status,
+        result_duration_ms: result.duration_ms ?? null,
+      });
+    }
+  }
+  rows.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+  return rows.slice(0, limit);
+}
 
 // ============================================================================
 // Feature #87: Optimized Test Run Metadata Functions

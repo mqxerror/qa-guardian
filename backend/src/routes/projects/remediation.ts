@@ -56,7 +56,8 @@ export async function remediationRoutes(app: FastifyInstance) {
     }
 
     // Get flakiness data for this test (async DB call)
-    const allOrgRuns = await listTestRunsByOrg(orgId);
+    // Feature #198: includeResults needed because this handler iterates over individual test results
+    const allOrgRuns = await listTestRunsByOrg(orgId, { includeResults: true });
     const orgRuns = allOrgRuns.filter(r => r.results);
 
     // Analyze test runs for this specific test
