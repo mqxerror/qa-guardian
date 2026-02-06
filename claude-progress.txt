@@ -1,10 +1,10 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 167/171 features passing (97.7%)**
+- **Progress: 171/171 features passing (100.0%) - ALL COMPLETE!**
 - **Last Updated**: 2026-02-06
-- **Status**: 4 production-hardening features registered (#168-#171)
-- **Last Feature Registered**: #171 - Write backend smoke tests and make them block CI
+- **Status**: All features implemented and verified (includes production-hardening hotfixes)
+- **Last Feature Fixed**: #169-#171 - Manual hotfixes by Agent 007
 
 === Session 2026-02-06 (Session 128) - Regression Testing ===
 Progress: 167/167 (100%) - ALL FEATURES COMPLETE!
@@ -34897,3 +34897,23 @@ The QA Guardian platform now has:
 - Completion: 100%
 
 The QA Guardian platform is now production-ready with all planned features implemented.
+
+=== Manual Hotfix Session 2026-02-06 (Features #169-#171 fixes) ===
+Progress: 171/171 (100%) - Fixed agent's work on production-hardening features
+
+### Context
+Code review of features #168-#171 found #168 was good but #169, #170, #171 had critical issues.
+
+### Features Fixed
+
+**#170: Health Monitor - 7 bugs fixed** (Critical Bug Fix)
+- Problem: set -e killed watchdog on first curl failure; date -d incompatible with Alpine BusyBox; JSON payloads not escaped; Slack colors wrong; crash loop on missing webhook URL
+- Fix: Removed set -e, changed shebang to #!/bin/ash, stored DOWN_SINCE as epoch seconds, added json_escape(), fixed Slack hex colors, made webhook URL optional with log-only mode, removed dead ANSI vars, added vars to .env.production.example
+
+**#169: Worker Separation - 5 issues fixed** (Critical Bug Fix)
+- Problem: isQueueReady() returned false in API-only mode; direct-execution fallback ran Chromium in API process; schedules.ts and projects/routes.ts called runTestsForRun directly bypassing queue; worker.ts had dead pg.Pool
+- Fix: Fixed isQueueReady() for API-only mode, disabled direct-execution fallback when API_ONLY_MODE, replaced direct runTestsForRun calls in schedules.ts and projects/routes.ts with enqueueOrExecute, removed dead code from worker.ts
+
+**#171: Backend Tests - 4 issues fixed** (Critical Bug Fix)  
+- Problem: Failing test due to Date.now() ID collision; vitest in watch mode; statistics test passing by accident; defaultTTL ignored in cache mock
+- Fix: Counter-based IDs, "vitest run" in package.json, proper statistics test, defaultTTL applied when no explicit TTL. All 70 tests pass.

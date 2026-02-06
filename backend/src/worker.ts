@@ -25,7 +25,7 @@
 import 'dotenv/config';
 import { Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
-import { Pool } from 'pg';
+import { createServer } from 'http';
 
 // ============================================================================
 // Configuration
@@ -38,29 +38,6 @@ const JOB_TIMEOUT = parseInt(process.env.EXECUTION_JOB_TIMEOUT || '600000', 10);
 console.log('[Worker] Starting QA Guardian Test Execution Worker');
 console.log(`[Worker] Max Concurrency: ${MAX_CONCURRENCY}`);
 console.log(`[Worker] Job Timeout: ${JOB_TIMEOUT}ms`);
-
-// ============================================================================
-// Database Connection
-// ============================================================================
-
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-  console.error('[Worker] ERROR: DATABASE_URL environment variable is required');
-  process.exit(1);
-}
-
-const pool = new Pool({
-  connectionString: databaseUrl,
-  max: MAX_CONCURRENCY + 2, // Pool size = concurrency + overhead
-});
-
-// Test database connection
-pool.query('SELECT 1')
-  .then(() => console.log('[Worker] Database connection established'))
-  .catch((err) => {
-    console.error('[Worker] ERROR: Failed to connect to database:', err.message);
-    process.exit(1);
-  });
 
 // ============================================================================
 // Redis Connection
@@ -216,15 +193,6 @@ async function shutdown(signal: string): Promise<void> {
     }
   }
 
-  // Close database pool
-  console.log('[Worker] Closing database connections...');
-  try {
-    await pool.end();
-    console.log('[Worker] Database connections closed');
-  } catch (err) {
-    console.error('[Worker] Error closing database:', err);
-  }
-
   console.log('[Worker] Shutdown complete');
   process.exit(0);
 }
@@ -247,8 +215,6 @@ process.on('unhandledRejection', (reason, promise) => {
 // ============================================================================
 // Health Check Server (optional, for container health checks)
 // ============================================================================
-
-import { createServer } from 'http';
 
 const HEALTH_PORT = parseInt(process.env.WORKER_HEALTH_PORT || '3002', 10);
 

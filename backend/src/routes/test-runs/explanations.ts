@@ -9,7 +9,7 @@
  * - Executive summaries
  */
 
-import {
+import type {
   AffectedTest,
   CrossTestCorrelation,
   HumanReadableExplanation,
@@ -20,8 +20,8 @@ import {
   ExecutiveSummary,
 } from './root-cause-helpers';
 
-// Re-export types for convenience
-export {
+// Re-export types for convenience (must use 'export type' for ESM compatibility with Node.js 20+)
+export type {
   AffectedTest,
   CrossTestCorrelation,
   HumanReadableExplanation,

@@ -729,14 +729,11 @@ export async function coreRoutes(app: FastifyInstance) {
     // We need to dynamically import to avoid circular dependency
     // Note: test-runs.ts is the main file, test-runs/ is the folder with modules
     try {
-      const testRunsModule = await import('../test-runs.js');
-      if (typeof testRunsModule.runTestsForRun === 'function') {
-        testRunsModule.runTestsForRun(runId).catch(console.error);
-      } else {
-        console.error('[Quick Smoke Test] runTestsForRun not found in test-runs module');
-      }
+      // Feature #169: Route execution through the queue (worker container handles actual execution)
+      const { enqueueOrExecute } = await import('../../services/execution-queue.js');
+      await enqueueOrExecute(runId, 'e2e', { triggeredBy: 'quick-smoke-test' });
     } catch (err) {
-      console.error('[Quick Smoke Test] Failed to start test execution:', err);
+      console.error('[Quick Smoke Test] Failed to enqueue test execution:', err);
     }
 
     // Log audit entry

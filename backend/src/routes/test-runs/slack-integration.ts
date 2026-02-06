@@ -224,5 +224,6 @@ export async function slackIntegrationRoutes(app: FastifyInstance) {
   });
 }
 
-// Re-export types for consumers
-export { SlackConnection, SlackChannel, slackConnections, slackLog } from './alerts';
+// Re-export types for consumers (must use 'export type' for ESM compatibility with Node.js 20+)
+export type { SlackConnection, SlackChannel } from './alerts';
+export { slackConnections, slackLog } from './alerts';

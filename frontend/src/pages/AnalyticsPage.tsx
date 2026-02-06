@@ -881,7 +881,7 @@ export function AnalyticsPage() {
               </div>
 
               {/* Line chart */}
-              <div className="h-72">
+              <div className="h-72" role="img" aria-label="Test trend line chart showing passed and failed tests over time">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={trendData.map(d => ({
@@ -1023,7 +1023,7 @@ export function AnalyticsPage() {
               </div>
 
               {/* Line chart - stacked area chart for violation severity */}
-              <div className="h-72">
+              <div className="h-72" role="img" aria-label="Accessibility violations trend chart showing critical, serious, moderate, and minor violations over time">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={a11yTrendData.map(d => ({

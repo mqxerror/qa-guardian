@@ -22,7 +22,8 @@ class MockCacheService {
   }
 
   async set(key: string, value: any, ttl?: number): Promise<boolean> {
-    const expiresAt = ttl ? Date.now() + (ttl * 1000) : null;
+    const effectiveTTL = ttl !== undefined ? ttl : this.defaultTTL;
+    const expiresAt = effectiveTTL ? Date.now() + (effectiveTTL * 1000) : null;
     this.cache.set(key, { value, expiresAt });
     return true;
   }
@@ -196,8 +197,16 @@ describe('Cache Service', () => {
       expect(remaining).toBeCloseTo(40, 0);
     });
 
+    it('should use defaultTTL when no TTL is provided', async () => {
+      await cache.set('default-ttl', 'value');
+
+      const ttl = await cache.ttl('default-ttl');
+      // defaultTTL is 3600 seconds, so remaining TTL should be close to 3600
+      expect(ttl).toBeCloseTo(3600, 0);
+    });
+
     it('should return null TTL for non-expiring key', async () => {
-      await cache.set('no-ttl', 'value');
+      await cache.set('no-ttl', 'value', 0);
 
       const ttl = await cache.ttl('no-ttl');
       expect(ttl).toBeNull();

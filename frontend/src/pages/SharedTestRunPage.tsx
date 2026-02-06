@@ -756,7 +756,7 @@ export default function SharedTestRunPage() {
                         // Open in new tab for full view
                         const win = window.open();
                         if (win) {
-                          win.document.write(`<img src="data:image/png;base64,${result.screenshot_base64}" style="max-width: 100%;" />`);
+                          win.document.write(`<img src="data:image/png;base64,${result.screenshot_base64}" alt="Screenshot for ${result.test_name}" style="max-width: 100%;" />`);
                           win.document.title = `Screenshot - ${result.test_name}`;
                         }
                       }}

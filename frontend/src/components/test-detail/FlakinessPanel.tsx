@@ -90,8 +90,8 @@ export function FlakinessPanel({
           {/* Daily Trend Chart */}
           {flakinessTrend.daily_trend.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-foreground mb-2">Daily Flakiness Trend</h3>
-              <div className="h-40 relative">
+              <h3 id="flakiness-trend-title" className="text-sm font-medium text-foreground mb-2">Daily Flakiness Trend</h3>
+              <div className="h-40 relative" role="img" aria-labelledby="flakiness-trend-title">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={flakinessTrend.daily_trend}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

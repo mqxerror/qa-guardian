@@ -1,8 +1,8 @@
 // Projects Routes - Re-exports from modular implementation
 // This file maintains backward compatibility while the implementation is split into modules
 
-// Re-export all types
-export {
+// Re-export all types (must use 'export type' for ESM compatibility with Node.js 20+)
+export type {
   Project,
   ProjectMember,
   EnvironmentVariable,

@@ -654,13 +654,20 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
           onClick={() => setLightboxOpen(false)}
         >
-          <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="screenshots-lightbox-title"
+            className="relative max-w-[90vw] max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Close button */}
             <button
               onClick={() => setLightboxOpen(false)}
+              aria-label="Close dialog"
               className="absolute -top-10 right-0 p-2 text-white/70 hover:text-white transition-colors"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -716,7 +723,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
                         {allScreenshots[lightboxIndex].testStatus}
                       </span>
                     </div>
-                    <h3 className="font-semibold text-lg">{allScreenshots[lightboxIndex].title}</h3>
+                    <h3 id="screenshots-lightbox-title" className="font-semibold text-lg">{allScreenshots[lightboxIndex].title}</h3>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-white/70">

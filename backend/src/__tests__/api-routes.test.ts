@@ -35,6 +35,9 @@ interface Test {
 const buildTestApp = async (): Promise<FastifyInstance> => {
   const app = Fastify({ logger: false });
 
+  // Counter-based ID generation to prevent collisions within the same millisecond
+  let idCounter = 0;
+
   // In-memory data stores
   const projects = new Map<string, Project>();
   const suites = new Map<string, TestSuite>();
@@ -59,7 +62,7 @@ const buildTestApp = async (): Promise<FastifyInstance> => {
     if (!name) {
       return reply.status(400).send({ error: 'Name is required' });
     }
-    const id = `project-${Date.now()}`;
+    const id = `project-${++idCounter}`;
     const project: Project = {
       id,
       name,
@@ -123,7 +126,7 @@ const buildTestApp = async (): Promise<FastifyInstance> => {
     if (!projects.has(project_id)) {
       return reply.status(400).send({ error: 'Project not found' });
     }
-    const id = `suite-${Date.now()}`;
+    const id = `suite-${++idCounter}`;
     const suite: TestSuite = {
       id,
       project_id,
@@ -175,7 +178,7 @@ const buildTestApp = async (): Promise<FastifyInstance> => {
     if (!suites.has(suite_id)) {
       return reply.status(400).send({ error: 'Suite not found' });
     }
-    const id = `test-${Date.now()}`;
+    const id = `test-${++idCounter}`;
     const test: Test = {
       id,
       suite_id,

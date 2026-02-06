@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/ash
 # =============================================================================
 # QA Guardian - Health Monitor Watchdog
 # =============================================================================
@@ -10,7 +10,7 @@
 # Environment Variables:
 #   HEALTH_CHECK_URL      - URL to poll (default: http://backend:3001/health)
 #   HEALTH_CHECK_INTERVAL - Seconds between checks (default: 300 = 5 minutes)
-#   ALERT_WEBHOOK_URL     - Discord/Slack webhook URL for alerts (required)
+#   ALERT_WEBHOOK_URL     - Discord/Slack webhook URL for alerts (optional)
 #   ALERT_THRESHOLD       - Consecutive failures before alerting (default: 2)
 #   SERVICE_NAME          - Name to show in alerts (default: QA Guardian)
 #
@@ -21,7 +21,9 @@
 #   Designed to run in an alpine/curl container alongside the backend.
 # =============================================================================
 
-set -e
+# NOTE: No "set -e" here. A monitoring script must survive transient failures
+# (e.g. curl returning non-zero when the target is down). Exiting on the first
+# failure would defeat the purpose of a watchdog.
 
 # Configuration with defaults
 HEALTH_CHECK_URL="${HEALTH_CHECK_URL:-http://backend:3001/health}"
@@ -36,12 +38,6 @@ IS_DOWN=false
 LAST_CHECK_TIME=""
 LAST_ERROR=""
 DOWN_SINCE=""
-
-# Colors for logging (when running interactively)
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
 
 log_info() {
     TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
@@ -58,12 +54,17 @@ log_error() {
     echo "${TIMESTAMP} [ERROR] $1" >&2
 }
 
-# Validate required configuration
+# Escape special characters for safe JSON embedding.
+# Handles backslashes, double quotes, tabs, and collapses newlines to spaces.
+json_escape() {
+    printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g' | tr '\n' ' '
+}
+
+# Validate configuration and log startup banner
 validate_config() {
     if [ -z "$ALERT_WEBHOOK_URL" ]; then
-        log_error "ALERT_WEBHOOK_URL is required but not set"
-        log_error "Set it to a Discord or Slack webhook URL"
-        exit 1
+        log_warn "ALERT_WEBHOOK_URL not set - running in log-only mode (no alerts will be sent)"
+        ALERT_WEBHOOK_URL=""
     fi
 
     log_info "====================================="
@@ -73,26 +74,45 @@ validate_config() {
     log_info "Check interval: ${HEALTH_CHECK_INTERVAL}s"
     log_info "Alert threshold: $ALERT_THRESHOLD consecutive failures"
     log_info "Service name: $SERVICE_NAME"
+    if [ -z "$ALERT_WEBHOOK_URL" ]; then
+        log_info "Alert mode: LOG ONLY (no webhook configured)"
+    else
+        log_info "Alert mode: WEBHOOK"
+    fi
     log_info "====================================="
 }
 
 # Send Discord/Slack webhook notification
-# Both support the same JSON format for simple messages
+# Args: $1=status  $2=message  $3=color (hex string, e.g. "FF0000")
 send_alert() {
     local status="$1"
     local message="$2"
     local color="$3"
     local timestamp=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 
+    # In log-only mode (no webhook URL), just log the alert and return
+    if [ -z "$ALERT_WEBHOOK_URL" ]; then
+        log_info "Alert (log-only): $status - $message"
+        return
+    fi
+
+    # Escape values that will be interpolated into the JSON payload
+    message=$(json_escape "$message")
+    local safe_service=$(json_escape "$SERVICE_NAME")
+    local safe_url=$(json_escape "$HEALTH_CHECK_URL")
+
     # Determine if Discord or Slack based on URL
     if echo "$ALERT_WEBHOOK_URL" | grep -q "discord"; then
+        # Discord expects color as a decimal integer
+        local decimal_color=$(printf '%d' "0x${color}")
+
         # Discord embed format
         local payload=$(cat <<EOF
 {
     "embeds": [{
-        "title": "🚨 ${SERVICE_NAME} ${status}",
+        "title": "${safe_service} ${status}",
         "description": "${message}",
-        "color": ${color},
+        "color": ${decimal_color},
         "timestamp": "${timestamp}",
         "footer": {
             "text": "Health Monitor Watchdog"
@@ -100,12 +120,12 @@ send_alert() {
         "fields": [
             {
                 "name": "Service",
-                "value": "${SERVICE_NAME}",
+                "value": "${safe_service}",
                 "inline": true
             },
             {
                 "name": "Endpoint",
-                "value": "${HEALTH_CHECK_URL}",
+                "value": "${safe_url}",
                 "inline": true
             }
         ]
@@ -114,21 +134,21 @@ send_alert() {
 EOF
 )
     else
-        # Slack format
+        # Slack format -- color is a hex string with "#" prefix
         local emoji="🚨"
         if [ "$status" = "RECOVERED" ]; then
             emoji="✅"
         fi
         local payload=$(cat <<EOF
 {
-    "text": "${emoji} *${SERVICE_NAME} ${status}*",
+    "text": "${emoji} *${safe_service} ${status}*",
     "attachments": [{
         "color": "#${color}",
         "text": "${message}",
         "fields": [
             {
                 "title": "Endpoint",
-                "value": "${HEALTH_CHECK_URL}",
+                "value": "${safe_url}",
                 "short": true
             },
             {
@@ -162,15 +182,14 @@ send_outage_alert() {
     local duration=""
 
     if [ -n "$DOWN_SINCE" ]; then
-        # Calculate downtime
+        # DOWN_SINCE is already epoch seconds -- no date -d needed
         local now=$(date +%s)
-        local down_start=$(date -d "$DOWN_SINCE" +%s 2>/dev/null || echo "$now")
-        local diff=$((now - down_start))
+        local diff=$((now - DOWN_SINCE))
         local minutes=$((diff / 60))
         duration=" (down for ${minutes} minutes)"
     fi
 
-    send_alert "DOWN" "Health check failed after $CONSECUTIVE_FAILURES consecutive attempts.${duration}\\n\\nError: ${error_msg}" "16711680"  # Red
+    send_alert "DOWN" "Health check failed after $CONSECUTIVE_FAILURES consecutive attempts.${duration}\\n\\nError: ${error_msg}" "FF0000"
 }
 
 # Send recovery alert
@@ -178,15 +197,14 @@ send_recovery_alert() {
     local downtime=""
 
     if [ -n "$DOWN_SINCE" ]; then
-        # Calculate total downtime
+        # DOWN_SINCE is already epoch seconds -- no date -d needed
         local now=$(date +%s)
-        local down_start=$(date -d "$DOWN_SINCE" +%s 2>/dev/null || echo "$now")
-        local diff=$((now - down_start))
+        local diff=$((now - DOWN_SINCE))
         local minutes=$((diff / 60))
         downtime="\\n\\nTotal downtime: ${minutes} minutes"
     fi
 
-    send_alert "RECOVERED" "Service is back online and responding to health checks.${downtime}" "65280"  # Green
+    send_alert "RECOVERED" "Service is back online and responding to health checks.${downtime}" "00FF00"
 }
 
 # Perform health check
@@ -208,12 +226,12 @@ check_health() {
         # Success!
         if [ "$IS_DOWN" = true ]; then
             # We were down, now recovered
-            log_info "✅ Health check PASSED (recovered after $CONSECUTIVE_FAILURES failures)"
+            log_info "Health check PASSED (recovered after $CONSECUTIVE_FAILURES failures)"
             send_recovery_alert
             IS_DOWN=false
             DOWN_SINCE=""
         else
-            log_info "✅ Health check PASSED (${duration}s)"
+            log_info "Health check PASSED (${duration}s)"
         fi
         CONSECUTIVE_FAILURES=0
         LAST_ERROR=""
@@ -222,13 +240,13 @@ check_health() {
         CONSECUTIVE_FAILURES=$((CONSECUTIVE_FAILURES + 1))
         LAST_ERROR="HTTP $RESPONSE (or connection failed)"
 
-        log_warn "❌ Health check FAILED (attempt $CONSECUTIVE_FAILURES): $LAST_ERROR"
+        log_warn "Health check FAILED (attempt $CONSECUTIVE_FAILURES): $LAST_ERROR"
 
         # Check if we should alert
         if [ "$CONSECUTIVE_FAILURES" -ge "$ALERT_THRESHOLD" ] && [ "$IS_DOWN" = false ]; then
             IS_DOWN=true
-            DOWN_SINCE=$(date '+%Y-%m-%d %H:%M:%S')
-            log_error "🚨 ALERT: Service is DOWN after $CONSECUTIVE_FAILURES consecutive failures"
+            DOWN_SINCE=$(date +%s)
+            log_error "ALERT: Service is DOWN after $CONSECUTIVE_FAILURES consecutive failures"
             send_outage_alert "$LAST_ERROR"
         fi
     fi

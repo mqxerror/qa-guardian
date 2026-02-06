@@ -461,10 +461,10 @@ export async function alertChannelRoutes(app: FastifyInstance) {
   });
 }
 
-// Re-export types for consumers
-export {
+// Re-export types for consumers (must use 'export type' for ESM compatibility with Node.js 20+)
+export type {
   AlertCondition,
   AlertChannelType,
   AlertChannel,
-  alertChannels,
 } from './alerts';
+export { alertChannels } from './alerts';

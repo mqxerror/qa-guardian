@@ -45,6 +45,9 @@ import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, regis
 import { initializeErrorHandlers, getErrorMetrics } from './services/error-tracking'; // Feature #164: Error tracking
 import { registerMetricsHooks, getMetricsSummary } from './services/metrics'; // Feature #165: API response time tracking
 import { setWebSocketIO } from './services/websocket-events'; // Feature #108: WebSocket CRUD events
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 // Socket.IO server instance (will be initialized after server starts)
 let io: SocketIOServer | null = null;
@@ -389,9 +392,7 @@ async function registerPlugins() {
 // Used by Dokploy/Docker health checks and deployment verification
 // Feature #152: Enhanced with disk space, memory usage, version info, and 503 on critical failures
 app.get('/health', async (request, reply) => {
-  const fs = require('fs');
-  const path = require('path');
-  const os = require('os');
+  // fs, path, os are now imported at the top level
 
   // Check database health with timeout
   const dbCheck = await Promise.race([
@@ -534,13 +535,11 @@ async function checkDiskSpace(): Promise<{
   usedPercent: number;
   warning: string | null;
 }> {
-  const os = require('os');
-  const fs = require('fs');
-  const path = require('path');
+  // fs, path, os are imported at the top level
+  const { execSync } = await import('child_process');
 
   try {
     // Use statvfs on Unix-like systems via child_process
-    const { execSync } = require('child_process');
 
     // Try to get disk space info
     let freeBytes = 0;
@@ -588,9 +587,7 @@ function getVersionInfo(): {
   commit: string | null;
   buildTime: string | null;
 } {
-  const fs = require('fs');
-  const path = require('path');
-
+  // fs, path are imported at the top level
   let version = '1.0.0';
 
   // Try to read version from package.json
@@ -621,9 +618,7 @@ async function getBackupStatus(): Promise<{
   backupsCount: number;
   retentionDays: number;
 }> {
-  const fs = require('fs');
-  const path = require('path');
-
+  // fs, path are imported at the top level
   const backupDir = process.env.BACKUP_DIR || '/opt/backups';
   const statusFile = path.join(backupDir, '.backup_status.json');
 

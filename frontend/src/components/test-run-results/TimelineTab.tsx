@@ -684,16 +684,22 @@ export default function TimelineTab({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
           onClick={() => setSelectedScreenshot(null)}
         >
-          <div className="relative max-w-4xl max-h-[90vh] p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="timeline-screenshot-modal-title"
+            className="relative max-w-4xl max-h-[90vh] p-4"
+          >
             <button
               onClick={() => setSelectedScreenshot(null)}
+              aria-label="Close dialog"
               className="absolute -top-2 -right-2 z-10 p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              <svg className="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-5 w-5 text-gray-600 dark:text-gray-400" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <p className="text-white text-center mb-2">{selectedScreenshot.title}</p>
+            <p id="timeline-screenshot-modal-title" className="text-white text-center mb-2">{selectedScreenshot.title}</p>
             <img
               src={selectedScreenshot.url}
               alt={selectedScreenshot.title}

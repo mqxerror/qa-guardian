@@ -280,22 +280,24 @@ describe('Execution Queue', () => {
   describe('Queue Statistics', () => {
     it('should return accurate queue stats', async () => {
       // Add jobs
-      await queue.add('execute-test', { runId: 'run-1' });
+      const job1 = await queue.add('execute-test', { runId: 'run-1' });
       await queue.add('execute-test', { runId: 'run-2' });
-      const job3 = await queue.add('execute-test', { runId: 'run-3' });
+      await queue.add('execute-test', { runId: 'run-3' });
 
-      // Process some
+      // Process two jobs (moves them to active)
       await queue.processNext();
       await queue.processNext();
 
-      // Complete one
-      await queue.completeJob(job3.id.replace('run-3', 'run-1'));
+      // Complete the first active job
+      await queue.completeJob(job1.id);
 
       const waitingCount = await queue.getWaitingCount();
       const activeCount = await queue.getActiveCount();
+      const completedCount = await queue.getCompletedCount();
 
       expect(waitingCount).toBe(1);
-      expect(activeCount).toBe(2);
+      expect(activeCount).toBe(1);
+      expect(completedCount).toBe(1);
     });
 
     it('should track pause state', async () => {

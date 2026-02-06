@@ -377,11 +377,11 @@ export async function scheduleRoutes(app: FastifyInstance) {
       run_count: (schedule.run_count || 0) + 1,
     });
 
-    // Import and start the test execution
-    const { runTestsForRun } = await import('./test-runs.js');
-    if (typeof runTestsForRun === 'function') {
-      runTestsForRun(runId).catch(console.error);
-    }
+    // Feature #169: Route execution through the queue (worker container handles actual execution)
+    const { enqueueOrExecute } = await import('../services/execution-queue.js');
+    enqueueOrExecute(runId, 'e2e', { triggeredBy: 'schedule' }).catch(err => {
+      console.error(`[Schedules] Failed to enqueue test run ${runId}:`, err);
+    });
 
     // Feature #1312: Emit schedule.triggered webhook
     const suite = await getTestSuite(schedule.suite_id);

@@ -432,6 +432,9 @@ export async function getQueueHealth(): Promise<QueueHealth> {
  * Check if queue is ready to accept jobs
  */
 export function isQueueReady(): boolean {
+  if (API_ONLY_MODE) {
+    return isInitialized && queue !== null;
+  }
   return isInitialized && queue !== null && worker !== null;
 }
 
@@ -534,7 +537,7 @@ export async function enqueueOrExecute(
     triggeredBy?: string;
     delay?: number;
   }
-): Promise<{ queued: boolean; jobId?: string; position?: number }> {
+): Promise<{ queued: boolean; jobId?: string; position?: number; error?: string }> {
   // Try to queue the job
   const jobId = await queueTestRun(runId, testType, options);
 
@@ -543,10 +546,14 @@ export async function enqueueOrExecute(
     return { queued: true, jobId, position: position || undefined };
   }
 
-  // Queue not available, execute directly
-  console.log('[ExecutionQueue] Queue not available, executing directly');
+  // In API-only mode, never execute directly - the whole point is to keep Chromium out of the API process
+  if (API_ONLY_MODE) {
+    console.error(`[ExecutionQueue] Queue unavailable in API-only mode, cannot execute run ${runId}. Is Redis running?`);
+    return { queued: false, error: 'Queue unavailable - worker container required' };
+  }
 
-  // Execute in background (don't await)
+  // Queue not available, execute directly (only in non-API-only mode)
+  console.log('[ExecutionQueue] Queue not available, executing directly');
   executeDirectly(runId).catch(err => {
     console.error(`[ExecutionQueue] Direct execution failed for run ${runId}:`, err);
   });
