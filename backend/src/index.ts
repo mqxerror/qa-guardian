@@ -14,6 +14,7 @@ if (!process.env.JWT_SECRET) {
 import Fastify from 'fastify';
 import { initializeDatabase, isDatabaseConnected, healthCheck as dbHealthCheck, closeDatabase } from './services/database';
 import { initializeCache, closeCache, getCache } from './services/cache'; // Feature #60: Redis cache service
+import { runMigrations, getMigrationStatus } from './services/migrations'; // Feature #162: Database migrations
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import swagger from '@fastify/swagger';
@@ -493,6 +494,8 @@ app.get('/health', async (request, reply) => {
     cleanup: getCleanupStats(),
     // Feature #155: Include execution queue status in health check
     executionQueue: await getQueueHealth(),
+    // Feature #162: Include migration status in health check
+    migrations: getMigrationStatus(),
     // Feature #152: Version and build info
     version: versionInfo.version,
     build: {
@@ -653,6 +656,14 @@ async function start() {
     const dbConnected = await initializeDatabase();
     if (dbConnected) {
       console.log('[Startup] PostgreSQL database connected - data will persist');
+
+      // Feature #162: Run pending database migrations
+      const migrationsRan = await runMigrations();
+      if (migrationsRan) {
+        console.log('[Startup] Database migrations applied successfully');
+      } else {
+        console.log('[Startup] Some migrations may have failed - check logs above');
+      }
     } else {
       console.log('[Startup] Using in-memory storage - data will NOT persist across restarts');
     }
