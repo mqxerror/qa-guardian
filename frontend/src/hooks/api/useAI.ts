@@ -134,6 +134,7 @@ export function useGenerationHistory(params?: { status?: string }) {
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -172,6 +173,7 @@ export function useReviewQueue() {
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds - queue changes often
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -186,6 +188,7 @@ export function useApprovalStats() {
     queryFn: () => fetchWithAuth('/api/v1/ai/approval-stats', token) as Promise<ApprovalStats>,
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -223,6 +226,7 @@ export function useAIAnalytics(period: string = '7d') {
     queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics?period=${period}`, token) as Promise<AIUsageAnalytics>,
     enabled: !!token,
     staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 2 * 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -237,6 +241,7 @@ export function useAIAnalyticsComparison(period: string = '7d') {
     queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics/comparison?period=${period}`, token),
     enabled: !!token,
     staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 2 * 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -251,6 +256,7 @@ export function useAIAnalyticsTrends(period: string = '7d') {
     queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics/trends?period=${period}`, token),
     enabled: !!token,
     staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 2 * 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -265,6 +271,7 @@ export function useAIExports() {
     queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics/exports`, token),
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -300,6 +307,7 @@ export function useCostSummary(period: string = '7d') {
     queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/costs/summary?period=${period}`, token) as Promise<CostSummary>,
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -314,6 +322,7 @@ export function useBudget() {
     queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/costs/budget`, token),
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -328,6 +337,7 @@ export function useCostHistory() {
     queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/costs?limit=20`, token),
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -363,6 +373,7 @@ export function useLearningStats() {
     queryFn: () => fetchWithAuth('/api/v1/ai-insights/learning-stats', token) as Promise<LearningStats>,
     enabled: !!token,
     staleTime: 5 * 60 * 1000, // 5 minutes - learning stats don't change often
+    gcTime: 2 * 5 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 

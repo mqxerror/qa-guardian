@@ -243,6 +243,7 @@ export function useSecurityDashboard(params: DashboardQueryParams = {}) {
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds - security data can change frequently
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -259,6 +260,7 @@ export function useSecurityTrends(days: number = 30) {
     },
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute - trends don't change as often
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -287,6 +289,7 @@ export function useSecretsDashboard(params: SecretsQueryParams = {}) {
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -370,6 +373,7 @@ export function useAlertsConfig() {
     queryFn: () => fetchWithAuth('/api/v1/organization/dependency-alerts/config', token),
     enabled: !!token,
     staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 2 * 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -387,6 +391,7 @@ export function useDependencyAlerts() {
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds - alerts change frequently
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -440,6 +445,7 @@ export function useAgeConfig() {
     queryFn: () => fetchWithAuth('/api/v1/organization/dependency-age/config', token),
     enabled: !!token,
     staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 2 * 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -457,6 +463,7 @@ export function useProjectDependencies(projectId: string) {
     },
     enabled: !!token && !!projectId,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -495,6 +502,7 @@ export function useDependencyPolicies() {
     },
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -512,6 +520,7 @@ export function usePolicyViolations() {
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -587,6 +596,7 @@ export function useVulnerabilityHistory(projectId: string) {
     },
     enabled: !!token && !!projectId,
     staleTime: 30 * 1000, // 30 seconds
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -601,6 +611,7 @@ export function useVulnerabilityStats(projectId: string) {
     queryFn: () => fetchWithAuth(`/api/v1/projects/${projectId}/vulnerability-stats`, token),
     enabled: !!token && !!projectId,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -637,6 +648,7 @@ export function useMultiLangConfig() {
     queryFn: () => fetchWithAuth('/api/v1/organization/multi-language/config', token),
     enabled: !!token,
     staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 2 * 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -651,6 +663,7 @@ export function useMultiLangStats() {
     queryFn: () => fetchWithAuth('/api/v1/organization/multi-language/stats', token),
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -668,6 +681,7 @@ export function useAllDependencies(projectId: string) {
     },
     enabled: !!token && !!projectId,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 

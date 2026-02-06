@@ -101,6 +101,7 @@ export function useSchedules() {
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds
+    gcTime: 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -137,6 +138,7 @@ export function useTestSuitesForSchedule() {
     },
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute - suites don't change often
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 

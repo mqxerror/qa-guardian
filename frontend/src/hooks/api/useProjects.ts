@@ -84,6 +84,7 @@ export function useProjects(includeArchived: boolean = false) {
     },
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -98,6 +99,7 @@ export function useProject(projectId: string | undefined) {
     queryFn: () => fetchWithAuth(`/api/v1/projects/${projectId}`, token),
     enabled: !!token && !!projectId,
     staleTime: 60 * 1000,
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 

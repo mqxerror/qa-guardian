@@ -193,6 +193,7 @@ export function useFlakyTests() {
     },
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute - flaky test data doesn't change often
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -207,6 +208,7 @@ export function useFlakyImpactReport() {
     queryFn: () => fetchWithAuth('/api/v1/ai-insights/flaky-impact-report', token) as Promise<FlakyImpactReport>,
     enabled: !!token,
     staleTime: 5 * 60 * 1000, // 5 minutes - impact report is computed data
+    gcTime: 2 * 5 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -224,6 +226,7 @@ export function useAutoQuarantineSettings() {
     },
     enabled: !!token,
     staleTime: 2 * 60 * 1000, // 2 minutes - settings change rarely
+    gcTime: 2 * 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -241,6 +244,7 @@ export function useRetryStrategySettings() {
     },
     enabled: !!token,
     staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 2 * 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -255,6 +259,7 @@ export function useRetryStrategyPreview() {
     queryFn: () => fetchWithAuth('/api/v1/organization/retry-strategy-preview', token) as Promise<RetryStrategyPreview>,
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -269,6 +274,7 @@ export function useRemediationSuggestions(testId: string | null) {
     queryFn: () => fetchWithAuth(`/api/v1/ai-insights/flaky-suggestions/${testId}`, token) as Promise<RemediationSuggestion>,
     enabled: !!token && !!testId,
     staleTime: 10 * 60 * 1000, // 10 minutes - suggestions are AI-generated
+    gcTime: 2 * 10 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 

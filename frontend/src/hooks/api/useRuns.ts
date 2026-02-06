@@ -104,6 +104,7 @@ export function useRunsPaginated(params: RunsQueryParams = {}) {
     enabled: !!token,
     // Feature #95: Reduced from 30s to 5s for faster updates on frequently changing run data
     staleTime: 5 * 1000, // 5 seconds
+    gcTime: 15 * 1000, // Feature #106: 3x staleTime for frequently changing run data
   });
 }
 
@@ -156,6 +157,7 @@ export function useRun(runId: string | undefined) {
     enabled: !!token && !!runId,
     // Feature #95: Reduced from 10s to 2s for real-time run status updates
     staleTime: 2 * 1000, // 2 seconds for active runs
+    gcTime: 10 * 1000, // Feature #106: 5x staleTime for active run details
     // Feature #95: Auto-refetch every 10s for run detail pages
     refetchInterval: 10 * 1000, // 10 seconds
   });
@@ -173,6 +175,7 @@ export function useRunsByTest(testId: string | undefined) {
     enabled: !!token && !!testId,
     // Feature #95: Reduced from 30s to 5s for faster run history updates
     staleTime: 5 * 1000, // 5 seconds
+    gcTime: 15 * 1000, // Feature #106: 3x staleTime for run history
   });
 }
 
@@ -188,6 +191,7 @@ export function useRunsBySuite(suiteId: string | undefined) {
     enabled: !!token && !!suiteId,
     // Feature #95: Reduced from 30s to 5s for faster run history updates
     staleTime: 5 * 1000, // 5 seconds
+    gcTime: 15 * 1000, // Feature #106: 3x staleTime for run history
   });
 }
 

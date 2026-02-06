@@ -119,6 +119,7 @@ export function useSuitesPaginated(projectId: string | undefined, params: Suites
     },
     enabled: !!token && !!projectId,
     staleTime: 30 * 1000, // 30 seconds
+    gcTime: 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -140,6 +141,7 @@ export function useSuite(suiteId: string | undefined) {
     queryFn: () => fetchWithAuth(`/api/v1/suites/${suiteId}`, token),
     enabled: !!token && !!suiteId,
     staleTime: 30 * 1000,
+    gcTime: 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 

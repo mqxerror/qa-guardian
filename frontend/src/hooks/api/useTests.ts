@@ -134,6 +134,7 @@ export function useTestsPaginated(suiteId: string | undefined, params: TestsQuer
     },
     enabled: !!token && !!suiteId,
     staleTime: 30 * 1000, // 30 seconds
+    gcTime: 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -155,6 +156,7 @@ export function useTest(testId: string | undefined) {
     queryFn: () => fetchWithAuth(`/api/v1/tests/${testId}`, token),
     enabled: !!token && !!testId,
     staleTime: 30 * 1000,
+    gcTime: 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -169,6 +171,7 @@ export function useTestCode(testId: string | undefined, format: 'typescript' | '
     queryFn: () => fetchWithAuth(`/api/v1/tests/${testId}/code?format=${format}`, token),
     enabled: !!token && !!testId,
     staleTime: 60 * 1000, // 1 minute - code doesn't change often
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 

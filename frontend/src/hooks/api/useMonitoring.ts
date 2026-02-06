@@ -98,6 +98,7 @@ export function useMonitoringSummary() {
     queryFn: () => fetchWithAuth('/api/v1/monitoring/summary', token) as Promise<MonitoringSummary>,
     enabled: !!token,
     staleTime: 15 * 1000, // 15 seconds - monitoring data needs to be fresh
+    gcTime: 2 * 15 * 1000, // Feature #106: 2x staleTime for garbage collection
     refetchInterval: 30 * 1000, // Auto-refetch every 30 seconds for real-time updates
   });
 }
@@ -121,6 +122,7 @@ export function useMonitoringChecks(params: ChecksQueryParams = {}) {
     },
     enabled: !!token,
     staleTime: 15 * 1000, // 15 seconds
+    gcTime: 2 * 15 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -135,6 +137,7 @@ export function useMonitoringLocations() {
     queryFn: () => fetchWithAuth('/api/v1/monitoring/locations', token) as Promise<{ locations: MonitoringLocation[] }>,
     enabled: !!token,
     staleTime: 5 * 60 * 1000, // 5 minutes - locations don't change often
+    gcTime: 2 * 5 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -149,6 +152,7 @@ export function useCheckResults(checkId: string | undefined) {
     queryFn: () => fetchWithAuth(`/api/v1/monitoring/checks/${checkId}/results?limit=20`, token),
     enabled: !!token && !!checkId,
     staleTime: 10 * 1000, // 10 seconds - results update frequently
+    gcTime: 2 * 10 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -163,6 +167,7 @@ export function useMonitoringTransactions() {
     queryFn: () => fetchWithAuth('/api/v1/monitoring/transactions', token),
     enabled: !!token,
     staleTime: 15 * 1000,
+    gcTime: 2 * 15 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -177,6 +182,7 @@ export function useMonitoringWebhooks() {
     queryFn: () => fetchWithAuth('/api/v1/monitoring/webhooks', token),
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -191,6 +197,7 @@ export function useMonitoringPerformance() {
     queryFn: () => fetchWithAuth('/api/v1/monitoring/performance', token),
     enabled: !!token,
     staleTime: 15 * 1000,
+    gcTime: 2 * 15 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 

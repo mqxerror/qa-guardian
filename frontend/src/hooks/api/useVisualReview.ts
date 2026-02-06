@@ -157,6 +157,7 @@ export function usePendingVisualChanges() {
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds - visual changes need to be fresh
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 

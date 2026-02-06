@@ -129,6 +129,7 @@ export function useMembers(orgId: string | number = 1) {
     },
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute - members don't change often
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -146,6 +147,7 @@ export function useInvitations(orgId: string | number = 1) {
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds - invitations may be accepted
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -239,6 +241,7 @@ export function useApiKeys(orgId: string | number | undefined) {
     },
     enabled: !!token && !!orgId,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -299,6 +302,7 @@ export function useWebhooks(orgId: string | number | undefined) {
     },
     enabled: !!token && !!orgId,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -387,6 +391,7 @@ export function useAuditLogs(orgId: string | number | undefined, filters: AuditL
     },
     enabled: !!token && !!orgId,
     staleTime: 30 * 1000, // 30 seconds - logs update frequently
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -404,6 +409,7 @@ export function useAuditLogActions(orgId: string | number | undefined) {
     },
     enabled: !!token && !!orgId,
     staleTime: 5 * 60 * 1000, // 5 minutes - actions rarely change
+    gcTime: 2 * 5 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -421,6 +427,7 @@ export function useAuditLogResourceTypes(orgId: string | number | undefined) {
     },
     enabled: !!token && !!orgId,
     staleTime: 5 * 60 * 1000, // 5 minutes - resource types rarely change
+    gcTime: 2 * 5 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 

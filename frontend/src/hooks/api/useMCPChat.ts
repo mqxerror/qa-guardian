@@ -37,6 +37,7 @@ export function useAIStatus() {
     },
     enabled: true, // Always fetch status, even without token
     staleTime: 30 * 1000, // 30 seconds - status should be relatively fresh
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
     refetchInterval: 60 * 1000, // Auto-refetch every minute
     refetchOnWindowFocus: true, // Refetch when user returns to tab
   });

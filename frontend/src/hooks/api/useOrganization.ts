@@ -166,6 +166,7 @@ export function useAuditLogs(params: AuditLogsParams = {}) {
     },
     enabled: !!token && !!orgId,
     staleTime: 30 * 1000, // 30 seconds
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -185,6 +186,7 @@ export function useAuditLogActions() {
     },
     enabled: !!token && !!orgId,
     staleTime: 5 * 60 * 1000, // 5 minutes - actions don't change often
+    gcTime: 2 * 5 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -204,6 +206,7 @@ export function useAuditLogResourceTypes() {
     },
     enabled: !!token && !!orgId,
     staleTime: 5 * 60 * 1000, // 5 minutes - resource types don't change often
+    gcTime: 2 * 5 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -225,6 +228,7 @@ export function useApiKeys() {
     },
     enabled: !!token && !!orgId,
     staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -285,6 +289,7 @@ export function useWebhooks() {
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
@@ -358,6 +363,7 @@ export function useWebhookLogs(webhookId: string) {
     },
     enabled: !!token && !!webhookId,
     staleTime: 30 * 1000, // 30 seconds
+    gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
