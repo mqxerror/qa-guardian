@@ -530,17 +530,20 @@ export async function deleteOtherSessions(userId: string, currentSessionId: stri
  * Create a password reset token
  */
 export async function createResetToken(resetToken: ResetToken): Promise<ResetToken> {
+  // Memory store uses raw token as key (dev mode only)
   memoryResetTokens.set(resetToken.token, resetToken);
   if (!isDatabaseConnected()) {
     return resetToken;
   }
 
   try {
+    // Feature #223: Hash the token before storing (prevents exposure on DB compromise)
+    const tokenHash = createHash('sha256').update(resetToken.token).digest('hex');
     await query(
       `INSERT INTO reset_tokens (token_hash, user_email, expires_at, created_at)
        VALUES ($1, $2, $3, $4)`,
       [
-        resetToken.token, // In production, this should be hashed
+        tokenHash,
         resetToken.email,
         new Date(resetToken.createdAt.getTime() + 60 * 60 * 1000), // 1 hour expiry
         resetToken.createdAt,
@@ -563,15 +566,17 @@ export async function getResetToken(token: string): Promise<ResetToken | undefin
   }
 
   try {
+    // Feature #223: Hash the incoming token to match stored hash
+    const tokenHash = createHash('sha256').update(token).digest('hex');
     const result = await query<any>(
       `SELECT ${RESET_TOKEN_COLUMNS} FROM reset_tokens WHERE token_hash = $1`,
-      [token]
+      [tokenHash]
     );
     if (result && result.rows[0]) {
       const row = result.rows[0];
       return {
         email: row.user_email,
-        token: row.token_hash,
+        token: token, // Return original token, not hash
         createdAt: new Date(row.created_at),
         used: row.used_at !== null,
       };
@@ -594,9 +599,11 @@ export async function markResetTokenUsed(token: string): Promise<void> {
   }
 
   try {
+    // Feature #223: Hash the incoming token to match stored hash
+    const tokenHash = createHash('sha256').update(token).digest('hex');
     await query(
       'UPDATE reset_tokens SET used_at = NOW() WHERE token_hash = $1',
-      [token]
+      [tokenHash]
     );
   } catch (error) {
     console.error('[AuthRepo] Failed to mark reset token as used:', error);
