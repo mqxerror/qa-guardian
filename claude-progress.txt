@@ -1,10 +1,53 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 171/171 features passing (100.0%) - ALL COMPLETE!**
+- **Progress: 174/177 features passing (98.3%)**
 - **Last Updated**: 2026-02-06
-- **Status**: All features implemented and verified (includes production-hardening hotfixes)
-- **Last Feature Fixed**: #169-#171 - Manual hotfixes by Agent 007
+- **Pending**: #175-177 (Phase 10 JS build - complex refactoring, skipped for now)
+- **Last Action**: Completed #172 (login bug), #173 (migration bug), #174 (tsc verification)
+
+=== Session 2026-02-06 (Agent 138) - Bug Fixes + TypeScript Verification ===
+
+### Completed Features
+1. **#172** (Bug/Auth): Fixed login "string did not match expected pattern" error
+   - Root cause: Safari HTML5 browser validation on type="email" inputs
+   - Fix: Added `noValidate` attribute to LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage
+   - Verified: Login works with owner@example.com, edge-case emails with + work
+
+2. **#173** (Bug/Deployment): Fixed production migration re-run crash on existing databases
+   - Root cause: pgm.addConstraint() calls fail when constraint already exists
+   - Fix: Define composite primary keys inline in createTable, use DO $$ EXCEPTION blocks
+   - Also fixed: index syntax from 'order: DESC' to 'sort: DESC' for node-pg-migrate API
+   - Verified: Migration shows "No migrations to run!" on subsequent starts
+
+3. **#174** (Perf/Backend): Verified tsc compilation works with zero errors
+   - `npm run build` (tsc) completes successfully with exit code 0
+   - dist/ folder created with compiled JavaScript
+   - Backend still works with tsx runtime, frontend login flow verified
+
+### Skipped Features (Phase 10 - Complex Refactoring)
+- **#175-177**: Require adding .js extensions to ~869 imports across 211 files
+- Previously attempted and reverted (commit 32ad2cf)
+- Current tsx runtime works fine - performance optimization deferred
+
+=== Session 2026-02-06 (Agent 007 Manual) - Bug Fixes + Phase 10 Registration ===
+
+### Production Fix Applied
+- Fixed blank page crash: Removed Rollup manualChunks that created circular dependencies
+  between vendor and charts chunks (useState undefined at runtime)
+- Root cause: Rollup shares CommonJS interop helpers across manual chunks
+- Fix: Let Vite handle all chunk splitting natively (zero circular deps guaranteed)
+
+### New Features Registered (#172-#177)
+1. **#172** (P1 Bug/Auth): Fix login "string did not match expected pattern" error
+2. **#173** (P1 Bug/Deployment): Fix production migration re-run crash on existing databases
+3. **#174** (P2 Perf): Phase 10a - Fix all backend TypeScript type errors for tsc
+4. **#175** (P2 Perf): Phase 10b - Switch to NodeNext + add .js extensions to imports
+5. **#176** (P2 Perf): Phase 10c - Enable tsc build and compile to JavaScript
+6. **#177** (P2 Perf): Phase 10d - Switch Docker to compiled JS (60% faster startup)
+
+### Previous Status
+- Features 1-171: All passing (includes production-hardening hotfixes for #168-#171)
 
 === Session 2026-02-06 (Session 128) - Regression Testing ===
 Progress: 167/167 (100%) - ALL FEATURES COMPLETE!
