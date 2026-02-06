@@ -11,6 +11,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-qa_guardian}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-QaGuardian2024Secure}
       POSTGRES_DB: ${POSTGRES_DB:-qa_guardian}
+    # Feature #165: Slow query logging (queries > 1 second)
+    command: postgres -c log_min_duration_statement=1000 -c log_statement=none
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

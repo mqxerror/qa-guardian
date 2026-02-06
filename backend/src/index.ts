@@ -42,6 +42,7 @@ import { requestTimeoutHook } from './middleware/timeout'; // Feature #90: Reque
 import { initializeCleanupJob, stopCleanupJob, getCleanupStats } from './jobs/cleanup'; // Feature #154: Data retention cleanup
 import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, registerExecutionCallback } from './services/execution-queue'; // Feature #155: BullMQ execution queue
 import { initializeErrorHandlers, getErrorMetrics } from './services/error-tracking'; // Feature #164: Error tracking
+import { registerMetricsHooks, getMetricsSummary } from './services/metrics'; // Feature #165: API response time tracking
 
 // Socket.IO server instance (will be initialized after server starts)
 let io: SocketIOServer | null = null;
@@ -517,6 +518,11 @@ app.get('/health', async (request, reply) => {
   return responseBody;
 });
 
+// Feature #165: API Metrics endpoint - response time tracking
+app.get('/api/v1/metrics', async (request, reply) => {
+  return getMetricsSummary();
+});
+
 // Feature #152: Check disk space and warn if < 1GB free
 async function checkDiskSpace(): Promise<{
   healthy: boolean;
@@ -696,6 +702,9 @@ async function start() {
     }
 
     await registerPlugins();
+
+    // Feature #165: Register response time tracking hooks
+    registerMetricsHooks(app);
 
     const port = parseInt(process.env.PORT || '3001', 10);
     const host = process.env.HOST || '0.0.0.0';
