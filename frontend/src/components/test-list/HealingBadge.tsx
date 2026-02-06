@@ -2,8 +2,10 @@
  * Self-Healing Badge Component
  * Feature #1787: Extract test list components from TestSuitePage
  * Feature #1071: Healing indicator badge
+ * Feature #111: Wrapped with React.memo for performance
  */
 
+import { memo } from 'react';
 import { HealingBadgeProps } from './types';
 
 const healingStyles = {
@@ -13,7 +15,7 @@ const healingStyles = {
   default: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
 };
 
-export function HealingBadge({ isActive, status, count }: HealingBadgeProps) {
+export const HealingBadge = memo(function HealingBadge({ isActive, status, count }: HealingBadgeProps) {
   if (!isActive) return null;
 
   const styleKey = status || 'default';
@@ -29,6 +31,6 @@ export function HealingBadge({ isActive, status, count }: HealingBadgeProps) {
       {displayCount > 1 && <span>{displayCount}</span>}
     </span>
   );
-}
+});
 
 export default HealingBadge;

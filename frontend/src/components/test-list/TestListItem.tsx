@@ -2,11 +2,13 @@
  * Test List Item Component
  * Feature #1787: Extract test list components from TestSuitePage
  * Feature #1958: Enhanced with run metadata columns (Last Run, Result, Runs, Avg Time)
+ * Feature #111: Wrapped with React.memo for performance
  *
  * Renders a single test row in the test list table.
  * Replaces the inline JSX that was duplicated in TestSuitePage.
  */
 
+import { memo } from 'react';
 import { TestListItemProps } from './types';
 import { TestStatusBadge } from './TestStatusBadge';
 import { AIBadge } from './AIBadge';
@@ -44,7 +46,8 @@ function formatDuration(ms: number | null | undefined): string {
 }
 
 // Feature #1958: Result badge component
-function ResultBadge({ result }: { result: 'passed' | 'failed' | 'error' | 'running' | null | undefined }) {
+// Feature #111: Wrapped with React.memo for performance
+const ResultBadge = memo(function ResultBadge({ result }: { result: 'passed' | 'failed' | 'error' | 'running' | null | undefined }) {
   if (!result) {
     return <span className="text-xs text-muted-foreground">-</span>;
   }
@@ -69,9 +72,10 @@ function ResultBadge({ result }: { result: 'passed' | 'failed' | 'error' | 'runn
       <span className="capitalize">{result}</span>
     </span>
   );
-}
+});
 
-export function TestListItem({
+// Feature #111: Wrapped with React.memo for performance
+export const TestListItem = memo(function TestListItem({
   test,
   onView,
   onSelect,
@@ -167,6 +171,6 @@ export function TestListItem({
       </div>
     </div>
   );
-}
+});
 
 export default TestListItem;

@@ -3,11 +3,13 @@
  * Feature #1787: Extract test list components from TestSuitePage
  * Feature #1164: AI confidence level display
  * Feature #1151: Human review workflow badges
+ * Feature #111: Wrapped with React.memo for performance
  */
 
+import { memo } from 'react';
 import { AIBadgeProps } from './types';
 
-export function AIBadge({ isAiGenerated, confidenceScore, reviewStatus }: AIBadgeProps) {
+export const AIBadge = memo(function AIBadge({ isAiGenerated, confidenceScore, reviewStatus }: AIBadgeProps) {
   if (!isAiGenerated) return null;
 
   const getConfidenceColor = (score: number) => {
@@ -68,6 +70,6 @@ export function AIBadge({ isAiGenerated, confidenceScore, reviewStatus }: AIBadg
       )}
     </div>
   );
-}
+});
 
 export default AIBadge;

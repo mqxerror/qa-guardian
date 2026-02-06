@@ -1,8 +1,10 @@
 /**
  * Test Status Badge Component
  * Feature #1787: Extract test list components from TestSuitePage
+ * Feature #111: Wrapped with React.memo for performance
  */
 
+import { memo } from 'react';
 import { TestStatusBadgeProps } from './types';
 
 const statusStyles = {
@@ -12,7 +14,7 @@ const statusStyles = {
   archived: 'bg-gray-100 text-gray-500 dark:bg-gray-900/30 dark:text-gray-400',
 };
 
-export function TestStatusBadge({ status, size = 'sm' }: TestStatusBadgeProps) {
+export const TestStatusBadge = memo(function TestStatusBadge({ status, size = 'sm' }: TestStatusBadgeProps) {
   const sizeClasses = size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-sm';
 
   return (
@@ -20,6 +22,6 @@ export function TestStatusBadge({ status, size = 'sm' }: TestStatusBadgeProps) {
       {status}
     </span>
   );
-}
+});
 
 export default TestStatusBadge;

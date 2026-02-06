@@ -1,8 +1,10 @@
 /**
  * Test Type Badge Component
  * Feature #1787: Extract test list components from TestSuitePage
+ * Feature #111: Wrapped with React.memo for performance
  */
 
+import { memo } from 'react';
 import { TestTypeBadgeProps } from './types';
 
 const typeConfig = {
@@ -33,7 +35,7 @@ const typeConfig = {
   },
 };
 
-export function TestTypeBadge({ testType }: TestTypeBadgeProps) {
+export const TestTypeBadge = memo(function TestTypeBadge({ testType }: TestTypeBadgeProps) {
   const config = typeConfig[testType] || typeConfig.e2e;
 
   return (
@@ -44,6 +46,6 @@ export function TestTypeBadge({ testType }: TestTypeBadgeProps) {
       {config.icon}
     </span>
   );
-}
+});
 
 export default TestTypeBadge;
