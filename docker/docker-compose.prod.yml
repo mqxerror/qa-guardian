@@ -321,6 +321,41 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # ===========================================================================
+  # Health Monitor Watchdog (Feature #170)
+  # ===========================================================================
+  # External uptime monitoring that alerts via Discord/Slack webhook
+  healthcheck-monitor:
+    image: alpine/curl:latest
+    container_name: qa-guardian-healthcheck
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/scripts/health-monitor.sh"]
+    volumes:
+      - ../scripts:/scripts:ro
+    environment:
+      HEALTH_CHECK_URL: http://backend:3001/health
+      HEALTH_CHECK_INTERVAL: '300'  # 5 minutes
+      ALERT_THRESHOLD: '2'          # Alert after 2 consecutive failures
+      SERVICE_NAME: 'QA Guardian'
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 32M
+        reservations:
+          memory: 8M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
 # =============================================================================
 # Networks
 # =============================================================================
