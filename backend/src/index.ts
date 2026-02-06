@@ -20,6 +20,8 @@ import jwt from '@fastify/jwt';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { Server as SocketIOServer, Socket } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter'; // Feature #227: Redis adapter for horizontal scaling
+import { Redis } from 'ioredis'; // Feature #227: Redis clients for Socket.IO adapter
 import { createVerifier } from 'fast-jwt'; // Feature #201: Socket.IO JWT authentication
 import { authRoutes, initTestUsers } from './routes/auth.js';
 import { organizationRoutes } from './routes/organizations.js';
@@ -800,6 +802,56 @@ async function start() {
         credentials: true,
       },
     });
+
+    // Feature #227: Socket.IO Redis adapter for horizontal scaling
+    // This enables multiple API server instances to share Socket.IO events
+    try {
+      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+      const redisPassword = process.env.REDIS_PASSWORD;
+
+      const redisOptions: { host: string; port: number; password?: string } = (() => {
+        try {
+          const url = new URL(redisUrl);
+          const opts: { host: string; port: number; password?: string } = {
+            host: url.hostname,
+            port: parseInt(url.port || '6379', 10),
+          };
+          if (redisPassword) {
+            opts.password = redisPassword;
+          } else if (url.password) {
+            opts.password = url.password;
+          }
+          return opts;
+        } catch {
+          return { host: 'localhost', port: 6379 };
+        }
+      })();
+
+      // Create dedicated pub/sub clients for the Socket.IO adapter
+      const socketPubClient = new Redis(redisOptions);
+      const socketSubClient = new Redis(redisOptions);
+
+      // Wait for both clients to be ready
+      await Promise.all([
+        new Promise<void>((resolve, reject) => {
+          socketPubClient.once('ready', resolve);
+          socketPubClient.once('error', reject);
+          setTimeout(() => reject(new Error('Redis pub client timeout')), 5000);
+        }),
+        new Promise<void>((resolve, reject) => {
+          socketSubClient.once('ready', resolve);
+          socketSubClient.once('error', reject);
+          setTimeout(() => reject(new Error('Redis sub client timeout')), 5000);
+        }),
+      ]);
+
+      // Configure the Redis adapter
+      io.adapter(createAdapter(socketPubClient, socketSubClient));
+      console.log('[Socket.IO] Redis adapter configured - horizontal scaling enabled');
+    } catch (err) {
+      console.warn('[Socket.IO] Redis adapter not available, running in single-instance mode:', err instanceof Error ? err.message : err);
+      // Continue without Redis adapter - Socket.IO will work on single instance
+    }
 
     // Feature #201: Socket.IO JWT Authentication Middleware
     // Create JWT verifier using the same secret as Fastify JWT
