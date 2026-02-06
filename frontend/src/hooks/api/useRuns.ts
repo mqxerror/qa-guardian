@@ -290,6 +290,73 @@ export function useCancelRun() {
 }
 
 /**
+ * Feature #143: Hook to start a suite run (run all tests in a suite)
+ * Mutation hook with optimistic updates and cache invalidation
+ */
+export function useStartSuiteRun() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ suiteId, browsers }: { suiteId: string; browsers?: string[] }) =>
+      fetchWithAuth(`/api/v1/suites/${suiteId}/runs`, token, {
+        method: 'POST',
+        body: JSON.stringify({ browsers: browsers || ['chromium'] }),
+      }),
+    // Optimistic update - show pending run immediately
+    onMutate: async ({ suiteId }) => {
+      // Cancel any outgoing refetches for this suite's runs
+      await queryClient.cancelQueries({ queryKey: runKeys.bySuite(suiteId) });
+
+      // Snapshot the previous value for rollback
+      const previousRuns = queryClient.getQueryData(runKeys.bySuite(suiteId));
+
+      // Create an optimistic run object
+      const optimisticRun: TestRun = {
+        id: `temp-${Date.now()}`,
+        suite_id: suiteId,
+        suite_name: '',
+        project_id: '',
+        test_id: null,
+        status: 'pending',
+        browser: 'chromium',
+        branch: 'main',
+        created_at: new Date().toISOString(),
+        results_count: 0,
+        passed_count: 0,
+        failed_count: 0,
+        skipped_count: 0,
+      };
+
+      // Optimistically add the new run at the beginning of the list
+      queryClient.setQueryData(runKeys.bySuite(suiteId), (old: { runs?: TestRun[] } | undefined) => {
+        if (!old) return { runs: [optimisticRun] };
+        return {
+          ...old,
+          runs: [optimisticRun, ...(old.runs || [])],
+        };
+      });
+
+      return { previousRuns, suiteId };
+    },
+    // Rollback on error
+    onError: (_err, _vars, context) => {
+      if (context?.previousRuns !== undefined && context?.suiteId) {
+        queryClient.setQueryData(runKeys.bySuite(context.suiteId), context.previousRuns);
+      }
+    },
+    onSuccess: (_, { suiteId }) => {
+      // Invalidate the runs list for this suite
+      queryClient.invalidateQueries({ queryKey: runKeys.bySuite(suiteId) });
+      // Invalidate all run lists (run history pages)
+      queryClient.invalidateQueries({ queryKey: runKeys.lists() });
+      // Invalidate dashboard stats (run count changed)
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
+    },
+  });
+}
+
+/**
  * Hook to invalidate run queries (for use after mutations)
  * Feature #92: Enhanced to also invalidate dashboard stats on run completion
  */

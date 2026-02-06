@@ -10,7 +10,12 @@ import { io, Socket } from 'socket.io-client';
 import { UnifiedAIService } from '../services/UnifiedAIService';
 import { CreateTestModal } from '../components/create-test';
 // Feature #59: React Query hooks for paginated test loading
-import { useTestsPaginated, useSuite, useInvalidateTests } from '../hooks/api';
+// Feature #143: Added mutation hooks for operations
+import {
+  useTestsPaginated, useSuite, useInvalidateTests,
+  useReviewTest, useBatchReviewTests, useDuplicateTest, useDeleteTest,
+  useStartRun, useCancelRun, useStartSuiteRun, useDeleteSuite,
+} from '../hooks/api';
 import {
   TestSuite, TestType, TestTypeEnum, DeleteSuiteModal, DeleteTestModal,
   ImportTestsModal, EditSelectorModal, ExpandedScreenshotModal, InsertTemplateModal,
@@ -35,6 +40,16 @@ function TestSuitePage() {
     limit: itemsPerPage,
   });
   const { invalidateBySuite } = useInvalidateTests();
+
+  // Feature #143: Mutation hooks for operations (replace raw fetch calls)
+  const reviewTestMutation = useReviewTest();
+  const batchReviewMutation = useBatchReviewTests();
+  const duplicateTestMutation = useDuplicateTest();
+  const deleteTestMutation = useDeleteTest();
+  const startRunMutation = useStartRun();
+  const cancelRunMutation = useCancelRun();
+  const startSuiteRunMutation = useStartSuiteRun();
+  const deleteSuiteMutation = useDeleteSuite();
 
   // Extract data from React Query responses
   const suite = suiteData?.suite || null;
@@ -331,75 +346,35 @@ function TestSuitePage() {
   };
 
   // Feature #1151: Approve or reject a test
+  // Feature #143: Converted to React Query mutation
   const handleReviewTest = async (testId: string, action: 'approve' | 'reject', notes?: string) => {
     if (!token) return;
     setIsApproving(true);
     try {
-      const response = await fetch(`/api/v1/tests/${testId}/review`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ action, notes }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        // Feature #59: Use React Query invalidation to refresh tests
-        invalidateBySuite(suiteId || '');
-        toast.success(data.message);
-      } else {
-        const error = await response.json();
-        toast.error(error.message || 'Failed to review test');
-      }
+      const status = action === 'approve' ? 'approved' : 'rejected';
+      const data = await reviewTestMutation.mutateAsync({ testId, status, notes });
+      toast.success(data.message || `Test ${action}d successfully`);
     } catch (err) {
-      toast.error('Failed to review test');
+      toast.error(getErrorMessage(err, 'Failed to review test'));
     } finally {
       setIsApproving(false);
     }
   };
 
   // Feature #1152: Batch review multiple AI-generated tests
+  // Feature #143: Converted to React Query mutation
   const handleBatchReview = async (action: 'approve' | 'reject') => {
     if (!token || selectedForReview.size === 0) return;
     setIsApproving(true);
     try {
-      const response = await fetch('/api/v1/tests/bulk-review', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          test_ids: Array.from(selectedForReview),
-          action
-        }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        // Feature #59: Use React Query invalidation to refresh tests
-        invalidateBySuite(suiteId || '');
-        // Update review stats
-        if (suiteId) {
-          const statsResponse = await fetch(`/api/v1/suites/${suiteId}/review-settings`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          });
-          if (statsResponse.ok) {
-            const statsData = await statsResponse.json();
-            if (statsData.stats) {
-              setReviewStats(statsData.stats);
-            }
-          }
-        }
-        // Clear selection
-        setSelectedForReview(new Set());
-        toast.success(`Successfully ${action}d ${data.successful || selectedForReview.size} test(s)`);
-      } else {
-        const error = await response.json();
-        toast.error(error.message || 'Failed to batch review tests');
-      }
+      const status = action === 'approve' ? 'approved' : 'rejected';
+      const testIds = Array.from(selectedForReview);
+      const data = await batchReviewMutation.mutateAsync({ testIds, status, suiteId });
+      // Clear selection
+      setSelectedForReview(new Set());
+      toast.success(`Successfully ${action}d ${data.successful || testIds.length} test(s)`);
     } catch (err) {
-      toast.error('Failed to batch review tests');
+      toast.error(getErrorMessage(err, 'Failed to batch review tests'));
     } finally {
       setIsApproving(false);
     }
@@ -441,46 +416,24 @@ function TestSuitePage() {
     setSuiteRun(null);
 
     try {
-      const response = await fetch(`/api/v1/suites/${suiteId}/runs`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to start suite run');
-      }
-
-      const data = await response.json();
+      // Feature #143: Converted to React Query mutation
+      const data = await startSuiteRunMutation.mutateAsync({ suiteId: suiteId || '' });
       setSuiteRun(data.run);
       setSuiteRunPolling(true);
     } catch (err) {
       console.error('Failed to run suite:', err);
-      // Show user-friendly error message
       toast.error(getErrorMessage(err, 'Failed to start test run'));
       setIsRunningSuite(false);
     }
   };
 
   // Feature #1961: Quick actions - Run single test
+  // Feature #143: Converted to React Query mutation
   const handleRunSingleTest = async (testId: string) => {
     setRunningTestId(testId);
     try {
-      const response = await fetch(`/api/v1/tests/${testId}/runs`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to start test run');
-      }
-      const data = await response.json();
+      await startRunMutation.mutateAsync({ testId });
       toast.success('Test run started');
-      // Navigate to the test detail page to see results
       navigate(`/tests/${testId}`);
     } catch (err) {
       console.error('Failed to run test:', err);
@@ -491,30 +444,19 @@ function TestSuitePage() {
   };
 
   // Feature #1961: Quick actions - Duplicate test
+  // Feature #143: Converted to React Query mutation
   const handleDuplicateTest = async (test: TestType) => {
     try {
-      const response = await fetch(`/api/v1/suites/${suiteId}/tests`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      await duplicateTestMutation.mutateAsync({
+        suiteId: suiteId || '',
+        data: {
           name: `${test.name} (Copy)`,
           description: test.description,
           test_type: test.test_type || test.type,
-          steps: test.steps,
+          steps: test.steps as any, // Steps type varies between component and hook
           target_url: test.target_url,
-          viewport_width: test.viewport_width,
-          viewport_height: test.viewport_height,
-        }),
+        },
       });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to duplicate test');
-      }
-      // Feature #59: Use React Query invalidation to refresh tests
-      invalidateBySuite(suiteId || '');
       toast.success('Test duplicated successfully');
     } catch (err) {
       console.error('Failed to duplicate test:', err);
@@ -523,21 +465,11 @@ function TestSuitePage() {
   };
 
   // Feature #1961: Quick actions - Delete test
+  // Feature #143: Converted to React Query mutation
   const handleDeleteTest = async (testId: string) => {
     setIsDeletingTest(true);
     try {
-      const response = await fetch(`/api/v1/tests/${testId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to delete test');
-      }
-      // Feature #59: Use React Query invalidation to refresh tests
-      invalidateBySuite(suiteId || '');
+      await deleteTestMutation.mutateAsync({ id: testId, suiteId });
       toast.success('Test deleted successfully');
       setShowDeleteTestModal(null);
     } catch (err) {
@@ -628,57 +560,35 @@ function TestSuitePage() {
     setIsAnalyzingParallel(false);
   };
 
+  // Feature #143: Converted to React Query mutation
   const handleCancelSuiteRun = async () => {
     if (!suiteRun?.id) return;
 
     setIsCancellingSuite(true);
 
     try {
-      const response = await fetch(`/api/v1/runs/${suiteRun.id}/cancel`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to cancel run');
-      }
-
-      const data = await response.json();
+      await cancelRunMutation.mutateAsync(suiteRun.id);
       setSuiteRun((prev: any) => ({ ...prev, status: 'cancelled' }));
       setSuiteRunPolling(false);
       setIsRunningSuite(false);
       toast.success('Test run cancelled');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to cancel run');
+      toast.error(getErrorMessage(err, 'Failed to cancel run'));
     } finally {
       setIsCancellingSuite(false);
     }
   };
 
+  // Feature #143: Converted to React Query mutation
   const handleDeleteSuite = async () => {
     setIsDeletingSuite(true);
     const suiteName = suite?.name;
     try {
-      const response = await fetch(`/api/v1/suites/${suiteId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to delete suite');
-      }
-
+      await deleteSuiteMutation.mutateAsync({ id: suiteId || '', projectId: suite?.project_id });
       toast.success(`Suite "${suiteName}" deleted successfully!`);
-      // Navigate back to project page after deletion
       navigate(`/projects/${suite?.project_id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete suite');
+      toast.error(getErrorMessage(err, 'Failed to delete suite'));
       setIsDeletingSuite(false);
       setShowDeleteSuiteModal(false);
     }

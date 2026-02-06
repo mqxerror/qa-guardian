@@ -21,6 +21,9 @@ export {
   useRun,
   useRunsByTest,
   useRunsBySuite,
+  useStartRun,
+  useCancelRun,
+  useStartSuiteRun,  // Feature #143
   useInvalidateRuns,
   runKeys,
   type TestRun,
@@ -69,6 +72,10 @@ export {
   useCreateTest,
   useUpdateTest,
   useDeleteTest,
+  useReviewTest,        // Feature #143
+  useBatchReviewTests,  // Feature #143
+  useDuplicateTest,     // Feature #143
+  useUpdateSelector,    // Feature #143
   useInvalidateTests,
   testKeys,
   type Test,

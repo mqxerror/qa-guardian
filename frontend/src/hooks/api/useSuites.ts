@@ -5,6 +5,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
+// Feature #143: Import dashboard keys for cross-cache invalidation
+import { dashboardKeys } from './useDashboard';
 
 // Types
 export interface TestSuite {
@@ -238,18 +240,25 @@ export function useUpdateSuite() {
 
 /**
  * Hook to delete a suite
+ * Feature #143: Enhanced with dashboard invalidation
  */
 export function useDeleteSuite() {
   const token = useAuthStore(state => state.token);
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) =>
+    mutationFn: ({ id, projectId }: { id: string; projectId?: string }) =>
       fetchWithAuth(`/api/v1/suites/${id}`, token, {
         method: 'DELETE',
       }),
-    onSuccess: () => {
+    onSuccess: (_, { projectId }) => {
       queryClient.invalidateQueries({ queryKey: suiteKeys.lists() });
+      // Feature #143: Invalidate dashboard stats (suite count changed)
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
+      // Invalidate project suites if projectId provided
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: suiteKeys.listByProject(projectId) });
+      }
     },
   });
 }

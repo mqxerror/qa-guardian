@@ -330,3 +330,101 @@ export function useInvalidateTests() {
     },
   };
 }
+
+/**
+ * Feature #143: Hook to review a single test
+ * Mutation hook to update test review status with cache invalidation
+ */
+export function useReviewTest() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ testId, status, notes }: { testId: string; status: 'approved' | 'rejected' | 'needs_review'; notes?: string }) =>
+      fetchWithAuth(`/api/v1/tests/${testId}/review`, token, {
+        method: 'POST',
+        body: JSON.stringify({ status, notes }),
+      }),
+    onSuccess: (_, { testId }) => {
+      // Invalidate the specific test detail
+      queryClient.invalidateQueries({ queryKey: testKeys.detail(testId) });
+      // Invalidate all test lists (review status changed)
+      queryClient.invalidateQueries({ queryKey: testKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Feature #143: Hook to batch review multiple tests
+ * Mutation hook for bulk review operations with cache invalidation
+ */
+export function useBatchReviewTests() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ testIds, status }: { testIds: string[]; status: 'approved' | 'rejected' | 'needs_review'; suiteId?: string }) =>
+      fetchWithAuth('/api/v1/tests/bulk-review', token, {
+        method: 'POST',
+        body: JSON.stringify({ test_ids: testIds, status }),
+      }),
+    onSuccess: (_, { testIds, suiteId }) => {
+      // Invalidate all affected test details
+      testIds.forEach(id => {
+        queryClient.invalidateQueries({ queryKey: testKeys.detail(id) });
+      });
+      // Invalidate test lists
+      queryClient.invalidateQueries({ queryKey: testKeys.lists() });
+      // Invalidate suite detail if provided
+      if (suiteId) {
+        queryClient.invalidateQueries({ queryKey: suiteKeys.detail(suiteId) });
+      }
+    },
+  });
+}
+
+/**
+ * Feature #143: Hook to duplicate a test
+ * Mutation hook with cache invalidation for the duplicated test
+ */
+export function useDuplicateTest() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ suiteId, data }: { suiteId: string; data: CreateTestInput }) =>
+      fetchWithAuth(`/api/v1/suites/${suiteId}/tests`, token, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: (_, { suiteId }) => {
+      // Invalidate test lists for the suite
+      queryClient.invalidateQueries({ queryKey: testKeys.listBySuite(suiteId) });
+      // Invalidate suite detail (test count changed)
+      queryClient.invalidateQueries({ queryKey: suiteKeys.detail(suiteId) });
+      // Invalidate dashboard stats
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
+    },
+  });
+}
+
+/**
+ * Feature #143: Hook to update a selector override for a test step
+ * Mutation hook for healing/updating selectors
+ */
+export function useUpdateSelector() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ testId, stepId, newSelector, notes }: { testId: string; stepId: string; newSelector: string; notes?: string }) =>
+      fetchWithAuth(`/api/v1/tests/${testId}/steps/${stepId}/selector`, token, {
+        method: 'PUT',
+        body: JSON.stringify({ new_selector: newSelector, notes }),
+      }),
+    onSuccess: (_, { testId }) => {
+      // Invalidate the specific test detail (selector changed)
+      queryClient.invalidateQueries({ queryKey: testKeys.detail(testId) });
+    },
+  });
+}
