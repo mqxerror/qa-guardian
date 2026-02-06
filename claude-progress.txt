@@ -1,10 +1,10 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 167/167 features passing (100.0%) 🎉 ALL COMPLETE!**
+- **Progress: 167/171 features passing (97.7%)**
 - **Last Updated**: 2026-02-06
-- **Status**: All features implemented and verified
-- **Last Feature**: #100 - Replace SELECT * with explicit column selection
+- **Status**: 4 production-hardening features registered (#168-#171)
+- **Last Feature Registered**: #171 - Write backend smoke tests and make them block CI
 
 === Session 2026-02-06 (Session 128) - Regression Testing ===
 Progress: 167/167 (100%) - ALL FEATURES COMPLETE!
@@ -34747,3 +34747,87 @@ All major pages tested successfully with zero console errors:
 - MCP Tools Catalog showing 0 tools available (endpoint may need check)
 
 Conclusion: All 167 features remain passing. Application is stable and production-ready.
+
+=== Session 2026-02-06 - Production Hardening Feature Registration ===
+Progress: 167/171 (97.7%) - 4 new production-hardening features registered
+
+### QA Guardian Assessment Follow-up
+- Current score: 7.1/10 (up from 5.7/10)
+- Target: 8.0/10 (minimum for paying customers)
+- 4 remaining blockers registered as features #168-#171
+
+### New Features Registered
+1. **Feature #168** [Operations, P1]: Fix CI/CD pipeline to block on failures
+   - Remove || echo "non-blocking" patterns from lint/test/health check steps
+   - Keep migration || true (legitimate no-ops)
+
+2. **Feature #169** [Scalability, P1]: Separate test execution into worker container
+   - Create backend/src/worker.ts for BullMQ execution
+   - Add worker service to docker-compose.prod.yml
+   - Prevent Chromium OOM from killing API server
+
+3. **Feature #170** [Monitoring, P1]: Add external uptime monitoring watchdog
+   - Health monitor script polling backend every 5 minutes
+   - Discord/Slack webhook alerts on outage/recovery
+   - Alpine/curl container in docker-compose
+
+4. **Feature #171** [Testing/Backend, P1]: Write backend smoke tests and make them block CI
+   - Vitest-based tests: health, auth, API routes, execution queue, cache
+   - Wire into CI to block deployment on failures
+
+### Notes
+- S3/offsite backups explicitly deferred per user request
+- All features start as pending (passes=0, in_progress=0)
+- All set to priority 1 (critical production blockers)
+
+
+=== Session 2026-02-06 (Session 136) - CI/CD Pipeline Hardening ===
+Progress: 168/171 (98.2%) - Feature #168 COMPLETED
+
+### Feature #168: Fix CI/CD pipeline to block on failures - COMPLETED
+
+**Changes Made to .github/workflows/deploy.yml:**
+
+1. **Line 60 - Lint step**: Removed || echo non-blocking pattern
+   - Now: npm run lint (blocking)
+   - Lint failures will stop deployment
+
+2. **Line 68 - Test step**: Removed || echo non-blocking pattern
+   - Now: npm test (blocking)
+   - Test failures will stop deployment
+
+3. **Lines 118-120 - Health check in deploy script**:
+   - Changed from soft fail to hard fail with exit 1
+   - Unhealthy backend fails the deployment
+
+4. **Lines 122-140 - Production verification**:
+   - Added retry logic (3 attempts with 10s delay for Traefik)
+   - Changed from soft fail to hard fail (exit 1)
+   - Both /health and /api/v1/health are verified
+
+5. **Line 116 - Migrations**: Kept || true
+   - Migrations may legitimately be no-ops when no new migrations exist
+
+**Supporting Files Created:**
+
+1. **backend/.eslintrc.json** - ESLint configuration
+   - TypeScript support with recommended rules
+   - Warns on unused vars, explicit any, non-null assertions
+
+2. **backend/vitest.config.ts** - Vitest configuration
+   - passWithNoTests: true (allows CI to pass when no tests yet)
+   - Feature #171 will add actual tests
+
+**Commit:** d849ae9 - Feature #168: Make CI/CD pipeline block on failures
+
+**Verification Evidence:**
+- YAML syntax valid (manually reviewed structure)
+- All non-blocking patterns removed from lint/test steps
+- Health checks now use exit 1 to fail deployment on errors
+- Migration step preserved with || true as intended
+- ESLint and Vitest configs added to enable the checks
+
+**Next Features:**
+- Feature #169: Separate test execution into worker container
+- Feature #170: Add external uptime monitoring watchdog
+- Feature #171: Write backend smoke tests
