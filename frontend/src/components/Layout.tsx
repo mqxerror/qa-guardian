@@ -5,6 +5,8 @@ import { useAuthStore } from '../stores/authStore';
 import { useSocketStore } from '../stores/socketStore';
 // Feature #96: Real-time cache invalidation via WebSocket
 import { useRealtimeCacheInvalidation } from '../hooks/api/useRealtimeCacheInvalidation';
+// Feature #128: Command palette for quick navigation
+import { CommandPalette, useCommandPalette } from './ui/CommandPalette';
 
 interface LayoutProps {
   children: ReactNode;
@@ -15,6 +17,9 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Feature #128: Command palette for quick navigation (Cmd+K / Ctrl+K)
+  const { isOpen: commandPaletteOpen, close: closeCommandPalette } = useCommandPalette();
 
   // Feature #96: Connect to WebSocket and join organization room for real-time updates
   const { connect, joinOrg, isConnected } = useSocketStore();
@@ -200,6 +205,9 @@ export function Layout({ children }: LayoutProps) {
           {children}
         </main>
       </div>
+
+      {/* Feature #128: Command palette for quick navigation */}
+      <CommandPalette isOpen={commandPaletteOpen} onClose={closeCommandPalette} />
     </div>
   );
 }
