@@ -405,7 +405,7 @@ app.get('/health', async (request, reply) => {
   // Feature #60: Check cache status with timeout
   const cacheStats = await Promise.race([
     getCache().stats(),
-    new Promise<{ redisConnected: boolean; memoryCacheSize: number; redisKeyCount: number }>((resolve) =>
+    new Promise<{ redisConnected: boolean; memoryCacheSize: number; redisKeyCount: number; redisMemory?: undefined }>((resolve) =>
       setTimeout(() => resolve({ redisConnected: false, memoryCacheSize: 0, redisKeyCount: 0 }), 3000)
     ),
   ]);
