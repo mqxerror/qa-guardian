@@ -9,8 +9,8 @@
  * - Key page performance
  */
 
-import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest } from './types';
-import type { SiteAnalysis } from '../../services/crawl4ai';
+import { TestSuiteTemplate, TemplateGeneratorOptions, GeneratedTest } from './types.js';
+import type { SiteAnalysis } from '../../services/crawl4ai.js';
 
 export function generatePerformanceTemplate(options: TemplateGeneratorOptions): TestSuiteTemplate {
   const { baseUrl, siteAnalysis, projectName } = options;
