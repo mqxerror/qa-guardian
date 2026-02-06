@@ -1,12 +1,14 @@
 /**
  * LogsTab Component
  * Feature #46: Extracted from TestRunResultPage.tsx for modularity
+ * Feature #113: Added virtual scrolling for large log lists
  *
  * Displays unified console logs and network requests with filtering,
  * searching, and export capabilities.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { ConsoleLog, NetworkRequest, LogsViewMode, LogsFilter, LogsExportFormat } from './types';
 
 // Unified log entry interface for combining console logs and network requests
@@ -413,146 +415,13 @@ export default function LogsTab({
               <p className="text-muted-foreground">No logs match your current filters.</p>
             </div>
           ) : (
-            <div className="bg-gray-900 rounded-lg overflow-hidden">
-              <div className="max-h-[600px] overflow-auto p-4 font-mono text-sm">
-                {filteredLogs
-                  .filter(l => logsViewMode === 'unified' || l.type === 'console')
-                  .slice(0, expandedLogs ? undefined : 100)
-                  .map((log, idx) => (
-                    <div
-                      key={idx}
-                      className={`py-1.5 border-l-2 pl-3 mb-1 ${
-                        log.type === 'network'
-                          ? 'border-purple-500 hover:bg-purple-500/10'
-                          : log.level === 'error'
-                          ? 'border-red-500 hover:bg-red-500/10'
-                          : log.level === 'warn'
-                          ? 'border-yellow-500 hover:bg-yellow-500/10'
-                          : log.level === 'info'
-                          ? 'border-blue-500 hover:bg-blue-500/10'
-                          : 'border-gray-500 hover:bg-gray-500/10'
-                      } transition-colors cursor-pointer rounded-r`}
-                      onClick={() => log.type === 'network' && log.originalIndex !== undefined && toggleNetworkItem(log.originalIndex)}
-                    >
-                      <div className="flex items-start gap-2">
-                        {/* Timestamp */}
-                        <span className="text-gray-500 flex-shrink-0">
-                          [{new Date(log.timestamp).toISOString().split('T')[1].slice(0, 12)}]
-                        </span>
-
-                        {/* Type badge */}
-                        <span className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded uppercase ${
-                          log.type === 'network'
-                            ? 'bg-purple-800 text-purple-200'
-                            : log.level === 'error'
-                            ? 'bg-red-800 text-red-200'
-                            : log.level === 'warn'
-                            ? 'bg-yellow-800 text-yellow-200'
-                            : log.level === 'info'
-                            ? 'bg-blue-800 text-blue-200'
-                            : 'bg-gray-700 text-gray-300'
-                        }`}>
-                          {log.type === 'network' ? 'NET' : log.level?.slice(0, 3) || 'LOG'}
-                        </span>
-
-                        {/* Network: Method + Status */}
-                        {log.type === 'network' && (
-                          <>
-                            <span className="font-semibold text-purple-400 flex-shrink-0">{log.method}</span>
-                            <span className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${
-                              !log.status ? 'bg-gray-700 text-gray-300' :
-                              log.status >= 200 && log.status < 300 ? 'bg-green-800 text-green-200' :
-                              log.status >= 300 && log.status < 400 ? 'bg-blue-800 text-blue-200' :
-                              log.status >= 400 && log.status < 500 ? 'bg-yellow-800 text-yellow-200' :
-                              'bg-red-800 text-red-200'
-                            }`}>
-                              {log.status || 'N/A'}
-                            </span>
-                          </>
-                        )}
-
-                        {/* Message/URL */}
-                        <span className={`break-all ${
-                          log.type === 'network'
-                            ? 'text-purple-300'
-                            : log.level === 'error'
-                            ? 'text-red-400'
-                            : log.level === 'warn'
-                            ? 'text-yellow-400'
-                            : log.level === 'info'
-                            ? 'text-blue-400'
-                            : 'text-gray-200'
-                        }`}>
-                          {log.type === 'network' ? log.url : log.message}
-                        </span>
-
-                        {/* Duration for network */}
-                        {log.type === 'network' && log.duration_ms && (
-                          <span className="text-gray-500 flex-shrink-0 ml-auto">
-                            {log.duration_ms}ms
-                          </span>
-                        )}
-
-                        {/* Location for console */}
-                        {log.type === 'console' && log.location && (
-                          <span className="text-gray-500 text-xs flex-shrink-0 ml-auto">@ {log.location}</span>
-                        )}
-                      </div>
-
-                      {/* Expanded network details */}
-                      {log.type === 'network' && log.originalIndex !== undefined && expandedNetworkItems.has(log.originalIndex) && (
-                        <div className="mt-2 ml-6 p-3 bg-gray-800 rounded-lg text-xs space-y-2">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <span className="text-gray-500">Resource Type:</span>{' '}
-                              <span className="text-gray-300">{log.resourceType || 'unknown'}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Duration:</span>{' '}
-                              <span className="text-gray-300">{log.duration_ms ? `${log.duration_ms}ms` : '-'}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Request Size:</span>{' '}
-                              <span className="text-gray-300">{log.requestSize ? `${(log.requestSize / 1024).toFixed(1)}KB` : '-'}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Response Size:</span>{' '}
-                              <span className="text-gray-300">{log.responseSize ? `${(log.responseSize / 1024).toFixed(1)}KB` : '-'}</span>
-                            </div>
-                          </div>
-                          {log.failed && (
-                            <div className="text-red-400">
-                              <span className="text-gray-500">Error:</span> {log.failureText || 'Request failed'}
-                            </div>
-                          )}
-                          <div className="mt-2">
-                            <span className="text-gray-500">Full URL:</span>
-                            <div className="mt-1 p-2 bg-gray-900 rounded break-all text-gray-300">{log.url}</div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-
-              {/* Show more button */}
-              {!expandedLogs && filteredLogs.filter(l => logsViewMode === 'unified' || l.type === 'console').length > 100 && (
-                <button
-                  onClick={() => setExpandedLogs(true)}
-                  className="w-full p-3 bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors text-sm"
-                >
-                  Show all {filteredLogs.filter(l => logsViewMode === 'unified' || l.type === 'console').length} logs
-                </button>
-              )}
-              {expandedLogs && filteredLogs.length > 100 && (
-                <button
-                  onClick={() => setExpandedLogs(false)}
-                  className="w-full p-3 bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors text-sm"
-                >
-                  Show less
-                </button>
-              )}
-            </div>
+            <VirtualizedLogList
+              logs={filteredLogs.filter(l => logsViewMode === 'unified' || l.type === 'console')}
+              expandedLogs={expandedLogs}
+              setExpandedLogs={setExpandedLogs}
+              expandedNetworkItems={expandedNetworkItems}
+              toggleNetworkItem={toggleNetworkItem}
+            />
           )}
         </div>
       )}
@@ -572,152 +441,13 @@ export default function LogsTab({
               <p className="text-muted-foreground">No network requests captured.</p>
             </div>
           ) : (
-            <div className="border border-border rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 sticky top-0">
-                    <tr>
-                      <th className="text-left p-3 font-medium text-foreground w-8"></th>
-                      <th className="text-left p-3 font-medium text-foreground">Status</th>
-                      <th className="text-left p-3 font-medium text-foreground">Method</th>
-                      <th className="text-left p-3 font-medium text-foreground min-w-[300px]">URL</th>
-                      <th className="text-left p-3 font-medium text-foreground">Type</th>
-                      <th className="text-left p-3 font-medium text-foreground">Duration</th>
-                      <th className="text-left p-3 font-medium text-foreground">Size</th>
-                      <th className="text-left p-3 font-medium text-foreground">Time</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {networkRequests
-                      .filter(req => {
-                        if (!logsFilter.network) return false;
-                        if (req.failed && !logsFilter.failedRequests) return false;
-                        if (logsSearch.trim()) {
-                          const searchLower = logsSearch.toLowerCase();
-                          return req.url.toLowerCase().includes(searchLower) ||
-                            req.method.toLowerCase().includes(searchLower);
-                        }
-                        return true;
-                      })
-                      .slice(0, 100)
-                      .map((req, idx) => (
-                        <React.Fragment key={idx}>
-                          <tr
-                            className={`${req.failed ? 'bg-red-50 dark:bg-red-900/10' : ''} hover:bg-muted/30 cursor-pointer transition-colors`}
-                            onClick={() => toggleNetworkItem(idx)}
-                          >
-                            <td className="p-3">
-                              <svg
-                                className={`w-4 h-4 text-muted-foreground transition-transform ${expandedNetworkItems.has(idx) ? 'rotate-90' : ''}`}
-                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                            </td>
-                            <td className="p-3">
-                              <span className={`px-2 py-0.5 text-xs rounded font-medium ${
-                                !req.status ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' :
-                                req.status >= 200 && req.status < 300 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                                req.status >= 300 && req.status < 400 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                                req.status >= 400 && req.status < 500 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
-                                'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                              }`}>
-                                {req.status || (req.failed ? 'ERR' : 'N/A')}
-                              </span>
-                            </td>
-                            <td className="p-3">
-                              <span className={`font-mono font-medium ${
-                                req.method === 'GET' ? 'text-green-600 dark:text-green-400' :
-                                req.method === 'POST' ? 'text-blue-600 dark:text-blue-400' :
-                                req.method === 'PUT' ? 'text-yellow-600 dark:text-yellow-400' :
-                                req.method === 'DELETE' ? 'text-red-600 dark:text-red-400' :
-                                'text-foreground'
-                              }`}>
-                                {req.method}
-                              </span>
-                            </td>
-                            <td className="p-3 text-muted-foreground max-w-md">
-                              <div className="truncate" title={req.url}>
-                                {req.url}
-                              </div>
-                            </td>
-                            <td className="p-3 text-muted-foreground">
-                              <span className="px-1.5 py-0.5 text-xs bg-muted rounded">
-                                {req.resourceType}
-                              </span>
-                            </td>
-                            <td className="p-3 text-muted-foreground">
-                              {req.duration_ms ? (
-                                <span className={req.duration_ms > 1000 ? 'text-yellow-600 dark:text-yellow-400' : ''}>
-                                  {req.duration_ms}ms
-                                </span>
-                              ) : '-'}
-                            </td>
-                            <td className="p-3 text-muted-foreground">
-                              {req.responseSize ? `${(req.responseSize / 1024).toFixed(1)}KB` : '-'}
-                            </td>
-                            <td className="p-3 text-muted-foreground text-xs">
-                              {new Date(req.timestamp).toISOString().split('T')[1].slice(0, 12)}
-                            </td>
-                          </tr>
-                          {/* Expanded row */}
-                          {expandedNetworkItems.has(idx) && (
-                            <tr>
-                              <td colSpan={8} className="p-0">
-                                <div className="p-4 bg-muted/20 border-t border-border">
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                    <div>
-                                      <span className="text-xs text-muted-foreground block mb-1">Request Size</span>
-                                      <span className="font-medium text-foreground">
-                                        {req.requestSize ? `${(req.requestSize / 1024).toFixed(2)} KB` : 'N/A'}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-muted-foreground block mb-1">Response Size</span>
-                                      <span className="font-medium text-foreground">
-                                        {req.responseSize ? `${(req.responseSize / 1024).toFixed(2)} KB` : 'N/A'}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-muted-foreground block mb-1">Resource Type</span>
-                                      <span className="font-medium text-foreground">{req.resourceType || 'unknown'}</span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-muted-foreground block mb-1">Status Text</span>
-                                      <span className="font-medium text-foreground">{req.statusText || '-'}</span>
-                                    </div>
-                                  </div>
-
-                                  {req.failed && (
-                                    <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                                      <span className="text-red-700 dark:text-red-400 font-medium">Request Failed</span>
-                                      {req.failureText && (
-                                        <p className="text-sm text-red-600 dark:text-red-300 mt-1">{req.failureText}</p>
-                                      )}
-                                    </div>
-                                  )}
-
-                                  <div>
-                                    <span className="text-xs text-muted-foreground block mb-1">Full URL</span>
-                                    <div className="p-2 bg-muted rounded-lg font-mono text-sm break-all text-foreground">
-                                      {req.url}
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-              {networkRequests.length > 100 && (
-                <div className="p-3 bg-muted/30 text-center text-sm text-muted-foreground border-t border-border">
-                  Showing first 100 of {networkRequests.length} requests
-                </div>
-              )}
-            </div>
+            <VirtualizedNetworkTable
+              networkRequests={networkRequests}
+              logsFilter={logsFilter}
+              logsSearch={logsSearch}
+              expandedNetworkItems={expandedNetworkItems}
+              toggleNetworkItem={toggleNetworkItem}
+            />
           )}
         </div>
       )}
@@ -750,3 +480,476 @@ export default function LogsTab({
     </div>
   );
 }
+
+/**
+ * Feature #113: VirtualizedLogList - Virtualized rendering for large log lists
+ * Uses @tanstack/react-virtual for efficient rendering of 100+ log entries
+ */
+interface VirtualizedLogListProps {
+  logs: UnifiedLogEntry[];
+  expandedLogs: boolean;
+  setExpandedLogs: (expanded: boolean) => void;
+  expandedNetworkItems: Set<number>;
+  toggleNetworkItem: (index: number) => void;
+}
+
+function VirtualizedLogList({
+  logs,
+  expandedLogs,
+  setExpandedLogs,
+  expandedNetworkItems,
+  toggleNetworkItem,
+}: VirtualizedLogListProps) {
+  const parentRef = useRef<HTMLDivElement>(null);
+  const displayLogs = expandedLogs ? logs : logs.slice(0, 100);
+  const useVirtual = displayLogs.length > 50;
+  const ROW_HEIGHT = 36; // Estimated height per log entry
+
+  const virtualizer = useVirtualizer({
+    count: displayLogs.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: (index) => {
+      // Expanded network items are taller
+      const log = displayLogs[index];
+      if (log.type === 'network' && log.originalIndex !== undefined && expandedNetworkItems.has(log.originalIndex)) {
+        return 150;
+      }
+      return ROW_HEIGHT;
+    },
+    overscan: 10,
+  });
+
+  return (
+    <div className="bg-gray-900 rounded-lg overflow-hidden">
+      {useVirtual ? (
+        <div
+          ref={parentRef}
+          className="overflow-auto p-4 font-mono text-sm"
+          style={{ height: '600px' }}
+        >
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const log = displayLogs[virtualRow.index];
+              return (
+                <div
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <LogEntry
+                    log={log}
+                    expandedNetworkItems={expandedNetworkItems}
+                    toggleNetworkItem={toggleNetworkItem}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="max-h-[600px] overflow-auto p-4 font-mono text-sm">
+          {displayLogs.map((log, idx) => (
+            <LogEntry
+              key={idx}
+              log={log}
+              expandedNetworkItems={expandedNetworkItems}
+              toggleNetworkItem={toggleNetworkItem}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Show more/less button */}
+      {!expandedLogs && logs.length > 100 && (
+        <button
+          onClick={() => setExpandedLogs(true)}
+          className="w-full p-3 bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors text-sm"
+        >
+          Show all {logs.length} logs
+        </button>
+      )}
+      {expandedLogs && logs.length > 100 && (
+        <button
+          onClick={() => setExpandedLogs(false)}
+          className="w-full p-3 bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors text-sm"
+        >
+          Show less
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Single log entry component extracted for reuse
+ */
+function LogEntry({
+  log,
+  expandedNetworkItems,
+  toggleNetworkItem,
+}: {
+  log: UnifiedLogEntry;
+  expandedNetworkItems: Set<number>;
+  toggleNetworkItem: (index: number) => void;
+}) {
+  return (
+    <div
+      className={`py-1.5 border-l-2 pl-3 mb-1 ${
+        log.type === 'network'
+          ? 'border-purple-500 hover:bg-purple-500/10'
+          : log.level === 'error'
+          ? 'border-red-500 hover:bg-red-500/10'
+          : log.level === 'warn'
+          ? 'border-yellow-500 hover:bg-yellow-500/10'
+          : log.level === 'info'
+          ? 'border-blue-500 hover:bg-blue-500/10'
+          : 'border-gray-500 hover:bg-gray-500/10'
+      } transition-colors cursor-pointer rounded-r`}
+      onClick={() => log.type === 'network' && log.originalIndex !== undefined && toggleNetworkItem(log.originalIndex)}
+    >
+      <div className="flex items-start gap-2">
+        {/* Timestamp */}
+        <span className="text-gray-500 flex-shrink-0">
+          [{new Date(log.timestamp).toISOString().split('T')[1].slice(0, 12)}]
+        </span>
+
+        {/* Type badge */}
+        <span className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded uppercase ${
+          log.type === 'network'
+            ? 'bg-purple-800 text-purple-200'
+            : log.level === 'error'
+            ? 'bg-red-800 text-red-200'
+            : log.level === 'warn'
+            ? 'bg-yellow-800 text-yellow-200'
+            : log.level === 'info'
+            ? 'bg-blue-800 text-blue-200'
+            : 'bg-gray-700 text-gray-300'
+        }`}>
+          {log.type === 'network' ? 'NET' : log.level?.slice(0, 3) || 'LOG'}
+        </span>
+
+        {/* Network: Method + Status */}
+        {log.type === 'network' && (
+          <>
+            <span className="font-semibold text-purple-400 flex-shrink-0">{log.method}</span>
+            <span className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${
+              !log.status ? 'bg-gray-700 text-gray-300' :
+              log.status >= 200 && log.status < 300 ? 'bg-green-800 text-green-200' :
+              log.status >= 300 && log.status < 400 ? 'bg-blue-800 text-blue-200' :
+              log.status >= 400 && log.status < 500 ? 'bg-yellow-800 text-yellow-200' :
+              'bg-red-800 text-red-200'
+            }`}>
+              {log.status || 'N/A'}
+            </span>
+          </>
+        )}
+
+        {/* Message/URL */}
+        <span className={`break-all ${
+          log.type === 'network'
+            ? 'text-purple-300'
+            : log.level === 'error'
+            ? 'text-red-400'
+            : log.level === 'warn'
+            ? 'text-yellow-400'
+            : log.level === 'info'
+            ? 'text-blue-400'
+            : 'text-gray-200'
+        }`}>
+          {log.type === 'network' ? log.url : log.message}
+        </span>
+
+        {/* Duration for network */}
+        {log.type === 'network' && log.duration_ms && (
+          <span className="text-gray-500 flex-shrink-0 ml-auto">
+            {log.duration_ms}ms
+          </span>
+        )}
+
+        {/* Location for console */}
+        {log.type === 'console' && log.location && (
+          <span className="text-gray-500 text-xs flex-shrink-0 ml-auto">@ {log.location}</span>
+        )}
+      </div>
+
+      {/* Expanded network details */}
+      {log.type === 'network' && log.originalIndex !== undefined && expandedNetworkItems.has(log.originalIndex) && (
+        <div className="mt-2 ml-6 p-3 bg-gray-800 rounded-lg text-xs space-y-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="text-gray-500">Resource Type:</span>{' '}
+              <span className="text-gray-300">{log.resourceType || 'unknown'}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">Duration:</span>{' '}
+              <span className="text-gray-300">{log.duration_ms ? `${log.duration_ms}ms` : '-'}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">Request Size:</span>{' '}
+              <span className="text-gray-300">{log.requestSize ? `${(log.requestSize / 1024).toFixed(1)}KB` : '-'}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">Response Size:</span>{' '}
+              <span className="text-gray-300">{log.responseSize ? `${(log.responseSize / 1024).toFixed(1)}KB` : '-'}</span>
+            </div>
+          </div>
+          {log.failed && (
+            <div className="text-red-400">
+              <span className="text-gray-500">Error:</span> {log.failureText || 'Request failed'}
+            </div>
+          )}
+          <div className="mt-2">
+            <span className="text-gray-500">Full URL:</span>
+            <div className="mt-1 p-2 bg-gray-900 rounded break-all text-gray-300">{log.url}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Feature #113: VirtualizedNetworkTable - Virtualized network request table
+ */
+interface VirtualizedNetworkTableProps {
+  networkRequests: NetworkRequest[];
+  logsFilter: LogsFilter;
+  logsSearch: string;
+  expandedNetworkItems: Set<number>;
+  toggleNetworkItem: (index: number) => void;
+}
+
+function VirtualizedNetworkTable({
+  networkRequests,
+  logsFilter,
+  logsSearch,
+  expandedNetworkItems,
+  toggleNetworkItem,
+}: VirtualizedNetworkTableProps) {
+  const filteredRequests = useMemo(() => {
+    return networkRequests.filter(req => {
+      if (!logsFilter.network) return false;
+      if (req.failed && !logsFilter.failedRequests) return false;
+      if (logsSearch.trim()) {
+        const searchLower = logsSearch.toLowerCase();
+        return req.url.toLowerCase().includes(searchLower) ||
+          req.method.toLowerCase().includes(searchLower);
+      }
+      return true;
+    });
+  }, [networkRequests, logsFilter, logsSearch]);
+
+  const parentRef = useRef<HTMLDivElement>(null);
+  const useVirtual = filteredRequests.length > 50;
+  const ROW_HEIGHT = 48;
+
+  const virtualizer = useVirtualizer({
+    count: filteredRequests.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: (index) => {
+      // Expanded rows are taller
+      if (expandedNetworkItems.has(index)) {
+        return 200;
+      }
+      return ROW_HEIGHT;
+    },
+    overscan: 5,
+  });
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="grid grid-cols-8 gap-2 p-3 bg-muted/50 text-sm font-medium text-foreground sticky top-0 z-10 border-b border-border">
+        <div className="w-8"></div>
+        <div>Status</div>
+        <div>Method</div>
+        <div className="col-span-2">URL</div>
+        <div>Type</div>
+        <div>Duration</div>
+        <div>Size</div>
+      </div>
+
+      {/* Virtual or standard rendering */}
+      {useVirtual ? (
+        <div
+          ref={parentRef}
+          className="overflow-auto"
+          style={{ height: '500px' }}
+        >
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const req = filteredRequests[virtualRow.index];
+              const idx = virtualRow.index;
+              return (
+                <div
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <NetworkRow
+                    req={req}
+                    idx={idx}
+                    expanded={expandedNetworkItems.has(idx)}
+                    toggleNetworkItem={toggleNetworkItem}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="max-h-[500px] overflow-auto">
+          {filteredRequests.slice(0, 100).map((req, idx) => (
+            <NetworkRow
+              key={idx}
+              req={req}
+              idx={idx}
+              expanded={expandedNetworkItems.has(idx)}
+              toggleNetworkItem={toggleNetworkItem}
+            />
+          ))}
+        </div>
+      )}
+
+      {filteredRequests.length > 100 && !useVirtual && (
+        <div className="p-3 bg-muted/30 text-center text-sm text-muted-foreground border-t border-border">
+          Showing first 100 of {filteredRequests.length} requests
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Single network request row component
+ */
+function NetworkRow({
+  req,
+  idx,
+  expanded,
+  toggleNetworkItem,
+}: {
+  req: NetworkRequest;
+  idx: number;
+  expanded: boolean;
+  toggleNetworkItem: (index: number) => void;
+}) {
+  return (
+    <div className={`border-b border-border ${req.failed ? 'bg-red-50 dark:bg-red-900/10' : ''}`}>
+      <div
+        className="grid grid-cols-8 gap-2 p-3 items-center hover:bg-muted/30 cursor-pointer transition-colors"
+        onClick={() => toggleNetworkItem(idx)}
+      >
+        <div className="w-8">
+          <svg
+            className={`w-4 h-4 text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+        <div>
+          <span className={`px-2 py-0.5 text-xs rounded font-medium ${
+            !req.status ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' :
+            req.status >= 200 && req.status < 300 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+            req.status >= 400 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+            'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+          }`}>
+            {req.status || (req.failed ? 'ERR' : 'N/A')}
+          </span>
+        </div>
+        <div>
+          <span className={`font-mono font-medium ${
+            req.method === 'GET' ? 'text-green-600 dark:text-green-400' :
+            req.method === 'POST' ? 'text-blue-600 dark:text-blue-400' :
+            req.method === 'DELETE' ? 'text-red-600 dark:text-red-400' :
+            'text-foreground'
+          }`}>
+            {req.method}
+          </span>
+        </div>
+        <div className="col-span-2 text-sm text-muted-foreground truncate" title={req.url}>
+          {req.url}
+        </div>
+        <div className="text-xs">
+          <span className="px-1.5 py-0.5 bg-muted rounded">{req.resourceType}</span>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {req.duration_ms ? `${req.duration_ms}ms` : '-'}
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {req.responseSize ? `${(req.responseSize / 1024).toFixed(1)}KB` : '-'}
+        </div>
+      </div>
+
+      {/* Expanded details */}
+      {expanded && (
+        <div className="p-4 bg-muted/20 border-t border-border">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <span className="text-xs text-muted-foreground block mb-1">Request Size</span>
+              <span className="font-medium text-foreground">
+                {req.requestSize ? `${(req.requestSize / 1024).toFixed(2)} KB` : 'N/A'}
+              </span>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground block mb-1">Response Size</span>
+              <span className="font-medium text-foreground">
+                {req.responseSize ? `${(req.responseSize / 1024).toFixed(2)} KB` : 'N/A'}
+              </span>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground block mb-1">Resource Type</span>
+              <span className="font-medium text-foreground">{req.resourceType || 'unknown'}</span>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground block mb-1">Status Text</span>
+              <span className="font-medium text-foreground">{req.statusText || '-'}</span>
+            </div>
+          </div>
+          {req.failed && (
+            <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <span className="text-red-700 dark:text-red-400 font-medium">Request Failed</span>
+              {req.failureText && (
+                <p className="text-sm text-red-600 dark:text-red-300 mt-1">{req.failureText}</p>
+              )}
+            </div>
+          )}
+          <div>
+            <span className="text-xs text-muted-foreground block mb-1">Full URL</span>
+            <div className="p-2 bg-muted rounded-lg font-mono text-sm break-all text-foreground">
+              {req.url}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+

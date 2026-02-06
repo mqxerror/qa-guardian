@@ -1,12 +1,14 @@
 /**
  * TestListSection Component
  * Feature #50: Extract tests list from TestSuitePage.tsx
+ * Feature #113: Added virtual scrolling for large test lists using @tanstack/react-virtual
  *
  * Displays the list of tests in a suite with sorting, searching, and actions.
  */
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { TestType } from './types';
 import { formatRelativeTime } from './utils';
 
@@ -171,72 +173,180 @@ export function TestListSection({
           </button>
         </div>
       ) : (
-        <div className="rounded-lg border border-border bg-card overflow-x-auto">
-          {/* Feature #1958: Enhanced header with run metadata columns and sorting */}
-          <div className="grid grid-cols-[2fr_1fr_1fr_1fr_80px_80px_100px] gap-2 border-b border-border bg-muted/30 px-4 py-3 text-sm font-medium text-muted-foreground min-w-[900px]">
-            <button
-              className="flex items-center hover:text-foreground transition-colors text-left"
-              onClick={() => onSort('name')}
-            >
-              Name
-              <span className="ml-1">{renderSortIndicator('name')}</span>
-            </button>
-            <button
-              className="flex items-center hover:text-foreground transition-colors text-left"
-              onClick={() => onSort('status')}
-            >
-              Status
-              <span className="ml-1">{renderSortIndicator('status')}</span>
-            </button>
-            <button
-              className="flex items-center hover:text-foreground transition-colors text-left"
-              onClick={() => onSort('last_run')}
-            >
-              Last Run
-              <span className="ml-1">{renderSortIndicator('last_run')}</span>
-            </button>
-            <button
-              className="flex items-center hover:text-foreground transition-colors text-left"
-              onClick={() => onSort('last_result')}
-            >
-              Result
-              <span className="ml-1">{renderSortIndicator('last_result')}</span>
-            </button>
-            <button
-              className="flex items-center hover:text-foreground transition-colors text-left"
-              onClick={() => onSort('run_count')}
-            >
-              Runs
-              <span className="ml-1">{renderSortIndicator('run_count')}</span>
-            </button>
-            <button
-              className="flex items-center hover:text-foreground transition-colors text-left"
-              onClick={() => onSort('avg_duration')}
-            >
-              Avg Time
-              <span className="ml-1">{renderSortIndicator('avg_duration')}</span>
-            </button>
-            <div>Actions</div>
-          </div>
+        <VirtualizedTestList
+          tests={tests}
+          sortedTests={sortedTests}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          suiteRun={suiteRun}
+          openActionsDropdown={openActionsDropdown}
+          runningTestId={runningTestId}
+          onSort={onSort}
+          onSetActionsDropdown={onSetActionsDropdown}
+          onRunSingleTest={onRunSingleTest}
+          onDuplicateTest={onDuplicateTest}
+          onShowTemplateModal={onShowTemplateModal}
+          onShowDeleteTestModal={onShowDeleteTestModal}
+          loadStepTemplates={loadStepTemplates}
+          renderSortIndicator={renderSortIndicator}
+          renderTestTypeIcon={renderTestTypeIcon}
+          formatDuration={formatDuration}
+        />
+      )}
+    </div>
+  );
+}
 
-          {/* Test rows */}
-          {sortedTests.map((test) => {
-            // Feature #1959: Check run status for this test
-            const testResult = suiteRun?.results?.find((r: any) => r.test_id === test.id);
-            const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && suiteRun?.results?.length < tests.length;
-            const completedTestIds = suiteRun?.results?.map((r: any) => r.test_id) || [];
-            const currentTestIndex = completedTestIds.length;
-            const testsInOrder = tests.map(t => t.id);
-            const isThisTestRunning = isCurrentlyRunning && testsInOrder[currentTestIndex] === test.id;
-            const wasRecentlyRun = testResult && (Date.now() - new Date(suiteRun?.started_at || 0).getTime() < 60000);
+/**
+ * Feature #113: VirtualizedTestList - Uses @tanstack/react-virtual for efficient rendering
+ * Only renders visible rows plus overscan, dramatically reducing DOM nodes for large test lists
+ */
+interface VirtualizedTestListProps {
+  tests: TestType[];
+  sortedTests: TestType[];
+  sortField: LocalSortField | null;
+  sortDirection: LocalSortDirection;
+  suiteRun: any;
+  openActionsDropdown: string | null;
+  runningTestId: string | null;
+  onSort: (field: LocalSortField) => void;
+  onSetActionsDropdown: (testId: string | null) => void;
+  onRunSingleTest: (testId: string) => void;
+  onDuplicateTest: (test: TestType) => void;
+  onShowTemplateModal: (testId: string) => void;
+  onShowDeleteTestModal: (testId: string) => void;
+  loadStepTemplates: () => void;
+  renderSortIndicator: (field: LocalSortField) => React.ReactNode;
+  renderTestTypeIcon: (testType: string) => React.ReactNode;
+  formatDuration: (ms: number | null | undefined) => string;
+}
 
-            return (
-              <div
-                key={test.id}
-                className={`grid grid-cols-[2fr_1fr_1fr_1fr_80px_80px_100px] gap-2 border-b border-border px-4 py-3 last:border-0 items-center hover:bg-muted/20 cursor-pointer transition-colors min-w-[900px] ${
-                  wasRecentlyRun ? 'bg-primary/5 hover:bg-primary/10' : ''
-                } ${isThisTestRunning ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
-                onClick={() => navigate(`/tests/${test.id}`)}
+function VirtualizedTestList({
+  tests,
+  sortedTests,
+  sortField,
+  sortDirection,
+  suiteRun,
+  openActionsDropdown,
+  runningTestId,
+  onSort,
+  onSetActionsDropdown,
+  onRunSingleTest,
+  onDuplicateTest,
+  onShowTemplateModal,
+  onShowDeleteTestModal,
+  loadStepTemplates,
+  renderSortIndicator,
+  renderTestTypeIcon,
+  formatDuration,
+}: VirtualizedTestListProps) {
+  const navigate = useNavigate();
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  // Feature #113: Virtual scrolling for large test lists
+  // Only use virtualization when we have many tests (>20)
+  const useVirtual = sortedTests.length > 20;
+  const ROW_HEIGHT = 56; // Estimated row height in pixels
+
+  const virtualizer = useVirtualizer({
+    count: sortedTests.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 5, // Render 5 extra rows above/below viewport
+  });
+
+  return (
+    <div className="rounded-lg border border-border bg-card overflow-x-auto">
+      {/* Feature #1958: Enhanced header with run metadata columns and sorting */}
+      <div className="grid grid-cols-[2fr_1fr_1fr_1fr_80px_80px_100px] gap-2 border-b border-border bg-muted/30 px-4 py-3 text-sm font-medium text-muted-foreground min-w-[900px]">
+        <button
+          className="flex items-center hover:text-foreground transition-colors text-left"
+          onClick={() => onSort('name')}
+        >
+          Name
+          <span className="ml-1">{renderSortIndicator('name')}</span>
+        </button>
+        <button
+          className="flex items-center hover:text-foreground transition-colors text-left"
+          onClick={() => onSort('status')}
+        >
+          Status
+          <span className="ml-1">{renderSortIndicator('status')}</span>
+        </button>
+        <button
+          className="flex items-center hover:text-foreground transition-colors text-left"
+          onClick={() => onSort('last_run')}
+        >
+          Last Run
+          <span className="ml-1">{renderSortIndicator('last_run')}</span>
+        </button>
+        <button
+          className="flex items-center hover:text-foreground transition-colors text-left"
+          onClick={() => onSort('last_result')}
+        >
+          Result
+          <span className="ml-1">{renderSortIndicator('last_result')}</span>
+        </button>
+        <button
+          className="flex items-center hover:text-foreground transition-colors text-left"
+          onClick={() => onSort('run_count')}
+        >
+          Runs
+          <span className="ml-1">{renderSortIndicator('run_count')}</span>
+        </button>
+        <button
+          className="flex items-center hover:text-foreground transition-colors text-left"
+          onClick={() => onSort('avg_duration')}
+        >
+          Avg Time
+          <span className="ml-1">{renderSortIndicator('avg_duration')}</span>
+        </button>
+        <div>Actions</div>
+      </div>
+
+      {/* Feature #113: Virtualized or standard rendering based on list size */}
+      {useVirtual ? (
+        <div
+          ref={parentRef}
+          className="overflow-auto"
+          style={{ maxHeight: '600px' }} // Limit height for scrolling
+        >
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const test = sortedTests[virtualRow.index];
+              // Feature #1959: Check run status for this test
+              const testResult = suiteRun?.results?.find((r: any) => r.test_id === test.id);
+              const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && suiteRun?.results?.length < tests.length;
+              const completedTestIds = suiteRun?.results?.map((r: any) => r.test_id) || [];
+              const currentTestIndex = completedTestIds.length;
+              const testsInOrder = tests.map(t => t.id);
+              const isThisTestRunning = isCurrentlyRunning && testsInOrder[currentTestIndex] === test.id;
+              const wasRecentlyRun = testResult && (Date.now() - new Date(suiteRun?.started_at || 0).getTime() < 60000);
+
+              return (
+                <div
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <div
+                    className={`grid grid-cols-[2fr_1fr_1fr_1fr_80px_80px_100px] gap-2 border-b border-border px-4 py-3 items-center hover:bg-muted/20 cursor-pointer transition-colors min-w-[900px] ${
+                      wasRecentlyRun ? 'bg-primary/5 hover:bg-primary/10' : ''
+                    } ${isThisTestRunning ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                    onClick={() => navigate(`/tests/${test.id}`)}
               >
                 {/* Name Column */}
                 <div>
@@ -493,6 +603,214 @@ export function TestListSection({
                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        /* Non-virtualized fallback for smaller lists (<=20 items) */
+        <div>
+          {sortedTests.map((test) => {
+            // Feature #1959: Check run status for this test
+            const testResult = suiteRun?.results?.find((r: any) => r.test_id === test.id);
+            const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && suiteRun?.results?.length < tests.length;
+            const completedTestIds = suiteRun?.results?.map((r: any) => r.test_id) || [];
+            const currentTestIndex = completedTestIds.length;
+            const testsInOrder = tests.map(t => t.id);
+            const isThisTestRunning = isCurrentlyRunning && testsInOrder[currentTestIndex] === test.id;
+            const wasRecentlyRun = testResult && (Date.now() - new Date(suiteRun?.started_at || 0).getTime() < 60000);
+
+            return (
+              <div
+                key={test.id}
+                className={`grid grid-cols-[2fr_1fr_1fr_1fr_80px_80px_100px] gap-2 border-b border-border px-4 py-3 last:border-0 items-center hover:bg-muted/20 cursor-pointer transition-colors min-w-[900px] ${
+                  wasRecentlyRun ? 'bg-primary/5 hover:bg-primary/10' : ''
+                } ${isThisTestRunning ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                onClick={() => navigate(`/tests/${test.id}`)}
+              >
+                {/* Name Column */}
+                <div>
+                  <div className="flex items-center gap-2">
+                    {renderTestTypeIcon(test.test_type)}
+                    <span className="font-medium text-foreground">{test.name}</span>
+                    {test.healing_active && (
+                      <span
+                        className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium ${
+                          test.healing_status === 'pending'
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                            : test.healing_status === 'applied'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                            : test.healing_status === 'rejected'
+                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                        }`}
+                        title={`${test.healing_count || 1} healed selector${(test.healing_count || 1) > 1 ? 's' : ''} (${test.healing_status || 'pending'})`}
+                      >
+                        🔧
+                        {test.healing_count && test.healing_count > 1 && (
+                          <span>{test.healing_count}</span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  {test.description && (
+                    <p className="text-xs text-muted-foreground truncate">{test.description}</p>
+                  )}
+                </div>
+
+                {/* Status Column */}
+                <div className="flex items-center gap-1">
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    test.status === 'active' ? 'bg-green-100 text-green-700' :
+                    test.status === 'draft' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {test.status}
+                  </span>
+                  {test.ai_generated && (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-xs font-medium cursor-help bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                      title={
+                        test.ai_confidence_score !== undefined
+                          ? `AI Generated - ${test.ai_confidence_score}% confidence`
+                          : 'This test was generated by AI'
+                      }
+                    >
+                      🤖 AI
+                    </span>
+                  )}
+                </div>
+
+                {/* Last Run Column */}
+                <div className="text-sm text-muted-foreground">
+                  {isThisTestRunning ? (
+                    <span className="inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+                      <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Now
+                    </span>
+                  ) : test.last_run_at ? (
+                    formatRelativeTime(new Date(test.last_run_at))
+                  ) : (
+                    'Never'
+                  )}
+                </div>
+
+                {/* Result Column */}
+                <div>
+                  {testResult ? (
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      testResult.status === 'passed'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                    }`}>
+                      {testResult.status === 'passed' ? '✓' : '✗'}
+                    </span>
+                  ) : test.last_result ? (
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      test.last_result === 'passed'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                    }`}>
+                      {test.last_result === 'passed' ? '✓' : '✗'}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  )}
+                </div>
+
+                {/* Run Count Column */}
+                <div className="text-sm text-muted-foreground text-center">
+                  {test.run_count ?? 0}
+                </div>
+
+                {/* Avg Duration Column */}
+                <div className="text-sm text-muted-foreground">
+                  {formatDuration(test.avg_duration_ms)}
+                </div>
+
+                {/* Actions Column */}
+                <div className="relative">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSetActionsDropdown(openActionsDropdown === test.id ? null : test.id);
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                  >
+                    Actions
+                  </button>
+                  {openActionsDropdown === test.id && (
+                    <div
+                      className="absolute right-0 top-full z-50 mt-1 w-48 rounded-md border border-border bg-card shadow-lg"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            onSetActionsDropdown(null);
+                            navigate(`/tests/${test.id}`);
+                          }}
+                          className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
+                        >
+                          View Details
+                        </button>
+                        <button
+                          onClick={() => {
+                            onSetActionsDropdown(null);
+                            onRunSingleTest(test.id);
+                          }}
+                          disabled={runningTestId === test.id}
+                          className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted disabled:opacity-50"
+                        >
+                          Run Test
+                        </button>
+                        <button
+                          onClick={() => {
+                            onSetActionsDropdown(null);
+                            navigate(`/tests/${test.id}?edit=true`);
+                          }}
+                          className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            onSetActionsDropdown(null);
+                            onDuplicateTest(test);
+                          }}
+                          className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
+                        >
+                          Duplicate
+                        </button>
+                        <button
+                          onClick={() => {
+                            onSetActionsDropdown(null);
+                            onShowTemplateModal(test.id);
+                            loadStepTemplates();
+                          }}
+                          className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
+                        >
+                          Insert Template
+                        </button>
+                        <div className="border-t border-border my-1" />
+                        <button
+                          onClick={() => {
+                            onSetActionsDropdown(null);
+                            onShowDeleteTestModal(test.id);
+                          }}
+                          className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                        >
                           Delete
                         </button>
                       </div>
