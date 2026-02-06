@@ -25,11 +25,12 @@ services:
     image: redis:7-alpine
     container_name: qa-guardian-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    # Feature #148: Add password authentication for Redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-QaGuardianRedis2024}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-QaGuardianRedis2024}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
