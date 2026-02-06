@@ -57,6 +57,51 @@ function tokenExpiresWithin(token: string, ms: number): boolean {
 
 const API_BASE_URL = '/api/v1';
 
+// Feature #226: Background token refresh timer
+// Proactively refresh tokens before they expire to prevent 401 errors
+let refreshTimerId: ReturnType<typeof setInterval> | null = null;
+const REFRESH_INTERVAL_MS = 50 * 60 * 1000; // 50 minutes (access token is 1 hour)
+const PROACTIVE_REFRESH_THRESHOLD_MS = 10 * 60 * 1000; // Refresh if expires within 10 minutes
+
+// Feature #226: Start the background refresh timer
+function startRefreshTimer(): void {
+  // Clear any existing timer first
+  if (refreshTimerId) {
+    clearInterval(refreshTimerId);
+  }
+
+  refreshTimerId = setInterval(async () => {
+    const { token, refreshToken, refreshAccessToken } = useAuthStore.getState();
+
+    if (!token || !refreshToken) {
+      // Not logged in, stop the timer
+      stopRefreshTimer();
+      return;
+    }
+
+    // Check if token expires soon
+    if (tokenExpiresWithin(token, PROACTIVE_REFRESH_THRESHOLD_MS)) {
+      logger.auth.debug('[RefreshTimer] Token expires soon, refreshing proactively...');
+      const success = await refreshAccessToken();
+      if (!success) {
+        logger.auth.debug('[RefreshTimer] Proactive refresh failed');
+        // Don't logout - let the next API call handle it
+      }
+    }
+  }, REFRESH_INTERVAL_MS);
+
+  logger.auth.debug('[RefreshTimer] Started background refresh timer');
+}
+
+// Feature #226: Stop the background refresh timer
+function stopRefreshTimer(): void {
+  if (refreshTimerId) {
+    clearInterval(refreshTimerId);
+    refreshTimerId = null;
+    logger.auth.debug('[RefreshTimer] Stopped background refresh timer');
+  }
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -91,9 +136,15 @@ export const useAuthStore = create<AuthState>()(
           isLoading: false,
         });
         logger.auth.debug('Stored user:', get().user);
+
+        // Feature #226: Start background token refresh timer
+        startRefreshTimer();
       },
 
       logout: async () => {
+        // Feature #226: Stop background refresh timer
+        stopRefreshTimer();
+
         const { token, refreshToken } = get();
 
         // Call backend to invalidate token and refresh token
@@ -171,6 +222,10 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               isLoading: false,
             });
+
+            // Feature #226: Start background token refresh timer
+            startRefreshTimer();
+
             return true;
           } else {
             // Feature #213: Try refresh if /me fails (401)
