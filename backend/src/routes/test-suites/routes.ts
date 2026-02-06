@@ -24,11 +24,13 @@ import {
 // Import async database functions
 import {
   listTestSuites as dbListTestSuites,
+  listTestSuitesPaginated as dbListTestSuitesPaginated,
   getTestSuite as dbGetTestSuite,
   createTestSuite as dbCreateTestSuite,
   updateTestSuite as dbUpdateTestSuite,
   deleteTestSuite as dbDeleteTestSuite,
   listTests as dbListTests,
+  listTestsPaginated as dbListTestsPaginated,
   getTest as dbGetTest,
   createTest as dbCreateTest,
   updateTest as dbUpdateTest,
@@ -45,6 +47,7 @@ export async function coreRoutes(app: FastifyInstance) {
   // Feature #2081: Use async database functions for persistence
   // Feature #55: Add server-side pagination
   // Feature #61: Cached for 5 minutes
+  // Feature #99: Database-level pagination - no longer loads ALL suites into memory
   app.get<{ Params: ProjectParams; Querystring: { page?: number; limit?: number } }>('/api/v1/projects/:projectId/suites', {
     preHandler: [authenticate],
   }, async (request, reply) => {
@@ -56,22 +59,27 @@ export async function coreRoutes(app: FastifyInstance) {
     // Validate and clamp pagination params
     const pageNum = Math.max(1, Number(page) || 1);
     const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
-
-    // Feature #61: Try to get from cache first
-    const cacheKey = CacheKeys.suites.list(projectId);
-    let allSuites = await cache.get<TestSuite[]>(cacheKey);
-
-    if (!allSuites) {
-      // Cache miss - fetch from database
-      allSuites = await dbListTestSuites(projectId, orgId);
-      // Cache the full list
-      await cache.set(cacheKey, allSuites, CacheTTL.MEDIUM);
-    }
-    const total = allSuites.length;
-
-    // Apply pagination
     const offset = (pageNum - 1) * limitNum;
-    const suites = allSuites.slice(offset, offset + limitNum);
+
+    // Feature #99: Cache key now includes page/limit for proper cache scoping
+    const cacheKey = `${CacheKeys.suites.list(projectId)}:page=${pageNum}:limit=${limitNum}`;
+    let cachedResult = await cache.get<{ data: TestSuite[]; total: number }>(cacheKey);
+
+    let suites: TestSuite[];
+    let total: number;
+
+    if (cachedResult) {
+      // Cache hit - use cached paginated result
+      suites = cachedResult.data;
+      total = cachedResult.total;
+    } else {
+      // Cache miss - fetch from database with LIMIT/OFFSET
+      const result = await dbListTestSuitesPaginated(projectId, orgId, limitNum, offset);
+      suites = result.data;
+      total = result.total;
+      // Cache the paginated result
+      await cache.set(cacheKey, { data: suites, total }, CacheTTL.MEDIUM);
+    }
 
     // Feature #55: Return paginated response
     const totalPages = Math.ceil(total / limitNum);
@@ -303,6 +311,7 @@ export async function coreRoutes(app: FastifyInstance) {
   // Feature #2081: Use async database functions for persistence
   // Feature #54: Add server-side pagination
   // Feature #61: Cached for 5 minutes (tests list)
+  // Feature #99: Database-level pagination - no longer loads ALL tests into memory
   app.get<{ Params: SuiteParams; Querystring: { page?: number; limit?: number } }>('/api/v1/suites/:suiteId/tests', {
     preHandler: [authenticate],
   }, async (request, reply) => {
@@ -314,6 +323,7 @@ export async function coreRoutes(app: FastifyInstance) {
     // Validate and clamp pagination params
     const pageNum = Math.max(1, Number(page) || 1);
     const limitNum = Math.min(100, Math.max(1, Number(limit) || 50));
+    const offset = (pageNum - 1) * limitNum;
 
     // Feature #61: Try to get suite from cache first
     const suiteCacheKey = CacheKeys.suites.detail(suiteId);
@@ -332,20 +342,25 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    // Feature #61: Try to get tests from cache first
-    const testsCacheKey = CacheKeys.tests.list(suiteId);
-    let allTests = await cache.get<Test[]>(testsCacheKey);
-    if (!allTests) {
-      // Cache miss - fetch from database
-      allTests = await dbListTests(suiteId);
-      // Cache the full tests list
-      await cache.set(testsCacheKey, allTests, CacheTTL.MEDIUM);
-    }
-    const total = allTests.length;
+    // Feature #99: Cache key now includes page/limit for proper cache scoping
+    const testsCacheKey = `${CacheKeys.tests.list(suiteId)}:page=${pageNum}:limit=${limitNum}`;
+    let cachedResult = await cache.get<{ data: Test[]; total: number }>(testsCacheKey);
 
-    // Apply pagination
-    const offset = (pageNum - 1) * limitNum;
-    const testList = allTests.slice(offset, offset + limitNum);
+    let testList: Test[];
+    let total: number;
+
+    if (cachedResult) {
+      // Cache hit - use cached paginated result
+      testList = cachedResult.data;
+      total = cachedResult.total;
+    } else {
+      // Cache miss - fetch from database with LIMIT/OFFSET
+      const result = await dbListTestsPaginated(suiteId, limitNum, offset);
+      testList = result.data;
+      total = result.total;
+      // Cache the paginated result
+      await cache.set(testsCacheKey, { data: testList, total }, CacheTTL.MEDIUM);
+    }
 
     // Feature #1958: Compute run metadata for each test
     // Feature #87: Use optimized aggregated query instead of loading ALL runs into memory

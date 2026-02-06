@@ -13,12 +13,14 @@ import {
   updateTestSuite as dbUpdateTestSuite,
   deleteTestSuite as dbDeleteTestSuite,
   listTestSuites as dbListTestSuites,
+  listTestSuitesPaginated as dbListTestSuitesPaginated,
   listAllTestSuites as dbListAllTestSuites,
   createTest as dbCreateTest,
   getTest as dbGetTest,
   updateTest as dbUpdateTest,
   deleteTest as dbDeleteTest,
   listTests as dbListTests,
+  listTestsPaginated as dbListTestsPaginated,
   listAllTests as dbListAllTests,
   getTestSuitesMap,
   getTestsMap,
@@ -33,6 +35,7 @@ export const getTestSuite = dbGetTestSuite;
 export const updateTestSuite = dbUpdateTestSuite;
 export const deleteTestSuite = dbDeleteTestSuite;
 export const listTestSuites = dbListTestSuites;
+export const listTestSuitesPaginated = dbListTestSuitesPaginated;
 export const listAllTestSuites = dbListAllTestSuites;
 
 // Tests CRUD
@@ -41,6 +44,7 @@ export const getTest = dbGetTest;
 export const updateTest = dbUpdateTest;
 export const deleteTest = dbDeleteTest;
 export const listTests = dbListTests;
+export const listTestsPaginated = dbListTestsPaginated;
 export const listAllTests = dbListAllTests;
 
 // Async Map accessors (return Promise<Map>)

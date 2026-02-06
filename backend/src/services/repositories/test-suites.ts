@@ -158,6 +158,46 @@ export async function listTestSuites(projectId: string, organizationId: string):
   return [];
 }
 
+/**
+ * Feature #99: Database-level pagination for test suites
+ * Returns paginated results directly from database instead of loading all into memory
+ */
+export async function listTestSuitesPaginated(
+  projectId: string,
+  organizationId: string,
+  limit: number = 20,
+  offset: number = 0
+): Promise<{ data: TestSuite[]; total: number }> {
+  if (!isDatabaseConnected()) {
+    const all = Array.from(memTestSuites.values())
+      .filter(s => s.project_id === projectId && s.organization_id === organizationId);
+    return {
+      data: all.slice(offset, offset + limit),
+      total: all.length,
+    };
+  }
+
+  // Get total count first (with organization filter via JSONB)
+  const countResult = await query<{ count: string }>(
+    `SELECT COUNT(*) as count FROM test_suites
+     WHERE project_id = $1 AND config->>'organization_id' = $2`,
+    [projectId, organizationId]
+  );
+  const total = countResult ? parseInt(countResult.rows[0]?.count || '0', 10) : 0;
+
+  // Get paginated results with LIMIT/OFFSET at database level
+  const result = await query<any>(
+    `SELECT * FROM test_suites
+     WHERE project_id = $1 AND config->>'organization_id' = $2
+     ORDER BY created_at DESC
+     LIMIT $3 OFFSET $4`,
+    [projectId, organizationId, limit, offset]
+  );
+
+  const data = result ? result.rows.map(row => rowToTestSuite(row)) : [];
+  return { data, total };
+}
+
 export async function listAllTestSuites(organizationId: string): Promise<TestSuite[]> {
   if (!isDatabaseConnected()) {
     return Array.from(memTestSuites.values()).filter(s => s.organization_id === organizationId);
@@ -305,6 +345,48 @@ export async function listTests(suiteId: string): Promise<Test[]> {
     return result.rows.map(row => rowToTest(row, orgId));
   }
   return [];
+}
+
+/**
+ * Feature #99: Database-level pagination for tests
+ * Returns paginated results directly from database instead of loading all into memory
+ */
+export async function listTestsPaginated(
+  suiteId: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<{ data: Test[]; total: number; organizationId: string }> {
+  // Get the suite to find the organization_id
+  const suite = await getTestSuite(suiteId);
+  const orgId = suite?.organization_id || '';
+
+  if (!isDatabaseConnected()) {
+    const all = Array.from(memTests.values()).filter(t => t.suite_id === suiteId);
+    return {
+      data: all.slice(offset, offset + limit),
+      total: all.length,
+      organizationId: orgId,
+    };
+  }
+
+  // Get total count
+  const countResult = await query<{ count: string }>(
+    `SELECT COUNT(*) as count FROM tests WHERE suite_id = $1`,
+    [suiteId]
+  );
+  const total = countResult ? parseInt(countResult.rows[0]?.count || '0', 10) : 0;
+
+  // Get paginated results with LIMIT/OFFSET at database level
+  const result = await query<any>(
+    `SELECT * FROM tests
+     WHERE suite_id = $1
+     ORDER BY priority ASC, created_at ASC
+     LIMIT $2 OFFSET $3`,
+    [suiteId, limit, offset]
+  );
+
+  const data = result ? result.rows.map(row => rowToTest(row, orgId)) : [];
+  return { data, total, organizationId: orgId };
 }
 
 export async function listAllTests(organizationId: string): Promise<Test[]> {
