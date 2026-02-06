@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth';
 import { getTestSuite } from './test-suites';
-import { listTestRunsByOrg, createTestRun } from '../services/repositories/test-runs';
+import { listTestRunsBySchedule, createTestRun } from '../services/repositories/test-runs';
 import { sendScheduleTriggeredWebhook } from './test-runs/webhook-events';
 
 // Feature #2117: Import only async repository functions (no getMemory* calls)
@@ -296,24 +296,21 @@ export async function scheduleRoutes(app: FastifyInstance) {
       });
     }
 
-    // Find all runs that were triggered by this schedule (Feature #2117: async DB call)
-    const allRuns = await listTestRunsByOrg(orgId);
-    const runs = allRuns
-      .filter(r => (r as any).schedule_id === id)
-      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
-      .map(r => ({
-        id: r.id,
-        suite_id: r.suite_id,
-        status: r.status,
-        browser: r.browser,
-        started_at: r.started_at?.toISOString(),
-        completed_at: r.completed_at?.toISOString(),
-        duration_ms: r.duration_ms,
-        created_at: r.created_at.toISOString(),
-        passed: r.results?.filter(res => res.status === 'passed').length || 0,
-        failed: r.results?.filter(res => res.status === 'failed' || res.status === 'error').length || 0,
-        total: r.results?.length || 0,
-      }));
+    // Feature #141: Query directly by schedule_id instead of loading all org runs
+    const scheduleRuns = await listTestRunsBySchedule(id, orgId, 100);
+    const runs = scheduleRuns.map(r => ({
+      id: r.id,
+      suite_id: r.suite_id,
+      status: r.status,
+      browser: r.browser,
+      started_at: r.started_at?.toISOString(),
+      completed_at: r.completed_at?.toISOString(),
+      duration_ms: r.duration_ms,
+      created_at: r.created_at.toISOString(),
+      passed: r.results?.filter(res => res.status === 'passed').length || 0,
+      failed: r.results?.filter(res => res.status === 'failed' || res.status === 'error').length || 0,
+      total: r.results?.length || 0,
+    }));
 
     return { runs, schedule_name: schedule.name, total: runs.length };
   });

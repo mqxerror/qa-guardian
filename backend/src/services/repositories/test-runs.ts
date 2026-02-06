@@ -408,6 +408,40 @@ export async function listTestRunsByOrg(orgId: string, limit?: number): Promise<
 }
 
 /**
+ * Feature #141: List test runs for a specific schedule
+ * Queries directly by schedule_id instead of loading all org runs and filtering
+ */
+export async function listTestRunsBySchedule(scheduleId: string, orgId: string, limit: number = 50): Promise<TestRun[]> {
+  if (isDatabaseConnected()) {
+    try {
+      const result = await query<any>(
+        `SELECT * FROM test_runs
+         WHERE schedule_id = $1 AND organization_id = $2
+         ORDER BY created_at DESC
+         LIMIT $3`,
+        [scheduleId, orgId, limit]
+      );
+      if (result && result.rows) {
+        return result.rows.map(rowToTestRun);
+      }
+    } catch (error) {
+      console.error('[TestRunsRepo] Failed to list test runs by schedule from database:', error);
+    }
+  }
+
+  // Fallback: filter from in-memory Map when DB unavailable
+  const map = getTestRunsMap();
+  let runs: TestRun[] = [];
+  for (const run of map.values()) {
+    if (run.schedule_id === scheduleId && run.organization_id === orgId) {
+      runs.push(run);
+    }
+  }
+  runs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return runs.slice(0, limit);
+}
+
+/**
  * Feature #135: List test runs for a specific test
  * Queries directly by test_id instead of loading all org runs
  * Also handles batch/suite runs that include this test in their results
