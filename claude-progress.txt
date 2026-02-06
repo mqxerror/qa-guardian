@@ -35426,3 +35426,47 @@ Key Verifications:
 Remaining:
 - Feature #191 (ZAP DAST) requires Docker environment
 
+=== Session 2026-02-06 (Session 146) - ZAP DAST Feature Investigation ===
+Progress: 198/199 passing (99.5%)
+
+Feature #191 Investigation: ZAP DAST Security Scan
+Status: SKIPPED - Requires Docker with ZAP container (external dependency)
+
+Investigation Findings:
+1. DAST Architecture Verified:
+   - Full ZAP Scanner (scanner.ts): Uses OWASP ZAP container for comprehensive DAST
+   - Lightweight Scanner (lightweight-scanner.ts): Built-in fallback when ZAP unavailable
+   - Smart fallback: routes.ts checks isZAPAvailable() and uses appropriate scanner
+
+2. Lightweight Scanner Capabilities (Verified Working):
+   - Security header analysis (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)
+   - Cookie security flags (Secure, HttpOnly, SameSite)
+   - Information disclosure detection (Server header, X-Powered-By)
+   - CORS policy analysis, Error message disclosure detection
+
+3. ZAP Container Status:
+   - Services page correctly shows OWASP ZAP: Unavailable
+   - ZAP Docker container not running in this environment
+   - Docker daemon permissions restricted in sandbox
+
+4. DAST Scan Test (Lightweight Mode):
+   - Ran DAST scan on http://localhost:3001 (Baseline profile)
+   - Scan completed successfully with 0 findings
+   - 2 completed scans shown in UI with compare functionality
+
+Reason for Skip: Feature #191 requires ZAP container for spider scan, active scan,
+and finding detection from real ZAP alerts - external service dependency.
+
+Regression Testing Performed:
+1. Run History Page - 4 runs, filters working, pagination functional
+2. Security Dashboard Secrets Tab - 11 secrets (2 Critical, 8 High, 1 Medium)
+3. DAST Scanning Page - Lightweight scanner executes successfully
+
+System Status: Backend OK, Frontend OK, PostgreSQL 4ms, Redis connected, WebSocket connected
+Console Errors: 0
+
+Screenshots: session146-services-zap-unavailable.png, session146-dast-scan-completed.png,
+session146-run-history-page.png, session146-security-secrets-verified.png
+
+Current Status: 198/199 features passing (99.5%)
+
