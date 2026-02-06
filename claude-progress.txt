@@ -35340,3 +35340,89 @@ Ended: 182/182 features passing (100%) 🎉
 
 ### Final Status
 The QA Guardian platform is now fully feature-complete with all 182 planned features implemented and verified!
+
+=== Manual Hotfix Session 2026-02-06 (Features #183-#199) ===
+Progress: 191/199 (96.0%) - P1 bug fixes, ESLint cleanup, JSONB performance optimization
+
+### Features Completed
+
+**#183: Fix visual/pending/count 504 timeout** (Priority Bug Fix)
+- Problem: /api/v1/visual/pending/count endpoint timing out under load
+- Fix: Added date filtering, extended timeout to 60s, added reply.sent guard
+- Commit: 52bbe25
+
+**#184: Fix flakiness-trend 504 timeout and add caching** (Priority Bug Fix)
+- Problem: /api/v1/tests/:testId/flakiness-trend endpoint timing out
+- Fix: Added cache.getOrSet with 5min TTL, extended timeout to 60s
+- Commit: 52bbe25
+
+**#185: Add GIN index on test_runs.results JSONB column** (Priority Bug Fix)
+- Problem: JSONB containment queries using sequential scan on large results column
+- Fix: Added migration 20260207000000_add_gin_index_test_runs_results
+- Commit: 52bbe25
+
+**#193: Fix Reply already sent errors in visual-batch and stats routes** (Priority Bug Fix)
+- Problem: Multiple reply.send() calls causing Fastify errors
+- Fix: Added reply.sent guards before all response sends
+- Commit: 52bbe25
+
+**#194: Fix 58 ESLint errors in backend** (Code Quality)
+- Problem: 58 ESLint errors across 18 backend files
+- Fix: Auto-fix + manual fixes for no-case-declarations, no-useless-escape, ban-ts-comment, no-var, no-empty
+- Commit: 50d20db
+
+**#195: Fix 33 ESLint errors in frontend** (Code Quality)
+- Problem: 33 ESLint errors across 10 frontend files
+- Fix: Auto-fix + manual fixes for no-empty, no-case-declarations, react-hooks/rules-of-hooks
+- Commit: 50d20db
+
+**#197: Exclude results JSONB from test runs listing queries** (Critical Performance)
+- Problem: test_runs.results column up to 114MB per row loaded in ALL listing queries
+- Fix: Added TEST_RUN_COLUMNS_LIGHT constant, updated listing functions. 731x speedup (6.5s -> 9ms)
+- Commit: 6e028f2
+
+**#198: Fix flakiness-trend to use lightweight query without results JSONB** (Critical Performance)
+- Problem: Flakiness-trend handler loading hundreds of MB of JSONB data
+- Fix: Added getFlakinessTrendData() with targeted JSONB extraction
+- Commit: 6e028f2
+
+**#199: Fix dbListTestRunsByTestId to exclude full results column** (Critical Performance)
+- Problem: /api/v1/tests/:testId/runs loading 114MB+ JSONB per row
+- Fix: Updated to use TEST_RUN_COLUMNS_LIGHT, CASE expression for matching test results
+- Commit: 6e028f2
+
+### Deployment Verification
+- Health check: All green (DB connected, Redis connected, 3 migrations, 0 errors)
+- API benchmark: Lightweight listing query 9ms vs 6579ms (heavy) = 731x speedup
+- Public URL test: flakiness-trend 200 OK in 17ms, test runs 200 OK in 7ms
+- tsc --noEmit: 0 errors
+- ESLint: 0 errors (warnings only)
+
+### Git Commits This Session
+- 52bbe25: fix: resolve 504 timeouts on visual/pending and flakiness-trend endpoints
+- 50d20db: fix: resolve all 91 ESLint errors across backend and frontend (#194, #195)
+- 6e028f2: perf: exclude massive JSONB columns from test runs listing queries (#197, #198, #199)
+
+=== Session Update: 2026-02-06 14:42:43 ===
+Features Progress: 198/199 passing (99.5%)
+
+Features Completed This Session:
+- #188: K6 Load test execution - PASSED
+- #189: Lighthouse Performance audit - PASSED
+- #190: axe-core Accessibility test - PASSED
+- #192: Gitleaks secret detection - PASSED
+- #196: CI pipeline lint/tsc blocking - PASSED
+
+Feature Skipped:
+- #191: ZAP DAST security scan - SKIPPED (requires Docker with ZAP container)
+
+Key Verifications:
+1. K6 v1.5.0: Ran real load test, 39 iterations, all checks passed, p(95)=35.28ms
+2. Lighthouse 12.8.2: Performance 97%, Accessibility 96%, Best Practices 96%, SEO 83%
+3. axe-core via @axe-core/playwright@4.11.1: Real WCAG scanning with AxeBuilder
+4. Gitleaks 8.30.0: Detected 11 secrets (2 Critical, 8 High, 1 Medium)
+5. CI Pipeline: deploy.yml properly blocks on lint/tsc failures
+
+Remaining:
+- Feature #191 (ZAP DAST) requires Docker environment
+
