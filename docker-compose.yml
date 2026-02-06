@@ -20,13 +20,23 @@ services:
       retries: 5
     networks:
       - qa-network
+    # Feature #156: Resource constraints to prevent OOM
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   redis:
     image: redis:7-alpine
     container_name: qa-guardian-redis
     restart: unless-stopped
     # Feature #148: Add password authentication for Redis
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-QaGuardianRedis2024}
+    # Feature #156: Add maxmemory policy to prevent OOM
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-QaGuardianRedis2024} --maxmemory 400mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     healthcheck:
@@ -36,6 +46,15 @@ services:
       retries: 5
     networks:
       - qa-network
+    # Feature #156: Resource constraints to prevent OOM
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
 
   backend:
     build:
@@ -49,7 +68,8 @@ services:
       - .env
     environment:
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
-      - NODE_OPTIONS=--max-old-space-size=2048
+      # Feature #156: Limit Node.js heap to 1.5GB to leave room for other processes
+      - NODE_OPTIONS=--max-old-space-size=1536
     volumes:
       - backend_data:/app/data
     depends_on:
@@ -62,6 +82,15 @@ services:
       #   condition: service_healthy
     networks:
       - qa-network
+    # Feature #156: Resource constraints to prevent OOM
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   zap:
     image: ghcr.io/zaproxy/zaproxy:stable
@@ -82,6 +111,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    # Feature #156: Resource constraints to prevent OOM
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   frontend:
     build:
@@ -95,6 +133,15 @@ services:
       - backend
     networks:
       - qa-network
+    # Feature #156: Resource constraints to prevent OOM (Nginx is lightweight)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 32M
 
   mcp-server:
     build:
@@ -112,6 +159,8 @@ services:
       - MCP_HOST=0.0.0.0
       - QA_GUARDIAN_API_URL=http://backend:3001
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
+      # Feature #156: Limit Node.js heap
+      - NODE_OPTIONS=--max-old-space-size=768
     command: ["npx", "tsx", "src/mcp/index.ts"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
@@ -123,6 +172,15 @@ services:
       - backend
     networks:
       - qa-network
+    # Feature #156: Resource constraints to prevent OOM
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
 # Feature #151: Database backup service (runs daily via cron)
   backup:
@@ -160,6 +218,15 @@ services:
         done
       "
     restart: unless-stopped
+    # Feature #156: Resource constraints (backup is lightweight)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
 
 networks:
   qa-network:
