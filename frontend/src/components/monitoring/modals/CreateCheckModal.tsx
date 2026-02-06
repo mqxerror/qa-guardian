@@ -252,16 +252,22 @@ export default function CreateCheckModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-4">
-      <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl mx-4 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-check-title"
+        className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl mx-4 max-h-[90vh] overflow-y-auto"
+      >
+        <h2 id="create-check-title" className="text-lg font-semibold text-foreground mb-4">
           {editingCheck ? 'Edit Uptime Check' : 'Create Uptime Check'}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* URL Input - Primary field */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">URL to Monitor</label>
+            <label htmlFor="check-url" className="block text-sm font-medium text-foreground mb-1">URL to Monitor</label>
             <input
               type="url"
+              id="check-url"
               value={formUrl}
               onChange={e => handleUrlChange(e.target.value)}
               placeholder="https://api.example.com/health"
@@ -314,9 +320,10 @@ export default function CreateCheckModal({
 
           {/* Name field - editable */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Name</label>
+            <label htmlFor="check-name" className="block text-sm font-medium text-foreground mb-1">Name</label>
             <input
               type="text"
+              id="check-name"
               value={formName}
               onChange={e => setFormName(e.target.value)}
               placeholder="Auto-generated from URL"
@@ -353,8 +360,9 @@ export default function CreateCheckModal({
               {/* Method & Interval */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Method</label>
+                  <label htmlFor="check-method" className="block text-sm font-medium text-foreground mb-1">Method</label>
                   <select
+                    id="check-method"
                     value={formMethod}
                     onChange={e => setFormMethod(e.target.value as 'GET' | 'POST' | 'HEAD' | 'PUT' | 'DELETE' | 'PATCH')}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
@@ -368,8 +376,9 @@ export default function CreateCheckModal({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Interval</label>
+                  <label htmlFor="check-interval" className="block text-sm font-medium text-foreground mb-1">Interval</label>
                   <select
+                    id="check-interval"
                     value={formInterval}
                     onChange={e => {
                       setFormInterval(parseInt(e.target.value));
@@ -389,9 +398,10 @@ export default function CreateCheckModal({
               {/* Timeout & Expected Status */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Timeout (ms)</label>
+                  <label htmlFor="check-timeout" className="block text-sm font-medium text-foreground mb-1">Timeout (ms)</label>
                   <input
                     type="number"
+                    id="check-timeout"
                     value={formTimeout}
                     onChange={e => setFormTimeout(parseInt(e.target.value))}
                     min={1000}
@@ -401,9 +411,10 @@ export default function CreateCheckModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Expected Status</label>
+                  <label htmlFor="check-expected-status" className="block text-sm font-medium text-foreground mb-1">Expected Status</label>
                   <input
                     type="number"
+                    id="check-expected-status"
                     value={formExpectedStatus}
                     onChange={e => setFormExpectedStatus(parseInt(e.target.value))}
                     min={100}
@@ -415,8 +426,9 @@ export default function CreateCheckModal({
 
               {/* Request Headers */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Request Headers</label>
+                <label htmlFor="check-headers" className="block text-sm font-medium text-foreground mb-1">Request Headers</label>
                 <textarea
+                  id="check-headers"
                   value={formHeaders}
                   onChange={e => setFormHeaders(e.target.value)}
                   placeholder="Header-Name: value (one per line)"
@@ -428,8 +440,9 @@ export default function CreateCheckModal({
               {/* Request Body - Only for POST/PUT/PATCH */}
               {(formMethod === 'POST' || formMethod === 'PUT' || formMethod === 'PATCH') && (
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Request Body</label>
+                  <label htmlFor="check-body" className="block text-sm font-medium text-foreground mb-1">Request Body</label>
                   <textarea
+                    id="check-body"
                     value={formBody}
                     onChange={e => setFormBody(e.target.value)}
                     placeholder='{"key": "value"}'
@@ -584,9 +597,10 @@ export default function CreateCheckModal({
               {/* Tags & Group */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">🏷️ Tags</label>
+                  <label htmlFor="check-tags" className="block text-sm font-medium text-foreground mb-1">🏷️ Tags</label>
                   <input
                     type="text"
+                    id="check-tags"
                     value={formTags}
                     onChange={e => setFormTags(e.target.value)}
                     placeholder="production, api"
@@ -594,9 +608,10 @@ export default function CreateCheckModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">📁 Group</label>
+                  <label htmlFor="check-group" className="block text-sm font-medium text-foreground mb-1">📁 Group</label>
                   <input
                     type="text"
+                    id="check-group"
                     value={formGroup}
                     onChange={e => setFormGroup(e.target.value)}
                     placeholder="Backend APIs"

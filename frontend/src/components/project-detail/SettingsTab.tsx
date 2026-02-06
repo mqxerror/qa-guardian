@@ -150,10 +150,11 @@ export function SettingsTab({
           <div className="space-y-6">
             {/* Default Browser */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label htmlFor="project-default-browser" className="block text-sm font-medium text-foreground mb-2">
                 Default Browser
               </label>
               <select
+                id="project-default-browser"
                 value={projectDefaultBrowser}
                 onChange={(e) => setProjectDefaultBrowser(e.target.value as 'chromium' | 'firefox' | 'webkit')}
                 className="w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -180,6 +181,8 @@ export function SettingsTab({
                   <div key={index} className="flex items-center gap-3 p-3 rounded-md border border-border bg-muted/30">
                     <input
                       type="text"
+                      id={`viewport-profile-name-${index}`}
+                      aria-label={`Viewport profile ${index + 1} name`}
                       value={profile.name}
                       onChange={(e) => {
                         const newProfiles = [...projectViewportProfiles];
@@ -192,6 +195,8 @@ export function SettingsTab({
                     <div className="flex items-center gap-1">
                       <input
                         type="number"
+                        id={`viewport-profile-width-${index}`}
+                        aria-label={`Viewport profile ${index + 1} width`}
                         value={profile.width}
                         onChange={(e) => {
                           const newProfiles = [...projectViewportProfiles];
@@ -202,9 +207,11 @@ export function SettingsTab({
                         min={320}
                         max={3840}
                       />
-                      <span className="text-muted-foreground">x</span>
+                      <span className="text-muted-foreground" aria-hidden="true">x</span>
                       <input
                         type="number"
+                        id={`viewport-profile-height-${index}`}
+                        aria-label={`Viewport profile ${index + 1} height`}
                         value={profile.height}
                         onChange={(e) => {
                           const newProfiles = [...projectViewportProfiles];
@@ -630,6 +637,8 @@ export function SettingsTab({
                                 <div className="flex items-center gap-2">
                                   <input
                                     type="text"
+                                    id={`env-var-edit-${envVar.id}`}
+                                    aria-label={`Edit value for ${envVar.key}`}
                                     value={editEnvValue}
                                     onChange={(e) => setEditEnvValue(e.target.value)}
                                     className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-sm text-foreground"
@@ -713,11 +722,15 @@ export function SettingsTab({
                   {/* Enable/Disable Healing */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <label className="text-sm font-medium text-foreground">Enable AI Healing</label>
-                      <p className="text-xs text-muted-foreground">When enabled, tests will attempt to self-heal when selectors fail</p>
+                      <label id="healing-enabled-label" className="text-sm font-medium text-foreground">Enable AI Healing</label>
+                      <p id="healing-enabled-desc" className="text-xs text-muted-foreground">When enabled, tests will attempt to self-heal when selectors fail</p>
                     </div>
                     <button
                       onClick={() => setHealingSettings({ ...healingSettings, healing_enabled: !healingSettings.healing_enabled })}
+                      role="switch"
+                      aria-checked={healingSettings.healing_enabled}
+                      aria-labelledby="healing-enabled-label"
+                      aria-describedby="healing-enabled-desc"
                       className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                         healingSettings.healing_enabled ? 'bg-primary' : 'bg-muted'
                       }`}
@@ -732,11 +745,13 @@ export function SettingsTab({
 
                   {/* Healing Timeout */}
                   <div>
-                    <label className="text-sm font-medium text-foreground">Healing Timeout (seconds)</label>
-                    <p className="text-xs text-muted-foreground mb-2">Maximum time to attempt healing before aborting (5-120 seconds)</p>
+                    <label htmlFor="healing-timeout" className="text-sm font-medium text-foreground">Healing Timeout (seconds)</label>
+                    <p id="healing-timeout-desc" className="text-xs text-muted-foreground mb-2">Maximum time to attempt healing before aborting (5-120 seconds)</p>
                     <div className="flex items-center gap-3">
                       <input
                         type="range"
+                        id="healing-timeout-range"
+                        aria-label="Healing timeout slider"
                         min="5"
                         max="120"
                         step="5"
@@ -747,6 +762,8 @@ export function SettingsTab({
                       />
                       <input
                         type="number"
+                        id="healing-timeout"
+                        aria-describedby="healing-timeout-desc"
                         min="5"
                         max="120"
                         value={healingSettings.healing_timeout}
@@ -759,17 +776,19 @@ export function SettingsTab({
                         className="w-20 rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground text-center"
                         disabled={!healingSettings.healing_enabled}
                       />
-                      <span className="text-sm text-muted-foreground">sec</span>
+                      <span className="text-sm text-muted-foreground" aria-hidden="true">sec</span>
                     </div>
                   </div>
 
                   {/* Max Healing Attempts */}
                   <div>
-                    <label className="text-sm font-medium text-foreground">Max Healing Attempts</label>
-                    <p className="text-xs text-muted-foreground mb-2">Maximum number of healing attempts per failed selector (1-10)</p>
+                    <label htmlFor="max-healing-attempts" className="text-sm font-medium text-foreground">Max Healing Attempts</label>
+                    <p id="max-healing-attempts-desc" className="text-xs text-muted-foreground mb-2">Maximum number of healing attempts per failed selector (1-10)</p>
                     <div className="flex items-center gap-3">
                       <input
                         type="range"
+                        id="max-healing-attempts-range"
+                        aria-label="Max healing attempts slider"
                         min="1"
                         max="10"
                         value={healingSettings.max_healing_attempts}
@@ -779,6 +798,8 @@ export function SettingsTab({
                       />
                       <input
                         type="number"
+                        id="max-healing-attempts"
+                        aria-describedby="max-healing-attempts-desc"
                         min="1"
                         max="10"
                         value={healingSettings.max_healing_attempts}
@@ -846,12 +867,16 @@ export function SettingsTab({
                   {/* Notify on Healing */}
                   <div className="flex items-center justify-between pt-2 border-t border-border">
                     <div>
-                      <label className="text-sm font-medium text-foreground">Notify on Healing</label>
-                      <p className="text-xs text-muted-foreground">Send a notification when healing is applied to a test</p>
+                      <label id="notify-healing-label" className="text-sm font-medium text-foreground">Notify on Healing</label>
+                      <p id="notify-healing-desc" className="text-xs text-muted-foreground">Send a notification when healing is applied to a test</p>
                     </div>
                     <button
                       onClick={() => setHealingSettings({ ...healingSettings, notify_on_healing: !healingSettings.notify_on_healing })}
                       disabled={!healingSettings.healing_enabled}
+                      role="switch"
+                      aria-checked={healingSettings.notify_on_healing}
+                      aria-labelledby="notify-healing-label"
+                      aria-describedby="notify-healing-desc"
                       className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                         healingSettings.notify_on_healing ? 'bg-primary' : 'bg-muted'
                       } ${!healingSettings.healing_enabled ? 'opacity-50 cursor-not-allowed' : ''}`}

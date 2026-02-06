@@ -43,13 +43,20 @@ export function EditTestModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg">
-        <h3 className="text-lg font-semibold text-foreground">Edit Test</h3>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-test-title"
+        className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg"
+      >
+        <h3 id="edit-test-title" className="text-lg font-semibold text-foreground">Edit Test</h3>
         <form onSubmit={onSubmit} className="mt-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground">Test Name</label>
+            <label htmlFor="edit-test-name" className="block text-sm font-medium text-foreground">Test Name</label>
             <input
               type="text"
+              id="edit-test-name"
+              aria-describedby={editError ? 'edit-test-error' : undefined}
               value={editName}
               onChange={(e) => onNameChange(e.target.value)}
               required
@@ -58,8 +65,9 @@ export function EditTestModal({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground">Description (optional)</label>
+            <label htmlFor="edit-test-description" className="block text-sm font-medium text-foreground">Description (optional)</label>
             <textarea
+              id="edit-test-description"
               value={editDescription}
               onChange={(e) => onDescriptionChange(e.target.value)}
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -68,7 +76,7 @@ export function EditTestModal({
             />
           </div>
           {editError && (
-            <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            <div id="edit-test-error" role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
               {editError}
             </div>
           )}

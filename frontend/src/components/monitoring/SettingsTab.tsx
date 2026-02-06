@@ -202,10 +202,12 @@ export default function SettingsTab({
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label htmlFor="retention-period" className="block text-sm font-medium text-foreground mb-2">
               Retention Period
             </label>
             <select
+              id="retention-period"
+              aria-describedby="retention-period-desc"
               value={settingsRetentionDays}
               onChange={(e) => setSettingsRetentionDays?.(Number(e.target.value) as 30 | 90 | 365)}
               className="w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-foreground"
@@ -214,7 +216,7 @@ export default function SettingsTab({
               <option value={90}>90 days</option>
               <option value={365}>365 days (1 year)</option>
             </select>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p id="retention-period-desc" className="mt-1 text-xs text-muted-foreground">
               Results older than this will be removed during cleanup
             </p>
           </div>

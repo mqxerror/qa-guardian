@@ -157,7 +157,7 @@ export function ViewCodeTab({
 
       {/* Code error display */}
       {codeError && (
-        <div className="mb-3 rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+        <div role="alert" className="mb-3 rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
           {codeError}
         </div>
       )}

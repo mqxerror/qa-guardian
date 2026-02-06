@@ -175,7 +175,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
         </div>
 
         {githubError && (
-          <div className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+          <div role="alert" className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {githubError}
           </div>
         )}

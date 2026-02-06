@@ -30,16 +30,19 @@ export function ImportTestsModal({
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="import-tests-title"
         className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-semibold text-foreground">Import Tests</h3>
+        <h3 id="import-tests-title" className="text-lg font-semibold text-foreground">Import Tests</h3>
         <p className="mt-2 text-sm text-muted-foreground">
           Upload a JSON file with test definitions or Playwright test files.
         </p>
 
         {importError && (
-          <div className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+          <div role="alert" className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {importError}
           </div>
         )}

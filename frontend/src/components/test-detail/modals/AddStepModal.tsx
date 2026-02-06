@@ -127,8 +127,9 @@ export function AddStepModal({
         <form onSubmit={onSubmit} className="mt-4 space-y-4">
           {/* Feature #1965: Expanded action dropdown with categorized sections */}
           <div>
-            <label className="block text-sm font-medium text-foreground">Action</label>
+            <label htmlFor="add-step-action" className="block text-sm font-medium text-foreground">Action</label>
             <select
+              id="add-step-action"
               value={newStepAction}
               onChange={(e) => onActionChange(e.target.value)}
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -193,10 +194,11 @@ export function AddStepModal({
           {/* Selector field */}
           {needsSelector && (
             <div>
-              <label className="block text-sm font-medium text-foreground">Selector</label>
+              <label htmlFor="add-step-selector" className="block text-sm font-medium text-foreground">Selector</label>
               <div className="relative">
                 <input
                   type="text"
+                  id="add-step-selector"
                   value={newStepSelector}
                   onChange={(e) => onSelectorChange(e.target.value)}
                   onKeyDown={onSelectorKeyDown}
@@ -225,10 +227,11 @@ export function AddStepModal({
           {/* Value field */}
           {needsValue && (
             <div>
-              <label className="block text-sm font-medium text-foreground">{getValueLabel()}</label>
+              <label htmlFor="add-step-value" className="block text-sm font-medium text-foreground">{getValueLabel()}</label>
               <div className="relative">
                 <input
                   type="text"
+                  id="add-step-value"
                   value={newStepValue}
                   onChange={(e) => onValueChange(e.target.value)}
                   onKeyDown={onValueKeyDown}
@@ -258,20 +261,24 @@ export function AddStepModal({
           {newStepAction === 'visual_checkpoint' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-foreground">Checkpoint Name</label>
+                <label htmlFor="checkpoint-name" className="block text-sm font-medium text-foreground">Checkpoint Name</label>
                 <input
                   type="text"
+                  id="checkpoint-name"
+                  aria-describedby="checkpoint-name-desc"
                   value={newStepCheckpointName}
                   onChange={(e) => onCheckpointNameChange(e.target.value)}
                   className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   placeholder="e.g., login-page, dashboard-header"
                 />
-                <p className="mt-1 text-xs text-muted-foreground">Unique identifier for this visual checkpoint</p>
+                <p id="checkpoint-name-desc" className="mt-1 text-xs text-muted-foreground">Unique identifier for this visual checkpoint</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground">Diff Threshold (%)</label>
+                <label htmlFor="checkpoint-threshold" className="block text-sm font-medium text-foreground">Diff Threshold (%)</label>
                 <input
                   type="number"
+                  id="checkpoint-threshold"
+                  aria-describedby="checkpoint-threshold-desc"
                   value={newStepCheckpointThreshold}
                   onChange={(e) => onCheckpointThresholdChange(e.target.value)}
                   className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -280,7 +287,7 @@ export function AddStepModal({
                   max="100"
                   step="0.1"
                 />
-                <p className="mt-1 text-xs text-muted-foreground">Test fails if diff exceeds this percentage (0 = any change fails)</p>
+                <p id="checkpoint-threshold-desc" className="mt-1 text-xs text-muted-foreground">Test fails if diff exceeds this percentage (0 = any change fails)</p>
               </div>
               <div className="rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-3">
                 <div className="flex items-start gap-2">
@@ -300,8 +307,10 @@ export function AddStepModal({
           {newStepAction === 'accessibility_check' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-foreground">WCAG Level</label>
+                <label htmlFor="a11y-wcag-level" className="block text-sm font-medium text-foreground">WCAG Level</label>
                 <select
+                  id="a11y-wcag-level"
+                  aria-describedby="a11y-wcag-level-desc"
                   value={newStepA11yWcagLevel}
                   onChange={(e) => onA11yWcagLevelChange(e.target.value as 'A' | 'AA' | 'AAA')}
                   className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -310,24 +319,27 @@ export function AddStepModal({
                   <option value="AA">Level AA (Recommended)</option>
                   <option value="AAA">Level AAA (Enhanced)</option>
                 </select>
-                <p className="mt-1 text-xs text-muted-foreground">WCAG conformance level to check against</p>
+                <p id="a11y-wcag-level-desc" className="mt-1 text-xs text-muted-foreground">WCAG conformance level to check against</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground">Failure Threshold</label>
+                <label htmlFor="a11y-threshold" className="block text-sm font-medium text-foreground">Failure Threshold</label>
                 <input
                   type="number"
+                  id="a11y-threshold"
+                  aria-describedby="a11y-threshold-desc"
                   value={newStepA11yThreshold}
                   onChange={(e) => onA11yThresholdChange(e.target.value)}
                   className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   placeholder="0"
                   min="0"
                 />
-                <p className="mt-1 text-xs text-muted-foreground">Number of violations allowed before step fails (0 = any violation fails)</p>
+                <p id="a11y-threshold-desc" className="mt-1 text-xs text-muted-foreground">Number of violations allowed before step fails (0 = any violation fails)</p>
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
+                    id="a11y-fail-critical"
                     checked={newStepA11yFailOnCritical}
                     onChange={(e) => onA11yFailOnCriticalChange(e.target.checked)}
                     className="rounded border-border"
@@ -337,6 +349,7 @@ export function AddStepModal({
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
+                    id="a11y-fail-any"
                     checked={newStepA11yFailOnAny}
                     onChange={(e) => onA11yFailOnAnyChange(e.target.checked)}
                     className="rounded border-border"
