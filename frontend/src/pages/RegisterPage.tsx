@@ -171,7 +171,7 @@ export function RegisterPage() {
             </motion.p>
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-5">
+          <form onSubmit={handleRegister} className="space-y-5" noValidate>
             {/* Error Alert */}
             {error && (
               <motion.div

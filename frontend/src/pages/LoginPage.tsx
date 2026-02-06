@@ -77,7 +77,7 @@ export function LoginPage() {
             </motion.p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             {/* Session Expired Alert */}
             {sessionExpired && (
               <motion.div
