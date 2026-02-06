@@ -4,6 +4,8 @@ import { getTestSuite, getTest, listTests, updateTest, IgnoreRegion } from './te
 import { getProjectEnvVars, getProjectVisualSettings, getProjectHealingSettings } from './projects.js';
 import { getProject } from './projects/stores.js';
 import { getTestRun, updateTestRun as dbUpdateTestRun } from '../services/repositories/test-runs.js';
+// Feature #212: Cache invalidation on run completion
+import { getCache, CacheKeys } from '../services/cache.js';
 import { chromium, firefox, webkit, Browser, Page, BrowserContext } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -858,6 +860,21 @@ export async function runTestsForRun(runId: string) {
     }).catch(err =>
       console.error('[RunComplete] Failed to persist completed run to database:', err)
     );
+
+    // Feature #212: Invalidate test run listing caches on completion
+    try {
+      const cache = getCache();
+      // Invalidate suite-specific cache
+      await cache.delete(CacheKeys.runs.bySuite(run.suite_id));
+      // Invalidate test-specific cache if this is a single test run
+      if (run.test_id) {
+        await cache.delete(CacheKeys.runs.byTest(run.test_id));
+      }
+      // Invalidate org-wide paginated run list caches (use pattern matching)
+      await cache.invalidate(`runs:list:${orgId}:*`);
+    } catch (cacheErr) {
+      console.error('[RunComplete] Cache invalidation failed (non-critical):', cacheErr);
+    }
 
     // Emit run complete event
     const testName = testsToRun.length === 1 ? testsToRun[0].name : `${testsToRun.length} tests`;
