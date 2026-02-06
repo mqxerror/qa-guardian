@@ -8,6 +8,10 @@ dist/
 build/
 *.tsbuildinfo
 
+# Compiled migration files (built at Docker time from .ts sources)
+backend/migrations/*.cjs
+backend/migrations/*.js
+
 # Environment files
 .env
 .env.local
