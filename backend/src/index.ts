@@ -824,11 +824,9 @@ async function start() {
         const token = socket.handshake.auth?.token;
 
         if (!token) {
-          console.log(`[Socket.IO] Client ${socket.id} - no token provided, allowing unauthenticated connection`);
-          // Allow connection but mark as unauthenticated
-          // This enables backward compatibility while we migrate clients
-          socket.data.authenticated = false;
-          return next();
+          // Feature #219: Require authentication - no more unauthenticated bypass
+          console.warn(`[Socket.IO] Client ${socket.id} rejected - no token provided`);
+          return next(new Error('Authentication required: No token provided'));
         }
 
         // Verify the JWT token
@@ -876,13 +874,17 @@ async function start() {
         console.log(`[Socket.IO] Client ${socket.id} joined org:${orgId}`);
       });
 
-      // Join specific test run room
+      // Feature #219: Join specific test run room with auth check
       socket.on('join-run', (runId: string) => {
+        if (!socket.data.authenticated) {
+          socket.emit('error', { message: 'Authentication required to join run rooms' });
+          return;
+        }
         socket.join(`run:${runId}`);
         console.log(`[Socket.IO] Client ${socket.id} joined run:${runId}`);
       });
 
-      // Leave test run room
+      // Feature #219: Leave test run room (auth implicitly required since only authenticated clients can connect)
       socket.on('leave-run', (runId: string) => {
         socket.leave(`run:${runId}`);
         console.log(`[Socket.IO] Client ${socket.id} left run:${runId}`);
