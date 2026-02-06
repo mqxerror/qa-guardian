@@ -45,6 +45,7 @@ import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, regis
 import { initializeErrorHandlers, getErrorMetrics } from './services/error-tracking.js'; // Feature #164: Error tracking
 import { registerMetricsHooks, getMetricsSummary } from './services/metrics.js'; // Feature #165: API response time tracking
 import { setWebSocketIO } from './services/websocket-events.js'; // Feature #108: WebSocket CRUD events
+import { initializeEventSubscriber, closeSubscriber, getConnectionStatus as getRedisEventsStatus } from './services/redis-events.js'; // Feature #200: Redis Pub/Sub for worker events
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -770,6 +771,16 @@ async function start() {
     setRecordingSocketIO(io);
     setWebSocketIO(io); // Feature #108: WebSocket CRUD events
 
+    // Feature #200: Initialize Redis event subscriber for worker events
+    // This allows worker containers to publish events via Redis Pub/Sub
+    // and have them forwarded to Socket.IO clients
+    const redisEventsInitialized = await initializeEventSubscriber(io);
+    if (redisEventsInitialized) {
+      console.log('[Startup] Redis event subscriber initialized - worker events will be forwarded to Socket.IO');
+    } else {
+      console.log('[Startup] Redis event subscriber not available - worker events will not be forwarded');
+    }
+
     // Feature #154: Initialize data retention cleanup job
     initializeCleanupJob();
 
@@ -820,6 +831,7 @@ async function gracefulShutdown(): Promise<void> {
   console.log('[Shutdown] Closing connections gracefully...');
   stopCleanupJob(); // Feature #154: Stop cleanup job
   await shutdownExecutionQueue(); // Feature #155: Stop execution queue
+  await closeSubscriber(); // Feature #200: Close Redis event subscriber
   await closeCache(); // Feature #60: Close cache connection
   await closeDatabase();
   await app.close();

@@ -26,6 +26,7 @@ import 'dotenv/config';
 import { Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
 import { createServer } from 'http';
+import { initializeEventPublisher, closePublisher, isPublisherAvailable } from './services/redis-events.js'; // Feature #200: Redis Pub/Sub for real-time events
 
 // ============================================================================
 // Configuration
@@ -105,7 +106,16 @@ let worker: Worker | null = null;
 let isShuttingDown = false;
 
 async function startWorker(): Promise<void> {
-  // Load execution module first
+  // Feature #200: Initialize Redis event publisher BEFORE loading execution module
+  // This allows emitRunEvent() to publish events via Redis Pub/Sub
+  const publisherInitialized = await initializeEventPublisher();
+  if (publisherInitialized) {
+    console.log('[Worker] Redis event publisher initialized - real-time events will be forwarded to API server');
+  } else {
+    console.warn('[Worker] Redis event publisher not available - real-time events will be silently dropped');
+  }
+
+  // Load execution module after event publisher is ready
   await loadExecutionModule();
 
   console.log('[Worker] Creating BullMQ worker...');
@@ -193,6 +203,9 @@ async function shutdown(signal: string): Promise<void> {
     }
   }
 
+  // Feature #200: Close Redis event publisher
+  await closePublisher();
+
   console.log('[Worker] Shutdown complete');
   process.exit(0);
 }
@@ -227,6 +240,8 @@ const healthServer = createServer((req, res) => {
       worker: worker !== null,
       shuttingDown: isShuttingDown,
       maxConcurrency: MAX_CONCURRENCY,
+      // Feature #200: Include Redis event publisher status
+      redisEventPublisher: isPublisherAvailable(),
     }));
   } else {
     res.writeHead(404);

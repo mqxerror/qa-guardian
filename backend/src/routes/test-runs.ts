@@ -8,6 +8,7 @@ import { chromium, firefox, webkit, Browser, Page, BrowserContext } from 'playwr
 import * as fs from 'fs';
 import * as path from 'path';
 import { Server as SocketIOServer } from 'socket.io';
+import { publishRunEvent as publishToRedis, isPublisherAvailable } from '../services/redis-events.js'; // Feature #200: Redis Pub/Sub for worker events
 import archiver from 'archiver';
 // pixelmatch is imported dynamically since v6+ is ESM-only
 // import pixelmatch from 'pixelmatch';
@@ -431,14 +432,25 @@ export function setSocketIO(socketIO: SocketIOServer) {
 }
 
 // Helper to emit test run events to both run room and org room
+// Feature #200: Falls back to Redis Pub/Sub when Socket.IO is not available (worker mode)
 function emitRunEvent(runId: string, orgId: string, event: string, data: any) {
   if (io) {
+    // Direct Socket.IO emit (API server mode)
     const payload = { runId, orgId, ...data };
     // Emit to run-specific room
     io.to(`run:${runId}`).emit(event, payload);
     // Also emit to organization room for cross-tab sync
     io.to(`org:${orgId}`).emit(event, payload);
     console.log(`[Socket.IO] Emitted ${event} for run ${runId} (org: ${orgId})`);
+  } else if (isPublisherAvailable()) {
+    // Feature #200: Redis Pub/Sub fallback (worker mode)
+    // Worker publishes events via Redis, API server subscribes and forwards to Socket.IO
+    publishToRedis(runId, orgId, event, data).catch((err) => {
+      console.error(`[RedisEvents] Failed to publish ${event} for run ${runId}:`, err);
+    });
+  } else {
+    // Neither Socket.IO nor Redis available - log warning
+    console.warn(`[Events] No event transport available for ${event} (run: ${runId})`);
   }
 }
 
