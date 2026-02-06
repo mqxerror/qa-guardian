@@ -44,6 +44,30 @@ export {
   type ProjectsResponse,
   type CreateProjectInput,
   type UpdateProjectInput,
+  // Feature #144: Project settings hooks
+  useProjectMembers,
+  useAlertChannels,
+  useAlertHistory,
+  useEnvVars,
+  useHealingSettings,
+  useSastConfig,
+  useDastConfig,
+  useInvalidateProjectSettings,
+  projectSettingsKeys,
+  // Types re-exported from project-detail
+  type ProjectMember,
+  type AlertChannel,
+  type AlertHistoryEntry,
+  type EnvironmentVariable,
+  type HealingSettings,
+  type SASTConfig,
+  type SASTScanResult,
+  type SASTRuleset,
+  type CustomRule,
+  type SecretPattern,
+  type DASTConfig,
+  type DASTScanResult,
+  type OpenAPISpec,
 } from './useProjects';
 
 // Suites hooks

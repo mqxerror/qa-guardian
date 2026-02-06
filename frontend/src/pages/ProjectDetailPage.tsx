@@ -11,7 +11,13 @@ import { useTimezoneStore } from "../stores/timezoneStore";
 import { useTestDefaultsStore } from "../stores/testDefaultsStore";
 import { toast } from "../stores/toastStore";
 // Feature #58: Import React Query hooks for parallel data fetching
-import { useProject, useSuites, useInvalidateSuites } from '../hooks/api';
+// Feature #144: Added project settings hooks for caching
+import {
+  useProject, useSuites, useInvalidateSuites,
+  useProjectMembers, useAlertChannels, useAlertHistory,
+  useEnvVars, useHealingSettings, useSastConfig, useDastConfig,
+} from '../hooks/api';
+import { useMembers } from '../hooks/api/useSettings';
 // Feature #49: Import modular types, utilities and hooks from project-detail
 import {
   // Types (still needed for inline useState declarations until fully migrated)
@@ -119,8 +125,8 @@ function ProjectDetailPage() {
   ]);
   const [isSavingProjectDefaults, setIsSavingProjectDefaults] = useState(false);
 
-  // Feature #58: Settings/GitHub data loading state (lazy-loaded when tabs active)
-  const [settingsDataLoaded, setSettingsDataLoaded] = useState(false);
+  // Feature #58: GitHub data loading state (lazy-loaded when tab active)
+  // Feature #144: Settings data loading is now handled by React Query hooks
   const [githubDataLoaded, setGithubDataLoaded] = useState(false);
   const [showCreateSuiteModal, setShowCreateSuiteModal] = useState(false);
   const [newSuiteName, setNewSuiteName] = useState('');
@@ -408,89 +414,49 @@ function ProjectDetailPage() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [showCreateSuiteModal, showDeleteModal]);
 
-  // Feature #58: Lazy-load settings data when Settings tab is activated
-  // This reduces initial page load from 11+ sequential calls to just 2 parallel calls (project + suites)
+  // Feature #144: Use React Query hooks for settings data (with caching)
+  // Only enable queries when Settings tab is active for lazy loading
+  const isSettingsTab = activeTab === 'settings';
+  const isAdminOrOwner = user?.role === 'owner' || user?.role === 'admin';
+  const isNotViewer = user?.role !== 'viewer';
+
+  // React Query hooks for settings data
+  const { data: projectMembersData } = useProjectMembers(isSettingsTab && isAdminOrOwner ? id : undefined);
+  const { data: orgMembersData } = useMembers(isSettingsTab && isAdminOrOwner ? user?.organization_id : undefined);
+  const { data: alertChannelsData } = useAlertChannels(isSettingsTab && isNotViewer ? id : undefined);
+  const { data: alertHistoryData } = useAlertHistory();
+  const { data: envVarsData } = useEnvVars(isSettingsTab && isNotViewer ? id : undefined);
+  const { data: healingSettingsData } = useHealingSettings(isSettingsTab && isNotViewer ? id : undefined);
+
+  // Sync React Query data to handler state
   useEffect(() => {
-    if (activeTab !== 'settings' || settingsDataLoaded) return;
+    if (projectMembersData) setProjectMembers(projectMembersData);
+  }, [projectMembersData, setProjectMembers]);
 
-    const fetchSettingsData = async () => {
-      try {
-        // Load all settings-related data in parallel
-        const promises: Promise<void>[] = [];
+  useEffect(() => {
+    if (orgMembersData) setOrgMembers(orgMembersData);
+  }, [orgMembersData, setOrgMembers]);
 
-        // Fetch project members (only for admins/owners)
-        if (user?.role === 'owner' || user?.role === 'admin') {
-          promises.push(
-            fetch(`/api/v1/projects/${id}/members`, {
-              headers: { 'Authorization': `Bearer ${token}` },
-            }).then(res => res.ok ? res.json() : null).then(data => {
-              if (data) setProjectMembers(data.members);
-            })
-          );
+  useEffect(() => {
+    if (alertChannelsData) setAlertChannels(alertChannelsData);
+  }, [alertChannelsData, setAlertChannels]);
 
-          // Fetch organization members for the dropdown
-          promises.push(
-            fetch(`/api/v1/organizations/${user?.organization_id}/members`, {
-              headers: { 'Authorization': `Bearer ${token}` },
-            }).then(res => res.ok ? res.json() : null).then(data => {
-              if (data) setOrgMembers(data.members);
-            })
-          );
-        }
+  useEffect(() => {
+    if (alertHistoryData && id) {
+      const projectHistory = alertHistoryData.filter(
+        (h: AlertHistoryEntry) => h.projectId === id
+      );
+      setAlertHistory(projectHistory);
+    }
+  }, [alertHistoryData, id, setAlertHistory]);
 
-        // Fetch alert channels (all roles except viewer can see)
-        if (user?.role !== 'viewer') {
-          promises.push(
-            fetch(`/api/v1/projects/${id}/alerts`, {
-              headers: { 'Authorization': `Bearer ${token}` },
-            }).then(res => res.ok ? res.json() : null).then(data => {
-              if (data) setAlertChannels(data.channels);
-            })
-          );
+  useEffect(() => {
+    if (envVarsData) setEnvVars(envVarsData);
+  }, [envVarsData, setEnvVars]);
 
-          // Fetch alert history
-          promises.push(
-            fetch('/api/v1/alert-history', {
-              headers: { 'Authorization': `Bearer ${token}` },
-            }).then(res => res.ok ? res.json() : null).then(data => {
-              if (data) {
-                const projectHistory = data.history.filter(
-                  (h: AlertHistoryEntry) => h.projectId === id
-                );
-                setAlertHistory(projectHistory);
-              }
-            })
-          );
-
-          // Fetch environment variables
-          promises.push(
-            fetch(`/api/v1/projects/${id}/env`, {
-              headers: { 'Authorization': `Bearer ${token}` },
-            }).then(res => res.ok ? res.json() : null).then(data => {
-              if (data) setEnvVars(data.env_vars);
-            })
-          );
-
-          // Fetch healing settings (Feature #1064)
-          promises.push(
-            fetch(`/api/v1/projects/${id}/healing-settings`, {
-              headers: { 'Authorization': `Bearer ${token}` },
-            }).then(res => res.ok ? res.json() : null).then(data => {
-              if (data) setHealingSettings(data.healing_settings);
-            })
-          );
-        }
-
-        // Execute all in parallel
-        await Promise.all(promises);
-        setSettingsDataLoaded(true);
-      } catch (err) {
-        console.error('Failed to load settings data:', err);
-      }
-    };
-
-    fetchSettingsData();
-  }, [activeTab, settingsDataLoaded, id, token, user?.role, user?.organization_id]);
+  useEffect(() => {
+    if (healingSettingsData) setHealingSettings(healingSettingsData);
+  }, [healingSettingsData, setHealingSettings]);
 
   // Feature #58: Lazy-load GitHub data when GitHub tab is activated
   useEffect(() => {
@@ -543,116 +509,53 @@ function ProjectDetailPage() {
     fetchGitHubData();
   }, [activeTab, githubDataLoaded, id, token]);
 
-  // Fetch SAST configuration and scans when Security tab is active
+  // Feature #144: Use React Query hooks for SAST/DAST data (with caching)
+  const isSecurityTab = activeTab === 'security';
+
+  // React Query hooks for SAST data
+  const { data: sastData, isLoading: sastQueryLoading } = useSastConfig(isSecurityTab ? id : undefined);
+
+  // React Query hooks for DAST data
+  const { data: dastData, isLoading: dastQueryLoading } = useDastConfig(isSecurityTab ? id : undefined);
+
+  // Sync SAST data from React Query to handler state
+  useEffect(() => {
+    if (sastData) {
+      if (sastData.config) setSastConfig(sastData.config);
+      if (sastData.rulesets) setSastRulesets(sastData.rulesets);
+      if (sastData.scans) setSastScans(sastData.scans);
+      if (sastData.customRules) setCustomRules(sastData.customRules);
+      if (sastData.patterns) setSecretPatterns(sastData.patterns);
+    }
+  }, [sastData, setSastConfig, setSastRulesets, setSastScans, setCustomRules, setSecretPatterns]);
+
+  // Sync DAST data from React Query to handler state
+  useEffect(() => {
+    if (dastData) {
+      if (dastData.config) setDastConfig(dastData.config);
+      if (dastData.targetUrl !== undefined) setDastTargetUrl(dastData.targetUrl);
+      if (dastData.scans) setDastScans(dastData.scans);
+      setOpenApiSpec(dastData.spec || null);
+      if (dastData.schedules) setDastSchedules(dastData.schedules);
+    }
+  }, [dastData, setDastConfig, setDastTargetUrl, setDastScans, setOpenApiSpec, setDastSchedules]);
+
+  // Sync loading state
+  useEffect(() => {
+    setIsLoadingSast(sastQueryLoading);
+  }, [sastQueryLoading, setIsLoadingSast]);
+
+  useEffect(() => {
+    setIsLoadingDast(dastQueryLoading);
+  }, [dastQueryLoading, setIsLoadingDast]);
+
+  // Poll for updates when there's a running DAST scan (still needed for real-time progress)
   useEffect(() => {
     if (activeTab !== 'security') return;
 
-    // Feature #146: Parallelize SAST data fetching for faster load
-    const fetchSastData = async () => {
-      setIsLoadingSast(true);
-      try {
-        // Fetch all SAST data in parallel instead of sequentially
-        const [configRes, rulesetsRes, scansRes, customRulesRes, patternsRes] = await Promise.all([
-          fetch(`/api/v1/projects/${id}/sast/config`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          }),
-          fetch('/api/v1/sast/rulesets', {
-            headers: { 'Authorization': `Bearer ${token}` },
-          }),
-          fetch(`/api/v1/projects/${id}/sast/scans?limit=10`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          }),
-          fetch(`/api/v1/projects/${id}/sast/custom-rules`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          }),
-          fetch(`/api/v1/projects/${id}/sast/patterns`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          }),
-        ]);
-
-        // Process responses (each can fail independently)
-        if (configRes.ok) {
-          const configData = await configRes.json();
-          setSastConfig(configData.config);
-        }
-        if (rulesetsRes.ok) {
-          const rulesetsData = await rulesetsRes.json();
-          setSastRulesets(rulesetsData.rulesets);
-        }
-        if (scansRes.ok) {
-          const scansData = await scansRes.json();
-          setSastScans(scansData.scans);
-        }
-        if (customRulesRes.ok) {
-          const customRulesData = await customRulesRes.json();
-          setCustomRules(customRulesData.rules || []);
-        }
-        if (patternsRes.ok) {
-          const patternsData = await patternsRes.json();
-          setSecretPatterns(patternsData.patterns || []);
-        }
-      } catch (err) {
-        console.error('Failed to load SAST data:', err);
-      } finally {
-        setIsLoadingSast(false);
-      }
-    };
-
-    fetchSastData();
-
-    // Feature #146: Parallelize DAST data fetching for faster load
-    const fetchDastData = async () => {
-      setIsLoadingDast(true);
-      try {
-        // Fetch all DAST data in parallel instead of sequentially
-        const [configRes, scansRes, specRes, schedulesRes] = await Promise.all([
-          fetch(`/api/v1/projects/${id}/dast/config`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          }),
-          fetch(`/api/v1/projects/${id}/dast/scans?limit=10`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          }),
-          fetch(`/api/v1/projects/${id}/dast/openapi-spec`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          }),
-          fetch(`/api/v1/projects/${id}/dast/schedules`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          }),
-        ]);
-
-        // Process responses (each can fail independently)
-        if (configRes.ok) {
-          const configData = await configRes.json();
-          setDastConfig(configData.config);
-          setDastTargetUrl(configData.config.targetUrl || '');
-        }
-        if (scansRes.ok) {
-          const scansData = await scansRes.json();
-          setDastScans(scansData.scans);
-        }
-        if (specRes.ok) {
-          const specData = await specRes.json();
-          setOpenApiSpec(specData.spec);
-        } else {
-          setOpenApiSpec(null);
-        }
-        if (schedulesRes.ok) {
-          const schedulesData = await schedulesRes.json();
-          setDastSchedules(schedulesData.schedules || []);
-        }
-      } catch (err) {
-        console.error('Failed to load DAST data:', err);
-      } finally {
-        setIsLoadingDast(false);
-      }
-    };
-
-    fetchDastData();
-
-    // Poll for updates when there's a running scan
     const pollInterval = setInterval(async () => {
       const hasRunningScans = dastScans.some(s => s.status === 'running');
-      if (hasRunningScans && activeTab === 'security') {
+      if (hasRunningScans) {
         try {
           const scansResponse = await fetch(`/api/v1/projects/${id}/dast/scans?limit=10`, {
             headers: { 'Authorization': `Bearer ${token}` },
@@ -668,7 +571,7 @@ function ProjectDetailPage() {
     }, 500);  // Poll every 500ms for smooth progress updates
 
     return () => clearInterval(pollInterval);
-  }, [id, token, activeTab, dastScans]);
+  }, [id, token, activeTab, dastScans, setDastScans]);
 
   // Get organization members who can be added (exclude admins/owners and existing project members)
   const availableMembers = orgMembers.filter(m => {
