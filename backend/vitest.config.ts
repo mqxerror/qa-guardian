@@ -4,10 +4,17 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'src/__tests__/**/*.ts'],
     exclude: ['node_modules', 'dist'],
-    passWithNoTests: true, // Allow CI to pass when no tests exist yet (Feature #171 will add tests)
+    passWithNoTests: false, // Feature #171: Tests are now required - CI should fail if no tests
     testTimeout: 10000,
     hookTimeout: 10000,
+    // Run tests sequentially to avoid port conflicts
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
   },
 });
