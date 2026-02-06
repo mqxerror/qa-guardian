@@ -258,44 +258,49 @@ async function registerPlugins() {
     secret: process.env.JWT_SECRET!,
   });
 
-  // Swagger Documentation
-  await app.register(swagger, {
-    openapi: {
-      info: {
-        title: 'QA Guardian API',
-        description: 'Enterprise-Grade Quality Assurance Automation Platform API',
-        version: '1.0.0',
-      },
-      servers: [
-        {
-          url: `http://localhost:${process.env.PORT || 3001}`,
-          description: 'Development server',
+  // Feature #205: Swagger Documentation - only enabled in non-production environments
+  if (process.env.NODE_ENV !== 'production') {
+    await app.register(swagger, {
+      openapi: {
+        info: {
+          title: 'QA Guardian API',
+          description: 'Enterprise-Grade Quality Assurance Automation Platform API',
+          version: '1.0.0',
         },
-      ],
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT',
+        servers: [
+          {
+            url: `http://localhost:${process.env.PORT || 3001}`,
+            description: 'Development server',
           },
-          apiKeyAuth: {
-            type: 'apiKey',
-            in: 'header',
-            name: 'X-API-Key',
+        ],
+        components: {
+          securitySchemes: {
+            bearerAuth: {
+              type: 'http',
+              scheme: 'bearer',
+              bearerFormat: 'JWT',
+            },
+            apiKeyAuth: {
+              type: 'apiKey',
+              in: 'header',
+              name: 'X-API-Key',
+            },
           },
         },
       },
-    },
-  });
+    });
 
-  await app.register(swaggerUi, {
-    routePrefix: '/api/docs',
-    uiConfig: {
-      docExpansion: 'list',
-      deepLinking: false,
-    },
-  });
+    await app.register(swaggerUi, {
+      routePrefix: '/api/docs',
+      uiConfig: {
+        docExpansion: 'list',
+        deepLinking: false,
+      },
+    });
+    console.log('[Swagger] API documentation available at /api/docs');
+  } else {
+    console.log('[Swagger] Disabled in production mode');
+  }
 
   // Register routes
   await app.register(authRoutes);
@@ -390,10 +395,26 @@ async function registerPlugins() {
   });
 }
 
-// Health check endpoint with service status
-// Used by Dokploy/Docker health checks and deployment verification
+// Feature #205: Lightweight health check for Docker/Kubernetes health probes
+// Returns simple status without exposing sensitive system information
+app.get('/health', async (_request, reply) => {
+  // Quick check of critical dependencies without detailed diagnostics
+  const dbHealthy = isDatabaseConnected();
+  const socketHealthy = io !== null;
+
+  const allHealthy = dbHealthy && socketHealthy;
+  const status = allHealthy ? 'ok' : 'unhealthy';
+
+  if (!allHealthy) {
+    reply.status(503);
+  }
+
+  return { status, timestamp: new Date().toISOString() };
+});
+
+// Feature #205: Detailed health check with full diagnostics - requires authentication
 // Feature #152: Enhanced with disk space, memory usage, version info, and 503 on critical failures
-app.get('/health', async (request, reply) => {
+app.get('/health/detailed', { preHandler: [authenticate] }, async (request, reply) => {
   // fs, path, os are now imported at the top level
 
   // Check database health with timeout
@@ -525,7 +546,8 @@ app.get('/health', async (request, reply) => {
 });
 
 // Feature #165: API Metrics endpoint - response time tracking
-app.get('/api/v1/metrics', async (request, reply) => {
+// Feature #205: Requires authentication to protect latency data
+app.get('/api/v1/metrics', { preHandler: [authenticate] }, async (_request, _reply) => {
   return getMetricsSummary();
 });
 
