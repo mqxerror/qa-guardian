@@ -16,6 +16,8 @@ import { getTestSuite, getTest, listTests } from '../test-suites';
 import { testRuns, BrowserType, createTestRun as dbCreateTestRun } from './execution';
 // Feature #61: Redis caching
 import { getCache, CacheKeys } from '../../services/cache';
+// Feature #155: Execution queue for concurrency limits
+import { enqueueOrExecute } from '../../services/execution-queue';
 
 // Type definitions for route params/body
 interface RunParams {
@@ -112,8 +114,18 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       const cache = getCache();
       await cache.delete(CacheKeys.runs.bySuite(suiteId));
 
-      // Start test execution asynchronously
-      runTestsForRun(id).catch(console.error);
+      // Feature #155: Queue test execution with concurrency limits
+      // enqueueOrExecute will queue the job if queue is available, otherwise execute directly
+      const queueResult = await enqueueOrExecute(id, 'e2e', {
+        triggeredBy: request.user?.id,
+      });
+
+      // Update status to 'queued' if the run was queued (not executed directly)
+      if (queueResult.queued) {
+        run.status = 'pending'; // pending = waiting in queue
+        testRuns.set(id, run as any);
+        console.log(`[RunTrigger] Run ${id} queued at position ${queueResult.position || 'unknown'}`);
+      }
 
       return reply.status(201).send({
         run: {
@@ -125,7 +137,11 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
           status: run.status,
           created_at: run.created_at.toISOString(),
         },
-        message: 'Test run started successfully',
+        queued: queueResult.queued,
+        queuePosition: queueResult.position,
+        message: queueResult.queued
+          ? `Test run queued${queueResult.position ? ` at position ${queueResult.position}` : ''}`
+          : 'Test run started successfully',
       });
     });
 
@@ -176,8 +192,19 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       await cache.delete(CacheKeys.runs.byTest(testId));
       await cache.delete(CacheKeys.runs.bySuite(test.suite_id));
 
-      // Start test execution asynchronously
-      runTestsForRun(id).catch(console.error);
+      // Feature #155: Queue test execution with concurrency limits
+      // Determine test type for queue prioritization
+      const testType = test.test_type || 'e2e';
+      const queueResult = await enqueueOrExecute(id, testType as any, {
+        triggeredBy: request.user?.id,
+      });
+
+      // Update status if queued
+      if (queueResult.queued) {
+        run.status = 'pending';
+        testRuns.set(id, run as any);
+        console.log(`[RunTrigger] Run ${id} queued at position ${queueResult.position || 'unknown'}`);
+      }
 
       return reply.status(201).send({
         run: {
@@ -190,7 +217,11 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
           status: run.status,
           created_at: run.created_at.toISOString(),
         },
-        message: 'Test run started successfully',
+        queued: queueResult.queued,
+        queuePosition: queueResult.position,
+        message: queueResult.queued
+          ? `Test run queued${queueResult.position ? ` at position ${queueResult.position}` : ''}`
+          : 'Test run started successfully',
       });
     });
 
@@ -256,8 +287,14 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
         await cache.delete(CacheKeys.runs.byTest(tid));
       }
 
-      // Start test execution asynchronously
-      runTestsForRun(id).catch(console.error);
+      // Feature #155: Queue test execution with concurrency limits
+      const queueResult = await enqueueOrExecute(id, 'e2e', {
+        triggeredBy: request.user?.id,
+      });
+
+      if (queueResult.queued) {
+        console.log(`[RunTrigger] Rerun ${id} queued at position ${queueResult.position || 'unknown'}`);
+      }
 
       return reply.status(201).send({
         run_id: id,
@@ -271,7 +308,11 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
           created_at: run.created_at.toISOString(),
           test_ids: validTestIds,
         },
-        message: `Rerun started for ${validTestIds.length} test(s)`,
+        queued: queueResult.queued,
+        queuePosition: queueResult.position,
+        message: queueResult.queued
+          ? `Rerun queued for ${validTestIds.length} test(s)${queueResult.position ? ` at position ${queueResult.position}` : ''}`
+          : `Rerun started for ${validTestIds.length} test(s)`,
       });
     });
   };

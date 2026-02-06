@@ -38,6 +38,8 @@ import { servicesStatusRoutes, setServicesSocketIO } from './routes/services-sta
 import { setRecordingSocketIO } from './routes/test-runs/recording-routes'; // Feature #26: Playwright recording
 import { stepTemplateRoutes } from './routes/step-templates'; // Feature #31: Reusable Step Templates
 import { requestTimeoutHook } from './middleware/timeout'; // Feature #90: Request timeout middleware
+import { initializeCleanupJob, stopCleanupJob, getCleanupStats } from './jobs/cleanup'; // Feature #154: Data retention cleanup
+import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, registerExecutionCallback } from './services/execution-queue'; // Feature #155: BullMQ execution queue
 
 // Socket.IO server instance (will be initialized after server starts)
 let io: SocketIOServer | null = null;
@@ -483,6 +485,10 @@ app.get('/health', async (request, reply) => {
     memory: memoryUsage,
     // Feature #151: Include backup status in health check
     backup: await getBackupStatus(),
+    // Feature #154: Include cleanup job status in health check
+    cleanup: getCleanupStats(),
+    // Feature #155: Include execution queue status in health check
+    executionQueue: await getQueueHealth(),
     // Feature #152: Version and build info
     version: versionInfo.version,
     build: {
@@ -655,6 +661,14 @@ async function start() {
       console.log('[Startup] Redis not available - using in-memory cache fallback');
     }
 
+    // Feature #155: Initialize BullMQ execution queue (requires Redis)
+    const queueInitialized = await initializeExecutionQueue();
+    if (queueInitialized) {
+      console.log('[Startup] Execution queue initialized - test runs will be queued with concurrency limits');
+    } else {
+      console.log('[Startup] Execution queue not available - test runs will execute directly');
+    }
+
     // Seed test users AFTER database is connected
     // This ensures organization_members are persisted to the database
     try {
@@ -725,6 +739,9 @@ async function start() {
     setServicesSocketIO(io);
     setRecordingSocketIO(io);
 
+    // Feature #154: Initialize data retention cleanup job
+    initializeCleanupJob();
+
     // Check AI provider status for MCP features
     const kieApiKey = process.env.KIE_API_KEY;
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
@@ -772,6 +789,7 @@ start();
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('[Shutdown] SIGTERM received, closing connections...');
+  stopCleanupJob(); // Feature #154: Stop cleanup job
   await closeCache(); // Feature #60: Close cache connection
   await closeDatabase();
   await app.close();

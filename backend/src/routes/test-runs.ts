@@ -394,6 +394,13 @@ import {
   generateLighthouseErrorMessage,
 } from './test-runs/lighthouse-executor';
 
+// Feature #155: Import execution queue for concurrency-limited test runs
+import {
+  registerExecutionCallback,
+  enqueueOrExecute,
+  isQueueReady,
+} from '../services/execution-queue';
+
 // Re-export healing types for external use
 export {
   PendingHealingApproval,
@@ -897,6 +904,11 @@ interface RunBody {
 export async function testRunRoutes(app: FastifyInstance) {
   // Feature #1356: All API routes have been extracted to separate modules in ./test-runs/
   // See index.ts for complete module listing. Routes are registered at the end of this function.
+
+  // Feature #155: Register the execution callback for the queue worker
+  // This allows the queue to execute test runs with proper concurrency limits
+  registerExecutionCallback(runTestsForRun);
+  console.log('[TestRuns] Execution callback registered with queue');
 
   // Register all extracted route modules
   await securityRoutes(app);
