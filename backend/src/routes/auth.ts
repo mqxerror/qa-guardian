@@ -570,9 +570,17 @@ export async function authRoutes(app: FastifyInstance) {
       { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
 
+    // Feature #225: Refresh token rotation - revoke old, issue new
+    // OWASP recommends rotating refresh tokens on each use to limit theft window
+    await revokeRefreshToken(refresh_token);
+    const newRefreshToken = generateRefreshToken(user.id, user.email, organizationId);
+    await storeRefreshToken(newRefreshToken, user.id);
+
     return {
       token: newAccessToken,
       expiresIn: ACCESS_TOKEN_EXPIRY_SECONDS,
+      refresh_token: newRefreshToken,
+      refreshExpiresIn: REFRESH_TOKEN_EXPIRY_SECONDS,
       user: {
         id: user.id,
         email: user.email,
