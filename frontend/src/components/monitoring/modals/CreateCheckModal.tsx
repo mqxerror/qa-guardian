@@ -1,6 +1,7 @@
 /**
  * CreateCheckModal Component
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
+ * Feature #127: Mobile responsive design audit and fixes
  *
  * Handles creating and editing uptime checks with smart defaults and presets
  */
@@ -251,12 +252,12 @@ export default function CreateCheckModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto p-4">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-check-title"
-        className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl mx-4 max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-md rounded-lg bg-card p-4 sm:p-6 shadow-xl mx-4 max-h-[90vh] overflow-y-auto"
       >
         <h2 id="create-check-title" className="text-lg font-semibold text-foreground mb-4">
           {editingCheck ? 'Edit Uptime Check' : 'Create Uptime Check'}

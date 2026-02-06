@@ -2,6 +2,7 @@
  * InsertTemplateModal Component
  * Feature #50: Extract modals from TestSuitePage.tsx
  * Feature #31: Step Templates for test recording
+ * Feature #127: Mobile responsive design audit and fixes
  */
 
 import React from 'react';
@@ -42,7 +43,7 @@ export function InsertTemplateModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -50,7 +51,10 @@ export function InsertTemplateModal({
       }}
     >
       <div
-        className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-2xl max-h-[80vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="insert-template-modal-title"
+        className="w-full max-w-lg rounded-xl border border-border bg-card p-4 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 mb-4">
@@ -58,7 +62,7 @@ export function InsertTemplateModal({
             <span className="text-xl">📋</span>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Insert Template</h3>
+            <h3 id="insert-template-modal-title" className="text-lg font-semibold text-foreground">Insert Template</h3>
             <p className="text-sm text-muted-foreground">
               Choose a step template to append to this test.
             </p>

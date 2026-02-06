@@ -18,7 +18,7 @@ export function DeleteTestModal({
 }: DeleteTestModalProps) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
           onCancel();
@@ -29,7 +29,7 @@ export function DeleteTestModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="delete-test-title"
-        className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg"
+        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-lg border border-border bg-card p-4 sm:p-6 shadow-lg mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id="delete-test-title" className="text-lg font-semibold text-foreground">

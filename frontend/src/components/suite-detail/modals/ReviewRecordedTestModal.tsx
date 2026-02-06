@@ -3,6 +3,7 @@
  * Feature #50: Extracted from TestSuitePage.tsx
  * Feature #31: Save as Template support
  * Feature #37: Optional step support for cookie consent handling
+ * Feature #127: Mobile responsive design audit and fixes
  */
 
 import React from 'react';
@@ -71,7 +72,7 @@ export function ReviewRecordedTestModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -79,7 +80,10 @@ export function ReviewRecordedTestModal({
       }}
     >
       <div
-        className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="review-recorded-test-modal-title"
+        className="w-full max-w-2xl rounded-xl border border-border bg-card p-4 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -88,7 +92,7 @@ export function ReviewRecordedTestModal({
             <span className="text-xl">✅</span>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Review Recorded Test</h3>
+            <h3 id="review-recorded-test-modal-title" className="text-lg font-semibold text-foreground">Review Recorded Test</h3>
             <p className="text-sm text-muted-foreground">
               Review the recorded steps, give your test a name, and save it to the suite.
             </p>

@@ -4,6 +4,7 @@
 // Feature #64: Added infinite scroll as alternative to pagination
 // Feature #113: Added virtual scrolling for large run lists
 // Feature #125: Added skeleton loaders for better perceived performance
+// Feature #127: Mobile responsive design - card layout on mobile
 
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -480,78 +481,114 @@ function RunHistoryPage() {
                     />
                   </div>
                 ) : (
-                  <div className="bg-card rounded-lg border border-border overflow-hidden">
-                    <table className="w-full">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Run ID</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Suite</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Date/Time</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Duration</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Pass/Fail</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Branch</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {paginatedRuns.map((run) => (
-                          <tr key={run.id} className="hover:bg-muted/30">
-                            <td className="px-4 py-3">
+                  <>
+                    {/* Feature #127: Mobile card view */}
+                    <div className="md:hidden space-y-3">
+                      {paginatedRuns.map((run) => (
+                        <Link
+                          key={run.id}
+                          to={`/runs/${run.id}`}
+                          className="block bg-card rounded-lg border border-border p-4 hover:bg-muted/30 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="flex items-center gap-2">
                               <StatusBadge status={run.status} />
-                            </td>
-                            <td className="px-4 py-3">
-                              <code className="text-sm text-foreground">#{run.id.slice(-8)}</code>
-                            </td>
-                            <td className="px-4 py-3">
-                              <Link
-                                to={`/suites/${run.suite_id}`}
-                                className="text-primary hover:underline font-medium"
-                              >
-                                {run.suite_name}
-                              </Link>
-                              {run.test_name && (
-                                <div className="text-xs text-muted-foreground mt-0.5" title={run.test_name}>
-                                  {run.test_name}
-                                </div>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-muted-foreground">
-                              <div>{formatDate(run.created_at)}</div>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-foreground">
-                              {formatDuration(run.duration_ms)}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-1 text-sm">
-                                <span className="text-green-600 dark:text-green-400 font-medium">{run.passed_count}</span>
-                                <span className="text-muted-foreground">/</span>
-                                <span className="text-red-600 dark:text-red-400 font-medium">{run.failed_count}</span>
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {run.results_count} test{run.results_count !== 1 ? 's' : ''}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-muted-foreground">
-                              {run.branch || 'main'}
-                            </td>
-                            <td className="px-4 py-3">
-                              <Link
-                                to={`/runs/${run.id}`}
-                                className="inline-flex items-center gap-1 text-primary hover:underline text-sm"
-                              >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                                View
-                              </Link>
-                            </td>
+                              <span className="font-medium text-foreground truncate">{run.suite_name}</span>
+                            </div>
+                            <code className="text-xs text-muted-foreground shrink-0">#{run.id.slice(-8)}</code>
+                          </div>
+                          {run.test_name && (
+                            <div className="text-sm text-muted-foreground truncate mb-2">{run.test_name}</div>
+                          )}
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-3">
+                              <span className="text-muted-foreground">{formatDate(run.created_at)}</span>
+                              <span className="text-foreground">{formatDuration(run.duration_ms)}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-green-600 dark:text-green-400 font-medium">{run.passed_count}</span>
+                              <span className="text-muted-foreground">/</span>
+                              <span className="text-red-600 dark:text-red-400 font-medium">{run.failed_count}</span>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+
+                    {/* Desktop table view */}
+                    <div className="hidden md:block bg-card rounded-lg border border-border overflow-hidden">
+                      <table className="w-full">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Run ID</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Suite</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Date/Time</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Duration</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Pass/Fail</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Branch</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Actions</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {paginatedRuns.map((run) => (
+                            <tr key={run.id} className="hover:bg-muted/30">
+                              <td className="px-4 py-3">
+                                <StatusBadge status={run.status} />
+                              </td>
+                              <td className="px-4 py-3">
+                                <code className="text-sm text-foreground">#{run.id.slice(-8)}</code>
+                              </td>
+                              <td className="px-4 py-3">
+                                <Link
+                                  to={`/suites/${run.suite_id}`}
+                                  className="text-primary hover:underline font-medium"
+                                >
+                                  {run.suite_name}
+                                </Link>
+                                {run.test_name && (
+                                  <div className="text-xs text-muted-foreground mt-0.5" title={run.test_name}>
+                                    {run.test_name}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-muted-foreground">
+                                <div>{formatDate(run.created_at)}</div>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-foreground">
+                                {formatDuration(run.duration_ms)}
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-1 text-sm">
+                                  <span className="text-green-600 dark:text-green-400 font-medium">{run.passed_count}</span>
+                                  <span className="text-muted-foreground">/</span>
+                                  <span className="text-red-600 dark:text-red-400 font-medium">{run.failed_count}</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {run.results_count} test{run.results_count !== 1 ? 's' : ''}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-muted-foreground">
+                                {run.branch || 'main'}
+                              </td>
+                              <td className="px-4 py-3">
+                                <Link
+                                  to={`/runs/${run.id}`}
+                                  className="inline-flex items-center gap-1 text-primary hover:underline text-sm"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                  View
+                                </Link>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 )}
 
                 {/* Pagination - only shown when not using infinite scroll */}

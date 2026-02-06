@@ -1,5 +1,6 @@
 // EditTestModal.tsx
 // Feature #48: Extracted from TestDetailPage.tsx
+// Feature #127: Mobile responsive design audit and fixes
 import { FormEvent } from 'react';
 
 interface EditTestModalProps {
@@ -42,12 +43,12 @@ export function EditTestModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-test-title"
-        className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg"
+        className="w-full max-w-md rounded-lg bg-card p-4 sm:p-6 shadow-lg max-h-[90vh] overflow-y-auto"
       >
         <h3 id="edit-test-title" className="text-lg font-semibold text-foreground">Edit Test</h3>
         <form onSubmit={onSubmit} className="mt-4 space-y-4">

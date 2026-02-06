@@ -1,6 +1,7 @@
 /**
  * Alert Grouping Modal
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
+ * Feature #127: Mobile responsive design audit and fixes
  *
  * Handles creation and editing of alert grouping rules with:
  * - Rule name and description
@@ -120,9 +121,14 @@ export const AlertGroupingModal: React.FC<AlertGroupingModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="alert-grouping-modal-title"
+        className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
+      >
+        <h2 id="alert-grouping-modal-title" className="text-lg font-semibold text-foreground mb-4">
           {editingRule ? 'Edit Alert Grouping Rule' : 'Create Alert Grouping Rule'}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -1,5 +1,6 @@
 /**
  * AlertRoutingModal - Extracted from MonitoringPage.tsx for Feature #47
+ * Feature #127: Mobile responsive design audit and fixes
  * Handles creation and editing of alert routing rules with multiple destination types
  */
 
@@ -173,9 +174,14 @@ export function AlertRoutingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="alert-routing-modal-title"
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
+      >
+        <h2 id="alert-routing-modal-title" className="text-lg font-semibold text-foreground mb-4">
           {editingRule ? 'Edit Alert Routing Rule' : 'Create Alert Routing Rule'}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">

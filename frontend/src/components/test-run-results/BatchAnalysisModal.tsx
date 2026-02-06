@@ -2,6 +2,7 @@
  * BatchAnalysisModal - AI batch analysis modal for multiple test failures
  * Feature #46: Extracted from TestRunResultPage.tsx for modularity
  * Feature #1954: Batch failure analysis with common pattern detection
+ * Feature #127: Mobile responsive design - p-4 backdrop, max-h-[90vh] overflow, responsive padding
  */
 
 import React, { useState, useCallback } from 'react';
@@ -127,16 +128,21 @@ Please identify:
   const failedTests = run.results.filter(r => r.status === 'failed' || r.status === 'error');
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="batch-analysis-title"
+        className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+      >
         <div className="p-4 border-b border-border bg-gradient-to-r from-purple-600/10 to-indigo-600/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center" aria-hidden="true">
                 <span className="text-white text-lg">🤖</span>
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Batch Failure Analysis</h3>
+                <h3 id="batch-analysis-title" className="font-semibold text-foreground">Batch Failure Analysis</h3>
                 <p className="text-sm text-muted-foreground">
                   Analyzing {resultSummary.failed} failed tests for common patterns
                 </p>
@@ -144,9 +150,10 @@ Please identify:
             </div>
             <button
               onClick={onClose}
+              aria-label="Close dialog"
               className="p-2 rounded-full hover:bg-muted transition-colors"
             >
-              <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>

@@ -1,6 +1,7 @@
 /**
  * TransactionModal Component
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
+ * Feature #127: Mobile responsive design audit and fixes
  *
  * Handles creating multi-step transaction monitors
  */
@@ -169,9 +170,14 @@ export default function TransactionModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-8">
-      <div className="w-full max-w-2xl rounded-lg bg-card p-6 shadow-xl mx-4 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Create Transaction</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-transaction-title"
+        className="w-full max-w-2xl rounded-lg bg-card p-4 sm:p-6 shadow-xl mx-4 max-h-[90vh] overflow-y-auto"
+      >
+        <h2 id="create-transaction-title" className="text-lg font-semibold text-foreground mb-4">Create Transaction</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>

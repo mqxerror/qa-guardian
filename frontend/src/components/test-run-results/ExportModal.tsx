@@ -1,6 +1,7 @@
 /**
  * ExportModal - Export test results modal with PDF, HTML, JSON, and share link options
  * Feature #46: Extracted from TestRunResultPage.tsx for modularity
+ * Feature #127: Mobile responsive design - p-4 backdrop, max-h-[90vh] overflow, responsive padding
  */
 
 import React, { useState } from 'react';
@@ -194,14 +195,20 @@ export default function ExportModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-card border border-border rounded-lg shadow-xl w-full max-w-lg p-6 animate-in fade-in zoom-in-95 duration-200">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-modal-title"
+        className="relative bg-card border border-border rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-200"
+      >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-foreground">Export Test Results</h2>
+          <h2 id="export-modal-title" className="text-xl font-bold text-foreground">Export Test Results</h2>
           <button
             onClick={handleClose}
+            aria-label="Close dialog"
             className="p-2 rounded-full hover:bg-muted transition-colors"
           >
-            <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>

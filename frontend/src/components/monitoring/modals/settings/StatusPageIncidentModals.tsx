@@ -1,6 +1,7 @@
 /**
  * Status Page Incident Modals
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
+ * Feature #127: Mobile responsive design audit and fixes
  *
  * Contains 3 modals:
  * 1. IncidentManagementPanel - Panel for viewing/managing incidents on a status page
@@ -92,11 +93,16 @@ export const IncidentManagementPanel: React.FC<IncidentManagementPanelProps> = (
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-6 shadow-xl">
+      <div className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/50">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="incident-management-panel-title"
+          className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
+        >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-lg font-semibold text-foreground">
+              <h2 id="incident-management-panel-title" className="text-lg font-semibold text-foreground">
                 📢 Incident Management - {statusPage.name}
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
@@ -315,9 +321,14 @@ export const CreateStatusPageIncidentModal: React.FC<CreateStatusPageIncidentMod
   if (!isOpen || !statusPage) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Create New Incident</h2>
+    <div className="fixed inset-0 z-[60] p-4 flex items-center justify-center bg-black/50">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-status-page-incident-modal-title"
+        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
+      >
+        <h2 id="create-status-page-incident-modal-title" className="text-lg font-semibold text-foreground mb-4">Create New Incident</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Incident Title *</label>
@@ -471,9 +482,14 @@ export const AddIncidentUpdateModal: React.FC<AddIncidentUpdateModalProps> = ({
   if (!isOpen || !statusPage || !incident) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Add Incident Update</h2>
+    <div className="fixed inset-0 z-[60] p-4 flex items-center justify-center bg-black/50">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-incident-update-modal-title"
+        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
+      >
+        <h2 id="add-incident-update-modal-title" className="text-lg font-semibold text-foreground mb-4">Add Incident Update</h2>
         <p className="text-sm text-muted-foreground mb-4">
           Incident: {incident.title}
         </p>

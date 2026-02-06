@@ -1,6 +1,7 @@
 /**
  * ImportTestsModal Component
  * Feature #50: Extract modals from TestSuitePage.tsx
+ * Feature #127: Mobile responsive design audit and fixes
  */
 
 import React, { useRef } from 'react';
@@ -22,7 +23,7 @@ export function ImportTestsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -33,7 +34,7 @@ export function ImportTestsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="import-tests-title"
-        className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg"
+        className="w-full max-w-md rounded-lg border border-border bg-card p-4 sm:p-6 shadow-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id="import-tests-title" className="text-lg font-semibold text-foreground">Import Tests</h3>

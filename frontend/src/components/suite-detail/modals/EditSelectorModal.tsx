@@ -2,6 +2,7 @@
  * EditSelectorModal Component
  * Feature #50: Extract modals from TestSuitePage.tsx
  * Feature #1065: Edit selector modal for TestSuitePage
+ * Feature #127: Mobile responsive design audit and fixes
  */
 
 import React from 'react';
@@ -47,14 +48,14 @@ export function EditSelectorModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) {
           onClose();
         }
       }}
     >
-      <div role="dialog" aria-modal="true" className="w-full max-w-lg rounded-lg bg-card p-6 shadow-lg">
+      <div role="dialog" aria-modal="true" className="w-full max-w-lg rounded-lg bg-card p-4 sm:p-6 shadow-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30">

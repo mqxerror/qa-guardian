@@ -1,6 +1,7 @@
 /**
  * PerformanceCheckModal Component
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
+ * Feature #127: Mobile responsive design audit and fixes
  *
  * Handles creating performance (Lighthouse) checks
  */
@@ -83,9 +84,14 @@ export default function PerformanceCheckModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Create Performance Check</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-performance-title"
+        className="w-full max-w-md rounded-lg bg-card p-4 sm:p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+      >
+        <h2 id="create-performance-title" className="text-lg font-semibold text-foreground mb-4">Create Performance Check</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Name</label>

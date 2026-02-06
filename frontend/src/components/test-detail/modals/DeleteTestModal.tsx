@@ -1,5 +1,6 @@
 // Feature #48: DeleteTestModal component extracted from TestDetailPage.tsx
 // Feature #119: Added focus trap for keyboard navigation
+// Feature #127: Mobile responsive design audit and fixes
 
 import { useFocusTrap } from '../../../hooks/useFocusTrap';
 
@@ -28,7 +29,7 @@ export function DeleteTestModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
@@ -36,7 +37,7 @@ export function DeleteTestModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="delete-test-title"
-        className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg"
+        className="w-full max-w-md rounded-lg bg-card p-4 sm:p-6 shadow-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id="delete-test-title" className="text-lg font-semibold text-foreground">

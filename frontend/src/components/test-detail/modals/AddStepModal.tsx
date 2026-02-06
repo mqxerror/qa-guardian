@@ -1,5 +1,6 @@
 // AddStepModal.tsx
 // Feature #48: Extracted from TestDetailPage.tsx
+// Feature #127: Mobile responsive design audit and fixes
 import { FormEvent, KeyboardEvent } from 'react';
 
 interface AddStepModalProps {
@@ -119,10 +120,10 @@ export function AddStepModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div role="dialog" aria-modal="true" aria-labelledby="add-step-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" aria-labelledby="add-step-title" className="w-full max-w-md rounded-lg bg-card p-4 sm:p-6 shadow-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <h3 id="add-step-title" className="text-lg font-semibold text-foreground">Add Test Step</h3>
         <form onSubmit={onSubmit} className="mt-4 space-y-4">
           {/* Feature #1965: Expanded action dropdown with categorized sections */}

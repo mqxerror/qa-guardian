@@ -1,6 +1,7 @@
 /**
  * Alert Routing Test Modal
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
+ * Feature #127: Mobile responsive design audit and fixes
  *
  * Allows users to test alert routing rules by simulating alerts
  * with different severity levels, check types, and names.
@@ -74,9 +75,14 @@ export const AlertRoutingTestModal: React.FC<AlertRoutingTestModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="alert-routing-test-modal-title"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
+      >
+        <h2 id="alert-routing-test-modal-title" className="text-lg font-semibold text-foreground mb-4">
           🧪 Test Alert Routing
         </h2>
         <div className="space-y-4">

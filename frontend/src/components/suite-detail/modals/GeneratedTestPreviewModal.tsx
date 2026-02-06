@@ -4,6 +4,7 @@
  * Feature #1342: Generated Test Code Preview Modal
  * Feature #1153: Confidence Score Display
  * Feature #1163: Diff View and Regeneration
+ * Feature #127: Mobile responsive design audit and fixes
  */
 
 import React from 'react';
@@ -152,7 +153,7 @@ export function GeneratedTestPreviewModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -162,7 +163,7 @@ export function GeneratedTestPreviewModal({
       <div
         role="dialog"
         aria-modal="true"
-        className="w-full max-w-4xl rounded-lg bg-card p-6 shadow-lg max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-4xl rounded-lg bg-card p-4 sm:p-6 shadow-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

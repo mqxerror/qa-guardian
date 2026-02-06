@@ -1,5 +1,6 @@
 // ManagedIncidentModals - Feature #47: Extract from MonitoringPage.tsx
 // All incident-related modals bundled together for modularity
+// Feature #127: Mobile responsive design audit and fixes
 
 import { useState } from 'react';
 import { ManagedIncident, ManagedIncidentResponder } from '../../types';
@@ -89,9 +90,14 @@ export function CreateManagedIncidentModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
+    <div className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/50">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-managed-incident-modal-title"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
+      >
+        <h2 id="create-managed-incident-modal-title" className="text-lg font-semibold text-foreground mb-4">
           🔥 Declare Incident
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -225,8 +231,13 @@ export function ManagedIncidentDetailModal({
   if (!isOpen || !incident) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/50">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="managed-incident-detail-modal-title"
+        className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
+      >
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -237,7 +248,7 @@ export function ManagedIncidentDetailModal({
                 {incident.status}
               </span>
             </div>
-            <h2 className="text-xl font-semibold text-foreground">{incident.title}</h2>
+            <h2 id="managed-incident-detail-modal-title" className="text-xl font-semibold text-foreground">{incident.title}</h2>
             {incident.description && (
               <p className="text-muted-foreground mt-1">{incident.description}</p>
             )}
@@ -492,9 +503,14 @@ export function AssignResponderModal({
   if (!isOpen || !incidentId) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Assign Responder</h2>
+    <div className="fixed inset-0 z-[60] p-4 flex items-center justify-center bg-black/50">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="assign-responder-modal-title"
+        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
+      >
+        <h2 id="assign-responder-modal-title" className="text-lg font-semibold text-foreground mb-4">Assign Responder</h2>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Name *</label>
@@ -583,9 +599,14 @@ export function ResolveIncidentModal({
   if (!isOpen || !incidentId) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Resolve Incident</h2>
+    <div className="fixed inset-0 z-[60] p-4 flex items-center justify-center bg-black/50">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="resolve-incident-modal-title"
+        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
+      >
+        <h2 id="resolve-incident-modal-title" className="text-lg font-semibold text-foreground mb-4">Resolve Incident</h2>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Resolution Summary *</label>

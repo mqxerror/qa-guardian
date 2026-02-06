@@ -1,5 +1,6 @@
 // ManagedIncidentModal - Feature #47: Extract from MonitoringPage.tsx
 // Modal for creating new managed incidents
+// Feature #127: Mobile responsive design audit and fixes
 
 import { useState } from 'react';
 import { ManagedIncident } from '../../types';
@@ -64,9 +65,14 @@ export function ManagedIncidentModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
+    <div className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/50">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="managed-incident-modal-title"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
+      >
+        <h2 id="managed-incident-modal-title" className="text-lg font-semibold text-foreground mb-4">
           🔥 Declare Incident
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">

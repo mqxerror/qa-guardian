@@ -1,6 +1,7 @@
 /**
  * Status Page Modal
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
+ * Feature #127: Mobile responsive design audit and fixes
  *
  * Handles creation and editing of public status pages with:
  * - Name, slug, description
@@ -142,9 +143,14 @@ export const StatusPageModal: React.FC<StatusPageModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
+    <div className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/50">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="status-page-modal-title"
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
+      >
+        <h2 id="status-page-modal-title" className="text-lg font-semibold text-foreground mb-4">
           {editingStatusPage ? 'Edit Status Page' : 'Create Status Page'}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -8,6 +8,7 @@
  * Feature #34: Debug overlay
  * Feature #36: Device emulation
  * Feature #37: Optional step support
+ * Feature #127: Mobile responsive design audit and fixes
  */
 
 import React, { useRef, useEffect, useState } from 'react';
@@ -245,7 +246,7 @@ export function RecordTestModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget && !isRecording) {
           onCancelRecording();
@@ -253,10 +254,12 @@ export function RecordTestModal({
       }}
     >
       <div
-        className={`w-full rounded-xl bg-card shadow-2xl transition-all duration-300 ${
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="record-test-title"
+        className={`w-full rounded-xl bg-card shadow-2xl transition-all duration-300 max-h-[90vh] overflow-y-auto ${
           isRecording ? 'max-w-7xl border-2 border-blue-500 shadow-blue-500/20' : 'max-w-xl border border-border'
         }`}
-        style={{ maxHeight: '95vh' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -267,7 +270,7 @@ export function RecordTestModal({
             <span className="text-xl">{isRecording ? '🔴' : '🎬'}</span>
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-foreground">
+            <h3 id="record-test-title" className="text-lg font-semibold text-foreground">
               {isRecording ? 'Recording in Progress' : 'Record New Test'}
             </h3>
             <p className="text-sm text-muted-foreground">

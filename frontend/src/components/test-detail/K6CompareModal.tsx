@@ -1,6 +1,7 @@
 /**
  * K6CompareModal - Feature #48: Extracted from TestDetailPage.tsx
  * K6 Load Test comparison modal (Feature #564)
+ * Feature #127: Mobile responsive design - p-4 backdrop, max-h-[90vh] overflow, responsive padding
  */
 
 // K6 Compare Results type
@@ -52,19 +53,23 @@ export function K6CompareModal({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="k6-compare-modal-title"
         className="max-w-4xl w-full max-h-[90vh] overflow-auto rounded-lg bg-background border border-border shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-background border-b border-border p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-lg">📊</span>
-            <h3 className="text-lg font-semibold text-foreground">K6 Load Test Comparison</h3>
+            <h3 id="k6-compare-modal-title" className="text-lg font-semibold text-foreground">K6 Load Test Comparison</h3>
           </div>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             className="rounded-md p-1 hover:bg-muted"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
