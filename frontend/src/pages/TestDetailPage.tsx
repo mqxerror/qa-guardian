@@ -10,6 +10,7 @@ import { useTimezoneStore } from '../stores/timezoneStore';
 import { useSocketStore } from '../stores/socketStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { toast } from '../stores/toastStore';
+import { logger } from '../utils/logger';
 // Feature #68: Import React Query hooks for caching
 import { useTest, useInvalidateTests } from '../hooks/api/useTests';
 import { useRunsByTest, useInvalidateRuns } from '../hooks/api/useRuns';
@@ -996,11 +997,11 @@ function TestDetailPage() {
     if (!socket || !testId) return;
 
     const handleOrgRunComplete = (data: { runId: string; orgId: string; status: string; duration_ms: number; testName?: string }) => {
-      console.log('[WebSocket] Received run-complete from org room:', data);
+      logger.websocket.debug('Received run-complete from org room:', data);
 
       // Avoid processing the same run twice (we receive from both run room and org room)
       if (processedRunsRef.current.has(data.runId)) {
-        console.log('[WebSocket] Skipping duplicate notification for run:', data.runId);
+        logger.websocket.debug('Skipping duplicate notification for run:', data.runId);
         return;
       }
       processedRunsRef.current.add(data.runId);

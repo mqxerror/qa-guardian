@@ -21,6 +21,7 @@ import { URLInput, QuickTestPanel, type QuickTestType } from './shared';
 import { CustomTestWizard } from './CustomTestWizard';
 // Feature #97: Toast for run started notification
 import { toast } from '../../stores/toastStore';
+import { devLog } from '../../utils/logger';
 
 // URL validation regex
 const URL_REGEX = /^https?:\/\/[^\s<>"']+$/i;
@@ -296,7 +297,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
         }
 
         const data = await response.json();
-        console.log('[CreateTestModal] Test created successfully:', data);
+        devLog('[CreateTestModal] Test created successfully:', data);
 
         // Update status to created
         setGeneratedTests(prev =>

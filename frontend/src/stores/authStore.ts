@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { logger } from '../utils/logger';
 
 export interface User {
   id: string;
@@ -59,14 +60,14 @@ export const useAuthStore = create<AuthState>()(
         }
 
         const data = await response.json();
-        console.log('Login response user:', JSON.stringify(data.user));
+        logger.auth.debug('Login response user:', data.user);
         set({
           user: data.user,
           token: data.token,
           isAuthenticated: true,
           isLoading: false,
         });
-        console.log('Stored user:', JSON.stringify(get().user));
+        logger.auth.debug('Stored user:', get().user);
       },
 
       logout: async () => {
@@ -218,13 +219,13 @@ export const useAuthStore = create<AuthState>()(
 
         // Check if persisted state has valid organization_id
         if (persistedState?.user?.organization_id && !isValidUUID(persistedState.user.organization_id)) {
-          console.log('[AuthStore] Clearing stale auth state with invalid organization_id:', persistedState.user.organization_id);
+          logger.auth.debug('Clearing stale auth state with invalid organization_id:', persistedState.user.organization_id);
           return { token: null, user: null };
         }
 
         // Also validate user.id if present
         if (persistedState?.user?.id && !isValidUUID(persistedState.user.id)) {
-          console.log('[AuthStore] Clearing stale auth state with invalid user.id:', persistedState.user.id);
+          logger.auth.debug('Clearing stale auth state with invalid user.id:', persistedState.user.id);
           return { token: null, user: null };
         }
 

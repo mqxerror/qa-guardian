@@ -8,6 +8,7 @@ import { useAuthStore } from "../stores/authStore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { toast } from "../stores/toastStore";
 import { useMonitoringSummary } from "../hooks/api/useMonitoring";
+import { devLog } from "../utils/logger";
 
 // Feature #47: Import modular components and types for performance optimization
 // Eliminates ~600 lines of duplicate type definitions
@@ -658,7 +659,7 @@ function MonitoringPage() {
       if (response.ok) {
         const data = await response.json();
         toast.success(`Escalation test completed: ${data.escalation_flow.length} levels`);
-        console.log('[Escalation Test]', data);
+        devLog('[Escalation Test]', data);
       } else {
         toast.error('Failed to test escalation policy');
       }

@@ -4,6 +4,7 @@
  */
 
 import { SimpleErrorPattern, ErrorAnalysis } from './types';
+import { logger } from '../../utils/logger';
 
 // Format duration in human-readable form
 export const formatDuration = (ms?: number): string => {
@@ -71,12 +72,12 @@ export const detectSimpleError = (errorMessage?: string): ErrorAnalysis => {
   for (const { pattern, tip, category } of SIMPLE_ERROR_PATTERNS) {
     if (pattern.test(errorMessage)) {
       // Log for tuning (Feature #1951 Step 5)
-      console.log('[AI Skip] Simple error detected:', { category, pattern: pattern.source, errorSnippet: errorMessage.slice(0, 100) });
+      logger.ai.debug('Simple error detected (AI Skip):', { category, pattern: pattern.source, errorSnippet: errorMessage.slice(0, 100) });
       return { isSimple: true, tip, category };
     }
   }
   // Log complex errors that trigger AI
-  console.log('[AI Triggered] Complex error:', { errorSnippet: errorMessage.slice(0, 100) });
+  logger.ai.debug('Complex error (AI Triggered):', { errorSnippet: errorMessage.slice(0, 100) });
   return { isSimple: false };
 };
 

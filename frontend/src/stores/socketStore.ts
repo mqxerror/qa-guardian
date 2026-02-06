@@ -12,6 +12,7 @@
 
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
+import { logger } from '../utils/logger';
 
 /**
  * Connection status for visual indicator
@@ -87,7 +88,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
    */
   const logReconnectionEvent = (event: Omit<ReconnectionEvent, 'timestamp'>) => {
     const fullEvent = { ...event, timestamp: new Date() };
-    console.log('[Socket.IO] Reconnection event:', fullEvent);
+    logger.socket.debug('Reconnection event:', fullEvent);
 
     set((state) => ({
       reconnectionEvents: [
@@ -158,13 +159,13 @@ export const useSocketStore = create<SocketState>((set, get) => {
     // Re-join organization room
     if (state.subscribedOrg) {
       socket.emit('join-org', state.subscribedOrg);
-      console.log('[Socket.IO] Re-subscribed to org:', state.subscribedOrg);
+      logger.socket.debug('Re-subscribed to org:', state.subscribedOrg);
     }
 
     // Re-join all run rooms
     for (const runId of state.subscribedRuns) {
       socket.emit('join-run', runId);
-      console.log('[Socket.IO] Re-subscribed to run:', runId);
+      logger.socket.debug('Re-subscribed to run:', runId);
     }
   };
 
@@ -188,7 +189,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
       success: false,
     });
 
-    console.log(`[Socket.IO] Reconnecting in ${Math.round(delay)}ms (attempt ${attempt})`);
+    logger.socket.debug(`Reconnecting in ${Math.round(delay)}ms (attempt ${attempt})`);
 
     reconnectTimeout = setTimeout(() => {
       get().connect();
@@ -218,7 +219,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
       set({ connectionStatus: 'connecting' });
 
       const socketUrl = getSocketUrl();
-      console.log('[Socket.IO] Connecting to:', socketUrl);
+      logger.socket.debug('Connecting to:', socketUrl);
 
       const newSocket = io(socketUrl, {
         transports: ['websocket', 'polling'],
@@ -227,7 +228,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
       });
 
       newSocket.on('connect', () => {
-        console.log('[Socket.IO] Connected:', newSocket.id);
+        logger.socket.debug('Connected:', newSocket.id);
 
         const wasReconnecting = get().reconnectAttempt > 0;
 
@@ -254,7 +255,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
       });
 
       newSocket.on('disconnect', (reason) => {
-        console.log('[Socket.IO] Disconnected:', reason);
+        logger.socket.debug('Disconnected:', reason);
         clearTimers();
 
         set({
@@ -305,7 +306,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
       const { socket, subscribedRuns } = get();
       if (socket?.connected) {
         socket.emit('join-run', runId);
-        console.log('[Socket.IO] Joining run:', runId);
+        logger.socket.debug('Joining run:', runId);
 
         // Track subscription for re-subscribe
         if (!subscribedRuns.includes(runId)) {
@@ -318,7 +319,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
       const { socket, subscribedRuns } = get();
       if (socket?.connected) {
         socket.emit('leave-run', runId);
-        console.log('[Socket.IO] Leaving run:', runId);
+        logger.socket.debug('Leaving run:', runId);
       }
 
       // Remove from tracked subscriptions
@@ -329,7 +330,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
       const { socket } = get();
       if (socket?.connected) {
         socket.emit('join-org', orgId);
-        console.log('[Socket.IO] Joining org:', orgId);
+        logger.socket.debug('Joining org:', orgId);
       }
 
       // Track subscription for re-subscribe

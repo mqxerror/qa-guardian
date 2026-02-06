@@ -6,6 +6,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { TestRun, ResultSummary } from './types';
+import { logger } from '../../utils/logger';
 
 export interface BatchAnalysisModalProps {
   isOpen: boolean;
@@ -43,7 +44,7 @@ export default function BatchAnalysisModal({
         if (Date.now() - cached.timestamp < 24 * 60 * 60 * 1000) {
           setBatchAnalysisResult(cached.analysis);
           setBatchAnalysisCached(true);
-          console.log('[AI Cache] Using cached batch analysis');
+          logger.ai.debug('Using cached batch analysis');
           return;
         }
       }
@@ -102,7 +103,7 @@ Please identify:
         } catch (e) {
           // Storage full
         }
-        console.log('[AI Triggered] Batch failure analysis for', failedTests.length, 'tests');
+        logger.ai.debug('Batch failure analysis triggered for', failedTests.length, 'tests');
       } else {
         setBatchAnalysisResult('Failed to analyze failures. Please try again.');
       }

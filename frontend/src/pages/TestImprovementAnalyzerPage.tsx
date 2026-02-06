@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { devLog } from '../utils/logger';
 
 // Types for test improvement analysis
 interface TestImprovementAnalysis {
@@ -48,7 +49,7 @@ export function TestImprovementAnalyzerPage() {
   await page.click('.login-button');
   await page.waitForTimeout(2000);
   const welcomeText = await page.textContent('.welcome-message');
-  console.log('Welcome:', welcomeText);
+  devLog('Welcome:', welcomeText);
 });`);
   const [testName, setTestName] = useState<string>('user can login successfully');
   const [testType, setTestType] = useState<'e2e' | 'unit' | 'integration' | 'visual' | 'api'>('e2e');

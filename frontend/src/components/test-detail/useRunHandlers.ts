@@ -6,6 +6,7 @@
 import { useCallback, useEffect } from 'react';
 import { toast } from '../../stores/toastStore';
 import { getErrorMessage } from '../../utils/errorHandling';
+import { logger } from '../../utils/logger';
 import type { Socket } from 'socket.io-client';
 import type { TestRunType } from './types';
 
@@ -137,7 +138,7 @@ export function useRunHandlers({
 
       // Join the run's WebSocket room for real-time updates
       joinRun(data.run.id);
-      console.log('[WebSocket] Joined run room:', data.run.id);
+      logger.websocket.debug('Joined run room:', data.run.id);
 
       // Also poll for completion as fallback
       pollRunStatus(data.run.id);
@@ -186,14 +187,14 @@ export function useRunHandlers({
     if (!socket || !currentRun) return;
 
     const handleRunStart = (data: { runId: string; status: string }) => {
-      console.log('[WebSocket] run-start event:', data);
+      logger.websocket.debug('run-start event:', data);
       if (data.runId === currentRun.id) {
         setCurrentRun(prev => prev ? { ...prev, status: 'running' } : null);
       }
     };
 
     const handleRunProgress = (data: { runId: string; totalTests: number; completedTests: number; currentTest?: string }) => {
-      console.log('[WebSocket] run-progress event:', data);
+      logger.websocket.debug('run-progress event:', data);
       if (data.runId === currentRun.id) {
         setLiveProgress({
           totalTests: data.totalTests,
@@ -204,7 +205,7 @@ export function useRunHandlers({
     };
 
     const handleStepStart = (data: { runId: string; stepIndex: number; action: string }) => {
-      console.log('[WebSocket] step-start event:', data);
+      logger.websocket.debug('step-start event:', data);
       if (data.runId === currentRun.id) {
         setLiveProgress(prev => prev ? {
           ...prev,
@@ -214,7 +215,7 @@ export function useRunHandlers({
     };
 
     const handleStepComplete = (data: { runId: string; stepIndex: number; totalSteps: number; status: string }) => {
-      console.log('[WebSocket] step-complete event:', data);
+      logger.websocket.debug('step-complete event:', data);
       if (data.runId === currentRun.id) {
         setLiveProgress(prev => prev ? {
           ...prev,
@@ -224,7 +225,7 @@ export function useRunHandlers({
     };
 
     const handleRunComplete = (data: { runId: string; status: string; duration_ms: number }) => {
-      console.log('[WebSocket] run-complete event:', data);
+      logger.websocket.debug('run-complete event:', data);
       if (data.runId === currentRun.id) {
         setIsRunning(false);
         setLiveProgress(null);
@@ -250,7 +251,7 @@ export function useRunHandlers({
       p95ResponseTime?: number;
       p99ResponseTime?: number;
     }) => {
-      console.log('[WebSocket] step-progress event:', data);
+      logger.websocket.debug('step-progress event:', data);
       if (data.runId === currentRun.id) {
         // Only show k6 metrics panel for actual load tests
         if (testType === 'load' || data.stepId === 'load_test') {

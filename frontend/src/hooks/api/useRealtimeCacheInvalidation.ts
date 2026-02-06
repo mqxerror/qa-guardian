@@ -11,6 +11,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocketStore } from '../../stores/socketStore';
+import { logger } from '../../utils/logger';
 import { runKeys } from './useRuns';
 import { testKeys } from './useTests';
 import { suiteKeys } from './useSuites';
@@ -78,7 +79,7 @@ export function useRealtimeCacheInvalidation() {
 
     // Handle run-start event
     const handleRunStart = (data: RunEventPayload) => {
-      console.log('[RealtimeCache] run-start event:', data.runId);
+      logger.cache.debug('run-start event:', data.runId);
 
       // Invalidate run lists so the new run appears
       queryClient.invalidateQueries({ queryKey: runKeys.lists() });
@@ -99,7 +100,7 @@ export function useRealtimeCacheInvalidation() {
 
     // Feature #108: Handle run-progress event for live status updates
     const handleRunProgress = (data: RunEventPayload) => {
-      console.log('[RealtimeCache] run-progress event:', data.runId, 'progress:', data.progress);
+      logger.cache.debug('run-progress event:', data.runId, 'progress:', data.progress);
 
       // Invalidate the specific run detail for live progress updates
       queryClient.invalidateQueries({ queryKey: runKeys.detail(data.runId) });
@@ -107,7 +108,7 @@ export function useRealtimeCacheInvalidation() {
 
     // Handle run-complete event
     const handleRunComplete = (data: RunEventPayload) => {
-      console.log('[RealtimeCache] run-complete event:', data.runId, 'status:', data.status);
+      logger.cache.debug('run-complete event:', data.runId, 'status:', data.status);
 
       // Invalidate the specific run detail
       queryClient.invalidateQueries({ queryKey: runKeys.detail(data.runId) });
@@ -136,7 +137,7 @@ export function useRealtimeCacheInvalidation() {
 
     // Handle test-created event
     const handleTestCreated = (data: TestEventPayload) => {
-      console.log('[RealtimeCache] test-created event:', data.testId);
+      logger.cache.debug('test-created event:', data.testId);
 
       const suiteId = data.suiteId || data.suite_id;
       if (suiteId) {
@@ -152,7 +153,7 @@ export function useRealtimeCacheInvalidation() {
 
     // Handle test-updated event
     const handleTestUpdated = (data: TestEventPayload) => {
-      console.log('[RealtimeCache] test-updated event:', data.testId);
+      logger.cache.debug('test-updated event:', data.testId);
 
       // Invalidate the specific test detail
       queryClient.invalidateQueries({ queryKey: testKeys.detail(data.testId) });
@@ -166,7 +167,7 @@ export function useRealtimeCacheInvalidation() {
 
     // Feature #108: Handle test-deleted event
     const handleTestDeleted = (data: TestEventPayload) => {
-      console.log('[RealtimeCache] test-deleted event:', data.testId);
+      logger.cache.debug('test-deleted event:', data.testId);
 
       const suiteId = data.suiteId || data.suite_id;
       if (suiteId) {
@@ -182,7 +183,7 @@ export function useRealtimeCacheInvalidation() {
 
     // Feature #108: Handle suite-created event
     const handleSuiteCreated = (data: SuiteEventPayload) => {
-      console.log('[RealtimeCache] suite-created event:', data.suiteId);
+      logger.cache.debug('suite-created event:', data.suiteId);
 
       const projectId = data.projectId || data.project_id;
 
@@ -202,7 +203,7 @@ export function useRealtimeCacheInvalidation() {
 
     // Feature #108: Handle suite-updated event
     const handleSuiteUpdated = (data: SuiteEventPayload) => {
-      console.log('[RealtimeCache] suite-updated event:', data.suiteId);
+      logger.cache.debug('suite-updated event:', data.suiteId);
 
       // Invalidate the specific suite detail
       queryClient.invalidateQueries({ queryKey: suiteKeys.detail(data.suiteId) });
@@ -219,7 +220,7 @@ export function useRealtimeCacheInvalidation() {
 
     // Feature #108: Handle suite-deleted event
     const handleSuiteDeleted = (data: SuiteEventPayload) => {
-      console.log('[RealtimeCache] suite-deleted event:', data.suiteId);
+      logger.cache.debug('suite-deleted event:', data.suiteId);
 
       const projectId = data.projectId || data.project_id;
 
@@ -239,7 +240,7 @@ export function useRealtimeCacheInvalidation() {
 
     // Feature #108: Handle project-created event
     const handleProjectCreated = (data: ProjectEventPayload) => {
-      console.log('[RealtimeCache] project-created event:', data.projectId);
+      logger.cache.debug('project-created event:', data.projectId);
 
       // Invalidate project lists
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
@@ -250,7 +251,7 @@ export function useRealtimeCacheInvalidation() {
 
     // Feature #108: Handle project-updated event
     const handleProjectUpdated = (data: ProjectEventPayload) => {
-      console.log('[RealtimeCache] project-updated event:', data.projectId);
+      logger.cache.debug('project-updated event:', data.projectId);
 
       // Invalidate the specific project detail
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(data.projectId) });
@@ -261,7 +262,7 @@ export function useRealtimeCacheInvalidation() {
 
     // Feature #108: Handle project-deleted event
     const handleProjectDeleted = (data: ProjectEventPayload) => {
-      console.log('[RealtimeCache] project-deleted event:', data.projectId);
+      logger.cache.debug('project-deleted event:', data.projectId);
 
       // Invalidate project lists
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });

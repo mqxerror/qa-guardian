@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
+import { logger } from '../utils/logger';
 import {
   useFlakyTests,
   useFlakyImpactReport,
@@ -369,7 +370,7 @@ export function FlakyTestsDashboardPage() {
       setSelectedTestForAnalysis(test);
       setFlakinessAnalysis(cached.analysis);
       setShowFlakinessAnalysisModal(true);
-      console.log('[AI Cache] Using cached flakiness analysis for:', test.test_name);
+      logger.ai.debug('Using cached flakiness analysis for:', test.test_name);
       return;
     }
 
@@ -432,7 +433,7 @@ Please provide:
           ...prev,
           [test.test_id]: { analysis, timestamp: Date.now() },
         }));
-        console.log('[AI Triggered] Flakiness analysis for:', test.test_name);
+        logger.ai.debug('Flakiness analysis triggered for:', test.test_name);
       } else {
         toast.error('Failed to analyze flakiness');
         setFlakinessAnalysis('Failed to get AI analysis. Please try again.');

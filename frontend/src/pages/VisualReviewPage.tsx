@@ -5,6 +5,7 @@ import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
+import { logger } from '../utils/logger';
 import {
   usePendingVisualChanges,
   useBatchApproveChanges,
@@ -232,7 +233,7 @@ export default function VisualReviewPage() {
         ctx.drawImage(img, 0, 0, width, height);
         const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
         const base64Only = compressedBase64.split(',')[1];
-        console.log(`[AI Vision] Diff image resized: ${img.width}x${img.height} -> ${width}x${height}`);
+        logger.ai.debug(`Diff image resized: ${img.width}x${img.height} -> ${width}x${height}`);
         resolve(base64Only);
       };
       img.onerror = () => reject(new Error('Failed to load image'));
@@ -281,7 +282,7 @@ Respond in this JSON format:
 
       // Feature #1952: Use Claude Vision API when diff image is available
       if (change.diffImage) {
-        console.log(`[AI Vision] Using Vision API for ${change.testName} - ${diffPercent.toFixed(2)}% diff`);
+        logger.ai.debug(`Using Vision API for ${change.testName} - ${diffPercent.toFixed(2)}% diff`);
 
         // Resize and compress the diff image
         const compressedImage = await resizeAndCompressDiffImage(change.diffImage);
@@ -312,7 +313,7 @@ Respond in this JSON format:
         });
       } else {
         // Fallback to text-only analysis when no diff image
-        console.log(`[AI] No diff image available for ${change.testName}, using text-only analysis`);
+        logger.ai.debug(`No diff image available for ${change.testName}, using text-only analysis`);
 
         response = await fetch('/api/v1/mcp/chat', {
           method: 'POST',

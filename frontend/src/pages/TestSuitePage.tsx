@@ -9,6 +9,7 @@ import { getErrorMessage } from '../utils/errorHandling';
 import { io, Socket } from 'socket.io-client';
 import { UnifiedAIService } from '../services/UnifiedAIService';
 import { CreateTestModal } from '../components/create-test';
+import { logger } from '../utils/logger';
 // Feature #59: React Query hooks for paginated test loading
 // Feature #143: Added mutation hooks for operations
 import {
@@ -945,7 +946,7 @@ function TestSuitePage() {
     });
 
     screenshotSocket.on('connect', () => {
-      console.log('[LiveScreenshot] Connected, joining run room:', suiteRun.id);
+      logger.websocket.debug('LiveScreenshot connected, joining run room:', suiteRun.id);
       screenshotSocket.emit('join-run', suiteRun.id);
     });
 
@@ -963,7 +964,7 @@ function TestSuitePage() {
       height: number;
       timestamp: number;
     }) => {
-      console.log(`[LiveScreenshot] Received screenshot for step ${data.stepIndex + 1}: ${data.stepAction}`);
+      logger.websocket.debug(`LiveScreenshot received screenshot for step ${data.stepIndex + 1}: ${data.stepAction}`);
 
       // Update current live screenshot
       setLiveScreenshot({
@@ -992,7 +993,7 @@ function TestSuitePage() {
     });
 
     screenshotSocket.on('disconnect', () => {
-      console.log('[LiveScreenshot] Disconnected');
+      logger.websocket.debug('LiveScreenshot disconnected');
     });
 
     screenshotSocket.on('connect_error', (err: Error) => {
@@ -1000,7 +1001,7 @@ function TestSuitePage() {
     });
 
     return () => {
-      console.log('[LiveScreenshot] Cleaning up socket connection');
+      logger.websocket.debug('LiveScreenshot cleaning up socket connection');
       screenshotSocket.emit('leave-run', suiteRun.id);
       screenshotSocket.disconnect();
     };

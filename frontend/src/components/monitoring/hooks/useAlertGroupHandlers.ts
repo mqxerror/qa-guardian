@@ -7,6 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from '../../../stores/toastStore';
+import { devLog } from '../../../utils/logger';
 import type { AlertGroupingRule, AlertGroup, GroupedAlert } from '../types';
 
 export interface UseAlertGroupHandlersReturn {
@@ -135,7 +136,7 @@ export function useAlertGroupHandlers(
       if (response.ok) {
         const data = await response.json();
         toast.success(data.message);
-        console.log('[Alert Grouping Simulation]', data);
+        devLog('[Alert Grouping Simulation]', data);
         fetchAlertGroups();
       } else {
         const data = await response.json();

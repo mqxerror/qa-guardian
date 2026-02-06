@@ -10,6 +10,7 @@ import { useOrganizationBrandingStore } from '../stores/organizationBrandingStor
 // Feature #46: Recharts and jsPDF imports removed - now used only in extracted components
 import { io, Socket } from 'socket.io-client';
 import { toast } from '../stores/toastStore';
+import { logger } from '../utils/logger';
 import { useMetricsState } from '../hooks/useMetricsState';
 import { useNetworkAnalysisState } from '../hooks/useNetworkAnalysisState';
 import { useAccessibilityState } from '../hooks/useAccessibilityState';
@@ -377,7 +378,7 @@ export default function TestRunResultPage() {
 
     // Handle connection events
     socket.on('connect', () => {
-      console.log('Live updates connected');
+      logger.websocket.debug('Live updates connected');
       socket.emit('subscribe:run', { runId });
     });
 
