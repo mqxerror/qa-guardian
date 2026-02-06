@@ -120,6 +120,40 @@ async function registerPlugins() {
     exposedHeaders: ['Content-Disposition', 'Content-Type', 'Content-Length'],
   });
 
+  // Feature #150: Security headers (CSP, X-Frame-Options, etc.)
+  app.addHook('onSend', async (_request, reply, _payload) => {
+    // Content Security Policy - restrict resource loading
+    reply.header('Content-Security-Policy', [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Allow inline scripts for React
+      "style-src 'self' 'unsafe-inline'", // Allow inline styles
+      "img-src 'self' data: https:", // Allow images from self, data URIs, and HTTPS
+      "font-src 'self' https:", // Allow fonts from self and HTTPS
+      "connect-src 'self' https: wss:", // Allow API and WebSocket connections
+      "frame-ancestors 'none'", // Prevent embedding in iframes
+    ].join('; '));
+
+    // Prevent clickjacking
+    reply.header('X-Frame-Options', 'DENY');
+
+    // Prevent MIME-type sniffing
+    reply.header('X-Content-Type-Options', 'nosniff');
+
+    // Enable XSS filter
+    reply.header('X-XSS-Protection', '1; mode=block');
+
+    // Referrer Policy
+    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+    // Permissions Policy (previously Feature-Policy)
+    reply.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+
+    // HSTS - only in production with HTTPS
+    if (process.env.NODE_ENV === 'production') {
+      reply.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
+  });
+
   // JWT Authentication
   // Feature #147: JWT_SECRET is validated at startup, so we can safely use it here
   await app.register(jwt, {
