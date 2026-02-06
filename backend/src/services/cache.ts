@@ -390,6 +390,86 @@ export class CacheService {
   }
 
   /**
+   * Feature #214: Increment a counter (for rate limiting)
+   * Uses Redis INCR + EXPIRE for distributed rate limiting
+   * Falls back to in-memory counter if Redis is unavailable
+   * @returns The new count after incrementing
+   */
+  async incr(key: string, ttlSeconds: number): Promise<number> {
+    const fullKey = this.keyPrefix + key;
+
+    // Try Redis first
+    if (this.redis && this.connected) {
+      try {
+        // Use MULTI/EXEC for atomic INCR + EXPIRE
+        const result = await this.redis.multi()
+          .incr(fullKey)
+          .expire(fullKey, ttlSeconds)
+          .exec();
+
+        if (result && result[0] && result[0][1] !== null) {
+          return result[0][1] as number;
+        }
+      } catch (err) {
+        console.warn(`[CacheService] Redis incr error for key ${key}:`, err);
+      }
+    }
+
+    // Fall back to memory counter
+    if (this.enableFallback) {
+      const entry = this.memoryCache.get(fullKey);
+      const now = Date.now();
+
+      if (entry && entry.expiresAt > now) {
+        // Increment existing counter
+        const currentValue = parseInt(entry.value, 10) || 0;
+        const newValue = currentValue + 1;
+        entry.value = String(newValue);
+        return newValue;
+      } else {
+        // Start new counter
+        this.memoryCache.set(fullKey, {
+          value: '1',
+          expiresAt: now + (ttlSeconds * 1000),
+        });
+        return 1;
+      }
+    }
+
+    return 0;
+  }
+
+  /**
+   * Feature #214: Get a counter value without incrementing
+   * @returns The current count, or 0 if not found
+   */
+  async getCount(key: string): Promise<number> {
+    const fullKey = this.keyPrefix + key;
+
+    // Try Redis first
+    if (this.redis && this.connected) {
+      try {
+        const value = await this.redis.get(fullKey);
+        if (value) {
+          return parseInt(value, 10) || 0;
+        }
+      } catch (err) {
+        console.warn(`[CacheService] Redis getCount error for key ${key}:`, err);
+      }
+    }
+
+    // Fall back to memory counter
+    if (this.enableFallback) {
+      const entry = this.memoryCache.get(fullKey);
+      if (entry && entry.expiresAt > Date.now()) {
+        return parseInt(entry.value, 10) || 0;
+      }
+    }
+
+    return 0;
+  }
+
+  /**
    * Close the cache service connection
    */
   async close(): Promise<void> {

@@ -56,20 +56,47 @@ import * as os from 'os';
 let io: SocketIOServer | null = null;
 
 // ========== RATE LIMITING ==========
+// Feature #214: Redis-based distributed rate limiting
 interface RateLimitEntry {
   count: number;
   resetAt: number;
 }
 
-// In-memory rate limit store (per IP address)
-// For production, use Redis for distributed rate limiting
+// In-memory rate limit store as fallback when Redis is unavailable
 const rateLimitStore: Map<string, RateLimitEntry> = new Map();
 
-// Rate limit configuration
-const RATE_LIMIT_MAX = 5000; // Maximum requests per window (increased for development/testing)
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+// Feature #214: Rate limit configuration with endpoint-specific limits
+const RATE_LIMIT_WINDOW_SECONDS = 60; // 1 minute window
+const RATE_LIMIT_WINDOW_MS = RATE_LIMIT_WINDOW_SECONDS * 1000;
 
-// Cleanup old entries periodically (every 5 minutes)
+// Different limits for different endpoint categories
+const RATE_LIMITS = {
+  AUTH: 20,       // Auth endpoints: 20 requests per minute (stricter)
+  DEFAULT: 200,   // Default limit: 200 requests per minute
+  READ_ONLY: 500, // Read-only endpoints: 500 requests per minute (higher)
+};
+
+// Patterns for endpoint classification
+const AUTH_ENDPOINT_PATTERNS = ['/api/v1/auth'];
+const READ_ONLY_METHODS = ['GET', 'HEAD', 'OPTIONS'];
+
+/**
+ * Feature #214: Get rate limit for a given request
+ */
+function getRateLimitForRequest(url: string, method: string): number {
+  // Auth endpoints get stricter limits
+  if (AUTH_ENDPOINT_PATTERNS.some(pattern => url.startsWith(pattern))) {
+    return RATE_LIMITS.AUTH;
+  }
+  // Read-only requests get higher limits
+  if (READ_ONLY_METHODS.includes(method)) {
+    return RATE_LIMITS.READ_ONLY;
+  }
+  return RATE_LIMITS.DEFAULT;
+}
+
+// Feature #214: Cleanup old fallback entries periodically (every 5 minutes)
+// Note: Redis entries auto-expire via TTL, this only cleans up memory fallback
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of rateLimitStore.entries()) {
@@ -345,7 +372,7 @@ async function registerPlugins() {
   // This hook must be added BEFORE other hooks to ensure timeout applies first
   app.addHook('onRequest', requestTimeoutHook);
 
-  // Rate limiting hook - applies to all API routes
+  // Feature #214: Redis-based rate limiting hook - applies to all API routes
   app.addHook('onRequest', async (request, reply) => {
     // Skip rate limiting for certain endpoints
     const skipPaths = ['/health', '/api/docs', '/favicon.ico'];
@@ -358,38 +385,55 @@ async function registerPlugins() {
     const apiKey = request.headers['x-api-key'];
     const clientId = apiKey ? `key:${apiKey}` : `ip:${clientIp}`;
 
-    const now = Date.now();
-    let entry = rateLimitStore.get(clientId);
+    // Feature #214: Get endpoint-specific rate limit
+    const rateLimit = getRateLimitForRequest(request.url, request.method);
+    const rateLimitKey = `ratelimit:${clientId}`;
 
-    // Initialize or reset entry if window has passed
-    if (!entry || entry.resetAt < now) {
-      entry = {
-        count: 0,
-        resetAt: now + RATE_LIMIT_WINDOW_MS,
-      };
+    const cache = getCache();
+    let count: number;
+    const now = Date.now();
+    const resetAt = now + RATE_LIMIT_WINDOW_MS;
+
+    // Feature #214: Use Redis INCR for distributed rate limiting
+    if (cache.isRedisConnected()) {
+      // Redis-based rate limiting with automatic expiry
+      count = await cache.incr(rateLimitKey, RATE_LIMIT_WINDOW_SECONDS);
+    } else {
+      // Fallback to in-memory rate limiting
+      let entry = rateLimitStore.get(clientId);
+
+      // Initialize or reset entry if window has passed
+      if (!entry || entry.resetAt < now) {
+        entry = {
+          count: 0,
+          resetAt: resetAt,
+        };
+      }
+
+      // Increment request count
+      entry.count++;
+      rateLimitStore.set(clientId, entry);
+      count = entry.count;
     }
 
-    // Increment request count
-    entry.count++;
-    rateLimitStore.set(clientId, entry);
-
     // Calculate remaining requests and time until reset
-    const remaining = Math.max(0, RATE_LIMIT_MAX - entry.count);
-    const resetInSeconds = Math.ceil((entry.resetAt - now) / 1000);
+    const remaining = Math.max(0, rateLimit - count);
+    const resetInSeconds = RATE_LIMIT_WINDOW_SECONDS;
 
     // Add rate limit headers to all responses
-    reply.header('X-RateLimit-Limit', RATE_LIMIT_MAX);
+    reply.header('X-RateLimit-Limit', rateLimit);
     reply.header('X-RateLimit-Remaining', remaining);
-    reply.header('X-RateLimit-Reset', Math.ceil(entry.resetAt / 1000)); // Unix timestamp
+    reply.header('X-RateLimit-Reset', Math.ceil(resetAt / 1000)); // Unix timestamp
 
     // Check if rate limit exceeded
-    if (entry.count > RATE_LIMIT_MAX) {
+    if (count > rateLimit) {
       reply.header('Retry-After', resetInSeconds);
       reply.status(429).send({
         error: 'Too Many Requests',
         message: `Rate limit exceeded. Please wait ${resetInSeconds} seconds before making more requests.`,
         statusCode: 429,
         retryAfter: resetInSeconds,
+        limit: rateLimit,
       });
       return;
     }
