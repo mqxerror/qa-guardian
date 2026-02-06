@@ -71,6 +71,10 @@ RUN npm run build
 RUN npx tsc migrations/*.ts --outDir migrations --module CommonJS --moduleResolution Node --esModuleInterop --skipLibCheck \
     && for f in migrations/*.js; do mv "$f" "${f%.js}.cjs"; done
 
+# Feature #181: Remove devDependencies to reduce image size
+# This removes ~150-200MB of dev tools (tsx, vitest, eslint, typescript, etc.)
+RUN npm prune --omit=dev
+
 # Create directories for runtime data
 RUN mkdir -p /app/uploads /app/logs /app/data /app/screenshots /app/traces /app/videos /app/baselines
 
