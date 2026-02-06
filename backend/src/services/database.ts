@@ -1250,6 +1250,26 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_step_templates_suite ON step_templates(suite_id);
     CREATE INDEX IF NOT EXISTS idx_step_templates_created ON step_templates(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_step_templates_name ON step_templates(name);
+
+    -- Feature #98: Missing indexes for foreign keys and filter columns
+    -- Organization members indexes
+    CREATE INDEX IF NOT EXISTS idx_organization_members_organization ON organization_members(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_organization_members_user ON organization_members(user_id);
+
+    -- Project members indexes
+    CREATE INDEX IF NOT EXISTS idx_project_members_project ON project_members(project_id);
+    CREATE INDEX IF NOT EXISTS idx_project_members_user ON project_members(user_id);
+    CREATE INDEX IF NOT EXISTS idx_project_members_project_user ON project_members(project_id, user_id);
+
+    -- Projects filter columns
+    CREATE INDEX IF NOT EXISTS idx_projects_archived ON projects(archived);
+    CREATE INDEX IF NOT EXISTS idx_projects_org_archived ON projects(organization_id, archived);
+
+    -- Additional foreign key indexes for referenced columns without indexes
+    CREATE INDEX IF NOT EXISTS idx_users_org ON users(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_project_env_vars_project ON project_env_vars(project_id);
+    CREATE INDEX IF NOT EXISTS idx_visual_baselines_project ON visual_baselines(project_id);
+    CREATE INDEX IF NOT EXISTS idx_webhooks_project ON webhooks(project_id);
   `;
 
   try {
