@@ -13,6 +13,7 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { logger } from '../utils/logger';
+import { useAuthStore } from './authStore';
 
 /**
  * Connection status for visual indicator
@@ -70,9 +71,11 @@ function getSocketUrl(): string {
   return 'https://qa.pixelcraftedmedia.com';
 }
 
-// Feature #201: Get authentication token for Socket.IO connection
+// Feature #218: Get authentication token from Zustand auth store
+// FIXED: Previously read from localStorage.getItem('token') which was never set.
+// The actual token lives in Zustand authStore, persisted as 'qa-guardian-auth' JSON object.
 function getAuthToken(): string | null {
-  return localStorage.getItem('token');
+  return useAuthStore.getState().token;
 }
 
 export const useSocketStore = create<SocketState>((set, get) => {
