@@ -1,6 +1,7 @@
 // Feature #1441: FlakyTestsDashboardPage extracted from App.tsx (~1,575 lines)
 // Features #1102-1107: Flaky test management, quarantine, suggestions, impact report
 // Feature #76: Migrated to React Query with caching
+// Feature #336: Dark-first design system redesign
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +9,17 @@ import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { logger } from '../utils/logger';
+// Feature #336: Design system components
+import {
+  PageHeader,
+  AnimatedCard,
+  StatCard,
+  StatusPill,
+  SectionHeader,
+  CardContent,
+  useReducedMotion,
+} from '../components/ui';
+import { AlertTriangle, RefreshCw, Settings2 } from 'lucide-react';
 import {
   useFlakyTests,
   useFlakyImpactReport,
@@ -476,54 +488,55 @@ Please provide:
 
   return (
     <Layout>
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <span className="text-2xl">🔮</span> AI Insights - Flaky Tests
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Manage and investigate tests with inconsistent results
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Feature #1105: Retry Strategy button */}
-            <button
-              onClick={() => {
-                setShowRetryStrategySettings(!showRetryStrategySettings);
-                if (!showRetryStrategySettings) {
-                  refetchRetryPreview();
-                }
-              }}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
-              title="Configure retry strategy based on flakiness level"
-            >
-              <span>🔄</span> Retry Strategy
-              {retryStrategySettings?.enabled && (
-                <span className="px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                  ON
-                </span>
-              )}
-            </button>
-            {/* Feature #1104: Auto-quarantine button */}
-            <button
-              onClick={() => setShowAutoQuarantineSettings(!showAutoQuarantineSettings)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition-colors"
-              title="Configure auto-quarantine settings"
-            >
-              <span>⚙️</span> Auto-Quarantine
-              {autoQuarantineSettings?.enabled && (
-                <span className="px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                  ON
-                </span>
-              )}
-            </button>
-            <div className="text-right">
-              <span className="text-3xl font-bold text-orange-600">{filteredTests.length}</span>
-              <p className="text-sm text-muted-foreground">Flaky Tests</p>
+      <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+        {/* Feature #336: PageHeader with action buttons */}
+        <PageHeader
+          title="AI Insights - Flaky Tests"
+          description="Manage and investigate tests with inconsistent results"
+          breadcrumbs={[
+            { label: 'Home', href: '/' },
+            { label: 'AI Insights', href: '/ai-insights' },
+            { label: 'Flaky Tests' }
+          ]}
+          actions={
+            <div className="flex items-center gap-4">
+              {/* Feature #1105: Retry Strategy button */}
+              <button
+                onClick={() => {
+                  setShowRetryStrategySettings(!showRetryStrategySettings);
+                  if (!showRetryStrategySettings) {
+                    refetchRetryPreview();
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                title="Configure retry strategy based on flakiness level"
+              >
+                <RefreshCw className="h-4 w-4" /> Retry Strategy
+                {retryStrategySettings?.enabled && (
+                  <StatusPill status="passed" className="text-[10px]">ON</StatusPill>
+                )}
+              </button>
+              {/* Feature #1104: Auto-quarantine button */}
+              <button
+                onClick={() => setShowAutoQuarantineSettings(!showAutoQuarantineSettings)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-warning/30 bg-warning/10 text-warning hover:bg-warning/20 transition-colors"
+                title="Configure auto-quarantine settings"
+              >
+                <Settings2 className="h-4 w-4" /> Auto-Quarantine
+                {autoQuarantineSettings?.enabled && (
+                  <StatusPill status="passed" className="text-[10px]">ON</StatusPill>
+                )}
+              </button>
+              {/* Hero stat */}
+              <AnimatedCard variant="hero" className="px-4 py-2">
+                <div className="text-right">
+                  <span className="text-3xl font-bold text-warning">{filteredTests.length}</span>
+                  <p className="text-sm text-muted-foreground">Flaky Tests</p>
+                </div>
+              </AnimatedCard>
             </div>
-          </div>
-        </div>
+          }
+        />
 
         {/* Feature #1104: Auto-Quarantine Settings Panel */}
         {showAutoQuarantineSettings && autoQuarantineSettings && (

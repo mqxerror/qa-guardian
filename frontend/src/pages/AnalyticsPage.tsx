@@ -1,6 +1,7 @@
 // Feature #1441: AnalyticsPage extracted from App.tsx (~5,650 lines)
 // Lines 8740-14390: Analytics dashboard with failure clusters, trends, and AI analysis
 // Feature #72: Migrated to React Query for caching
+// Feature #336: Dark-first design system redesign
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +9,20 @@ import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+// Feature #336: Design system components
+import {
+  PageHeader,
+  AnimatedCard,
+  SectionHeader,
+  StatusPill,
+  CardContent,
+  useReducedMotion,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from '../components/ui';
+import { Download } from 'lucide-react';
 // Feature #72: Import React Query hooks for caching
 import {
   useFailingTests,
@@ -769,32 +784,31 @@ export function AnalyticsPage() {
 
   return (
     <Layout>
-      <div className="p-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold text-foreground">Analytics</h2>
-            <p className="mt-2 text-muted-foreground">
-              View test analytics and insights for your organization.
-            </p>
-          </div>
-          <button
-            onClick={handleExportCSV}
-            disabled={isLoading || isTrendsLoading || isBrowserStatsLoading || isProjectStatsLoading}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Export CSV
-          </button>
-        </div>
+      <div className="p-6 lg:p-8 space-y-8">
+        {/* Feature #336: PageHeader with action button */}
+        <PageHeader
+          title="Analytics"
+          description="View test analytics and insights for your organization."
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Analytics' }]}
+          actions={
+            <button
+              onClick={handleExportCSV}
+              disabled={isLoading || isTrendsLoading || isBrowserStatsLoading || isProjectStatsLoading}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </button>
+          }
+        />
 
         {/* Pass Rate Trends Section */}
-        <div className="mt-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-xl font-semibold text-foreground">Pass Rate Trends</h3>
-              <p className="text-sm text-muted-foreground">
-                Daily pass rate over the selected time period.
-              </p>
-            </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <SectionHeader
+              title="Pass Rate Trends"
+              description="Daily pass rate over the selected time period."
+            />
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setTrendDays(7)}

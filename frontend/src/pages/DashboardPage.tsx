@@ -5,12 +5,35 @@ import { Layout } from '../components/Layout';
 import { useDashboardStats } from '../hooks/api/useDashboard';
 // Feature #125: Skeleton loaders for better perceived performance
 import { Skeleton, SkeletonCard } from '../components/ui/Skeleton';
+// Feature #336: Design system components
+import {
+  PageHeader,
+  StatCard,
+  AnimatedCard,
+  SectionHeader,
+  useReducedMotion,
+  CardContent,
+} from '../components/ui';
+import {
+  FolderKanban,
+  TestTube2,
+  FlaskConical,
+  PlayCircle,
+  CheckCircle2,
+  XCircle,
+  Percent,
+  Sparkles,
+  Settings2,
+} from 'lucide-react';
 
 export function DashboardPage() {
   const { user } = useAuthStore();
 
   // Feature #70: Use React Query for caching - dashboard loads instantly on revisit
   const { data: stats, isLoading } = useDashboardStats();
+
+  // Feature #336: Check for reduced motion preference
+  const prefersReducedMotion = useReducedMotion();
 
   // Default stats when loading or no data
   const displayStats = stats || {
@@ -23,85 +46,118 @@ export function DashboardPage() {
     pass_rate: 0,
   };
 
+  // Calculate trend based on pass rate
+  const passRateTrend = displayStats.pass_rate >= 80 ? 'up' as const :
+    displayStats.pass_rate >= 50 ? 'neutral' as const : 'down' as const;
+
   return (
     <Layout>
-      <div className="p-8">
-        <h2 className="text-3xl font-bold text-foreground">Dashboard</h2>
-        <p className="mt-2 text-muted-foreground">
-          Welcome to your QA Guardian dashboard, {user?.name || 'User'}!
-        </p>
-        {/* Feature #125: Skeleton loaders while stats load */}
-        <div className="mt-8 grid gap-4 md:grid-cols-4">
+      <div className="p-6 lg:p-8 space-y-8">
+        {/* Feature #336: PageHeader with welcome message */}
+        <PageHeader
+          title="Dashboard"
+          description={`Welcome to your QA Guardian dashboard, ${user?.name || 'User'}!`}
+          breadcrumbs={[{ label: 'Home' }, { label: 'Dashboard' }]}
+        />
+
+        {/* Feature #336: Stats grid with StatCard components */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {isLoading ? (
             <>
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
+              <div className="h-32 bg-muted/50 rounded-lg animate-pulse" />
+              <div className="h-32 bg-muted/50 rounded-lg animate-pulse" />
+              <div className="h-32 bg-muted/50 rounded-lg animate-pulse" />
+              <div className="h-32 bg-muted/50 rounded-lg animate-pulse" />
             </>
           ) : (
             <>
-              <div className="rounded-lg border border-border bg-card p-6">
-                <h3 className="text-lg font-semibold text-foreground">Projects</h3>
-                <p className="mt-1 text-3xl font-bold text-primary">{displayStats.projects}</p>
-              </div>
-              <div className="rounded-lg border border-border bg-card p-6">
-                <h3 className="text-lg font-semibold text-foreground">Test Suites</h3>
-                <p className="mt-1 text-3xl font-bold text-primary">{displayStats.test_suites}</p>
-              </div>
-              <div className="rounded-lg border border-border bg-card p-6">
-                <h3 className="text-lg font-semibold text-foreground">Total Tests</h3>
-                <p className="mt-1 text-3xl font-bold text-primary">{displayStats.tests}</p>
-              </div>
-              <div className="rounded-lg border border-border bg-card p-6">
-                <h3 className="text-lg font-semibold text-foreground">Test Runs</h3>
-                <p className="mt-1 text-3xl font-bold text-primary">{displayStats.test_runs}</p>
-              </div>
+              <StatCard
+                icon={FolderKanban}
+                value={displayStats.projects}
+                label="Projects"
+                className={!prefersReducedMotion ? 'delay-0' : ''}
+              />
+              <StatCard
+                icon={FlaskConical}
+                value={displayStats.test_suites}
+                label="Test Suites"
+                className={!prefersReducedMotion ? 'delay-1' : ''}
+              />
+              <StatCard
+                icon={TestTube2}
+                value={displayStats.tests}
+                label="Total Tests"
+                className={!prefersReducedMotion ? 'delay-2' : ''}
+              />
+              <StatCard
+                icon={PlayCircle}
+                value={displayStats.test_runs}
+                label="Test Runs"
+                className={!prefersReducedMotion ? 'delay-3' : ''}
+              />
             </>
           )}
         </div>
 
-        {/* Pass Rate Analytics */}
-        <div className="mt-8">
-          <h3 className="text-xl font-semibold text-foreground mb-4">Test Results</h3>
+        {/* Feature #336: Test Results section with SectionHeader */}
+        <div className="space-y-4">
+          <SectionHeader title="Test Results" description="Overall test execution metrics" />
           {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-3">
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="h-32 bg-muted/50 rounded-lg animate-pulse" />
+              <div className="h-32 bg-muted/50 rounded-lg animate-pulse" />
+              <div className="h-32 bg-muted/50 rounded-lg animate-pulse" />
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-lg border border-border bg-card p-6">
-                <h4 className="text-lg font-semibold text-foreground">Pass Rate</h4>
-                <p className={`mt-1 text-3xl font-bold ${
-                  displayStats.pass_rate >= 80 ? 'text-green-600' :
-                  displayStats.pass_rate >= 50 ? 'text-yellow-600' :
-                  'text-red-600'
-                }`}>
-                  {displayStats.pass_rate}%
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {displayStats.passed_runs + displayStats.failed_runs} completed runs
-                </p>
-              </div>
-              <div className="rounded-lg border border-border bg-card p-6">
-                <h4 className="text-lg font-semibold text-foreground">Passed</h4>
-                <p className="mt-1 text-3xl font-bold text-green-600">{displayStats.passed_runs}</p>
-                <p className="mt-1 text-sm text-muted-foreground">successful runs</p>
-              </div>
-              <div className="rounded-lg border border-border bg-card p-6">
-                <h4 className="text-lg font-semibold text-foreground">Failed</h4>
-                <p className="mt-1 text-3xl font-bold text-red-600">{displayStats.failed_runs}</p>
-                <p className="mt-1 text-sm text-muted-foreground">failed runs</p>
-              </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Hero card for pass rate */}
+              <AnimatedCard variant="hero" staggerIndex={4}>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20">
+                      <Percent className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Pass Rate</p>
+                      <p className={`text-3xl font-bold ${
+                        displayStats.pass_rate >= 80 ? 'text-success' :
+                        displayStats.pass_rate >= 50 ? 'text-warning' :
+                        'text-destructive'
+                      }`}>
+                        {displayStats.pass_rate}%
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    {displayStats.passed_runs + displayStats.failed_runs} completed runs
+                  </p>
+                </CardContent>
+              </AnimatedCard>
+
+              <StatCard
+                icon={CheckCircle2}
+                value={displayStats.passed_runs}
+                label="Passed Runs"
+                trend="up"
+                trendValue="successful"
+                className="[&_svg]:text-success [&_.text-3xl]:text-success"
+              />
+
+              <StatCard
+                icon={XCircle}
+                value={displayStats.failed_runs}
+                label="Failed Runs"
+                trend="down"
+                trendValue="need attention"
+                className="[&_svg]:text-destructive [&_.text-3xl]:text-destructive"
+              />
             </div>
           )}
         </div>
 
-        {/* Feature #1510: Quick Access Hub Cards */}
-        <div className="mt-8">
-          <h3 className="text-xl font-semibold text-foreground mb-4">Quick Access</h3>
+        {/* Feature #1510: Quick Access Hub Cards - Feature #336: Updated styling */}
+        <div className="space-y-4">
+          <SectionHeader title="Quick Access" description="Navigate to key features" />
           <div className="grid gap-6 md:grid-cols-2">
             {/* AI Insights Hub Card */}
             <Link

@@ -1,5 +1,6 @@
 // MonitoringPage - Extracted from App.tsx (Feature #1441)
 // Feature #75: Migrated summary to React Query with caching
+// Feature #336: Dark-first design system redesign
 // Synthetic monitoring: uptime checks, transaction monitoring, performance testing
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +10,18 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { toast } from "../stores/toastStore";
 import { useMonitoringSummary } from "../hooks/api/useMonitoring";
 import { devLog } from "../utils/logger";
+// Feature #336: Design system components
+import {
+  PageHeader,
+  AnimatedCard,
+  StatusPill,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  useReducedMotion,
+} from "../components/ui";
+import { Plus, Activity, CreditCard, Webhook, Gauge, Settings } from "lucide-react";
 
 // Feature #47: Import modular components and types for performance optimization
 // Eliminates ~600 lines of duplicate type definitions
@@ -897,29 +910,29 @@ function MonitoringPage() {
 
   return (
     <Layout>
-      <div className="p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Synthetic Monitoring</h1>
-            <p className="text-muted-foreground">Monitor uptime and performance of your endpoints</p>
-          </div>
-          {activeTab !== 'settings' && (
-            <button
-              onClick={() => {
-                if (activeTab === 'checks') setShowCreateModal(true);
-                else if (activeTab === 'transactions') setShowTransactionModal(true);
-                else if (activeTab === 'webhooks') setShowWebhookModal(true);
-                else setShowPerformanceModal(true);
-              }}
-              className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
-              {activeTab === 'checks' ? 'Create Check' : activeTab === 'transactions' ? 'Create Transaction' : activeTab === 'webhooks' ? 'Create Webhook' : 'Create Performance Check'}
-            </button>
-          )}
-        </div>
+      <div className="p-6 lg:p-8 space-y-6">
+        {/* Feature #336: PageHeader with action button */}
+        <PageHeader
+          title="Synthetic Monitoring"
+          description="Monitor uptime and performance of your endpoints"
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Monitoring' }]}
+          actions={
+            activeTab !== 'settings' && (
+              <button
+                onClick={() => {
+                  if (activeTab === 'checks') setShowCreateModal(true);
+                  else if (activeTab === 'transactions') setShowTransactionModal(true);
+                  else if (activeTab === 'webhooks') setShowWebhookModal(true);
+                  else setShowPerformanceModal(true);
+                }}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                {activeTab === 'checks' ? 'Create Check' : activeTab === 'transactions' ? 'Create Transaction' : activeTab === 'webhooks' ? 'Create Webhook' : 'Create Performance Check'}
+              </button>
+            )
+          }
+        />
 
         {/* Tabs */}
         <div className="mb-6 border-b border-border">
