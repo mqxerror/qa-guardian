@@ -838,7 +838,7 @@ export function AnalyticsPage() {
               <p className="text-muted-foreground">Loading trend data...</p>
             </div>
           ) : trendData.length === 0 || !trendSummary || trendSummary.total_runs === 0 ? (
-            <div className="rounded-lg border border-dashed border-border bg-gradient-to-br from-card to-muted/30 p-12 text-center animate-in fade-in duration-500">
+            <div className="rounded-lg border border-dashed border-border bg-gradient-to-br from-card to-muted/30 p-12 text-center animate-in fade-in duration-300">
               {/* Illustrated empty state with chart icon */}
               <div className="relative mx-auto w-24 h-24 mb-6">
                 <svg className="w-full h-full text-primary/20" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2">
@@ -922,6 +922,8 @@ export function AnalyticsPage() {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px',
                       }}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      itemStyle={{ color: 'hsl(var(--muted-foreground))' }}
                       formatter={(value, name) => {
                         if (name === 'Pass Rate') {
                           return [value !== null ? `${value}%` : 'N/A', 'Pass Rate'];
@@ -1062,6 +1064,8 @@ export function AnalyticsPage() {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px',
                       }}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      itemStyle={{ color: 'hsl(var(--muted-foreground))' }}
                       formatter={(value, name) => [value, name]}
                       labelFormatter={(label) => `Date: ${label}`}
                     />
@@ -1131,7 +1135,7 @@ export function AnalyticsPage() {
               <p className="text-muted-foreground">Loading failing tests...</p>
             </div>
           ) : failingTests.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 p-12 text-center animate-in fade-in duration-500 relative overflow-hidden">
+            <div className="rounded-lg border border-dashed border-success/30 bg-gradient-to-br from-success/10 to-success/5 p-12 text-center animate-in fade-in duration-300 relative overflow-hidden">
               {/* Confetti animation */}
               <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 {[...Array(12)].map((_, i) => (
