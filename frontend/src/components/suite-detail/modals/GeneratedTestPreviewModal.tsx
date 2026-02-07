@@ -7,9 +7,10 @@
  * Feature #127: Mobile responsive design audit and fixes
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { GeneratedTestPreview } from '../useModalState';
-import { computeCodeDiff, calculateTestConfidence, extractUrlFromText } from '../utils';
+import { calculateTestConfidence, extractUrlFromText } from '../utils';
+import { CodeDiffView } from '../../diff';
 
 interface GeneratedTestPreviewModalProps {
   // Visibility
@@ -390,39 +391,18 @@ export function GeneratedTestPreviewModal({
             </button>
           </div>
 
-          {/* Feature #1163: Diff View */}
+          {/* Feature #311: Interactive Code Diff View with per-hunk accept/reject */}
           {showDiffView && previousCode ? (
-            <div className="rounded-lg bg-[#1e1e1e] p-4 overflow-x-auto max-h-80 overflow-y-auto">
-              <div className="font-mono text-sm space-y-0">
-                {computeCodeDiff(previousCode, generatedCode).map((line, idx) => (
-                  <div
-                    key={idx}
-                    className={`px-2 py-0.5 ${
-                      line.type === 'added'
-                        ? 'bg-green-500/20 text-green-400 border-l-2 border-green-500'
-                        : line.type === 'removed'
-                        ? 'bg-red-500/20 text-red-400 border-l-2 border-red-500 line-through opacity-70'
-                        : 'text-gray-400'
-                    }`}
-                  >
-                    <span className="inline-block w-6 text-xs opacity-50 mr-2">
-                      {line.type === 'added' ? '+' : line.type === 'removed' ? '-' : ' '}
-                    </span>
-                    {line.line || '\u00A0'}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 pt-3 border-t border-gray-700 flex items-center gap-4 text-xs">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded bg-green-500/30 border border-green-500"></span>
-                  <span className="text-green-400">Added lines</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded bg-red-500/30 border border-red-500"></span>
-                  <span className="text-red-400">Removed lines</span>
-                </span>
-              </div>
-            </div>
+            <CodeDiffView
+              originalCode={previousCode}
+              newCode={generatedCode}
+              onApply={(mergedCode) => {
+                onSetGeneratedCode(mergedCode);
+                onSetShowDiffView(false);
+                onSetPreviousCode(null);
+              }}
+              onCancel={() => onSetShowDiffView(false)}
+            />
           ) : (
             <div className="rounded-lg bg-[#1e1e1e] p-4 overflow-x-auto max-h-80 overflow-y-auto">
               <pre className="text-sm text-green-400 font-mono whitespace-pre-wrap break-words">
@@ -474,7 +454,7 @@ export function GeneratedTestPreviewModal({
           {previousCode && (
             <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
               <span>✓</span>
-              Regenerated - click "Show Diff" to see changes
+              Regenerated - click "Show Diff" to review changes with accept/reject controls
             </p>
           )}
         </div>
