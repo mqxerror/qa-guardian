@@ -1,6 +1,7 @@
 // TestSuitePage - Test suite management with recording, AI generation, and execution
 // Feature #59: Migrated to React Query for paginated test loading
 // Feature #125: Added skeleton loaders for better perceived performance
+// Feature #337: Dark-first design system redesign
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
@@ -12,6 +13,22 @@ import { io, Socket } from 'socket.io-client';
 import { UnifiedAIService } from '../services/UnifiedAIService';
 import { CreateTestModal } from '../components/create-test';
 import { logger } from '../utils/logger';
+// Feature #337: Design system components
+import {
+  PageHeader,
+  AnimatedCard,
+  StatusPill,
+  SectionHeader,
+  CardContent,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  useReducedMotion,
+} from '../components/ui';
+import { Plus, Play, Settings } from 'lucide-react';
 // Feature #59: React Query hooks for paginated test loading
 // Feature #143: Added mutation hooks for operations
 import {

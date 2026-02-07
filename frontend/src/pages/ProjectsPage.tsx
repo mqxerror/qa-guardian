@@ -1,6 +1,7 @@
 // Feature #1357: Extracted ProjectsPage for code quality compliance (400 line limit)
 // Feature #71: Migrated to React Query for caching
 // Feature #126: Added empty states with CTA
+// Feature #337: Dark-first design system redesign
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
@@ -11,6 +12,15 @@ import { getErrorMessage, isNetworkError, isOffline } from '../utils/errorHandli
 import { useProjects, useCreateProject, useInvalidateProjects } from '../hooks/api/useProjects';
 // Feature #126: Empty state component
 import { EmptyStates } from '../components/ui/EmptyState';
+// Feature #337: Design system components
+import {
+  PageHeader,
+  AnimatedCard,
+  StatusPill,
+  CardContent,
+  useReducedMotion,
+} from '../components/ui';
+import { Plus, Archive, RotateCcw, Loader2 } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -178,32 +188,30 @@ export function ProjectsPage() {
     );
   };
 
+  // Feature #337: Check for reduced motion preference
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <Layout>
-      <div className="p-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Projects</h1>
-            <p className="mt-2 text-muted-foreground">
-              Manage your test projects
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Show Archived Toggle */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showArchived}
-                onChange={(e) => setShowArchived(e.target.checked)}
-                className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-              />
-              <span className="text-sm text-muted-foreground">Show Archived</span>
-            </label>
-            {/* Project Filter Dropdown - populated from database */}
-            <div className="flex items-center gap-2">
-              <label htmlFor="projectFilter" className="text-sm text-muted-foreground">
-                Filter:
+      <div className="p-6 lg:p-8 space-y-8">
+        {/* Feature #337: PageHeader with action buttons */}
+        <PageHeader
+          title="Projects"
+          description="Manage your test projects"
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Projects' }]}
+          actions={
+            <div className="flex items-center gap-4">
+              {/* Show Archived Toggle */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => setShowArchived(e.target.checked)}
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <span className="text-sm text-muted-foreground">Show Archived</span>
               </label>
+              {/* Project Filter Dropdown */}
               <select
                 id="projectFilter"
                 value={selectedProjectFilter}
@@ -217,22 +225,27 @@ export function ProjectsPage() {
                   </option>
                 ))}
               </select>
+              {canCreateProject && (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create Project
+                </button>
+              )}
             </div>
-            {canCreateProject && (
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                Create Project
-              </button>
-            )}
-          </div>
-        </div>
+          }
+        />
 
         {/* Projects list */}
-        <div className="mt-8">
+        <div>
           {isLoading ? (
-            <p className="text-muted-foreground">Loading projects...</p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-40 bg-muted/50 rounded-lg animate-pulse" />
+              ))}
+            </div>
           ) : filteredProjects.length === 0 ? (
             /* Feature #126: Reusable empty state with CTA */
             projects.length === 0 ? (
@@ -242,71 +255,63 @@ export function ProjectsPage() {
             )
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredProjects.map((project) => (
-                <div
+              {filteredProjects.map((project, index) => (
+                <AnimatedCard
                   key={project.id}
-                  className={`rounded-lg border bg-card p-6 transition-shadow hover:shadow-md ${
-                    project.archived ? 'border-amber-300 dark:border-amber-600 opacity-75' : 'border-border'
-                  }`}
+                  variant="interactive"
+                  staggerIndex={index < 8 ? index : undefined}
+                  className={project.archived ? 'border-warning/30 opacity-75' : ''}
+                  onClick={() => navigate(`/projects/${project.id}`)}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div
-                      onClick={() => navigate(`/projects/${project.id}`)}
-                      className="cursor-pointer flex-1 min-w-0"
-                      title={project.name}
-                    >
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-foreground truncate">{project.name}</h3>
-                        {project.archived && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                            Archived
-                          </span>
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-semibold text-foreground truncate">{project.name}</h3>
+                          {project.archived && (
+                            <StatusPill status="warning">Archived</StatusPill>
+                          )}
+                        </div>
+                        {project.description && (
+                          <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                            {project.description}
+                          </p>
                         )}
                       </div>
-                      {project.description && (
-                        <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-                          {project.description}
-                        </p>
+                      {(user?.role === 'admin' || user?.role === 'owner') && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleArchiveProject(project.id, !project.archived);
+                          }}
+                          disabled={archivingProjectId === project.id}
+                          className={`shrink-0 rounded-md p-2 transition-colors ${
+                            project.archived
+                              ? 'text-success hover:bg-success/10'
+                              : 'text-warning hover:bg-warning/10'
+                          } disabled:opacity-50`}
+                          title={project.archived ? 'Unarchive project' : 'Archive project'}
+                        >
+                          {archivingProjectId === project.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : project.archived ? (
+                            <RotateCcw className="h-4 w-4" />
+                          ) : (
+                            <Archive className="h-4 w-4" />
+                          )}
+                        </button>
                       )}
                     </div>
-                    {(user?.role === 'admin' || user?.role === 'owner') && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleArchiveProject(project.id, !project.archived);
-                        }}
-                        disabled={archivingProjectId === project.id}
-                        className={`shrink-0 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
-                          project.archived
-                            ? 'text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/30'
-                            : 'text-amber-600 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30'
-                        } disabled:opacity-50`}
-                        title={project.archived ? 'Unarchive project' : 'Archive project'}
-                      >
-                        {archivingProjectId === project.id ? (
-                          <span className="flex items-center gap-1">
-                            <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                          </span>
-                        ) : project.archived ? (
-                          'Restore'
-                        ) : (
-                          'Archive'
-                        )}
-                      </button>
-                    )}
-                  </div>
-                  <p className="mt-4 text-xs text-muted-foreground">
-                    ID: {project.id}
-                    {project.archived_at && (
-                      <span className="ml-2">
-                        · Archived {new Date(project.archived_at).toLocaleDateString()}
-                      </span>
-                    )}
-                  </p>
-                </div>
+                    <p className="mt-4 text-xs text-muted-foreground">
+                      ID: {project.id}
+                      {project.archived_at && (
+                        <span className="ml-2">
+                          · Archived {new Date(project.archived_at).toLocaleDateString()}
+                        </span>
+                      )}
+                    </p>
+                  </CardContent>
+                </AnimatedCard>
               ))}
             </div>
           )}

@@ -1,6 +1,7 @@
 /**
  * TestRunResultPage - Detailed test run results with full report
  * Feature #1823: Test results detail page with full report
+ * Feature #337: Dark-first design system redesign
  */
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
@@ -11,6 +12,20 @@ import { useOrganizationBrandingStore } from '../stores/organizationBrandingStor
 import { io, Socket } from 'socket.io-client';
 import { toast } from '../stores/toastStore';
 import { logger } from '../utils/logger';
+// Feature #337: Design system components
+import {
+  PageHeader,
+  AnimatedCard,
+  StatusPill,
+  SectionHeader,
+  CardContent,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  useReducedMotion,
+} from '../components/ui';
+import { Download, RefreshCw, Share2 } from 'lucide-react';
 import { useMetricsState } from '../hooks/useMetricsState';
 import { useNetworkAnalysisState } from '../hooks/useNetworkAnalysisState';
 import { useAccessibilityState } from '../hooks/useAccessibilityState';

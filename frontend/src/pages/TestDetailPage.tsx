@@ -1,6 +1,7 @@
 // TestDetailPage - Extracted from App.tsx
 // Feature #1441: Split App.tsx into logical modules
 // Feature #68: Added React Query caching for faster loading
+// Feature #337: Dark-first design system redesign
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,6 +12,21 @@ import { useSocketStore } from '../stores/socketStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { toast } from '../stores/toastStore';
 import { logger } from '../utils/logger';
+// Feature #337: Design system components
+import {
+  PageHeader,
+  AnimatedCard,
+  StatusPill,
+  MetadataRow,
+  SectionHeader,
+  CardContent,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  useReducedMotion,
+} from '../components/ui';
+import { Play, Clock, Calendar, Tag } from 'lucide-react';
 // Feature #68: Import React Query hooks for caching
 import { useTest, useInvalidateTests } from '../hooks/api/useTests';
 import { useRunsByTest, useInvalidateRuns } from '../hooks/api/useRuns';
