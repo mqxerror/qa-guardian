@@ -1,9 +1,13 @@
-// Feature #1357: Extracted CreateOrganizationPage for code quality compliance (400 line limit)
+// Feature #338: Dark-first auth page with premium design
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { getErrorMessage } from '../utils/errorHandling';
+import { BackgroundBeams, Input } from '../components/aceternity';
+import { Building2, ArrowRight } from 'lucide-react';
+import { useReducedMotion } from '../components/ui';
 
 export function CreateOrganizationPage() {
   const navigate = useNavigate();
@@ -13,6 +17,7 @@ export function CreateOrganizationPage() {
   const [autoSlug, setAutoSlug] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
   // Generate slug from name
   const generateSlug = (name: string) => {
@@ -78,7 +83,6 @@ export function CreateOrganizationPage() {
       toast.success(`Organization "${data.organization.name}" created successfully!`);
       navigate('/dashboard');
     } catch (err) {
-      // Use enhanced error handling for network errors
       setError(getErrorMessage(err, 'Failed to create organization. Please try again.'));
     } finally {
       setIsLoading(false);
@@ -86,69 +90,142 @@ export function CreateOrganizationPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 shadow-sm">
-        <div className="mb-6 text-center">
-          <h2 className="text-2xl font-bold text-foreground">Create Organization</h2>
-          <p className="mt-2 text-muted-foreground">
-            Set up your organization to start managing tests
-          </p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-          <div>
-            <label htmlFor="org-name" className="mb-1 block text-sm font-medium text-foreground">
-              Organization Name
-            </label>
-            <input
-              id="org-name"
-              type="text"
-              value={name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="e.g., Acme Inc."
-              required
-              maxLength={100}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            <p className="mt-1 text-xs text-muted-foreground">{name.length}/100 characters</p>
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-950 p-4">
+      {/* Background Effects */}
+      <BackgroundBeams className="opacity-40" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
+
+      <motion.div
+        initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-10 w-full max-w-md"
+      >
+        <div className="rounded-2xl border border-gray-800 bg-gray-900/80 p-8 shadow-2xl backdrop-blur-sm">
+          {/* Header */}
+          <div className="mb-8 text-center">
+            <motion.div
+              initial={prefersReducedMotion ? {} : { scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
+              className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/20"
+            >
+              <Building2 className="h-6 w-6 text-blue-400" />
+            </motion.div>
+            <motion.h2
+              initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-3xl font-bold text-transparent"
+            >
+              Create Organization
+            </motion.h2>
+            <motion.p
+              initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mt-2 text-gray-400"
+            >
+              Set up your organization to start managing tests
+            </motion.p>
           </div>
-          <div>
-            <label htmlFor="org-slug" className="mb-1 block text-sm font-medium text-foreground">
-              Organization Slug
-            </label>
-            <input
-              id="org-slug"
-              type="text"
-              value={slug}
-              onChange={(e) => handleSlugChange(e.target.value)}
-              placeholder="e.g., acme-inc"
-              required
-              pattern="[a-z0-9-]+"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            <p className="mt-1 text-xs text-muted-foreground">
-              URL-friendly identifier (lowercase letters, numbers, and hyphens only)
-            </p>
-          </div>
-          <button
-            type="submit"
-            disabled={isLoading || !name.trim() || !slug.trim()}
-            className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+            {/* Error Alert */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                role="alert"
+                className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            {/* Organization Name Input */}
+            <motion.div
+              initial={prefersReducedMotion ? {} : { opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Input
+                id="org-name"
+                type="text"
+                label="Organization Name"
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                placeholder="e.g., Acme Inc."
+                required
+              />
+              <p className="mt-1 text-xs text-gray-500">{name.length}/100 characters</p>
+            </motion.div>
+
+            {/* Organization Slug Input */}
+            <motion.div
+              initial={prefersReducedMotion ? {} : { opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.45 }}
+            >
+              <Input
+                id="org-slug"
+                type="text"
+                label="Organization Slug"
+                value={slug}
+                onChange={(e) => handleSlugChange(e.target.value)}
+                placeholder="e.g., acme-inc"
+                required
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                URL-friendly identifier (lowercase letters, numbers, and hyphens only)
+              </p>
+            </motion.div>
+
+            {/* Submit Button */}
+            <motion.div
+              initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <button
+                type="submit"
+                disabled={isLoading || !name.trim() || !slug.trim()}
+                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 font-medium text-white transition-all hover:from-blue-500 hover:to-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {isLoading ? (
+                    <>
+                      <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Create Organization</span>
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
+                </span>
+              </button>
+            </motion.div>
+          </form>
+
+          {/* Dashboard Link */}
+          <motion.div
+            initial={prefersReducedMotion ? {} : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="mt-6 text-center text-sm text-gray-400"
           >
-            {isLoading ? 'Creating...' : 'Create Organization'}
-          </button>
-        </form>
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          Already have an organization?{' '}
-          <Link to="/dashboard" className="text-primary hover:underline">
-            Go to Dashboard
-          </Link>
-        </p>
-      </div>
+            Already have an organization?{' '}
+            <Link to="/dashboard" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
+              Go to Dashboard
+            </Link>
+          </motion.div>
+        </div>
+      </motion.div>
     </div>
   );
 }

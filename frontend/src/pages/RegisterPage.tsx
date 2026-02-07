@@ -1,9 +1,11 @@
+// Feature #338: Dark-first auth page with premium design
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getErrorMessage } from '../utils/errorHandling';
 import { BackgroundBeams, Input } from '../components/aceternity';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useReducedMotion } from '../components/ui';
 
 export function RegisterPage() {
   const navigate = useNavigate();

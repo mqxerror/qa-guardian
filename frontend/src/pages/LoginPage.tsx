@@ -1,10 +1,12 @@
+// Feature #338: Dark-first auth page with premium design
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../stores/authStore';
 import { getErrorMessage } from '../utils/errorHandling';
 import { BackgroundBeams, Input } from '../components/aceternity';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
+import { useReducedMotion } from '../components/ui';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
