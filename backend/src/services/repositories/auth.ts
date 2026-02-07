@@ -15,6 +15,53 @@ import bcrypt from 'bcryptjs';
 // Type Definitions
 // ============================================================================
 
+// Database row types (match actual DB schema columns)
+interface UserRow {
+  id: string;
+  email: string;
+  password_hash: string;
+  name: string;
+  avatar_url: string | null;
+  role: string;
+  email_verified: boolean;
+  created_at: string | Date;
+  updated_at?: string | Date;
+}
+
+interface SessionRow {
+  id: string;
+  user_id: string;
+  token_hash: string;
+  device: string | null;
+  browser: string | null;
+  ip_address: string | null;
+  last_active: string | Date;
+  created_at: string | Date;
+}
+
+interface ResetTokenRow {
+  user_email: string;
+  token_hash: string;
+  created_at: string | Date;
+  used_at: string | Date | null;
+  expires_at?: string | Date;
+}
+
+interface RefreshTokenRow {
+  token_hash: string;
+  user_id: string;
+  expires_at: string | Date;
+  revoked_at: string | Date | null;
+}
+
+interface CountRow {
+  count: string;
+}
+
+interface ExistsRow {
+  '?column?'?: number;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -91,13 +138,13 @@ const RESET_TOKEN_COLUMNS = [
 /**
  * Convert a database row to a User object
  */
-function rowToUser(row: any): User {
+function rowToUser(row: UserRow): User {
   return {
     id: row.id,
     email: row.email,
     password_hash: row.password_hash,
     name: row.name,
-    avatar_url: row.avatar_url,
+    avatar_url: row.avatar_url ?? undefined,
     role: row.role as User['role'],
     email_verified: row.email_verified,
     created_at: new Date(row.created_at),
@@ -107,7 +154,7 @@ function rowToUser(row: any): User {
 /**
  * Convert a database row to a Session object
  */
-function rowToSession(row: any): Session {
+function rowToSession(row: SessionRow): Session {
   return {
     id: row.id,
     user_id: row.user_id,
@@ -135,7 +182,7 @@ export async function createUser(user: User): Promise<User> {
   }
 
   try {
-    const result = await query<any>(
+    const result = await query<UserRow>(
       `INSERT INTO users (id, email, password_hash, name, avatar_url, role, email_verified, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
@@ -170,7 +217,7 @@ export async function getUserByEmail(email: string): Promise<User | undefined> {
   }
 
   try {
-    const result = await query<any>(
+    const result = await query<UserRow>(
       `SELECT ${USER_COLUMNS} FROM users WHERE email = $1`,
       [email]
     );
@@ -194,7 +241,7 @@ export async function getUserById(id: string): Promise<User | undefined> {
   }
 
   try {
-    const result = await query<any>(
+    const result = await query<UserRow>(
       `SELECT ${USER_COLUMNS} FROM users WHERE id = $1`,
       [id]
     );
@@ -221,10 +268,10 @@ export async function updateUser(email: string, updates: Partial<User>): Promise
 
   try {
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: (string | boolean | undefined)[] = [];
     let paramIndex = 1;
 
-    const fieldMappings: Record<string, string> = {
+    const fieldMappings: Record<keyof Pick<User, 'password_hash' | 'name' | 'avatar_url' | 'role' | 'email_verified'>, string> = {
       password_hash: 'password_hash',
       name: 'name',
       avatar_url: 'avatar_url',
@@ -233,9 +280,10 @@ export async function updateUser(email: string, updates: Partial<User>): Promise
     };
 
     for (const [key, dbField] of Object.entries(fieldMappings)) {
-      if (key in updates) {
+      const typedKey = key as keyof typeof fieldMappings;
+      if (typedKey in updates) {
         setClauses.push(`${dbField} = $${paramIndex}`);
-        values.push((updates as any)[key]);
+        values.push(updates[typedKey]);
         paramIndex++;
       }
     }
@@ -243,7 +291,7 @@ export async function updateUser(email: string, updates: Partial<User>): Promise
     if (setClauses.length > 0) {
       setClauses.push(`updated_at = NOW()`);
       values.push(email);
-      const result = await query<any>(
+      const result = await query<UserRow>(
         `UPDATE users SET ${setClauses.join(', ')} WHERE email = $${paramIndex} RETURNING *`,
         values
       );
@@ -267,7 +315,7 @@ export async function userExists(email: string): Promise<boolean> {
   }
 
   try {
-    const result = await query<any>(
+    const result = await query<ExistsRow>(
       'SELECT 1 FROM users WHERE email = $1',
       [email]
     );
@@ -290,7 +338,7 @@ export async function getUserCount(): Promise<number> {
   }
 
   try {
-    const result = await query<any>('SELECT COUNT(*) as count FROM users');
+    const result = await query<CountRow>('SELECT COUNT(*) as count FROM users');
     if (result && result.rows[0]) {
       return parseInt(result.rows[0].count, 10);
     }
@@ -439,7 +487,7 @@ export async function getUserSessions(userId: string): Promise<Session[]> {
   }
 
   try {
-    const result = await query<any>(
+    const result = await query<SessionRow>(
       `SELECT ${SESSION_COLUMNS} FROM sessions WHERE user_id = $1 ORDER BY last_active DESC`,
       [userId]
     );
@@ -582,7 +630,7 @@ export async function getResetToken(token: string): Promise<ResetToken | undefin
   try {
     // Feature #223: Hash the incoming token to match stored hash
     const tokenHash = createHash('sha256').update(token).digest('hex');
-    const result = await query<any>(
+    const result = await query<ResetTokenRow>(
       `SELECT ${RESET_TOKEN_COLUMNS} FROM reset_tokens WHERE token_hash = $1`,
       [tokenHash]
     );
@@ -665,7 +713,7 @@ export async function isRefreshTokenHashValid(hash: string): Promise<boolean> {
   }
 
   try {
-    const result = await query<any>(
+    const result = await query<ExistsRow>(
       `SELECT 1 FROM refresh_tokens
        WHERE token_hash = $1 AND expires_at > NOW() AND revoked_at IS NULL`,
       [hash]
@@ -728,7 +776,7 @@ export async function atomicRevokeRefreshToken(hash: string): Promise<string | n
 
   try {
     // Atomic: UPDATE only if not already revoked AND not expired, return the row if successful
-    const result = await query<any>(
+    const result = await query<Pick<RefreshTokenRow, 'user_id'>>(
       `UPDATE refresh_tokens
        SET revoked_at = NOW()
        WHERE token_hash = $1
