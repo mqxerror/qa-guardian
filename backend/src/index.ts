@@ -19,9 +19,9 @@ declare module 'fastify' {
     startTime: [number, number] | null;
   }
 }
-import { initializeDatabase, isDatabaseConnected, healthCheck as dbHealthCheck, closeDatabase } from './services/database.js';
+import { initializeDatabase, isDatabaseConnected, closeDatabase } from './services/database.js';
 import { initializeCache, closeCache, getCache } from './services/cache.js'; // Feature #60: Redis cache service
-import { runMigrations, getMigrationStatus } from './services/migrations.js'; // Feature #162: Database migrations
+import { runMigrations } from './services/migrations.js'; // Feature #162: Database migrations
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import swagger from '@fastify/swagger';
@@ -49,19 +49,17 @@ import { servicesStatusRoutes, setServicesSocketIO } from './routes/services-sta
 import { setRecordingSocketIO } from './routes/test-runs/recording-routes.js'; // Feature #26: Playwright recording
 import { stepTemplateRoutes } from './routes/step-templates.js'; // Feature #31: Reusable Step Templates
 import { errorsRoutes } from './routes/errors/index.js'; // Feature #166: Frontend error reporting
+import { healthRoutes, setHealthSocketIO } from './routes/health.js'; // Feature #359: Health check routes
 import { requestTimeoutHook } from './middleware/timeout.js'; // Feature #90: Request timeout middleware
-import { authenticate } from './middleware/auth.js'; // Feature #205: Auth for health/metrics endpoints
-import { initializeCleanupJob, stopCleanupJob, getCleanupStats } from './jobs/cleanup.js'; // Feature #154: Data retention cleanup
-import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, registerExecutionCallback } from './services/execution-queue.js'; // Feature #155: BullMQ execution queue
-import { initializeWebhookQueue, shutdownWebhookQueue, getWebhookQueueHealth, registerSubscriptionStatsCallback } from './services/webhook-queue.js'; // Feature #320: BullMQ webhook queue
+import { registerRateLimiting } from './middleware/rate-limit.js'; // Feature #359: Rate limiting middleware
+import { initializeCleanupJob, stopCleanupJob } from './jobs/cleanup.js'; // Feature #154: Data retention cleanup
+import { initializeExecutionQueue, shutdownExecutionQueue } from './services/execution-queue.js'; // Feature #155: BullMQ execution queue
+import { initializeWebhookQueue, shutdownWebhookQueue, registerSubscriptionStatsCallback } from './services/webhook-queue.js'; // Feature #320: BullMQ webhook queue
 import { updateSubscriptionDeliveryStats, initializeWebhookSubscriptionsFromDb } from './routes/test-runs/webhooks.js'; // Feature #321: Webhook auto-disable, Feature #329: DB persistence
-import { initializeErrorHandlers, getErrorMetrics } from './services/error-tracking.js'; // Feature #164: Error tracking
-import { registerMetricsHooks, getMetricsSummary } from './services/metrics.js'; // Feature #165: API response time tracking
+import { initializeErrorHandlers } from './services/error-tracking.js'; // Feature #164: Error tracking
+import { registerMetricsHooks } from './services/metrics.js'; // Feature #165: API response time tracking
 import { setWebSocketIO } from './services/websocket-events.js'; // Feature #108: WebSocket CRUD events
-import { initializeEventSubscriber, closeSubscriber, getConnectionStatus as getRedisEventsStatus } from './services/redis-events.js'; // Feature #200: Redis Pub/Sub for worker events
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import { initializeEventSubscriber, closeSubscriber } from './services/redis-events.js'; // Feature #200: Redis Pub/Sub for worker events
 import { generateRequestId } from './utils/index.js';
 
 // Socket.IO server instance (will be initialized after server starts)
@@ -83,57 +81,6 @@ const CORS_ALLOWED_ORIGINS = [
   'https://qa.pixelcraftedmedia.com',
   'http://qa.pixelcraftedmedia.com',  // HTTP redirect should handle this
 ] as const;
-
-// ========== RATE LIMITING ==========
-// Feature #214: Redis-based distributed rate limiting
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
-
-// In-memory rate limit store as fallback when Redis is unavailable
-const rateLimitStore: Map<string, RateLimitEntry> = new Map();
-
-// Feature #214: Rate limit configuration with endpoint-specific limits
-const RATE_LIMIT_WINDOW_SECONDS = 60; // 1 minute window
-const RATE_LIMIT_WINDOW_MS = RATE_LIMIT_WINDOW_SECONDS * 1000;
-
-// Different limits for different endpoint categories
-const RATE_LIMITS = {
-  AUTH: 20,       // Auth endpoints: 20 requests per minute (stricter)
-  DEFAULT: 200,   // Default limit: 200 requests per minute
-  READ_ONLY: 500, // Read-only endpoints: 500 requests per minute (higher)
-};
-
-// Patterns for endpoint classification
-const AUTH_ENDPOINT_PATTERNS = ['/api/v1/auth'];
-const READ_ONLY_METHODS = ['GET', 'HEAD', 'OPTIONS'];
-
-/**
- * Feature #214: Get rate limit for a given request
- */
-function getRateLimitForRequest(url: string, method: string): number {
-  // Auth endpoints get stricter limits
-  if (AUTH_ENDPOINT_PATTERNS.some(pattern => url.startsWith(pattern))) {
-    return RATE_LIMITS.AUTH;
-  }
-  // Read-only requests get higher limits
-  if (READ_ONLY_METHODS.includes(method)) {
-    return RATE_LIMITS.READ_ONLY;
-  }
-  return RATE_LIMITS.DEFAULT;
-}
-
-// Feature #214: Cleanup old fallback entries periodically (every 5 minutes)
-// Note: Redis entries auto-expire via TTL, this only cleans up memory fallback
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitStore.entries()) {
-    if (entry.resetAt < now) {
-      rateLimitStore.delete(key);
-    }
-  }
-}, 5 * 60 * 1000);
 
 // Feature #153: Structured JSON logging with request correlation IDs
 // Fastify uses pino internally - configure it for production-grade logging
@@ -399,351 +346,17 @@ async function registerPlugins() {
   // This hook must be added BEFORE other hooks to ensure timeout applies first
   app.addHook('onRequest', requestTimeoutHook);
 
-  // Feature #214: Redis-based rate limiting hook - applies to all API routes
-  app.addHook('onRequest', async (request, reply) => {
-    // Skip rate limiting for certain endpoints
-    const skipPaths = ['/health', '/api/docs', '/favicon.ico'];
-    if (skipPaths.some(path => request.url.startsWith(path))) {
-      return;
-    }
+  // Feature #359: Rate limiting extracted to middleware/rate-limit.ts
+  registerRateLimiting(app);
 
-    // Get client identifier (IP address or API key if present)
-    const clientIp = request.ip || request.headers['x-forwarded-for'] || 'unknown';
-    const apiKey = request.headers['x-api-key'];
-    const clientId = apiKey ? `key:${apiKey}` : `ip:${clientIp}`;
-
-    // Feature #214: Get endpoint-specific rate limit
-    const rateLimit = getRateLimitForRequest(request.url, request.method);
-    const rateLimitKey = `ratelimit:${clientId}`;
-
-    const cache = getCache();
-    let count: number;
-    const now = Date.now();
-    const resetAt = now + RATE_LIMIT_WINDOW_MS;
-
-    // Feature #214: Use Redis INCR for distributed rate limiting
-    if (cache.isRedisConnected()) {
-      // Redis-based rate limiting with automatic expiry
-      count = await cache.incr(rateLimitKey, RATE_LIMIT_WINDOW_SECONDS);
-    } else {
-      // Fallback to in-memory rate limiting
-      let entry = rateLimitStore.get(clientId);
-
-      // Initialize or reset entry if window has passed
-      if (!entry || entry.resetAt < now) {
-        entry = {
-          count: 0,
-          resetAt: resetAt,
-        };
-      }
-
-      // Increment request count
-      entry.count++;
-      rateLimitStore.set(clientId, entry);
-      count = entry.count;
-    }
-
-    // Calculate remaining requests and time until reset
-    const remaining = Math.max(0, rateLimit - count);
-    const resetInSeconds = RATE_LIMIT_WINDOW_SECONDS;
-
-    // Add rate limit headers to all responses
-    reply.header('X-RateLimit-Limit', rateLimit);
-    reply.header('X-RateLimit-Remaining', remaining);
-    reply.header('X-RateLimit-Reset', Math.ceil(resetAt / 1000)); // Unix timestamp
-
-    // Check if rate limit exceeded
-    if (count > rateLimit) {
-      reply.header('Retry-After', resetInSeconds);
-      reply.status(429).send({
-        error: 'Too Many Requests',
-        message: `Rate limit exceeded. Please wait ${resetInSeconds} seconds before making more requests.`,
-        statusCode: 429,
-        retry_after: resetInSeconds, // Feature #360: Use snake_case for consistency with HTTP headers
-        limit: rateLimit,
-      });
-      return;
-    }
-  });
+  // Feature #359: Health check routes extracted to routes/health.ts
+  await app.register(healthRoutes);
 }
 
-// Feature #205: Lightweight health check for Docker/Kubernetes health probes
-// Returns simple status without exposing sensitive system information
-app.get('/health', async (_request, reply) => {
-  // Quick check of critical dependencies without detailed diagnostics
-  const dbHealthy = isDatabaseConnected();
-  const socketHealthy = io !== null;
-
-  const allHealthy = dbHealthy && socketHealthy;
-  const status = allHealthy ? 'ok' : 'unhealthy';
-
-  if (!allHealthy) {
-    reply.status(503);
-  }
-
-  return { status, timestamp: new Date().toISOString() };
-});
-
-// Feature #205: Detailed health check with full diagnostics - requires authentication
-// Feature #152: Enhanced with disk space, memory usage, version info, and 503 on critical failures
-app.get('/health/detailed', { preHandler: [authenticate] }, async (request, reply) => {
-  // fs, path, os are now imported at the top level
-
-  // Check database health with timeout
-  const dbCheck = await Promise.race([
-    dbHealthCheck(),
-    new Promise<{ status: 'error'; latency?: number; error: string }>((resolve) =>
-      setTimeout(() => resolve({ status: 'error', error: 'Database health check timed out (5s)' }), 5000)
-    ),
-  ]);
-
-  // Feature #60: Check cache status with timeout
-  const cacheStats = await Promise.race([
-    getCache().stats(),
-    new Promise<{ redisConnected: boolean; memoryCacheSize: number; redisKeyCount: number; redisMemory?: undefined }>((resolve) =>
-      setTimeout(() => resolve({ redisConnected: false, memoryCacheSize: 0, redisKeyCount: 0 }), 3000)
-    ),
-  ]);
-
-  // Feature #152: Check disk space
-  const diskSpace = await checkDiskSpace();
-
-  // Feature #152: Get memory usage
-  const memoryUsage = {
-    heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-    heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-    rss: Math.round(process.memoryUsage().rss / 1024 / 1024),
-    external: Math.round(process.memoryUsage().external / 1024 / 1024),
-    systemFree: Math.round(os.freemem() / 1024 / 1024),
-    systemTotal: Math.round(os.totalmem() / 1024 / 1024),
-  };
-
-  // Feature #152: Get application version and build info
-  const versionInfo = getVersionInfo();
-
-  const checks = {
-    server: true,
-    socketio: io !== null,
-    filesystem: true,
-    database: dbCheck.status === 'ok',
-    cache: cacheStats.redisConnected || cacheStats.memoryCacheSize >= 0, // Always true with fallback
-    diskSpace: diskSpace.healthy,
-  };
-
-  // Check filesystem (screenshots/traces/videos directories)
-  try {
-    const dirs = ['screenshots', 'traces', 'videos'].map((d: string) => path.join(process.cwd(), d));
-    dirs.forEach((dir: string) => {
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-    });
-    checks.filesystem = true;
-  } catch {
-    checks.filesystem = false;
-  }
-
-  // Feature #152: Critical dependencies that must be healthy
-  // Database and Redis are critical in production
-  const isProduction = process.env.NODE_ENV === 'production';
-  const criticalChecks = {
-    server: checks.server,
-    socketio: checks.socketio,
-    filesystem: checks.filesystem,
-    // In production, database must be connected
-    ...(isProduction && { database: checks.database }),
-    // Disk space is always critical
-    diskSpace: checks.diskSpace,
-  };
-
-  const allCriticalHealthy = Object.values(criticalChecks).every(Boolean);
-
-  // Feature #152: Determine overall status
-  let status: 'ok' | 'degraded' | 'unhealthy' = 'ok';
-  if (!allCriticalHealthy) {
-    status = 'unhealthy';
-  } else if (!checks.database || !checks.cache) {
-    status = 'degraded';
-  }
-
-  const responseBody = {
-    status,
-    timestamp: new Date().toISOString(),
-    checks,
-    database: {
-      connected: isDatabaseConnected(),
-      latency: dbCheck.latency,
-      error: dbCheck.error,
-      // Feature #157: Include pool stats from health check
-      pool: 'pool' in dbCheck ? dbCheck.pool : undefined,
-    },
-    // Feature #60: Include cache status in health check
-    // Feature #158: Enhanced with Redis memory usage
-    cache: {
-      redisConnected: cacheStats.redisConnected,
-      memoryCacheSize: cacheStats.memoryCacheSize,
-      redisKeyCount: cacheStats.redisKeyCount,
-      redisMemory: cacheStats.redisMemory,
-    },
-    // Feature #152: Disk space info
-    disk: diskSpace,
-    // Feature #152: Memory usage stats
-    memory: memoryUsage,
-    // Feature #151: Include backup status in health check
-    backup: await getBackupStatus(),
-    // Feature #154: Include cleanup job status in health check
-    cleanup: getCleanupStats(),
-    // Feature #155: Include execution queue status in health check
-    executionQueue: await getQueueHealth(),
-    // Feature #320: Include webhook queue status in health check
-    webhookQueue: await getWebhookQueueHealth(),
-    // Feature #162: Include migration status in health check
-    migrations: getMigrationStatus(),
-    // Feature #164: Include error tracking metrics in health check
-    errors: getErrorMetrics(),
-    // Feature #152: Version and build info
-    version: versionInfo.version,
-    build: {
-      commit: versionInfo.commit,
-      buildTime: versionInfo.buildTime,
-      nodeVersion: process.version,
-    },
-    uptime: process.uptime(),
-  };
-
-  // Feature #152: Return 503 if any critical dependency is down
-  if (status === 'unhealthy') {
-    reply.status(503);
-  }
-
-  return responseBody;
-});
-
-// Feature #165: API Metrics endpoint - response time tracking
-// Feature #205: Requires authentication to protect latency data
-app.get('/api/v1/metrics', { preHandler: [authenticate] }, async (_request, _reply) => {
-  return getMetricsSummary();
-});
-
-// Feature #152: Check disk space and warn if < 1GB free
-async function checkDiskSpace(): Promise<{
-  healthy: boolean;
-  freeGB: number;
-  totalGB: number;
-  usedPercent: number;
-  warning: string | null;
-}> {
-  // fs, path, os are imported at the top level
-  const { execSync } = await import('child_process');
-
-  try {
-    // Use statvfs on Unix-like systems via child_process
-
-    // Try to get disk space info
-    let freeBytes = 0;
-    let totalBytes = 0;
-
-    try {
-      // Works on Linux/macOS
-      const dfOutput = execSync('df -k . 2>/dev/null || df -k / 2>/dev/null', { encoding: 'utf-8' });
-      const lines = dfOutput.trim().split('\n');
-      if (lines.length >= 2) {
-        const parts = lines[1].split(/\s+/);
-        // df -k outputs in 1K blocks: Filesystem, 1K-blocks, Used, Available, Use%, Mounted
-        totalBytes = parseInt(parts[1], 10) * 1024;
-        freeBytes = parseInt(parts[3], 10) * 1024;
-      }
-    } catch {
-      // Fallback: estimate from OS memory (not accurate but provides a response)
-      totalBytes = os.totalmem();
-      freeBytes = os.freemem();
-    }
-
-    const freeGB = Math.round((freeBytes / 1024 / 1024 / 1024) * 100) / 100;
-    const totalGB = Math.round((totalBytes / 1024 / 1024 / 1024) * 100) / 100;
-    const usedPercent = totalBytes > 0 ? Math.round(((totalBytes - freeBytes) / totalBytes) * 100) : 0;
-
-    // Warning if < 1GB free
-    const warning = freeGB < 1 ? `Low disk space: ${freeGB}GB free` : null;
-    const healthy = freeGB >= 1;
-
-    return { healthy, freeGB, totalGB, usedPercent, warning };
-  } catch (error) {
-    return {
-      healthy: true, // Assume healthy if we can't check
-      freeGB: 0,
-      totalGB: 0,
-      usedPercent: 0,
-      warning: 'Could not determine disk space',
-    };
-  }
-}
-
-// Feature #152: Get version info from package.json and environment
-function getVersionInfo(): {
-  version: string;
-  commit: string | null;
-  buildTime: string | null;
-} {
-  // fs, path are imported at the top level
-  let version = '1.0.0';
-
-  // Try to read version from package.json
-  try {
-    const packageJsonPath = path.join(process.cwd(), 'package.json');
-    if (fs.existsSync(packageJsonPath)) {
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-      version = packageJson.version || version;
-    }
-  } catch {
-    // Use default version
-  }
-
-  // Get commit hash from environment (set during Docker build)
-  const commit = process.env.BUILD_COMMIT || process.env.GIT_COMMIT || null;
-
-  // Get build time from environment
-  const buildTime = process.env.BUILD_TIME || null;
-
-  return { version, commit, buildTime };
-}
-
-// Feature #151: Get backup status from status file
-async function getBackupStatus(): Promise<{
-  configured: boolean;
-  lastBackup: string | null;
-  status: string;
-  backupsCount: number;
-  retentionDays: number;
-}> {
-  // fs, path are imported at the top level
-  const backupDir = process.env.BACKUP_DIR || '/opt/backups';
-  const statusFile = path.join(backupDir, '.backup_status.json');
-
-  try {
-    if (fs.existsSync(statusFile)) {
-      const content = fs.readFileSync(statusFile, 'utf-8');
-      const status = JSON.parse(content);
-      return {
-        configured: true,
-        lastBackup: status.last_backup || null,
-        status: status.status || 'unknown',
-        backupsCount: status.backups_count || 0,
-        retentionDays: status.retention_days || 30,
-      };
-    }
-  } catch (e) {
-    // Status file not readable
-  }
-
-  return {
-    configured: false,
-    lastBackup: null,
-    status: 'not_configured',
-    backupsCount: 0,
-    retentionDays: 30,
-  };
-}
+// Feature #359: Health check endpoints and utility functions extracted to:
+// - routes/health.ts (health endpoints + metrics endpoint)
+// - services/health-checks.ts (checkDiskSpace, getVersionInfo, getBackupStatus)
+// - middleware/rate-limit.ts (rate limiting configuration and hooks)
 
 // API v1 prefix
 app.get('/api/v1', async () => {
@@ -987,10 +600,11 @@ async function start() {
       });
     });
 
-    // Share Socket.IO instance with test-runs module, services status, recording, and WebSocket events
+    // Share Socket.IO instance with test-runs module, services status, recording, health, and WebSocket events
     setSocketIO(io);
     setServicesSocketIO(io);
     setRecordingSocketIO(io);
+    setHealthSocketIO(io); // Feature #359: Health check routes need Socket.IO status
     setWebSocketIO(io); // Feature #108: WebSocket CRUD events
 
     // Feature #200: Initialize Redis event subscriber for worker events
