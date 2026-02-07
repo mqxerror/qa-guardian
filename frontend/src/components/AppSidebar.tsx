@@ -1,0 +1,654 @@
+/**
+ * AppSidebar Component - Feature #255
+ *
+ * Rebuilt using shadcn/ui Sidebar primitives (21st.dev integration).
+ * Preserves all existing features from the legacy Sidebar.tsx:
+ * - Role-based visibility (viewer, qa, developer, admin, owner)
+ * - Pinned items with localStorage persistence
+ * - Keyboard shortcuts (G+T, G+S, G+A, G+D, G+M)
+ * - Collapsible navigation groups
+ * - Organization switcher
+ * - Notification dropdown
+ * - Connection status indicator
+ * - Security alert badges
+ * - Visual review pending count
+ */
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { ChevronDown, ChevronRight, Pin, PanelLeft, LogOut, Bell, RefreshCw, Eye, EyeOff, Building2, Check } from 'lucide-react';
+import { useAuthStore } from '../stores/authStore';
+import { useSidebarStore, SidebarSection } from '../stores/sidebarStore';
+import { useVisualReviewStore } from '../stores/visualReviewStore';
+import { ConnectionStatusIndicator } from './ConnectionStatusIndicator';
+import { usePrefetch } from '../hooks/usePrefetch';
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator,
+  useSidebar,
+} from '@/components/ui/sidebar';
+
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+// Import existing icons
+import {
+  DashboardIcon,
+  ProjectsIcon,
+  SchedulesIcon,
+  AnalyticsIcon,
+  SettingsIcon,
+  LogoutIcon,
+  VisualReviewIcon,
+  SecurityIcon,
+  SecurityGroupIcon,
+  DASTIcon,
+  MonitoringIcon,
+  ServicesIcon,
+  AIInsightsIcon,
+  AIGroupIcon,
+  AITestGeneratorIcon,
+  MCPToolsIcon,
+  TestingGroupIcon,
+  RunHistoryIcon,
+} from './sidebar-components/SidebarIcons';
+
+// Import types
+import { MenuItemConfig, UserRole, hasAccess } from './sidebar-components/types';
+
+export function AppSidebar() {
+  const { user, logout, token, organizations, fetchOrganizations, switchOrganization } = useAuthStore();
+  const { collapsedSections, toggleSection: storeToggleSection, expandSection, setCollapsedSections } = useSidebarStore();
+  const { pendingCount, fetchPendingCount } = useVisualReviewStore();
+  const { state } = useSidebar();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const prefetch = usePrefetch();
+  const isCollapsed = state === 'collapsed';
+
+  // Feature #1502: Security alert count for badge
+  const [securityAlertCount, setSecurityAlertCount] = useState(0);
+
+  // Feature #1502: Fetch security alert count
+  useEffect(() => {
+    const fetchSecurityAlerts = async () => {
+      if (!token) return;
+      try {
+        const response = await fetch('/api/v1/sast/dashboard?severity=CRITICAL,HIGH&limit=1', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const count = (data.summary?.bySeverity?.critical || 0) + (data.summary?.bySeverity?.high || 0);
+          setSecurityAlertCount(count);
+        }
+      } catch (error) {
+        console.debug('Could not fetch security alerts:', error);
+      }
+    };
+    fetchSecurityAlerts();
+    const interval = setInterval(fetchSecurityAlerts, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [token]);
+
+  // Feature #1363: Advanced features toggle
+  const [showAdvancedFeatures, setShowAdvancedFeatures] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem('qa-guardian-show-advanced-features');
+      return stored ? JSON.parse(stored) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  // Feature #1364: Pinned items
+  const [pinnedItems, setPinnedItems] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('qa-guardian-pinned-items');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Persist preferences
+  useEffect(() => {
+    try {
+      localStorage.setItem('qa-guardian-show-advanced-features', JSON.stringify(showAdvancedFeatures));
+    } catch { /* storage unavailable */ }
+  }, [showAdvancedFeatures]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('qa-guardian-pinned-items', JSON.stringify(pinnedItems));
+    } catch { /* storage unavailable */ }
+  }, [pinnedItems]);
+
+  // Feature #1364: Toggle pin
+  const togglePin = (path: string) => {
+    setPinnedItems(prev => prev.includes(path) ? prev.filter(p => p !== path) : [...prev, path]);
+  };
+
+  // Feature #1364: Toggle section
+  const toggleSection = (section: string) => {
+    storeToggleSection(section as SidebarSection);
+  };
+
+  // Feature #1364: Reset preferences
+  const resetNavPreferences = () => {
+    setPinnedItems([]);
+    setCollapsedSections(['security']);
+    setShowAdvancedFeatures(false);
+    try {
+      localStorage.removeItem('qa-guardian-pinned-items');
+      localStorage.setItem('qa-guardian-collapsed-sections', JSON.stringify(['security']));
+      localStorage.removeItem('qa-guardian-show-advanced-features');
+    } catch { /* storage unavailable */ }
+  };
+
+  const isPinned = (path: string) => pinnedItems.includes(path);
+  const isSectionCollapsed = (section: SidebarSection) => {
+    const sections = Array.isArray(collapsedSections) ? collapsedSections : [];
+    return sections.includes(section);
+  };
+
+  // Feature #1505: Keyboard shortcuts
+  const [showShortcutHints, setShowShortcutHints] = useState(false);
+  const shortcutTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    let waitingForSecondKey = false;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'g' && !waitingForSecondKey) {
+        waitingForSecondKey = true;
+        setShowShortcutHints(true);
+
+        if (shortcutTimeoutRef.current) {
+          clearTimeout(shortcutTimeoutRef.current);
+        }
+
+        shortcutTimeoutRef.current = setTimeout(() => {
+          waitingForSecondKey = false;
+          setShowShortcutHints(false);
+        }, 1500);
+        return;
+      }
+
+      if (waitingForSecondKey) {
+        waitingForSecondKey = false;
+        setShowShortcutHints(false);
+        if (shortcutTimeoutRef.current) {
+          clearTimeout(shortcutTimeoutRef.current);
+        }
+
+        const key = e.key.toLowerCase();
+        switch (key) {
+          case 't':
+            e.preventDefault();
+            expandSection('testing');
+            navigate('/projects');
+            break;
+          case 's':
+            e.preventDefault();
+            expandSection('security');
+            navigate('/security');
+            break;
+          case 'a':
+            e.preventDefault();
+            expandSection('ai-mcp');
+            navigate('/ai-insights');
+            break;
+          case 'd':
+            e.preventDefault();
+            navigate('/dashboard');
+            break;
+          case 'm':
+            e.preventDefault();
+            expandSection('ai-mcp');
+            navigate('/mcp');
+            break;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (shortcutTimeoutRef.current) {
+        clearTimeout(shortcutTimeoutRef.current);
+      }
+    };
+  }, [navigate, expandSection]);
+
+  // Fetch visual review pending count
+  useEffect(() => {
+    if (token) {
+      fetchPendingCount(token);
+    }
+  }, [token, fetchPendingCount]);
+
+  useEffect(() => {
+    if (token && location.pathname !== '/visual-review') {
+      const timer = setTimeout(() => fetchPendingCount(token), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname, token, fetchPendingCount]);
+
+  // Fetch organizations
+  useEffect(() => {
+    fetchOrganizations();
+  }, [fetchOrganizations]);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  const isActive = (path: string) => location.pathname === path;
+
+  // Menu item configurations
+  const coreMenuItems: MenuItemConfig[] = [
+    { path: '/schedules', icon: <SchedulesIcon />, label: 'Schedules', visibility: 'all' },
+    { path: '/analytics', icon: <AnalyticsIcon />, label: 'Analytics', visibility: 'qa' },
+    { path: '/monitoring', icon: <MonitoringIcon />, label: 'Monitoring', visibility: 'qa' },
+    { path: '/services', icon: <ServicesIcon />, label: 'Services', visibility: 'qa' },
+  ];
+
+  const securityMenuItems: MenuItemConfig[] = [
+    { path: '/security', icon: <SecurityIcon />, label: 'Dashboard', visibility: 'qa' },
+    { path: '/security/dast-compare', icon: <DASTIcon />, label: 'DAST Scanning', visibility: 'qa' },
+  ];
+
+  const aiMcpMenuItems: MenuItemConfig[] = [
+    { path: '/ai-insights', icon: <AIInsightsIcon />, label: 'AI Insights', visibility: 'all' },
+    { path: '/ai/test-generator', icon: <AITestGeneratorIcon />, label: 'Test Generator', visibility: 'qa' },
+    { path: '/mcp', icon: <MCPToolsIcon />, label: 'MCP Hub', visibility: 'developer', advancedOnly: true },
+  ];
+
+  const testingMenuItems: MenuItemConfig[] = [
+    { path: '/projects', icon: <ProjectsIcon />, label: 'Projects', visibility: 'all' },
+    { path: '/run-history', icon: <RunHistoryIcon />, label: 'Run History', visibility: 'all' },
+  ];
+
+  const adminMenuItems: MenuItemConfig[] = [
+    { path: '/settings', icon: <SettingsIcon />, label: 'Settings', visibility: 'developer' },
+  ];
+
+  // Filter menu items based on role
+  const filterMenuItems = (items: MenuItemConfig[]): MenuItemConfig[] => {
+    return items.filter(item => {
+      const hasRoleAccess = hasAccess(user?.role as UserRole, item.visibility);
+      if (item.advancedOnly) {
+        const isDeveloperPlus = user?.role === 'developer' || user?.role === 'admin' || user?.role === 'owner';
+        if (isDeveloperPlus) return true;
+        return showAdvancedFeatures;
+      }
+      return hasRoleAccess;
+    });
+  };
+
+  const visibleCoreItems = filterMenuItems(coreMenuItems);
+  const visibleTestingItems = filterMenuItems(testingMenuItems);
+  const visibleSecurityItems = filterMenuItems(securityMenuItems);
+  const visibleAiMcpItems = filterMenuItems(aiMcpMenuItems);
+  const visibleAdminItems = filterMenuItems(adminMenuItems);
+
+  // Active item detection
+  const hasActiveTestingItem = isActive('/projects') || location.pathname.startsWith('/projects/') ||
+    location.pathname.startsWith('/suites/') || location.pathname.startsWith('/tests/') ||
+    location.pathname.startsWith('/runs/') || isActive('/run-history') || isActive('/visual-review');
+  const hasActiveSecurityItem = location.pathname.startsWith('/security');
+  const hasActiveAiMcpItem = location.pathname.startsWith('/ai-insights') ||
+    location.pathname.startsWith('/ai/') || location.pathname.startsWith('/mcp');
+
+  // Organization handling
+  const currentOrg = organizations.find(org => org.is_current) || organizations.find(org => org.id === user?.organization_id);
+  const [isOrgLoading, setIsOrgLoading] = useState(false);
+
+  const handleOrgSwitch = async (orgId: string) => {
+    if (orgId === user?.organization_id) return;
+    setIsOrgLoading(true);
+    try {
+      await switchOrganization(orgId);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Failed to switch organization:', error);
+    } finally {
+      setIsOrgLoading(false);
+    }
+  };
+
+  // Render nav item with shadcn primitives
+  const renderNavItem = (item: MenuItemConfig, options?: { showBadge?: boolean; badgeCount?: number }) => {
+    const active = isActive(item.path) ||
+      (item.path === '/projects' && location.pathname.startsWith('/projects/')) ||
+      (item.path === '/ai-insights' && location.pathname.startsWith('/ai-insights')) ||
+      (item.path === '/ai/test-generator' && location.pathname.startsWith('/ai/')) ||
+      (item.path === '/mcp' && location.pathname.startsWith('/mcp'));
+    const pinned = isPinned(item.path);
+
+    return (
+      <SidebarMenuItem key={item.path}>
+        <SidebarMenuButton
+          asChild
+          isActive={active}
+          tooltip={item.label}
+          onMouseEnter={item.path === '/dashboard' ? prefetch.dashboard : item.path === '/projects' ? prefetch.projects : undefined}
+        >
+          <Link to={item.path} className="relative group">
+            {item.icon}
+            <span>{item.label}</span>
+            {!isCollapsed && pinned && (
+              <Pin className="h-3 w-3 ml-auto text-primary/60 fill-primary/60" />
+            )}
+          </Link>
+        </SidebarMenuButton>
+        {options?.showBadge && options.badgeCount && options.badgeCount > 0 && (
+          <SidebarMenuBadge className="bg-amber-500 text-white">
+            {options.badgeCount > 99 ? '99+' : options.badgeCount}
+          </SidebarMenuBadge>
+        )}
+        {!isCollapsed && (
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePin(item.path); }}
+            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-sidebar-accent transition-all"
+            title={pinned ? 'Unpin' : 'Pin'}
+          >
+            <Pin className={`h-3 w-3 ${pinned ? 'text-primary fill-primary' : 'text-muted-foreground'}`} />
+          </button>
+        )}
+      </SidebarMenuItem>
+    );
+  };
+
+  // Render collapsible group
+  const renderCollapsibleGroup = (
+    label: string,
+    sectionId: SidebarSection,
+    icon: React.ReactNode,
+    items: MenuItemConfig[],
+    hasActiveChild: boolean,
+    options?: { badge?: number; badgeColor?: string; shortcutKey?: string }
+  ) => {
+    const isExpanded = !isSectionCollapsed(sectionId);
+
+    if (items.length === 0) return null;
+
+    return (
+      <Collapsible open={isExpanded} onOpenChange={() => toggleSection(sectionId)} className="group/collapsible">
+        <SidebarGroup>
+          <CollapsibleTrigger asChild>
+            <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md px-2 relative">
+              <div className="flex items-center gap-2 flex-1">
+                {icon}
+                <span className="text-xs font-semibold uppercase">{label}</span>
+                {showShortcutHints && options?.shortcutKey && (
+                  <span className="flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] text-white font-bold animate-pulse">
+                    {options.shortcutKey}
+                  </span>
+                )}
+                {!showShortcutHints && options?.badge && options.badge > 0 && (
+                  <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full ${options.badgeColor === 'red' ? 'bg-red-500' : 'bg-amber-500'} text-xs text-white font-bold px-1`}>
+                    {options.badge > 99 ? '99+' : options.badge}
+                  </span>
+                )}
+                {!showShortcutHints && !isExpanded && hasActiveChild && (
+                  <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                )}
+              </div>
+              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </SidebarGroupLabel>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {items.map(item => renderNavItem(item))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </CollapsibleContent>
+        </SidebarGroup>
+      </Collapsible>
+    );
+  };
+
+  return (
+    <Sidebar collapsible="icon" className="border-r border-border">
+      {/* Header */}
+      <SidebarHeader className="border-b border-border">
+        <div className="flex items-center justify-between px-2">
+          {!isCollapsed && (
+            <h1 className="text-xl font-bold text-foreground">QA Guardian</h1>
+          )}
+        </div>
+
+        {/* Organization Switcher */}
+        {organizations.length > 1 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                disabled={isOrgLoading}
+                className={`flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm font-medium border border-border bg-background hover:bg-muted transition-colors ${
+                  isCollapsed ? 'justify-center' : ''
+                } ${isOrgLoading ? 'opacity-50 cursor-wait' : ''}`}
+              >
+                <Building2 className="h-4 w-4" />
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1 text-left truncate text-foreground">
+                      {currentOrg?.name || 'Select Org'}
+                    </span>
+                    <ChevronDown className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuLabel>Switch Organization</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {organizations.map((org) => (
+                <DropdownMenuItem
+                  key={org.id}
+                  onClick={() => handleOrgSwitch(org.id)}
+                  disabled={isOrgLoading}
+                  className={org.is_current || org.id === user?.organization_id ? 'bg-primary/10' : ''}
+                >
+                  <span className="flex-1">{org.name}</span>
+                  <span className="text-xs text-muted-foreground capitalize">{org.role}</span>
+                  {(org.is_current || org.id === user?.organization_id) && (
+                    <Check className="h-4 w-4 ml-2" />
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </SidebarHeader>
+
+      {/* Content */}
+      <SidebarContent>
+        {/* Pinned Items */}
+        {pinnedItems.length > 0 && !isCollapsed && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="flex items-center gap-1">
+              <Pin className="h-3 w-3 fill-current" /> Pinned
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {[
+                  { path: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard', visibility: 'all' as const },
+                  ...visibleCoreItems, ...visibleTestingItems, ...visibleSecurityItems, ...visibleAiMcpItems, ...visibleAdminItems,
+                  { path: '/visual-review', icon: <VisualReviewIcon />, label: 'Visual Review', visibility: 'all' as const },
+                ]
+                  .filter(item => isPinned(item.path))
+                  .map(item => renderNavItem(item))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {pinnedItems.length > 0 && !isCollapsed && <SidebarSeparator />}
+
+        {/* Dashboard */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {renderNavItem({ path: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard', visibility: 'all' })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Testing Group */}
+        {renderCollapsibleGroup('Testing', 'testing', <TestingGroupIcon />, [
+          ...visibleTestingItems,
+          // Visual Review with badge
+        ], hasActiveTestingItem, { shortcutKey: 'T' })}
+
+        {/* Visual Review - separate to handle badge */}
+        <SidebarGroup className="-mt-2">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive('/visual-review')} tooltip="Visual Review">
+                  <Link to="/visual-review" className="relative group">
+                    <VisualReviewIcon />
+                    <span>Visual Review</span>
+                    {!isCollapsed && isPinned('/visual-review') && (
+                      <Pin className="h-3 w-3 ml-auto text-primary/60 fill-primary/60" />
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+                {pendingCount > 0 && (
+                  <SidebarMenuBadge className="bg-amber-500 text-white">
+                    {pendingCount > 99 ? '99+' : pendingCount}
+                  </SidebarMenuBadge>
+                )}
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Core Items */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {visibleCoreItems.map(item => renderNavItem(item))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Security Group */}
+        {renderCollapsibleGroup('Security', 'security', <SecurityGroupIcon />, visibleSecurityItems, hasActiveSecurityItem, { badge: securityAlertCount, badgeColor: 'red', shortcutKey: 'S' })}
+
+        {/* AI & MCP Group */}
+        {renderCollapsibleGroup('AI & MCP', 'ai-mcp', <AIGroupIcon />, visibleAiMcpItems, hasActiveAiMcpItem, { shortcutKey: 'A' })}
+
+        {/* Admin */}
+        {visibleAdminItems.length > 0 && (
+          <SidebarGroup>
+            {!isCollapsed && <SidebarGroupLabel>Admin</SidebarGroupLabel>}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {visibleAdminItems.map(item => renderNavItem(item))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Advanced Features Toggle */}
+        {user?.role === 'viewer' && (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => setShowAdvancedFeatures(!showAdvancedFeatures)}
+                    tooltip={showAdvancedFeatures ? 'Hide Advanced' : 'Show Advanced'}
+                  >
+                    {showAdvancedFeatures ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span>{showAdvancedFeatures ? 'Hide Advanced' : 'Show Advanced'}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Reset Preferences */}
+        {!isCollapsed && (pinnedItems.length > 0 || collapsedSections.length > 0) && (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={resetNavPreferences} tooltip="Reset Layout">
+                    <RefreshCw className="h-4 w-4" />
+                    <span>Reset Layout</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+      </SidebarContent>
+
+      {/* Footer */}
+      <SidebarFooter className="border-t border-border">
+        {/* Connection Status */}
+        <div className={`${isCollapsed ? 'flex justify-center' : ''}`}>
+          <ConnectionStatusIndicator collapsed={isCollapsed} />
+        </div>
+
+        {/* User Info */}
+        {!isCollapsed && user && (
+          <div className="px-3 py-2">
+            <div className="text-sm font-medium text-foreground">{user.name}</div>
+            <div className="text-xs text-muted-foreground capitalize">{user.role}</div>
+          </div>
+        )}
+
+        {/* Logout */}
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}

@@ -1,12 +1,18 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
+import { AppSidebar } from './AppSidebar';
+import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
+import { useSidebarStore } from '../stores/sidebarStore';
 import { useAuthStore } from '../stores/authStore';
 import { useSocketStore } from '../stores/socketStore';
 // Feature #96: Real-time cache invalidation via WebSocket
 import { useRealtimeCacheInvalidation } from '../hooks/api/useRealtimeCacheInvalidation';
 // Feature #128: Command palette for quick navigation
 import { CommandPalette, useCommandPalette } from './ui/CommandPalette';
+
+// Feature #255: Toggle to use new shadcn sidebar vs legacy sidebar
+const USE_NEW_SIDEBAR = true;
 
 interface LayoutProps {
   children: ReactNode;
@@ -17,6 +23,7 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { collapsed } = useSidebarStore();
 
   // Feature #128: Command palette for quick navigation (Cmd+K / Ctrl+K)
   const { isOpen: commandPaletteOpen, close: closeCommandPalette } = useCommandPalette();
@@ -52,6 +59,44 @@ export function Layout({ children }: LayoutProps) {
   const canViewBilling = user?.role === 'owner';
   const canViewApiKeys = user?.role === 'owner' || user?.role === 'admin';
 
+  // Feature #255: Use new shadcn sidebar or legacy sidebar
+  if (USE_NEW_SIDEBAR) {
+    return (
+      <SidebarProvider defaultOpen={!collapsed}>
+        {/* Skip to main content link - visible only when focused */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:shadow-lg"
+        >
+          Skip to main content
+        </a>
+
+        {/* New shadcn/ui Sidebar */}
+        <AppSidebar />
+
+        {/* Main Content with SidebarInset */}
+        <SidebarInset>
+          {/* Mobile Header with SidebarTrigger */}
+          <header className="md:hidden border-b border-border bg-card px-4 py-4">
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl font-bold text-foreground">QA Guardian</h1>
+              <SidebarTrigger />
+            </div>
+          </header>
+
+          {/* Main content */}
+          <main id="main-content" className="flex-1 overflow-auto p-4" tabIndex={-1}>
+            {children}
+          </main>
+        </SidebarInset>
+
+        {/* Feature #128: Command palette for quick navigation */}
+        <CommandPalette isOpen={commandPaletteOpen} onClose={closeCommandPalette} />
+      </SidebarProvider>
+    );
+  }
+
+  // Legacy sidebar layout
   return (
     <div className="flex min-h-screen">
       {/* Skip to main content link - visible only when focused */}
