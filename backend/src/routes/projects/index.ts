@@ -33,6 +33,7 @@ export {
 // Import route modules
 import { coreRoutes } from './routes.js';
 import { analyticsRoutes } from './analytics.js';
+import { aiInsightsRoutes } from './ai-insights-routes.js';
 import { flakyTestsRoutes } from './flaky-tests.js';
 import { remediationRoutes } from './remediation.js';
 import { memberRoutes } from './members.js';
@@ -43,6 +44,7 @@ export async function projectRoutes(app: FastifyInstance) {
   // Register all route modules
   await coreRoutes(app);
   await analyticsRoutes(app);
+  await aiInsightsRoutes(app);
   await flakyTestsRoutes(app);
   await remediationRoutes(app);
   await memberRoutes(app);
