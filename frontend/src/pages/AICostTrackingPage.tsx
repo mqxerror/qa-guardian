@@ -1,11 +1,14 @@
 // ============================================================================
 // FEATURE #1325: AI Cost Tracking Per Request
 // Extracted from App.tsx for code quality compliance (Feature #1357)
+// Feature #340: Dark-first design system update
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
+import { ArrowLeft, RefreshCw, DollarSign, Zap, FileInput, FileOutput, Building2, Brain, FileText, TrendingUp, Users, FolderOpen, Clock, Settings } from 'lucide-react';
 
 // Types
 interface AICostRecord {
@@ -230,412 +233,467 @@ export function AICostTrackingPage() {
     return num.toString();
   };
 
-  // Get budget status color
+  // Get budget status color - dark-first
   const getBudgetStatusColor = () => {
-    if (!budget) return 'bg-gray-200';
+    if (!budget) return 'bg-muted';
     if (budget.percentage_used >= budget.critical_threshold_percent) return 'bg-red-500';
     if (budget.percentage_used >= budget.warning_threshold_percent) return 'bg-yellow-500';
     return 'bg-green-500';
   };
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <button
-          onClick={() => navigate('/ai-insights')}
-          className="text-blue-600 hover:text-blue-800 mb-4 flex items-center gap-1"
-        >
-          ← Back to AI Insights
-        </button>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">💰 AI Cost Tracking</h1>
-            <p className="text-gray-600 mt-2">
-              Track AI costs per request by provider and model with token counts
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value as 'day' | 'week' | 'month')}
-              className="px-4 py-2 border rounded-lg"
-            >
-              <option value="day">Last 24 Hours</option>
-              <option value="week">Last 7 Days</option>
-              <option value="month">Last 30 Days</option>
-            </select>
+    <Layout>
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
             <button
-              onClick={fetchData}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              onClick={() => navigate('/ai-insights')}
+              className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             >
-              🔄 Refresh
+              <ArrowLeft className="h-5 w-5" />
             </button>
+            <span className="text-muted-foreground">Back to AI Insights</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+                <DollarSign className="h-8 w-8 text-primary" />
+                AI Cost Tracking
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Track AI costs per request by provider and model with token counts
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <select
+                value={period}
+                onChange={(e) => setPeriod(e.target.value as 'day' | 'week' | 'month')}
+                className="px-4 py-2 border border-border bg-card text-foreground rounded-lg"
+              >
+                <option value="day">Last 24 Hours</option>
+                <option value="week">Last 7 Days</option>
+                <option value="month">Last 30 Days</option>
+              </select>
+              <button
+                onClick={fetchData}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Budget Overview Banner */}
-      {budget && (
-        <div className="bg-white rounded-xl border p-6 mb-8 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">📊 Monthly Budget</h2>
-            <button
-              onClick={() => {
-                setNewBudget(budget.monthly_budget);
-                setShowBudgetModal(true);
-              }}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              Edit Budget
-            </button>
-          </div>
-          <div className="grid grid-cols-4 gap-6">
-            <div>
-              <div className="text-sm text-gray-500">Budget</div>
-              <div className="text-2xl font-bold">{formatCurrency(budget.monthly_budget)}</div>
+        {/* Budget Overview Banner */}
+        {budget && (
+          <div className="rounded-xl border border-border bg-card p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Monthly Budget
+              </h2>
+              <button
+                onClick={() => {
+                  setNewBudget(budget.monthly_budget);
+                  setShowBudgetModal(true);
+                }}
+                className="text-sm text-primary hover:text-primary/80 flex items-center gap-1"
+              >
+                <Settings className="h-4 w-4" />
+                Edit Budget
+              </button>
             </div>
-            <div>
-              <div className="text-sm text-gray-500">Spent This Month</div>
-              <div className="text-2xl font-bold">{formatCurrency(budget.current_month_spend)}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Remaining</div>
-              <div className={`text-2xl font-bold ${budget.budget_remaining < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {formatCurrency(budget.budget_remaining)}
+            <div className="grid grid-cols-4 gap-6">
+              <div>
+                <div className="text-sm text-muted-foreground">Budget</div>
+                <div className="text-2xl font-bold text-foreground">{formatCurrency(budget.monthly_budget)}</div>
               </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Projected End of Month</div>
-              <div className={`text-2xl font-bold ${budget.projected_month_end > budget.monthly_budget ? 'text-red-600' : ''}`}>
-                {formatCurrency(budget.projected_month_end)}
+              <div>
+                <div className="text-sm text-muted-foreground">Spent This Month</div>
+                <div className="text-2xl font-bold text-foreground">{formatCurrency(budget.current_month_spend)}</div>
               </div>
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="flex justify-between text-sm mb-1">
-              <span>{Math.round(budget.percentage_used)}% used</span>
-              <span>{formatCurrency(budget.monthly_budget)}</span>
-            </div>
-            <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all ${getBudgetStatusColor()}`}
-                style={{ width: `${Math.min(budget.percentage_used, 100)}%` }}
-              ></div>
-            </div>
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Warning: {budget.warning_threshold_percent}%</span>
-              <span>Critical: {budget.critical_threshold_percent}%</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Summary Stats */}
-      {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl border p-6 shadow-sm">
-            <div className="text-sm text-gray-500">Total Cost</div>
-            <div className="text-3xl font-bold text-blue-600">{formatCurrency(summary.total_cost)}</div>
-            <div className="text-xs text-gray-400 mt-1">{summary.total_requests} requests</div>
-          </div>
-          <div className="bg-white rounded-xl border p-6 shadow-sm">
-            <div className="text-sm text-gray-500">Avg Cost/Request</div>
-            <div className="text-3xl font-bold text-purple-600">{formatCurrency(summary.avg_cost_per_request)}</div>
-          </div>
-          <div className="bg-white rounded-xl border p-6 shadow-sm">
-            <div className="text-sm text-gray-500">Input Tokens</div>
-            <div className="text-3xl font-bold text-green-600">{formatNumber(summary.total_input_tokens)}</div>
-          </div>
-          <div className="bg-white rounded-xl border p-6 shadow-sm">
-            <div className="text-sm text-gray-500">Output Tokens</div>
-            <div className="text-3xl font-bold text-orange-600">{formatNumber(summary.total_output_tokens)}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Cost by Provider & Model */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* By Provider */}
-        {summary && (
-          <div className="bg-white rounded-xl border p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-4">🏢 Cost by Provider</h2>
-            <div className="space-y-4">
-              {Object.entries(summary.by_provider).map(([provider, data]) => (
-                <div key={provider} className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{provider === 'kie' ? '🤖' : '🔵'}</span>
-                      <span className="font-medium capitalize">{provider === 'kie' ? 'Kie.ai' : 'Anthropic'}</span>
-                    </div>
-                    <div className="text-lg font-bold">{formatCurrency(data.cost)}</div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-sm text-gray-500">
-                    <div>{data.requests} requests</div>
-                    <div>{formatNumber(data.input_tokens)} in</div>
-                    <div>{formatNumber(data.output_tokens)} out</div>
-                  </div>
-                  <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${provider === 'kie' ? 'bg-blue-500' : 'bg-purple-500'}`}
-                      style={{ width: `${(data.cost / summary.total_cost) * 100}%` }}
-                    ></div>
-                  </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Remaining</div>
+                <div className={`text-2xl font-bold ${budget.budget_remaining < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                  {formatCurrency(budget.budget_remaining)}
                 </div>
-              ))}
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Projected End of Month</div>
+                <div className={`text-2xl font-bold ${budget.projected_month_end > budget.monthly_budget ? 'text-red-400' : 'text-foreground'}`}>
+                  {formatCurrency(budget.projected_month_end)}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="flex justify-between text-sm mb-1 text-foreground">
+                <span>{Math.round(budget.percentage_used)}% used</span>
+                <span>{formatCurrency(budget.monthly_budget)}</span>
+              </div>
+              <div className="h-3 bg-muted rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all ${getBudgetStatusColor()}`}
+                  style={{ width: `${Math.min(budget.percentage_used, 100)}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>Warning: {budget.warning_threshold_percent}%</span>
+                <span>Critical: {budget.critical_threshold_percent}%</span>
+              </div>
             </div>
           </div>
         )}
 
-        {/* By Model */}
+        {/* Summary Stats */}
         {summary && (
-          <div className="bg-white rounded-xl border p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-4">🧠 Cost by Model</h2>
-            <div className="space-y-3">
-              {Object.entries(summary.by_model)
-                .sort(([, a], [, b]) => b.cost - a.cost)
-                .map(([model, data]) => (
-                  <div key={model} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <div className="font-medium">{model}</div>
-                      <div className="text-xs text-gray-500">
-                        {data.requests} requests • {data.avg_latency_ms}ms avg
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold">{formatCurrency(data.cost)}</div>
-                      <div className="text-xs text-gray-500">
-                        {((data.cost / summary.total_cost) * 100).toFixed(1)}%
-                      </div>
-                    </div>
-                  </div>
-                ))}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <DollarSign className="h-4 w-4" />
+                Total Cost
+              </div>
+              <div className="text-3xl font-bold text-blue-400">{formatCurrency(summary.total_cost)}</div>
+              <div className="text-xs text-muted-foreground mt-1">{summary.total_requests} requests</div>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <Zap className="h-4 w-4" />
+                Avg Cost/Request
+              </div>
+              <div className="text-3xl font-bold text-purple-400">{formatCurrency(summary.avg_cost_per_request)}</div>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <FileInput className="h-4 w-4" />
+                Input Tokens
+              </div>
+              <div className="text-3xl font-bold text-green-400">{formatNumber(summary.total_input_tokens)}</div>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <FileOutput className="h-4 w-4" />
+                Output Tokens
+              </div>
+              <div className="text-3xl font-bold text-orange-400">{formatNumber(summary.total_output_tokens)}</div>
             </div>
           </div>
         )}
-      </div>
 
-      {/* Cost by Request Type & Trend */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* By Request Type */}
-        {summary && (
-          <div className="bg-white rounded-xl border p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-4">📋 Cost by Request Type</h2>
-            <div className="space-y-3">
-              {Object.entries(summary.by_request_type)
-                .sort(([, a], [, b]) => b.cost - a.cost)
-                .map(([type, data]) => (
-                  <div key={type} className="flex items-center gap-4">
-                    <div className="w-32 text-sm text-gray-600 capitalize">{type.replace('_', ' ')}</div>
-                    <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+        {/* Cost by Provider & Model */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* By Provider */}
+          {summary && (
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-xl font-bold mb-4 text-foreground flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-primary" />
+                Cost by Provider
+              </h2>
+              <div className="space-y-4">
+                {Object.entries(summary.by_provider).map(([provider, data]) => (
+                  <div key={provider} className="p-4 bg-muted/50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-8 h-8 rounded-full flex items-center justify-center ${provider === 'kie' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}`}>
+                          {provider === 'kie' ? 'K' : 'A'}
+                        </span>
+                        <span className="font-medium text-foreground capitalize">{provider === 'kie' ? 'Kie.ai' : 'Anthropic'}</span>
+                      </div>
+                      <div className="text-lg font-bold text-foreground">{formatCurrency(data.cost)}</div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-sm text-muted-foreground">
+                      <div>{data.requests} requests</div>
+                      <div>{formatNumber(data.input_tokens)} in</div>
+                      <div>{formatNumber(data.output_tokens)} out</div>
+                    </div>
+                    <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                        className={`h-full ${provider === 'kie' ? 'bg-blue-500' : 'bg-purple-500'}`}
                         style={{ width: `${(data.cost / summary.total_cost) * 100}%` }}
                       ></div>
                     </div>
-                    <div className="w-24 text-right">
-                      <div className="font-medium">{formatCurrency(data.cost)}</div>
-                      <div className="text-xs text-gray-500">{data.requests} reqs</div>
-                    </div>
                   </div>
                 ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Trend */}
-        {summary && summary.trend.length > 0 && (
-          <div className="bg-white rounded-xl border p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-4">📈 Daily Cost Trend</h2>
-            <div className="h-48 flex items-end gap-1">
-              {summary.trend.slice(-14).map((day, idx) => {
-                const maxCost = Math.max(...summary.trend.map(d => d.cost));
-                return (
-                  <div key={idx} className="flex-1 flex flex-col items-center">
-                    <div
-                      className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t transition-all hover:opacity-80"
-                      style={{ height: `${(day.cost / maxCost) * 150}px` }}
-                      title={`${day.date}: ${formatCurrency(day.cost)}`}
-                    ></div>
-                    <div className="text-xs text-gray-400 mt-1 rotate-45 origin-left whitespace-nowrap">
-                      {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          {/* By Model */}
+          {summary && (
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-xl font-bold mb-4 text-foreground flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                Cost by Model
+              </h2>
+              <div className="space-y-3">
+                {Object.entries(summary.by_model)
+                  .sort(([, a], [, b]) => b.cost - a.cost)
+                  .map(([model, data]) => (
+                    <div key={model} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div>
+                        <div className="font-medium text-foreground">{model}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {data.requests} requests • {data.avg_latency_ms}ms avg
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-foreground">{formatCurrency(data.cost)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {((data.cost / summary.total_cost) * 100).toFixed(1)}%
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Costs by User & Project */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* By User */}
-        <div className="bg-white rounded-xl border p-6 shadow-sm">
-          <h2 className="text-xl font-bold mb-4">👤 Top Users by Cost</h2>
-          {costsByUser.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No user data available</div>
-          ) : (
-            <div className="space-y-3">
-              {costsByUser.slice(0, 5).map((user, idx) => (
-                <div key={user.user_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                      idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-orange-400' : 'bg-gray-300'
-                    }`}>
-                      {idx + 1}
-                    </div>
-                    <div>
-                      <div className="font-medium">{user.user_id}</div>
-                      <div className="text-xs text-gray-500">{user.requests} requests • {formatNumber(user.tokens)} tokens</div>
-                    </div>
-                  </div>
-                  <div className="font-bold">{formatCurrency(user.cost)}</div>
-                </div>
-              ))}
+                  ))}
+              </div>
             </div>
           )}
         </div>
 
-        {/* By Project */}
-        <div className="bg-white rounded-xl border p-6 shadow-sm">
-          <h2 className="text-xl font-bold mb-4">📁 Top Projects by Cost</h2>
-          {costsByProject.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No project data available</div>
-          ) : (
-            <div className="space-y-3">
-              {costsByProject.slice(0, 5).map((project, idx) => (
-                <div key={project.project_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                      idx === 0 ? 'bg-blue-500' : idx === 1 ? 'bg-blue-400' : idx === 2 ? 'bg-blue-300' : 'bg-gray-300'
-                    }`}>
-                      {idx + 1}
+        {/* Cost by Request Type & Trend */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* By Request Type */}
+          {summary && (
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-xl font-bold mb-4 text-foreground flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Cost by Request Type
+              </h2>
+              <div className="space-y-3">
+                {Object.entries(summary.by_request_type)
+                  .sort(([, a], [, b]) => b.cost - a.cost)
+                  .map(([type, data]) => (
+                    <div key={type} className="flex items-center gap-4">
+                      <div className="w-32 text-sm text-muted-foreground capitalize">{type.replace('_', ' ')}</div>
+                      <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                          style={{ width: `${(data.cost / summary.total_cost) * 100}%` }}
+                        ></div>
+                      </div>
+                      <div className="w-24 text-right">
+                        <div className="font-medium text-foreground">{formatCurrency(data.cost)}</div>
+                        <div className="text-xs text-muted-foreground">{data.requests} reqs</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-medium">{project.project_id}</div>
-                      <div className="text-xs text-gray-500">{project.requests} requests • {formatNumber(project.tokens)} tokens</div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Trend */}
+          {summary && summary.trend.length > 0 && (
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-xl font-bold mb-4 text-foreground flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Daily Cost Trend
+              </h2>
+              <div className="h-48 flex items-end gap-1">
+                {summary.trend.slice(-14).map((day, idx) => {
+                  const maxCost = Math.max(...summary.trend.map(d => d.cost));
+                  return (
+                    <div key={idx} className="flex-1 flex flex-col items-center">
+                      <div
+                        className="w-full bg-gradient-to-t from-primary to-primary/60 rounded-t transition-all hover:opacity-80"
+                        style={{ height: `${(day.cost / maxCost) * 150}px` }}
+                        title={`${day.date}: ${formatCurrency(day.cost)}`}
+                      ></div>
+                      <div className="text-xs text-muted-foreground mt-1 rotate-45 origin-left whitespace-nowrap">
+                        {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </div>
                     </div>
-                  </div>
-                  <div className="font-bold">{formatCurrency(project.cost)}</div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
-      </div>
 
-      {/* Recent Records */}
-      <div className="bg-white rounded-xl border p-6 shadow-sm mb-8">
-        <h2 className="text-xl font-bold mb-4">📜 Recent Requests</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 px-2">Time</th>
-                <th className="text-left py-3 px-2">Provider</th>
-                <th className="text-left py-3 px-2">Model</th>
-                <th className="text-left py-3 px-2">Type</th>
-                <th className="text-right py-3 px-2">Input</th>
-                <th className="text-right py-3 px-2">Output</th>
-                <th className="text-right py-3 px-2">Cost</th>
-                <th className="text-right py-3 px-2">Latency</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.slice(0, 10).map((record) => (
-                <tr key={record.id} className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-2 text-gray-500">
-                    {new Date(record.timestamp).toLocaleTimeString()}
-                  </td>
-                  <td className="py-3 px-2">
-                    <span className="inline-flex items-center gap-1">
-                      {record.provider === 'kie' ? '🤖' : '🔵'}
-                      {record.provider === 'kie' ? 'Kie.ai' : 'Anthropic'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-2 font-mono text-xs">{record.model}</td>
-                  <td className="py-3 px-2 capitalize">{record.request_type.replace('_', ' ')}</td>
-                  <td className="py-3 px-2 text-right text-gray-500">{formatNumber(record.input_tokens)}</td>
-                  <td className="py-3 px-2 text-right text-gray-500">{formatNumber(record.output_tokens)}</td>
-                  <td className="py-3 px-2 text-right font-medium">{formatCurrency(record.total_cost)}</td>
-                  <td className="py-3 px-2 text-right text-gray-500">{record.latency_ms}ms</td>
+        {/* Costs by User & Project */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* By User */}
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h2 className="text-xl font-bold mb-4 text-foreground flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Top Users by Cost
+            </h2>
+            {costsByUser.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">No user data available</div>
+            ) : (
+              <div className="space-y-3">
+                {costsByUser.slice(0, 5).map((user, idx) => (
+                  <div key={user.user_id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                        idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-orange-400' : 'bg-muted-foreground'
+                      }`}>
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <div className="font-medium text-foreground">{user.user_id}</div>
+                        <div className="text-xs text-muted-foreground">{user.requests} requests • {formatNumber(user.tokens)} tokens</div>
+                      </div>
+                    </div>
+                    <div className="font-bold text-foreground">{formatCurrency(user.cost)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* By Project */}
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h2 className="text-xl font-bold mb-4 text-foreground flex items-center gap-2">
+              <FolderOpen className="h-5 w-5 text-primary" />
+              Top Projects by Cost
+            </h2>
+            {costsByProject.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">No project data available</div>
+            ) : (
+              <div className="space-y-3">
+                {costsByProject.slice(0, 5).map((project, idx) => (
+                  <div key={project.project_id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                        idx === 0 ? 'bg-blue-500' : idx === 1 ? 'bg-blue-400' : idx === 2 ? 'bg-blue-300' : 'bg-muted-foreground'
+                      }`}>
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <div className="font-medium text-foreground">{project.project_id}</div>
+                        <div className="text-xs text-muted-foreground">{project.requests} requests • {formatNumber(project.tokens)} tokens</div>
+                      </div>
+                    </div>
+                    <div className="font-bold text-foreground">{formatCurrency(project.cost)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Records */}
+        <div className="rounded-xl border border-border bg-card p-6 mb-8">
+          <h2 className="text-xl font-bold mb-4 text-foreground flex items-center gap-2">
+            <Clock className="h-5 w-5 text-primary" />
+            Recent Requests
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-2 text-muted-foreground">Time</th>
+                  <th className="text-left py-3 px-2 text-muted-foreground">Provider</th>
+                  <th className="text-left py-3 px-2 text-muted-foreground">Model</th>
+                  <th className="text-left py-3 px-2 text-muted-foreground">Type</th>
+                  <th className="text-right py-3 px-2 text-muted-foreground">Input</th>
+                  <th className="text-right py-3 px-2 text-muted-foreground">Output</th>
+                  <th className="text-right py-3 px-2 text-muted-foreground">Cost</th>
+                  <th className="text-right py-3 px-2 text-muted-foreground">Latency</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Model Pricing Reference */}
-      <div className="bg-white rounded-xl border p-6 shadow-sm">
-        <h2 className="text-xl font-bold mb-4">💵 Model Pricing Reference</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {pricing.map((model) => (
-            <div key={model.model} className="p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <span>{model.provider === 'kie' ? '🤖' : '🔵'}</span>
-                <span className="font-medium">{model.model}</span>
-              </div>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Input</span>
-                  <span>${model.input_cost_per_million}/M tokens</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Output</span>
-                  <span>${model.output_cost_per_million}/M tokens</span>
-                </div>
-                {model.thinking_cost_per_million && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Thinking</span>
-                    <span>${model.thinking_cost_per_million}/M tokens</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-gray-400 text-xs mt-2">
-                  <span>Context: {formatNumber(model.context_window)}</span>
-                  <span>Max Out: {formatNumber(model.max_output_tokens)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Budget Edit Modal */}
-      {showBudgetModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-96">
-            <h3 className="text-xl font-bold mb-4">Edit Monthly Budget</h3>
-            <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-1">Monthly Budget ($)</label>
-              <input
-                type="number"
-                value={newBudget}
-                onChange={(e) => setNewBudget(parseInt(e.target.value) || 0)}
-                className="w-full px-4 py-2 border rounded-lg"
-                min="0"
-                step="100"
-              />
-            </div>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowBudgetModal(false)}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={updateBudget}
-                disabled={isSavingBudget}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {isSavingBudget ? 'Saving...' : 'Save'}
-              </button>
-            </div>
+              </thead>
+              <tbody>
+                {records.slice(0, 10).map((record) => (
+                  <tr key={record.id} className="border-b border-border hover:bg-muted/50">
+                    <td className="py-3 px-2 text-muted-foreground">
+                      {new Date(record.timestamp).toLocaleTimeString()}
+                    </td>
+                    <td className="py-3 px-2 text-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${record.provider === 'kie' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}`}>
+                          {record.provider === 'kie' ? 'K' : 'A'}
+                        </span>
+                        {record.provider === 'kie' ? 'Kie.ai' : 'Anthropic'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-2 font-mono text-xs text-foreground">{record.model}</td>
+                    <td className="py-3 px-2 capitalize text-foreground">{record.request_type.replace('_', ' ')}</td>
+                    <td className="py-3 px-2 text-right text-muted-foreground">{formatNumber(record.input_tokens)}</td>
+                    <td className="py-3 px-2 text-right text-muted-foreground">{formatNumber(record.output_tokens)}</td>
+                    <td className="py-3 px-2 text-right font-medium text-foreground">{formatCurrency(record.total_cost)}</td>
+                    <td className="py-3 px-2 text-right text-muted-foreground">{record.latency_ms}ms</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Model Pricing Reference */}
+        <div className="rounded-xl border border-border bg-card p-6">
+          <h2 className="text-xl font-bold mb-4 text-foreground flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-primary" />
+            Model Pricing Reference
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pricing.map((model) => (
+              <div key={model.model} className="p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${model.provider === 'kie' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}`}>
+                    {model.provider === 'kie' ? 'K' : 'A'}
+                  </span>
+                  <span className="font-medium text-foreground">{model.model}</span>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Input</span>
+                    <span className="text-foreground">${model.input_cost_per_million}/M tokens</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Output</span>
+                    <span className="text-foreground">${model.output_cost_per_million}/M tokens</span>
+                  </div>
+                  {model.thinking_cost_per_million && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Thinking</span>
+                      <span className="text-foreground">${model.thinking_cost_per_million}/M tokens</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-muted-foreground text-xs mt-2">
+                    <span>Context: {formatNumber(model.context_window)}</span>
+                    <span>Max Out: {formatNumber(model.max_output_tokens)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Budget Edit Modal */}
+        {showBudgetModal && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+            <div className="bg-card border border-border rounded-xl p-6 w-96">
+              <h3 className="text-xl font-bold mb-4 text-foreground">Edit Monthly Budget</h3>
+              <div className="mb-4">
+                <label className="block text-sm text-muted-foreground mb-1">Monthly Budget ($)</label>
+                <input
+                  type="number"
+                  value={newBudget}
+                  onChange={(e) => setNewBudget(parseInt(e.target.value) || 0)}
+                  className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg"
+                  min="0"
+                  step="100"
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowBudgetModal(false)}
+                  className="px-4 py-2 border border-border text-foreground rounded-lg hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={updateBudget}
+                  disabled={isSavingBudget}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {isSavingBudget ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </Layout>
   );
 }
