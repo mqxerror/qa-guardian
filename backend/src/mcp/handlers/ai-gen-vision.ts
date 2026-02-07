@@ -16,6 +16,88 @@ import { aiRouter } from '../../services/providers/ai-router.js';
 import { modelSelector } from '../../services/providers/model-selector.js';
 
 // ============================================================================
+// Constants
+// ============================================================================
+
+/**
+ * Feature #316: Maximum allowed image size (10MB decoded)
+ */
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+
+/**
+ * Feature #316: Allowed image MIME types
+ */
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+
+// ============================================================================
+// Validation Functions
+// ============================================================================
+
+/**
+ * Feature #316: Calculate the decoded size of a base64 string
+ * Base64 encoding increases size by ~33%, so decoded size is approximately (length * 3) / 4
+ *
+ * @param base64String - The base64 encoded string (without data URL prefix)
+ * @returns Estimated decoded size in bytes
+ */
+function calculateBase64DecodedSize(base64String: string): number {
+  // Remove any whitespace and data URL prefix if present
+  let cleanBase64 = base64String.replace(/\s/g, '');
+
+  // Remove data URL prefix if present (e.g., "data:image/png;base64,")
+  const dataUrlMatch = cleanBase64.match(/^data:[^;]+;base64,(.*)$/);
+  if (dataUrlMatch) {
+    cleanBase64 = dataUrlMatch[1];
+  }
+
+  // Calculate decoded size: base64 encodes 3 bytes into 4 characters
+  // Account for padding characters ('=')
+  const padding = (cleanBase64.match(/=/g) || []).length;
+  const decodedSize = (cleanBase64.length * 3) / 4 - padding;
+
+  return Math.ceil(decodedSize);
+}
+
+/**
+ * Feature #316: Validate base64 image data
+ *
+ * Checks:
+ * 1. Image size does not exceed 10MB (decoded)
+ * 2. Media type is in the allowed list
+ *
+ * @param base64Data - The base64 encoded image data
+ * @param mediaType - The MIME type of the image
+ * @returns Validation result with error message if invalid
+ */
+function validateBase64Image(
+  base64Data: string,
+  mediaType: string
+): { valid: boolean; error?: string; decodedSize?: number } {
+  // Validate media type
+  if (!ALLOWED_IMAGE_TYPES.includes(mediaType)) {
+    return {
+      valid: false,
+      error: `Invalid image type: ${mediaType}. Allowed types: ${ALLOWED_IMAGE_TYPES.join(', ')}`,
+    };
+  }
+
+  // Calculate and validate decoded size
+  const decodedSize = calculateBase64DecodedSize(base64Data);
+
+  if (decodedSize > MAX_IMAGE_SIZE_BYTES) {
+    const sizeMB = (decodedSize / (1024 * 1024)).toFixed(2);
+    const maxMB = (MAX_IMAGE_SIZE_BYTES / (1024 * 1024)).toFixed(0);
+    return {
+      valid: false,
+      error: `Image too large: ${sizeMB}MB exceeds maximum allowed size of ${maxMB}MB`,
+      decodedSize,
+    };
+  }
+
+  return { valid: true, decodedSize };
+}
+
+// ============================================================================
 // Interfaces
 // ============================================================================
 
@@ -249,6 +331,16 @@ const analyzeScreenshot: ToolHandler = async (args, context) => {
 
     // Get optional parameters
     const mediaType = (args.media_type as 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif') || 'image/png';
+
+    // Feature #316: Validate base64 image size and type
+    const validation = validateBase64Image(imageBase64, mediaType);
+    if (!validation.valid) {
+      return {
+        success: false,
+        error: validation.error,
+        status_code: 413, // Payload Too Large
+      };
+    }
     const targetUrl = args.target_url as string | undefined;
     const focusArea = (args.focus_area as string) || 'all'; // all, forms, navigation, interactive
     const includePositions = args.include_positions !== false; // Default true
@@ -471,6 +563,16 @@ const generateTestFromAnnotatedScreenshot: ToolHandler = async (args, context) =
 
     // Get other parameters
     const mediaType = (args.media_type as 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif') || 'image/png';
+
+    // Feature #316: Validate base64 image size and type
+    const validation = validateBase64Image(imageBase64, mediaType);
+    if (!validation.valid) {
+      return {
+        success: false,
+        error: validation.error,
+        status_code: 413, // Payload Too Large
+      };
+    }
     const targetUrl = args.target_url as string | undefined;
     const testName = (args.test_name as string) || 'Annotated Screenshot Test';
     const includeComments = args.include_comments !== false;
