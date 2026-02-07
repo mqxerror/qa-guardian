@@ -16,6 +16,7 @@ export function LoginPage() {
   const { login, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const prefersReducedMotion = useReducedMotion();
 
   // Get the page user was trying to access and session expired flag
   const locationState = location.state as { from?: { pathname: string }; sessionExpired?: boolean } | null;
@@ -53,26 +54,26 @@ export function LoginPage() {
 
       {/* Login Card */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.5 }}
         className="relative z-10 w-full max-w-md"
       >
         <div className="rounded-2xl border border-gray-800 bg-gray-900/80 p-8 shadow-2xl backdrop-blur-sm">
           {/* Header */}
           <div className="mb-8 text-center">
             <motion.h2
-              initial={{ opacity: 0, y: 10 }}
+              initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.1 }}
               className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-3xl font-bold text-transparent"
             >
               Welcome Back
             </motion.h2>
             <motion.p
-              initial={{ opacity: 0, y: 10 }}
+              initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.2 }}
               className="mt-2 text-gray-400"
             >
               Sign in to QA Guardian
@@ -83,8 +84,9 @@ export function LoginPage() {
             {/* Session Expired Alert */}
             {sessionExpired && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={prefersReducedMotion ? {} : { opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
+                transition={prefersReducedMotion ? { duration: 0 } : undefined}
                 className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-400"
               >
                 Your session has expired. Please log in again.
@@ -94,8 +96,9 @@ export function LoginPage() {
             {/* Error Alert */}
             {error && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={prefersReducedMotion ? {} : { opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
+                transition={prefersReducedMotion ? { duration: 0 } : undefined}
                 role="alert"
                 className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
               >
@@ -105,9 +108,9 @@ export function LoginPage() {
 
             {/* Email Input */}
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
+              initial={prefersReducedMotion ? {} : { opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3 }}
             >
               <Input
                 id="email"
@@ -123,9 +126,9 @@ export function LoginPage() {
 
             {/* Password Input */}
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
+              initial={prefersReducedMotion ? {} : { opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.4 }}
             >
               <Input
                 id="password"
@@ -141,9 +144,9 @@ export function LoginPage() {
 
             {/* Submit Button */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.5 }}
             >
               <button
                 type="submit"
@@ -179,9 +182,9 @@ export function LoginPage() {
 
           {/* Google OAuth */}
           <motion.button
-            initial={{ opacity: 0 }}
+            initial={prefersReducedMotion ? {} : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.6 }}
             onClick={() => {
               window.location.href = `${import.meta.env.VITE_API_BASE_URL || 'https://qa.pixelcraftedmedia.com'}/api/v1/auth/google`;
             }}
@@ -210,9 +213,9 @@ export function LoginPage() {
 
           {/* Forgot Password */}
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={prefersReducedMotion ? {} : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.7 }}
             className="mt-4 text-center"
           >
             <Link to="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
@@ -222,9 +225,9 @@ export function LoginPage() {
 
           {/* Test Accounts */}
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={prefersReducedMotion ? {} : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.8 }}
             className="mt-6 rounded-lg border border-gray-800 bg-gray-800/30 p-4 text-xs text-gray-500"
           >
             <p className="font-medium mb-2 text-gray-400">Test accounts (Org 1):</p>
@@ -238,9 +241,9 @@ export function LoginPage() {
 
           {/* Register Link */}
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={prefersReducedMotion ? {} : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.9 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.9 }}
             className="mt-6 text-center text-sm text-gray-400"
           >
             Don't have an account?{' '}
