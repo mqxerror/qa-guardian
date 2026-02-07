@@ -346,25 +346,25 @@ export function SbomPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div className="bg-muted/50 rounded-lg p-4">
                 <div className="text-2xl font-bold text-foreground">
-                  {generatedSbom.summary.total_components}
+                  {generatedSbom.summary?.total_components ?? 0}
                 </div>
                 <div className="text-sm text-muted-foreground">Total Components</div>
               </div>
               <div className="bg-muted/50 rounded-lg p-4">
                 <div className="text-2xl font-bold text-foreground">
-                  {generatedSbom.summary.production_components}
+                  {generatedSbom.summary?.production_components ?? 0}
                 </div>
                 <div className="text-sm text-muted-foreground">Production</div>
               </div>
               <div className="bg-muted/50 rounded-lg p-4">
                 <div className="text-2xl font-bold text-foreground">
-                  {generatedSbom.summary.dev_components}
+                  {generatedSbom.summary?.dev_components ?? 0}
                 </div>
                 <div className="text-sm text-muted-foreground">Development</div>
               </div>
               <div className="bg-muted/50 rounded-lg p-4">
                 <div className="text-2xl font-bold text-foreground">
-                  {generatedSbom.summary.unique_licenses}
+                  {generatedSbom.summary?.unique_licenses ?? 0}
                 </div>
                 <div className="text-sm text-muted-foreground">Unique Licenses</div>
               </div>
@@ -373,11 +373,11 @@ export function SbomPage() {
             {/* Compliance Status */}
             <div className="flex flex-wrap gap-2 mb-4">
               <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
-                generatedSbom.compliance.executive_order_14028
+                generatedSbom.compliance?.executive_order_14028
                   ? 'bg-green-500/10 text-green-500'
                   : 'bg-yellow-500/10 text-yellow-500'
               }`}>
-                {generatedSbom.compliance.executive_order_14028 ? (
+                {generatedSbom.compliance?.executive_order_14028 ? (
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
@@ -389,11 +389,11 @@ export function SbomPage() {
                 EO 14028
               </span>
               <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
-                generatedSbom.compliance.ntia_minimum_elements
+                generatedSbom.compliance?.ntia_minimum_elements
                   ? 'bg-green-500/10 text-green-500'
                   : 'bg-yellow-500/10 text-yellow-500'
               }`}>
-                {generatedSbom.compliance.ntia_minimum_elements ? (
+                {generatedSbom.compliance?.ntia_minimum_elements ? (
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
@@ -405,10 +405,10 @@ export function SbomPage() {
                 NTIA Minimum
               </span>
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-                {generatedSbom.format.toUpperCase()} {generatedSbom.spec_version}
+                {generatedSbom.format?.toUpperCase() || 'N/A'} {generatedSbom.spec_version || ''}
               </span>
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-                {formatBytes(generatedSbom.download.size_bytes)}
+                {formatBytes(generatedSbom.download?.size_bytes ?? 0)}
               </span>
             </div>
 
@@ -416,7 +416,7 @@ export function SbomPage() {
             <div>
               <h4 className="text-sm font-medium text-muted-foreground mb-2">License Distribution</h4>
               <div className="flex flex-wrap gap-2">
-                {Object.entries(generatedSbom.summary.license_distribution)
+                {Object.entries(generatedSbom.summary?.license_distribution || {})
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 10)
                   .map(([license, count]) => (
