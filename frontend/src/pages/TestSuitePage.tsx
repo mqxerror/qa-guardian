@@ -20,13 +20,6 @@ import {
   StatusPill,
   SectionHeader,
   CardContent,
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-  useReducedMotion,
 } from '../components/ui';
 import { Plus, Play, Settings } from 'lucide-react';
 // Feature #59: React Query hooks for paginated test loading
@@ -1082,10 +1075,10 @@ function TestSuitePage() {
             )}
             {/* Browser Settings */}
             <div className="mt-3 flex flex-wrap gap-4 text-sm">
-              <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-blue-700">
+              <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 px-2 py-1 text-primary border border-primary/20">
                 🌐 {suite?.browser === 'firefox' ? 'Firefox' : suite?.browser === 'webkit' ? 'WebKit (Safari)' : 'Chromium'}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-gray-700">
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-muted-foreground">
                 📐 {suite?.viewport_width || 1280}×{suite?.viewport_height || 720}
               </span>
             </div>
