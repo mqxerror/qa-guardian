@@ -37,6 +37,7 @@ import {
   naturalLanguageTestRoutes,
   aiAnalysisRoutes,
   aiBestPracticesRoutes,
+  githubWebhookRoutes, // Feature #272: Auto-trigger dependency scan on PR
 } from './github/index.js';
 
 // Combined GitHub routes function that registers all sub-routes
@@ -51,4 +52,5 @@ export async function githubRoutes(app: FastifyInstance) {
   await naturalLanguageTestRoutes(app);
   await aiAnalysisRoutes(app);
   await aiBestPracticesRoutes(app);
+  await githubWebhookRoutes(app); // Feature #272: Auto-trigger dependency scan on PR
 }

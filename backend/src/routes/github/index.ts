@@ -37,3 +37,5 @@ export { naturalLanguageTestRoutes } from './natural-language-tests.js';
 export { aiAnalysisRoutes } from './ai-analysis.js';
 export { aiCostAnalyticsRoutes } from './ai-cost-analytics.js';
 export { aiBestPracticesRoutes } from './ai-best-practices.js';
+// Feature #272: GitHub webhooks for auto-triggering dependency scans on PR
+export { githubWebhookRoutes } from './github-webhooks.js';
