@@ -5,8 +5,7 @@
 # For production deployments, use docker/docker-compose.prod.yml with proper
 # environment variables set (no defaults). Never use these defaults in production!
 # =============================================================================
-
-version: "3.8"
+# Feature #361: Removed deprecated "version" key (obsolete since Docker Compose v2)
 
 services:
   postgres:
@@ -52,7 +51,8 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-QaGuardianRedis2024}", "ping"]
+      # Feature #361: Use REDISCLI_AUTH env var instead of -a flag to avoid password exposure in docker inspect
+      test: ["CMD-SHELL", "REDISCLI_AUTH=${REDIS_PASSWORD:-QaGuardianRedis2024} redis-cli ping"]
       interval: 10s
       timeout: 5s
       retries: 5

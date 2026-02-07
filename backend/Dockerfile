@@ -1,12 +1,63 @@
 # QA Guardian Backend - Production Dockerfile
 # Feature #159: Uses tsc to compile TypeScript, runs compiled JS for better performance
+# Feature #361: Multi-stage build to reduce final image size by ~500MB
 
-FROM node:20-slim
+# =============================================================================
+# Stage 1: Builder - Install build deps, compile TypeScript, install Python tools
+# =============================================================================
+FROM node:20-slim AS builder
 
-# Install system dependencies for Playwright and runtime
+# Feature #361: Build arguments for tool versions (easier updates)
+ARG GITLEAKS_VERSION=v8.21.2
+
+# Install build dependencies (these won't be in final image)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    ca-certificates \
+    curl \
+    gnupg \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install semgrep for SAST scanning (in builder, copy binary to runtime)
+RUN pip3 install --break-system-packages semgrep
+
+# Install gitleaks for secret detection
+RUN curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz \
+    -o /tmp/gitleaks.tar.gz \
+    && tar xzf /tmp/gitleaks.tar.gz -C /usr/local/bin/ gitleaks \
+    && chmod +x /usr/local/bin/gitleaks \
+    && rm /tmp/gitleaks.tar.gz
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including devDependencies for build)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Feature #159 + #177: Compile TypeScript to JavaScript for production
+RUN npm run build
+
+# Compile migrations separately (they're outside src/)
+# node-pg-migrate needs CommonJS files (.cjs) when running compiled backend
+RUN npx tsc migrations/*.ts --outDir migrations --module CommonJS --moduleResolution Node --esModuleInterop --skipLibCheck \
+    && for f in migrations/*.js; do mv "$f" "${f%.js}.cjs"; done
+
+# Feature #181: Remove devDependencies to reduce image size
+RUN npm prune --omit=dev
+
+# =============================================================================
+# Stage 2: Runtime - Minimal production image
+# =============================================================================
+FROM node:20-slim AS runtime
+
+# Install only runtime system dependencies for Playwright and tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Playwright dependencies
     fonts-liberation \
     libasound2 \
     libatk-bridge2.0-0 \
@@ -24,56 +75,38 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxfixes3 \
     libxrandr2 \
     xdg-utils \
+    # Minimal runtime tools
     curl \
+    ca-certificates \
     dumb-init \
-    gnupg \
+    # Python runtime for semgrep (no pip/build tools)
+    python3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install k6 for load testing
+# Install k6 for load testing (binary only)
 RUN curl -fsSL https://dl.k6.io/key.gpg | gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" > /etc/apt/sources.list.d/k6.list \
-    && apt-get update && apt-get install -y k6 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install gitleaks for secret detection
-RUN curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz \
-    -o /tmp/gitleaks.tar.gz \
-    && tar xzf /tmp/gitleaks.tar.gz -C /usr/local/bin/ gitleaks \
-    && chmod +x /usr/local/bin/gitleaks \
-    && rm /tmp/gitleaks.tar.gz
-
-# Install semgrep for SAST scanning
-RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip \
-    && pip3 install --break-system-packages semgrep \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get update && apt-get install -y --no-install-recommends k6 gnupg \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm /usr/share/keyrings/k6-archive-keyring.gpg
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy compiled output and production dependencies from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/migrations ./migrations
 
-# Install all dependencies
-RUN npm ci
+# Copy pre-built binary tools from builder
+COPY --from=builder /usr/local/bin/gitleaks /usr/local/bin/gitleaks
 
-# Install Playwright browsers
+# Copy semgrep and its Python dependencies
+COPY --from=builder /usr/local/lib/python3.11/dist-packages /usr/local/lib/python3.11/dist-packages
+COPY --from=builder /usr/local/bin/semgrep /usr/local/bin/semgrep
+
+# Install Playwright browsers (chromium only for minimal size)
 RUN npx playwright install chromium
-
-# Copy source code
-COPY . .
-
-# Feature #159 + #177: Compile TypeScript to JavaScript for production
-# Phase 10 completed - all TS2307/TS2835 errors resolved, tsc compiles cleanly
-RUN npm run build
-
-# Compile migrations separately (they're outside src/)
-# node-pg-migrate needs CommonJS files (.cjs) when running compiled backend
-# because package.json has "type": "module" which makes .js files ESM
-RUN npx tsc migrations/*.ts --outDir migrations --module CommonJS --moduleResolution Node --esModuleInterop --skipLibCheck \
-    && for f in migrations/*.js; do mv "$f" "${f%.js}.cjs"; done
-
-# Feature #181: Remove devDependencies to reduce image size
-# This removes ~150-200MB of dev tools (tsx, vitest, eslint, typescript, etc.)
-RUN npm prune --omit=dev
 
 # Create directories for runtime data
 RUN mkdir -p /app/uploads /app/logs /app/data /app/screenshots /app/traces /app/videos /app/baselines
@@ -93,5 +126,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Start the application using compiled JavaScript (Feature #177)
-# tsc compiles to dist/, runs ~60% faster than tsx runtime
 CMD ["node", "dist/index.js"]
