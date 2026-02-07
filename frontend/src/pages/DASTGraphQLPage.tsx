@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { useAuthStore } from '../stores/authStore';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://qa.pixelcraftedmedia.com';
 
@@ -142,7 +143,8 @@ export function DASTGraphQLPage() {
 
     try {
       // Start the scan via API
-      const token = localStorage.getItem('token');
+      // Feature #232: Fixed to use Zustand auth store instead of non-existent localStorage token
+      const token = useAuthStore.getState().token;
       const startResponse = await fetch(`${API_BASE}/api/v1/dast/graphql/scan`, {
         method: 'POST',
         headers: {

@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
 
 // Types
 interface AICostRecord {
@@ -54,7 +55,8 @@ interface CostBudget {
 
 export function AICostTrackingPage() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  // Feature #232: Fixed to use Zustand auth store instead of non-existent localStorage token
+  const token = useAuthStore.getState().token;
 
   // State
   const [summary, setSummary] = useState<CostSummary | null>(null);

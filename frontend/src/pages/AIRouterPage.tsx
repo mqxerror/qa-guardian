@@ -503,7 +503,8 @@ interface KeyTestResult {
 
 function AIRouterPage() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  // Feature #232: Fixed to use Zustand auth store instead of non-existent localStorage token
+  const token = useAuthStore.getState().token;
 
   // State
   const [config, setConfig] = useState<AIRouterConfig | null>(null);

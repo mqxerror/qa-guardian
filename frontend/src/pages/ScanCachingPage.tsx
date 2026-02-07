@@ -2,6 +2,7 @@
 // Feature #776: Dependency Scan Caching Page
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
 
 // Type definitions
 interface ScanCacheEntry {
@@ -63,7 +64,8 @@ interface ScanResult {
 
 export function ScanCachingPage() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  // Feature #232: Fixed to use Zustand auth store instead of non-existent localStorage token
+  const token = useAuthStore.getState().token;
   const projectId = 'proj-001'; // Demo project
 
   // State

@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
 
 // Type definitions
 interface AnthropicConfig {
@@ -51,7 +52,8 @@ interface AnthropicChatResponse {
 
 export function AnthropicProviderPage() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  // Feature #232: Fixed to use Zustand auth store instead of non-existent localStorage token
+  const token = useAuthStore.getState().token;
 
   // State
   const [config, setConfig] = useState<AnthropicConfig | null>(null);

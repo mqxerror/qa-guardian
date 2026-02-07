@@ -76,9 +76,10 @@ const SESSION_COLUMNS = [
 
 /**
  * Explicit column list for reset_tokens table.
+ * Feature #231: Fixed column names to match actual DB schema (user_email, used_at)
  */
 const RESET_TOKEN_COLUMNS = [
-  'email', 'token_hash', 'created_at', 'used'
+  'user_email', 'token_hash', 'created_at', 'used_at'
 ].join(', ');
 
 // ============================================================================

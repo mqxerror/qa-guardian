@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { toast } from '../stores/toastStore';
+import { useAuthStore } from '../stores/authStore';
 
 // Type definitions
 interface DependencyAlertConfig {
@@ -43,7 +44,8 @@ interface CVEAlert {
 
 export function DependencyAlertsPage() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  // Feature #232: Fixed to use Zustand auth store instead of non-existent localStorage token
+  const token = useAuthStore.getState().token;
 
   // Configuration state
   const [config, setConfig] = useState<DependencyAlertConfig>({

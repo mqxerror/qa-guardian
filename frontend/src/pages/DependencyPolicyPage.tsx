@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '../stores/toastStore';
+import { useAuthStore } from '../stores/authStore';
 
 // Feature #770: Dependency Policy Enforcement interfaces
 interface DependencyPolicy {
@@ -67,7 +68,8 @@ interface PolicyViolation {
 
 export function DependencyPolicyPage() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  // Feature #232: Fixed to use Zustand auth store instead of non-existent localStorage token
+  const token = useAuthStore.getState().token;
 
   // Policies state
   const [policies, setPolicies] = useState<DependencyPolicy[]>([]);
