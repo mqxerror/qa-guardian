@@ -52,6 +52,8 @@ const TrivyDependencyScanPage = lazy(() => import('./pages/TrivyDependencyScanPa
 const NpmAuditPage = lazy(() => import('./pages/NpmAuditPage').then(m => ({ default: m.NpmAuditPage })));
 const CVEDatabasePage = lazy(() => import('./pages/CVEDatabasePage').then(m => ({ default: m.CVEDatabasePage })));
 const LicenseCompliancePage = lazy(() => import('./pages/LicenseCompliancePage').then(m => ({ default: m.LicenseCompliancePage })));
+// Feature #268: SBOM Generation Page
+const SbomPage = lazy(() => import('./pages/SbomPage').then(m => ({ default: m.SbomPage })));
 const ContainerScanPage = lazy(() => import('./pages/ContainerScanPage').then(m => ({ default: m.ContainerScanPage })));
 const DependencyPolicyPage = lazy(() => import('./pages/DependencyPolicyPage').then(m => ({ default: m.DependencyPolicyPage })));
 const AutoPRPage = lazy(() => import('./pages/AutoPRPage').then(m => ({ default: m.AutoPRPage })));
@@ -1299,6 +1301,15 @@ function App() {
           element={
             <ProtectedRoute>
               <LicenseCompliancePage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Feature #268: SBOM Generation Page */}
+        <Route
+          path="/security/sbom"
+          element={
+            <ProtectedRoute>
+              <SbomPage />
             </ProtectedRoute>
           }
         />

@@ -18,6 +18,14 @@ import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/au
 import { getProject as dbGetProject } from '../projects/stores.js';
 // Feature #123: Import cache service for read-heavy endpoints
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
+// Feature #268: Import SBOM generator service
+import {
+  generateSbom,
+  retrieveSbom,
+  listSbomsByProject,
+  getSbomById,
+  GenerateSbomOptions,
+} from '../../services/sbom-generator.js';
 
 // ============================================================================
 // Type Definitions
@@ -1390,6 +1398,283 @@ export async function securityRoutes(app: FastifyInstance) {
       allowlist: DEFAULT_LICENSE_POLICY.allowlist,
       blocklist: DEFAULT_LICENSE_POLICY.blocklist,
       note: 'This is the default policy template. Use PUT /api/v1/license-policy to customize for your organization.',
+    };
+  });
+
+  // ============================================================================
+  // Feature #268: SBOM Generation Endpoints
+  // ============================================================================
+
+  /**
+   * POST /api/v1/projects/:projectId/sbom/generate
+   * Generate a Software Bill of Materials for a project
+   */
+  app.post<{
+    Params: { projectId: string };
+    Body: {
+      format?: 'cyclonedx' | 'spdx';
+      include_dev_dependencies?: boolean;
+    };
+  }>('/api/v1/projects/:projectId/sbom/generate', {
+    preHandler: [authenticate],
+    schema: {
+      description: 'Generate SBOM for a project',
+      tags: ['Security'],
+      params: {
+        type: 'object',
+        properties: {
+          projectId: { type: 'string', description: 'Project ID' },
+        },
+        required: ['projectId'],
+      },
+      body: {
+        type: 'object',
+        properties: {
+          format: {
+            type: 'string',
+            enum: ['cyclonedx', 'spdx'],
+            default: 'cyclonedx',
+            description: 'SBOM output format',
+          },
+          include_dev_dependencies: {
+            type: 'boolean',
+            default: false,
+            description: 'Include development dependencies in SBOM',
+          },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            sbom_id: { type: 'string' },
+            project_id: { type: 'string' },
+            project_name: { type: 'string' },
+            format: { type: 'string' },
+            spec_version: { type: 'string' },
+            generated_at: { type: 'string' },
+            generated_by: { type: 'string' },
+            summary: { type: 'object' },
+            download: { type: 'object' },
+            sbom: { type: 'object' },
+            storage: { type: 'object' },
+            compliance: { type: 'object' },
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const { projectId } = request.params;
+    const { format = 'cyclonedx', include_dev_dependencies = false } = request.body || {};
+    const orgId = getOrganizationId(request);
+    const user = (request as any).user as JwtPayload;
+
+    // Verify project exists and belongs to organization
+    const project = await dbGetProject(projectId);
+    if (!project || project.organization_id !== orgId) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: `Project with ID ${projectId} not found`,
+      });
+    }
+
+    try {
+      const options: GenerateSbomOptions = {
+        projectId,
+        projectName: project.name,
+        format,
+        includeDevDeps: include_dev_dependencies,
+        generatedBy: user?.email || 'system',
+      };
+
+      const result = await generateSbom(options);
+      return result;
+    } catch (error: any) {
+      console.error('[SBOM] Generation failed:', error);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: `Failed to generate SBOM: ${error.message}`,
+      });
+    }
+  });
+
+  /**
+   * GET /api/v1/projects/:projectId/sbom
+   * List all SBOMs generated for a project
+   */
+  app.get<{
+    Params: { projectId: string };
+  }>('/api/v1/projects/:projectId/sbom', {
+    preHandler: [authenticate],
+    schema: {
+      description: 'List all SBOMs for a project',
+      tags: ['Security'],
+      params: {
+        type: 'object',
+        properties: {
+          projectId: { type: 'string', description: 'Project ID' },
+        },
+        required: ['projectId'],
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            project_id: { type: 'string' },
+            sboms: { type: 'array' },
+            total: { type: 'number' },
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const { projectId } = request.params;
+    const orgId = getOrganizationId(request);
+
+    // Verify project exists and belongs to organization
+    const project = await dbGetProject(projectId);
+    if (!project || project.organization_id !== orgId) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: `Project with ID ${projectId} not found`,
+      });
+    }
+
+    const sboms = listSbomsByProject(projectId);
+    return {
+      project_id: projectId,
+      project_name: project.name,
+      sboms: sboms.map(s => ({
+        id: s.id,
+        format: s.format,
+        spec_version: s.spec_version,
+        generated_at: s.generated_at,
+        generated_by: s.generated_by,
+        filename: s.filename,
+        size_bytes: s.size_bytes,
+        component_count: s.component_count,
+        download_url: `/api/v1/projects/${projectId}/sbom/${s.id}/download`,
+      })),
+      total: sboms.length,
+    };
+  });
+
+  /**
+   * GET /api/v1/projects/:projectId/sbom/:sbomId/download
+   * Download a generated SBOM file
+   */
+  app.get<{
+    Params: { projectId: string; sbomId: string };
+  }>('/api/v1/projects/:projectId/sbom/:sbomId/download', {
+    preHandler: [authenticate],
+    schema: {
+      description: 'Download a generated SBOM file',
+      tags: ['Security'],
+      params: {
+        type: 'object',
+        properties: {
+          projectId: { type: 'string', description: 'Project ID' },
+          sbomId: { type: 'string', description: 'SBOM ID' },
+        },
+        required: ['projectId', 'sbomId'],
+      },
+    },
+  }, async (request, reply) => {
+    const { projectId, sbomId } = request.params;
+    const orgId = getOrganizationId(request);
+
+    // Verify project exists and belongs to organization
+    const project = await dbGetProject(projectId);
+    if (!project || project.organization_id !== orgId) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: `Project with ID ${projectId} not found`,
+      });
+    }
+
+    // Get SBOM metadata
+    const sbomMeta = getSbomById(sbomId);
+    if (!sbomMeta || sbomMeta.project_id !== projectId) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: `SBOM with ID ${sbomId} not found`,
+      });
+    }
+
+    // Retrieve SBOM content
+    const sbomData = await retrieveSbom(sbomId);
+    if (!sbomData) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'SBOM content not found - may have expired or been deleted',
+      });
+    }
+
+    // Set response headers for file download
+    reply.header('Content-Type', sbomMeta.content_type);
+    reply.header('Content-Disposition', `attachment; filename="${sbomMeta.filename}"`);
+    reply.header('Content-Length', sbomMeta.size_bytes.toString());
+
+    return reply.send(sbomData.content);
+  });
+
+  /**
+   * GET /api/v1/projects/:projectId/sbom/:sbomId
+   * Get SBOM details (metadata only, no content)
+   */
+  app.get<{
+    Params: { projectId: string; sbomId: string };
+  }>('/api/v1/projects/:projectId/sbom/:sbomId', {
+    preHandler: [authenticate],
+    schema: {
+      description: 'Get SBOM details',
+      tags: ['Security'],
+      params: {
+        type: 'object',
+        properties: {
+          projectId: { type: 'string', description: 'Project ID' },
+          sbomId: { type: 'string', description: 'SBOM ID' },
+        },
+        required: ['projectId', 'sbomId'],
+      },
+    },
+  }, async (request, reply) => {
+    const { projectId, sbomId } = request.params;
+    const orgId = getOrganizationId(request);
+
+    // Verify project exists and belongs to organization
+    const project = await dbGetProject(projectId);
+    if (!project || project.organization_id !== orgId) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: `Project with ID ${projectId} not found`,
+      });
+    }
+
+    // Get SBOM metadata
+    const sbomMeta = getSbomById(sbomId);
+    if (!sbomMeta || sbomMeta.project_id !== projectId) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: `SBOM with ID ${sbomId} not found`,
+      });
+    }
+
+    return {
+      id: sbomMeta.id,
+      project_id: sbomMeta.project_id,
+      project_name: project.name,
+      format: sbomMeta.format,
+      spec_version: sbomMeta.spec_version,
+      generated_at: sbomMeta.generated_at,
+      generated_by: sbomMeta.generated_by,
+      filename: sbomMeta.filename,
+      content_type: sbomMeta.content_type,
+      size_bytes: sbomMeta.size_bytes,
+      storage_location: sbomMeta.storage_location,
+      component_count: sbomMeta.component_count,
+      license_distribution: sbomMeta.license_distribution,
+      download_url: `/api/v1/projects/${projectId}/sbom/${sbomId}/download`,
     };
   });
 }

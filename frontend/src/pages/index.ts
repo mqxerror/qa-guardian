@@ -28,6 +28,8 @@ export { TrivyDependencyScanPage } from './TrivyDependencyScanPage';
 export { NpmAuditPage } from './NpmAuditPage';
 export { CVEDatabasePage } from './CVEDatabasePage';
 export { LicenseCompliancePage } from './LicenseCompliancePage';
+// Feature #268: SBOM Generation Page
+export { SbomPage } from './SbomPage';
 export { ContainerScanPage } from './ContainerScanPage';
 export { DependencyPolicyPage } from './DependencyPolicyPage';
 export { AutoPRPage } from './AutoPRPage';

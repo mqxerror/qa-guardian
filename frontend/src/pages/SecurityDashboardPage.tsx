@@ -302,6 +302,13 @@ export function SecurityDashboardPage() {
             >
               Licenses
             </button>
+            {/* Feature #268: SBOM tab */}
+            <button
+              onClick={() => navigate('/security/sbom')}
+              className="pb-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors"
+            >
+              SBOM
+            </button>
           </nav>
         </div>
 
