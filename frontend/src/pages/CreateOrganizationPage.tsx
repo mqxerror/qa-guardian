@@ -90,7 +90,7 @@ export function CreateOrganizationPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gray-950 p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-background p-4">
       {/* Background Effects */}
       <BackgroundBeams className="opacity-40" />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
@@ -101,7 +101,7 @@ export function CreateOrganizationPage() {
         transition={{ duration: 0.5 }}
         className="relative z-10 w-full max-w-md"
       >
-        <div className="rounded-2xl border border-gray-800 bg-gray-900/80 p-8 shadow-2xl backdrop-blur-sm">
+        <div className="rounded-2xl border border-border bg-card/80 p-8 shadow-2xl backdrop-blur-sm">
           {/* Header */}
           <div className="mb-8 text-center">
             <motion.div
@@ -116,7 +116,7 @@ export function CreateOrganizationPage() {
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-3xl font-bold text-transparent"
+              className="bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-3xl font-bold text-transparent"
             >
               Create Organization
             </motion.h2>
@@ -124,7 +124,7 @@ export function CreateOrganizationPage() {
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="mt-2 text-gray-400"
+              className="mt-2 text-muted-foreground"
             >
               Set up your organization to start managing tests
             </motion.p>
@@ -158,7 +158,7 @@ export function CreateOrganizationPage() {
                 placeholder="e.g., Acme Inc."
                 required
               />
-              <p className="mt-1 text-xs text-gray-500">{name.length}/100 characters</p>
+              <p className="mt-1 text-xs text-muted-foreground">{name.length}/100 characters</p>
             </motion.div>
 
             {/* Organization Slug Input */}
@@ -176,7 +176,7 @@ export function CreateOrganizationPage() {
                 placeholder="e.g., acme-inc"
                 required
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 URL-friendly identifier (lowercase letters, numbers, and hyphens only)
               </p>
             </motion.div>
@@ -217,7 +217,7 @@ export function CreateOrganizationPage() {
             initial={prefersReducedMotion ? {} : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
-            className="mt-6 text-center text-sm text-gray-400"
+            className="mt-6 text-center text-sm text-muted-foreground"
           >
             Already have an organization?{' '}
             <Link to="/dashboard" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">

@@ -91,7 +91,7 @@ export function ResetPasswordPage() {
   // Invalid token state
   if (!token) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center bg-gray-950 p-4">
+      <div className="relative flex min-h-screen items-center justify-center bg-background p-4">
         <BackgroundBeams className="opacity-40" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
 
@@ -101,7 +101,7 @@ export function ResetPasswordPage() {
           transition={{ duration: 0.5 }}
           className="relative z-10 w-full max-w-md"
         >
-          <div className="rounded-2xl border border-gray-800 bg-gray-900/80 p-8 shadow-2xl backdrop-blur-sm">
+          <div className="rounded-2xl border border-border bg-card/80 p-8 shadow-2xl backdrop-blur-sm">
             <div className="text-center">
               <motion.div
                 initial={prefersReducedMotion ? {} : { scale: 0 }}
@@ -115,7 +115,7 @@ export function ResetPasswordPage() {
                 initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-2xl font-bold text-transparent"
+                className="bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-2xl font-bold text-transparent"
               >
                 Invalid Reset Link
               </motion.h2>
@@ -123,7 +123,7 @@ export function ResetPasswordPage() {
                 initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="mt-3 text-gray-400"
+                className="mt-3 text-muted-foreground"
               >
                 This password reset link is invalid or has expired.
               </motion.p>
@@ -149,7 +149,7 @@ export function ResetPasswordPage() {
   // Success state
   if (isSuccess) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center bg-gray-950 p-4">
+      <div className="relative flex min-h-screen items-center justify-center bg-background p-4">
         <BackgroundBeams className="opacity-40" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
 
@@ -159,7 +159,7 @@ export function ResetPasswordPage() {
           transition={{ duration: 0.5 }}
           className="relative z-10 w-full max-w-md"
         >
-          <div className="rounded-2xl border border-gray-800 bg-gray-900/80 p-8 shadow-2xl backdrop-blur-sm">
+          <div className="rounded-2xl border border-border bg-card/80 p-8 shadow-2xl backdrop-blur-sm">
             <div className="text-center">
               <motion.div
                 initial={prefersReducedMotion ? {} : { scale: 0 }}
@@ -173,7 +173,7 @@ export function ResetPasswordPage() {
                 initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-2xl font-bold text-transparent"
+                className="bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-2xl font-bold text-transparent"
               >
                 Password Reset!
               </motion.h2>
@@ -181,7 +181,7 @@ export function ResetPasswordPage() {
                 initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="mt-3 text-gray-400"
+                className="mt-3 text-muted-foreground"
               >
                 Your password has been successfully reset.
               </motion.p>
@@ -206,7 +206,7 @@ export function ResetPasswordPage() {
 
   // Main reset form
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gray-950 p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-background p-4">
       <BackgroundBeams className="opacity-40" />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
 
@@ -216,7 +216,7 @@ export function ResetPasswordPage() {
         transition={{ duration: 0.5 }}
         className="relative z-10 w-full max-w-md"
       >
-        <div className="rounded-2xl border border-gray-800 bg-gray-900/80 p-8 shadow-2xl backdrop-blur-sm">
+        <div className="rounded-2xl border border-border bg-card/80 p-8 shadow-2xl backdrop-blur-sm">
           {/* Header */}
           <div className="mb-8 text-center">
             <motion.div
@@ -231,7 +231,7 @@ export function ResetPasswordPage() {
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-3xl font-bold text-transparent"
+              className="bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-3xl font-bold text-transparent"
             >
               Reset Password
             </motion.h2>
@@ -239,7 +239,7 @@ export function ResetPasswordPage() {
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="mt-2 text-gray-400"
+              className="mt-2 text-muted-foreground"
             >
               Enter your new password below
             </motion.p>
@@ -282,7 +282,7 @@ export function ResetPasswordPage() {
                   className="mt-2"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="flex-1 h-1 bg-border rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${(passwordStrength.score / 3) * 100}%` }}
@@ -293,21 +293,21 @@ export function ResetPasswordPage() {
                       {passwordStrength.label}
                     </span>
                   </div>
-                  <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-gray-500">
+                  <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-muted-foreground">
                     <div className={`flex items-center gap-1 ${password.length >= 8 ? 'text-green-400' : ''}`}>
-                      <CheckCircle2 className={`h-3 w-3 ${password.length >= 8 ? 'text-green-400' : 'text-gray-600'}`} />
+                      <CheckCircle2 className={`h-3 w-3 ${password.length >= 8 ? 'text-green-400' : 'text-muted-foreground/50'}`} />
                       8+ characters
                     </div>
                     <div className={`flex items-center gap-1 ${/[A-Z]/.test(password) ? 'text-green-400' : ''}`}>
-                      <CheckCircle2 className={`h-3 w-3 ${/[A-Z]/.test(password) ? 'text-green-400' : 'text-gray-600'}`} />
+                      <CheckCircle2 className={`h-3 w-3 ${/[A-Z]/.test(password) ? 'text-green-400' : 'text-muted-foreground/50'}`} />
                       Uppercase
                     </div>
                     <div className={`flex items-center gap-1 ${/[a-z]/.test(password) ? 'text-green-400' : ''}`}>
-                      <CheckCircle2 className={`h-3 w-3 ${/[a-z]/.test(password) ? 'text-green-400' : 'text-gray-600'}`} />
+                      <CheckCircle2 className={`h-3 w-3 ${/[a-z]/.test(password) ? 'text-green-400' : 'text-muted-foreground/50'}`} />
                       Lowercase
                     </div>
                     <div className={`flex items-center gap-1 ${/[0-9]/.test(password) ? 'text-green-400' : ''}`}>
-                      <CheckCircle2 className={`h-3 w-3 ${/[0-9]/.test(password) ? 'text-green-400' : 'text-gray-600'}`} />
+                      <CheckCircle2 className={`h-3 w-3 ${/[0-9]/.test(password) ? 'text-green-400' : 'text-muted-foreground/50'}`} />
                       Number
                     </div>
                   </div>
@@ -371,7 +371,7 @@ export function ResetPasswordPage() {
           >
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-blue-400 transition-colors"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-blue-400 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Login

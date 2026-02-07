@@ -47,7 +47,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gray-950 p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-background p-4">
       {/* Background Effects */}
       <BackgroundBeams className="opacity-40" />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
@@ -59,14 +59,14 @@ export function LoginPage() {
         transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.5 }}
         className="relative z-10 w-full max-w-md"
       >
-        <div className="rounded-2xl border border-gray-800 bg-gray-900/80 p-8 shadow-2xl backdrop-blur-sm">
+        <div className="rounded-2xl border border-border bg-card/80 p-8 shadow-2xl backdrop-blur-sm">
           {/* Header */}
           <div className="mb-8 text-center">
             <motion.h2
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.1 }}
-              className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-3xl font-bold text-transparent"
+              className="bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-3xl font-bold text-transparent"
             >
               Welcome Back
             </motion.h2>
@@ -74,7 +74,7 @@ export function LoginPage() {
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.2 }}
-              className="mt-2 text-gray-400"
+              className="mt-2 text-muted-foreground"
             >
               Sign in to QA Guardian
             </motion.p>
@@ -175,9 +175,9 @@ export function LoginPage() {
 
           {/* Divider */}
           <div className="my-6 flex items-center gap-4">
-            <div className="h-px flex-1 bg-gray-800"></div>
-            <span className="text-sm text-gray-500">or continue with</span>
-            <div className="h-px flex-1 bg-gray-800"></div>
+            <div className="h-px flex-1 bg-border"></div>
+            <span className="text-sm text-muted-foreground">or continue with</span>
+            <div className="h-px flex-1 bg-border"></div>
           </div>
 
           {/* Google OAuth */}
@@ -188,7 +188,7 @@ export function LoginPage() {
             onClick={() => {
               window.location.href = `${import.meta.env.VITE_API_BASE_URL || 'https://qa.pixelcraftedmedia.com'}/api/v1/auth/google`;
             }}
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 font-medium text-gray-300 transition-colors hover:border-gray-600 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3 font-medium text-foreground transition-colors hover:border-muted-foreground/50 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500/40"
           >
             <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24">
               <path
@@ -228,14 +228,14 @@ export function LoginPage() {
             initial={prefersReducedMotion ? {} : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.8 }}
-            className="mt-6 rounded-lg border border-gray-800 bg-gray-800/30 p-4 text-xs text-gray-500"
+            className="mt-6 rounded-lg border border-border bg-muted/30 p-4 text-xs text-muted-foreground"
           >
-            <p className="font-medium mb-2 text-gray-400">Test accounts (Org 1):</p>
+            <p className="font-medium mb-2 text-muted-foreground">Test accounts (Org 1):</p>
             <p>owner@example.com / Owner123!</p>
             <p>admin@example.com / Admin123!</p>
             <p>developer@example.com / Developer123!</p>
             <p>viewer@example.com / Viewer123!</p>
-            <p className="font-medium mt-3 mb-2 text-gray-400">Test account (Org 2):</p>
+            <p className="font-medium mt-3 mb-2 text-muted-foreground">Test account (Org 2):</p>
             <p>otherowner@example.com / Other123!</p>
           </motion.div>
 
@@ -244,7 +244,7 @@ export function LoginPage() {
             initial={prefersReducedMotion ? {} : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.9 }}
-            className="mt-6 text-center text-sm text-gray-400"
+            className="mt-6 text-center text-sm text-muted-foreground"
           >
             Don't have an account?{' '}
             <Link to="/register" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
