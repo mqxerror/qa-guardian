@@ -57,6 +57,45 @@
 | 333 | 1333 | reliability | Persist license/SBOM/dependency data to PostgreSQL |
 | 334 | 1334 | feature | Wire Gitleaks scan to push webhook handler |
 
+=== Session 2026-02-07 (Session 173) - Feature #312 Implementation ===
+Progress: 310/333 (93%) - Working on BMAD R5 remediation
+
+### Session Summary
+Implemented Feature #312: Auth middleware on AI test generator routes.
+
+### Feature #312: Auth middleware on AI test generator routes
+**Status**: IMPLEMENTED (pending verification after server restart)
+
+**Changes Made**:
+1. Added import for authenticate middleware from auth.js
+2. Created getUserFromRequest() helper function to safely extract user info
+3. Added preHandler: [authenticate] to all 9 route handlers:
+   - POST /api/v1/ai/generation-history
+   - GET /api/v1/ai/generation-history
+   - GET /api/v1/ai/generation-history/:testId
+   - GET /api/v1/ai/generation-history/versions
+   - DELETE /api/v1/ai/generation-history/:testId
+   - GET /api/v1/ai/review-queue
+   - POST /api/v1/ai/generation-history/:testId/approve
+   - GET /api/v1/ai/approval-stats
+   - POST /api/v1/ai/parse-intent
+4. Replaced mock user fallback (demo-user) with authenticated user data
+
+**Files Modified**:
+- backend/src/routes/ai-test-generator/routes.ts
+
+**Test Script Added**:
+- scripts/test-feature-312-auth.sh (run to verify 401 responses)
+
+**Verification Required**:
+- Backend server needs restart for changes to take effect
+- Sandbox environment prevents network connections for testing
+- Run `./scripts/test-feature-312-auth.sh` after server restart
+
+**Commit**: 5ffbf98 - feat(security): Add auth middleware to AI test generator routes
+
+---
+
 === Session 2026-02-07 (Session 172) - REGRESSION TESTING ===
 Progress: 310/310 (100%) - All features still passing
 
