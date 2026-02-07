@@ -296,6 +296,12 @@ export function SecurityDashboardPage() {
             >
               Trends
             </button>
+            <button
+              onClick={() => navigate('/security/licenses')}
+              className="pb-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Licenses
+            </button>
           </nav>
         </div>
 

@@ -1153,4 +1153,243 @@ export async function securityRoutes(app: FastifyInstance) {
 
     return result;
   });
+
+  // ============================================
+  // Feature #267: License Compliance Checking
+  // ============================================
+
+  // Import license scanner utilities
+  const {
+    checkLicenseCompliance,
+    getLicensePolicy,
+    setLicensePolicy,
+    DEFAULT_LICENSE_POLICY,
+    toSpdxId,
+  } = await import('../../services/license-scanner.js');
+
+  // Get license compliance report for a project
+  app.get<{ Params: { projectId: string }; Querystring: { include_packages?: string } }>('/api/v1/projects/:projectId/license-compliance', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const { projectId } = request.params;
+    const { include_packages } = request.query;
+    const orgId = getOrganizationId(request);
+    const includePackages = include_packages !== 'false';
+
+    // Verify project exists
+    const project = await dbGetProject(projectId);
+    if (!project || project.organization_id !== orgId) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: `Project with ID ${projectId} not found`,
+      });
+    }
+
+    try {
+      // For now, scan the backend's own node_modules as a demo
+      // In production, this would scan the project's repository path
+      const projectPath = process.cwd();
+
+      const result = await checkLicenseCompliance(projectId, projectPath, orgId);
+
+      // Return response (optionally without full package list for performance)
+      const response: any = {
+        project_id: projectId,
+        project_name: project.name,
+        scanned_at: result.scanned_at.toISOString(),
+        summary: {
+          total_packages: result.total_packages,
+          compliant_packages: result.compliant_packages,
+          violation_count: result.violation_count,
+          unknown_license_count: result.unknown_license_count,
+          compliance_percentage: result.compliance_percentage,
+        },
+        violations: result.violations.map(v => ({
+          package: v.package,
+          version: v.version,
+          license: v.license,
+          spdx_id: v.spdxId,
+          violation_type: v.violationType,
+          severity: v.severity,
+          reason: v.reason,
+        })),
+        license_summary: result.license_summary,
+        policy_applied: result.policy_applied,
+        severity_breakdown: {
+          critical: result.violations.filter(v => v.severity === 'critical').length,
+          high: result.violations.filter(v => v.severity === 'high').length,
+          medium: result.violations.filter(v => v.severity === 'medium').length,
+          low: result.violations.filter(v => v.severity === 'low').length,
+        },
+      };
+
+      if (includePackages) {
+        response.packages = result.packages.map(p => ({
+          name: p.name,
+          version: p.version,
+          license: p.license,
+          spdx_id: p.spdxId,
+          repository: p.repository,
+          publisher: p.publisher,
+        }));
+      }
+
+      return response;
+    } catch (error) {
+      console.error('[LicenseCompliance] Error scanning licenses:', error);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to scan license compliance',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Get organization's license policy
+  app.get('/api/v1/license-policy', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const orgId = getOrganizationId(request);
+    const policy = getLicensePolicy(orgId);
+
+    return {
+      id: policy.id,
+      organization_id: policy.organization_id,
+      name: policy.name,
+      description: policy.description,
+      allowlist: policy.allowlist,
+      blocklist: policy.blocklist,
+      is_default: policy.id === 'default',
+      created_at: policy.created_at.toISOString(),
+      updated_at: policy.updated_at.toISOString(),
+    };
+  });
+
+  // Update organization's license policy
+  app.put<{ Body: { name?: string; description?: string; allowlist?: string[]; blocklist?: string[] } }>('/api/v1/license-policy', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const orgId = getOrganizationId(request);
+    const { name, description, allowlist, blocklist } = request.body || {};
+    const user = (request as any).user;
+
+    // Get current policy or create new one
+    const currentPolicy = getLicensePolicy(orgId);
+    const isNewPolicy = currentPolicy.id === 'default';
+
+    const updatedPolicy = {
+      id: isNewPolicy ? `policy-${Date.now()}` : currentPolicy.id,
+      organization_id: orgId,
+      name: name || currentPolicy.name,
+      description: description !== undefined ? description : currentPolicy.description,
+      allowlist: allowlist || currentPolicy.allowlist,
+      blocklist: blocklist || currentPolicy.blocklist,
+      created_at: isNewPolicy ? new Date() : currentPolicy.created_at,
+      updated_at: new Date(),
+    };
+
+    // Validate that allowlist and blocklist don't overlap
+    const overlap = updatedPolicy.allowlist.filter(a =>
+      updatedPolicy.blocklist.some(b => {
+        if (b.endsWith('*')) {
+          return a.startsWith(b.slice(0, -1));
+        }
+        if (a.endsWith('*')) {
+          return b.startsWith(a.slice(0, -1));
+        }
+        return a === b;
+      })
+    );
+
+    if (overlap.length > 0) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: `Licenses cannot be in both allowlist and blocklist: ${overlap.join(', ')}`,
+      });
+    }
+
+    setLicensePolicy(updatedPolicy);
+
+    return {
+      success: true,
+      policy: {
+        id: updatedPolicy.id,
+        organization_id: updatedPolicy.organization_id,
+        name: updatedPolicy.name,
+        description: updatedPolicy.description,
+        allowlist: updatedPolicy.allowlist,
+        blocklist: updatedPolicy.blocklist,
+        created_at: updatedPolicy.created_at.toISOString(),
+        updated_at: updatedPolicy.updated_at.toISOString(),
+      },
+      message: isNewPolicy ? 'License policy created' : 'License policy updated',
+    };
+  });
+
+  // Validate a single license against policy
+  app.post<{ Body: { license: string } }>('/api/v1/license-policy/validate', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const orgId = getOrganizationId(request);
+    const { license } = request.body || {};
+
+    if (!license) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'license field is required',
+      });
+    }
+
+    const policy = getLicensePolicy(orgId);
+    const spdxId = toSpdxId(license);
+
+    // Check against policy
+    let status: 'allowed' | 'blocked' | 'unknown' = 'unknown';
+    let reason = '';
+
+    if (!spdxId) {
+      status = 'unknown';
+      reason = `Could not parse license "${license}" to SPDX identifier`;
+    } else if (policy.blocklist.some(b => {
+      if (b.endsWith('*')) return spdxId.startsWith(b.slice(0, -1));
+      return b === spdxId;
+    })) {
+      status = 'blocked';
+      reason = `License ${spdxId} is on the blocklist`;
+    } else if (policy.allowlist.length === 0 || policy.allowlist.some(a => {
+      if (a.endsWith('*')) return spdxId.startsWith(a.slice(0, -1));
+      return a === spdxId;
+    })) {
+      status = 'allowed';
+      reason = `License ${spdxId} is permitted`;
+    } else {
+      status = 'blocked';
+      reason = `License ${spdxId} is not in the allowlist`;
+    }
+
+    return {
+      license,
+      spdx_id: spdxId,
+      status,
+      reason,
+      policy: {
+        name: policy.name,
+        allowlist_size: policy.allowlist.length,
+        blocklist_size: policy.blocklist.length,
+      },
+    };
+  });
+
+  // Get default license policy template
+  app.get('/api/v1/license-policy/default', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    return {
+      name: DEFAULT_LICENSE_POLICY.name,
+      description: DEFAULT_LICENSE_POLICY.description,
+      allowlist: DEFAULT_LICENSE_POLICY.allowlist,
+      blocklist: DEFAULT_LICENSE_POLICY.blocklist,
+      note: 'This is the default policy template. Use PUT /api/v1/license-policy to customize for your organization.',
+    };
+  });
 }
