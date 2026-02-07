@@ -46,6 +46,7 @@ import { requestTimeoutHook } from './middleware/timeout.js'; // Feature #90: Re
 import { authenticate } from './middleware/auth.js'; // Feature #205: Auth for health/metrics endpoints
 import { initializeCleanupJob, stopCleanupJob, getCleanupStats } from './jobs/cleanup.js'; // Feature #154: Data retention cleanup
 import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, registerExecutionCallback } from './services/execution-queue.js'; // Feature #155: BullMQ execution queue
+import { initializeWebhookQueue, shutdownWebhookQueue, getWebhookQueueHealth } from './services/webhook-queue.js'; // Feature #320: BullMQ webhook queue
 import { initializeErrorHandlers, getErrorMetrics } from './services/error-tracking.js'; // Feature #164: Error tracking
 import { registerMetricsHooks, getMetricsSummary } from './services/metrics.js'; // Feature #165: API response time tracking
 import { setWebSocketIO } from './services/websocket-events.js'; // Feature #108: WebSocket CRUD events
@@ -574,6 +575,8 @@ app.get('/health/detailed', { preHandler: [authenticate] }, async (request, repl
     cleanup: getCleanupStats(),
     // Feature #155: Include execution queue status in health check
     executionQueue: await getQueueHealth(),
+    // Feature #320: Include webhook queue status in health check
+    webhookQueue: await getWebhookQueueHealth(),
     // Feature #162: Include migration status in health check
     migrations: getMigrationStatus(),
     // Feature #164: Include error tracking metrics in health check
@@ -764,6 +767,14 @@ async function start() {
       console.log('[Startup] Execution queue initialized - test runs will be queued with concurrency limits');
     } else {
       console.log('[Startup] Execution queue not available - test runs will execute directly');
+    }
+
+    // Feature #320: Initialize BullMQ webhook queue (requires Redis)
+    const webhookQueueInitialized = await initializeWebhookQueue();
+    if (webhookQueueInitialized) {
+      console.log('[Startup] Webhook queue initialized - webhook deliveries will be queued reliably');
+    } else {
+      console.log('[Startup] Webhook queue not available - webhooks will use in-memory delivery');
     }
 
     // Seed test users AFTER database is connected
@@ -1023,6 +1034,7 @@ async function gracefulShutdown(): Promise<void> {
   console.log('[Shutdown] Closing connections gracefully...');
   stopCleanupJob(); // Feature #154: Stop cleanup job
   await shutdownExecutionQueue(); // Feature #155: Stop execution queue
+  await shutdownWebhookQueue(); // Feature #320: Stop webhook queue
   await closeSubscriber(); // Feature #200: Close Redis event subscriber
   // Feature #237: Close Socket.IO adapter Redis clients
   if (socketPubClient) {

@@ -7,6 +7,7 @@
 
 import * as crypto from 'crypto';
 import { validateWebhookURL } from '../../utils/index.js';
+import { queueWebhookDelivery, isWebhookQueueReady } from '../../services/webhook-queue.js';
 
 // ============================================================================
 // Webhook Subscription Interface
@@ -430,6 +431,7 @@ export async function deliverOrBatchWebhook(
 // Feature #1294: Deliver webhook with retry support
 // Feature #1295: Enhanced with detailed delivery logging
 // Feature #315: Added SSRF protection
+// Feature #320: Uses BullMQ queue when available for reliable delivery
 export async function deliverWebhookWithRetry(
   subscription: WebhookSubscription,
   payload: Record<string, any>,
@@ -437,6 +439,39 @@ export async function deliverWebhookWithRetry(
   context?: { runId?: string; projectId?: string }
 ): Promise<{ success: boolean; attempts: number; error?: string; deliveryId: string }> {
   const deliveryId = `del_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+  // Feature #320: Try to use BullMQ queue for reliable delivery
+  if (isWebhookQueueReady()) {
+    const result = await queueWebhookDelivery(
+      subscription.id,
+      subscription.name,
+      subscription.url,
+      payload,
+      eventType,
+      {
+        headers: subscription.headers,
+        secret: subscription.secret,
+        maxRetries: subscription.max_retries ?? 5,
+        retryEnabled: subscription.retry_enabled ?? true,
+        context,
+      }
+    );
+
+    if (result.queued) {
+      console.log(`[WEBHOOK] Queued ${eventType} for ${subscription.name} (job: ${result.jobId})`);
+      // Return success since it's queued - actual delivery happens async
+      return {
+        success: true,
+        attempts: 0,
+        deliveryId: result.jobId || deliveryId,
+      };
+    }
+    // If queueing failed, fall through to direct delivery
+    console.warn(`[WEBHOOK] Queue unavailable, falling back to direct delivery: ${result.error}`);
+  }
+
+  // Fallback: Direct delivery (in-memory, not reliable on restart)
+  console.log(`[WEBHOOK] Using direct delivery for ${eventType} to ${subscription.name}`);
 
   // Feature #315: SSRF protection - validate URL before delivery
   const ssrfValidation = validateWebhookURL(subscription.url);
