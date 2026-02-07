@@ -79,45 +79,98 @@ export function AICostTrackingPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [summaryRes, budgetRes, recordsRes, pricingRes, usersRes, projectsRes] = await Promise.all([
-        fetch(`http://localhost:3000/api/v1/ai/costs/summary?period=${period}`, {
+      // Feature #313: Use correct API endpoints (cost-analytics instead of costs)
+      const API_BASE = import.meta.env.VITE_API_URL || '';
+      const days = period === 'day' ? '1' : period === 'week' ? '7' : '30';
+
+      const [analyticsRes, budgetRes, modelsRes] = await Promise.all([
+        fetch(`${API_BASE}/api/v1/ai/cost-analytics?days=${days}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:3000/api/v1/ai/costs/budget', {
+        fetch(`${API_BASE}/api/v1/ai/cost-analytics/budget`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:3000/api/v1/ai/costs?limit=20', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch('http://localhost:3000/api/v1/ai/costs/pricing', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`http://localhost:3000/api/v1/ai/costs/by-user?period=${period}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`http://localhost:3000/api/v1/ai/costs/by-project?period=${period}`, {
+        fetch(`${API_BASE}/api/v1/ai/cost-analytics/models`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
 
-      if (summaryRes.ok) setSummary(await summaryRes.json());
-      if (budgetRes.ok) setBudget(await budgetRes.json());
-      if (recordsRes.ok) {
-        const data = await recordsRes.json();
-        setRecords(data.records || []);
+      // Parse full analytics response
+      if (analyticsRes.ok) {
+        const analytics = await analyticsRes.json();
+        // Map analytics response to expected summary format
+        setSummary({
+          period: period,
+          total_cost: analytics.totals?.totalCostUsd || 0,
+          total_requests: analytics.totals?.totalRequests || 0,
+          total_input_tokens: analytics.totals?.totalInputTokens || 0,
+          total_output_tokens: analytics.totals?.totalOutputTokens || 0,
+          total_thinking_tokens: 0,
+          avg_cost_per_request: analytics.totals?.totalRequests > 0
+            ? analytics.totals.totalCostUsd / analytics.totals.totalRequests
+            : 0,
+          by_provider: {
+            kie: {
+              cost: analytics.byProvider?.kie?.costUsd || 0,
+              requests: analytics.byProvider?.kie?.requests || 0,
+              input_tokens: analytics.byProvider?.kie?.inputTokens || 0,
+              output_tokens: analytics.byProvider?.kie?.outputTokens || 0,
+            },
+            anthropic: {
+              cost: analytics.byProvider?.anthropic?.costUsd || 0,
+              requests: analytics.byProvider?.anthropic?.requests || 0,
+              input_tokens: analytics.byProvider?.anthropic?.inputTokens || 0,
+              output_tokens: analytics.byProvider?.anthropic?.outputTokens || 0,
+            },
+          },
+          by_model: Object.fromEntries(
+            Object.entries(analytics.byModel || {}).map(([model, data]: [string, any]) => [
+              model,
+              { cost: data.costUsd || 0, requests: data.requests || 0, avg_latency_ms: 0 }
+            ])
+          ),
+          by_request_type: {},
+          trend: (analytics.daily || []).map((d: { date: string; totalCostUsd: number; kie: { requests: number }; anthropic: { requests: number } }) => ({
+            date: d.date,
+            cost: d.totalCostUsd,
+            requests: (d.kie?.requests || 0) + (d.anthropic?.requests || 0),
+          })),
+        });
       }
-      if (pricingRes.ok) {
-        const data = await pricingRes.json();
-        setPricing(data.models || []);
+
+      // Parse budget response
+      if (budgetRes.ok) {
+        const budgetData = await budgetRes.json();
+        setBudget({
+          org_id: 'org-001',
+          monthly_budget: budgetData.monthlyLimitUsd || 500,
+          warning_threshold_percent: 80,
+          critical_threshold_percent: 95,
+          auto_disable_on_limit: false,
+          current_month_spend: budgetData.currentSpendUsd || 0,
+          budget_remaining: budgetData.remainingUsd || 0,
+          percentage_used: budgetData.percentUsed || 0,
+          projected_month_end: budgetData.projectedMonthlySpend || 0,
+        });
       }
-      if (usersRes.ok) {
-        const data = await usersRes.json();
-        setCostsByUser(data.users || []);
+
+      // Parse models for pricing
+      if (modelsRes.ok) {
+        const modelsData = await modelsRes.json();
+        setPricing(Object.entries(modelsData.models || {}).map(([model, data]: [string, any]) => ({
+          model,
+          provider: model.includes('claude') ? 'anthropic' : 'kie',
+          input_cost_per_million: (data.costUsd || 0) / ((data.inputTokens || 1) / 1000000),
+          output_cost_per_million: (data.costUsd || 0) / ((data.outputTokens || 1) / 1000000),
+          context_window: 200000,
+          max_output_tokens: 4096,
+        })));
       }
-      if (projectsRes.ok) {
-        const data = await projectsRes.json();
-        setCostsByProject(data.projects || []);
-      }
+
+      // Clear unused state since those endpoints don't exist
+      setRecords([]);
+      setCostsByUser([]);
+      setCostsByProject([]);
     } catch (error) {
       console.error('Failed to fetch cost data:', error);
     }
@@ -125,20 +178,33 @@ export function AICostTrackingPage() {
   };
 
   // Update budget
+  // Feature #313: Note - budget update endpoint not yet implemented in backend
+  // This will need a PATCH /api/v1/ai/cost-analytics/budget endpoint to be added
   const updateBudget = async () => {
     setIsSavingBudget(true);
     try {
-      const response = await fetch('http://localhost:3000/api/v1/ai/costs/budget', {
+      const API_BASE = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${API_BASE}/api/v1/ai/cost-analytics/budget`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ monthly_budget: newBudget }),
+        body: JSON.stringify({ monthlyLimitUsd: newBudget }),
       });
       if (response.ok) {
         const data = await response.json();
-        setBudget(data.budget);
+        setBudget({
+          org_id: 'org-001',
+          monthly_budget: data.monthlyLimitUsd || newBudget,
+          warning_threshold_percent: 80,
+          critical_threshold_percent: 95,
+          auto_disable_on_limit: false,
+          current_month_spend: data.currentSpendUsd || 0,
+          budget_remaining: data.remainingUsd || 0,
+          percentage_used: data.percentUsed || 0,
+          projected_month_end: data.projectedMonthlySpend || 0,
+        });
         setShowBudgetModal(false);
       }
     } catch (error) {

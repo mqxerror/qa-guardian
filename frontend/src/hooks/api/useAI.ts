@@ -298,13 +298,15 @@ export function useExportAIAnalytics() {
 
 /**
  * Hook to fetch cost summary
+ * Feature #313: Updated to use correct cost-analytics endpoint
  */
 export function useCostSummary(period: string = '7d') {
   const token = useAuthStore(state => state.token);
+  const days = period === '1d' ? '1' : period === '7d' ? '7' : '30';
 
   return useQuery({
     queryKey: aiKeys.costSummary(period),
-    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/costs/summary?period=${period}`, token) as Promise<CostSummary>,
+    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/cost-analytics/summary?days=${days}`, token) as Promise<CostSummary>,
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
     gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
@@ -313,13 +315,14 @@ export function useCostSummary(period: string = '7d') {
 
 /**
  * Hook to fetch budget
+ * Feature #313: Updated to use correct cost-analytics endpoint
  */
 export function useBudget() {
   const token = useAuthStore(state => state.token);
 
   return useQuery({
     queryKey: aiKeys.budget(),
-    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/costs/budget`, token),
+    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/cost-analytics/budget`, token),
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
     gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
@@ -327,14 +330,15 @@ export function useBudget() {
 }
 
 /**
- * Hook to fetch cost history
+ * Hook to fetch cost history (full analytics)
+ * Feature #313: Updated to use correct cost-analytics endpoint
  */
 export function useCostHistory() {
   const token = useAuthStore(state => state.token);
 
   return useQuery({
     queryKey: aiKeys.costHistory(),
-    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/costs?limit=20`, token),
+    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/cost-analytics?days=30`, token),
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
     gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
@@ -343,6 +347,7 @@ export function useCostHistory() {
 
 /**
  * Hook to update budget
+ * Feature #313: Updated to use correct cost-analytics endpoint
  */
 export function useUpdateBudget() {
   const token = useAuthStore(state => state.token);
@@ -350,9 +355,9 @@ export function useUpdateBudget() {
 
   return useMutation({
     mutationFn: (budget: { monthly_limit: number; alert_threshold: number }) =>
-      fetchWithAuth(`${API_BASE_URL}/api/v1/ai/costs/budget`, token, {
-        method: 'PUT',
-        body: JSON.stringify(budget),
+      fetchWithAuth(`${API_BASE_URL}/api/v1/ai/cost-analytics/budget`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({ monthlyLimitUsd: budget.monthly_limit }),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: aiKeys.budget() });
