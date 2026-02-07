@@ -1,15 +1,50 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 250/250 features passing (100%)**
+- **Progress: 250/310 features passing (80.6%)**
 - **Last Updated**: 2026-02-07
-- **Pending**: 0 features (All complete!)
-- **Last Action**: Session 161 - Regression Testing (All features verified)
+- **Pending**: 60 features (Code quality refactoring tasks)
+- **Last Action**: Session 162 - MCP Server Code Extraction (Feature #252)
 
 ### Current State
-- All 250 features are passing (100%)
+- 250 of 310 features passing (80.6%)
+- Feature #252 (mcp/server.ts refactoring) in progress
 - Application is production-ready
-- No pending work
+
+=== Session 2026-02-07 (Session 162) - MCP Server Code Extraction ===
+Progress: 250/310 (80.6%) - Working on code quality features
+
+### Feature #252: Split mcp/server.ts (3256 lines) to get under 1500 lines
+
+**Status**: Partially complete - significant progress made
+
+**Modules Extracted**:
+1. `mcp-rate-limiter.ts` (320 lines) - Rate limiting with sliding window + burst support
+2. `mcp-sse-manager.ts` (441 lines) - SSE client connection management
+3. `mcp-concurrency.ts` (261 lines) - Priority-based concurrent request limiting
+4. `mcp-idempotency.ts` (238 lines) - Request deduplication cache
+5. `mcp-operations.ts` (200 lines) - In-progress operations tracking
+
+**Total extracted**: 1,460 lines into reusable modules
+
+**server.ts Progress**:
+- Before: 3,256 lines
+- After: 2,882 lines (reduced by 374 lines)
+- Target: 1,500 lines (still 1,382 lines over target)
+
+**Next Steps** (for future session):
+- Extract streaming methods to mcp-streaming.ts
+- Extract handleToolsCall response building to mcp-response-builder.ts
+- Extract SSE transport handlers to mcp-transport-sse.ts
+
+**TypeScript Compilation**: ✅ No errors
+
+**Notes**:
+- The remaining code in server.ts is tightly coupled to the MCPServer class
+- Further extraction requires careful interface design to avoid circular dependencies
+- All extracted modules are well-documented with JSDoc comments
+
+---
 
 === Session 2026-02-07 (Session 161) - Comprehensive Regression Testing ===
 Progress: 250/250 (100%) - All features passing
@@ -36496,3 +36531,127 @@ All 250 features passing (100%).
 Application fully functional with 250/250 features passing (100%).
 All core functionality verified through browser automation.
 Application is production-ready.
+
+---
+
+## Session: BMAD Round 4 Assessment + Phase 9 Features Added (2026-02-06)
+
+### Round 4 Assessment Results
+Phase 10 Code Refactoring: 8 PASS, 1 CONDITIONAL PASS, 1 PARTIAL PASS.
+- 13/15 target files now under 1500-line limit
+- mcp/server.ts still at 3,256 lines (needs further split)
+- runTestsForRun duplicated in test-runs.ts + run-orchestrator.ts (not wired)
+- Score: 94/100 (up from 93)
+
+### New Features Added (#252-#261)
+
+**Phase 10 Fixes (2 features):**
+| 252 | Further split mcp/server.ts to get under 1500 lines |
+| 253 | Wire runTestsForRun to run-orchestrator.ts, clean facade |
+
+**Phase 9 Navigation Redesign with 21st.dev (8 features):**
+| 254 | Set up shadcn CLI and components.json |
+| 255 | Install shadcn Sidebar primitives, rebuild sidebar shell |
+| 256 | Collapsible navigation groups + icon-only collapsed mode |
+| 257 | Cmd+K command palette for quick navigation |
+| 258 | AI Insights Hub (consolidate 11 pages) |
+| 259 | MCP Tools Hub (consolidate 13 pages) |
+| 260 | Role-based nav visibility + final polish |
+| 261 | Phase 9+10 final verification |
+
+### State
+Previous: 250/250 passing. New: 250/260 total, 10 pending.
+
+### Source
+QA-GUARDIAN-REASSESSMENT-R4.md + QA-GUARDIAN-BMAD-21STDEV-ASSESSMENT.md
+
+## Session: Remaining Phases Feature Insertion (2026-02-06)
+
+### Summary
+Inserted 50 new features (#262-311) across 4 remaining phases per the BMAD-approved plan.
+Total features: 310 (250 passing, 60 pending)
+
+### Phase 8R: AI Settings UI (5 features, #262-266)
+| ID | Category | Name |
+|----|----------|------|
+| 262 | frontend | AI provider configuration settings page |
+| 263 | frontend | AI API key management UI with encrypted storage |
+| 264 | frontend | Model selection UI per feature category |
+| 265 | frontend | Fallback rules configuration UI |
+| 266 | frontend | AI cost budget settings UI with usage chart |
+
+### Phase 4R: Security Arsenal (12 features, #267-278)
+| ID | Category | Name |
+|----|----------|------|
+| 267 | Security/Backend | License compliance checking for dependencies |
+| 268 | Security/Backend | SBOM generation in CycloneDX and SPDX formats |
+| 269 | Security/Backend | Container image scanning with Trivy |
+| 270 | Security/Backend | Dependency upgrade recommendations |
+| 271 | frontend | Interactive dependency tree visualization |
+| 272 | Security/Backend | Auto-trigger dependency scan on GitHub PR |
+| 273 | Security/Backend | Multi-language dependency scanning |
+| 274 | Security/Backend | Exploitability analysis with EPSS scores |
+| 275 | Security/Backend | Dependency health score |
+| 276 | Security/Backend | Dependency policy enforcement |
+| 277 | Security/Backend | Enhanced Gitleaks scanning with custom rules |
+| 278 | Security/Backend | Secret detection as GitHub status check |
+
+### Phase 7: Webhook Engine (15 features, #279-293)
+| ID | Category | Name |
+|----|----------|------|
+| 279 | Backend/API | Webhook subscription CRUD API |
+| 280 | Backend/API | Webhook event dispatcher with async queue |
+| 281 | Backend/API | HMAC-SHA256 webhook signature verification |
+| 282 | Backend/API | Webhook retry with exponential backoff |
+| 283 | Backend/API | Webhook delivery logs with full audit trail |
+| 284 | Backend/API | Webhook payload customization with template engine |
+| 285 | Backend/API | Webhook event filtering with AND/OR logic |
+| 286 | Backend/API | Webhook testing endpoint with sample payloads |
+| 287 | Backend/API | Webhook status dashboard API with health metrics |
+| 288 | Backend/API | Webhook batch events with debounce window |
+| 289 | frontend | Webhook configuration page with full CRUD UI |
+| 290 | frontend | Webhook delivery log viewer with filters |
+| 291 | frontend | Webhook payload preview with live rendering |
+| 292 | frontend | Integration guides for n8n, Zapier, and Make |
+| 293 | Backend/API | Webhook health alerts with auto-disable |
+
+### Phase 3R: AI Test Generation (18 features, #294-311)
+| ID | Category | Name |
+|----|----------|------|
+| 294 | AI/Backend | NL-to-Playwright test generation |
+| 295 | AI/Backend | Multi-step test generation |
+| 296 | AI/Backend | AI selector optimization |
+| 297 | AI/Backend | Assertion generation from NL outcomes |
+| 298 | AI/Backend | Ambiguity handling with confidence scoring |
+| 299 | frontend | Test preview with side-by-side view |
+| 300 | frontend | Inline code editing with Monaco editor |
+| 301 | AI/Backend | Regenerate test with feedback and diff view |
+| 302 | AI/Backend | AI confidence scoring (multi-dimensional) |
+| 303 | frontend | Batch review queue for AI-generated tests |
+| 304 | AI/Backend | Generate test suite from user story |
+| 305 | AI/Backend | BDD/Gherkin to Playwright conversion |
+| 306 | AI/Backend | Coverage gap identification |
+| 307 | AI/Backend | Test variation suggestions |
+| 308 | AI/Backend | API test generation from OpenAPI spec |
+| 309 | frontend | AI test generation wizard |
+| 310 | AI/Backend | Screenshot-to-test generation (Claude Vision) |
+| 311 | frontend | Code diff view for regenerations |
+
+### Execution Order
+1. Phase 10 fixes (#252-253) - 2 pending
+2. Phase 9 Nav Redesign (#254-261) - 8 pending
+3. Phase 8R AI Settings (#262-266) - 5 pending
+4. Phase 4R Security Arsenal (#267-278) - 12 pending
+5. Phase 7 Webhook Engine (#279-293) - 15 pending
+6. Phase 3R AI Test Gen (#294-311) - 18 pending
+
+### Features Cut (38 total - agreed with BMAD team)
+- AI Healing ML Core (15 features) - rule-based healing sufficient
+- Advanced MCP Tools (13 features) - 170+ tools already exist
+- Services Dashboard (5 features) - Docker CLI sufficient
+- Prompt/Response Caching (5 features) - premature optimization
+
+### Reference Documents
+- QA-GUARDIAN-REMAINING-PHASES-PLAN.md - Full creative plan
+- QA-GUARDIAN-BMAD-21STDEV-ASSESSMENT.md - 21st.dev feasibility (9/10)
+- QA-GUARDIAN-REASSESSMENT-R4.md - Phase 10 code review (94/100)

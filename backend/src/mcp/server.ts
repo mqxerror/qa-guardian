@@ -129,6 +129,13 @@ import {
   createErrorPayload,
 } from './webhook-callbacks.js';
 
+// Feature #252: Import extracted modules for code size reduction
+import { RateLimiter, createDefaultRateLimitConfig } from './mcp-rate-limiter.js';
+import { SSEClientManager, parseJsonWithDetails, buildJsonParseErrorMessage } from './mcp-sse-manager.js';
+import { ConcurrencyManager, PRIORITY_LOW, PRIORITY_NORMAL, PRIORITY_HIGH } from './mcp-concurrency.js';
+import { IdempotencyCache } from './mcp-idempotency.js';
+import { OperationsTracker, executeWithTimeout } from './mcp-operations.js';
+
 // Server info
 const SERVER_INFO = {
   name: 'qa-guardian-mcp-server',
@@ -141,30 +148,23 @@ class MCPServer {
   private initialized = false;
   private rl: readline.Interface | null = null;
   private httpServer: http.Server | null = null;
-  private sseClients: Map<string, SSEClient> = new Map();
 
-  // Rate limiting state - tracks requests per API key
-  private rateLimitStore: Map<string, RateLimitEntry> = new Map();
-  private rateLimitConfig: RateLimitConfig;
-  // Per-key rate limit configurations (from backend validation response)
-  private perKeyRateLimits: Map<string, PerKeyRateLimitConfig> = new Map();
+  // Feature #252: Use extracted module instances
+  private sseClientManager: SSEClientManager;
+  private rateLimiter: RateLimiter;
+  private concurrencyManager: ConcurrencyManager;
+  private idempotencyManager: IdempotencyCache;
+  private operationsTracker: OperationsTracker;
 
-  // Feature #851: Request priority levels (higher number = higher priority)
-  private static readonly PRIORITY_LOW = 1;
-  private static readonly PRIORITY_NORMAL = 5;
-  private static readonly PRIORITY_HIGH = 10;
-
-  // Concurrent request limiting - tracks in-flight requests per API key
-  private concurrentRequests: Map<string, {
-    active: number;
-    queue: Array<{
-      resolve: (value: boolean) => void;
-      timestamp: number;
-      priority: number; // Feature #851: Priority level for queue ordering
-    }>;
-  }> = new Map();
-  private maxConcurrentRequests = 5; // Default max concurrent requests per API key
-  private concurrentQueueTimeout = 30000; // 30 seconds max queue wait time
+  // Legacy compatibility - SSE clients (delegates to sseClientManager)
+  private get sseClients(): Map<string, SSEClient> {
+    // Create a compatibility wrapper that delegates to SSEClientManager
+    const compatMap = new Map<string, SSEClient>();
+    for (const [id, client] of this.sseClientManager.getAllClients()) {
+      compatMap.set(id, client);
+    }
+    return compatMap;
+  }
 
   // Feature #849: Tool execution timeout
   private toolTimeout = 30000; // Default 30 seconds for tool execution
@@ -261,12 +261,6 @@ class MCPServer {
   // Graceful shutdown state
   private isShuttingDown = false;
   private shutdownTimeout = 10000; // 10 seconds max wait for in-progress operations
-  private inProgressOperations: Map<string, {
-    startTime: number;
-    method: string;
-    requestId?: string | number;
-    abortController?: AbortController;
-  }> = new Map();
 
   // Feature #846: Audit logging - track connection info
   private connectionId?: string;
@@ -279,18 +273,33 @@ class MCPServer {
   constructor(config: ServerConfig) {
     this.config = config;
 
-    // Initialize rate limit config with burst support
-    this.rateLimitConfig = {
-      maxRequests: config.rateLimit || 100, // Default: 100 requests
-      windowMs: (config.rateLimitWindow || 60) * 1000, // Default: 60 seconds
-      burstLimit: 20, // Default: 20 additional burst requests
-      burstWindowMs: 10 * 1000, // Default: 10 seconds burst window
-    };
+    // Feature #252: Initialize extracted modules
+    const logFn = (msg: string) => this.log(msg);
 
-    // Allow configuring max concurrent requests
-    if (config.maxConcurrent) {
-      this.maxConcurrentRequests = config.maxConcurrent;
-    }
+    // Initialize rate limiter
+    const rateLimitConfig = createDefaultRateLimitConfig(
+      config.rateLimit || 100,
+      config.rateLimitWindow || 60,
+      20, // burst limit
+      10  // burst window seconds
+    );
+    this.rateLimiter = new RateLimiter(rateLimitConfig, logFn);
+
+    // Initialize SSE client manager
+    this.sseClientManager = new SSEClientManager(logFn);
+
+    // Initialize concurrency manager
+    this.concurrencyManager = new ConcurrencyManager(
+      config.maxConcurrent || 5,
+      30000, // queue timeout
+      logFn
+    );
+
+    // Initialize idempotency cache
+    this.idempotencyManager = new IdempotencyCache(3600000, logFn); // 1 hour TTL
+
+    // Initialize operations tracker
+    this.operationsTracker = new OperationsTracker(logFn);
 
     // Feature #849: Allow configuring tool execution timeout
     if (config.toolTimeout !== undefined && config.toolTimeout > 0) {
@@ -314,25 +323,9 @@ class MCPServer {
     }
   }
 
-  // Feature #851: Parse priority from request params
+  // Feature #851: Parse priority from request params (delegates to concurrency manager)
   private parsePriority(params?: Record<string, unknown>): number {
-    if (!params || params._priority === undefined) {
-      return MCPServer.PRIORITY_NORMAL;
-    }
-    const priority = params._priority;
-    if (typeof priority === 'number') {
-      // Clamp to valid range
-      return Math.max(MCPServer.PRIORITY_LOW, Math.min(MCPServer.PRIORITY_HIGH, priority));
-    }
-    if (typeof priority === 'string') {
-      switch (priority.toLowerCase()) {
-        case 'low': return MCPServer.PRIORITY_LOW;
-        case 'high': return MCPServer.PRIORITY_HIGH;
-        case 'normal':
-        default: return MCPServer.PRIORITY_NORMAL;
-      }
-    }
-    return MCPServer.PRIORITY_NORMAL;
+    return this.concurrencyManager.parsePriority(params);
   }
 
   // Feature #858: Parse API version from request params (delegates to extracted module)
@@ -512,109 +505,29 @@ class MCPServer {
     return this.activeStreams;
   }
 
-  // Feature #857: Start idempotency cache cleanup
+  // Feature #857/#252: Idempotency methods - delegate to extracted module
   private startIdempotencyCleanup(): void {
-    if (this.idempotencyCleanupInterval) return;
-
-    // Run cleanup every 5 minutes
-    this.idempotencyCleanupInterval = setInterval(() => {
-      const now = Date.now();
-      let cleaned = 0;
-      for (const [key, entry] of this.idempotencyCache) {
-        if (entry.expiresAt < now) {
-          this.idempotencyCache.delete(key);
-          cleaned++;
-        }
-      }
-      if (cleaned > 0) {
-        this.log(`[IDEMPOTENCY] Cleaned up ${cleaned} expired entries`);
-      }
-    }, 300000); // 5 minutes
+    this.idempotencyManager.startCleanup(300000); // 5 minutes
   }
 
-  // Feature #857: Stop idempotency cache cleanup
   private stopIdempotencyCleanup(): void {
-    if (this.idempotencyCleanupInterval) {
-      clearInterval(this.idempotencyCleanupInterval);
-      this.idempotencyCleanupInterval = null;
-    }
+    this.idempotencyManager.stopCleanup();
   }
 
-  // Feature #857: generateRequestHash moved to hash-utils.ts
-
-  // Feature #857: Check idempotency cache for existing response
-  private checkIdempotency(
-    key: string,
-    toolName: string,
-    requestHash: string
-  ): IdempotencyEntry | null {
-    const entry = this.idempotencyCache.get(key);
-    if (!entry) return null;
-
-    // Check if expired
-    if (entry.expiresAt < Date.now()) {
-      this.idempotencyCache.delete(key);
-      return null;
-    }
-
-    // Check if same tool and request hash
-    if (entry.toolName !== toolName) {
-      this.log(`[IDEMPOTENCY] Key reused with different tool: ${key} (${entry.toolName} vs ${toolName})`);
-      return null; // Don't return cached response if tool is different
-    }
-
-    if (entry.requestHash !== requestHash) {
-      this.log(`[IDEMPOTENCY] Key reused with different request: ${key}`);
-      return null; // Don't return cached response if request is different
-    }
-
-    this.log(`[IDEMPOTENCY] Cache hit for key: ${key}`);
-    return entry;
+  private checkIdempotency(key: string, toolName: string, requestHash: string): IdempotencyEntry | null {
+    return this.idempotencyManager.check(key, toolName, requestHash);
   }
 
-  // Feature #857: Store response in idempotency cache
-  private storeIdempotencyResponse(
-    key: string,
-    toolName: string,
-    requestHash: string,
-    response: MCPResponse,
-    ttlMs?: number
-  ): void {
-    const now = Date.now();
-    const entry: IdempotencyEntry = {
-      key,
-      response,
-      createdAt: now,
-      expiresAt: now + (ttlMs || this.idempotencyTTL),
-      toolName,
-      requestHash,
-    };
-    this.idempotencyCache.set(key, entry);
-    this.log(`[IDEMPOTENCY] Stored response for key: ${key} (expires in ${(ttlMs || this.idempotencyTTL) / 1000}s)`);
+  private storeIdempotencyResponse(key: string, toolName: string, requestHash: string, response: MCPResponse, ttlMs?: number): void {
+    this.idempotencyManager.store(key, toolName, requestHash, response, ttlMs);
   }
 
-  // Feature #857: Parse idempotency key from request args
   private parseIdempotencyKey(args?: Record<string, unknown>): string | undefined {
-    if (!args) return undefined;
-    const key = args._idempotencyKey;
-    if (typeof key === 'string' && key.length > 0 && key.length <= 256) {
-      return key;
-    }
-    return undefined;
+    return this.idempotencyManager.parseKey(args);
   }
 
-  // Feature #857: Get idempotency cache stats
   getIdempotencyCacheStats(): { size: number; entries: Array<{ key: string; toolName: string; expiresIn: number }> } {
-    const now = Date.now();
-    const entries = [];
-    for (const [key, entry] of this.idempotencyCache) {
-      entries.push({
-        key,
-        toolName: entry.toolName,
-        expiresIn: Math.max(0, entry.expiresAt - now),
-      });
-    }
-    return { size: this.idempotencyCache.size, entries };
+    return this.idempotencyManager.getStats();
   }
 
   // Feature #855: Send webhook callback (delegates to extracted module)
@@ -630,87 +543,20 @@ class MCPServer {
     return parseWebhookCallback(args, this.config.enableWebhookCallbacks !== false, (msg) => this.log(msg));
   }
 
-  // Acquire a concurrent request slot (returns true if acquired, false if rejected)
-  // Feature #851: Added priority parameter for queue ordering
+  // Feature #851/#252: Concurrent request methods - delegate to extracted module
   private async acquireConcurrentSlot(
     apiKey: string,
-    priority: number = MCPServer.PRIORITY_NORMAL
+    priority: number = PRIORITY_NORMAL
   ): Promise<{ acquired: boolean; queued: boolean; position?: number; priority: number }> {
-    const key = apiKey || 'anonymous';
-
-    if (!this.concurrentRequests.has(key)) {
-      this.concurrentRequests.set(key, { active: 0, queue: [] });
-    }
-
-    const state = this.concurrentRequests.get(key)!;
-
-    // If under limit, acquire immediately
-    if (state.active < this.maxConcurrentRequests) {
-      state.active++;
-      return { acquired: true, queued: false, priority };
-    }
-
-    // Feature #851: Insert into queue based on priority (higher priority first)
-    const queueEntry = {
-      resolve: (acquired: boolean) => {},
-      timestamp: Date.now(),
-      priority,
-    };
-
-    // Find insertion point to maintain priority order (higher priority first)
-    let insertIndex = state.queue.findIndex(entry => entry.priority < priority);
-    if (insertIndex === -1) {
-      insertIndex = state.queue.length;
-    }
-
-    const queuePosition = insertIndex + 1;
-    this.log(`[CONCURRENT] Request queued at position ${queuePosition} (priority: ${priority}) for API key ${key.substring(0, 8)}...`);
-
-    return new Promise((resolve) => {
-      queueEntry.resolve = (acquired: boolean) => resolve({ acquired, queued: true, position: queuePosition, priority });
-      state.queue.splice(insertIndex, 0, queueEntry);
-
-      // Timeout after configured period
-      setTimeout(() => {
-        const index = state.queue.indexOf(queueEntry);
-        if (index !== -1) {
-          state.queue.splice(index, 1);
-          this.log(`[CONCURRENT] Queued request timed out (priority: ${priority}) for API key ${key.substring(0, 8)}...`);
-          resolve({ acquired: false, queued: true, position: queuePosition, priority });
-        }
-      }, this.concurrentQueueTimeout);
-    });
+    return this.concurrencyManager.acquireSlot(apiKey, priority);
   }
 
-  // Release a concurrent request slot
   private releaseConcurrentSlot(apiKey: string): void {
-    const key = apiKey || 'anonymous';
-    const state = this.concurrentRequests.get(key);
-
-    if (!state) return;
-
-    state.active--;
-
-    // Process next queued request if any
-    if (state.queue.length > 0 && state.active < this.maxConcurrentRequests) {
-      const next = state.queue.shift();
-      if (next) {
-        state.active++;
-        this.log(`[CONCURRENT] Dequeued request for API key ${key.substring(0, 8)}...`);
-        next.resolve(true);
-      }
-    }
+    this.concurrencyManager.releaseSlot(apiKey);
   }
 
-  // Get concurrent request stats for an API key
   private getConcurrentStats(apiKey: string): { active: number; queued: number; maxConcurrent: number } {
-    const key = apiKey || 'anonymous';
-    const state = this.concurrentRequests.get(key);
-    return {
-      active: state?.active || 0,
-      queued: state?.queue.length || 0,
-      maxConcurrent: this.maxConcurrentRequests,
-    };
+    return this.concurrencyManager.getStats(apiKey);
   }
 
   // Start the server
@@ -831,27 +677,8 @@ class MCPServer {
     // Feature #857: Stop idempotency cleanup
     this.stopIdempotencyCleanup();
 
-    // Phase 1: Notify all connected clients about server shutdown
-    if (this.sseClients.size > 0) {
-      this.log(`Notifying ${this.sseClients.size} SSE client(s) about server shutdown...`);
-      const shutdownNotification = {
-        type: 'server-shutdown',
-        timestamp: Date.now(),
-        reason: 'Server is shutting down for maintenance or restart',
-        reconnectAfter: 5000, // Suggest reconnecting after 5 seconds
-        inProgressOperations: this.inProgressOperations.size,
-      };
-
-      for (const [clientId, client] of this.sseClients) {
-        try {
-          // Send server-shutdown event to client
-          this.sendSSEEvent(client, 'server-shutdown', JSON.stringify(shutdownNotification));
-          this.log(`Sent server-shutdown notification to client: ${clientId}`);
-        } catch {
-          this.log(`Failed to notify client ${clientId} about shutdown`);
-        }
-      }
-    }
+    // Phase 1: Notify all connected clients about server shutdown (using extracted module)
+    this.sseClientManager.notifyShutdown(this.operationsTracker.count);
 
     // For stdio transport, send shutdown notification to stdout
     if (this.config.transport === 'stdio') {
@@ -861,31 +688,19 @@ class MCPServer {
         params: {
           timestamp: Date.now(),
           reason: 'Server is shutting down for maintenance or restart',
-          inProgressOperations: this.inProgressOperations.size,
+          inProgressOperations: this.operationsTracker.count,
         },
       };
       this.sendResponse(shutdownNotification as unknown as MCPResponse);
     }
 
     // Phase 2: Wait for in-progress operations to complete (with timeout)
-    if (this.inProgressOperations.size > 0) {
-      this.log(`Waiting for ${this.inProgressOperations.size} in-progress operation(s) to complete...`);
-
-      const waitStart = Date.now();
-      while (this.inProgressOperations.size > 0 && (Date.now() - waitStart) < this.shutdownTimeout) {
-        await new Promise(resolve => setTimeout(resolve, 100)); // Check every 100ms
-      }
-
-      if (this.inProgressOperations.size > 0) {
-        this.log(`Aborting ${this.inProgressOperations.size} remaining operation(s) after timeout`);
-        // Abort remaining operations
-        for (const [opId, op] of this.inProgressOperations) {
-          this.log(`Aborting operation ${opId}: ${op.method} (running for ${Date.now() - op.startTime}ms)`);
-          if (op.abortController) {
-            op.abortController.abort();
-          }
-        }
-        this.inProgressOperations.clear();
+    if (this.operationsTracker.count > 0) {
+      this.log(`Waiting for ${this.operationsTracker.count} in-progress operation(s) to complete...`);
+      const completed = await this.operationsTracker.waitForCompletion(this.shutdownTimeout);
+      if (!completed) {
+        this.log(`Aborting ${this.operationsTracker.count} remaining operation(s) after timeout`);
+        this.operationsTracker.abortAll();
       } else {
         this.log('All in-progress operations completed cleanly');
       }
@@ -897,21 +712,8 @@ class MCPServer {
       this.log('Closed readline interface');
     }
 
-    // Phase 4: Close all SSE client connections
-    if (this.sseClients.size > 0) {
-      this.log(`Closing ${this.sseClients.size} SSE client connection(s)`);
-      for (const [clientId, client] of this.sseClients) {
-        try {
-          // Send final close event to client
-          client.response.write('event: close\ndata: Server shutdown complete\n\n');
-          client.response.end();
-          this.log(`Closed SSE client: ${clientId}`);
-        } catch {
-          // Ignore errors when closing
-        }
-      }
-      this.sseClients.clear();
-    }
+    // Phase 4: Close all SSE client connections (using extracted module)
+    this.sseClientManager.closeAll();
 
     // Phase 5: Close HTTP server
     const totalShutdownTime = Date.now() - shutdownStartTime;
@@ -933,55 +735,18 @@ class MCPServer {
     }
   }
 
-  // Track start of an operation
+  // Feature #252: Operations tracking methods - delegate to extracted module
   private trackOperationStart(operationId: string, method: string, requestId?: string | number): AbortController {
-    const abortController = new AbortController();
-    this.inProgressOperations.set(operationId, {
-      startTime: Date.now(),
-      method,
-      requestId,
-      abortController,
-    });
-    this.log(`[OPERATION] Started: ${operationId} (${method})`);
-    return abortController;
+    return this.operationsTracker.trackStart(operationId, method, requestId);
   }
 
-  // Track completion of an operation
   private trackOperationComplete(operationId: string): void {
-    const op = this.inProgressOperations.get(operationId);
-    if (op) {
-      const duration = Date.now() - op.startTime;
-      this.log(`[OPERATION] Completed: ${operationId} (${op.method}) in ${duration}ms`);
-      this.inProgressOperations.delete(operationId);
-    }
+    this.operationsTracker.trackComplete(operationId);
   }
 
-  // Feature #849: Execute a promise with timeout
-  private async executeWithTimeout<T>(
-    promise: Promise<T>,
-    timeoutMs: number,
-    toolName: string
-  ): Promise<T> {
-    let timeoutHandle: NodeJS.Timeout;
-
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutHandle = setTimeout(() => {
-        const error = new Error(`Tool '${toolName}' execution timed out after ${timeoutMs}ms`);
-        error.name = 'TimeoutError';
-        reject(error);
-      }, timeoutMs);
-    });
-
-    try {
-      return await Promise.race([promise, timeoutPromise]);
-    } finally {
-      clearTimeout(timeoutHandle!);
-    }
-  }
-
-  // Get count of in-progress operations
+  // Get count of in-progress operations (delegates to extracted module)
   getInProgressCount(): number {
-    return this.inProgressOperations.size;
+    return this.operationsTracker.count;
   }
 
   // Check if server is shutting down
@@ -1419,9 +1184,9 @@ class MCPServer {
         }
       }
 
-      // Store per-key rate limits if provided
+      // Store per-key rate limits if provided (using extracted module)
       if (data.rate_limit && this.config.apiKey) {
-        this.perKeyRateLimits.set(this.config.apiKey, data.rate_limit);
+        this.rateLimiter.setPerKeyConfig(this.config.apiKey, data.rate_limit);
         this.log(`Loaded per-key rate limits: ${data.rate_limit.max_requests}/${data.rate_limit.window_seconds}s (burst: ${data.rate_limit.burst_limit}/${data.rate_limit.burst_window_seconds}s)`);
       }
 
@@ -1533,26 +1298,7 @@ class MCPServer {
   // Feature #1356: Tool scope requirements are now imported from ./tool-permissions.ts
   // See TOOL_SCOPE_MAP in tool-permissions.ts for the full mapping
 
-  // Get effective rate limit config for the current API key
-  // Uses per-key config if available, otherwise falls back to default
-  private getEffectiveRateLimitConfig(): { maxRequests: number; windowMs: number; burstLimit: number; burstWindowMs: number } {
-    const identifier = this.config.apiKey || 'anonymous';
-    const perKeyConfig = this.perKeyRateLimits.get(identifier);
-
-    if (perKeyConfig) {
-      return {
-        maxRequests: perKeyConfig.max_requests,
-        windowMs: perKeyConfig.window_seconds * 1000,
-        burstLimit: perKeyConfig.burst_limit,
-        burstWindowMs: perKeyConfig.burst_window_seconds * 1000,
-      };
-    }
-
-    return this.rateLimitConfig;
-  }
-
-  // Check rate limit for the current API key
-  // Uses a sliding window algorithm with burst support
+  // Feature #252: Rate limiting methods - delegate to extracted module
   private checkRateLimit(): {
     allowed: boolean;
     error?: MCPResponse;
@@ -1560,131 +1306,11 @@ class MCPServer {
     resetMs: number;
     headers: { 'X-RateLimit-Limit': number; 'X-RateLimit-Remaining': number; 'X-RateLimit-Reset': number; 'X-RateLimit-Burst-Limit': number; 'X-RateLimit-Burst-Remaining': number };
   } {
-    // Use API key as identifier, or 'anonymous' for unauthenticated requests
-    const identifier = this.config.apiKey || 'anonymous';
-    const now = Date.now();
-    const config = this.getEffectiveRateLimitConfig();
-    const windowStart = now - config.windowMs;
-    const burstWindowStart = now - config.burstWindowMs;
-
-    // Get or create rate limit entry
-    let entry = this.rateLimitStore.get(identifier);
-    if (!entry) {
-      entry = { timestamps: [], burstTimestamps: [] };
-      this.rateLimitStore.set(identifier, entry);
-    }
-
-    // Remove timestamps outside the current windows (sliding window)
-    entry.timestamps = entry.timestamps.filter(ts => ts > windowStart);
-    entry.burstTimestamps = entry.burstTimestamps.filter(ts => ts > burstWindowStart);
-
-    // Check if rate limit exceeded
-    const requestCount = entry.timestamps.length;
-    const burstCount = entry.burstTimestamps.length;
-    const remaining = Math.max(0, config.maxRequests - requestCount);
-    const burstRemaining = Math.max(0, config.burstLimit - burstCount);
-
-    // Calculate time until oldest request expires (reset time)
-    const resetMs = entry.timestamps.length > 0
-      ? Math.max(0, entry.timestamps[0] + config.windowMs - now)
-      : 0;
-
-    // Rate limit headers to return with every response
-    const headers = {
-      'X-RateLimit-Limit': config.maxRequests,
-      'X-RateLimit-Remaining': Math.max(0, remaining - 1),
-      'X-RateLimit-Reset': Math.ceil((now + resetMs) / 1000),
-      'X-RateLimit-Burst-Limit': config.burstLimit,
-      'X-RateLimit-Burst-Remaining': Math.max(0, burstRemaining - 1),
-    };
-
-    // Check if both rate limit AND burst limit exceeded
-    if (requestCount >= config.maxRequests) {
-      // Main rate limit exceeded - check if burst is available
-      if (burstCount >= config.burstLimit) {
-        // Both limits exceeded - reject request
-        this.log(`Rate limit exceeded for ${identifier}: ${requestCount}/${config.maxRequests} (burst: ${burstCount}/${config.burstLimit})`);
-        return {
-          allowed: false,
-          remaining: 0,
-          resetMs,
-          headers: { ...headers, 'X-RateLimit-Remaining': 0, 'X-RateLimit-Burst-Remaining': 0 },
-          error: {
-            jsonrpc: '2.0',
-            error: {
-              code: -32004, // Rate limit exceeded error code
-              message: `Rate limit exceeded. Maximum ${config.maxRequests} requests per ${config.windowMs / 1000} seconds (burst: ${config.burstLimit}/${config.burstWindowMs / 1000}s). Try again in ${Math.ceil(resetMs / 1000)} seconds.`,
-              data: {
-                limit: config.maxRequests,
-                remaining: 0,
-                resetMs,
-                retryAfter: Math.ceil(resetMs / 1000),
-                burst_limit: config.burstLimit,
-                burst_remaining: 0,
-              },
-            },
-          },
-        };
-      }
-
-      // Main limit exceeded but burst available - allow with warning
-      this.log(`Using burst allowance for ${identifier}: ${burstCount + 1}/${config.burstLimit} (main: ${requestCount}/${config.maxRequests})`);
-      entry.burstTimestamps.push(now);
-
-      return {
-        allowed: true,
-        remaining: 0,
-        resetMs,
-        headers: { ...headers, 'X-RateLimit-Remaining': 0, 'X-RateLimit-Burst-Remaining': Math.max(0, burstRemaining - 1) },
-      };
-    }
-
-    // Add current request timestamp to main window
-    entry.timestamps.push(now);
-
-    return {
-      allowed: true,
-      remaining: remaining - 1, // -1 because we just added this request
-      resetMs,
-      headers,
-    };
+    return this.rateLimiter.checkRateLimit(this.config.apiKey);
   }
 
-  // Get current rate limit status without consuming a request
   private getRateLimitStatus(): { remaining: number; limit: number; resetMs: number; burstLimit: number; burstRemaining: number } {
-    const identifier = this.config.apiKey || 'anonymous';
-    const now = Date.now();
-    const config = this.getEffectiveRateLimitConfig();
-    const windowStart = now - config.windowMs;
-    const burstWindowStart = now - config.burstWindowMs;
-
-    const entry = this.rateLimitStore.get(identifier);
-    if (!entry) {
-      return {
-        remaining: config.maxRequests,
-        limit: config.maxRequests,
-        resetMs: 0,
-        burstLimit: config.burstLimit,
-        burstRemaining: config.burstLimit,
-      };
-    }
-
-    // Count requests in current windows
-    const validTimestamps = entry.timestamps.filter(ts => ts > windowStart);
-    const validBurstTimestamps = entry.burstTimestamps.filter(ts => ts > burstWindowStart);
-    const remaining = Math.max(0, config.maxRequests - validTimestamps.length);
-    const burstRemaining = Math.max(0, config.burstLimit - validBurstTimestamps.length);
-    const resetMs = validTimestamps.length > 0
-      ? Math.max(0, validTimestamps[0] + config.windowMs - now)
-      : 0;
-
-    return {
-      remaining,
-      limit: config.maxRequests,
-      resetMs,
-      burstLimit: config.burstLimit,
-      burstRemaining,
-    };
+    return this.rateLimiter.getRateLimitStatus(this.config.apiKey);
   }
 
   // Feature #1356: findSimilarTools and levenshteinDistance moved to ./string-utils.ts
@@ -1774,7 +1400,7 @@ class MCPServer {
           message: 'Server is shutting down. Please reconnect shortly.',
           data: {
             reason: 'shutdown',
-            inProgressOperations: this.inProgressOperations.size,
+            inProgressOperations: this.operationsTracker.count,
             reconnectAfter: 5000,
           },
         },
@@ -2151,9 +1777,9 @@ class MCPServer {
         id: request.id,
         error: {
           code: -32005, // Too many concurrent requests (429 equivalent)
-          message: `Too many concurrent requests. Maximum ${this.maxConcurrentRequests} allowed. Request was queued but timed out.`,
+          message: `Too many concurrent requests. Maximum ${this.concurrencyManager.maxConcurrent} allowed. Request was queued but timed out.`,
           data: {
-            maxConcurrent: this.maxConcurrentRequests,
+            maxConcurrent: this.concurrencyManager.maxConcurrent,
             active: stats.active,
             queued: stats.queued,
             queuePosition: slotResult.position,
@@ -2223,8 +1849,8 @@ class MCPServer {
         } as MCPResponse;
       };
 
-      // Execute tool with timeout
-      const executionResult = await this.executeWithTimeout(
+      // Execute tool with timeout (using extracted module function)
+      const executionResult = await executeWithTimeout(
         executeToolSwitch(),
         this.toolTimeout,
         toolName
