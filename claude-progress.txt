@@ -4,7 +4,8 @@
 - **Progress: 310/333 features passing (93%)**
 - **Last Updated**: 2026-02-07
 - **Pending**: 23 features (BMAD R5 Remediation #312-#334)
-- **Last Action**: BMAD R5 Remediation features inserted
+- **In Progress**: Feature #312 (Auth middleware on AI test generator routes) - implemented, needs verification
+- **Last Action**: Feature #312 implementation complete, backend restart required for verification
 
 ### Current State
 - 310 of 333 features passing (93%)
