@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { CodeDiffView } from '../components/diff';
+import { ConfidenceBreakdown } from '../components/ai/ConfidenceBreakdown';
 
 interface ConfidenceDetails {
   level: 'high' | 'medium' | 'low';
@@ -840,6 +841,14 @@ Example: Test that a user can login with valid credentials and see the welcome m
                     </div>
                   )}
                 </div>
+
+                {/* Feature #331: AI Confidence Sub-scores Breakdown */}
+                {generatedTest.confidence_score !== undefined && (
+                  <ConfidenceBreakdown
+                    overallScore={generatedTest.confidence_score}
+                    className="mt-4"
+                  />
+                )}
 
                 {/* Generated Code */}
                 <div className="bg-card rounded-lg border border-border overflow-hidden">
