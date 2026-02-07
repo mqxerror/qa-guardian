@@ -200,7 +200,7 @@ export async function listTestSuitesPaginated(
   const result = await query<any>(
     `SELECT ${TEST_SUITE_COLUMNS}, COUNT(*) OVER() as total_count
      FROM test_suites
-     WHERE project_id = $1 AND config->>'organization_id' = $2
+     WHERE project_id = $1 AND organization_id = $2
      ORDER BY created_at DESC
      LIMIT $3 OFFSET $4`,
     [projectId, organizationId, limit, offset]
@@ -434,7 +434,7 @@ export async function listAllTests(organizationId: string, limit: number = 1000)
   const result = await query<any>(
     `SELECT t.*, ts.config as suite_config FROM tests t
      INNER JOIN test_suites ts ON t.suite_id = ts.id
-     WHERE ts.config->>'organization_id' = $1
+     WHERE ts.organization_id = $1
      ORDER BY t.created_at DESC
      LIMIT $2`,
     [organizationId, limit]
