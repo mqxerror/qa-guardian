@@ -135,8 +135,8 @@ jobs:
             fi
             sleep 10
           done
-          # Verify API endpoint
-          curl -sf https://${{ env.PRODUCTION_DOMAIN }}/api/v1/health || { echo "ERROR: API health check failed"; exit 1; }
+          # Verify API is responding (health endpoint is at /health, not /api/v1/health)
+          curl -sf https://${{ env.PRODUCTION_DOMAIN }}/health | grep -q '"status":"ok"' || { echo "ERROR: Health check response invalid"; exit 1; }
           echo "API health check passed"
 
       - name: Deployment complete
