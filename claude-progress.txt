@@ -1,15 +1,91 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 250/310 features passing (80.6%)**
+- **Progress: 266/310 features passing (85.8%)**
 - **Last Updated**: 2026-02-07
-- **Pending**: 60 features (Code quality refactoring tasks)
-- **Last Action**: Session 162 - MCP Server Code Extraction (Feature #252)
+- **Pending**: 44 features (Security, AI features)
+- **Last Action**: Session 164 - Completed Feature #267 (License Compliance)
 
 ### Current State
-- 250 of 310 features passing (80.6%)
-- Feature #252 (mcp/server.ts refactoring) in progress
+- 266 of 310 features passing (85.8%)
 - Application is production-ready
+- License compliance checking feature implemented
+- Security dashboard enhanced with Licenses tab
+
+=== Session 2026-02-07 (Session 164) - License Compliance Feature ===
+Progress: 266/310 (85.8%) - Completed Feature #267
+
+### Feature #267: License compliance checking for dependencies ✅
+
+**Changes Made**:
+1. Installed license-checker npm package in backend
+2. Created backend/src/services/license-scanner.ts with:
+   - SPDX license identifier mapping (MIT, Apache-2.0, BSD-*, GPL-*, etc.)
+   - Org-level allowlist/blocklist policy support
+   - Default policy: MIT, Apache-2.0, ISC, BSD allowed; GPL-3.0, AGPL blocked
+   - Severity levels for violations (critical, high, medium, low)
+3. Added API endpoints to security.ts:
+   - GET /api/v1/projects/:id/license-compliance - full compliance report
+   - GET /api/v1/license-policy - org policy retrieval
+   - PUT /api/v1/license-policy - policy customization
+   - POST /api/v1/license-policy/validate - single license validation
+   - GET /api/v1/license-policy/default - default policy template
+4. Added Licenses tab to Security Dashboard linking to /security/licenses
+
+**Verification**:
+- TypeScript build: ✅ Compiles successfully
+- Frontend build: ✅ Built in 5.39s
+- Browser testing: ✅
+  - Licenses tab visible in Security Dashboard
+  - License scan runs and shows 15 dependencies
+  - 11 compliant, 4 non-compliant (GPL, UNKNOWN, PROPRIETARY)
+  - 6 with warnings, 4 high risk
+- Screenshots: security-dashboard-with-licenses-tab.png, license-compliance-scan-results.png
+- Commit: 9978dbd
+
+---
+
+=== Session 2026-02-07 (Session 163) - Code Quality Features ===
+Progress: 253/310 (81.6%) - Completed Features #253 and #254
+
+### Feature #253: Wire runTestsForRun to run-orchestrator.ts ✅
+
+**Changes Made**:
+1. Uncommented import from run-orchestrator.ts (was at line 506)
+2. Removed duplicate runTestsForRun function (~376 lines)
+3. Removed duplicate emitRunEvent function (~20 lines)
+4. Removed duplicate checkAndSendAlerts wrapper (~25 lines)
+5. Removed local Socket.IO `io` variable and setSocketIO function
+6. Added re-exports for backwards compatibility
+
+**test-runs.ts Progress**:
+- Before: 980 lines
+- After: 529 lines
+- Target: <600 lines ✅ ACHIEVED
+
+**Verification**:
+- TypeScript build: ✅ No errors
+- ESLint: ✅ No new errors
+- Backend startup: ✅ Server starts successfully
+- Dashboard: ✅ Working with WebSocket connected
+- Commit: dca0591
+
+### Feature #254: Set up shadcn CLI configuration ✅
+
+**Changes Made**:
+1. Created frontend/components.json with shadcn configuration
+2. Verified all shadcn CSS tokens already present in index.css
+3. Verified lib/utils.ts has cn() function
+4. Verified path aliases already configured in tsconfig.json
+
+**Verification**:
+- Frontend build: ✅ PASSED (5.42s)
+- Frontend lint: ✅ PASSED (only pre-existing warnings)
+- Commit: 9101b46
+
+**Next Feature**: #255 - Install shadcn Sidebar primitives and rebuild sidebar shell
+
+---
 
 === Session 2026-02-07 (Session 162) - MCP Server Code Extraction ===
 Progress: 250/310 (80.6%) - Working on code quality features
