@@ -50,7 +50,9 @@ export interface ResetToken {
 // ============================================================================
 
 const memoryUsers: Map<string, User> = new Map();
-const memoryTokenBlacklist: Set<string> = new Set();
+// Feature #241: Changed from Set to Map with expiry timestamp for TTL-based eviction
+// Key: token, Value: expiry timestamp (ms since epoch)
+const memoryTokenBlacklist: Map<string, number> = new Map();
 const memoryUserSessions: Map<string, Session[]> = new Map();
 const memoryResetTokens: Map<string, ResetToken> = new Map();
 
@@ -306,18 +308,19 @@ export async function getUserCount(): Promise<number> {
 /**
  * Add a token to the blacklist
  * Feature #216: Store in Redis for persistence across server restarts
+ * Feature #241: Store expiry timestamp for TTL-based eviction
  */
 export async function blacklistToken(token: string, expiresAt?: Date): Promise<void> {
-  // Always add to runtime cache (fast lookup for current session)
-  memoryTokenBlacklist.add(token);
+  // Calculate TTL in seconds (default 1 hour to match new access token expiry)
+  const defaultExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  const expiry = expiresAt || defaultExpiry;
+
+  // Feature #241: Store with expiry timestamp (enables TTL-based eviction)
+  memoryTokenBlacklist.set(token, expiry.getTime());
 
   // Feature #216: Create a fast SHA256 hash for Redis key (not bcrypt - too slow)
   const tokenHash = createHash('sha256').update(token).digest('hex');
   const redisKey = `blacklist:${tokenHash}`;
-
-  // Calculate TTL in seconds (default 1 hour to match new access token expiry)
-  const defaultExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-  const expiry = expiresAt || defaultExpiry;
   const ttlMs = Math.max(0, expiry.getTime() - Date.now());
   const ttlSeconds = Math.ceil(ttlMs / 1000);
 
@@ -351,11 +354,18 @@ export async function blacklistToken(token: string, expiresAt?: Date): Promise<v
 /**
  * Check if a token is blacklisted
  * Feature #216: Check Redis after memory for persistence across restarts
+ * Feature #241: Check expiry timestamp for TTL-based eviction
  */
 export async function isTokenBlacklisted(token: string): Promise<boolean> {
   // Check memory first (fast path for current session)
-  if (memoryTokenBlacklist.has(token)) {
-    return true;
+  // Feature #241: Also check expiry timestamp
+  const expiryTimestamp = memoryTokenBlacklist.get(token);
+  if (expiryTimestamp !== undefined) {
+    if (expiryTimestamp > Date.now()) {
+      return true;
+    }
+    // Token has expired, remove from memory cache
+    memoryTokenBlacklist.delete(token);
   }
 
   // Feature #216: Check Redis (persists across server restarts)
@@ -367,7 +377,8 @@ export async function isTokenBlacklisted(token: string): Promise<boolean> {
       const exists = await cache.exists(redisKey);
       if (exists) {
         // Warm up memory cache for future fast-path lookups
-        memoryTokenBlacklist.add(token);
+        // Feature #241: Store with 1 hour expiry for warm-up entries
+        memoryTokenBlacklist.set(token, Date.now() + 60 * 60 * 1000);
         return true;
       }
     } catch (error) {
@@ -622,12 +633,12 @@ const memoryRefreshTokens: Map<string, { userId: string; expiresAt: Date }> = ne
 
 /**
  * Store a refresh token hash in the database
+ * Feature #240: Guarded memory write with isDatabaseConnected check
  */
 export async function storeRefreshTokenHash(hash: string, userId: string, expiresAt: Date): Promise<void> {
-  // Always store in memory as fallback
-  memoryRefreshTokens.set(hash, { userId, expiresAt });
-
+  // Feature #240: Only write to memory when DB is not connected (avoids unbounded memory growth)
   if (!isDatabaseConnected()) {
+    memoryRefreshTokens.set(hash, { userId, expiresAt });
     return;
   }
 
@@ -776,10 +787,21 @@ export async function cleanupExpiredRefreshTokens(): Promise<number> {
 
 /**
  * Clean up expired tokens and sessions
+ * Feature #241: Also clean up expired entries from memoryTokenBlacklist
  */
-export async function cleanupExpiredData(): Promise<{ tokens: number; sessions: number }> {
+export async function cleanupExpiredData(): Promise<{ tokens: number; sessions: number; memoryBlacklist: number }> {
   let tokensDeleted = 0;
   let sessionsDeleted = 0;
+  let memoryBlacklistEvicted = 0;
+
+  // Feature #241: Evict expired entries from memory blacklist
+  const now = Date.now();
+  for (const [token, expiryTimestamp] of memoryTokenBlacklist) {
+    if (expiryTimestamp <= now) {
+      memoryTokenBlacklist.delete(token);
+      memoryBlacklistEvicted++;
+    }
+  }
 
   if (isDatabaseConnected()) {
     try {
@@ -808,7 +830,7 @@ export async function cleanupExpiredData(): Promise<{ tokens: number; sessions: 
     }
   }
 
-  return { tokens: tokensDeleted, sessions: sessionsDeleted };
+  return { tokens: tokensDeleted, sessions: sessionsDeleted, memoryBlacklist: memoryBlacklistEvicted };
 }
 
 // ============================================================================
@@ -900,8 +922,9 @@ export function getMemoryUsers(): Map<string, User> {
   return memoryUsers;
 }
 
-export function getMemoryTokenBlacklist(): Set<string> {
-  return memoryTokenBlacklist; // Runtime cache
+// Feature #241: Return type changed from Set to Map (with expiry timestamp)
+export function getMemoryTokenBlacklist(): Map<string, number> {
+  return memoryTokenBlacklist; // Runtime cache with expiry timestamps
 }
 
 export function getMemoryUserSessions(): Map<string, Session[]> {
