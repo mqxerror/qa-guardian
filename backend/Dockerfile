@@ -81,12 +81,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dumb-init \
     # Python runtime for semgrep (no pip/build tools)
     python3 \
+    # gnupg needed for k6 GPG key import below
+    gnupg \
     && rm -rf /var/lib/apt/lists/*
 
 # Install k6 for load testing (binary only)
 RUN curl -fsSL https://dl.k6.io/key.gpg | gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" > /etc/apt/sources.list.d/k6.list \
-    && apt-get update && apt-get install -y --no-install-recommends k6 gnupg \
+    && apt-get update && apt-get install -y --no-install-recommends k6 \
     && rm -rf /var/lib/apt/lists/* \
     && rm /usr/share/keyrings/k6-archive-keyring.gpg
 

@@ -199,7 +199,7 @@ function parseSimpleYAML(yamlStr: string): unknown {
       const colonIndex = content.indexOf(':');
       if (colonIndex !== -1) {
         const key = content.slice(0, colonIndex).trim();
-        let value = content.slice(colonIndex + 1).trim();
+        const value = content.slice(colonIndex + 1).trim();
 
         if (!value) {
           // Nested object or array
@@ -432,7 +432,7 @@ function generatePlaywrightTest(
 
   // Build request body
   let requestBody: unknown = undefined;
-  let contentType = 'application/json';
+  const contentType = 'application/json';
   if (operation.requestBody?.content) {
     const jsonContent = operation.requestBody.content['application/json'];
     if (jsonContent) {
