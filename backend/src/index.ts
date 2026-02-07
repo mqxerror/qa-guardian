@@ -317,6 +317,13 @@ async function registerPlugins() {
   await app.register(sastRoutes);
   await app.register(dastRoutes);
   await app.register(monitoringRoutes);
+
+  // Feature #359: Route prefix documentation
+  // Most routes are registered without a prefix and define their paths internally (e.g., /api/v1/auth, /api/v1/projects)
+  // Some routes use inline prefixes for modularity:
+  // - aiTestGeneratorRoutes: /api/v1/ai/* - AI test generation endpoints
+  // - mcpToolsRoutes: /api/v1/mcp/* - MCP tool execution endpoints
+  // This allows these modules to define paths relative to their prefix (e.g., /generate instead of /api/v1/ai/generate)
   await app.register(aiTestGeneratorRoutes, { prefix: '/api/v1/ai' });
   await app.register(mcpToolsRoutes, { prefix: '/api/v1/mcp' });
   await app.register(reportsRoutes); // Feature #1732
