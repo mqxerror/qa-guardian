@@ -14,7 +14,8 @@
  */
 import React from 'react';
 
-export type UserRole = 'owner' | 'admin' | 'developer' | 'viewer';
+// Feature #260: Added 'qa' role for QA team members
+export type UserRole = 'owner' | 'admin' | 'developer' | 'qa' | 'viewer';
 export type MenuVisibility = 'all' | 'qa' | 'developer' | 'admin' | 'owner';
 
 export interface MenuItemConfig {
@@ -28,26 +29,41 @@ export interface MenuItemConfig {
 
 /**
  * Check if user role has access to menu visibility level
+ *
+ * Feature #260: Role-based navigation visibility
+ * - Viewer: Dashboard, Projects, Testing group only (visibility='all')
+ * - QA: + Security group + AI Chat (visibility='qa')
+ * - Developer: + AI Insights Hub + MCP Hub + Developer Tools (visibility='developer')
+ * - Admin/Owner: all items visible (visibility='admin' or 'owner')
  */
 export function hasAccess(userRole: UserRole | undefined, visibility: MenuVisibility): boolean {
   if (!userRole) return false;
 
-  switch (visibility) {
-    case 'all':
-      return true;
-    case 'qa':
-      // QA features available to all roles
-      return true;
-    case 'developer':
-      // Developer features for developers, admins, and owners
-      return userRole === 'developer' || userRole === 'admin' || userRole === 'owner';
-    case 'admin':
-      // Admin features for admins and owners
-      return userRole === 'admin' || userRole === 'owner';
-    case 'owner':
-      // Owner-only features
-      return userRole === 'owner';
-    default:
-      return false;
+  // Map roles to hierarchy levels for comparison
+  // Feature #260: viewer < qa < developer < admin < owner
+  const roleHierarchy: Record<UserRole, number> = {
+    viewer: 1,
+    qa: 2,        // QA team has access to security, AI chat
+    developer: 3, // Developers have access to dev tools, MCP hub
+    admin: 4,
+    owner: 5,
+  };
+
+  const visibilityRequirement: Record<MenuVisibility, number> = {
+    all: 1,      // All authenticated users (viewer+)
+    qa: 2,       // QA level - NOT viewers (viewer excluded)
+    developer: 3, // Developer level
+    admin: 4,    // Admin level
+    owner: 5,    // Owner only
+  };
+
+  // Special case: QA visibility means NOT viewer (viewers are excluded)
+  if (visibility === 'qa' && userRole === 'viewer') {
+    return false;
   }
+
+  const userLevel = roleHierarchy[userRole] || 0;
+  const requiredLevel = visibilityRequirement[visibility] || 0;
+
+  return userLevel >= requiredLevel;
 }
