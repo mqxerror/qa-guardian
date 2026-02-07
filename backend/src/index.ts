@@ -11,7 +11,14 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-import Fastify from 'fastify';
+import Fastify, { FastifyRequest } from 'fastify';
+
+// Feature #356: Type augmentation for request.startTime
+declare module 'fastify' {
+  interface FastifyRequest {
+    startTime: [number, number] | null;
+  }
+}
 import { initializeDatabase, isDatabaseConnected, healthCheck as dbHealthCheck, closeDatabase } from './services/database.js';
 import { initializeCache, closeCache, getCache } from './services/cache.js'; // Feature #60: Redis cache service
 import { runMigrations, getMigrationStatus } from './services/migrations.js'; // Feature #162: Database migrations
@@ -55,6 +62,7 @@ import { initializeEventSubscriber, closeSubscriber, getConnectionStatus as getR
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { generateRequestId } from './utils/index.js';
 
 // Socket.IO server instance (will be initialized after server starts)
 let io: SocketIOServer | null = null;
@@ -62,6 +70,19 @@ let io: SocketIOServer | null = null;
 // Feature #237: Socket.IO Redis adapter clients for graceful shutdown cleanup
 let socketPubClient: Redis | null = null;
 let socketSubClient: Redis | null = null;
+
+// ========== CORS Configuration ==========
+// Feature #358: Shared CORS origins to avoid duplication
+const CORS_ALLOWED_ORIGINS = [
+  process.env.FRONTEND_URL || 'http://localhost:5173',
+  'http://localhost:5173',  // Vite default (development)
+  'http://localhost:3000',  // Alternative React dev server
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+  // Production domains - qa.pixelcraftedmedia.com
+  'https://qa.pixelcraftedmedia.com',
+  'http://qa.pixelcraftedmedia.com',  // HTTP redirect should handle this
+] as const;
 
 // ========== RATE LIMITING ==========
 // Feature #214: Redis-based distributed rate limiting
@@ -161,12 +182,16 @@ const app = Fastify({
     if (clientRequestId && typeof clientRequestId === 'string') {
       return clientRequestId;
     }
-    // Generate a unique request ID
-    return `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Generate a unique request ID (Feature #357: Use shared utility)
+    return generateRequestId();
   },
   // Disable request logging for certain paths (logged separately)
   disableRequestLogging: false,
 });
+
+// Feature #356: Type-safe request decoration for duration tracking
+// Using [number, number] type for process.hrtime() result
+app.decorateRequest('startTime', null as [number, number] | null);
 
 // Feature #153: Add request ID to response headers for correlation
 app.addHook('onRequest', async (request, reply) => {
@@ -174,7 +199,7 @@ app.addHook('onRequest', async (request, reply) => {
   reply.header('X-Request-ID', request.id);
 
   // Store request start time for duration calculation
-  (request as any).startTime = process.hrtime();
+  request.startTime = process.hrtime();
 });
 
 // Feature #153: Log request completion with duration
@@ -185,8 +210,8 @@ app.addHook('onResponse', async (request, reply) => {
     return;
   }
 
-  // Calculate request duration
-  const startTime = (request as any).startTime;
+  // Calculate request duration (Feature #356: type-safe access)
+  const startTime = request.startTime;
   let durationMs = 0;
   if (startTime) {
     const diff = process.hrtime(startTime);
@@ -207,7 +232,8 @@ app.addHook('onResponse', async (request, reply) => {
 // Register plugins
 async function registerPlugins() {
   // Feature #149: CORS - Configurable allowed origins for security
-  // Parse CORS_ORIGINS env var (comma-separated list) or use defaults
+  // Parse CORS_ORIGINS env var (comma-separated list) and combine with defaults
+  // Feature #358: Use shared CORS_ALLOWED_ORIGINS constant
   const corsOriginsEnv = process.env.CORS_ORIGINS;
   const configuredOrigins = corsOriginsEnv
     ? corsOriginsEnv.split(',').map(o => o.trim()).filter(Boolean)
@@ -215,14 +241,7 @@ async function registerPlugins() {
 
   const allowedOrigins = [
     ...configuredOrigins,
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    'http://localhost:5173',  // Vite default (development)
-    'http://localhost:3000',  // Alternative React dev server
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:3000',
-    // Production domains - qa.pixelcraftedmedia.com
-    'https://qa.pixelcraftedmedia.com',
-    'http://qa.pixelcraftedmedia.com',  // HTTP redirect should handle this
+    ...CORS_ALLOWED_ORIGINS,
   ];
 
   // Log allowed origins for debugging (helpful for CORS troubleshooting)
@@ -440,7 +459,7 @@ async function registerPlugins() {
         error: 'Too Many Requests',
         message: `Rate limit exceeded. Please wait ${resetInSeconds} seconds before making more requests.`,
         statusCode: 429,
-        retryAfter: resetInSeconds,
+        retry_after: resetInSeconds, // Feature #360: Use snake_case for consistency with HTTP headers
         limit: rateLimit,
       });
       return;
@@ -808,24 +827,12 @@ async function start() {
     await app.listen({ port, host });
 
     // Initialize Socket.IO server attached to Fastify's underlying HTTP server
-    // Use same CORS origins as the main server
-    const socketAllowedOrigins = [
-      process.env.FRONTEND_URL || 'http://localhost:5173',
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:3000',
-      // Production domains - qa.pixelcraftedmedia.com
-      'https://qa.pixelcraftedmedia.com',
-      'http://qa.pixelcraftedmedia.com',
-    ];
-
-    // Log Socket.IO allowed origins for debugging
-    console.log('Socket.IO allowed origins:', socketAllowedOrigins);
+    // Feature #358: Use shared CORS_ALLOWED_ORIGINS constant
+    console.log('Socket.IO allowed origins:', CORS_ALLOWED_ORIGINS);
 
     io = new SocketIOServer(app.server, {
       cors: {
-        origin: socketAllowedOrigins,
+        origin: [...CORS_ALLOWED_ORIGINS], // Spread to convert readonly tuple to mutable array
         credentials: true,
       },
     });

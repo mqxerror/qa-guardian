@@ -11,6 +11,7 @@
 
 import { query, isDatabaseConnected } from '../database.js';
 import { ComprehensiveReport, ReportSummary } from '../../routes/reports/types.js';
+import { generateId } from '../../utils/index.js';
 
 // ============================================
 // Column Constants (Feature #210: Replace SELECT *)
@@ -58,7 +59,7 @@ export function getMemoryReports(): Map<string, ComprehensiveReport> {
  * Generate unique ID for a report
  */
 export function generateReportId(): string {
-  return `report-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return generateId('report'); // Feature #357: Use shared ID generator
 }
 
 function parseReportRow(row: any): ComprehensiveReport {

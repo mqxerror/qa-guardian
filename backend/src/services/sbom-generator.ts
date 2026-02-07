@@ -273,13 +273,15 @@ async function generateCycloneDxFromNpm(projectPath: string, includeDevDeps: boo
     fs.unlinkSync(outputPath);
 
     return sbom;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    // Feature #356: Use unknown type with proper narrowing
     // Clean up temp file if it exists
     if (fs.existsSync(outputPath)) {
       fs.unlinkSync(outputPath);
     }
 
-    console.error('[SBOM] CycloneDX generation failed:', error.message);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[SBOM] CycloneDX generation failed:', errorMessage);
 
     // Fall back to reading package.json directly
     return await generateCycloneDxFromPackageJson(projectPath, includeDevDeps);

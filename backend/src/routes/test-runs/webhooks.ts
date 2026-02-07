@@ -7,8 +7,11 @@
  */
 
 import * as crypto from 'crypto';
-import { validateWebhookURL } from '../../utils/index.js';
-import { queueWebhookDelivery, isWebhookQueueReady, WEBHOOK_AUTO_DISABLE_THRESHOLD, type SubscriptionStatsResult } from '../../services/webhook-queue.js';
+import { validateWebhookURL, generateId } from '../../utils/index.js';
+import { queueWebhookDelivery, isWebhookQueueReady, WEBHOOK_AUTO_DISABLE_THRESHOLD, generateWebhookSignature, type SubscriptionStatsResult } from '../../services/webhook-queue.js';
+
+// Re-export generateWebhookSignature for consumers of this module (Feature #357)
+export { generateWebhookSignature };
 import * as webhookRepo from '../../services/repositories/webhooks.js';
 
 // ============================================================================
@@ -65,6 +68,101 @@ export type WebhookEventType =
   | 'accessibility.issue.found';
 
 // ============================================================================
+// Webhook Payload Types (Feature #358: Replace Record<string, any>)
+// ============================================================================
+
+/**
+ * Base interface for all webhook payloads.
+ * All payloads must include event type and timestamp.
+ * Index signature allows arbitrary additional properties.
+ */
+export interface WebhookPayloadBase {
+  event: WebhookEventType | 'batch' | 'test' | string;
+  timestamp: string;
+  organization_id?: string;
+  project_id?: string;
+  [key: string]: unknown; // Allow arbitrary additional properties
+}
+
+/**
+ * Test run event payload
+ */
+export interface TestRunPayload extends WebhookPayloadBase {
+  run_id: string;
+  run_name?: string;
+  status: 'started' | 'running' | 'completed' | 'failed' | 'passed';
+  total_tests?: number;
+  passed_tests?: number;
+  failed_tests?: number;
+  skipped_tests?: number;
+  duration_ms?: number;
+  triggered_by?: string;
+}
+
+/**
+ * Test result event payload
+ */
+export interface TestResultPayload extends WebhookPayloadBase {
+  test_id: string;
+  test_name: string;
+  suite_id?: string;
+  suite_name?: string;
+  status: 'passed' | 'failed' | 'skipped' | 'error';
+  duration_ms?: number;
+  error_message?: string;
+}
+
+/**
+ * Visual diff event payload
+ */
+export interface VisualDiffPayload extends WebhookPayloadBase {
+  baseline_id: string;
+  comparison_id: string;
+  diff_percentage: number;
+  viewport?: string;
+  url?: string;
+}
+
+/**
+ * Security vulnerability event payload
+ */
+export interface SecurityPayload extends WebhookPayloadBase {
+  scan_id: string;
+  vulnerability_count: number;
+  severity_breakdown?: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+}
+
+/**
+ * Batch webhook payload (aggregated events)
+ */
+export interface BatchWebhookPayload extends WebhookPayloadBase {
+  event: 'batch';
+  subscription_id: string;
+  subscription_name: string;
+  events: WebhookPayload[];
+  event_types: string[];
+  first_event_at: string;
+  last_event_at: string;
+}
+
+/**
+ * Generic webhook payload type.
+ * Uses union of known types with fallback to base + arbitrary properties.
+ */
+export type WebhookPayload =
+  | TestRunPayload
+  | TestResultPayload
+  | VisualDiffPayload
+  | SecurityPayload
+  | BatchWebhookPayload
+  | (WebhookPayloadBase & Record<string, unknown>);
+
+// ============================================================================
 // Webhook Delivery Tracking
 // ============================================================================
 
@@ -73,7 +171,7 @@ export interface WebhookDeliveryAttempt {
   id: string;
   subscription_id: string;
   event: string;
-  payload: Record<string, any>;
+  payload: WebhookPayload; // Feature #358: Use typed payload
   attempt_number: number;
   max_attempts: number;
   status: 'pending' | 'success' | 'failed' | 'retrying';
@@ -84,7 +182,11 @@ export interface WebhookDeliveryAttempt {
   completed_at?: Date;
 }
 
-// Feature #1294: Store for pending webhook delivery retries
+/**
+ * @deprecated Feature #358: This Map is dead code from pre-BullMQ implementation.
+ * Webhook delivery now uses BullMQ queue (Feature #320) - see webhook-queue.ts.
+ * Kept for backward compatibility but never populated.
+ */
 export const webhookDeliveryQueue: Map<string, WebhookDeliveryAttempt> = new Map();
 
 // ============================================================================
@@ -93,7 +195,7 @@ export const webhookDeliveryQueue: Map<string, WebhookDeliveryAttempt> = new Map
 
 // Feature #1304: Webhook batch queue
 export interface WebhookBatchEntry {
-  payload: Record<string, any>;
+  payload: WebhookPayload; // Feature #358: Use typed payload
   eventType: string;
   context?: { runId?: string; projectId?: string };
   addedAt: Date;
@@ -184,7 +286,7 @@ export async function initializeWebhookSubscriptionsFromDb(): Promise<void> {
 /**
  * Feature #329: Create subscription in both memory and database
  */
-export async function createWebhookSubscription(subscription: WebhookSubscription): Promise<WebhookSubscription> {
+export async function createWebhookSubscriptionInDb(subscription: WebhookSubscription): Promise<WebhookSubscription> {
   // Add to memory first
   webhookSubscriptions.set(subscription.id, subscription);
 
@@ -259,28 +361,7 @@ export const MAX_WEBHOOK_RETRIES = 3;
 // Replay protection window in seconds (5 minutes)
 export const WEBHOOK_SIGNATURE_TOLERANCE_SECONDS = 300;
 
-/**
- * Generate Stripe-style webhook signature
- * Format: t=timestamp,v1=hmac_signature
- *
- * The signature is computed as: HMAC-SHA256(secret, timestamp + "." + payload)
- * This includes the timestamp in the signed payload to prevent replay attacks.
- *
- * Feature #314: Stripe-style HMAC signing with timestamp
- */
-export function generateWebhookSignature(payload: string, secret: string): { signature: string; timestamp: number } {
-  const timestamp = Math.floor(Date.now() / 1000);
-  const signedPayload = `${timestamp}.${payload}`;
-  const hmac = crypto
-    .createHmac('sha256', secret)
-    .update(signedPayload)
-    .digest('hex');
-
-  return {
-    signature: `t=${timestamp},v1=${hmac}`,
-    timestamp,
-  };
-}
+// generateWebhookSignature is now imported from webhook-queue.js (Feature #357)
 
 /**
  * Verify Stripe-style webhook signature with replay protection
@@ -577,18 +658,20 @@ export async function flushWebhookBatch(subscriptionId: string): Promise<void> {
   const firstEntry = batch[0];
   const lastEntry = batch[batch.length - 1];
 
-  // Build batched payload
-  const batchedPayload = {
-    batch: true,
-    event_count: batch.length,
+  // Build batched payload (Feature #358: typed as BatchWebhookPayload)
+  const batchedPayload: BatchWebhookPayload = {
+    event: 'batch',
+    timestamp: new Date().toISOString(),
+    subscription_id: subscriptionId,
+    subscription_name: subscription.name,
     events: batch.map(entry => ({
       event: entry.eventType,
       timestamp: entry.addedAt.toISOString(),
       ...entry.payload,
-    })),
+    })) as WebhookPayload[],
+    event_types: [...new Set(batch.map(e => e.eventType))],
     first_event_at: firstEntry?.addedAt.toISOString() || new Date().toISOString(),
     last_event_at: lastEntry?.addedAt.toISOString() || new Date().toISOString(),
-    flushed_at: new Date().toISOString(),
   };
 
   // Send the batch using the retry-enabled delivery
@@ -601,7 +684,7 @@ export async function flushWebhookBatch(subscriptionId: string): Promise<void> {
 // Add an event to a subscription's batch
 export async function addToBatch(
   subscription: WebhookSubscription,
-  payload: Record<string, any>,
+  payload: WebhookPayload, // Feature #358: Use typed payload
   eventType: string,
   context?: { runId?: string; projectId?: string }
 ): Promise<void> {
@@ -648,7 +731,7 @@ export async function addToBatch(
 // If batch_enabled is true on subscription, adds to batch queue instead of immediate delivery
 export async function deliverOrBatchWebhook(
   subscription: WebhookSubscription,
-  payload: Record<string, any>,
+  payload: WebhookPayload, // Feature #358: Use typed payload
   eventType: string,
   context?: { runId?: string; projectId?: string }
 ): Promise<{ success: boolean; attempts: number; error?: string; deliveryId: string } | { batched: true }> {
@@ -668,11 +751,11 @@ export async function deliverOrBatchWebhook(
 // Feature #320: Uses BullMQ queue when available for reliable delivery
 export async function deliverWebhookWithRetry(
   subscription: WebhookSubscription,
-  payload: Record<string, any>,
+  payload: WebhookPayload, // Feature #358: Use typed payload
   eventType: string,
   context?: { runId?: string; projectId?: string }
 ): Promise<{ success: boolean; attempts: number; error?: string; deliveryId: string }> {
-  const deliveryId = `del_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  const deliveryId = generateId('del', 7); // Feature #357: Use shared ID generator
 
   // Feature #320: Try to use BullMQ queue for reliable delivery
   if (isWebhookQueueReady()) {
@@ -969,16 +1052,17 @@ export const getWebhookDeliveryLogs = getWebhookDeliveryLogsInMemory;
 // ============================================================================
 
 // Feature #1291: Template variable interpolation function
-export function interpolateTemplate(template: string, data: Record<string, any>): string {
+// Feature #358: Use Record<string, unknown> for type safety
+export function interpolateTemplate(template: string, data: Record<string, unknown>): string {
   return template.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
     const keys = path.trim().split('.');
-    let value: any = data;
+    let value: unknown = data;
 
     for (const key of keys) {
       if (value === undefined || value === null) {
         return match; // Return original placeholder if path not found
       }
-      value = value[key];
+      value = (value as Record<string, unknown>)[key];
     }
 
     if (value === undefined || value === null) {
@@ -995,10 +1079,11 @@ export function interpolateTemplate(template: string, data: Record<string, any>)
 }
 
 // Feature #1291: Apply custom template to webhook payload
+// Feature #358: Use Record<string, unknown> for type safety
 export function applyPayloadTemplate(
   subscription: WebhookSubscription,
-  defaultPayload: Record<string, any>
-): Record<string, any> {
+  defaultPayload: Record<string, unknown>
+): Record<string, unknown> {
   if (!subscription.payload_template) {
     return defaultPayload;
   }

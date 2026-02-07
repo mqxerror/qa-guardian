@@ -18,6 +18,7 @@
 
 import { query, isDatabaseConnected } from '../database.js';
 import { AIGeneratedTest, ApprovalStatus, ApprovalInfo } from '../../routes/ai-test-generator/types.js';
+import { generateId } from '../../utils/index.js';
 
 // ============================================
 // Deprecated Memory Store Accessors
@@ -69,7 +70,7 @@ export function getMemoryTestsByApprovalStatus(): Map<ApprovalStatus, Set<string
  * Generate a unique ID for a test
  */
 export function generateTestId(): string {
-  return `aigt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  return generateId('aigt'); // Feature #357: Use shared ID generator
 }
 
 /**

@@ -26,6 +26,7 @@ import * as os from 'os';
 import { SecretPattern } from './types.js';
 import { getSecretPatterns } from './stores.js';
 import * as gitleaksRepo from '../../services/repositories/gitleaks.js';
+import { generateId } from '../../utils/index.js';
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -107,13 +108,8 @@ export interface GitleaksScan {
   error_message?: string;
 }
 
-// ============================================================
-// In-memory stores for Gitleaks - DEPRECATED (#2121)
-// Kept for backward compatibility; routes now use async DB calls.
-// ============================================================
-
-export const gitleaksConfigs: Map<string, GitleaksConfig> = new Map(); // DEPRECATED
-export const gitleaksScans: Map<string, GitleaksScan[]> = new Map(); // DEPRECATED
+// Feature #360: Removed deprecated gitleaksConfigs and gitleaksScans Maps
+// In-memory stores removed in #2121 - routes now use async DB calls via gitleaksRepo.
 
 // Default Gitleaks configuration
 const DEFAULT_GITLEAKS_CONFIG: GitleaksConfig = {
@@ -880,7 +876,7 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
       }
 
       // Feature #1511: Run actual Gitleaks CLI scan
-      const scanId = `gitleaks_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const scanId = generateId('gitleaks'); // Feature #357: Use shared ID generator
 
       // Check Gitleaks availability
       const gitleaksInfo = checkGitleaksAvailability();

@@ -15,7 +15,7 @@
 import { Queue, Worker, Job, QueueEvents, JobsOptions } from 'bullmq';
 import { Redis as IORedis } from 'ioredis';
 import * as crypto from 'crypto';
-import { validateWebhookURL } from '../utils/index.js';
+import { validateWebhookURL, generateId } from '../utils/index.js';
 
 // ============================================================================
 // Types and Interfaces
@@ -297,7 +297,7 @@ export function registerSubscriptionStatsCallback(
  */
 async function processWebhookJob(job: Job<WebhookJobData>): Promise<WebhookDeliveryResult> {
   const { data } = job;
-  const deliveryId = `del_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  const deliveryId = generateId('del', 7); // Feature #357: Use shared ID generator
   const startTime = Date.now();
   const attemptNumber = job.attemptsMade + 1;
 
@@ -521,7 +521,7 @@ export async function queueWebhookDelivery(
   };
 
   const jobOptions: JobsOptions = {
-    jobId: `webhook-${subscriptionId}-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+    jobId: generateId(`webhook-${subscriptionId}`, 7), // Feature #357: Use shared ID generator
     attempts: (options?.maxRetries ?? 5) + 1,
     backoff: {
       type: 'custom',

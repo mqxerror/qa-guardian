@@ -12,12 +12,12 @@ import {
   webhookSubscriptions,
   applyPayloadTemplate,
   generateWebhookSignature,
-  createWebhookSubscription,
+  createWebhookSubscriptionInDb,
   updateWebhookSubscriptionInDb,
   deleteWebhookSubscriptionFromDb,
   MAX_WEBHOOK_RETRIES
 } from './webhooks.js';
-import { validateWebhookURL } from '../../utils/index.js';
+import { validateWebhookURL, generateId } from '../../utils/index.js';
 import { WebhookLogEntry, webhookLog } from './alerts.js';
 
 /**
@@ -182,7 +182,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     console.log(`[WEBHOOK] Testing URL "${url}" by ${user.email}`);
 
     const startTime = Date.now();
-    const deliveryId = `test-url-${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const deliveryId = generateId('test-url', 7); // Feature #357: Use shared ID generator
 
     // Build test payload
     const testPayload = customPayload || {
@@ -443,7 +443,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     }
 
     const now = new Date();
-    const id = `wsub_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const id = generateId('wsub', 7); // Feature #357: Use shared ID generator
 
     const subscription: WebhookSubscription = {
       id,
@@ -471,7 +471,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     };
 
     // Feature #329: Create subscription in both memory and database
-    await createWebhookSubscription(subscription);
+    await createWebhookSubscriptionInDb(subscription);
 
     console.log(`[WEBHOOK] Created subscription "${name}" (${id}) by ${user.email}`);
 

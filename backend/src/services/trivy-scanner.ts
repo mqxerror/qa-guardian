@@ -12,6 +12,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { getCache } from './cache.js';
+import { generateId } from '../utils/index.js';
 
 // ============================================================
 // Trivy Types
@@ -215,7 +216,7 @@ export async function scanContainerImage(
   } = options;
 
   const startTime = Date.now();
-  const scanId = `container-scan-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const scanId = generateId('container-scan'); // Feature #357: Use shared ID generator
   const scannedAt = new Date().toISOString();
 
   // Parse image reference
@@ -340,7 +341,7 @@ export async function scanContainerImage(
       }
 
       const rawResult: TrivyRawResult = JSON.parse(rawOutput);
-      const { vulnerabilities, layers } = parseTriyvOutput(rawResult);
+      const { vulnerabilities, layers } = parseTrivyOutput(rawResult);
 
       const result = createSuccessResult(scanId, parsedImage, scannedAt, trivyInfo.version!, duration, vulnerabilities, layers);
 
@@ -358,7 +359,8 @@ export async function scanContainerImage(
     console.log('[Trivy] No output file found');
     return createSuccessResult(scanId, parsedImage, scannedAt, trivyInfo.version!, duration, []);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    // Feature #356: Use unknown type with proper narrowing
     // Clean up temp file on error
     try {
       if (fs.existsSync(tempOutputFile)) {
@@ -367,6 +369,7 @@ export async function scanContainerImage(
     } catch { /* cleanup errors intentionally ignored */ }
 
     const duration = Date.now() - startTime;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error during Trivy scan';
 
     return {
       success: false,
@@ -386,7 +389,7 @@ export async function scanContainerImage(
         from_base_image: 0,
       },
       vulnerabilities: [],
-      error: error.message || 'Unknown error during Trivy scan',
+      error: errorMessage,
     };
   }
 }
@@ -436,7 +439,7 @@ function parseImageReference(imageRef: string): TrivyScanResult['image'] {
 /**
  * Parse Trivy JSON output into our vulnerability format
  */
-function parseTriyvOutput(raw: TrivyRawResult): { vulnerabilities: TrivyVulnerability[]; layers: TrivyLayerInfo[] } {
+function parseTrivyOutput(raw: TrivyRawResult): { vulnerabilities: TrivyVulnerability[]; layers: TrivyLayerInfo[] } {
   const vulnerabilities: TrivyVulnerability[] = [];
   const layerVulnCounts: Map<string, number> = new Map();
 

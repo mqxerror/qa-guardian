@@ -7,7 +7,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate, generateWebhookSignature, WEBHOOK_SIGNATURE_TOLERANCE_SECONDS, getWebhookDeliveryLogsFromDb, MAX_WEBHOOK_RETRIES } from './webhooks.js';
-import { validateWebhookURL } from '../../utils/index.js';
+import { validateWebhookURL, generateId } from '../../utils/index.js';
 import { webhookLog } from './alerts.js';
 import { logWebhookDelivery, flattenObject } from './webhook-crud.js';
 import * as webhookRepo from '../../services/repositories/webhooks.js';
@@ -342,7 +342,7 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
     console.log(`[WEBHOOK] Testing subscription "${subscription.name}" (${subscriptionId})`);
 
     const startTime = Date.now();
-    const deliveryId = `test-${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const deliveryId = generateId('test', 7); // Feature #357: Use shared ID generator
 
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
