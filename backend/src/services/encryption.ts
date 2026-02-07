@@ -258,3 +258,34 @@ export function encryptIfNeeded(value: string): string {
 export function generateEncryptionKey(): string {
   return randomBytes(32).toString('base64');
 }
+
+/**
+ * Feature #236: Check if a value uses the old v1 encryption format
+ */
+export function isV1Encrypted(value: string): boolean {
+  if (!value) return false;
+  return value.startsWith(ENCRYPTED_PREFIX) && !value.startsWith(ENCRYPTED_PREFIX_V2);
+}
+
+/**
+ * Feature #236: Migrate a v1 encrypted value to v2 format
+ * Decrypts the v1 value and re-encrypts with v2 (random salt)
+ *
+ * @param v1Ciphertext - The v1 encrypted value (enc:v1:...)
+ * @returns The re-encrypted v2 value (enc:v2:...), or original if not v1 or migration fails
+ */
+export function migrateV1ToV2(v1Ciphertext: string): string {
+  if (!v1Ciphertext || !isV1Encrypted(v1Ciphertext)) {
+    return v1Ciphertext;
+  }
+
+  try {
+    // Decrypt using v1 format
+    const plaintext = decrypt(v1Ciphertext);
+    // Re-encrypt using v2 format (which uses random salt)
+    return encrypt(plaintext);
+  } catch (error) {
+    console.error('[Encryption] Failed to migrate v1 to v2:', error);
+    throw error;
+  }
+}

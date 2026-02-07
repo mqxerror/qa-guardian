@@ -60,7 +60,7 @@ const API_BASE_URL = '/api/v1';
 // Feature #226: Background token refresh timer
 // Proactively refresh tokens before they expire to prevent 401 errors
 let refreshTimerId: ReturnType<typeof setInterval> | null = null;
-const REFRESH_INTERVAL_MS = 50 * 60 * 1000; // 50 minutes (access token is 1 hour)
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // Feature #238: 5 minutes for reliable refresh in background tabs
 const PROACTIVE_REFRESH_THRESHOLD_MS = 10 * 60 * 1000; // Refresh if expires within 10 minutes
 
 // Feature #226: Start the background refresh timer

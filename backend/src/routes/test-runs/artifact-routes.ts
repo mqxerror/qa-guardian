@@ -1,6 +1,7 @@
 /**
  * Artifact Routes Module - Test artifact management routes
  * Feature #1356: Code quality - extracted from test-runs.ts
+ * Feature #245: Types and helpers extracted to artifact-types.ts
  */
 
 import { FastifyInstance } from 'fastify';
@@ -11,15 +12,16 @@ import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { getTestSuite, getTestSuitesMap } from '../test-suites.js';
 import { getProject as dbGetProject } from '../projects/stores.js';
 import { TRACES_DIR, VIDEOS_DIR } from './storage.js';
-import { testRuns, TestRun } from './execution.js';
-import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
+import { listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
 
-// Helper: get test run from Map first, then fall back to DB
-async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
-  const fromMap = testRuns.get(runId);
-  if (fromMap) return fromMap;
-  return await dbGetTestRun(runId) as TestRun | undefined;
-}
+// Import types and helpers from extracted module
+import {
+  getTestRunWithFallback,
+  ArtifactInfo,
+  ScreenshotInfo,
+  ArtifactToDelete,
+  DownloadArtifactInfo,
+} from './artifact-types.js';
 
 /**
  * Register artifact routes on the Fastify app
@@ -275,18 +277,8 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
       };
     }
 
-    // Collect all artifacts from test results
-    const artifacts: {
-      id: string;
-      type: 'screenshot' | 'video' | 'trace' | 'log';
-      name: string;
-      test_id: string;
-      test_name: string;
-      url: string;
-      size_bytes?: number;
-      mime_type: string;
-      created_at?: string;
-    }[] = [];
+    // Collect all artifacts from test results (using ArtifactInfo from types module)
+    const artifacts: ArtifactInfo[] = [];
 
     // Build base URL
     const hostname = request.hostname.includes(':') ? request.hostname.split(':')[0] : request.hostname;
@@ -455,22 +447,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     const port = (request.server as any)?.server?.address?.()?.port || 3001;
     const baseUrl = `${request.protocol}://${hostname}:${port}`;
 
-    interface ScreenshotInfo {
-      id: string;
-      test_id: string;
-      test_name: string;
-      screenshot_type: 'current' | 'baseline' | 'diff' | 'failure' | 'step';
-      step_index?: number;
-      step_action?: string;
-      url: string;
-      size_bytes?: number;
-      viewport?: { width: number; height: number };
-      is_failure_screenshot: boolean;
-      // Feature #2053: Added 'warning' status for accessibility tests
-      test_status: 'passed' | 'failed' | 'error' | 'skipped' | 'warning';
-      created_at?: string;
-    }
-
+    // Use ScreenshotInfo from types module
     const screenshots: ScreenshotInfo[] = [];
 
     // Filter results by test_id if specified
@@ -979,17 +956,8 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
-    interface ArtifactInfo {
-      name: string;
-      type: 'trace' | 'video' | 'screenshot';
-      path?: string;
-      data?: string;
-      size_bytes: number;
-      test_id: string;
-      test_name: string;
-    }
-
-    const artifacts: ArtifactInfo[] = [];
+    // Use DownloadArtifactInfo from types module
+    const artifacts: DownloadArtifactInfo[] = [];
 
     for (const result of filteredResults) {
       const testName = result.test_name.replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -1175,16 +1143,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
       ? new Date(Date.now() - older_than_days * 24 * 60 * 60 * 1000)
       : null;
 
-    interface ArtifactToDelete {
-      name: string;
-      type: 'screenshot' | 'video' | 'trace';
-      path: string;
-      size_bytes: number;
-      test_id: string;
-      test_name: string;
-      created_at?: Date;
-    }
-
+    // Use ArtifactToDelete from types module
     const artifactsToDelete: ArtifactToDelete[] = [];
     let totalSizeToFree = 0;
 

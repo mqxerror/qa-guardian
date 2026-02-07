@@ -57,6 +57,10 @@ import * as os from 'os';
 // Socket.IO server instance (will be initialized after server starts)
 let io: SocketIOServer | null = null;
 
+// Feature #237: Socket.IO Redis adapter clients for graceful shutdown cleanup
+let socketPubClient: Redis | null = null;
+let socketSubClient: Redis | null = null;
+
 // ========== RATE LIMITING ==========
 // Feature #214: Redis-based distributed rate limiting
 interface RateLimitEntry {
@@ -827,9 +831,10 @@ async function start() {
         }
       })();
 
-      // Create dedicated pub/sub clients for the Socket.IO adapter
-      const socketPubClient = new Redis(redisOptions);
-      const socketSubClient = new Redis(redisOptions);
+      // Feature #237: Create dedicated pub/sub clients for the Socket.IO adapter
+      // Store in module-level variables so gracefulShutdown can close them
+      socketPubClient = new Redis(redisOptions);
+      socketSubClient = new Redis(redisOptions);
 
       // Wait for both clients to be ready
       await Promise.all([
@@ -1019,6 +1024,15 @@ async function gracefulShutdown(): Promise<void> {
   stopCleanupJob(); // Feature #154: Stop cleanup job
   await shutdownExecutionQueue(); // Feature #155: Stop execution queue
   await closeSubscriber(); // Feature #200: Close Redis event subscriber
+  // Feature #237: Close Socket.IO adapter Redis clients
+  if (socketPubClient) {
+    await socketPubClient.quit();
+    socketPubClient = null;
+  }
+  if (socketSubClient) {
+    await socketSubClient.quit();
+    socketSubClient = null;
+  }
   await closeCache(); // Feature #60: Close cache connection
   await closeDatabase();
   await app.close();

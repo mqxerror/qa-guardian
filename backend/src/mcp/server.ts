@@ -4,40 +4,11 @@
  * Model Context Protocol (MCP) server for QA Guardian integration with Claude Code.
  * Supports stdio transport for local use and SSE transport for remote use.
  *
- * REFACTORED (Feature #1356 + Feature #243):
- * The original monolithic server has been split into multiple modules:
+ * Feature #1356/#252: Refactored into modular architecture.
+ * See extracted modules: mcp-types, mcp-cli, mcp-auth, mcp-validation,
+ * mcp-streaming, mcp-batch, mcp-workflow, mcp-transport-sse, etc.
  *
- * EXTRACTED MODULES:
- * - mcp-types.ts (~320 lines): All TypeScript interfaces and type definitions
- * - mcp-cli.ts (~280 lines): CLI argument parsing, config file loading, main entry point
- * - tool-definitions.ts: Tool definitions (TOOLS array)
- * - tool-definitions-part1a.ts, tool-definitions-part2.ts, tool-definitions-part2a.ts: Large tool registrations
- * - tool-definitions-core.ts: Core tool definitions
- * - resource-definitions.ts: Resource URI definitions (RESOURCES array)
- * - tool-permissions.ts: Scope-to-tool permission mapping (TOOL_SCOPE_MAP)
- * - string-utils.ts: Levenshtein distance and string similarity functions
- * - hash-utils.ts: Request hash generation, stream ID generation
- * - cron-utils.ts: Cron expression parsing and scheduling
- * - validation-utils.ts: Parameter validation, K6 script validation
- * - api-versioning.ts: API version negotiation and deprecation warnings
- * - webhook-callbacks.ts: Webhook payload generation and delivery
- * - insights-utils.ts: Visual trend insights generation
- * - handlers/index.ts: Handler registry with 10+ specialized handler modules
- *
- * REMAINING IN THIS FILE (~3200 lines):
- * - MCPServer class: Core server with transport handling (stdio/SSE)
- * - Rate limiting, concurrent request management, idempotency caching
- * - handleRequest dispatch, tool execution, resource reading
- * - Streaming response support, graceful shutdown
- *
- * FUTURE EXTRACTION CANDIDATES:
- * - Transport-specific code could move to mcp-transport-stdio.ts / mcp-transport-sse.ts
- * - Rate limiting could move to mcp-rate-limit.ts
- * - The handleRequest method chain could be further modularized
- *
- * Note: The MCPServer class uses many interrelated private state variables,
- * making aggressive splitting complex. The current structure prioritizes
- * runtime reliability over file size optimization.
+ * @module server
  */
 
 import * as readline from 'readline';
@@ -46,26 +17,20 @@ import { randomUUID } from 'crypto';
 
 // Feature #1356: Import types from extracted module
 import {
-  TransportType,
   MCPRequest,
   MCPResponse,
   MCPNotification,
   ServerConfig,
   StreamMetadata,
   StreamChunkNotification,
-  BatchOperationItem,
-  BatchOperationResult,
-  BatchResponse,
   IdempotencyEntry,
-  RateLimitConfig,
-  RateLimitEntry,
-  PerKeyRateLimitConfig,
   SSEClient,
   MCP_PROTOCOL_VERSION,
   SSE_PING_INTERVAL,
   SSE_CONNECTION_TIMEOUT,
-  SSE_EVENT_BUFFER_MAX,
-  SSE_EVENT_BUFFER_TTL,
+  AlertSubscription,
+  Workflow,
+  WorkflowSchedule,
 } from './mcp-types.js';
 
 // Feature #1356: Import tool and resource definitions from extracted modules
@@ -79,43 +44,20 @@ import { hasHandler, executeHandler, HandlerContext } from './handlers/index.js'
 import { TOOL_SCOPE_MAP } from './tool-permissions.js';
 
 // Feature #1356: Import string utilities from extracted module
-import { findSimilarStrings, levenshteinDistance } from './string-utils.js';
-
-// Feature #1356: Import cron utilities from extracted module
-import { calculateNextCronRun, describeCronExpression } from './cron-utils.js';
-
-// Feature #1356: Import validation utilities from extracted module
-import {
-  getJsonType,
-  isTypeMatch,
-  getValidExample,
-  validateK6Script,
-  validateParameterTypes,
-  findMissingRequiredParams,
-} from './validation-utils.js';
+import { findSimilarStrings } from './string-utils.js';
 
 // Feature #1356: Import hash utilities from extracted module
-import {
-  generateRequestHash,
-  generateStreamId,
-  generateOperationId,
-} from './hash-utils.js';
+import { generateRequestHash } from './hash-utils.js';
 
 // Feature #1356: Import insights utilities from extracted module
 import { generateVisualTrendInsights as generateVisualTrendInsightsUtil } from './insights-utils.js';
 
 // Feature #1356: Import API versioning from extracted module
 import {
-  APIVersionStatus,
-  APIVersionInfo,
   API_VERSIONS,
   DEFAULT_API_VERSION,
   CURRENT_API_VERSION,
   parseApiVersion,
-  getVersionInfo,
-  isVersionDeprecated,
-  getSupportedVersions,
-  getCurrentApiVersion,
   addVersionWarnings,
 } from './api-versioning.js';
 
@@ -135,6 +77,38 @@ import { SSEClientManager, parseJsonWithDetails, buildJsonParseErrorMessage } fr
 import { ConcurrencyManager, PRIORITY_LOW, PRIORITY_NORMAL, PRIORITY_HIGH } from './mcp-concurrency.js';
 import { IdempotencyCache } from './mcp-idempotency.js';
 import { OperationsTracker, executeWithTimeout } from './mcp-operations.js';
+import { ApiClient, createApiClient } from './mcp-api-client.js';
+import { StreamingManager, createStreamingManager, StreamingConfig } from './mcp-streaming.js';
+import {
+  handleResourcesRead as handleResourcesReadImpl,
+  RESOURCE_PATTERNS,
+  validateResourceUri,
+  resourceNotFoundError,
+  unknownResourceError,
+  ResourceHandlerContext,
+} from './mcp-resources.js';
+import {
+  checkAuth as checkAuthImpl,
+  validateMcpScope as validateMcpScopeImpl,
+  isKnownTool as isKnownToolImpl,
+  hasToolPermission as hasToolPermissionImpl,
+  toolPermissionDeniedError as toolPermissionDeniedErrorImpl,
+  unknownToolError as unknownToolErrorImpl,
+} from './mcp-auth.js';
+import {
+  validateRequiredParams as validateRequiredParamsImpl,
+  validateParamTypes as validateParamTypesImpl,
+} from './mcp-validation.js';
+import { AuditLogger, createAuditLogger, AuditLogEntry } from './mcp-audit.js';
+import { handleToolsCallBatch as handleToolsCallBatchImpl, BatchContext } from './mcp-batch.js';
+import { executeWorkflowStep as executeWorkflowStepImpl, WorkflowContext } from './mcp-workflow.js';
+import {
+  handleSSEConnection as handleSSEConnectionImpl,
+  handleSSEMessage as handleSSEMessageImpl,
+  sendSSEEvent as sendSSEEventImpl,
+  sendSSEEventWithId as sendSSEEventWithIdImpl,
+  SSETransportContext,
+} from './mcp-transport-sse.js';
 
 // Server info
 const SERVER_INFO = {
@@ -155,6 +129,9 @@ class MCPServer {
   private concurrencyManager: ConcurrencyManager;
   private idempotencyManager: IdempotencyCache;
   private operationsTracker: OperationsTracker;
+  private apiClient: ApiClient;
+  private streamingManager: StreamingManager;
+  private auditLogger: AuditLogger;
 
   // Legacy compatibility - SSE clients (delegates to sseClientManager)
   private get sseClients(): Map<string, SSEClient> {
@@ -175,83 +152,14 @@ class MCPServer {
   private streamThreshold = 20; // Minimum items to trigger streaming
   private activeStreams: Map<string, StreamMetadata> = new Map();
 
-  // Feature #1217: Alert subscription tracking
-  private alertSubscriptions: Map<string, {
-    id: string;
-    filters: {
-      severity?: string[];
-      source?: string[];
-      check_ids?: string[];
-      include_resolved: boolean;
-    };
-    startTime: number;
-    timeoutMs: number;
-    pollIntervalMs: number;
-    lastAlertId?: string;
-    alertsReceived: number;
-    isActive: boolean;
-  }> = new Map();
+  // Feature #1217: Alert subscription tracking (types in mcp-types.ts)
+  private alertSubscriptions: Map<string, AlertSubscription> = new Map();
 
-  // Feature #1219: Workflow storage
-  private workflows: Map<string, {
-    id: string;
-    name: string;
-    description?: string;
-    steps: Array<{
-      id: string;
-      name: string;
-      tool: string;
-      arguments: Record<string, unknown>;
-      condition?: string;
-      on_failure?: 'stop' | 'continue' | 'skip_remaining';
-      timeout_ms?: number;
-      retry_count?: number;
-    }>;
-    created_at: Date;
-    created_by?: string;
-    triggers?: {
-      schedule?: string;
-      on_event?: string;
-      manual?: boolean;
-    };
-    variables?: Record<string, unknown>;
-    last_run?: {
-      run_id: string;
-      status: string;
-      started_at: Date;
-      completed_at?: Date;
-    };
-  }> = new Map();
+  // Feature #1219: Workflow storage (types in mcp-types.ts)
+  private workflows: Map<string, Workflow> = new Map();
 
-  // Feature #1221: Workflow schedules storage
-  private workflowSchedules: Map<string, {
-    id: string;
-    workflow_id: string;
-    cron: string;
-    timezone: string;
-    enabled: boolean;
-    variables?: Record<string, unknown>;
-    notify_on_success: boolean;
-    notify_on_failure: boolean;
-    max_consecutive_failures: number;
-    consecutive_failures: number;
-    created_at: Date;
-    created_by?: string;
-    next_run?: Date;
-    last_run?: {
-      run_id: string;
-      status: 'success' | 'failed';
-      started_at: Date;
-      completed_at?: Date;
-    };
-    execution_history: Array<{
-      run_id: string;
-      status: 'success' | 'failed';
-      started_at: Date;
-      completed_at: Date;
-      duration_ms: number;
-    }>;
-  }> = new Map();
+  // Feature #1221: Workflow schedules storage (types in mcp-types.ts)
+  private workflowSchedules: Map<string, WorkflowSchedule> = new Map();
 
   // Feature #857: Idempotency cache
   private idempotencyCache: Map<string, IdempotencyEntry> = new Map();
@@ -301,6 +209,12 @@ class MCPServer {
     // Initialize operations tracker
     this.operationsTracker = new OperationsTracker(logFn);
 
+    // Feature #252: Initialize API client
+    this.apiClient = createApiClient({
+      apiUrl: config.apiUrl || 'http://localhost:3001',
+      apiKey: config.apiKey,
+    }, logFn);
+
     // Feature #849: Allow configuring tool execution timeout
     if (config.toolTimeout !== undefined && config.toolTimeout > 0) {
       this.toolTimeout = config.toolTimeout;
@@ -317,10 +231,27 @@ class MCPServer {
       this.streamThreshold = config.streamThreshold;
     }
 
+    // Feature #252: Initialize streaming manager
+    this.streamingManager = createStreamingManager({
+      config: {
+        enableStreaming: this.enableStreaming,
+        streamChunkSize: this.streamChunkSize,
+        streamThreshold: this.streamThreshold,
+      },
+      log: logFn,
+      sendNotification: (notification) => this.sendStreamNotification(notification),
+    });
+
     // Feature #858: Configure API versioning
     if (config.defaultApiVersion && API_VERSIONS[config.defaultApiVersion]) {
       this.defaultApiVersion = config.defaultApiVersion;
     }
+
+    // Feature #252: Initialize audit logger
+    this.auditLogger = createAuditLogger({
+      apiUrl: config.apiUrl || 'http://localhost:3001',
+      apiKey: config.apiKey,
+    }, logFn);
   }
 
   // Feature #851: Parse priority from request params (delegates to concurrency manager)
@@ -338,50 +269,14 @@ class MCPServer {
     return addVersionWarnings(response, version, (msg) => this.log(msg));
   }
 
-  // Feature #854: Check if result should be streamed
+  // Feature #854: Check if result should be streamed (delegates to streaming manager)
   private shouldStreamResult(result: unknown, forceStream?: boolean): boolean {
-    if (!this.enableStreaming) return false;
-    if (forceStream === false) return false;
-    if (forceStream === true) return true;
-
-    // Auto-detect large arrays that should be streamed
-    if (Array.isArray(result)) {
-      return result.length >= this.streamThreshold;
-    }
-
-    // Check for result objects containing arrays
-    if (result && typeof result === 'object') {
-      const obj = result as Record<string, unknown>;
-      for (const key of ['items', 'results', 'data', 'records', 'list', 'entries']) {
-        if (Array.isArray(obj[key]) && (obj[key] as unknown[]).length >= this.streamThreshold) {
-          return true;
-        }
-      }
-    }
-
-    return false;
+    return this.streamingManager.shouldStreamResult(result, forceStream);
   }
 
-  // Feature #854: Extract streamable array from result
+  // Feature #854: Extract streamable array from result (delegates to streaming manager)
   private extractStreamableArray(result: unknown): { array: unknown[]; wrapper?: Record<string, unknown>; arrayKey?: string } {
-    if (Array.isArray(result)) {
-      return { array: result };
-    }
-
-    if (result && typeof result === 'object') {
-      const obj = result as Record<string, unknown>;
-      for (const key of ['items', 'results', 'data', 'records', 'list', 'entries']) {
-        if (Array.isArray(obj[key])) {
-          // Return the array with wrapper context
-          const wrapper = { ...obj };
-          delete wrapper[key];
-          return { array: obj[key] as unknown[], wrapper, arrayKey: key };
-        }
-      }
-    }
-
-    // Not streamable, wrap in array
-    return { array: [result] };
+    return this.streamingManager.extractStreamableArray(result);
   }
 
   // Feature #854: Send streaming notification
@@ -397,112 +292,18 @@ class MCPServer {
     }
   }
 
-  // Feature #854: Stream large result set
+  // Feature #854: Stream large result set (delegates to streaming manager)
   private async streamResult(
     result: unknown,
     requestId: string | number | undefined,
     toolName: string
   ): Promise<MCPResponse> {
-    const streamId = generateStreamId();
-    const { array, wrapper, arrayKey } = this.extractStreamableArray(result);
-    const totalItems = array.length;
-    const totalChunks = Math.ceil(totalItems / this.streamChunkSize);
-
-    // Create stream metadata
-    const metadata: StreamMetadata = {
-      streamId,
-      requestId,
-      toolName,
-      totalChunks,
-      totalItems,
-      startedAt: Date.now(),
-    };
-    this.activeStreams.set(streamId, metadata);
-
-    this.log(`[STREAM] Starting stream ${streamId} for ${toolName}: ${totalItems} items in ${totalChunks} chunks`);
-
-    // Send chunks
-    let itemsSent = 0;
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-      const start = chunkIndex * this.streamChunkSize;
-      const end = Math.min(start + this.streamChunkSize, totalItems);
-      const chunkData = array.slice(start, end);
-      itemsSent += chunkData.length;
-      const isLast = chunkIndex === totalChunks - 1;
-
-      const notification: StreamChunkNotification = {
-        jsonrpc: '2.0',
-        method: 'notifications/stream/chunk',
-        params: {
-          streamId,
-          requestId,
-          chunkIndex,
-          totalChunks,
-          data: chunkData,
-          isLast,
-          progress: {
-            itemsSent,
-            totalItems,
-            percentage: Math.round((itemsSent / totalItems) * 100),
-          },
-        },
-      };
-
-      this.sendStreamNotification(notification);
-
-      // Small delay between chunks to allow client processing
-      if (!isLast) {
-        await new Promise(resolve => setTimeout(resolve, 10));
-      }
-    }
-
-    // Mark stream complete
-    metadata.completedAt = Date.now();
-    this.log(`[STREAM] Completed stream ${streamId} in ${metadata.completedAt - metadata.startedAt}ms`);
-
-    // Clean up stream tracking after a delay
-    setTimeout(() => {
-      this.activeStreams.delete(streamId);
-    }, 60000); // Keep metadata for 1 minute for debugging
-
-    // Return summary response with streaming metadata
-    const summaryResult: Record<string, unknown> = {
-      streamed: true,
-      streamId,
-      totalItems,
-      totalChunks,
-      duration_ms: metadata.completedAt - metadata.startedAt,
-    };
-
-    // Include wrapper metadata if present
-    if (wrapper) {
-      summaryResult.metadata = wrapper;
-      summaryResult.arrayKey = arrayKey;
-    }
-
-    return {
-      jsonrpc: '2.0',
-      id: requestId,
-      result: {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(summaryResult, null, 2),
-          },
-        ],
-        _streaming: {
-          streamId,
-          totalItems,
-          totalChunks,
-          completed: true,
-        },
-      },
-    };
+    return this.streamingManager.streamResult(result, requestId, toolName);
   }
 
-  // Feature #854: Get active stream info
+  // Feature #854: Get active stream info (delegates to streaming manager)
   getActiveStreams(): Map<string, StreamMetadata> {
-    return this.activeStreams;
+    return this.streamingManager.getActiveStreams();
   }
 
   // Feature #857/#252: Idempotency methods - delegate to extracted module
@@ -588,61 +389,23 @@ class MCPServer {
     this.log('Ready to receive commands via stdin');
 
     this.rl.on('line', async (line) => {
-      try {
-        const request = JSON.parse(line) as MCPRequest;
-        const response = await this.handleRequest(request);
-        if (response) {
-          this.sendResponse(response);
-        }
-      } catch (error) {
-        // Enhanced JSON parse error handling with location information
-        const errorMessage = error instanceof Error ? error.message : String(error);
-
-        // Try to extract position information from JSON parse error
-        // Node.js JSON.parse errors often include position like "at position 42"
-        let position: number | undefined;
-        let lineNumber: number | undefined;
-        let column: number | undefined;
-
-        const positionMatch = errorMessage.match(/position\s+(\d+)/i);
-        if (positionMatch) {
-          position = parseInt(positionMatch[1], 10);
-          // Calculate line and column from position
-          const beforeError = line.substring(0, position);
-          const lines = beforeError.split('\n');
-          lineNumber = lines.length;
-          column = lines[lines.length - 1].length + 1;
-        }
-
-        // Log the malformed request for debugging (without exposing sensitive data)
-        this.log(`[ERROR] Malformed JSON request: ${errorMessage}`);
-        if (position !== undefined) {
-          this.log(`[ERROR] Error at position ${position} (line ${lineNumber}, column ${column})`);
-        }
-
-        // Build helpful error message
-        let helpfulMessage = 'Invalid JSON in request body';
-        if (position !== undefined) {
-          helpfulMessage += ` at position ${position}`;
-          if (lineNumber !== undefined && column !== undefined) {
-            helpfulMessage += ` (line ${lineNumber}, column ${column})`;
-          }
-        }
-        helpfulMessage += `. ${errorMessage}`;
-
+      const parseResult = parseJsonWithDetails<MCPRequest>(line);
+      if (!parseResult.success) {
+        const err = parseResult.error!;
+        this.log(`[ERROR] Malformed JSON request: ${err.message}`);
         this.sendResponse({
           jsonrpc: '2.0',
           error: {
-            code: -32700, // JSON-RPC standard parse error code
-            message: helpfulMessage,
-            data: {
-              originalError: errorMessage,
-              position,
-              line: lineNumber,
-              column,
-            },
+            code: -32700,
+            message: buildJsonParseErrorMessage(err),
+            data: { originalError: err.message, position: err.position, line: err.line, column: err.column },
           },
         });
+        return;
+      }
+      const response = await this.handleRequest(parseResult.data);
+      if (response) {
+        this.sendResponse(response);
       }
     });
 
@@ -850,444 +613,79 @@ class MCPServer {
     });
   }
 
-  // Handle SSE connection
+  // Handle SSE connection (delegates to mcp-transport-sse.ts)
   private handleSSEConnection(req: http.IncomingMessage, res: http.ServerResponse): void {
-    // Check if this is a reconnection (client provides previous session ID)
-    const url = new URL(req.url || '/', `http://localhost`);
-    const previousSessionId = url.searchParams.get('lastSessionId');
-    const lastEventId = req.headers['last-event-id'];
-
-    const clientId = randomUUID();
-    const now = Date.now();
-
-    // Set SSE headers with retry recommendation
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no', // Disable nginx buffering
-    });
-
-    // Create client
-    const client: SSEClient = {
-      id: clientId,
-      response: res,
-      initialized: false,
-      connectedAt: now,
-      lastPingAt: now,
-      eventBuffer: [],
-    };
-
-    this.sseClients.set(clientId, client);
-    this.log(`SSE client connected: ${clientId}`);
-
-    // Send retry interval recommendation (tells client to reconnect after this many ms)
-    res.write(`retry: ${SSE_PING_INTERVAL}\n\n`);
-
-    // If this is a reconnection, check for buffered events from previous session
-    if (previousSessionId) {
-      this.log(`SSE client ${clientId} reconnecting from previous session: ${previousSessionId}`);
-      // Note: In a production system, you'd store disconnected client buffers
-      // and replay them here. For now, we just acknowledge the reconnection.
-      this.sendSSEEvent(client, 'reconnected', JSON.stringify({
-        previousSessionId,
-        newSessionId: clientId,
-        timestamp: now,
-      }));
-    }
-
-    // Send endpoint message (tells client where to send requests)
-    this.sendSSEEvent(client, 'endpoint', `/message?sessionId=${clientId}`);
-
-    // Send welcome message with connection info
-    this.sendSSEEvent(client, 'message', JSON.stringify({
-      type: 'welcome',
-      sessionId: clientId,
+    const context: SSETransportContext = {
+      log: this.log.bind(this),
+      handleRequest: this.handleRequest.bind(this),
       serverInfo: SERVER_INFO,
-      connectionTimeout: SSE_CONNECTION_TIMEOUT,
-      pingInterval: SSE_PING_INTERVAL,
-    }));
-
-    // Handle client disconnect
-    req.on('close', () => {
-      const disconnectedClient = this.sseClients.get(clientId);
-      if (disconnectedClient) {
-        disconnectedClient.disconnectedAt = Date.now();
-        // Keep client in map for potential reconnection (for a limited time)
-        this.log(`SSE client disconnected: ${clientId} (may reconnect within ${SSE_CONNECTION_TIMEOUT}ms)`);
-
-        // Schedule removal after timeout period
-        setTimeout(() => {
-          if (this.sseClients.has(clientId)) {
-            const client = this.sseClients.get(clientId)!;
-            if (client.disconnectedAt) {
-              this.sseClients.delete(clientId);
-              this.log(`SSE client ${clientId} removed after reconnection timeout`);
-            }
-          }
-        }, SSE_CONNECTION_TIMEOUT);
-      }
-    });
-
-    // Keep-alive ping with timeout monitoring
-    const keepAlive = setInterval(() => {
-      const currentClient = this.sseClients.get(clientId);
-      if (currentClient && !currentClient.disconnectedAt) {
-        // Send ping with event ID for reconnection tracking
-        const eventId = `${clientId}-${Date.now()}`;
-        this.sendSSEEventWithId(client, 'ping', Date.now().toString(), eventId);
-        currentClient.lastPingAt = Date.now();
-      } else {
-        clearInterval(keepAlive);
-      }
-    }, SSE_PING_INTERVAL);
-
-    // Connection timeout monitoring
-    const timeoutCheck = setInterval(() => {
-      const currentClient = this.sseClients.get(clientId);
-      if (!currentClient) {
-        clearInterval(timeoutCheck);
-        return;
-      }
-
-      // If client is disconnected and timeout has passed, clean up
-      if (currentClient.disconnectedAt) {
-        const disconnectedDuration = Date.now() - currentClient.disconnectedAt;
-        if (disconnectedDuration > SSE_CONNECTION_TIMEOUT) {
-          this.sseClients.delete(clientId);
-          this.log(`SSE client ${clientId} timed out after ${disconnectedDuration}ms`);
-          clearInterval(timeoutCheck);
-          clearInterval(keepAlive);
-        }
-      }
-    }, 10000); // Check every 10 seconds
+      getSseClients: () => this.sseClients,
+    };
+    handleSSEConnectionImpl(req, res, context);
   }
 
-  // Send SSE event with event ID for reconnection tracking
+  // Send SSE event with event ID for reconnection tracking (delegates to mcp-transport-sse.ts)
   private sendSSEEventWithId(client: SSEClient, event: string, data: string, eventId: string): void {
-    try {
-      if (client.disconnectedAt) {
-        // Buffer event for potential reconnection
-        if (client.eventBuffer.length < SSE_EVENT_BUFFER_MAX) {
-          client.eventBuffer.push({ event, data, timestamp: Date.now() });
-        }
-        return;
-      }
-      client.response.write(`id: ${eventId}\nevent: ${event}\ndata: ${data}\n\n`);
-    } catch (error) {
-      this.log(`Error sending SSE event to ${client.id}: ${error}`);
-      client.disconnectedAt = Date.now();
-    }
+    sendSSEEventWithIdImpl(client, event, data, eventId, this.log.bind(this));
   }
 
-  // Handle incoming message on SSE transport
+  // Handle incoming message on SSE transport (delegates to mcp-transport-sse.ts)
   private handleSSEMessage(req: http.IncomingMessage, res: http.ServerResponse): void {
-    const url = new URL(req.url || '/', `http://localhost`);
-    const sessionId = url.searchParams.get('sessionId');
-
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk.toString();
-    });
-
-    req.on('end', async () => {
-      try {
-        const request = JSON.parse(body) as MCPRequest;
-        const response = await this.handleRequest(request);
-
-        // Send response via HTTP
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        if (response) {
-          res.end(JSON.stringify(response));
-        } else {
-          res.end(JSON.stringify({ jsonrpc: '2.0', result: 'ok' }));
-        }
-
-        // Also send via SSE if client connected
-        if (sessionId && this.sseClients.has(sessionId)) {
-          const client = this.sseClients.get(sessionId)!;
-          if (response) {
-            this.sendSSEEvent(client, 'message', JSON.stringify(response));
-          }
-        }
-      } catch (error) {
-        // Enhanced JSON parse error handling with location information
-        const errorMessage = error instanceof Error ? error.message : String(error);
-
-        // Try to extract position information from JSON parse error
-        let position: number | undefined;
-        let lineNumber: number | undefined;
-        let column: number | undefined;
-
-        const positionMatch = errorMessage.match(/position\s+(\d+)/i);
-        if (positionMatch) {
-          position = parseInt(positionMatch[1], 10);
-          // Calculate line and column from position
-          const beforeError = body.substring(0, position);
-          const lines = beforeError.split('\n');
-          lineNumber = lines.length;
-          column = lines[lines.length - 1].length + 1;
-        }
-
-        // Log the malformed request
-        this.log(`[ERROR] Malformed JSON request: ${errorMessage}`);
-        if (position !== undefined) {
-          this.log(`[ERROR] Error at position ${position} (line ${lineNumber}, column ${column})`);
-        }
-
-        // Build helpful error message
-        let helpfulMessage = 'Invalid JSON in request body';
-        if (position !== undefined) {
-          helpfulMessage += ` at position ${position}`;
-          if (lineNumber !== undefined && column !== undefined) {
-            helpfulMessage += ` (line ${lineNumber}, column ${column})`;
-          }
-        }
-        helpfulMessage += `. ${errorMessage}`;
-
-        const errorResponse: MCPResponse = {
-          jsonrpc: '2.0',
-          error: {
-            code: -32700,
-            message: helpfulMessage,
-            data: {
-              originalError: errorMessage,
-              position,
-              line: lineNumber,
-              column,
-            },
-          },
-        };
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(errorResponse));
-      }
-    });
+    const context: SSETransportContext = {
+      log: this.log.bind(this),
+      handleRequest: this.handleRequest.bind(this),
+      serverInfo: SERVER_INFO,
+      getSseClients: () => this.sseClients,
+    };
+    handleSSEMessageImpl(req, res, context);
   }
 
-  // Send SSE event to client
+  // Send SSE event to client (delegates to mcp-transport-sse.ts)
   private sendSSEEvent(client: SSEClient, event: string, data: string): void {
-    try {
-      client.response.write(`event: ${event}\n`);
-      client.response.write(`data: ${data}\n\n`);
-    } catch (error) {
-      this.log(`Error sending SSE event to ${client.id}: ${error}`);
-      this.sseClients.delete(client.id);
-    }
+    sendSSEEventImpl(client, event, data, this.log.bind(this));
   }
 
   // Check if authentication is required and valid
+  // Feature #252: Auth methods delegated to mcp-auth.ts
   private checkAuth(): { valid: boolean; error?: MCPResponse } {
-    if (this.config.requireAuth && !this.config.apiKey) {
-      return {
-        valid: false,
-        error: {
-          jsonrpc: '2.0',
-          error: {
-            code: -32001,
-            message: 'Authentication required. Please provide a valid API key.',
-          },
-        },
-      };
-    }
-    return { valid: true };
+    return checkAuthImpl({
+      requireAuth: this.config.requireAuth ?? false,
+      apiKey: this.config.apiKey,
+      apiUrl: this.config.apiUrl,
+    });
   }
 
-  // Validate API key has MCP scope via backend API
+  // Validate API key has MCP scope via backend API (delegates to mcp-auth.ts)
   private async validateMcpScope(): Promise<{ valid: boolean; error?: MCPResponse; scopes?: string[] }> {
-    // Skip validation if auth not required
-    if (!this.config.requireAuth || !this.config.apiKey) {
-      return { valid: true, scopes: ['admin'] }; // No auth required = full access
-    }
-
-    // Skip scope validation if no API URL configured (local mode)
-    if (!this.config.apiUrl) {
-      return { valid: true, scopes: ['admin'] }; // Local mode = full access
-    }
-
-    try {
-      const apiUrl = this.config.apiUrl;
-      const url = new URL('/api/v1/mcp/validate-key', apiUrl);
-
-      const response = await fetch(url.toString(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          api_key: this.config.apiKey,
-          required_scope: 'mcp',
-        }),
-      });
-
-      const data = await response.json() as {
-        valid: boolean;
-        error?: string;
-        scopes?: string[];
-        rate_limit?: PerKeyRateLimitConfig;
-      };
-
-      if (!data.valid) {
-        // Determine error type based on HTTP status code
-        // 401 = Invalid or expired API key (authentication failure)
-        // 403 = Insufficient scope (authorization failure)
-        const isAuthenticationError = response.status === 401;
-        const isAuthorizationError = response.status === 403;
-
-        // Log security event for failed authentication attempts
-        const maskedKey = this.config.apiKey
-          ? `${this.config.apiKey.substring(0, 7)}...${this.config.apiKey.substring(this.config.apiKey.length - 4)}`
-          : 'unknown';
-
-        if (isAuthenticationError) {
-          // Log security warning for invalid/expired API key
-          this.log(`[SECURITY] Failed authentication attempt with API key: ${maskedKey}`);
-          this.log(`[SECURITY] Error: ${data.error || 'Invalid or expired API key'}`);
-
-          return {
-            valid: false,
-            error: {
-              jsonrpc: '2.0',
-              error: {
-                code: -32001, // Authentication error code
-                message: 'Invalid or expired API key',
-              },
-            },
-          };
-        } else if (isAuthorizationError) {
-          // Log for insufficient scope
-          this.log(`[SECURITY] Insufficient scope for API key: ${maskedKey}. Scopes: ${data.scopes?.join(', ') || 'none'}`);
-
-          return {
-            valid: false,
-            error: {
-              jsonrpc: '2.0',
-              error: {
-                code: -32002, // Authorization error code
-                message: data.error || 'API key does not have MCP access. Required scope: mcp or mcp:*',
-              },
-            },
-          };
-        } else {
-          // Generic validation failure
-          this.log(`[SECURITY] API key validation failed for key: ${maskedKey}`);
-
-          return {
-            valid: false,
-            error: {
-              jsonrpc: '2.0',
-              error: {
-                code: -32002,
-                message: data.error || 'API key validation failed',
-              },
-            },
-          };
-        }
-      }
-
-      // Store per-key rate limits if provided (using extracted module)
-      if (data.rate_limit && this.config.apiKey) {
-        this.rateLimiter.setPerKeyConfig(this.config.apiKey, data.rate_limit);
-        this.log(`Loaded per-key rate limits: ${data.rate_limit.max_requests}/${data.rate_limit.window_seconds}s (burst: ${data.rate_limit.burst_limit}/${data.rate_limit.burst_window_seconds}s)`);
-      }
-
-      return { valid: true, scopes: data.scopes || [] };
-    } catch (error) {
-      // If we can't reach the API, allow access (graceful degradation)
-      // In production, you might want to fail closed instead
-      this.log(`MCP scope validation failed: ${error}`);
-      return { valid: true, scopes: ['admin'] };
-    }
+    return validateMcpScopeImpl(
+      {
+        requireAuth: this.config.requireAuth ?? false,
+        apiKey: this.config.apiKey,
+        apiUrl: this.config.apiUrl,
+      },
+      (msg) => this.log(msg),
+      this.rateLimiter
+    );
   }
 
-  // Check if a tool exists
+  // Check if a tool exists (delegates to mcp-auth.ts)
   private isKnownTool(toolName: string): boolean {
-    return TOOL_SCOPE_MAP[toolName] !== undefined;
+    return isKnownToolImpl(toolName);
   }
 
-  // Check if the validated scopes allow a specific tool action
+  // Check if the validated scopes allow a specific tool action (delegates to mcp-auth.ts)
   private hasToolPermission(toolName: string): boolean {
-    const requiredAction = TOOL_SCOPE_MAP[toolName];
-    if (!requiredAction) {
-      // Unknown tool - return false (but this should be handled separately)
-      return false;
-    }
-
-    // Check if user has any of these:
-    // - 'admin' scope (full access)
-    // - 'mcp' scope (full MCP access)
-    // - specific scope like 'mcp:read', 'mcp:write', 'mcp:execute'
-    for (const scope of this.validatedScopes) {
-      // Admin has access to everything
-      if (scope === 'admin') return true;
-
-      // Generic 'mcp' scope has full MCP access
-      if (scope === 'mcp') return true;
-
-      // Check specific scope matches required action
-      if (requiredAction === 'read' && (scope === 'mcp:read' || scope === 'mcp:write' || scope === 'mcp:execute')) {
-        return true; // Read is allowed for any specific mcp:* scope
-      }
-      if (requiredAction === 'write' && scope === 'mcp:write') {
-        return true;
-      }
-      if (requiredAction === 'execute' && scope === 'mcp:execute') {
-        return true;
-      }
-    }
-
-    return false;
+    return hasToolPermissionImpl(toolName, this.validatedScopes);
   }
 
-  // Generate permission denied error for a tool
+  // Generate permission denied error for a tool (delegates to mcp-auth.ts)
   private toolPermissionDeniedError(toolName: string, requestId?: string | number): MCPResponse {
-    const requiredAction = TOOL_SCOPE_MAP[toolName];
-    const requiredScope = requiredAction ? `mcp:${requiredAction}` : 'mcp';
-
-    // Log the permission denied event
-    const maskedKey = this.config.apiKey
-      ? `${this.config.apiKey.substring(0, 7)}...${this.config.apiKey.substring(this.config.apiKey.length - 4)}`
-      : 'unknown';
-    this.log(`[SECURITY] Permission denied for tool '${toolName}'. API key: ${maskedKey}, Current scopes: [${this.validatedScopes.join(', ')}], Required: ${requiredScope}`);
-
-    return {
-      jsonrpc: '2.0',
-      id: requestId,
-      error: {
-        code: -32003, // 403 Forbidden equivalent
-        message: `Permission denied. Tool '${toolName}' requires '${requiredScope}' scope. Update your API key permissions in the QA Guardian dashboard to include the '${requiredScope}' scope.`,
-      },
-    };
+    return toolPermissionDeniedErrorImpl(toolName, this.validatedScopes, requestId, (msg) => this.log(msg));
   }
 
-  // Generate unknown tool error with suggestions
+  // Generate unknown tool error with suggestions (delegates to mcp-auth.ts)
   private unknownToolError(toolName: string, requestId?: string | number): MCPResponse {
-    // Get list of available tools
-    const availableTools = TOOLS.map(t => t.name);
-
-    // Find similar tool names using Levenshtein distance
-    const suggestions = findSimilarStrings(toolName, availableTools);
-
-    // Build helpful error message
-    let errorMessage = `Unknown tool: ${toolName}.`;
-    if (suggestions.length > 0) {
-      errorMessage += ` Did you mean: ${suggestions.join(', ')}?`;
-    }
-
-    this.log(`[ERROR] Unknown tool invocation: ${toolName}`);
-
-    return {
-      jsonrpc: '2.0',
-      id: requestId,
-      error: {
-        code: -32601, // Method not found (404 equivalent)
-        message: errorMessage,
-        data: {
-          requestedTool: toolName,
-          availableTools,
-          suggestions: suggestions.length > 0 ? suggestions : undefined,
-        },
-      },
-    };
+    return unknownToolErrorImpl(toolName, requestId, (msg) => this.log(msg));
   }
 
   // Cache for MCP scope validation (to avoid repeated API calls)
@@ -1316,73 +714,13 @@ class MCPServer {
   // Feature #1356: findSimilarTools and levenshteinDistance moved to ./string-utils.ts
   // Feature #1356: calculateNextCronRun and describeCronExpression moved to ./cron-utils.ts
 
-  // Feature #1220: Execute a single workflow step by calling the appropriate API
+  // Feature #1220: Execute a single workflow step by calling the appropriate API (delegates to mcp-workflow.ts)
   private async executeWorkflowStep(tool: string, args: Record<string, unknown>): Promise<unknown> {
-    // Map common tools to their API endpoints
-    const toolApiMap: Record<string, { method: string; path: string | ((args: Record<string, unknown>) => string); bodyKeys?: string[] }> = {
-      'batch_trigger_tests': {
-        method: 'POST',
-        path: '/api/v1/suites/batch-run',
-        bodyKeys: ['suite_ids', 'browser', 'branch', 'env', 'parallel', 'retries'],
-      },
-      // Feature #1428: get_run_status replaced by get_run
-      'get_run': {
-        method: 'GET',
-        path: (a) => `/api/v1/runs/${a.run_id}/status`,
-      },
-      'subscribe_to_alerts': {
-        method: 'GET',
-        path: '/api/v1/monitoring/alert-grouping/groups?status=active',
-      },
-      // Feature #1429: get_test_results replaced by get_result
-      'get_result': {
-        method: 'GET',
-        path: (a) => `/api/v1/runs/${a.run_id}/results`,
-      },
-      'trigger_test_run': {
-        method: 'POST',
-        path: (a) => `/api/v1/suites/${a.suite_id}/runs`,
-        bodyKeys: ['browser', 'branch', 'env', 'parallel', 'retries'],
-      },
-      'get_flaky_tests': {
-        method: 'GET',
-        path: '/api/v1/tests/flaky',
-      },
-      'list_projects': {
-        method: 'GET',
-        path: '/api/v1/projects',
-      },
+    const context: WorkflowContext = {
+      callApi: this.callApi.bind(this),
+      log: this.log.bind(this),
     };
-
-    const mapping = toolApiMap[tool];
-    if (!mapping) {
-      // For unmapped tools, return a simulated result
-      this.log(`[WORKFLOW] Tool "${tool}" not mapped for workflow execution, returning simulated result`);
-      return {
-        success: true,
-        tool,
-        simulated: true,
-        args,
-        message: `Tool ${tool} executed (simulated)`,
-      };
-    }
-
-    // Build path
-    const path = typeof mapping.path === 'function' ? mapping.path(args) : mapping.path;
-
-    // Build body if needed
-    let body: Record<string, unknown> | undefined;
-    if (mapping.method === 'POST' && mapping.bodyKeys) {
-      body = {};
-      for (const key of mapping.bodyKeys) {
-        if (args[key] !== undefined) {
-          body[key] = args[key];
-        }
-      }
-    }
-
-    // Call the API
-    return await this.callApi(path, mapping.method !== 'GET' ? { method: mapping.method, body } : undefined);
+    return executeWorkflowStepImpl(tool, args, context);
   }
 
   // Handle incoming MCP request
@@ -1617,102 +955,14 @@ class MCPServer {
     };
   }
 
-  // Validate required parameters for a tool
-  // Feature #1356: Uses findMissingRequiredParams from validation-utils.ts
+  // Validate required parameters for a tool (delegates to mcp-validation.ts)
   private validateRequiredParams(toolName: string, toolArgs: Record<string, unknown>): { valid: boolean; error?: MCPResponse } {
-    // Find the tool definition
-    const tool = TOOLS.find(t => t.name === toolName);
-    if (!tool) {
-      return { valid: true }; // Unknown tool handled elsewhere
-    }
-
-    const schema = tool.inputSchema;
-    const requiredParams = schema?.required as string[] | undefined;
-    if (!requiredParams || requiredParams.length === 0) {
-      return { valid: true }; // No required params
-    }
-
-    // Use extracted utility to find missing params
-    const properties = schema?.properties as Record<string, { description?: string }> | undefined;
-    const missingParams = findMissingRequiredParams(toolArgs, requiredParams, properties);
-
-    if (missingParams.length === 0) {
-      return { valid: true };
-    }
-
-    // Build error message
-    const paramNames = missingParams.map(p => p.name);
-    const errorMessage = missingParams.length === 1
-      ? `Missing required parameter: ${paramNames[0]}`
-      : `Missing required parameters: ${paramNames.join(', ')}`;
-
-    // Build detailed data with descriptions
-    const missingDetails = missingParams.map(p => ({
-      parameter: p.name,
-      description: p.description || 'No description available',
-    }));
-
-    this.log(`[ERROR] Missing required parameters for tool '${toolName}': ${paramNames.join(', ')}`);
-
-    return {
-      valid: false,
-      error: {
-        jsonrpc: '2.0',
-        error: {
-          code: -32602, // Invalid params (400 Bad Request equivalent)
-          message: errorMessage,
-          data: {
-            tool: toolName,
-            missingParameters: missingDetails,
-          },
-        },
-      },
-    };
+    return validateRequiredParamsImpl(toolName, toolArgs, (msg) => this.log(msg));
   }
 
-  // Validate parameter types for a tool
-  // Feature #1356: Uses validateParameterTypes from validation-utils.ts
+  // Validate parameter types for a tool (delegates to mcp-validation.ts)
   private validateParamTypes(toolName: string, toolArgs: Record<string, unknown>): { valid: boolean; error?: MCPResponse } {
-    // Find the tool definition
-    const tool = TOOLS.find(t => t.name === toolName);
-    if (!tool) {
-      return { valid: true }; // Unknown tool handled elsewhere
-    }
-
-    const schema = tool.inputSchema;
-    const properties = schema?.properties as Record<string, { type?: string; enum?: unknown[]; description?: string }> | undefined;
-    if (!properties) {
-      return { valid: true }; // No properties defined
-    }
-
-    // Use extracted utility to validate parameter types
-    const typeErrors = validateParameterTypes(toolArgs, properties);
-
-    if (typeErrors.length === 0) {
-      return { valid: true };
-    }
-
-    // Build error message
-    const errorMessage = typeErrors.length === 1
-      ? `Invalid type for ${typeErrors[0].parameter}: expected ${typeErrors[0].expectedType}, got ${typeErrors[0].actualType}`
-      : `Invalid types for parameters: ${typeErrors.map(e => e.parameter).join(', ')}`;
-
-    this.log(`[ERROR] Invalid parameter types for tool '${toolName}': ${typeErrors.map(e => `${e.parameter} (expected ${e.expectedType}, got ${e.actualType})`).join(', ')}`);
-
-    return {
-      valid: false,
-      error: {
-        jsonrpc: '2.0',
-        error: {
-          code: -32602, // Invalid params (400 Bad Request equivalent)
-          message: errorMessage,
-          data: {
-            tool: toolName,
-            invalidParameters: typeErrors,
-          },
-        },
-      },
-    };
+    return validateParamTypesImpl(toolName, toolArgs, (msg) => this.log(msg));
   }
 
   // Feature #1356: Validation utilities moved to validation-utils.ts
@@ -2118,209 +1368,17 @@ class MCPServer {
     }
   }
 
-  // Feature #856: Handle batch tool calls
+  // Feature #856: Handle batch tool calls (delegates to mcp-batch.ts)
   private async handleToolsCallBatch(request: MCPRequest): Promise<MCPResponse> {
-    const params = request.params as {
-      operations: BatchOperationItem[];
-      parallel?: boolean; // Execute operations in parallel (default: false)
-      stopOnError?: boolean; // Stop batch on first error (default: false)
+    const context: BatchContext = {
+      handleToolsCall: this.handleToolsCall.bind(this),
+      isKnownTool: this.isKnownTool.bind(this),
+      hasToolPermission: this.hasToolPermission.bind(this),
+      log: this.log.bind(this),
+      addApiVersionWarnings: this.addApiVersionWarnings.bind(this),
+      requestApiVersion: this.requestApiVersion,
     };
-
-    const operations = params?.operations;
-    const parallel = params?.parallel ?? false;
-    const stopOnError = params?.stopOnError ?? false;
-
-    // Validate batch request
-    if (!operations || !Array.isArray(operations)) {
-      return {
-        jsonrpc: '2.0',
-        id: request.id,
-        error: {
-          code: -32602,
-          message: 'Invalid params: operations array is required',
-          data: {
-            expected: 'operations: BatchOperationItem[]',
-            received: typeof operations,
-          },
-        },
-      };
-    }
-
-    if (operations.length === 0) {
-      return {
-        jsonrpc: '2.0',
-        id: request.id,
-        error: {
-          code: -32602,
-          message: 'Invalid params: operations array cannot be empty',
-        },
-      };
-    }
-
-    if (operations.length > 50) {
-      return {
-        jsonrpc: '2.0',
-        id: request.id,
-        error: {
-          code: -32602,
-          message: 'Invalid params: maximum 50 operations per batch',
-          data: {
-            maxOperations: 50,
-            received: operations.length,
-          },
-        },
-      };
-    }
-
-    const batchId = `batch-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const batchStartTime = Date.now();
-    const results: BatchOperationResult[] = [];
-    let succeeded = 0;
-    let failed = 0;
-
-    this.log(`[BATCH] Starting batch ${batchId} with ${operations.length} operations (parallel: ${parallel})`);
-
-    // Execute operations
-    const executeOperation = async (op: BatchOperationItem): Promise<BatchOperationResult> => {
-      const opStartTime = Date.now();
-      const operationId = op.id ?? `op-${Math.random().toString(36).substring(2, 9)}`;
-
-      // Validate operation
-      if (!op.name || typeof op.name !== 'string') {
-        return {
-          id: operationId,
-          status: 'error',
-          error: { code: -32602, message: 'Invalid operation: name is required' },
-          duration_ms: Date.now() - opStartTime,
-        };
-      }
-
-      // Check if tool exists
-      if (!this.isKnownTool(op.name)) {
-        return {
-          id: operationId,
-          status: 'error',
-          error: { code: -32601, message: `Unknown tool: ${op.name}` },
-          duration_ms: Date.now() - opStartTime,
-        };
-      }
-
-      // Check tool permission
-      if (!this.hasToolPermission(op.name)) {
-        return {
-          id: operationId,
-          status: 'error',
-          error: { code: -32003, message: `Permission denied for tool: ${op.name}` },
-          duration_ms: Date.now() - opStartTime,
-        };
-      }
-
-      try {
-        // Create a synthetic request for the tool call
-        const toolRequest: MCPRequest = {
-          jsonrpc: '2.0',
-          id: `${batchId}-${operationId}`,
-          method: 'tools/call',
-          params: {
-            name: op.name,
-            arguments: op.arguments || {},
-          },
-        };
-
-        // Call the tool
-        const response = await this.handleToolsCall(toolRequest);
-        const duration = Date.now() - opStartTime;
-
-        if (response.error) {
-          return {
-            id: operationId,
-            status: 'error',
-            error: {
-              code: response.error.code,
-              message: response.error.message,
-            },
-            duration_ms: duration,
-          };
-        }
-
-        return {
-          id: operationId,
-          status: 'success',
-          result: response.result,
-          duration_ms: duration,
-        };
-      } catch (error) {
-        return {
-          id: operationId,
-          status: 'error',
-          error: {
-            code: -32000,
-            message: error instanceof Error ? error.message : 'Unknown error',
-          },
-          duration_ms: Date.now() - opStartTime,
-        };
-      }
-    };
-
-    if (parallel) {
-      // Execute all operations in parallel
-      const operationPromises = operations.map(executeOperation);
-      const operationResults = await Promise.all(operationPromises);
-
-      for (const result of operationResults) {
-        results.push(result);
-        if (result.status === 'success') {
-          succeeded++;
-        } else {
-          failed++;
-        }
-      }
-    } else {
-      // Execute operations sequentially
-      for (const op of operations) {
-        const result = await executeOperation(op);
-        results.push(result);
-
-        if (result.status === 'success') {
-          succeeded++;
-        } else {
-          failed++;
-          if (stopOnError) {
-            this.log(`[BATCH] Stopping batch ${batchId} due to error on operation ${result.id}`);
-            break;
-          }
-        }
-      }
-    }
-
-    const batchDuration = Date.now() - batchStartTime;
-    this.log(`[BATCH] Completed batch ${batchId}: ${succeeded} succeeded, ${failed} failed in ${batchDuration}ms`);
-
-    const batchResponse: BatchResponse = {
-      batchId,
-      totalOperations: operations.length,
-      succeeded,
-      failed,
-      results,
-      duration_ms: batchDuration,
-    };
-
-    const batchMcpResponse: MCPResponse = {
-      jsonrpc: '2.0',
-      id: request.id,
-      result: {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(batchResponse, null, 2),
-          },
-        ],
-        _batch: batchResponse,
-      },
-    };
-
-    // Feature #858: Add version warnings to batch response
-    return this.addApiVersionWarnings(batchMcpResponse, this.requestApiVersion);
+    return handleToolsCallBatchImpl(request, context);
   }
 
   // Handle resources/list request
@@ -2334,351 +1392,17 @@ class MCPServer {
     };
   }
 
-  // Available resource patterns for error messages
-  private static readonly RESOURCE_PATTERNS = [
-    'qa-guardian://projects - List all projects',
-    'qa-guardian://projects/{id} - Get a specific project',
-    'qa-guardian://recent-runs - List recent test runs',
-    'qa-guardian://dashboard-stats - Get dashboard statistics',
-    'qa-guardian://test-runs/{id} - Get a specific test run',
-    'qa-guardian://test-runs/{id}/results - Get results for a test run',
-    'qa-guardian://test-runs/{id}/artifacts - Get artifacts for a test run',
-  ];
+  // Feature #252: Resource patterns now imported from mcp-resources.ts
+  private static readonly RESOURCE_PATTERNS = RESOURCE_PATTERNS;
 
-  // Generate resource not found error
-  private resourceNotFoundError(resourceType: string, resourceId: string, requestId?: string | number): MCPResponse {
-    const errorMessage = `${resourceType} not found: ${resourceId}`;
-    this.log(`[ERROR] Resource not found: ${resourceType} with ID '${resourceId}'`);
-
-    return {
-      jsonrpc: '2.0',
-      id: requestId,
-      error: {
-        code: -32001, // Resource not found (404 equivalent)
-        message: errorMessage,
-        data: {
-          resourceType,
-          resourceId,
-          availablePatterns: MCPServer.RESOURCE_PATTERNS,
-        },
-      },
-    };
-  }
-
-  // Generate unknown resource pattern error
-  private unknownResourceError(uri: string, requestId?: string | number): MCPResponse {
-    this.log(`[ERROR] Unknown resource pattern: ${uri}`);
-
-    return {
-      jsonrpc: '2.0',
-      id: requestId,
-      error: {
-        code: -32602, // Invalid params
-        message: `Unknown resource pattern: ${uri}`,
-        data: {
-          requestedUri: uri,
-          availablePatterns: MCPServer.RESOURCE_PATTERNS,
-        },
-      },
-    };
-  }
-
-  // Validate resource URI format
-  private validateResourceUri(uri: string | undefined): { valid: boolean; error?: MCPResponse } {
-    if (!uri) {
-      return {
-        valid: false,
-        error: {
-          jsonrpc: '2.0',
-          error: {
-            code: -32602, // Invalid params (400 Bad Request)
-            message: 'Invalid resource URI format: URI is required',
-            data: {
-              expectedFormat: 'qa-guardian://{resource-type}[/{resource-id}]',
-              examples: MCPServer.RESOURCE_PATTERNS,
-            },
-          },
-        },
-      };
-    }
-
-    // Check for common URI format issues
-    const validationErrors: string[] = [];
-
-    // Check for wrong protocol prefix (e.g., qaguardian:// instead of qa-guardian://)
-    if (!uri.startsWith('qa-guardian://')) {
-      if (uri.match(/^[a-z-]+:\/\//i)) {
-        const protocol = uri.match(/^([a-z-]+):\/\//i)?.[1];
-        validationErrors.push(`Invalid protocol '${protocol}'. Expected 'qa-guardian'`);
-      } else {
-        validationErrors.push("URI must start with 'qa-guardian://'");
-      }
-    }
-
-    // Check for double slashes in path (after protocol)
-    const pathPart = uri.replace(/^qa-guardian:\/\//, '');
-    if (pathPart.includes('//')) {
-      validationErrors.push('URI contains invalid double slashes in path');
-    }
-
-    // Check for empty path segments
-    if (pathPart.split('/').some(segment => segment === '')) {
-      validationErrors.push('URI contains empty path segments');
-    }
-
-    // Check for invalid characters
-    if (uri.match(/[<>{}|\\^`[\]\s]/)) {
-      validationErrors.push('URI contains invalid characters');
-    }
-
-    if (validationErrors.length > 0) {
-      this.log(`[ERROR] Invalid resource URI format: ${uri} - ${validationErrors.join(', ')}`);
-
-      return {
-        valid: false,
-        error: {
-          jsonrpc: '2.0',
-          error: {
-            code: -32602, // Invalid params (400 Bad Request)
-            message: `Invalid resource URI format: ${validationErrors[0]}`,
-            data: {
-              requestedUri: uri,
-              issues: validationErrors,
-              expectedFormat: 'qa-guardian://{resource-type}[/{resource-id}]',
-              examples: MCPServer.RESOURCE_PATTERNS,
-            },
-          },
-        },
-      };
-    }
-
-    return { valid: true };
-  }
-
-  // Handle resources/read request
+  // Handle resources/read request (delegates to mcp-resources.ts)
   private async handleResourcesRead(request: MCPRequest): Promise<MCPResponse> {
-    const params = request.params as { uri: string };
-    const uri = params?.uri;
-
-    // Validate URI format first
-    const uriValidation = this.validateResourceUri(uri);
-    if (!uriValidation.valid) {
-      return { ...uriValidation.error!, id: request.id };
-    }
-
-    try {
-      let data: unknown;
-      let resourceType: string | null = null;
-      let resourceId: string | null = null;
-
-      // Check for dynamic resources first
-      // Match test-runs/{id}/results
-      const testRunResultsMatch = uri?.match(/^qa-guardian:\/\/test-runs\/([^/]+)\/results$/);
-      if (testRunResultsMatch) {
-        resourceType = 'Test run results';
-        resourceId = testRunResultsMatch[1];
-        // Get test run and extract just the results
-        const runData = await this.callApi(`/api/v1/runs/${resourceId}`) as { run?: { results?: unknown[] } };
-        data = { results: runData?.run?.results || [] };
-      }
-      // Match test-runs/{id}/artifacts
-      else {
-        const testRunArtifactsMatch = uri?.match(/^qa-guardian:\/\/test-runs\/([^/]+)\/artifacts$/);
-        if (testRunArtifactsMatch) {
-          resourceType = 'Test run artifacts';
-          resourceId = testRunArtifactsMatch[1];
-          // Get artifacts from the artifacts endpoint
-          data = await this.callApi(`/api/v1/runs/${resourceId}/artifacts`);
-        }
-        // Feature #1034: Match checks/{id}/status
-        else {
-          const checkStatusMatch = uri?.match(/^qa-guardian:\/\/checks\/([^/]+)\/status$/);
-          if (checkStatusMatch) {
-            resourceType = 'Check status';
-            resourceId = checkStatusMatch[1];
-            data = await this.callApi(`/api/v1/monitoring/checks/${resourceId}`);
-          }
-          // Match test-runs/{id}
-          else {
-          const testRunMatch = uri?.match(/^qa-guardian:\/\/test-runs\/([^/]+)$/);
-          if (testRunMatch) {
-            resourceType = 'Test run';
-            resourceId = testRunMatch[1];
-            data = await this.callApi(`/api/v1/runs/${resourceId}`);
-          }
-          // Feature #1026: Match projects/{id}/suites
-          else {
-            const projectSuitesMatch = uri?.match(/^qa-guardian:\/\/projects\/([^/]+)\/suites$/);
-            if (projectSuitesMatch) {
-              resourceType = 'Project suites';
-              resourceId = projectSuitesMatch[1];
-              data = await this.callApi(`/api/v1/projects/${resourceId}/suites`);
-            }
-            // Match projects/{id}
-            else {
-              const projectMatch = uri?.match(/^qa-guardian:\/\/projects\/([^/]+)$/);
-              if (projectMatch) {
-                resourceType = 'Project';
-                resourceId = projectMatch[1];
-                data = await this.callApi(`/api/v1/projects/${resourceId}`);
-              } else {
-              // Handle static resources
-              switch (uri) {
-                case 'qa-guardian://projects':
-                  data = await this.callApi('/api/v1/projects');
-                  break;
-                case 'qa-guardian://recent-runs':
-                  data = await this.callApi('/api/v1/runs?limit=20');
-                  break;
-                case 'qa-guardian://dashboard-stats':
-                  data = await this.callApi('/api/v1/dashboard/stats');
-                  break;
-                // Feature #1030: Security vulnerabilities resource
-                case 'qa-guardian://security/vulnerabilities':
-                  data = await this.callApi('/api/v1/security/vulnerabilities');
-                  break;
-                // Feature #1031: Security trends resource
-                case 'qa-guardian://security/trends':
-                  data = await this.callApi('/api/v1/security/trends');
-                  break;
-                // Feature #1032: Active alerts resource
-                case 'qa-guardian://alerts/active':
-                  try {
-                    data = await this.callApi('/api/v1/monitoring/alerts?status=active');
-                  } catch {
-                    // Return simulated empty alerts if endpoint not available
-                    data = {
-                      alerts: [],
-                      total: 0,
-                      message: 'No active alerts',
-                    };
-                  }
-                  break;
-                // Incidents resource
-                case 'qa-guardian://incidents':
-                  try {
-                    data = await this.callApi('/api/v1/incidents');
-                  } catch {
-                    // Return simulated empty incidents if endpoint not available
-                    data = {
-                      incidents: [],
-                      total: 0,
-                      message: 'No active incidents',
-                    };
-                  }
-                  break;
-                // Feature #1033: Analytics dashboard resource
-                case 'qa-guardian://analytics/dashboard':
-                  try {
-                    // Aggregate data from multiple analytics endpoints
-                    const [failingTests, browserStats, passRateTrends] = await Promise.all([
-                      this.callApi('/api/v1/analytics/failing-tests').catch(() => ({ tests: [] })),
-                      this.callApi('/api/v1/analytics/browser-stats').catch(() => ({ browsers: [] })),
-                      this.callApi('/api/v1/analytics/pass-rate-trends').catch(() => ({ trends: [] })),
-                    ]);
-                    data = {
-                      summary: {
-                        total_tests: 0,
-                        passing_tests: 0,
-                        failing_tests: (failingTests as { tests: unknown[] }).tests?.length || 0,
-                        pass_rate: 0,
-                      },
-                      browser_stats: browserStats,
-                      pass_rate_trends: passRateTrends,
-                      failing_tests: failingTests,
-                    };
-                  } catch {
-                    data = {
-                      summary: { total_tests: 0, passing_tests: 0, failing_tests: 0, pass_rate: 0 },
-                      browser_stats: { browsers: [] },
-                      pass_rate_trends: { trends: [] },
-                      failing_tests: { tests: [] },
-                    };
-                  }
-                  break;
-                default:
-                  return this.unknownResourceError(uri, request.id);
-              }
-            }
-          }
-          }
-          }
-        }
-      }
-
-      // Feature #846: Audit log successful resource read
-      const dataStr = JSON.stringify(data, null, 2);
-      this.sendAuditLog({
-        method: 'resources/read',
-        resource_uri: uri,
-        response_type: 'success',
-        response_data_preview: dataStr.length > 500 ? dataStr.slice(0, 500) + '...' : dataStr,
-      });
-
-      return {
-        jsonrpc: '2.0',
-        id: request.id,
-        result: {
-          contents: [
-            {
-              uri,
-              mimeType: 'application/json',
-              text: dataStr,
-            },
-          ],
-        },
-      };
-    } catch (error) {
-      // Check for 404 errors and return proper MCP error
-      const errorMessage = error instanceof Error ? error.message : 'Resource read failed';
-      const is404 = errorMessage.includes('404') || errorMessage.includes('Not Found');
-
-      // Extract resource type and ID from the URI for better error messages
-      const projectMatch = uri?.match(/^qa-guardian:\/\/projects\/([^/]+)$/);
-      const testRunMatch = uri?.match(/^qa-guardian:\/\/test-runs\/([^/]+)/);
-
-      if (is404) {
-        // Provide specific "not found" error with resource context
-        if (projectMatch) {
-          return this.resourceNotFoundError('Project', projectMatch[1], request.id);
-        } else if (testRunMatch) {
-          return this.resourceNotFoundError('Test run', testRunMatch[1], request.id);
-        } else {
-          // Generic 404
-          return {
-            jsonrpc: '2.0',
-            id: request.id,
-            error: {
-              code: -32001, // Resource not found
-              message: 'Resource not found',
-              data: {
-                requestedUri: uri,
-                availablePatterns: MCPServer.RESOURCE_PATTERNS,
-              },
-            },
-          };
-        }
-      }
-
-      // Feature #846: Audit log failed resource read
-      this.sendAuditLog({
-        method: 'resources/read',
-        resource_uri: uri,
-        response_type: 'error',
-        response_error_code: is404 ? -32001 : -32000,
-        response_error_message: errorMessage,
-      });
-
-      // Non-404 error
-      return {
-        jsonrpc: '2.0',
-        id: request.id,
-        error: {
-          code: -32000,
-          message: errorMessage,
-        },
-      };
-    }
+    const context: ResourceHandlerContext = {
+      callApi: this.callApi.bind(this),
+      log: this.log.bind(this),
+      sendAuditLog: this.sendAuditLog.bind(this),
+    };
+    return handleResourcesReadImpl(request, context);
   }
 
   // Handle ping request
@@ -2706,149 +1430,30 @@ class MCPServer {
     });
   }
 
-  // Call QA Guardian API
+  // Call QA Guardian API (delegates to mcp-api-client.ts)
   private async callApi(
     endpoint: string,
     options: { method?: string; body?: unknown } & Record<string, unknown> = {}
   ): Promise<unknown> {
-    const apiUrl = this.config.apiUrl || 'http://localhost:3001';
-    const url = new URL(endpoint, apiUrl);
-
-    // Add query parameters for GET requests
-    if (!options.method || options.method === 'GET') {
-      Object.entries(options).forEach(([key, value]) => {
-        if (key !== 'method' && key !== 'body' && value !== undefined) {
-          url.searchParams.set(key, String(value));
-        }
-      });
-    }
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    // Check for internal service token first (for container-to-container communication)
-    const internalServiceToken = process.env.INTERNAL_SERVICE_TOKEN;
-    if (internalServiceToken) {
-      headers['X-Internal-Service-Token'] = internalServiceToken;
-    } else if (this.config.apiKey) {
-      // Check if apiKey looks like a JWT (starts with 'eyJ') - if so, use Bearer auth
-      if (this.config.apiKey.startsWith('eyJ')) {
-        headers['Authorization'] = `Bearer ${this.config.apiKey}`;
-      } else {
-        headers['X-API-Key'] = this.config.apiKey;
-      }
-    }
-
-    const fetchOptions: RequestInit = {
-      method: options.method || 'GET',
-      headers,
-    };
-
-    if (options.body) {
-      fetchOptions.body = JSON.stringify(options.body);
-    }
-
-    const response = await fetch(url.toString(), fetchOptions);
-
-    if (!response.ok) {
-      // Try to get the error body for more helpful error messages
-      let errorDetail = '';
-      let suggestion = '';
-      try {
-        const errorBody = await response.json() as { error?: string; message?: string };
-        errorDetail = errorBody.message || errorBody.error || '';
-
-        // Add helpful suggestions based on error type
-        if (response.status === 404) {
-          suggestion = ' Verify the ID exists and you have access to it.';
-        } else if (response.status === 401) {
-          suggestion = ' Check that your API key is valid and has the required scopes.';
-        } else if (response.status === 403) {
-          suggestion = ' Your API key may not have permission for this operation.';
-        } else if (response.status === 400) {
-          suggestion = ' Check that all required parameters are provided and valid.';
-        }
-      } catch {
-        // Ignore JSON parse errors
-      }
-
-      const baseMessage = `API error: ${response.status} ${response.statusText}`;
-      const fullMessage = errorDetail
-        ? `${baseMessage} - ${errorDetail}${suggestion}`
-        : `${baseMessage}${suggestion}`;
-
-      throw new Error(fullMessage);
-    }
-
-    return response.json();
+    return this.apiClient.callApi(endpoint, options);
   }
 
-  // Feature #958: Call QA Guardian API without authentication (for public endpoints)
+  // Feature #958: Call QA Guardian API without authentication (delegates to mcp-api-client.ts)
   private async callApiPublic(endpoint: string): Promise<unknown> {
-    const apiUrl = this.config.apiUrl || 'http://localhost:3001';
-    const url = new URL(endpoint, apiUrl);
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      let errorDetail = '';
-      try {
-        const errorBody = await response.json() as { error?: string; message?: string };
-        errorDetail = errorBody.message || errorBody.error || '';
-      } catch {
-        // Ignore JSON parse errors
-      }
-      throw new Error(`${response.status} ${response.statusText}${errorDetail ? ` - ${errorDetail}` : ''}`);
-    }
-
-    return response.json();
+    return this.apiClient.callApiPublic(endpoint);
   }
 
-  // Feature #846: Send audit log entry to backend
-  private async sendAuditLog(entry: {
-    method: string;
-    tool_name?: string;
-    resource_uri?: string;
-    request_params?: Record<string, unknown>;
-    response_type: 'success' | 'error';
-    response_error_code?: number;
-    response_error_message?: string;
-    response_data_preview?: string;
-    duration_ms?: number;
-    // Feature #854: Streaming fields
-    streaming?: boolean;
-    stream_id?: string;
-  }): Promise<void> {
-    // Don't log if no API key configured
-    if (!this.config.apiKey) {
-      return;
+  // Feature #846: Send audit log entry to backend (delegates to mcp-audit.ts)
+  private async sendAuditLog(entry: AuditLogEntry): Promise<void> {
+    // Update connection info before sending
+    if (this.connectionId) {
+      this.auditLogger.updateConnectionInfo(
+        this.connectionId,
+        this.clientInfo?.name,
+        this.clientInfo?.version
+      );
     }
-
-    try {
-      const apiUrl = this.config.apiUrl || 'http://localhost:3001';
-      await fetch(`${apiUrl}/api/v1/mcp/audit-log`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          api_key: this.config.apiKey,
-          connection_id: this.connectionId,
-          client_name: this.clientInfo?.name,
-          client_version: this.clientInfo?.version,
-          ...entry,
-        }),
-      });
-    } catch (error) {
-      // Don't fail the main request if audit logging fails
-      this.log(`[AUDIT] Failed to send audit log: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    return this.auditLogger.sendAuditLog(entry);
   }
 
   // Send JSON-RPC response to stdout
