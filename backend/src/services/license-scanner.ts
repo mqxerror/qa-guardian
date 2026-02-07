@@ -12,11 +12,22 @@
 
 import licenseChecker from 'license-checker';
 import { promisify } from 'util';
-import path from 'path';
 
 // ============================================================================
 // Types
 // ============================================================================
+
+/**
+ * Package info returned by license-checker
+ */
+interface LicenseCheckerPackageInfo {
+  licenses?: string;
+  repository?: string;
+  publisher?: string;
+  url?: string;
+  path?: string;
+  licenseFile?: string;
+}
 
 export interface LicenseInfo {
   name: string;
@@ -268,7 +279,7 @@ export async function scanLicenses(projectPath: string): Promise<LicenseInfo[]> 
       start: projectPath,
       production: true,
       json: true,
-    }) as Record<string, any>;
+    }) as Record<string, LicenseCheckerPackageInfo>;
 
     const licenses: LicenseInfo[] = [];
 
@@ -286,7 +297,7 @@ export async function scanLicenses(projectPath: string): Promise<LicenseInfo[]> 
         version = 'unknown';
       }
 
-      const licenseStr = (info as any).licenses || 'UNKNOWN';
+      const licenseStr = info.licenses || 'UNKNOWN';
       const spdxId = toSpdxId(licenseStr);
 
       licenses.push({
@@ -294,11 +305,11 @@ export async function scanLicenses(projectPath: string): Promise<LicenseInfo[]> 
         version,
         license: licenseStr,
         spdxId,
-        repository: (info as any).repository,
-        publisher: (info as any).publisher,
-        url: (info as any).url,
-        path: (info as any).path,
-        licenseFile: (info as any).licenseFile,
+        repository: info.repository,
+        publisher: info.publisher,
+        url: info.url,
+        path: info.path,
+        licenseFile: info.licenseFile,
       });
     }
 
