@@ -57,6 +57,8 @@ const SbomPage = lazy(() => import('./pages/SbomPage').then(m => ({ default: m.S
 const ContainerScanPage = lazy(() => import('./pages/ContainerScanPage').then(m => ({ default: m.ContainerScanPage })));
 // Feature #270: Upgrade Recommendations Page
 const UpgradeRecommendationsPage = lazy(() => import('./pages/UpgradeRecommendationsPage').then(m => ({ default: m.UpgradeRecommendationsPage })));
+// Feature #271: Dependency Tree Visualization
+const DependencyTreePage = lazy(() => import('./pages/DependencyTreePage').then(m => ({ default: m.DependencyTreePage })));
 const DependencyPolicyPage = lazy(() => import('./pages/DependencyPolicyPage').then(m => ({ default: m.DependencyPolicyPage })));
 const AutoPRPage = lazy(() => import('./pages/AutoPRPage').then(m => ({ default: m.AutoPRPage })));
 const DependencyAgePage = lazy(() => import('./pages/DependencyAgePage').then(m => ({ default: m.DependencyAgePage })));
@@ -1329,6 +1331,15 @@ function App() {
           element={
             <ProtectedRoute>
               <UpgradeRecommendationsPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Feature #271: Dependency Tree Visualization */}
+        <Route
+          path="/security/dependency-tree"
+          element={
+            <ProtectedRoute>
+              <DependencyTreePage />
             </ProtectedRoute>
           }
         />
