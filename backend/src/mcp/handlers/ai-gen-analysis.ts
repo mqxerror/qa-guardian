@@ -14,8 +14,187 @@ import { aiRouter } from '../../services/providers/ai-router.js';
 import { modelSelector } from '../../services/providers/model-selector.js';
 
 /**
+ * Coverage area interface for analysis results
+ */
+interface CoverageArea {
+  area: string;
+  category: string;
+  coverage: number;
+  tested_scenarios: string[];
+  missing_scenarios: string[];
+  risk_level: 'critical' | 'high' | 'medium' | 'low';
+  priority_score: number;
+}
+
+/**
+ * Categorize test types into functional areas
+ */
+function categorizeTestType(type: string, name: string): { area: string; category: string } {
+  const typeLower = type?.toLowerCase() || '';
+  const nameLower = name?.toLowerCase() || '';
+
+  // Authentication/Security tests
+  if (nameLower.includes('login') || nameLower.includes('auth') || nameLower.includes('password') ||
+      nameLower.includes('session') || nameLower.includes('token') || typeLower === 'security') {
+    return { area: 'Authentication & Security', category: 'security' };
+  }
+
+  // Visual regression tests
+  if (typeLower.includes('visual') || nameLower.includes('visual') || nameLower.includes('screenshot')) {
+    return { area: 'Visual Regression', category: 'visual' };
+  }
+
+  // Performance tests
+  if (typeLower.includes('performance') || typeLower.includes('load') || nameLower.includes('performance') ||
+      nameLower.includes('lighthouse') || nameLower.includes('k6') || typeLower === 'load') {
+    return { area: 'Performance & Load', category: 'performance' };
+  }
+
+  // Accessibility tests
+  if (typeLower.includes('a11y') || typeLower.includes('accessibility') || nameLower.includes('accessibility') ||
+      nameLower.includes('wcag') || nameLower.includes('axe')) {
+    return { area: 'Accessibility', category: 'accessibility' };
+  }
+
+  // API tests
+  if (typeLower.includes('api') || nameLower.includes('api') || nameLower.includes('endpoint') ||
+      nameLower.includes('rest') || nameLower.includes('graphql')) {
+    return { area: 'API Integration', category: 'api' };
+  }
+
+  // Form tests
+  if (nameLower.includes('form') || nameLower.includes('input') || nameLower.includes('validation') ||
+      nameLower.includes('submit')) {
+    return { area: 'Form Handling', category: 'user_experience' };
+  }
+
+  // Navigation tests
+  if (nameLower.includes('navigation') || nameLower.includes('route') || nameLower.includes('redirect') ||
+      nameLower.includes('menu') || nameLower.includes('link')) {
+    return { area: 'Navigation', category: 'core_feature' };
+  }
+
+  // Error handling tests
+  if (nameLower.includes('error') || nameLower.includes('404') || nameLower.includes('500') ||
+      nameLower.includes('fail') || nameLower.includes('exception')) {
+    return { area: 'Error Handling', category: 'reliability' };
+  }
+
+  // E2E/functional tests (default)
+  return { area: 'Core Functionality', category: 'core_feature' };
+}
+
+/**
+ * Calculate risk level based on category and test count
+ */
+function calculateRiskLevel(category: string, testCount: number): 'critical' | 'high' | 'medium' | 'low' {
+  // Security with no tests is critical
+  if (category === 'security' && testCount === 0) return 'critical';
+  if (category === 'security') return testCount < 3 ? 'high' : 'medium';
+
+  // API with no tests is high risk
+  if (category === 'api' && testCount === 0) return 'high';
+
+  // Performance with no tests is medium-high
+  if (category === 'performance' && testCount === 0) return 'high';
+
+  // Other categories
+  if (testCount === 0) return 'medium';
+  if (testCount < 2) return 'low';
+  return 'low';
+}
+
+/**
+ * Generate missing scenarios based on category and existing tests
+ */
+function generateMissingScenarios(
+  category: string,
+  area: string,
+  existingTestNames: string[]
+): string[] {
+  const scenarios: string[] = [];
+  const existingLower = existingTestNames.map(n => n.toLowerCase()).join(' ');
+
+  // Category-specific missing scenarios
+  switch (category) {
+    case 'security':
+      if (!existingLower.includes('login')) scenarios.push('User login with valid credentials');
+      if (!existingLower.includes('logout')) scenarios.push('User logout and session cleanup');
+      if (!existingLower.includes('password reset')) scenarios.push('Password reset flow');
+      if (!existingLower.includes('invalid') && !existingLower.includes('fail')) {
+        scenarios.push('Login with invalid credentials (negative test)');
+      }
+      if (!existingLower.includes('session')) scenarios.push('Session timeout handling');
+      if (!existingLower.includes('mfa') && !existingLower.includes('2fa')) {
+        scenarios.push('Multi-factor authentication flow');
+      }
+      break;
+
+    case 'visual':
+      if (!existingLower.includes('mobile')) scenarios.push('Mobile viewport visual regression');
+      if (!existingLower.includes('dark') && !existingLower.includes('theme')) {
+        scenarios.push('Dark mode visual comparison');
+      }
+      if (!existingLower.includes('responsive')) scenarios.push('Responsive layout breakpoints');
+      break;
+
+    case 'performance':
+      if (!existingLower.includes('lighthouse')) scenarios.push('Lighthouse performance audit');
+      if (!existingLower.includes('load')) scenarios.push('Load testing with concurrent users');
+      if (!existingLower.includes('api') && !existingLower.includes('response')) {
+        scenarios.push('API response time benchmarks');
+      }
+      if (!existingLower.includes('mobile')) scenarios.push('Mobile performance metrics');
+      break;
+
+    case 'accessibility':
+      if (!existingLower.includes('wcag')) scenarios.push('WCAG 2.1 AA compliance check');
+      if (!existingLower.includes('keyboard')) scenarios.push('Keyboard navigation test');
+      if (!existingLower.includes('screen reader') && !existingLower.includes('aria')) {
+        scenarios.push('Screen reader compatibility');
+      }
+      if (!existingLower.includes('contrast')) scenarios.push('Color contrast verification');
+      break;
+
+    case 'api':
+      if (!existingLower.includes('get')) scenarios.push('GET endpoint response validation');
+      if (!existingLower.includes('post') && !existingLower.includes('create')) {
+        scenarios.push('POST/Create operations');
+      }
+      if (!existingLower.includes('error') && !existingLower.includes('400') && !existingLower.includes('500')) {
+        scenarios.push('API error response handling (4xx, 5xx)');
+      }
+      if (!existingLower.includes('auth')) scenarios.push('API authentication/authorization');
+      break;
+
+    case 'user_experience':
+      if (!existingLower.includes('validation')) scenarios.push('Form field validation');
+      if (!existingLower.includes('submit')) scenarios.push('Form submission success/error');
+      if (!existingLower.includes('empty') && !existingLower.includes('required')) {
+        scenarios.push('Required field validation');
+      }
+      break;
+
+    case 'reliability':
+      if (!existingLower.includes('network')) scenarios.push('Network error recovery');
+      if (!existingLower.includes('timeout')) scenarios.push('Request timeout handling');
+      if (!existingLower.includes('retry')) scenarios.push('Automatic retry on failure');
+      break;
+
+    default: // core_feature
+      if (!existingLower.includes('navigation')) scenarios.push('Page navigation flow');
+      if (!existingLower.includes('search')) scenarios.push('Search functionality');
+      if (!existingLower.includes('filter')) scenarios.push('Filter/sort capabilities');
+      if (!existingLower.includes('pagination')) scenarios.push('Pagination edge cases');
+  }
+
+  return scenarios.slice(0, 5); // Limit to 5 suggestions per area
+}
+
+/**
  * Get test coverage gaps for a project
  * Feature #1158
+ * Feature #332: Replace hardcoded data with real project analysis
  */
 export const getCoverageGaps: ToolHandler = async (args, context) => {
   try {
@@ -29,81 +208,129 @@ export const getCoverageGaps: ToolHandler = async (args, context) => {
 
     const includeSuggestions = args.include_suggestions !== false;
     const minPriority = (args.min_priority as number) || 0;
+    const useRealAi = args.use_real_ai !== false;
 
-    context.log(`[Coverage] Analyzing coverage gaps for project: ${projectId}`);
+    context.log(`[Coverage] Analyzing real coverage gaps for project: ${projectId}`);
 
     const startTime = Date.now();
 
-    // Untested areas analysis
-    const untestedAreas = [
-      {
-        area: 'User Authentication',
-        category: 'security',
-        coverage: 45,
-        missing_scenarios: [
-          'Password reset flow',
-          'Multi-factor authentication',
-          'Session timeout handling',
-          'Account lockout after failed attempts',
-        ],
-        risk_level: 'high',
-        priority_score: 95,
-      },
-      {
-        area: 'Payment Processing',
-        category: 'business_critical',
-        coverage: 30,
-        missing_scenarios: [
-          'Failed payment retry',
-          'Partial refund processing',
-          'Currency conversion',
-          'Payment method switching',
-        ],
-        risk_level: 'critical',
-        priority_score: 98,
-      },
-      {
-        area: 'User Profile Management',
-        category: 'user_experience',
-        coverage: 60,
-        missing_scenarios: [
-          'Profile picture upload',
-          'Email change verification',
-          'Account deletion',
-        ],
-        risk_level: 'medium',
-        priority_score: 65,
-      },
-      {
-        area: 'Search Functionality',
-        category: 'core_feature',
-        coverage: 55,
-        missing_scenarios: [
-          'Advanced filter combinations',
-          'Search with special characters',
-          'Empty result handling',
-          'Pagination edge cases',
-        ],
-        risk_level: 'medium',
-        priority_score: 70,
-      },
-      {
-        area: 'Error Handling',
-        category: 'reliability',
-        coverage: 25,
-        missing_scenarios: [
-          'Network timeout recovery',
-          'API error responses (4xx, 5xx)',
-          'Graceful degradation',
-          'Offline mode behavior',
-        ],
-        risk_level: 'high',
-        priority_score: 88,
-      },
+    // Fetch real project data
+    let project: { id: string; name: string; description?: string } | null = null;
+    let testSuites: Array<{ id: string; name: string; type: string; test_count?: number }> = [];
+    const allTests: Array<{ id: string; name: string; suite_id: string; type?: string; status?: string }> = [];
+
+    try {
+      // Fetch project details
+      const projectResponse = await context.callApi(`/api/v1/projects/${projectId}`);
+      project = projectResponse as typeof project;
+
+      // Fetch all test suites in the project
+      const suitesResponse = await context.callApi(`/api/v1/projects/${projectId}/suites`, {
+        limit: 100,
+      });
+      testSuites = (suitesResponse as { items?: typeof testSuites })?.items || [];
+
+      // Fetch tests from each suite
+      for (const suite of testSuites.slice(0, 20)) { // Limit to prevent timeout
+        try {
+          const testsResponse = await context.callApi(`/api/v1/suites/${suite.id}/tests`, {
+            limit: 50,
+          });
+          const suiteTests = (testsResponse as { items?: typeof allTests })?.items || [];
+          allTests.push(...suiteTests.map(t => ({ ...t, suite_id: suite.id })));
+        } catch (e) {
+          context.log(`[Coverage] Warning: Could not fetch tests for suite ${suite.id}`);
+        }
+      }
+    } catch (fetchError) {
+      context.log(`[Coverage] Warning: Could not fetch project data: ${fetchError}. Using empty baseline.`);
+    }
+
+    // Analyze coverage by area
+    const areaMap = new Map<string, {
+      category: string;
+      tests: Array<{ name: string; type?: string }>;
+    }>();
+
+    // Group tests by functional area
+    for (const test of allTests) {
+      const suite = testSuites.find(s => s.id === test.suite_id);
+      const testType = test.type || suite?.type || 'e2e';
+      const { area, category } = categorizeTestType(testType, test.name);
+
+      if (!areaMap.has(area)) {
+        areaMap.set(area, { category, tests: [] });
+      }
+      const areaData = areaMap.get(area);
+      if (areaData) {
+        areaData.tests.push({ name: test.name, type: testType });
+      }
+    }
+
+    // Define standard areas that should be covered
+    const standardAreas = [
+      { area: 'Authentication & Security', category: 'security', basePriority: 95 },
+      { area: 'Core Functionality', category: 'core_feature', basePriority: 85 },
+      { area: 'API Integration', category: 'api', basePriority: 80 },
+      { area: 'Error Handling', category: 'reliability', basePriority: 75 },
+      { area: 'Form Handling', category: 'user_experience', basePriority: 70 },
+      { area: 'Visual Regression', category: 'visual', basePriority: 65 },
+      { area: 'Performance & Load', category: 'performance', basePriority: 60 },
+      { area: 'Accessibility', category: 'accessibility', basePriority: 55 },
+      { area: 'Navigation', category: 'core_feature', basePriority: 50 },
     ];
+
+    // Build coverage analysis
+    const untestedAreas: CoverageArea[] = [];
+
+    for (const { area, category, basePriority } of standardAreas) {
+      const areaData = areaMap.get(area);
+      const tests = areaData?.tests || [];
+      const testCount = tests.length;
+
+      // Calculate coverage percentage (0-100)
+      // More tests = higher coverage, capped at 100
+      const maxExpectedTests = 10; // Assume 10 tests is "full coverage" for an area
+      const coverage = Math.min(100, Math.round((testCount / maxExpectedTests) * 100));
+
+      // Get risk level
+      const riskLevel = calculateRiskLevel(category, testCount);
+
+      // Calculate priority score (higher = more important to address)
+      // Areas with lower coverage and higher risk get higher priority
+      let priorityScore = basePriority;
+      if (coverage < 20) priorityScore += 15;
+      else if (coverage < 50) priorityScore += 10;
+      else if (coverage < 80) priorityScore += 5;
+
+      if (riskLevel === 'critical') priorityScore += 20;
+      else if (riskLevel === 'high') priorityScore += 10;
+
+      priorityScore = Math.min(100, priorityScore);
+
+      // Generate missing scenarios
+      const testedScenarios = tests.map(t => t.name);
+      const missingScenarios = generateMissingScenarios(category, area, testedScenarios);
+
+      // Only include areas with gaps (coverage < 100 or missing scenarios)
+      if (coverage < 100 || missingScenarios.length > 0) {
+        untestedAreas.push({
+          area,
+          category,
+          coverage,
+          tested_scenarios: testedScenarios.slice(0, 5), // Show up to 5 existing tests
+          missing_scenarios: missingScenarios,
+          risk_level: riskLevel,
+          priority_score: priorityScore,
+        });
+      }
+    }
 
     // Filter by minimum priority
     const filteredAreas = untestedAreas.filter(area => area.priority_score >= minPriority);
+
+    // Sort by priority (highest first)
+    filteredAreas.sort((a, b) => b.priority_score - a.priority_score);
 
     // Generate suggested tests
     const suggestedTests = includeSuggestions ? filteredAreas.flatMap(area =>
@@ -115,41 +342,92 @@ export const getCoverageGaps: ToolHandler = async (args, context) => {
         priority_score: area.priority_score - (idx * 2),
         estimated_effort: area.risk_level === 'critical' ? 'high' : area.risk_level === 'high' ? 'medium' : 'low',
         suggested_type: area.category === 'security' ? 'security' :
-                        area.category === 'business_critical' ? 'e2e' :
+                        area.category === 'api' ? 'api' :
+                        area.category === 'visual' ? 'visual' :
+                        area.category === 'performance' ? 'performance' :
+                        area.category === 'accessibility' ? 'accessibility' :
                         area.category === 'reliability' ? 'integration' : 'e2e',
       }))
     ) : [];
 
-    // Sort by priority
+    // Sort suggested tests by priority
     suggestedTests.sort((a, b) => b.priority_score - a.priority_score);
 
     const analysisTimeMs = Date.now() - startTime;
 
     // Calculate overall coverage
-    const overallCoverage = Math.round(
-      filteredAreas.reduce((sum, area) => sum + area.coverage, 0) / filteredAreas.length
-    );
+    const overallCoverage = filteredAreas.length > 0
+      ? Math.round(filteredAreas.reduce((sum, area) => sum + area.coverage, 0) / filteredAreas.length)
+      : 0;
+
+    // Use AI to enhance recommendations if available
+    let aiRecommendations: string[] = [];
+    let usedRealAi = false;
+
+    if (useRealAi && aiRouter.isInitialized() && filteredAreas.length > 0) {
+      try {
+        const modelConfig = modelSelector.getModelForFeature('analysis');
+        const gapSummary = filteredAreas
+          .slice(0, 5)
+          .map(a => `- ${a.area} (${a.coverage}% coverage, ${a.risk_level} risk): Missing ${a.missing_scenarios.join(', ')}`)
+          .join('\n');
+
+        const response = await aiRouter.sendMessage(
+          [{
+            role: 'user',
+            content: `Based on this test coverage gap analysis, provide 3-4 specific, actionable recommendations:\n\n${gapSummary}\n\nProject: ${project?.name || projectId}\nTotal tests: ${allTests.length}\nTest suites: ${testSuites.length}`,
+          }],
+          {
+            model: modelConfig.model,
+            maxTokens: 500,
+            temperature: 0.3,
+            systemPrompt: 'You are a QA expert. Provide brief, specific recommendations for improving test coverage. Focus on actionable items.',
+          }
+        );
+
+        usedRealAi = true;
+        // Extract bullet points from AI response
+        const lines = response.content.split('\n').filter(l => l.trim().startsWith('-') || l.trim().match(/^\d+\./));
+        aiRecommendations = lines.map(l => l.replace(/^[-\d.]+\s*/, '').trim()).filter(l => l.length > 10).slice(0, 4);
+      } catch (aiError) {
+        context.log(`[Coverage] AI recommendations failed: ${aiError}`);
+      }
+    }
+
+    // Default recommendations if AI not used or failed
+    const recommendations = aiRecommendations.length > 0 ? aiRecommendations : [
+      filteredAreas.some(a => a.risk_level === 'critical')
+        ? 'Address critical security gaps immediately before release'
+        : 'Focus on high-priority gaps first to maximize impact',
+      'Add negative test cases for error handling scenarios',
+      filteredAreas.some(a => a.category === 'accessibility')
+        ? 'Run accessibility audits with axe-core for WCAG compliance'
+        : 'Consider adding accessibility tests for better inclusivity',
+      'Schedule regular coverage analysis to track improvement over time',
+    ];
 
     return {
       success: true,
       project_id: projectId,
+      project_name: project?.name || 'Unknown Project',
       overall_coverage: overallCoverage,
       untested_areas: filteredAreas,
       suggested_tests: suggestedTests.slice(0, 20), // Limit to top 20
       analysis_time_ms: analysisTimeMs,
       summary: {
-        total_areas_analyzed: untestedAreas.length,
-        areas_below_threshold: filteredAreas.length,
+        total_test_suites: testSuites.length,
+        total_tests: allTests.length,
+        total_areas_analyzed: standardAreas.length,
+        areas_with_gaps: filteredAreas.length,
         critical_gaps: filteredAreas.filter(a => a.risk_level === 'critical').length,
         high_risk_gaps: filteredAreas.filter(a => a.risk_level === 'high').length,
         total_missing_scenarios: filteredAreas.reduce((sum, a) => sum + a.missing_scenarios.length, 0),
       },
-      recommendations: [
-        'Prioritize critical and high-risk gaps first',
-        'Consider adding integration tests for error handling',
-        'Security-related gaps should be addressed before release',
-        'Schedule regular coverage analysis to track progress',
-      ],
+      recommendations,
+      ai_metadata: {
+        used_real_ai: usedRealAi,
+        data_source: 'real_project_analysis',
+      },
       analyzed_at: new Date().toISOString(),
     };
 
@@ -623,7 +901,6 @@ Return the assessment as JSON.`;
 
     // Rule-based fallback
     if (!assessment) {
-      const descLower = description.toLowerCase();
       const wordCount = description.split(/\s+/).length;
 
       // Calculate clarity score
