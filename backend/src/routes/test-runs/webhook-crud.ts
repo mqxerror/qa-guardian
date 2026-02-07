@@ -7,7 +7,15 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { getProject as dbGetProject } from '../projects/stores.js';
-import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate, generateWebhookSignature } from './webhooks.js';
+import {
+  WebhookSubscription,
+  webhookSubscriptions,
+  applyPayloadTemplate,
+  generateWebhookSignature,
+  createWebhookSubscription,
+  updateWebhookSubscriptionInDb,
+  deleteWebhookSubscriptionFromDb
+} from './webhooks.js';
 import { validateWebhookURL } from '../../utils/index.js';
 import { WebhookLogEntry, webhookLog } from './alerts.js';
 
@@ -460,7 +468,8 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       consecutive_failures: 0, // Feature #321: Auto-disable tracking
     };
 
-    webhookSubscriptions.set(id, subscription);
+    // Feature #329: Create subscription in both memory and database
+    await createWebhookSubscription(subscription);
 
     console.log(`[WEBHOOK] Created subscription "${name}" (${id}) by ${user.email}`);
 
@@ -695,7 +704,9 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     if (updates.batch_interval_seconds !== undefined) subscription.batch_interval_seconds = updates.batch_interval_seconds;
 
     subscription.updated_at = new Date();
-    webhookSubscriptions.set(subscriptionId, subscription);
+
+    // Feature #329: Update subscription in both memory and database
+    await updateWebhookSubscriptionInDb(subscriptionId, subscription);
 
     console.log(`[WEBHOOK] Updated subscription "${subscription.name}" (${subscriptionId}) by ${user.email}`);
 
@@ -734,7 +745,8 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       });
     }
 
-    webhookSubscriptions.delete(subscriptionId);
+    // Feature #329: Delete subscription from both memory and database
+    await deleteWebhookSubscriptionFromDb(subscriptionId);
 
     console.log(`[WEBHOOK] Deleted subscription "${subscription.name}" (${subscriptionId}) by ${user.email}`);
 

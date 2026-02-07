@@ -1,6 +1,7 @@
 /**
  * Test Runs - Webhooks Module
  * Feature #1283-1315: Webhook event delivery and management
+ * Feature #329: Persist webhook subscriptions and logs to PostgreSQL
  *
  * Extracted from test-runs.ts for code quality (#1356)
  */
@@ -8,6 +9,7 @@
 import * as crypto from 'crypto';
 import { validateWebhookURL } from '../../utils/index.js';
 import { queueWebhookDelivery, isWebhookQueueReady, WEBHOOK_AUTO_DISABLE_THRESHOLD, type SubscriptionStatsResult } from '../../services/webhook-queue.js';
+import * as webhookRepo from '../../services/repositories/webhooks.js';
 
 // ============================================================================
 // Webhook Subscription Interface
@@ -151,8 +153,96 @@ export const webhookDeliveryLogs: Map<string, WebhookDeliveryLog> = new Map();
 // Webhook Subscriptions Store
 // ============================================================================
 
-// Store webhook subscriptions
+// Store webhook subscriptions (in-memory cache, synced with database)
 export const webhookSubscriptions: Map<string, WebhookSubscription> = new Map();
+
+// Feature #329: Flag to track if we've loaded from database
+let subscriptionsLoadedFromDb = false;
+
+/**
+ * Feature #329: Initialize subscriptions from database on startup
+ * Call this once during server initialization
+ */
+export async function initializeWebhookSubscriptionsFromDb(): Promise<void> {
+  if (subscriptionsLoadedFromDb) {
+    return; // Already loaded
+  }
+
+  try {
+    const dbSubscriptions = await webhookRepo.loadAllSubscriptions();
+    for (const [id, sub] of dbSubscriptions) {
+      webhookSubscriptions.set(id, sub);
+    }
+    subscriptionsLoadedFromDb = true;
+    console.log(`[WEBHOOK] Initialized ${webhookSubscriptions.size} subscriptions from database`);
+  } catch (error) {
+    console.error('[WEBHOOK] Failed to load subscriptions from database:', error);
+    // Continue with empty cache - will work in-memory only
+  }
+}
+
+/**
+ * Feature #329: Create subscription in both memory and database
+ */
+export async function createWebhookSubscription(subscription: WebhookSubscription): Promise<WebhookSubscription> {
+  // Add to memory first
+  webhookSubscriptions.set(subscription.id, subscription);
+
+  // Persist to database
+  try {
+    await webhookRepo.createSubscription(subscription);
+  } catch (error) {
+    console.error(`[WEBHOOK] Failed to persist subscription ${subscription.id} to database:`, error);
+    // Continue with in-memory only
+  }
+
+  return subscription;
+}
+
+/**
+ * Feature #329: Update subscription in both memory and database
+ */
+export async function updateWebhookSubscriptionInDb(
+  subscriptionId: string,
+  updates: Partial<WebhookSubscription>
+): Promise<WebhookSubscription | undefined> {
+  const subscription = webhookSubscriptions.get(subscriptionId);
+  if (!subscription) {
+    return undefined;
+  }
+
+  // Apply updates to in-memory copy
+  Object.assign(subscription, updates);
+  subscription.updated_at = new Date();
+  webhookSubscriptions.set(subscriptionId, subscription);
+
+  // Persist to database
+  try {
+    await webhookRepo.updateSubscription(subscriptionId, updates);
+  } catch (error) {
+    console.error(`[WEBHOOK] Failed to persist subscription update ${subscriptionId} to database:`, error);
+    // Continue with in-memory only
+  }
+
+  return subscription;
+}
+
+/**
+ * Feature #329: Delete subscription from both memory and database
+ */
+export async function deleteWebhookSubscriptionFromDb(subscriptionId: string): Promise<boolean> {
+  const existed = webhookSubscriptions.delete(subscriptionId);
+
+  // Delete from database
+  try {
+    await webhookRepo.deleteSubscription(subscriptionId);
+  } catch (error) {
+    console.error(`[WEBHOOK] Failed to delete subscription ${subscriptionId} from database:`, error);
+    // Continue even if DB delete fails
+  }
+
+  return existed;
+}
 
 // ============================================================================
 // Helper Functions
@@ -325,6 +415,7 @@ export function subscriptionMatchesAnyResultStatus(
  * Tracks consecutive failures and auto-disables after threshold
  *
  * Feature #321: Auto-disable on sustained failure
+ * Feature #329: Persists stats updates to database
  */
 export async function updateSubscriptionDeliveryStats(
   subscriptionId: string,
@@ -343,6 +434,13 @@ export async function updateSubscriptionDeliveryStats(
     subscription.last_triggered_at = new Date();
     subscription.updated_at = new Date();
     webhookSubscriptions.set(subscriptionId, subscription);
+
+    // Feature #329: Persist to database
+    webhookRepo.updateSubscription(subscriptionId, {
+      consecutive_failures: 0,
+      success_count: subscription.success_count,
+      last_triggered_at: subscription.last_triggered_at,
+    }).catch(err => console.error(`[WEBHOOK] Failed to persist stats update:`, err));
 
     return {
       consecutiveFailures: 0,
@@ -368,6 +466,15 @@ export async function updateSubscriptionDeliveryStats(
   }
 
   webhookSubscriptions.set(subscriptionId, subscription);
+
+  // Feature #329: Persist to database
+  webhookRepo.updateSubscription(subscriptionId, {
+    consecutive_failures: subscription.consecutive_failures,
+    failure_count: subscription.failure_count,
+    enabled: subscription.enabled,
+    disabled_at: subscription.disabled_at,
+    disable_reason: subscription.disable_reason,
+  }).catch(err => console.error(`[WEBHOOK] Failed to persist stats update:`, err));
 
   return {
     consecutiveFailures: subscription.consecutive_failures,
@@ -786,6 +893,7 @@ export async function deliverWebhookWithRetry(
 }
 
 // Feature #1295: Helper function to log webhook delivery details
+// Feature #329: Now also persists to database
 export function logWebhookDelivery(log: WebhookDeliveryLog): void {
   webhookDeliveryLogs.set(log.id, log);
 
@@ -799,11 +907,32 @@ export function logWebhookDelivery(log: WebhookDeliveryLog): void {
     subLogs.slice(1000).forEach(([id]) => webhookDeliveryLogs.delete(id));
   }
 
+  // Feature #329: Persist to database asynchronously (fire and forget)
+  webhookRepo.createDeliveryLog(log).catch(error => {
+    console.error(`[WEBHOOK] Failed to persist delivery log ${log.id} to database:`, error);
+  });
+
   console.log(`[WEBHOOK] Logged delivery ${log.id}: ${log.status} (${log.event_type} -> ${log.subscription_name})`);
 }
 
 // Feature #1295: Get delivery logs for a subscription
-export function getWebhookDeliveryLogs(
+// Feature #329: Now reads from database with fallback to in-memory cache
+export async function getWebhookDeliveryLogsFromDb(
+  subscriptionId: string,
+  options?: { limit?: number; offset?: number; status?: 'success' | 'failed' | 'pending_retry' }
+): Promise<{ logs: WebhookDeliveryLog[]; total: number }> {
+  try {
+    // Try database first
+    return await webhookRepo.getDeliveryLogs(subscriptionId, options);
+  } catch (error) {
+    console.error(`[WEBHOOK] Failed to get delivery logs from database, using in-memory:`, error);
+    // Fall back to in-memory
+    return getWebhookDeliveryLogsInMemory(subscriptionId, options);
+  }
+}
+
+// Legacy in-memory function for fallback
+export function getWebhookDeliveryLogsInMemory(
   subscriptionId: string,
   options?: { limit?: number; offset?: number; status?: 'success' | 'failed' | 'pending_retry' }
 ): { logs: WebhookDeliveryLog[]; total: number } {
@@ -826,6 +955,9 @@ export function getWebhookDeliveryLogs(
 
   return { logs, total };
 }
+
+// Alias for backward compatibility
+export const getWebhookDeliveryLogs = getWebhookDeliveryLogsInMemory;
 
 // ============================================================================
 // Template Processing

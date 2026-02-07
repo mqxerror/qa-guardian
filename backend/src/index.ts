@@ -47,7 +47,7 @@ import { authenticate } from './middleware/auth.js'; // Feature #205: Auth for h
 import { initializeCleanupJob, stopCleanupJob, getCleanupStats } from './jobs/cleanup.js'; // Feature #154: Data retention cleanup
 import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, registerExecutionCallback } from './services/execution-queue.js'; // Feature #155: BullMQ execution queue
 import { initializeWebhookQueue, shutdownWebhookQueue, getWebhookQueueHealth, registerSubscriptionStatsCallback } from './services/webhook-queue.js'; // Feature #320: BullMQ webhook queue
-import { updateSubscriptionDeliveryStats } from './routes/test-runs/webhooks.js'; // Feature #321: Webhook auto-disable
+import { updateSubscriptionDeliveryStats, initializeWebhookSubscriptionsFromDb } from './routes/test-runs/webhooks.js'; // Feature #321: Webhook auto-disable, Feature #329: DB persistence
 import { initializeErrorHandlers, getErrorMetrics } from './services/error-tracking.js'; // Feature #164: Error tracking
 import { registerMetricsHooks, getMetricsSummary } from './services/metrics.js'; // Feature #165: API response time tracking
 import { setWebSocketIO } from './services/websocket-events.js'; // Feature #108: WebSocket CRUD events
@@ -768,6 +768,14 @@ async function start() {
       console.log('[Startup] Execution queue initialized - test runs will be queued with concurrency limits');
     } else {
       console.log('[Startup] Execution queue not available - test runs will execute directly');
+    }
+
+    // Feature #329: Initialize webhook subscriptions from database
+    try {
+      await initializeWebhookSubscriptionsFromDb();
+      console.log('[Startup] Webhook subscriptions loaded from database');
+    } catch (err: any) {
+      console.error('[Startup] Failed to load webhook subscriptions from database (non-fatal):', err.message);
     }
 
     // Feature #320: Initialize BullMQ webhook queue (requires Redis)

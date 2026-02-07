@@ -6,10 +6,11 @@
  */
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
-import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate, generateWebhookSignature, WEBHOOK_SIGNATURE_TOLERANCE_SECONDS } from './webhooks.js';
+import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate, generateWebhookSignature, WEBHOOK_SIGNATURE_TOLERANCE_SECONDS, getWebhookDeliveryLogsFromDb } from './webhooks.js';
 import { validateWebhookURL } from '../../utils/index.js';
 import { webhookLog } from './alerts.js';
 import { logWebhookDelivery, flattenObject } from './webhook-crud.js';
+import * as webhookRepo from '../../services/repositories/webhooks.js';
 
 // ============================================================================
 // Route Registration
@@ -887,4 +888,128 @@ def verify_webhook_signature(body: bytes, signature_header: str, secret: str, to
       'Content-Type': 'application/json',
     },
   }));
+
+  // Feature #329: Get delivery history from database with pagination
+  // This endpoint provides persistent delivery history that survives server restarts
+  app.get<{
+    Params: { subscriptionId: string };
+    Querystring: {
+      limit?: string;
+      offset?: string;
+      status?: 'success' | 'failed' | 'pending_retry';
+    };
+  }>('/api/v1/webhook-subscriptions/:subscriptionId/delivery-history', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const orgId = getOrganizationId(request);
+    const { subscriptionId } = request.params;
+    const { limit = '50', offset = '0', status } = request.query;
+
+    const subscription = webhookSubscriptions.get(subscriptionId);
+    if (!subscription || subscription.organization_id !== orgId) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'Webhook subscription not found',
+      });
+    }
+
+    const limitNum = Math.min(parseInt(limit) || 50, 100);
+    const offsetNum = parseInt(offset) || 0;
+
+    try {
+      // Use database-backed function
+      const result = await getWebhookDeliveryLogsFromDb(subscriptionId, {
+        limit: limitNum,
+        offset: offsetNum,
+        status,
+      });
+
+      return {
+        subscription: {
+          id: subscription.id,
+          name: subscription.name,
+        },
+        logs: result.logs.map(log => ({
+          id: log.id,
+          timestamp: log.timestamp.toISOString(),
+          event_type: log.event_type,
+          url: log.url,
+          status: log.status,
+          attempt_number: log.attempt_number,
+          max_attempts: log.max_attempts,
+          response_status: log.response?.status,
+          duration_ms: log.response?.duration_ms,
+          error: log.error?.message,
+          completed_at: log.completed_at?.toISOString(),
+          context: log.context,
+        })),
+        total: result.total,
+        limit: limitNum,
+        offset: offsetNum,
+        source: 'database', // Indicates data comes from persistent storage
+      };
+    } catch (error: any) {
+      console.error('[WEBHOOK] Failed to get delivery history from database:', error);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve delivery history',
+      });
+    }
+  });
+
+  // Feature #329: Get all recent delivery logs for the organization (from database)
+  app.get<{
+    Querystring: {
+      limit?: string;
+      offset?: string;
+      event_type?: string;
+      success?: string;
+    };
+  }>('/api/v1/webhook-delivery-history', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const orgId = getOrganizationId(request);
+    const { limit = '50', offset = '0', event_type, success } = request.query;
+
+    const limitNum = Math.min(parseInt(limit) || 50, 100);
+    const offsetNum = parseInt(offset) || 0;
+
+    try {
+      const result = await webhookRepo.getRecentDeliveryLogs(orgId, {
+        limit: limitNum,
+        offset: offsetNum,
+        eventType: event_type,
+        success: success === undefined ? undefined : success === 'true',
+      });
+
+      return {
+        logs: result.logs.map(log => ({
+          id: log.id,
+          subscription_id: log.subscription_id,
+          subscription_name: log.subscription_name,
+          timestamp: log.timestamp.toISOString(),
+          event_type: log.event_type,
+          url: log.url,
+          status: log.status,
+          attempt_number: log.attempt_number,
+          max_attempts: log.max_attempts,
+          response_status: log.response?.status,
+          duration_ms: log.response?.duration_ms,
+          error: log.error?.message,
+          completed_at: log.completed_at?.toISOString(),
+          context: log.context,
+        })),
+        total: result.total,
+        limit: limitNum,
+        offset: offsetNum,
+        source: 'database',
+      };
+    } catch (error: any) {
+      console.error('[WEBHOOK] Failed to get delivery history from database:', error);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve delivery history',
+      });
+    }
+  });
 }
