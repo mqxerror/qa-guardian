@@ -39,16 +39,20 @@ export default {
   				foreground: 'hsl(var(--card-foreground))'
   			},
   			success: {
-  				DEFAULT: '#10B981',
-  				foreground: '#FFFFFF'
+  				DEFAULT: 'hsl(var(--success))',
+  				foreground: 'hsl(var(--success-foreground))'
   			},
   			warning: {
-  				DEFAULT: '#F59E0B',
-  				foreground: '#FFFFFF'
+  				DEFAULT: 'hsl(var(--warning))',
+  				foreground: 'hsl(var(--warning-foreground))'
+  			},
+  			info: {
+  				DEFAULT: 'hsl(var(--info))',
+  				foreground: 'hsl(var(--info-foreground))'
   			},
   			error: {
-  				DEFAULT: '#EF4444',
-  				foreground: '#FFFFFF'
+  				DEFAULT: 'hsl(var(--destructive))',
+  				foreground: 'hsl(var(--destructive-foreground))'
   			},
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',
@@ -130,8 +134,11 @@ export default {
   		},
   		animation: {
   			'fade-in': 'fadeIn 0.3s ease-out',
+  			'fade-up': 'fadeUp 0.3s ease-out',
   			'slide-in': 'slideIn 0.3s ease-out',
+  			'card-enter': 'cardEnter 0.3s ease-out',
   			'spin-slow': 'spin 3s linear infinite',
+  			'pulse-subtle': 'pulseSubtle 2s ease-in-out infinite',
   			spotlight: 'spotlight 2s ease 0.75s 1 forwards'
   		},
   		keyframes: {
@@ -141,6 +148,16 @@ export default {
   				},
   				'100%': {
   					opacity: '1'
+  				}
+  			},
+  			fadeUp: {
+  				'0%': {
+  					opacity: '0',
+  					transform: 'translateY(20px)'
+  				},
+  				'100%': {
+  					opacity: '1',
+  					transform: 'translateY(0)'
   				}
   			},
   			slideIn: {
@@ -153,6 +170,24 @@ export default {
   					opacity: '1'
   				}
   			},
+  			cardEnter: {
+  				'0%': {
+  					opacity: '0',
+  					transform: 'translateY(12px)'
+  				},
+  				'100%': {
+  					opacity: '1',
+  					transform: 'translateY(0)'
+  				}
+  			},
+  			pulseSubtle: {
+  				'0%, 100%': {
+  					opacity: '1'
+  				},
+  				'50%': {
+  					opacity: '0.7'
+  				}
+  			},
   			spotlight: {
   				'0%': {
   					opacity: '0',
@@ -163,6 +198,17 @@ export default {
   					transform: 'translate(-50%, -40%) scale(1)'
   				}
   			}
+  		},
+  		// Stagger delay utilities for animation sequences (max 8 items)
+  		transitionDelay: {
+  			'0': '0ms',
+  			'1': '50ms',
+  			'2': '100ms',
+  			'3': '150ms',
+  			'4': '200ms',
+  			'5': '250ms',
+  			'6': '300ms',
+  			'7': '350ms'
   		}
   	}
   },

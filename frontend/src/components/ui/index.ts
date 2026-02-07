@@ -69,3 +69,67 @@ export { EmptyState, EmptyStates } from './EmptyState';
 
 // Command palette
 export { CommandPalette, useCommandPalette } from './CommandPalette';
+
+// Feature #335: Design System Components
+
+// shadcn/ui Card
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from './card';
+
+// shadcn/ui Table
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableCaption,
+} from './table';
+
+// shadcn/ui Tabs
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
+
+// shadcn/ui Progress
+export { Progress } from './progress';
+
+// shadcn/ui Avatar
+export { Avatar, AvatarImage, AvatarFallback } from './avatar';
+
+// shadcn/ui Breadcrumb
+export {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+  BreadcrumbEllipsis,
+} from './breadcrumb';
+
+// shadcn/ui Alert
+export { Alert, AlertTitle, AlertDescription } from './alert';
+
+// Custom design system components
+export { PageHeader, type BreadcrumbItem as PageBreadcrumbItem } from './page-header';
+export { StatCard } from './stat-card';
+export { AnimatedCard } from './animated-card';
+export { StatusPill, getStatusFromString } from './status-pill';
+export { SectionHeader } from './section-header';
+export { MetadataRow, MetadataList } from './metadata-row';
+
+// Animation utilities
+export {
+  useReducedMotion,
+  animationClasses,
+  motionVariants,
+  getStaggerDelay,
+  animationTiming,
+} from './animations';
