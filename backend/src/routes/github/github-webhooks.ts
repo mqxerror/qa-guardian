@@ -1,9 +1,11 @@
 /**
  * GitHub Webhooks Handler
  * Feature #272: Auto-trigger dependency scan on GitHub PR
+ * Feature #334: Wire Gitleaks scan to push webhook handler
  *
  * Receives GitHub webhook events and triggers appropriate actions:
  * - pull_request opened/synchronize: Trigger dependency scan
+ * - push: Trigger Gitleaks secret scan (Feature #334)
  * - Post results as GitHub status check
  * - Post summary comment on PR
  */
@@ -15,6 +17,14 @@ import {
   prComments,
 } from './stores.js';
 import { PRStatusCheck, PRComment } from './types.js';
+// Feature #334: Import Gitleaks scanning functionality
+import {
+  runGitleaksScan,
+  checkGitleaksAvailability,
+  GitleaksScan,
+  GitleaksConfig,
+} from '../sast/gitleaks.js';
+import * as gitleaksRepo from '../../services/repositories/gitleaks.js';
 
 // Webhook secret for verifying GitHub signatures (in production, use env var)
 const WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'qa-guardian-webhook-secret';
@@ -150,6 +160,90 @@ interface GitHubPullRequestEvent {
     id: number;
   };
 }
+
+// Feature #334: GitHub Push Event type
+interface GitHubPushEvent {
+  ref: string;  // e.g., "refs/heads/main"
+  before: string;  // SHA before the push
+  after: string;   // SHA after the push
+  created: boolean;
+  deleted: boolean;
+  forced: boolean;
+  compare: string;  // URL to compare the changes
+  commits: Array<{
+    id: string;
+    tree_id: string;
+    distinct: boolean;
+    message: string;
+    timestamp: string;
+    url: string;
+    author: {
+      name: string;
+      email: string;
+      username?: string;
+    };
+    committer: {
+      name: string;
+      email: string;
+      username?: string;
+    };
+    added: string[];
+    removed: string[];
+    modified: string[];
+  }>;
+  head_commit: {
+    id: string;
+    tree_id: string;
+    distinct: boolean;
+    message: string;
+    timestamp: string;
+    url: string;
+    author: {
+      name: string;
+      email: string;
+      username?: string;
+    };
+  } | null;
+  repository: {
+    id: number;
+    name: string;
+    full_name: string;
+    owner: {
+      login: string;
+    };
+    clone_url: string;
+    default_branch: string;
+  };
+  pusher: {
+    name: string;
+    email: string;
+  };
+  sender: {
+    login: string;
+  };
+  installation?: {
+    id: number;
+  };
+}
+
+// Feature #334: Storage for push scan results
+interface PushSecretScanResult {
+  id: string;
+  repository: string;
+  branch: string;
+  before_sha: string;
+  after_sha: string;
+  pusher: string;
+  status: 'pending' | 'scanning' | 'completed' | 'failed';
+  started_at: Date;
+  completed_at?: Date;
+  secrets_found: number;
+  scan_id?: string;  // Reference to GitleaksScan
+  error?: string;
+}
+
+// In-memory storage for push scan results (for quick access)
+const pushSecretScans: Map<string, PushSecretScanResult> = new Map();
 
 interface ScanResult {
   success: boolean;
@@ -374,6 +468,220 @@ async function createPRComment(
   return comment;
 }
 
+// ============================================================
+// Feature #334: Async Gitleaks scan for push events
+// ============================================================
+
+/**
+ * Run Gitleaks scan asynchronously after a push event
+ * This runs in the background so it doesn't block the webhook response
+ */
+async function runPushGitleaksScan(
+  projectId: string,
+  repoFullName: string,
+  branch: string,
+  beforeSha: string,
+  afterSha: string,
+  pusher: string,
+  config: GitleaksConfig,
+  pushScanKey: string
+): Promise<void> {
+  const scanId = `gitleaks_push_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const startedAt = new Date();
+
+  console.log(`
+====================================
+  Feature #334: Gitleaks Push Scan
+====================================
+  Repository: ${repoFullName}
+  Branch: ${branch}
+  Commit Range: ${beforeSha.substring(0, 7)}..${afterSha.substring(0, 7)}
+  Pusher: ${pusher}
+  Scan ID: ${scanId}
+====================================
+  `);
+
+  try {
+    // In a real implementation, this would:
+    // 1. Clone the repo (or use a cached working copy)
+    // 2. Checkout the pushed commit
+    // 3. Run Gitleaks with --commits flag to scan only the pushed commits
+    //
+    // For now, we scan the current working directory (which simulates the repo)
+    const repoPath = process.env.GITLEAKS_SCAN_PATH || process.cwd();
+
+    // Check Gitleaks availability
+    const gitleaksInfo = checkGitleaksAvailability();
+
+    // Run the scan (with 5 minute timeout)
+    const scanResult = await runGitleaksScan(repoPath, {
+      fullHistory: false,  // Only scan current state for push events
+      timeout: 300000,     // 5 minutes
+      excludePaths: config.exclude_paths,
+    });
+
+    // Apply scan_id to all findings
+    const findings = scanResult.findings.map(f => ({ ...f, scan_id: scanId }));
+
+    // Filter by severity threshold
+    const severityOrder = { critical: 4, high: 3, medium: 2, low: 1, all: 0 };
+    const filteredFindings = findings.filter(f => {
+      const findingSeverity = severityOrder[f.severity] || 0;
+      const thresholdSeverity = severityOrder[config.severity_threshold] || 0;
+      return findingSeverity >= thresholdSeverity;
+    });
+
+    // Create scan record for database
+    const scan: GitleaksScan = {
+      id: scanId,
+      organization_id: 'webhook',  // Could be looked up from project
+      project_id: projectId,
+      repository: repoFullName,
+      branch,
+      status: scanResult.success ? 'completed' : 'failed',
+      started_at: startedAt,
+      completed_at: new Date(),
+      trigger: 'push',
+      commits_scanned: scanResult.commitsScanned || 1,
+      findings: filteredFindings,
+      summary: {
+        total: filteredFindings.length,
+        critical: filteredFindings.filter(f => f.severity === 'critical').length,
+        high: filteredFindings.filter(f => f.severity === 'high').length,
+        medium: filteredFindings.filter(f => f.severity === 'medium').length,
+        low: filteredFindings.filter(f => f.severity === 'low').length,
+        by_type: filteredFindings.reduce((acc, f) => {
+          acc[f.secret_type] = (acc[f.secret_type] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>),
+      },
+      error_message: scanResult.error,
+    };
+
+    // Store scan in database
+    await gitleaksRepo.createGitleaksScan(scan);
+
+    // Update in-memory push scan record
+    const pushScanRecord = pushSecretScans.get(pushScanKey);
+    if (pushScanRecord) {
+      pushScanRecord.status = 'completed';
+      pushScanRecord.completed_at = new Date();
+      pushScanRecord.secrets_found = filteredFindings.length;
+      pushScanRecord.scan_id = scanId;
+    }
+
+    console.log(`
+====================================
+  Gitleaks Push Scan Completed
+====================================
+  Repository: ${repoFullName}
+  Branch: ${branch}
+  Method: ${gitleaksInfo.available ? `CLI v${gitleaksInfo.version}` : 'Pattern Matching'}
+  Secrets Found: ${scan.summary.total}
+    - Critical: ${scan.summary.critical}
+    - High: ${scan.summary.high}
+    - Medium: ${scan.summary.medium}
+    - Low: ${scan.summary.low}
+====================================
+    `);
+
+    // Create alert/notification if secrets found (Feature #334 step 6)
+    if (filteredFindings.length > 0 && config.notification_channels.length > 0) {
+      await sendSecretDetectedNotification(
+        repoFullName,
+        branch,
+        afterSha,
+        pusher,
+        filteredFindings.length,
+        scan.summary,
+        config.notification_channels
+      );
+    }
+
+  } catch (error: any) {
+    console.error(`[GitHub Webhook] Gitleaks push scan failed:`, error);
+
+    // Update in-memory record with error
+    const pushScanRecord = pushSecretScans.get(pushScanKey);
+    if (pushScanRecord) {
+      pushScanRecord.status = 'failed';
+      pushScanRecord.completed_at = new Date();
+      pushScanRecord.error = error.message || 'Unknown error';
+    }
+
+    // Create a failed scan record in database
+    const failedScan: GitleaksScan = {
+      id: scanId,
+      organization_id: 'webhook',
+      project_id: projectId,
+      repository: repoFullName,
+      branch,
+      status: 'failed',
+      started_at: startedAt,
+      completed_at: new Date(),
+      trigger: 'push',
+      commits_scanned: 0,
+      findings: [],
+      summary: { total: 0, critical: 0, high: 0, medium: 0, low: 0, by_type: {} },
+      error_message: error.message || 'Unknown error during scan',
+    };
+    await gitleaksRepo.createGitleaksScan(failedScan);
+  }
+}
+
+/**
+ * Send notification when secrets are detected in pushed code
+ * Feature #334 step 6
+ */
+async function sendSecretDetectedNotification(
+  repository: string,
+  branch: string,
+  commitSha: string,
+  pusher: string,
+  secretsCount: number,
+  summary: { critical: number; high: number; medium: number; low: number },
+  channels: ('slack' | 'email' | 'webhook')[]
+): Promise<void> {
+  const message = `🔐 **Secret Detection Alert**
+
+**Repository:** ${repository}
+**Branch:** ${branch}
+**Commit:** ${commitSha.substring(0, 7)}
+**Pushed by:** ${pusher}
+
+**${secretsCount} secrets detected:**
+- 🔴 Critical: ${summary.critical}
+- 🟠 High: ${summary.high}
+- 🟡 Medium: ${summary.medium}
+- 🟢 Low: ${summary.low}
+
+Please review and remediate immediately. Secrets in code are a security risk.`;
+
+  console.log(`[GitHub Webhook] Sending secret detection notification to channels:`, channels);
+  console.log(message);
+
+  // TODO: Implement actual notification channels
+  // For now, we just log the notification
+  // In production, this would send to Slack, email, or custom webhooks
+
+  for (const channel of channels) {
+    switch (channel) {
+      case 'slack':
+        console.log(`[Notification] Would send to Slack: ${secretsCount} secrets found`);
+        // await sendSlackNotification(message);
+        break;
+      case 'email':
+        console.log(`[Notification] Would send email: ${secretsCount} secrets found`);
+        // await sendEmailNotification(message);
+        break;
+      case 'webhook':
+        console.log(`[Notification] Would call webhook: ${secretsCount} secrets found`);
+        // await sendWebhookNotification(message);
+        break;
+    }
+  }
+}
+
 export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
   // ============================================================
   // Feature #272: GitHub Webhook Receiver
@@ -496,6 +804,95 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
           scanned: false,
         };
       }
+    }
+
+    // ============================================================
+    // Feature #334: Handle push events - Trigger Gitleaks scan
+    // ============================================================
+    if (event === 'push') {
+      const pushEvent = request.body as unknown as GitHubPushEvent;
+      const { ref, before, after, repository, pusher, commits, deleted } = pushEvent;
+
+      // Extract branch name from ref (refs/heads/main -> main)
+      const branch = ref.replace('refs/heads/', '');
+
+      console.log(`[GitHub Webhook] Push to ${repository.full_name}/${branch} by ${pusher.name}`);
+      console.log(`[GitHub Webhook] Commits: ${before.substring(0, 7)}..${after.substring(0, 7)} (${commits?.length || 0} commits)`);
+
+      // Don't scan on branch deletion
+      if (deleted) {
+        console.log(`[GitHub Webhook] Branch ${branch} deleted, skipping scan`);
+        return {
+          success: true,
+          message: 'Branch deleted, no scan needed',
+          scanned: false,
+        };
+      }
+
+      // Check if Gitleaks scan_on_push is enabled for this repo
+      // Look up config by repository full name (or use a default project ID pattern)
+      const projectId = repository.id.toString();
+      const gitleaksConfig = await gitleaksRepo.getGitleaksConfigOrDefault(projectId);
+
+      if (!gitleaksConfig.enabled || !gitleaksConfig.scan_on_push) {
+        console.log(`[GitHub Webhook] Gitleaks scan_on_push disabled for ${repository.full_name}`);
+        return {
+          success: true,
+          message: 'Gitleaks scan on push disabled for this repository',
+          scanned: false,
+        };
+      }
+
+      // Create push scan record (mark as pending)
+      const pushScanId = `push-scan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const pushScanKey = `${repository.full_name}:${after}`;
+
+      const pushScanRecord: PushSecretScanResult = {
+        id: pushScanId,
+        repository: repository.full_name,
+        branch,
+        before_sha: before,
+        after_sha: after,
+        pusher: pusher.name,
+        status: 'scanning',
+        started_at: new Date(),
+        secrets_found: 0,
+      };
+      pushSecretScans.set(pushScanKey, pushScanRecord);
+
+      // Run Gitleaks scan asynchronously (don't block webhook response)
+      // GitHub webhooks have a 10-second timeout, so we run scan in background
+      runPushGitleaksScan(
+        projectId,
+        repository.full_name,
+        branch,
+        before,
+        after,
+        pusher.name,
+        gitleaksConfig,
+        pushScanKey
+      ).catch(err => {
+        console.error(`[GitHub Webhook] Async Gitleaks scan error:`, err);
+        // Update scan record with error
+        const record = pushSecretScans.get(pushScanKey);
+        if (record) {
+          record.status = 'failed';
+          record.completed_at = new Date();
+          record.error = err.message || 'Unknown error';
+        }
+      });
+
+      // Return immediately to acknowledge webhook (scan runs in background)
+      return {
+        success: true,
+        message: 'Push received, Gitleaks scan triggered',
+        scanned: true,
+        scan_id: pushScanId,
+        repository: repository.full_name,
+        branch,
+        commits_count: commits?.length || 0,
+        scan_status: 'pending',
+      };
     }
 
     // Return success for other events
@@ -670,6 +1067,162 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
     return {
       scans: scans.slice(0, 50), // Return latest 50
       total: scans.length,
+    };
+  });
+
+  // ============================================================
+  // Feature #334: Push Secret Scan Endpoints
+  // ============================================================
+
+  // Get Gitleaks config for push scanning (per project)
+  app.get<{
+    Params: { projectId: string };
+  }>('/api/v1/github/webhooks/gitleaks/config/:projectId', async (request) => {
+    const { projectId } = request.params;
+
+    const config = await gitleaksRepo.getGitleaksConfigOrDefault(projectId);
+
+    return {
+      project_id: projectId,
+      config,
+      gitleaks_available: checkGitleaksAvailability().available,
+      gitleaks_version: checkGitleaksAvailability().version,
+    };
+  });
+
+  // Update Gitleaks config for push scanning (enable/disable auto-scan)
+  app.patch<{
+    Params: { projectId: string };
+    Body: Partial<GitleaksConfig>;
+  }>('/api/v1/github/webhooks/gitleaks/config/:projectId', async (request) => {
+    const { projectId } = request.params;
+    const updates = request.body;
+
+    const currentConfig = await gitleaksRepo.getGitleaksConfigOrDefault(projectId);
+    const newConfig: GitleaksConfig = { ...currentConfig, ...updates };
+    await gitleaksRepo.upsertGitleaksConfig(projectId, newConfig);
+
+    console.log(`[GitHub Webhook] Updated Gitleaks config for project ${projectId}:`, {
+      enabled: newConfig.enabled,
+      scan_on_push: newConfig.scan_on_push,
+      scan_on_pr: newConfig.scan_on_pr,
+    });
+
+    return {
+      project_id: projectId,
+      config: newConfig,
+      message: 'Gitleaks configuration updated',
+    };
+  });
+
+  // List push secret scan results
+  app.get('/api/v1/github/webhooks/gitleaks/scans', async () => {
+    const scans: PushSecretScanResult[] = [];
+    pushSecretScans.forEach((scan) => {
+      scans.push(scan);
+    });
+
+    // Sort by started_at descending
+    scans.sort((a, b) =>
+      (b.started_at?.getTime() || 0) - (a.started_at?.getTime() || 0)
+    );
+
+    return {
+      scans: scans.slice(0, 50), // Return latest 50
+      total: scans.length,
+    };
+  });
+
+  // Get specific push scan result
+  app.get<{
+    Params: { owner: string; repo: string; sha: string };
+  }>('/api/v1/github/webhooks/gitleaks/scans/:owner/:repo/:sha', async (request, reply) => {
+    const { owner, repo, sha } = request.params;
+    const scanKey = `${owner}/${repo}:${sha}`;
+
+    const scan = pushSecretScans.get(scanKey);
+    if (!scan) {
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: `No push scan found for ${owner}/${repo} at commit ${sha}`,
+      });
+    }
+
+    // If scan has a scan_id, get the full Gitleaks scan from database
+    let gitleaksScan = null;
+    if (scan.scan_id) {
+      // We need to find by scan_id across all projects
+      const projectId = '0'; // Use a placeholder; in real impl would look up properly
+      gitleaksScan = await gitleaksRepo.getGitleaksScan(projectId, scan.scan_id);
+    }
+
+    return {
+      push_scan: scan,
+      gitleaks_scan: gitleaksScan,
+    };
+  });
+
+  // Manual trigger: Simulate a push event for testing
+  app.post<{
+    Params: { owner: string; repo: string };
+    Body: { branch?: string; sha?: string };
+  }>('/api/v1/github/webhooks/gitleaks/test/:owner/:repo', async (request) => {
+    const { owner, repo } = request.params;
+    const { branch = 'main', sha } = request.body;
+    const repoFullName = `${owner}/${repo}`;
+    const commitSha = sha || `test-${Date.now().toString(36)}`;
+    const projectId = repoFullName.replace('/', '-');  // Simple project ID derivation
+
+    const config = await gitleaksRepo.getGitleaksConfigOrDefault(projectId);
+
+    if (!config.enabled) {
+      return {
+        success: false,
+        message: 'Gitleaks is not enabled for this repository. Enable it first.',
+        config_hint: 'PATCH /api/v1/github/webhooks/gitleaks/config/:projectId with { "enabled": true, "scan_on_push": true }',
+      };
+    }
+
+    // Create a test push scan
+    const pushScanKey = `${repoFullName}:${commitSha}`;
+    const pushScanId = `push-test-${Date.now()}`;
+
+    const pushScanRecord: PushSecretScanResult = {
+      id: pushScanId,
+      repository: repoFullName,
+      branch,
+      before_sha: '0000000000000000000000000000000000000000',
+      after_sha: commitSha,
+      pusher: 'test-user',
+      status: 'scanning',
+      started_at: new Date(),
+      secrets_found: 0,
+    };
+    pushSecretScans.set(pushScanKey, pushScanRecord);
+
+    // Run scan asynchronously
+    runPushGitleaksScan(
+      projectId,
+      repoFullName,
+      branch,
+      pushScanRecord.before_sha,
+      commitSha,
+      'test-user',
+      config,
+      pushScanKey
+    ).catch(err => {
+      console.error(`[GitHub Webhook] Test Gitleaks scan error:`, err);
+    });
+
+    return {
+      success: true,
+      message: 'Test Gitleaks scan triggered',
+      scan_id: pushScanId,
+      repository: repoFullName,
+      branch,
+      commit_sha: commitSha,
+      status: 'scanning',
+      check_status_at: `/api/v1/github/webhooks/gitleaks/scans/${owner}/${repo}/${commitSha}`,
     };
   });
 }
