@@ -9,3 +9,5 @@ export { AIProviderHotSwap } from './AIProviderHotSwap';
 export { AIRouterStats } from './AIRouterStats';
 export { AIApiKeyManagement } from './AIApiKeyManagement';
 export { AIBudgetDashboard } from './AIBudgetDashboard';
+export { ConfidenceBreakdown } from './ConfidenceBreakdown';
+export { MonacoTestEditor } from './MonacoTestEditor';

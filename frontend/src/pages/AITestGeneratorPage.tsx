@@ -8,7 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { CodeDiffView } from '../components/diff';
-import { ConfidenceBreakdown } from '../components/ai/ConfidenceBreakdown';
+import { ConfidenceBreakdown, MonacoTestEditor } from '../components/ai';
 
 interface ConfidenceDetails {
   level: 'high' | 'medium' | 'low';
@@ -850,47 +850,48 @@ Example: Test that a user can login with valid credentials and see the welcome m
                   />
                 )}
 
-                {/* Generated Code */}
-                <div className="bg-card rounded-lg border border-border overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border">
+                {/* Generated Code - Feature #325: Monaco Editor Integration */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-muted-foreground">Generated Code</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={saveToHistory}
-                        className="px-3 py-1 rounded text-xs bg-background hover:bg-muted border border-border text-muted-foreground transition-colors flex items-center gap-1"
-                        title="Save to history"
-                      >
-                        <span>💾</span>
-                        Save
-                      </button>
-                      <button
-                        onClick={handleDownload}
-                        className="px-3 py-1 rounded text-xs bg-background hover:bg-muted border border-border text-muted-foreground transition-colors flex items-center gap-1"
-                      >
-                        <span>📥</span>
-                        Download
-                      </button>
-                      <button
-                        onClick={handleCopy}
-                        className="px-3 py-1 rounded text-xs bg-background hover:bg-muted border border-border text-muted-foreground transition-colors flex items-center gap-1"
-                      >
-                        {copied ? (
-                          <>
-                            <span>✓</span>
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <span>📋</span>
-                            Copy
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      onClick={saveToHistory}
+                      className="px-3 py-1 rounded text-xs bg-background hover:bg-muted border border-border text-muted-foreground transition-colors flex items-center gap-1"
+                      title="Save to history"
+                    >
+                      <span>💾</span>
+                      Save to History
+                    </button>
                   </div>
-                  <pre className="p-4 overflow-x-auto text-sm bg-muted/30">
-                    <code className="text-foreground">{generatedTest.test_code}</code>
-                  </pre>
+                  <MonacoTestEditor
+                    code={generatedTest.test_code}
+                    language={options.language}
+                    onChange={(newCode) => {
+                      // Allow editing the generated code
+                      setGeneratedTest({
+                        ...generatedTest,
+                        test_code: newCode,
+                      });
+                    }}
+                    readOnly={false}
+                    theme="auto"
+                    height="400px"
+                    showMinimap={true}
+                    showLineNumbers={true}
+                    wordWrap="on"
+                    fontSize={14}
+                    onSave={saveToHistory}
+                    onCopy={() => {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    onDownload={handleDownload}
+                  />
+                  {copied && (
+                    <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                      <span>✓</span> Copied to clipboard!
+                    </div>
+                  )}
                 </div>
 
                 {/* Feature #326: Code Diff View for Regeneration */}
