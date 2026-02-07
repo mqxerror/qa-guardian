@@ -4,9 +4,12 @@
  * Type definitions and helper functions for ai-providers.ts
  *
  * Feature #246: Extracted to reduce file size
+ * Feature #322: Encrypt AI API keys at rest
  *
  * @module ai-providers-types
  */
+
+import { encrypt, decrypt, isEncrypted, isEncryptionEnabled } from '../../services/encryption.js';
 
 // =====================================================
 // Feature #1321: Kie.ai Provider Integration - Types
@@ -284,6 +287,70 @@ export const ANTHROPIC_PRICING: Record<string, AnthropicPricing> = {
 };
 
 // =====================================================
+// Feature #322: API Key Encryption Helper Functions
+// =====================================================
+
+/**
+ * Encrypt an API key before storing
+ * Feature #322: Encrypt AI API keys at rest
+ */
+export function encryptApiKey(apiKey: string): string {
+  if (!apiKey || isEncrypted(apiKey)) {
+    return apiKey;
+  }
+  // Don't encrypt placeholder values
+  if (apiKey.includes('***')) {
+    return apiKey;
+  }
+  return encrypt(apiKey);
+}
+
+/**
+ * Decrypt an API key for use in API calls
+ * Feature #322: Decrypt AI API keys when needed
+ */
+export function decryptApiKey(encryptedKey: string): string {
+  if (!encryptedKey) {
+    return encryptedKey;
+  }
+  // Check if it's encrypted
+  if (isEncrypted(encryptedKey)) {
+    return decrypt(encryptedKey);
+  }
+  // Return as-is if not encrypted (backwards compatibility)
+  return encryptedKey;
+}
+
+/**
+ * Mask an API key for display (show only last 4 characters)
+ * Feature #322: Never expose full API keys in responses
+ */
+export function maskApiKey(apiKey: string): string {
+  if (!apiKey) {
+    return '';
+  }
+  // If encrypted, decrypt first to get the real key length
+  const plainKey = isEncrypted(apiKey) ? decrypt(apiKey) : apiKey;
+  // Already masked
+  if (plainKey.includes('***')) {
+    return plainKey;
+  }
+  // Show only last 4 characters
+  if (plainKey.length <= 8) {
+    return '********';
+  }
+  return '****' + plainKey.slice(-4);
+}
+
+/**
+ * Check if encryption is available for API keys
+ * Feature #322: Encryption status check
+ */
+export function isApiKeyEncryptionEnabled(): boolean {
+  return isEncryptionEnabled();
+}
+
+// =====================================================
 // Helper Functions
 // =====================================================
 
@@ -312,6 +379,7 @@ export function calculateKieAICost(
 
 /**
  * Attempt to call Kie.ai API. Returns error message if not configured.
+ * Feature #322: Decrypt API key before use
  */
 export async function callKieAI(
   apiEndpoint: string,
@@ -321,7 +389,10 @@ export async function callKieAI(
   maxTokens: number,
   temperature: number,
 ): Promise<{ content: string; inputTokens: number; outputTokens: number; thinkingTokens: number } | { error: string }> {
-  if (!apiKey || apiKey.includes('***')) {
+  // Feature #322: Decrypt the API key if encrypted
+  const decryptedKey = decryptApiKey(apiKey);
+
+  if (!decryptedKey || decryptedKey.includes('***')) {
     return { error: 'Kie.ai API key not configured. Please set a valid API key in Settings > AI Providers.' };
   }
 
@@ -330,7 +401,7 @@ export async function callKieAI(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${decryptedKey}`,
       },
       body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature }),
       signal: AbortSignal.timeout(30000),
@@ -355,6 +426,7 @@ export async function callKieAI(
 
 /**
  * Attempt to call Anthropic API directly. Returns error message if not configured.
+ * Feature #322: Decrypt API key before use
  */
 export async function callAnthropicDirect(
   apiKey: string,
@@ -365,7 +437,10 @@ export async function callAnthropicDirect(
   maxTokens: number,
   temperature: number,
 ): Promise<{ content: string; inputTokens: number; outputTokens: number } | { error: string }> {
-  if (!apiKey || apiKey.includes('***')) {
+  // Feature #322: Decrypt the API key if encrypted
+  const decryptedKey = decryptApiKey(apiKey);
+
+  if (!decryptedKey || decryptedKey.includes('***')) {
     return { error: 'Anthropic API key not configured. Please set a valid API key in Settings > AI Providers.' };
   }
 
@@ -374,7 +449,7 @@ export async function callAnthropicDirect(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
+        'x-api-key': decryptedKey,
         'anthropic-version': apiVersion || '2024-01-01',
       },
       body: JSON.stringify({

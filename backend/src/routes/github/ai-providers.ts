@@ -37,6 +37,10 @@ import {
   calculateKieAICost,
   callKieAI,
   callAnthropicDirect,
+  // Feature #322: API key encryption helpers
+  encryptApiKey,
+  maskApiKey,
+  isApiKeyEncryptionEnabled,
 } from './ai-providers-types.js';
 
 // Re-export types for backward compatibility
@@ -79,9 +83,11 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
       kieAIConfigs.set(orgId, config);
     }
 
+    // Feature #322: Mask the API key - never expose full key in responses
     return {
       ...config,
-      api_key: config.api_key.replace(/(.{4}).*(.{4})/, '$1********$2'),
+      api_key: maskApiKey(config.api_key),
+      encryption_enabled: isApiKeyEncryptionEnabled(),
     };
   });
 
@@ -105,14 +111,21 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
       };
     }
 
+    // Feature #322: Encrypt the API key before storing
+    if (updates.api_key && !updates.api_key.includes('***')) {
+      updates.api_key = encryptApiKey(updates.api_key);
+    }
+
     const updatedConfig = { ...config, ...updates };
     kieAIConfigs.set(orgId, updatedConfig);
 
+    // Feature #322: Mask the API key in response
     return {
       success: true,
       config: {
         ...updatedConfig,
-        api_key: updatedConfig.api_key.replace(/(.{4}).*(.{4})/, '$1********$2'),
+        api_key: maskApiKey(updatedConfig.api_key),
+        encryption_enabled: isApiKeyEncryptionEnabled(),
       },
     };
   });
@@ -358,9 +371,11 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
       anthropicConfigs.set(orgId, config);
     }
 
+    // Feature #322: Mask the API key - never expose full key in responses
     return {
       ...config,
-      api_key: config.api_key.replace(/(.{6}).*(.{4})/, '$1********$2'),
+      api_key: maskApiKey(config.api_key),
+      encryption_enabled: isApiKeyEncryptionEnabled(),
     };
   });
 
@@ -387,14 +402,21 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
       };
     }
 
+    // Feature #322: Encrypt the API key before storing
+    if (updates.api_key && !updates.api_key.includes('***')) {
+      updates.api_key = encryptApiKey(updates.api_key);
+    }
+
     const updatedConfig = { ...config, ...updates };
     anthropicConfigs.set(orgId, updatedConfig);
 
+    // Feature #322: Mask the API key in response
     return {
       success: true,
       config: {
         ...updatedConfig,
-        api_key: updatedConfig.api_key.replace(/(.{6}).*(.{4})/, '$1********$2'),
+        api_key: maskApiKey(updatedConfig.api_key),
+        encryption_enabled: isApiKeyEncryptionEnabled(),
       },
     };
   });
