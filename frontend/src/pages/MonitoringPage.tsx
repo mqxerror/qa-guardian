@@ -898,13 +898,13 @@ function MonitoringPage() {
   const getStatusBadge = (status: string | undefined) => {
     switch (status) {
       case 'up':
-        return <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">🟢 Up</span>;
+        return <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-1 text-xs font-medium text-success">🟢 Up</span>;
       case 'down':
-        return <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">🔴 Down</span>;
+        return <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-1 text-xs font-medium text-destructive">🔴 Down</span>;
       case 'degraded':
-        return <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-700">🟡 Degraded</span>;
+        return <span className="inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-1 text-xs font-medium text-warning">🟡 Degraded</span>;
       default:
-        return <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">⚪ Unknown</span>;
+        return <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">⚪ Unknown</span>;
     }
   };
 

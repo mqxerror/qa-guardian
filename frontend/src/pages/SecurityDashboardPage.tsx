@@ -127,25 +127,25 @@ export function SecurityDashboardPage() {
     switch (status) {
       case 'active':
         return (
-          <span className="px-2 py-0.5 text-xs font-medium rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+          <span className="px-2 py-0.5 text-xs font-medium rounded bg-destructive/15 text-destructive">
             Active
           </span>
         );
       case 'revoked':
         return (
-          <span className="px-2 py-0.5 text-xs font-medium rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+          <span className="px-2 py-0.5 text-xs font-medium rounded bg-success/15 text-success">
             Revoked
           </span>
         );
       case 'unknown':
         return (
-          <span className="px-2 py-0.5 text-xs font-medium rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+          <span className="px-2 py-0.5 text-xs font-medium rounded bg-warning/15 text-warning">
             Unknown
           </span>
         );
       default:
         return (
-          <span className="px-2 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+          <span className="px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground">
             Unverified
           </span>
         );
@@ -408,7 +408,7 @@ export function SecurityDashboardPage() {
                   </div>
                 </div>
                 {scanResult && (
-                  <div className={`mt-4 p-3 rounded-lg ${scanResult.secretsFound > 0 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}`}>
+                  <div className={`mt-4 p-3 rounded-lg ${scanResult.secretsFound > 0 ? 'bg-warning/15 text-warning' : 'bg-success/15 text-success'}`}>
                     <p className="text-sm font-medium">{scanResult.message}</p>
                   </div>
                 )}
@@ -524,12 +524,12 @@ export function SecurityDashboardPage() {
                                 {secret.secretTypeName}
                               </span>
                               {secret.status === 'resolved' && (
-                                <span className="px-2 py-0.5 text-xs font-medium rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                <span className="px-2 py-0.5 text-xs font-medium rounded bg-success/15 text-success">
                                   Resolved
                                 </span>
                               )}
                               {secret.status === 'false-positive' && (
-                                <span className="px-2 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                <span className="px-2 py-0.5 text-xs font-medium rounded bg-info/15 text-info">
                                   False Positive
                                 </span>
                               )}
@@ -808,13 +808,13 @@ export function SecurityDashboardPage() {
                         <p className="text-xs text-muted-foreground">{formatDate(scan.date)}</p>
                       </div>
                       <div className="flex items-center gap-3 text-xs">
-                        <span className="px-2 py-1 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                        <span className="px-2 py-1 rounded bg-destructive/15 text-destructive">
                           {scan.critical} critical
                         </span>
-                        <span className="px-2 py-1 rounded bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                        <span className="px-2 py-1 rounded bg-warning/15 text-warning">
                           {scan.high} high
                         </span>
-                        <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                        <span className="px-2 py-1 rounded bg-warning/10 text-warning/80">
                           {scan.medium} medium
                         </span>
                       </div>
@@ -982,7 +982,7 @@ export function SecurityDashboardPage() {
                               {finding.category}
                             </span>
                             {finding.isFalsePositive && (
-                              <span className="px-2 py-0.5 text-xs font-medium rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                              <span className="px-2 py-0.5 text-xs font-medium rounded bg-info/15 text-info">
                                 False Positive
                               </span>
                             )}
