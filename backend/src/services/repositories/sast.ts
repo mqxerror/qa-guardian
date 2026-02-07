@@ -26,6 +26,100 @@ import {
   SecretPattern,
 } from '../../routes/sast/types.js';
 
+// ============================================
+// Database Row Types
+// ============================================
+
+interface SastConfigRow {
+  project_id: string;
+  enabled: boolean;
+  ruleset: string;
+  custom_rules: string[] | null;
+  custom_rules_yaml: string[] | null;
+  exclude_paths: string[] | null;
+  severity_threshold: string;
+  auto_scan: boolean;
+  last_scan_at: Date | null;
+  last_scan_status: string | null;
+  pr_checks_enabled: boolean;
+  pr_comments_enabled: boolean;
+  block_pr_on_critical: boolean;
+  block_pr_on_high: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface SastScanRow {
+  id: string;
+  project_id: string;
+  repository_url: string | null;
+  branch: string | null;
+  commit_sha: string | null;
+  status: string;
+  started_at: Date | string;
+  completed_at: Date | string | null;
+  findings: unknown[];
+  summary: unknown;
+  error: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface FalsePositiveRow {
+  id: string;
+  project_id: string;
+  rule_id: string;
+  file_path: string;
+  line: number;
+  snippet: string | null;
+  reason: string;
+  marked_by: string;
+  marked_at: Date | string;
+}
+
+interface SastPRCheckRow {
+  id: string;
+  project_id: string;
+  pr_number: number;
+  pr_title: string;
+  head_sha: string;
+  status: string;
+  conclusion: string | null;
+  context: string;
+  description: string;
+  target_url: string | null;
+  scan_id: string | null;
+  findings: unknown[] | null;
+  blocked: boolean;
+  block_reason: string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+}
+
+interface SastPRCommentRow {
+  id: string;
+  project_id: string;
+  pr_number: number;
+  scan_id: string;
+  body: string;
+  findings: unknown[];
+  blocked: boolean;
+  created_at: Date | string;
+}
+
+interface SecretPatternRow {
+  id: string;
+  project_id: string;
+  name: string;
+  description: string | null;
+  pattern: string;
+  severity: string;
+  category: string;
+  enabled: boolean;
+  created_at: Date | string;
+  updated_at: Date | string;
+}
+
 // Default SAST config
 const DEFAULT_SAST_CONFIG: SASTConfig = {
   enabled: false,
@@ -74,7 +168,7 @@ export function getMemorySecretPatterns(): Map<string, SecretPattern[]> {
 
 export async function getSASTConfig(projectId: string): Promise<SASTConfig> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<SastConfigRow>(
       'SELECT * FROM sast_configs WHERE project_id = $1',
       [projectId]
     );
@@ -91,7 +185,7 @@ export async function updateSASTConfig(projectId: string, config: Partial<SASTCo
   const updated: SASTConfig = { ...current, ...config };
 
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<SastConfigRow>(
       `INSERT INTO sast_configs (
         project_id, enabled, ruleset, custom_rules, custom_rules_yaml,
         exclude_paths, severity_threshold, auto_scan, last_scan_at,
@@ -149,17 +243,17 @@ export async function deleteSASTConfig(projectId: string): Promise<boolean> {
   return false;
 }
 
-function parseSastConfigRow(row: any): SASTConfig {
+function parseSastConfigRow(row: SastConfigRow): SASTConfig {
   return {
     enabled: row.enabled,
-    ruleset: row.ruleset,
-    customRules: row.custom_rules || [],
-    customRulesYaml: row.custom_rules_yaml || [],
+    ruleset: row.ruleset as SASTConfig['ruleset'],
+    customRules: (row.custom_rules as unknown as SASTConfig['customRules']) || [],
+    customRulesYaml: (row.custom_rules_yaml as unknown as SASTConfig['customRulesYaml']) || [],
     excludePaths: row.exclude_paths || [],
-    severityThreshold: row.severity_threshold,
+    severityThreshold: row.severity_threshold as SASTConfig['severityThreshold'],
     autoScan: row.auto_scan,
-    lastScanAt: row.last_scan_at?.toISOString(),
-    lastScanStatus: row.last_scan_status,
+    lastScanAt: row.last_scan_at ? new Date(row.last_scan_at).toISOString() : undefined,
+    lastScanStatus: row.last_scan_status as SASTConfig['lastScanStatus'],
     prChecksEnabled: row.pr_checks_enabled,
     prCommentsEnabled: row.pr_comments_enabled,
     blockPrOnCritical: row.block_pr_on_critical,
@@ -173,7 +267,7 @@ function parseSastConfigRow(row: any): SASTConfig {
 
 export async function createSastScan(scan: SASTScanResult): Promise<SASTScanResult> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<SastScanRow>(
       `INSERT INTO sast_scans (
         id, project_id, repository_url, branch, commit_sha, status,
         started_at, completed_at, findings, summary, error
@@ -202,7 +296,7 @@ export async function createSastScan(scan: SASTScanResult): Promise<SASTScanResu
 
 export async function getSastScan(scanId: string): Promise<SASTScanResult | null> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<SastScanRow>(
       'SELECT * FROM sast_scans WHERE id = $1',
       [scanId]
     );
@@ -217,7 +311,7 @@ export async function getSastScan(scanId: string): Promise<SASTScanResult | null
 export async function updateSastScan(scanId: string, updates: Partial<SASTScanResult>): Promise<SASTScanResult | null> {
   if (isDatabaseConnected()) {
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | boolean | null | Date)[] = [];
     let paramIndex = 1;
 
     if (updates.status !== undefined) {
@@ -246,7 +340,7 @@ export async function updateSastScan(scanId: string, updates: Partial<SASTScanRe
     }
 
     values.push(scanId);
-    const result = await query<any>(
+    const result = await query<SastScanRow>(
       `UPDATE sast_scans SET ${setClauses.join(', ')}, updated_at = NOW() WHERE id = $${paramIndex} RETURNING *`,
       values
     );
@@ -261,7 +355,7 @@ export async function updateSastScan(scanId: string, updates: Partial<SASTScanRe
 
 export async function getSastScansByProject(projectId: string): Promise<SASTScanResult[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<SastScanRow>(
       'SELECT * FROM sast_scans WHERE project_id = $1 ORDER BY started_at DESC',
       [projectId]
     );
@@ -284,19 +378,23 @@ export async function deleteSastScan(scanId: string): Promise<boolean> {
   return false;
 }
 
-function parseSastScanRow(row: any): SASTScanResult {
+function parseSastScanRow(row: SastScanRow): SASTScanResult {
+  const startedAt = typeof row.started_at === 'string' ? row.started_at : row.started_at?.toISOString();
+  const completedAt = row.completed_at
+    ? (typeof row.completed_at === 'string' ? row.completed_at : row.completed_at.toISOString())
+    : undefined;
   return {
     id: row.id,
     projectId: row.project_id,
-    repositoryUrl: row.repository_url,
-    branch: row.branch,
-    commitSha: row.commit_sha,
-    status: row.status,
-    startedAt: row.started_at?.toISOString() || row.started_at,
-    completedAt: row.completed_at?.toISOString() || row.completed_at,
-    findings: row.findings || [],
-    summary: row.summary || { total: 0, bySeverity: { critical: 0, high: 0, medium: 0, low: 0 }, byCategory: {} },
-    error: row.error,
+    repositoryUrl: row.repository_url ?? undefined,
+    branch: row.branch ?? undefined,
+    commitSha: row.commit_sha ?? undefined,
+    status: row.status as SASTScanResult['status'],
+    startedAt: startedAt || new Date().toISOString(),
+    completedAt,
+    findings: (row.findings || []) as SASTScanResult['findings'],
+    summary: (row.summary || { total: 0, bySeverity: { critical: 0, high: 0, medium: 0, low: 0 }, byCategory: {} }) as SASTScanResult['summary'],
+    error: row.error ?? undefined,
   };
 }
 
@@ -306,7 +404,7 @@ function parseSastScanRow(row: any): SASTScanResult {
 
 export async function getFalsePositives(projectId: string): Promise<FalsePositive[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<FalsePositiveRow>(
       'SELECT * FROM sast_false_positives WHERE project_id = $1 ORDER BY marked_at DESC',
       [projectId]
     );
@@ -320,7 +418,7 @@ export async function getFalsePositives(projectId: string): Promise<FalsePositiv
 
 export async function addFalsePositive(projectId: string, fp: FalsePositive): Promise<FalsePositive> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<FalsePositiveRow>(
       `INSERT INTO sast_false_positives (
         id, project_id, rule_id, file_path, line, snippet, reason, marked_by, marked_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -355,17 +453,18 @@ export async function removeFalsePositive(projectId: string, fpId: string): Prom
   return false;
 }
 
-function parseFalsePositiveRow(row: any): FalsePositive {
+function parseFalsePositiveRow(row: FalsePositiveRow): FalsePositive {
+  const markedAt = typeof row.marked_at === 'string' ? row.marked_at : row.marked_at?.toISOString();
   return {
     id: row.id,
     projectId: row.project_id,
     ruleId: row.rule_id,
     filePath: row.file_path,
     line: row.line,
-    snippet: row.snippet,
+    snippet: row.snippet ?? undefined,
     reason: row.reason,
     markedBy: row.marked_by,
-    markedAt: row.marked_at?.toISOString() || row.marked_at,
+    markedAt: markedAt || new Date().toISOString(),
   };
 }
 
@@ -375,7 +474,7 @@ function parseFalsePositiveRow(row: any): FalsePositive {
 
 export async function createSastPRCheck(check: SASTPRCheck): Promise<SASTPRCheck> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<SastPRCheckRow>(
       `INSERT INTO sast_pr_checks (
         id, project_id, pr_number, pr_title, head_sha, status, conclusion,
         context, description, target_url, scan_id, findings, blocked,
@@ -410,7 +509,7 @@ export async function createSastPRCheck(check: SASTPRCheck): Promise<SASTPRCheck
 
 export async function getSastPRChecks(projectId: string): Promise<SASTPRCheck[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<SastPRCheckRow>(
       'SELECT * FROM sast_pr_checks WHERE project_id = $1 ORDER BY created_at DESC',
       [projectId]
     );
@@ -425,7 +524,7 @@ export async function getSastPRChecks(projectId: string): Promise<SASTPRCheck[]>
 export async function updateSastPRCheck(checkId: string, updates: Partial<SASTPRCheck>): Promise<SASTPRCheck | null> {
   if (isDatabaseConnected()) {
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | boolean | null | Date)[] = [];
     let paramIndex = 1;
 
     if (updates.status !== undefined) {
@@ -458,7 +557,7 @@ export async function updateSastPRCheck(checkId: string, updates: Partial<SASTPR
     }
 
     values.push(checkId);
-    const result = await query<any>(
+    const result = await query<SastPRCheckRow>(
       `UPDATE sast_pr_checks SET ${setClauses.join(', ')}, updated_at = NOW() WHERE id = $${paramIndex} RETURNING *`,
       values
     );
@@ -471,24 +570,26 @@ export async function updateSastPRCheck(checkId: string, updates: Partial<SASTPR
   return null;
 }
 
-function parseSastPRCheckRow(row: any): SASTPRCheck {
+function parseSastPRCheckRow(row: SastPRCheckRow): SASTPRCheck {
+  const createdAt = typeof row.created_at === 'string' ? row.created_at : row.created_at?.toISOString();
+  const updatedAt = typeof row.updated_at === 'string' ? row.updated_at : row.updated_at?.toISOString();
   return {
     id: row.id,
     projectId: row.project_id,
     prNumber: row.pr_number,
     prTitle: row.pr_title,
     headSha: row.head_sha,
-    status: row.status,
-    conclusion: row.conclusion,
+    status: row.status as SASTPRCheck['status'],
+    conclusion: row.conclusion as SASTPRCheck['conclusion'],
     context: row.context,
     description: row.description,
-    targetUrl: row.target_url,
-    scanId: row.scan_id,
-    findings: row.findings,
+    targetUrl: row.target_url ?? undefined,
+    scanId: row.scan_id ?? undefined,
+    findings: (row.findings as unknown as SASTPRCheck['findings']) ?? undefined,
     blocked: row.blocked,
-    blockReason: row.block_reason,
-    createdAt: row.created_at?.toISOString() || row.created_at,
-    updatedAt: row.updated_at?.toISOString() || row.updated_at,
+    blockReason: row.block_reason ?? undefined,
+    createdAt: createdAt || new Date().toISOString(),
+    updatedAt: updatedAt || new Date().toISOString(),
   };
 }
 
@@ -498,7 +599,7 @@ function parseSastPRCheckRow(row: any): SASTPRCheck {
 
 export async function createSastPRComment(comment: SASTPRComment): Promise<SASTPRComment> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<SastPRCommentRow>(
       `INSERT INTO sast_pr_comments (
         id, project_id, pr_number, scan_id, body, findings, blocked, created_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -523,7 +624,7 @@ export async function createSastPRComment(comment: SASTPRComment): Promise<SASTP
 
 export async function getSastPRComments(projectId: string): Promise<SASTPRComment[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<SastPRCommentRow>(
       'SELECT * FROM sast_pr_comments WHERE project_id = $1 ORDER BY created_at DESC',
       [projectId]
     );
@@ -535,16 +636,17 @@ export async function getSastPRComments(projectId: string): Promise<SASTPRCommen
   return [];
 }
 
-function parseSastPRCommentRow(row: any): SASTPRComment {
+function parseSastPRCommentRow(row: SastPRCommentRow): SASTPRComment {
+  const createdAt = typeof row.created_at === 'string' ? row.created_at : row.created_at?.toISOString();
   return {
     id: row.id,
     projectId: row.project_id,
     prNumber: row.pr_number,
     scanId: row.scan_id,
     body: row.body,
-    findings: row.findings,
+    findings: row.findings as unknown as SASTPRComment['findings'],
     blocked: row.blocked,
-    createdAt: row.created_at?.toISOString() || row.created_at,
+    createdAt: createdAt || new Date().toISOString(),
   };
 }
 
@@ -554,7 +656,7 @@ function parseSastPRCommentRow(row: any): SASTPRComment {
 
 export async function getSecretPatterns(projectId: string): Promise<SecretPattern[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<SecretPatternRow>(
       'SELECT * FROM secret_patterns WHERE project_id = $1 ORDER BY created_at DESC',
       [projectId]
     );
@@ -568,7 +670,7 @@ export async function getSecretPatterns(projectId: string): Promise<SecretPatter
 
 export async function addSecretPattern(projectId: string, pattern: SecretPattern): Promise<SecretPattern> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<SecretPatternRow>(
       `INSERT INTO secret_patterns (
         id, project_id, name, description, pattern, severity, category,
         enabled, created_at, updated_at
@@ -597,7 +699,7 @@ export async function addSecretPattern(projectId: string, pattern: SecretPattern
 export async function updateSecretPattern(projectId: string, patternId: string, updates: Partial<SecretPattern>): Promise<SecretPattern | null> {
   if (isDatabaseConnected()) {
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | boolean | null | Date)[] = [];
     let paramIndex = 1;
 
     if (updates.name !== undefined) {
@@ -631,7 +733,7 @@ export async function updateSecretPattern(projectId: string, patternId: string, 
 
     values.push(patternId);
     values.push(projectId);
-    const result = await query<any>(
+    const result = await query<SecretPatternRow>(
       `UPDATE secret_patterns SET ${setClauses.join(', ')}, updated_at = NOW() WHERE id = $${paramIndex} AND project_id = $${paramIndex + 1} RETURNING *`,
       values
     );
@@ -655,17 +757,19 @@ export async function removeSecretPattern(projectId: string, patternId: string):
   return false;
 }
 
-function parseSecretPatternRow(row: any): SecretPattern {
+function parseSecretPatternRow(row: SecretPatternRow): SecretPattern {
+  const createdAt = typeof row.created_at === 'string' ? row.created_at : row.created_at?.toISOString();
+  const updatedAt = typeof row.updated_at === 'string' ? row.updated_at : row.updated_at?.toISOString();
   return {
     id: row.id,
     name: row.name,
-    description: row.description,
+    description: row.description ?? undefined,
     pattern: row.pattern,
-    severity: row.severity,
+    severity: row.severity as SecretPattern['severity'],
     category: row.category,
     enabled: row.enabled,
-    createdAt: row.created_at?.toISOString() || row.created_at,
-    updatedAt: row.updated_at?.toISOString() || row.updated_at,
+    createdAt: createdAt || new Date().toISOString(),
+    updatedAt: updatedAt || new Date().toISOString(),
   };
 }
 
@@ -719,7 +823,7 @@ export async function getLatestScansForOrganization(projectIds: string[]): Promi
   }
 
   // Use DISTINCT ON to get only the latest completed scan per project
-  const result = await query<any>(
+  const result = await query<SastScanRow>(
     `SELECT DISTINCT ON (project_id) *
      FROM sast_scans
      WHERE project_id = ANY($1) AND status = 'completed'
