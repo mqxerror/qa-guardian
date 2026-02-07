@@ -6,6 +6,7 @@
  */
 
 import * as crypto from 'crypto';
+import { validateWebhookURL } from '../../utils/index.js';
 
 // ============================================================================
 // Webhook Subscription Interface
@@ -428,17 +429,30 @@ export async function deliverOrBatchWebhook(
 
 // Feature #1294: Deliver webhook with retry support
 // Feature #1295: Enhanced with detailed delivery logging
+// Feature #315: Added SSRF protection
 export async function deliverWebhookWithRetry(
   subscription: WebhookSubscription,
   payload: Record<string, any>,
   eventType: string,
   context?: { runId?: string; projectId?: string }
 ): Promise<{ success: boolean; attempts: number; error?: string; deliveryId: string }> {
+  const deliveryId = `del_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+  // Feature #315: SSRF protection - validate URL before delivery
+  const ssrfValidation = validateWebhookURL(subscription.url);
+  if (!ssrfValidation.safe) {
+    console.error(`[WEBHOOK] SSRF protection blocked delivery to ${subscription.url}: ${ssrfValidation.error}`);
+    return {
+      success: false,
+      attempts: 0,
+      error: `SSRF protection: ${ssrfValidation.error}`,
+      deliveryId,
+    };
+  }
+
   const maxRetries = subscription.max_retries ?? 5;
   const retryEnabled = subscription.retry_enabled ?? true;
   const maxAttempts = retryEnabled ? maxRetries : 1;
-
-  const deliveryId = `del_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const startTime = Date.now();

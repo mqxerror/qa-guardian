@@ -578,3 +578,290 @@ export function logError(context: string, message: string, error?: unknown): voi
   const errorMessage = error instanceof Error ? error.message : String(error);
   console.error(`[${context}] ${message}${error ? `: ${errorMessage}` : ''}`);
 }
+
+// ============================================
+// SSRF Protection Utilities
+// Feature #315: URL validation for webhook security
+// ============================================
+
+/**
+ * Result of SSRF URL validation.
+ */
+export interface SSRFValidationResult {
+  safe: boolean;
+  error?: string;
+  url?: URL;
+}
+
+/**
+ * Private/internal IPv4 address ranges that should be blocked.
+ * Format: [start, end] as numeric values for easy comparison.
+ */
+const PRIVATE_IPV4_RANGES: Array<{ start: number; end: number; name: string }> = [
+  // 10.0.0.0/8 - Private network
+  { start: ipToNumber('10.0.0.0'), end: ipToNumber('10.255.255.255'), name: '10.0.0.0/8 (private)' },
+  // 172.16.0.0/12 - Private network
+  { start: ipToNumber('172.16.0.0'), end: ipToNumber('172.31.255.255'), name: '172.16.0.0/12 (private)' },
+  // 192.168.0.0/16 - Private network
+  { start: ipToNumber('192.168.0.0'), end: ipToNumber('192.168.255.255'), name: '192.168.0.0/16 (private)' },
+  // 127.0.0.0/8 - Loopback
+  { start: ipToNumber('127.0.0.0'), end: ipToNumber('127.255.255.255'), name: '127.0.0.0/8 (loopback)' },
+  // 169.254.0.0/16 - Link-local
+  { start: ipToNumber('169.254.0.0'), end: ipToNumber('169.254.255.255'), name: '169.254.0.0/16 (link-local)' },
+  // 0.0.0.0/8 - Current network
+  { start: ipToNumber('0.0.0.0'), end: ipToNumber('0.255.255.255'), name: '0.0.0.0/8 (current network)' },
+];
+
+/**
+ * Private/internal IPv6 address prefixes that should be blocked.
+ */
+const PRIVATE_IPV6_PREFIXES = [
+  '::1',           // Loopback
+  'fe80:',         // Link-local
+  'fc00:',         // Unique local address
+  'fd00:',         // Unique local address
+  '::ffff:10.',    // IPv4-mapped private
+  '::ffff:172.',   // IPv4-mapped private (partial check)
+  '::ffff:192.168.',// IPv4-mapped private
+  '::ffff:127.',   // IPv4-mapped loopback
+];
+
+/**
+ * Allowed URL protocols for webhook destinations.
+ */
+const ALLOWED_PROTOCOLS = ['http:', 'https:'];
+
+/**
+ * Blocked URL protocols that could be used for SSRF attacks.
+ */
+const BLOCKED_PROTOCOLS = [
+  'file:',
+  'ftp:',
+  'gopher:',
+  'data:',
+  'javascript:',
+  'vbscript:',
+  'ldap:',
+  'dict:',
+  'sftp:',
+  'tftp:',
+  'telnet:',
+  'ssh:',
+];
+
+/**
+ * Converts an IPv4 address string to a numeric value for range comparison.
+ *
+ * @param ip - IPv4 address string (e.g., '192.168.1.1')
+ * @returns Numeric representation of the IP
+ */
+function ipToNumber(ip: string): number {
+  const parts = ip.split('.').map(Number);
+  return (parts[0] << 24) + (parts[1] << 16) + (parts[2] << 8) + parts[3];
+}
+
+/**
+ * Checks if an IPv4 address is in a private/internal range.
+ *
+ * @param ip - IPv4 address string
+ * @returns Object with result and optional range name if blocked
+ */
+function isPrivateIPv4(ip: string): { isPrivate: boolean; range?: string } {
+  const ipNum = ipToNumber(ip);
+
+  for (const range of PRIVATE_IPV4_RANGES) {
+    if (ipNum >= range.start && ipNum <= range.end) {
+      return { isPrivate: true, range: range.name };
+    }
+  }
+
+  return { isPrivate: false };
+}
+
+/**
+ * Checks if an IPv6 address is private/internal.
+ *
+ * @param ip - IPv6 address string
+ * @returns Whether the IP is private
+ */
+function isPrivateIPv6(ip: string): boolean {
+  const normalizedIp = ip.toLowerCase();
+
+  for (const prefix of PRIVATE_IPV6_PREFIXES) {
+    if (normalizedIp.startsWith(prefix.toLowerCase())) {
+      return true;
+    }
+  }
+
+  // Also check for IPv4-mapped addresses in full form
+  if (normalizedIp.includes('::ffff:')) {
+    const ipv4Part = normalizedIp.split('::ffff:')[1];
+    if (ipv4Part) {
+      const result = isPrivateIPv4(ipv4Part);
+      return result.isPrivate;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Checks if an IP address (v4 or v6) is private/internal.
+ *
+ * @param ip - IP address string
+ * @returns Object with result and optional details
+ */
+export function isPrivateIP(ip: string): { isPrivate: boolean; details?: string } {
+  // Check if it's IPv6
+  if (ip.includes(':')) {
+    const isPrivate = isPrivateIPv6(ip);
+    return {
+      isPrivate,
+      details: isPrivate ? 'IPv6 private/internal address' : undefined,
+    };
+  }
+
+  // IPv4
+  const result = isPrivateIPv4(ip);
+  return {
+    isPrivate: result.isPrivate,
+    details: result.range,
+  };
+}
+
+/**
+ * Validates a URL for SSRF safety.
+ *
+ * Checks:
+ * 1. Valid URL format
+ * 2. Allowed protocol (http/https only)
+ * 3. No private/internal IP addresses in hostname
+ * 4. No dangerous protocols
+ *
+ * Note: This does basic validation. For full protection, DNS resolution
+ * should also be checked before making the actual request.
+ *
+ * Feature #315: SSRF protection for webhook URLs
+ *
+ * @param urlString - The URL to validate
+ * @param options - Validation options
+ * @returns Validation result
+ */
+export function validateURLForSSRF(
+  urlString: string,
+  options: {
+    requireHttps?: boolean;  // Require HTTPS (recommended for production)
+    allowLocalhost?: boolean; // Allow localhost in development
+  } = {}
+): SSRFValidationResult {
+  const { requireHttps = false, allowLocalhost = false } = options;
+
+  // Parse the URL
+  let url: URL;
+  try {
+    url = new URL(urlString);
+  } catch {
+    return { safe: false, error: 'Invalid URL format' };
+  }
+
+  // Check protocol
+  if (BLOCKED_PROTOCOLS.includes(url.protocol)) {
+    return { safe: false, error: `Blocked protocol: ${url.protocol} - only HTTP(S) URLs are allowed` };
+  }
+
+  if (!ALLOWED_PROTOCOLS.includes(url.protocol)) {
+    return { safe: false, error: `Invalid protocol: ${url.protocol} - only http:// and https:// are allowed` };
+  }
+
+  if (requireHttps && url.protocol !== 'https:') {
+    return { safe: false, error: 'HTTPS is required for webhook URLs in production' };
+  }
+
+  // Check hostname
+  const hostname = url.hostname.toLowerCase();
+
+  // Block localhost unless explicitly allowed
+  if (!allowLocalhost) {
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+      return { safe: false, error: 'Localhost URLs are not allowed for security reasons' };
+    }
+  }
+
+  // Check if hostname is an IP address
+  const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+  const ipv6Regex = /^\[?([0-9a-fA-F:]+)\]?$/;
+
+  if (ipv4Regex.test(hostname)) {
+    // Direct IPv4 address
+    const result = isPrivateIPv4(hostname);
+    if (result.isPrivate) {
+      return { safe: false, error: `Private IP address not allowed: ${result.range}` };
+    }
+  } else if (hostname.startsWith('[') && hostname.endsWith(']')) {
+    // IPv6 address in brackets
+    const ipv6 = hostname.slice(1, -1);
+    if (isPrivateIPv6(ipv6)) {
+      return { safe: false, error: 'Private IPv6 address not allowed' };
+    }
+  } else if (ipv6Regex.test(hostname)) {
+    // Plain IPv6 address
+    if (isPrivateIPv6(hostname)) {
+      return { safe: false, error: 'Private IPv6 address not allowed' };
+    }
+  }
+
+  // Check for common SSRF bypass attempts
+  // Decimal IP notation (e.g., 2130706433 = 127.0.0.1)
+  if (/^\d+$/.test(hostname)) {
+    const decimalIp = parseInt(hostname, 10);
+    if (!isNaN(decimalIp) && decimalIp > 0) {
+      // Convert decimal to IP and check
+      const ip = [
+        (decimalIp >> 24) & 255,
+        (decimalIp >> 16) & 255,
+        (decimalIp >> 8) & 255,
+        decimalIp & 255,
+      ].join('.');
+      const result = isPrivateIPv4(ip);
+      if (result.isPrivate) {
+        return { safe: false, error: `Decimal IP notation resolves to private address: ${ip}` };
+      }
+    }
+  }
+
+  // Block common internal hostnames
+  const blockedHostnames = [
+    'metadata.google.internal',      // GCP metadata
+    '169.254.169.254',               // Cloud metadata endpoints (AWS, Azure, etc.)
+    'metadata.google',
+    'kubernetes.default',
+    'kubernetes.default.svc',
+  ];
+
+  if (blockedHostnames.some(blocked => hostname === blocked || hostname.endsWith('.' + blocked))) {
+    return { safe: false, error: 'Cloud metadata endpoints are not allowed' };
+  }
+
+  return { safe: true, url };
+}
+
+/**
+ * Validates a webhook URL with SSRF protection.
+ *
+ * This is a convenience wrapper for validateURLForSSRF with webhook-specific defaults.
+ *
+ * Feature #315: SSRF protection for webhook URLs
+ *
+ * @param url - The webhook URL to validate
+ * @param isProduction - Whether running in production mode
+ * @returns Validation result with error message if invalid
+ */
+export function validateWebhookURL(
+  url: string,
+  isProduction: boolean = process.env.NODE_ENV === 'production'
+): SSRFValidationResult {
+  return validateURLForSSRF(url, {
+    requireHttps: isProduction,
+    allowLocalhost: !isProduction,
+  });
+}

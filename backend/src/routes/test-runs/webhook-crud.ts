@@ -8,6 +8,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { getProject as dbGetProject } from '../projects/stores.js';
 import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate, generateWebhookSignature } from './webhooks.js';
+import { validateWebhookURL } from '../../utils/index.js';
 import { WebhookLogEntry, webhookLog } from './alerts.js';
 
 /**
@@ -155,6 +156,17 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
         error: 'Bad Request',
         message: 'URL must start with http:// or https://',
         reachable: false,
+      });
+    }
+
+    // Feature #315: SSRF protection - validate URL before testing
+    const ssrfValidation = validateWebhookURL(url);
+    if (!ssrfValidation.safe) {
+      return reply.status(400).send({
+        error: 'Security Error',
+        message: ssrfValidation.error,
+        reachable: false,
+        ssrf_blocked: true,
       });
     }
 
@@ -310,11 +322,21 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       });
     }
 
-    // Validate URL
+    // Validate URL format
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       return reply.status(400).send({
         error: 'Bad Request',
         message: 'URL must start with http:// or https://',
+      });
+    }
+
+    // Feature #315: SSRF protection - validate URL is not targeting internal resources
+    const ssrfValidation = validateWebhookURL(url);
+    if (!ssrfValidation.safe) {
+      return reply.status(400).send({
+        error: 'Security Error',
+        message: `Webhook URL rejected: ${ssrfValidation.error}`,
+        ssrf_blocked: true,
       });
     }
 
@@ -547,6 +569,18 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
         error: 'Bad Request',
         message: 'URL must start with http:// or https://',
       });
+    }
+
+    // Feature #315: SSRF protection - validate updated URL
+    if (updates.url) {
+      const ssrfValidation = validateWebhookURL(updates.url);
+      if (!ssrfValidation.safe) {
+        return reply.status(400).send({
+          error: 'Security Error',
+          message: `Webhook URL rejected: ${ssrfValidation.error}`,
+          ssrf_blocked: true,
+        });
+      }
     }
 
     // Validate events if provided

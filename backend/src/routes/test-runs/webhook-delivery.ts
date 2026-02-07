@@ -7,6 +7,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate, generateWebhookSignature, WEBHOOK_SIGNATURE_TOLERANCE_SECONDS } from './webhooks.js';
+import { validateWebhookURL } from '../../utils/index.js';
 import { webhookLog } from './alerts.js';
 import { logWebhookDelivery, flattenObject } from './webhook-crud.js';
 
@@ -311,6 +312,16 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
       return reply.status(404).send({
         error: 'Not Found',
         message: 'Webhook subscription not found',
+      });
+    }
+
+    // Feature #315: SSRF protection - validate URL before delivery
+    const ssrfValidation = validateWebhookURL(subscription.url);
+    if (!ssrfValidation.safe) {
+      return reply.status(400).send({
+        error: 'Security Error',
+        message: `Webhook URL rejected: ${ssrfValidation.error}`,
+        ssrf_blocked: true,
       });
     }
 
