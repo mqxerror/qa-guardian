@@ -155,6 +155,122 @@ export const webhookSubscriptions: Map<string, WebhookSubscription> = new Map();
 // Feature #1294: Exponential backoff delays in milliseconds (1s, 2s, 4s, 8s, 16s)
 export const RETRY_DELAYS = [1000, 2000, 4000, 8000, 16000];
 
+// Feature #314: Stripe-style HMAC webhook signing
+// Replay protection window in seconds (5 minutes)
+export const WEBHOOK_SIGNATURE_TOLERANCE_SECONDS = 300;
+
+/**
+ * Generate Stripe-style webhook signature
+ * Format: t=timestamp,v1=hmac_signature
+ *
+ * The signature is computed as: HMAC-SHA256(secret, timestamp + "." + payload)
+ * This includes the timestamp in the signed payload to prevent replay attacks.
+ *
+ * Feature #314: Stripe-style HMAC signing with timestamp
+ */
+export function generateWebhookSignature(payload: string, secret: string): { signature: string; timestamp: number } {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signedPayload = `${timestamp}.${payload}`;
+  const hmac = crypto
+    .createHmac('sha256', secret)
+    .update(signedPayload)
+    .digest('hex');
+
+  return {
+    signature: `t=${timestamp},v1=${hmac}`,
+    timestamp,
+  };
+}
+
+/**
+ * Verify Stripe-style webhook signature with replay protection
+ *
+ * Parses the signature header format: t=timestamp,v1=hmac_signature
+ * Verifies the HMAC and checks that the timestamp is within the tolerance window.
+ *
+ * Feature #314: Stripe-style HMAC verification with replay protection
+ *
+ * @param payload - The raw request body as string
+ * @param signatureHeader - The X-Webhook-Signature header value
+ * @param secret - The webhook secret
+ * @param toleranceSeconds - Maximum age of signature in seconds (default: 300 = 5 minutes)
+ * @returns Object with verified status and any error message
+ */
+export function verifyWebhookSignature(
+  payload: string,
+  signatureHeader: string,
+  secret: string,
+  toleranceSeconds: number = WEBHOOK_SIGNATURE_TOLERANCE_SECONDS
+): { verified: boolean; error?: string; timestamp?: number } {
+  // Parse the signature header: t=timestamp,v1=signature
+  const parts = signatureHeader.split(',');
+  let timestamp: number | undefined;
+  let providedSignature: string | undefined;
+
+  for (const part of parts) {
+    const [key, value] = part.split('=');
+    if (key === 't') {
+      timestamp = parseInt(value, 10);
+    } else if (key === 'v1') {
+      providedSignature = value;
+    }
+  }
+
+  // Validate parsed values
+  if (!timestamp || isNaN(timestamp)) {
+    return { verified: false, error: 'Invalid signature format: missing or invalid timestamp' };
+  }
+  if (!providedSignature) {
+    return { verified: false, error: 'Invalid signature format: missing v1 signature' };
+  }
+
+  // Check timestamp is within tolerance (replay protection)
+  const currentTime = Math.floor(Date.now() / 1000);
+  const age = currentTime - timestamp;
+
+  if (age > toleranceSeconds) {
+    return {
+      verified: false,
+      error: `Signature expired: timestamp is ${age} seconds old (max ${toleranceSeconds}s)`,
+      timestamp,
+    };
+  }
+
+  if (age < -toleranceSeconds) {
+    return {
+      verified: false,
+      error: 'Signature timestamp is in the future',
+      timestamp,
+    };
+  }
+
+  // Compute expected signature
+  const signedPayload = `${timestamp}.${payload}`;
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(signedPayload)
+    .digest('hex');
+
+  // Use timing-safe comparison to prevent timing attacks
+  try {
+    const providedBuffer = Buffer.from(providedSignature, 'hex');
+    const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+
+    if (providedBuffer.length !== expectedBuffer.length) {
+      return { verified: false, error: 'Signature mismatch', timestamp };
+    }
+
+    const match = crypto.timingSafeEqual(providedBuffer, expectedBuffer);
+    return {
+      verified: match,
+      error: match ? undefined : 'Signature mismatch',
+      timestamp,
+    };
+  } catch {
+    return { verified: false, error: 'Invalid signature encoding', timestamp };
+  }
+}
+
 // Feature #1299: Helper function to check if a subscription matches a project
 // Supports both legacy project_id (single project) and new project_ids (multi-project) filtering
 export function subscriptionMatchesProject(sub: WebhookSubscription, projectId: string): boolean {
@@ -341,12 +457,10 @@ export async function deliverWebhookWithRetry(
     };
 
     // Add HMAC signature if secret is configured
+    // Feature #314: Stripe-style signing with timestamp for replay protection
     if (subscription.secret) {
-      const signature = crypto
-        .createHmac('sha256', subscription.secret)
-        .update(payloadJson)
-        .digest('hex');
-      headers['X-Webhook-Signature'] = `sha256=${signature}`;
+      const { signature } = generateWebhookSignature(payloadJson, subscription.secret);
+      headers['X-Webhook-Signature'] = signature;
     }
 
     // Feature #1295: Create delivery log entry

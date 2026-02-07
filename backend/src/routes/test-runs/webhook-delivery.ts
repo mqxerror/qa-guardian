@@ -6,7 +6,7 @@
  */
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
-import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate } from './webhooks.js';
+import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate, generateWebhookSignature, WEBHOOK_SIGNATURE_TOLERANCE_SECONDS } from './webhooks.js';
 import { webhookLog } from './alerts.js';
 import { logWebhookDelivery, flattenObject } from './webhook-crud.js';
 
@@ -340,12 +340,10 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
     };
 
     // Add HMAC signature if secret is configured
+    // Feature #314: Stripe-style signing with timestamp for replay protection
     if (subscription.secret) {
-      const crypto = await import('crypto');
-      const signature = crypto.createHmac('sha256', subscription.secret)
-        .update(JSON.stringify(testPayload))
-        .digest('hex');
-      requestHeaders['X-QA-Guardian-Signature'] = `sha256=${signature}`;
+      const { signature } = generateWebhookSignature(JSON.stringify(testPayload), subscription.secret);
+      requestHeaders['X-Webhook-Signature'] = signature;
     }
 
     try {
@@ -770,26 +768,112 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
     };
   });
 
-  // Feature #1293: Webhook signature verification documentation
+  // Feature #1293 + #314: Webhook signature verification documentation
+  // Updated to Stripe-style signing with timestamp and replay protection
   app.get('/api/v1/webhook-signature-verification', {
     preHandler: [authenticate],
   }, async () => ({
-    header_name: 'X-QA-Guardian-Signature',
+    header_name: 'X-Webhook-Signature',
     algorithm: 'HMAC-SHA256',
-    format: 'sha256=<hex_encoded_signature>',
-    description: 'QA Guardian signs webhook payloads using HMAC-SHA256 when a secret is configured.',
+    format: 't=<unix_timestamp>,v1=<hex_encoded_signature>',
+    description: 'QA Guardian signs webhook payloads using Stripe-style HMAC-SHA256 with timestamp. The signature is computed over "timestamp.payload" to enable replay protection.',
+    replay_protection: {
+      enabled: true,
+      tolerance_seconds: WEBHOOK_SIGNATURE_TOLERANCE_SECONDS,
+      description: `Signatures older than ${WEBHOOK_SIGNATURE_TOLERANCE_SECONDS} seconds (5 minutes) should be rejected to prevent replay attacks.`,
+    },
     verification_steps: [
-      { step: 1, title: 'Extract signature', code: 'const sig = request.headers["x-qa-guardian-signature"];' },
-      { step: 2, title: 'Parse format', code: 'const providedSig = sig.split("=")[1];' },
-      { step: 3, title: 'Compute expected', code: 'const expected = crypto.createHmac("sha256", secret).update(body).digest("hex");' },
-      { step: 4, title: 'Compare securely', code: 'crypto.timingSafeEqual(Buffer.from(providedSig, "hex"), Buffer.from(expected, "hex"));' },
+      { step: 1, title: 'Extract header', code: 'const sig = request.headers["x-webhook-signature"];' },
+      { step: 2, title: 'Parse components', code: 'const parts = sig.split(","); const timestamp = parts.find(p => p.startsWith("t="))?.split("=")[1]; const signature = parts.find(p => p.startsWith("v1="))?.split("=")[1];' },
+      { step: 3, title: 'Check timestamp', code: 'const age = Math.floor(Date.now() / 1000) - parseInt(timestamp); if (age > 300) throw new Error("Signature expired");' },
+      { step: 4, title: 'Compute expected', code: 'const signedPayload = `${timestamp}.${body}`; const expected = crypto.createHmac("sha256", secret).update(signedPayload).digest("hex");' },
+      { step: 5, title: 'Compare securely', code: 'crypto.timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expected, "hex"));' },
     ],
     code_examples: {
-      nodejs: 'const crypto = require("crypto"); function verify(req, secret) { const sig = req.headers["x-qa-guardian-signature"]; if (!sig?.startsWith("sha256=")) return false; const provided = sig.substring(7); const expected = crypto.createHmac("sha256", secret).update(JSON.stringify(req.body)).digest("hex"); try { return crypto.timingSafeEqual(Buffer.from(provided, "hex"), Buffer.from(expected, "hex")); } catch { return false; } }',
-      python: 'import hmac, hashlib; def verify(request, secret): sig = request.headers.get("X-QA-Guardian-Signature", ""); return sig.startswith("sha256=") and hmac.compare_digest(sig.split("=", 1)[1], hmac.new(secret.encode(), request.data, hashlib.sha256).hexdigest())',
-      go: 'func verify(body []byte, sig, secret string) bool { if !strings.HasPrefix(sig, "sha256=") { return false }; mac := hmac.New(sha256.New, []byte(secret)); mac.Write(body); return hmac.Equal([]byte(strings.TrimPrefix(sig, "sha256=")), []byte(hex.EncodeToString(mac.Sum(nil)))) }',
+      nodejs: `const crypto = require("crypto");
+
+function verifyWebhookSignature(body, signatureHeader, secret, tolerance = 300) {
+  // Parse signature header: t=timestamp,v1=signature
+  const parts = signatureHeader.split(",");
+  const timestamp = parts.find(p => p.startsWith("t="))?.split("=")[1];
+  const signature = parts.find(p => p.startsWith("v1="))?.split("=")[1];
+
+  if (!timestamp || !signature) return false;
+
+  // Check timestamp (replay protection)
+  const age = Math.floor(Date.now() / 1000) - parseInt(timestamp);
+  if (age > tolerance || age < -tolerance) return false;
+
+  // Compute expected signature
+  const signedPayload = \`\${timestamp}.\${body}\`;
+  const expected = crypto.createHmac("sha256", secret).update(signedPayload).digest("hex");
+
+  // Timing-safe comparison
+  try {
+    return crypto.timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expected, "hex"));
+  } catch { return false; }
+}`,
+      python: `import hmac, hashlib, time
+
+def verify_webhook_signature(body: bytes, signature_header: str, secret: str, tolerance: int = 300) -> bool:
+    # Parse signature header: t=timestamp,v1=signature
+    parts = dict(p.split("=", 1) for p in signature_header.split(",") if "=" in p)
+    timestamp = parts.get("t")
+    signature = parts.get("v1")
+
+    if not timestamp or not signature:
+        return False
+
+    # Check timestamp (replay protection)
+    age = int(time.time()) - int(timestamp)
+    if abs(age) > tolerance:
+        return False
+
+    # Compute expected signature
+    signed_payload = f"{timestamp}.".encode() + body
+    expected = hmac.new(secret.encode(), signed_payload, hashlib.sha256).hexdigest()
+
+    return hmac.compare_digest(signature, expected)`,
+      go: `func verifyWebhookSignature(body []byte, sigHeader, secret string, tolerance int64) bool {
+    // Parse signature header
+    var timestamp, signature string
+    for _, part := range strings.Split(sigHeader, ",") {
+        kv := strings.SplitN(part, "=", 2)
+        if len(kv) == 2 {
+            if kv[0] == "t" { timestamp = kv[1] }
+            if kv[0] == "v1" { signature = kv[1] }
+        }
+    }
+    if timestamp == "" || signature == "" { return false }
+
+    // Check timestamp (replay protection)
+    ts, _ := strconv.ParseInt(timestamp, 10, 64)
+    age := time.Now().Unix() - ts
+    if age > tolerance || age < -tolerance { return false }
+
+    // Compute expected signature
+    signedPayload := fmt.Sprintf("%s.%s", timestamp, body)
+    mac := hmac.New(sha256.New, []byte(secret))
+    mac.Write([]byte(signedPayload))
+    expected := hex.EncodeToString(mac.Sum(nil))
+
+    return hmac.Equal([]byte(signature), []byte(expected))
+}`,
     },
-    security_notes: ['Use timing-safe comparison', 'Store secrets securely', 'Use HTTPS', 'Implement replay protection'],
-    headers_sent: { 'X-QA-Guardian-Signature': 'HMAC-SHA256 signature', 'X-Webhook-Event': 'Event type', 'X-Webhook-Delivery-Id': 'Unique delivery ID', 'Content-Type': 'application/json' },
+    security_notes: [
+      'Always verify the timestamp to prevent replay attacks',
+      'Reject signatures older than 5 minutes (300 seconds)',
+      'Use timing-safe comparison to prevent timing attacks',
+      'Store webhook secrets securely (environment variables, secrets manager)',
+      'Always use HTTPS for webhook endpoints',
+      'Log failed verification attempts for security monitoring',
+    ],
+    headers_sent: {
+      'X-Webhook-Signature': 'Stripe-style signature: t=timestamp,v1=hmac',
+      'X-Webhook-Event': 'Event type that triggered the webhook',
+      'X-Webhook-Delivery': 'Unique delivery ID for tracking',
+      'X-Webhook-Attempt': 'Delivery attempt number (for retries)',
+      'Content-Type': 'application/json',
+    },
   }));
 }

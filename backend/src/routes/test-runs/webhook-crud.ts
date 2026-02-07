@@ -7,7 +7,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { getProject as dbGetProject } from '../projects/stores.js';
-import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate } from './webhooks.js';
+import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate, generateWebhookSignature } from './webhooks.js';
 import { WebhookLogEntry, webhookLog } from './alerts.js';
 
 /**
@@ -181,12 +181,10 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     };
 
     // Add HMAC signature if secret is provided
+    // Feature #314: Stripe-style signing with timestamp for replay protection
     if (secret) {
-      const crypto = await import('crypto');
-      const signature = crypto.createHmac('sha256', secret)
-        .update(JSON.stringify(testPayload))
-        .digest('hex');
-      requestHeaders['X-QA-Guardian-Signature'] = `sha256=${signature}`;
+      const { signature } = generateWebhookSignature(JSON.stringify(testPayload), secret);
+      requestHeaders['X-Webhook-Signature'] = signature;
     }
 
     try {
