@@ -26,7 +26,7 @@
  */
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Pin, PanelLeft, LogOut, Bell, RefreshCw, Eye, EyeOff, Building2, Check, Users, Key, CreditCard, FileCode, ClipboardList } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pin, PanelLeft, LogOut, Bell, RefreshCw, Eye, EyeOff, Building2, Check, Users, Key, CreditCard, FileCode, ClipboardList, Bot } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useSidebarStore, SidebarSection } from '../stores/sidebarStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
@@ -315,9 +315,11 @@ export function AppSidebar() {
   ];
 
   // Group 5: Settings (collapsed by default)
+  // Feature #262: Added AI Providers settings link
   const settingsMenuItems: MenuItemConfig[] = [
     { path: '/settings/team', icon: <Users className="h-4 w-4" />, label: 'Team', visibility: 'admin' },
     { path: '/settings', icon: <SettingsIcon />, label: 'Settings', visibility: 'developer' },
+    { path: '/ai/router', icon: <Bot className="h-4 w-4" />, label: 'AI Providers', visibility: 'admin' },
     { path: '/settings/billing', icon: <CreditCard className="h-4 w-4" />, label: 'Billing', visibility: 'admin' },
     { path: '/settings/api-keys', icon: <Key className="h-4 w-4" />, label: 'API Keys', visibility: 'developer' },
   ];
