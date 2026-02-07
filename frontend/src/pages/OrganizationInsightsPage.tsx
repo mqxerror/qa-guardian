@@ -98,11 +98,11 @@ export function OrganizationInsightsPage() {
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-red-300';
-      case 'high': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-orange-300';
-      case 'medium': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-300';
-      case 'low': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-green-300';
-      default: return 'bg-gray-100 text-gray-700 border-gray-300';
+      case 'critical': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+      case 'medium': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+      case 'low': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      default: return 'bg-muted text-muted-foreground border-border';
     }
   };
 

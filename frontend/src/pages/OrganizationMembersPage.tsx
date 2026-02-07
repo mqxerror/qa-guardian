@@ -148,10 +148,10 @@ export function OrganizationMembersPage() {
                   <div className="text-muted-foreground">{member.email}</div>
                   <div>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      member.role === 'owner' ? 'bg-purple-100 text-purple-700' :
-                      member.role === 'admin' ? 'bg-blue-100 text-blue-700' :
-                      member.role === 'developer' ? 'bg-green-100 text-green-700' :
-                      'bg-gray-100 text-gray-700'
+                      member.role === 'owner' ? 'bg-purple-500/20 text-purple-400' :
+                      member.role === 'admin' ? 'bg-blue-500/20 text-blue-400' :
+                      member.role === 'developer' ? 'bg-green-500/20 text-green-400' :
+                      'bg-muted text-muted-foreground'
                     }`}>
                       {member.role}
                     </span>
@@ -200,15 +200,15 @@ export function OrganizationMembersPage() {
                   <div className="text-foreground">{invitation.email}</div>
                   <div>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      invitation.role === 'admin' ? 'bg-blue-100 text-blue-700' :
-                      invitation.role === 'developer' ? 'bg-green-100 text-green-700' :
-                      'bg-gray-100 text-gray-700'
+                      invitation.role === 'admin' ? 'bg-blue-500/20 text-blue-400' :
+                      invitation.role === 'developer' ? 'bg-green-500/20 text-green-400' :
+                      'bg-muted text-muted-foreground'
                     }`}>
                       {invitation.role}
                     </span>
                   </div>
                   <div>
-                    <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">
+                    <span className="rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs font-medium text-yellow-400">
                       {invitation.status}
                     </span>
                   </div>
