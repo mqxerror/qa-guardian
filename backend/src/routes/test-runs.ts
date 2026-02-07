@@ -500,6 +500,10 @@ import {
   ExecuteTestConfig,
 } from './test-runs/test-executor.js';
 
+// Feature #249: Run orchestrator module is available at ./test-runs/run-orchestrator.ts
+// It contains an extracted version of runTestsForRun, setSocketIO, and emitRunEvent
+// These can be migrated from this file to use the module in a future refactoring iteration
+// import { runTestsForRun, setSocketIO, emitRunEvent } from './test-runs/run-orchestrator.js';
 
 // Webhook infrastructure in ./test-runs/webhooks.ts, event functions in ./test-runs/webhook-events.ts
 

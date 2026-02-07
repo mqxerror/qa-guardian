@@ -156,6 +156,9 @@ import { executeVisualTest, VisualTestConfig } from './visual-test-executor.js';
 import { executeLighthouseTest, LighthouseTestConfig } from './lighthouse-test-executor.js';
 import { executeLoadTest, LoadTestConfig } from './load-test-executor.js';
 import { executeAccessibilityTest, AccessibilityTestConfig } from './accessibility-test-executor.js';
+// Feature #249: E2E step executor module (available for future migration)
+// The E2E step execution logic below can be migrated to this module
+// import { executeE2ESteps, E2EStepExecutionConfig, E2EStepExecutionResult } from './executor-functional.js';
 
 // Event emitter type - will be passed in from test-runs.ts
 export type EmitRunEventFn = (runId: string, orgId: string, event: string, data: any) => void;
