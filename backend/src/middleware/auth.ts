@@ -37,12 +37,14 @@ function validateInternalServiceToken(token: string): InternalServicePayload | n
   }
 
   // Feature #228: Use crypto.timingSafeEqual for constant-time comparison
-  // This prevents timing attacks that could leak token information
-  const tokenBuf = Buffer.from(token);
-  const expectedBuf = Buffer.from(INTERNAL_SERVICE_TOKEN);
+  // Feature #235: Hash both values with SHA-256 to normalize lengths and prevent
+  // length-based timing leaks. The length pre-check was removed because it
+  // leaks the expected token length via timing side-channel.
+  const tokenHash = crypto.createHash('sha256').update(token).digest();
+  const expectedHash = crypto.createHash('sha256').update(INTERNAL_SERVICE_TOKEN).digest();
 
-  // timingSafeEqual throws if buffers have different lengths, so check first
-  if (tokenBuf.length === expectedBuf.length && crypto.timingSafeEqual(tokenBuf, expectedBuf)) {
+  // Both hashes are now exactly 32 bytes, so no length check needed
+  if (crypto.timingSafeEqual(tokenHash, expectedHash)) {
     return {
       id: 'internal-service',
       organization_id: 'system',

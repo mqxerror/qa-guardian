@@ -529,11 +529,13 @@ export async function deleteOtherSessions(userId: string, currentSessionId: stri
 
 /**
  * Create a password reset token
+ * Feature #234: Guarded memory write with isDatabaseConnected check
  */
 export async function createResetToken(resetToken: ResetToken): Promise<ResetToken> {
-  // Memory store uses raw token as key (dev mode only)
-  memoryResetTokens.set(resetToken.token, resetToken);
+  // Feature #234: Only write to memory when DB is not connected (avoids memory leak)
   if (!isDatabaseConnected()) {
+    // Memory store uses raw token as key (dev mode only)
+    memoryResetTokens.set(resetToken.token, resetToken);
     return resetToken;
   }
 
