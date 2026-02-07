@@ -172,7 +172,7 @@ export function toSpdxId(license: string): string | null {
   }
 
   // If it looks like an SPDX ID already, return as-is
-  if (/^[A-Za-z0-9\-\.]+$/.test(license)) {
+  if (/^[A-Za-z0-9.+-]+$/.test(license)) {
     return license;
   }
 
