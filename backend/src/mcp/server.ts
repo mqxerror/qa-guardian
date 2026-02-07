@@ -3,13 +3,70 @@
  *
  * Model Context Protocol (MCP) server for QA Guardian integration with Claude Code.
  * Supports stdio transport for local use and SSE transport for remote use.
+ *
+ * REFACTORED (Feature #1356 + Feature #243):
+ * The original monolithic server has been split into multiple modules:
+ *
+ * EXTRACTED MODULES:
+ * - mcp-types.ts (~320 lines): All TypeScript interfaces and type definitions
+ * - mcp-cli.ts (~280 lines): CLI argument parsing, config file loading, main entry point
+ * - tool-definitions.ts: Tool definitions (TOOLS array)
+ * - tool-definitions-part1a.ts, tool-definitions-part2.ts, tool-definitions-part2a.ts: Large tool registrations
+ * - tool-definitions-core.ts: Core tool definitions
+ * - resource-definitions.ts: Resource URI definitions (RESOURCES array)
+ * - tool-permissions.ts: Scope-to-tool permission mapping (TOOL_SCOPE_MAP)
+ * - string-utils.ts: Levenshtein distance and string similarity functions
+ * - hash-utils.ts: Request hash generation, stream ID generation
+ * - cron-utils.ts: Cron expression parsing and scheduling
+ * - validation-utils.ts: Parameter validation, K6 script validation
+ * - api-versioning.ts: API version negotiation and deprecation warnings
+ * - webhook-callbacks.ts: Webhook payload generation and delivery
+ * - insights-utils.ts: Visual trend insights generation
+ * - handlers/index.ts: Handler registry with 10+ specialized handler modules
+ *
+ * REMAINING IN THIS FILE (~3200 lines):
+ * - MCPServer class: Core server with transport handling (stdio/SSE)
+ * - Rate limiting, concurrent request management, idempotency caching
+ * - handleRequest dispatch, tool execution, resource reading
+ * - Streaming response support, graceful shutdown
+ *
+ * FUTURE EXTRACTION CANDIDATES:
+ * - Transport-specific code could move to mcp-transport-stdio.ts / mcp-transport-sse.ts
+ * - Rate limiting could move to mcp-rate-limit.ts
+ * - The handleRequest method chain could be further modularized
+ *
+ * Note: The MCPServer class uses many interrelated private state variables,
+ * making aggressive splitting complex. The current structure prioritizes
+ * runtime reliability over file size optimization.
  */
 
 import * as readline from 'readline';
 import * as http from 'http';
-import * as fs from 'fs';
-import * as path from 'path';
 import { randomUUID } from 'crypto';
+
+// Feature #1356: Import types from extracted module
+import {
+  TransportType,
+  MCPRequest,
+  MCPResponse,
+  MCPNotification,
+  ServerConfig,
+  StreamMetadata,
+  StreamChunkNotification,
+  BatchOperationItem,
+  BatchOperationResult,
+  BatchResponse,
+  IdempotencyEntry,
+  RateLimitConfig,
+  RateLimitEntry,
+  PerKeyRateLimitConfig,
+  SSEClient,
+  MCP_PROTOCOL_VERSION,
+  SSE_PING_INTERVAL,
+  SSE_CONNECTION_TIMEOUT,
+  SSE_EVENT_BUFFER_MAX,
+  SSE_EVENT_BUFFER_TTL,
+} from './mcp-types.js';
 
 // Feature #1356: Import tool and resource definitions from extracted modules
 import { TOOLS } from './tool-definitions.js';
@@ -72,178 +129,12 @@ import {
   createErrorPayload,
 } from './webhook-callbacks.js';
 
-// MCP Protocol version
-const MCP_PROTOCOL_VERSION = '2024-11-05';
-
 // Server info
 const SERVER_INFO = {
   name: 'qa-guardian-mcp-server',
   version: '2.0.0',
   apiVersion: CURRENT_API_VERSION,
 };
-
-// Transport type
-type TransportType = 'stdio' | 'sse';
-
-interface MCPRequest {
-  jsonrpc: '2.0';
-  id?: string | number;
-  method: string;
-  params?: Record<string, unknown>;
-}
-
-interface MCPResponse {
-  jsonrpc: '2.0';
-  id?: string | number;
-  result?: unknown;
-  error?: {
-    code: number;
-    message: string;
-    data?: unknown;
-  };
-}
-
-interface MCPNotification {
-  jsonrpc: '2.0';
-  method: string;
-  params?: Record<string, unknown>;
-}
-
-// Feature #1356: TOOLS and RESOURCES are now imported from ./tool-definitions and ./resource-definitions
-// This reduces server.ts by ~5200 lines
-// See tool-definitions.ts and resource-definitions.ts for the full definitions
-
-// Configuration
-interface ServerConfig {
-  transport: TransportType;
-  apiUrl?: string;
-  apiKey?: string;
-  port?: number;
-  host?: string;
-  requireAuth?: boolean; // If true, API key is required for all operations
-  rateLimit?: number; // Max requests per minute per API key (default: 100)
-  rateLimitWindow?: number; // Window in seconds (default: 60)
-  maxConcurrent?: number; // Max concurrent requests per API key (default: 5)
-  toolTimeout?: number; // Tool execution timeout in milliseconds (default: 30000)
-  enableStreaming?: boolean; // Enable response streaming for large results (default: true)
-  streamChunkSize?: number; // Size of each streaming chunk in items (default: 10)
-  streamThreshold?: number; // Min items to trigger streaming (default: 20)
-  // Feature #855: Webhook callback configuration
-  webhookCallback?: WebhookCallbackConfig; // Global webhook callback
-  enableWebhookCallbacks?: boolean; // Enable per-request webhook callbacks (default: true)
-  // Feature #858: API versioning
-  defaultApiVersion?: string; // Default API version for requests without explicit version
-}
-
-// Feature #854: Streaming response metadata
-interface StreamMetadata {
-  streamId: string;
-  requestId: string | number | undefined;
-  toolName: string;
-  totalChunks: number;
-  totalItems: number;
-  startedAt: number;
-  completedAt?: number;
-}
-
-// Feature #854: Streaming chunk notification
-interface StreamChunkNotification {
-  jsonrpc: '2.0';
-  method: 'notifications/stream/chunk';
-  params: {
-    streamId: string;
-    requestId: string | number | undefined;
-    chunkIndex: number;
-    totalChunks: number;
-    data: unknown[];
-    isLast: boolean;
-    progress: {
-      itemsSent: number;
-      totalItems: number;
-      percentage: number;
-    };
-  };
-}
-
-// Feature #855: WebhookCallbackConfig and WebhookCallbackPayload imported from ./webhook-callbacks
-
-// Feature #856: Batch operation request item
-interface BatchOperationItem {
-  id: string | number; // Unique ID for this operation within the batch
-  name: string; // Tool name
-  arguments?: Record<string, unknown>; // Tool arguments
-}
-
-// Feature #856: Batch operation response item
-interface BatchOperationResult {
-  id: string | number; // Matches the request item ID
-  status: 'success' | 'error';
-  result?: unknown; // Result for success
-  error?: {
-    code: number;
-    message: string;
-  };
-  duration_ms: number;
-}
-
-// Feature #856: Batch response
-interface BatchResponse {
-  batchId: string;
-  totalOperations: number;
-  succeeded: number;
-  failed: number;
-  results: BatchOperationResult[];
-  duration_ms: number;
-}
-
-// Feature #857: Idempotency key entry
-interface IdempotencyEntry {
-  key: string;
-  response: MCPResponse;
-  createdAt: number;
-  expiresAt: number;
-  toolName: string;
-  requestHash: string;
-}
-
-// Rate limiting configuration (enhanced with burst support)
-interface RateLimitConfig {
-  maxRequests: number; // Max requests per window
-  windowMs: number; // Window size in milliseconds
-  burstLimit: number; // Max additional burst requests allowed
-  burstWindowMs: number; // Burst window size in milliseconds
-}
-
-// Rate limit entry for tracking requests per API key
-interface RateLimitEntry {
-  timestamps: number[]; // Timestamps of requests within the window
-  burstTimestamps: number[]; // Timestamps of burst requests (short window)
-}
-
-// Per-key rate limit configuration from backend
-interface PerKeyRateLimitConfig {
-  max_requests: number;
-  window_seconds: number;
-  burst_limit: number;
-  burst_window_seconds: number;
-}
-
-// SSE Client connection
-interface SSEClient {
-  id: string;
-  response: http.ServerResponse;
-  initialized: boolean;
-  connectedAt: number;
-  lastPingAt: number;
-  eventBuffer: Array<{ event: string; data: string; timestamp: number }>;
-  disconnectedAt?: number;
-}
-
-// SSE Connection timeout settings
-const SSE_PING_INTERVAL = 15000; // 15 seconds
-const SSE_CONNECTION_TIMEOUT = 60000; // 60 seconds
-const SSE_EVENT_BUFFER_MAX = 100; // Max events to buffer per client
-const SSE_EVENT_BUFFER_TTL = 300000; // 5 minutes - max age for buffered events
 
 class MCPServer {
   private config: ServerConfig;
@@ -3345,259 +3236,21 @@ class MCPServer {
   }
 }
 
-// Load configuration from JSON file
-function loadConfigFile(configPath: string): Partial<ServerConfig> {
-  try {
-    const absolutePath = path.isAbsolute(configPath)
-      ? configPath
-      : path.resolve(process.cwd(), configPath);
+// ============================================================================
+// Exports
+// ============================================================================
 
-    const content = fs.readFileSync(absolutePath, 'utf-8');
-    const fileConfig = JSON.parse(content);
+// Export MCPServer class for programmatic use
+export { MCPServer };
 
-    const config: Partial<ServerConfig> = {};
+// Re-export types from mcp-types.ts
+export type { ServerConfig } from './mcp-types.js';
 
-    if (fileConfig.transport === 'stdio' || fileConfig.transport === 'sse') {
-      config.transport = fileConfig.transport;
-    }
-    if (typeof fileConfig.port === 'number') {
-      config.port = fileConfig.port;
-    }
-    if (typeof fileConfig.host === 'string') {
-      config.host = fileConfig.host;
-    }
-    if (typeof fileConfig.apiUrl === 'string') {
-      config.apiUrl = fileConfig.apiUrl;
-    }
-    if (typeof fileConfig.apiKey === 'string') {
-      config.apiKey = fileConfig.apiKey;
-    }
-    if (typeof fileConfig.requireAuth === 'boolean') {
-      config.requireAuth = fileConfig.requireAuth;
-    }
-    if (typeof fileConfig.rateLimit === 'number') {
-      config.rateLimit = fileConfig.rateLimit;
-    }
-    if (typeof fileConfig.rateLimitWindow === 'number') {
-      config.rateLimitWindow = fileConfig.rateLimitWindow;
-    }
+// Re-export CLI functions from mcp-cli.ts for backward compatibility
+export { loadConfigFile, parseArgs, main } from './mcp-cli.js';
 
-    // Feature #854: Streaming configuration from config file
-    if (typeof fileConfig.enableStreaming === 'boolean') {
-      config.enableStreaming = fileConfig.enableStreaming;
-    }
-    if (typeof fileConfig.streamChunkSize === 'number') {
-      config.streamChunkSize = fileConfig.streamChunkSize;
-    }
-    if (typeof fileConfig.streamThreshold === 'number') {
-      config.streamThreshold = fileConfig.streamThreshold;
-    }
-
-    // Feature #855: Webhook callback configuration from config file
-    if (typeof fileConfig.enableWebhookCallbacks === 'boolean') {
-      config.enableWebhookCallbacks = fileConfig.enableWebhookCallbacks;
-    }
-    if (fileConfig.webhookCallback && typeof fileConfig.webhookCallback === 'object') {
-      const webhook = fileConfig.webhookCallback as Record<string, unknown>;
-      if (typeof webhook.url === 'string') {
-        try {
-          new URL(webhook.url);
-          config.webhookCallback = {
-            url: webhook.url,
-            method: (webhook.method as 'POST' | 'PUT') || 'POST',
-            headers: webhook.headers as Record<string, string>,
-            includeRequestParams: webhook.includeRequestParams as boolean,
-            retries: webhook.retries as number,
-            timeout: webhook.timeout as number,
-            secret: webhook.secret as string,
-          };
-        } catch {
-          console.error('[QA Guardian MCP] Invalid webhook callback URL in config');
-        }
-      }
-    }
-
-    console.error(`[QA Guardian MCP] Loaded config from: ${absolutePath}`);
-    return config;
-  } catch (error) {
-    console.error(`[QA Guardian MCP] Error loading config file: ${error instanceof Error ? error.message : error}`);
-    return {};
-  }
-}
-
-// Parse command line arguments
-function parseArgs(): ServerConfig {
-  const args = process.argv.slice(2);
-  const config: ServerConfig = {
-    transport: 'stdio',
-  };
-
-  // First pass: look for config file
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--config' || args[i] === '-c') {
-      const configPath = args[i + 1];
-      if (configPath) {
-        const fileConfig = loadConfigFile(configPath);
-        Object.assign(config, fileConfig);
-      }
-      break;
-    }
-  }
-
-  // Second pass: command line args override config file
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-
-    if (arg === '--config' || arg === '-c') {
-      i++; // Skip config file path
-    } else if (arg === '--transport' || arg === '-t') {
-      const value = args[++i];
-      if (value === 'stdio' || value === 'sse') {
-        config.transport = value;
-      }
-    } else if (arg === '--port' || arg === '-p') {
-      config.port = parseInt(args[++i], 10);
-    } else if (arg === '--host' || arg === '-H') {
-      config.host = args[++i];
-    } else if (arg === '--api-url' || arg === '-u') {
-      config.apiUrl = args[++i];
-    } else if (arg === '--api-key' || arg === '-k') {
-      config.apiKey = args[++i];
-    } else if (arg === '--require-auth' || arg === '-a') {
-      config.requireAuth = true;
-    } else if (arg === '--rate-limit' || arg === '-r') {
-      config.rateLimit = parseInt(args[++i], 10);
-    } else if (arg === '--rate-limit-window' || arg === '-w') {
-      config.rateLimitWindow = parseInt(args[++i], 10);
-    } else if (arg === '--tool-timeout' || arg === '-T') {
-      config.toolTimeout = parseInt(args[++i], 10);
-    } else if (arg === '--enable-streaming') {
-      config.enableStreaming = true;
-    } else if (arg === '--disable-streaming') {
-      config.enableStreaming = false;
-    } else if (arg === '--stream-chunk-size') {
-      config.streamChunkSize = parseInt(args[++i], 10);
-    } else if (arg === '--stream-threshold') {
-      config.streamThreshold = parseInt(args[++i], 10);
-    } else if (arg === '--webhook-callback') {
-      const url = args[++i];
-      try {
-        new URL(url);
-        config.webhookCallback = { url };
-      } catch {
-        console.error(`[QA Guardian MCP] Invalid webhook callback URL: ${url}`);
-      }
-    } else if (arg === '--enable-webhook-callbacks') {
-      config.enableWebhookCallbacks = true;
-    } else if (arg === '--disable-webhook-callbacks') {
-      config.enableWebhookCallbacks = false;
-    } else if (arg === '--help' || arg === '-h') {
-      console.log(`
-QA Guardian MCP Server
-
-Usage: qa-guardian-mcp [options]
-
-Options:
-  -c, --config <file>     Path to JSON config file
-  -t, --transport <type>  Transport type: stdio (default) or sse
-  -p, --port <port>       Port for SSE transport (default: 3000)
-  -H, --host <host>       Host for SSE transport (default: 0.0.0.0)
-  -u, --api-url <url>     QA Guardian API URL (default: http://localhost:3001)
-  -k, --api-key <key>     API key for authentication
-  -a, --require-auth      Require API key for tool calls and resource reads
-  -r, --rate-limit <n>    Max requests per window (default: 100)
-  -w, --rate-limit-window <s>  Rate limit window in seconds (default: 60)
-  -T, --tool-timeout <ms>  Tool execution timeout in milliseconds (default: 30000)
-  --enable-streaming       Enable response streaming for large results (default: true)
-  --disable-streaming      Disable response streaming
-  --stream-chunk-size <n>  Items per streaming chunk (default: 10)
-  --stream-threshold <n>   Min items to trigger streaming (default: 20)
-  --webhook-callback <url> Global webhook callback URL for operation completion
-  --enable-webhook-callbacks   Enable per-request webhook callbacks (default: true)
-  --disable-webhook-callbacks  Disable per-request webhook callbacks
-  -h, --help              Show this help message
-
-Config File Format (mcp-config.json):
-  {
-    "transport": "stdio",
-    "apiUrl": "http://localhost:3001",
-    "apiKey": "your-api-key",
-    "port": 3000,
-    "host": "0.0.0.0",
-    "requireAuth": true,
-    "rateLimit": 100,
-    "rateLimitWindow": 60,
-    "toolTimeout": 30000,
-    "enableStreaming": true,
-    "streamChunkSize": 10,
-    "streamThreshold": 20,
-    "enableWebhookCallbacks": true,
-    "webhookCallback": {
-      "url": "https://example.com/webhook",
-      "method": "POST",
-      "headers": { "Authorization": "Bearer token" },
-      "includeRequestParams": true,
-      "retries": 3,
-      "timeout": 10000,
-      "secret": "your-hmac-secret"
-    }
-  }
-
-Examples:
-  # Start with stdio transport (default)
-  qa-guardian-mcp
-
-  # Start with config file
-  qa-guardian-mcp --config mcp-config.json
-
-  # Start with SSE transport on port 3000
-  qa-guardian-mcp --transport sse --port 3000
-
-  # Connect to custom API URL
-  qa-guardian-mcp --api-url http://localhost:3001
-
-  # Require API key authentication
-  qa-guardian-mcp --require-auth --api-key your-api-key
-
-  # Set custom rate limit (50 requests per 30 seconds)
-  qa-guardian-mcp --rate-limit 50 --rate-limit-window 30
-
-  # Set tool execution timeout (60 seconds for long-running operations)
-  qa-guardian-mcp --tool-timeout 60000
-
-  # Configure streaming for large results
-  qa-guardian-mcp --stream-chunk-size 25 --stream-threshold 50
-
-  # Enable webhook callbacks for all operations
-  qa-guardian-mcp --webhook-callback https://example.com/webhook
-      `);
-      process.exit(0);
-    }
-  }
-
-  return config;
-}
-
-// Export for testing
-export { loadConfigFile };
-
-// Main entry point
-async function main(): Promise<void> {
-  const config = parseArgs();
-  const server = new MCPServer(config);
-
-  try {
-    await server.start();
-  } catch (error) {
-    console.error('Failed to start MCP server:', error);
-    process.exit(1);
-  }
-}
-
-// Export for programmatic use
-export { MCPServer, ServerConfig };
-
-// Run if executed directly
+// Run if executed directly - delegates to mcp-cli.ts
+// Note: For direct execution, use mcp-cli.ts instead
 if (require.main === module) {
-  main();
+  import('./mcp-cli.js').then(cli => cli.main());
 }
