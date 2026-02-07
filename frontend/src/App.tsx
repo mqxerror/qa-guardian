@@ -1407,52 +1407,53 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* Feature #319: AI settings pages require admin/owner role */}
         <Route
           path="/ai/kie-provider"
           element={
-            <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
               <KieAIProviderPage />
-            </ProtectedRoute>
+            </RoleProtectedRoute>
           }
         />
         <Route
           path="/ai/anthropic-provider"
           element={
-            <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
               <AnthropicProviderPage />
-            </ProtectedRoute>
+            </RoleProtectedRoute>
           }
         />
         <Route
           path="/ai/router"
           element={
-            <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
               <AIRouterPage />
-            </ProtectedRoute>
+            </RoleProtectedRoute>
           }
         />
         <Route
           path="/ai/health"
           element={
-            <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
               <ProviderHealthPage />
-            </ProtectedRoute>
+            </RoleProtectedRoute>
           }
         />
         <Route
           path="/ai/costs"
           element={
-            <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
               <AICostTrackingPage />
-            </ProtectedRoute>
+            </RoleProtectedRoute>
           }
         />
         <Route
           path="/ai/analytics"
           element={
-            <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
               <AIUsageAnalyticsDashboard />
-            </ProtectedRoute>
+            </RoleProtectedRoute>
           }
         />
         <Route
