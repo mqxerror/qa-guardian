@@ -1,6 +1,7 @@
 // WebhookConfigurationPage extracted from App.tsx for code quality compliance (Feature #1357)
 // Note: This file is 723 lines - will need further splitting in future sessions
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
@@ -317,12 +318,20 @@ export function WebhookConfigurationPage() {
               Configure webhook notifications for test events
             </p>
           </div>
-          <button
-            onClick={handleOpenCreate}
-            className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Create Webhook
-          </button>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/webhooks/integration-guides"
+              className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
+            >
+              Integration Guides
+            </Link>
+            <button
+              onClick={handleOpenCreate}
+              className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Create Webhook
+            </button>
+          </div>
         </div>
 
         {/* Webhooks List */}

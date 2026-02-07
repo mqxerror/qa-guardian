@@ -46,6 +46,7 @@ const SharedTestRunPage = lazy(() => import('./pages/SharedTestRunPage'));
 const OrganizationMembersPage = lazy(() => import('./pages/OrganizationMembersPage').then(m => ({ default: m.OrganizationMembersPage })));
 const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })));
 const WebhookConfigurationPage = lazy(() => import('./pages/WebhookConfigurationPage').then(m => ({ default: m.WebhookConfigurationPage })));
+const WebhookIntegrationGuidesPage = lazy(() => import('./pages/WebhookIntegrationGuidesPage').then(m => ({ default: m.WebhookIntegrationGuidesPage }))); // Feature #323
 const DASTComparisonPage = lazy(() => import('./pages/DASTComparisonPage').then(m => ({ default: m.DASTComparisonPage })));
 const DASTGraphQLPage = lazy(() => import('./pages/DASTGraphQLPage').then(m => ({ default: m.DASTGraphQLPage })));
 const TrivyDependencyScanPage = lazy(() => import('./pages/TrivyDependencyScanPage').then(m => ({ default: m.TrivyDependencyScanPage })));
@@ -1525,6 +1526,8 @@ function App() {
         <Route path="/organization/billing" element={<Navigate to="/settings?tab=billing" replace />} />
         <Route path="/organization/api-keys" element={<Navigate to="/settings?tab=api-keys" replace />} />
         <Route path="/organization/webhooks" element={<Navigate to="/settings?tab=webhooks" replace />} />
+        {/* Feature #323: Webhook integration guides for n8n/Zapier/Make */}
+        <Route path="/webhooks/integration-guides" element={<ProtectedRoute><WebhookIntegrationGuidesPage /></ProtectedRoute>} />
         <Route path="/organization/audit-logs" element={<Navigate to="/settings?tab=audit-logs" replace />} />
         {/* Feature #1365: MCP Hub - consolidated MCP tools under /mcp */}
         <Route

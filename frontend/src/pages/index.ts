@@ -79,6 +79,7 @@ export { SuiteRunHistoryPage } from './SuiteRunHistoryPage'; // Feature #1851: S
 export { ProjectRunHistoryPage } from './ProjectRunHistoryPage'; // Feature #1852: Project run history
 export { RunHistoryPage } from './RunHistoryPage'; // Feature #1855: Global run history
 export { ServicesPage } from './ServicesPage'; // Feature #2128: Platform Services Dashboard
+export { WebhookIntegrationGuidesPage } from './WebhookIntegrationGuidesPage'; // Feature #323: Integration guides
 
 // All major pages have been extracted from App.tsx
 // Feature #1441: Split App.tsx into logical modules - COMPLETE
