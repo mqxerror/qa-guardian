@@ -13,6 +13,7 @@
  */
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { authenticate, JwtPayload, ApiKeyPayload, InternalServicePayload } from '../../middleware/auth.js';
 import {
   AIGeneratedTest,
   SaveGeneratedTestBody,
@@ -40,14 +41,48 @@ import {
   rejectTest,
 } from './stores.js';
 
+// Helper to get user info from authenticated request
+function getUserFromRequest(request: FastifyRequest): { userId: string; organizationId: string; userName?: string } {
+  const user = request.user as JwtPayload | ApiKeyPayload | InternalServicePayload;
+
+  // Handle internal service token
+  if ('type' in user && user.type === 'internal_service') {
+    return {
+      userId: 'internal-service',
+      organizationId: 'system',
+      userName: 'Internal Service',
+    };
+  }
+
+  // Handle API key
+  if ('type' in user && user.type === 'api_key') {
+    return {
+      userId: user.id,
+      organizationId: user.organization_id,
+      userName: 'API User',
+    };
+  }
+
+  // Handle JWT user
+  const jwtUser = user as JwtPayload;
+  return {
+    userId: jwtUser.id,
+    organizationId: jwtUser.organization_id,
+    userName: jwtUser.email,
+  };
+}
+
 export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/v1/ai/generation-history
    * Save a generated test to history
+   * Feature #312: Requires authentication
    */
   fastify.post<{
     Body: SaveGeneratedTestBody;
-  }>('/generation-history', async (request, reply) => {
+  }>('/generation-history', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
     try {
       const {
         description,
@@ -65,9 +100,8 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
         project_id,
       } = request.body;
 
-      // Get user from auth context (mock for development)
-      const userId = (request as any).user?.id || 'demo-user';
-      const organizationId = (request as any).user?.organization_id || 'demo-org';
+      // Feature #312: Get user from authenticated request
+      const { userId, organizationId } = getUserFromRequest(request);
 
       // Determine confidence level
       let confidenceLevel: 'high' | 'medium' | 'low';
@@ -129,10 +163,13 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
   /**
    * GET /api/v1/ai/generation-history
    * Get generation history for the current user
+   * Feature #312: Requires authentication
    */
   fastify.get<{
     Querystring: GenerationHistoryQuery;
-  }>('/generation-history', async (request, reply) => {
+  }>('/generation-history', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
     try {
       const {
         project_id,
@@ -142,8 +179,8 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
         approval_status,
       } = request.query;
 
-      // Get user from auth context (mock for development)
-      const userId = (request as any).user?.id || 'demo-user';
+      // Feature #312: Get user from authenticated request
+      const { userId } = getUserFromRequest(request);
 
       // Get tests based on filters
       let tests: AIGeneratedTest[];
@@ -195,10 +232,13 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
   /**
    * GET /api/v1/ai/generation-history/:testId
    * Get a specific generated test by ID
+   * Feature #312: Requires authentication
    */
   fastify.get<{
     Params: { testId: string };
-  }>('/generation-history/:testId', async (request, reply) => {
+  }>('/generation-history/:testId', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
     try {
       const { testId } = request.params;
 
@@ -226,10 +266,13 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
   /**
    * GET /api/v1/ai/generation-history/versions
    * Get version chain for a specific description
+   * Feature #312: Requires authentication
    */
   fastify.get<{
     Querystring: { description: string };
-  }>('/generation-history/versions', async (request, reply) => {
+  }>('/generation-history/versions', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
     try {
       const { description } = request.query;
 
@@ -240,8 +283,8 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Get user from auth context (mock for development)
-      const userId = (request as any).user?.id || 'demo-user';
+      // Feature #312: Get user from authenticated request
+      const { userId } = getUserFromRequest(request);
 
       const versions = await getVersionChain(userId, description);
       const latestVersion = versions.length > 0 ? Math.max(...versions.map(v => v.version)) : 0;
@@ -268,10 +311,13 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
   /**
    * DELETE /api/v1/ai/generation-history/:testId
    * Delete a generated test from history
+   * Feature #312: Requires authentication
    */
   fastify.delete<{
     Params: { testId: string };
-  }>('/generation-history/:testId', async (request, reply) => {
+  }>('/generation-history/:testId', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
     try {
       const { testId } = request.params;
 
@@ -306,8 +352,11 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
   /**
    * GET /api/v1/ai/review-queue
    * Get the review queue with pending tests and recently reviewed
+   * Feature #312: Requires authentication
    */
-  fastify.get('/review-queue', async (request, reply) => {
+  fastify.get('/review-queue', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
     try {
       const pendingTests = await getTestsByApprovalStatus('pending');
       const allApprovedTests = await getTestsByApprovalStatus('approved');
@@ -347,11 +396,14 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/v1/ai/generation-history/:testId/approve
    * Approve or reject a generated test
+   * Feature #312: Requires authentication
    */
   fastify.post<{
     Params: { testId: string };
     Body: ApproveTestBody;
-  }>('/generation-history/:testId/approve', async (request, reply) => {
+  }>('/generation-history/:testId/approve', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
     try {
       const { testId } = request.params;
       const { action, comment, add_to_suite_id } = request.body;
@@ -364,9 +416,8 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Get user from auth context (mock for development)
-      const userId = (request as any).user?.id || 'demo-user';
-      const userName = (request as any).user?.name || 'Demo User';
+      // Feature #312: Get user from authenticated request
+      const { userId, userName } = getUserFromRequest(request);
 
       const oldStatus = test.approval.status;
       const newStatus: ApprovalStatus = action === 'approve' ? 'approved' : 'rejected';
@@ -415,8 +466,11 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
   /**
    * GET /api/v1/ai/approval-stats
    * Get statistics about approval workflow
+   * Feature #312: Requires authentication
    */
-  fastify.get('/approval-stats', async (request, reply) => {
+  fastify.get('/approval-stats', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
     try {
       const pendingTests = await getTestsByApprovalStatus('pending');
       const approvedTests = await getTestsByApprovalStatus('approved');
@@ -452,6 +506,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/v1/ai/parse-intent
    * Parse natural language and return structured test configuration
+   * Feature #312: Requires authentication
    *
    * Accepts: { text: string, context?: object }
    * Returns: { testType, targetUrl, viewport, testName, confidence }
@@ -466,7 +521,9 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
         recentTests?: string[];
       };
     };
-  }>('/parse-intent', async (request, reply) => {
+  }>('/parse-intent', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
     try {
       const { text, context } = request.body;
 
