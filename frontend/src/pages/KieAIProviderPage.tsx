@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 const API_BASE = import.meta.env.VITE_API_URL || '';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { Layout } from '../components/Layout';
 
 // Type definitions
 interface KieAIConfig {
@@ -213,23 +214,24 @@ export function KieAIProviderPage() {
   }
 
   return (
+    <Layout>
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <button
             onClick={() => navigate('/ai-insights')}
-            className="text-blue-500 hover:text-blue-700 mb-2 flex items-center gap-1"
+            className="text-primary hover:text-primary/80 mb-2 flex items-center gap-1"
           >
             {'\u2190'} Back to AI Insights
           </button>
-          <h1 className="text-2xl font-bold">{'\u{1F916}'} Kie.ai Provider</h1>
-          <p className="text-gray-600">70% cost savings on Claude Opus 4.5 thinking model</p>
+          <h1 className="text-2xl font-bold text-foreground">{'\u{1F916}'} Kie.ai Provider</h1>
+          <p className="text-muted-foreground">70% cost savings on Claude Opus 4.5 thinking model</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={testConnection}
             disabled={isTesting}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
           >
             {isTesting ? 'Testing...' : '\u{1F50C} Test Connection'}
           </button>
@@ -238,15 +240,15 @@ export function KieAIProviderPage() {
 
       {/* Connection Status */}
       {connectionStatus && (
-        <div className={`mb-6 p-4 rounded-lg border ${connectionStatus.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+        <div className={`mb-6 p-4 rounded-lg border ${connectionStatus.success ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
           <div className="flex items-center gap-2">
             <span className="text-2xl">{connectionStatus.success ? '\u2705' : '\u274C'}</span>
             <div>
-              <div className="font-medium">
+              <div className={`font-medium ${connectionStatus.success ? 'text-green-400' : 'text-red-400'}`}>
                 {connectionStatus.success ? 'Connection Successful' : 'Connection Failed'}
               </div>
               {connectionStatus.latency_ms && (
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   Latency: {connectionStatus.latency_ms}ms
                 </div>
               )}
@@ -286,57 +288,57 @@ export function KieAIProviderPage() {
       {/* Stats and Config Grid */}
       <div className="grid grid-cols-3 gap-6 mb-6">
         {/* Usage Stats */}
-        <div className="col-span-2 bg-white rounded-lg shadow p-4">
-          <h2 className="text-lg font-semibold mb-4">{'\u{1F4CA}'} Usage Statistics</h2>
+        <div className="col-span-2 bg-card rounded-lg border border-border p-4">
+          <h2 className="text-lg font-semibold text-foreground mb-4">{'\u{1F4CA}'} Usage Statistics</h2>
           {stats && (
             <div className="grid grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-blue-50 rounded">
-                <div className="text-2xl font-bold text-blue-600">{formatNumber(stats.total_requests)}</div>
-                <div className="text-sm text-gray-600">Total Requests</div>
+              <div className="text-center p-3 bg-blue-500/10 rounded">
+                <div className="text-2xl font-bold text-blue-400">{formatNumber(stats.total_requests)}</div>
+                <div className="text-sm text-muted-foreground">Total Requests</div>
               </div>
-              <div className="text-center p-3 bg-purple-50 rounded">
-                <div className="text-2xl font-bold text-purple-600">{formatNumber(stats.total_input_tokens + stats.total_output_tokens)}</div>
-                <div className="text-sm text-gray-600">Total Tokens</div>
+              <div className="text-center p-3 bg-purple-500/10 rounded">
+                <div className="text-2xl font-bold text-purple-400">{formatNumber(stats.total_input_tokens + stats.total_output_tokens)}</div>
+                <div className="text-sm text-muted-foreground">Total Tokens</div>
               </div>
-              <div className="text-center p-3 bg-green-50 rounded">
-                <div className="text-2xl font-bold text-green-600">{formatCurrency(stats.total_savings)}</div>
-                <div className="text-sm text-gray-600">Total Savings</div>
+              <div className="text-center p-3 bg-green-500/10 rounded">
+                <div className="text-2xl font-bold text-green-400">{formatCurrency(stats.total_savings)}</div>
+                <div className="text-sm text-muted-foreground">Total Savings</div>
               </div>
-              <div className="text-center p-3 bg-amber-50 rounded">
-                <div className="text-2xl font-bold text-amber-600">{stats.avg_response_time_ms}ms</div>
-                <div className="text-sm text-gray-600">Avg Response</div>
+              <div className="text-center p-3 bg-amber-500/10 rounded">
+                <div className="text-2xl font-bold text-amber-400">{stats.avg_response_time_ms}ms</div>
+                <div className="text-sm text-muted-foreground">Avg Response</div>
               </div>
             </div>
           )}
 
           {stats && (
             <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-              <div className="border rounded p-3">
+              <div className="border border-border rounded p-3">
                 <div className="flex justify-between mb-2">
-                  <span className="text-gray-600">Input Tokens:</span>
-                  <span className="font-medium">{formatNumber(stats.total_input_tokens)}</span>
+                  <span className="text-muted-foreground">Input Tokens:</span>
+                  <span className="font-medium text-foreground">{formatNumber(stats.total_input_tokens)}</span>
                 </div>
                 <div className="flex justify-between mb-2">
-                  <span className="text-gray-600">Output Tokens:</span>
-                  <span className="font-medium">{formatNumber(stats.total_output_tokens)}</span>
+                  <span className="text-muted-foreground">Output Tokens:</span>
+                  <span className="font-medium text-foreground">{formatNumber(stats.total_output_tokens)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Thinking Tokens:</span>
-                  <span className="font-medium">{formatNumber(stats.total_thinking_tokens)}</span>
+                  <span className="text-muted-foreground">Thinking Tokens:</span>
+                  <span className="font-medium text-foreground">{formatNumber(stats.total_thinking_tokens)}</span>
                 </div>
               </div>
-              <div className="border rounded p-3">
+              <div className="border border-border rounded p-3">
                 <div className="flex justify-between mb-2">
-                  <span className="text-gray-600">Total Cost:</span>
-                  <span className="font-medium">{formatCurrency(stats.total_cost)}</span>
+                  <span className="text-muted-foreground">Total Cost:</span>
+                  <span className="font-medium text-foreground">{formatCurrency(stats.total_cost)}</span>
                 </div>
                 <div className="flex justify-between mb-2">
-                  <span className="text-gray-600">Savings:</span>
-                  <span className="font-medium text-green-600">{formatCurrency(stats.total_savings)}</span>
+                  <span className="text-muted-foreground">Savings:</span>
+                  <span className="font-medium text-green-400">{formatCurrency(stats.total_savings)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Success Rate:</span>
-                  <span className="font-medium">{stats.success_rate}%</span>
+                  <span className="text-muted-foreground">Success Rate:</span>
+                  <span className="font-medium text-foreground">{stats.success_rate}%</span>
                 </div>
               </div>
             </div>
@@ -344,38 +346,38 @@ export function KieAIProviderPage() {
         </div>
 
         {/* Configuration */}
-        <div className="bg-white rounded-lg shadow p-4">
-          <h2 className="text-lg font-semibold mb-4">{'\u2699\uFE0F'} Configuration</h2>
+        <div className="bg-card rounded-lg border border-border p-4">
+          <h2 className="text-lg font-semibold text-foreground mb-4">{'\u2699\uFE0F'} Configuration</h2>
           {config && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span>Provider Enabled</span>
+                <span className="text-foreground">Provider Enabled</span>
                 <button
                   onClick={() => updateConfig({ enabled: !config.enabled })}
                   disabled={isSaving}
-                  className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-green-500' : 'bg-gray-300'}`}
+                  className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-green-500' : 'bg-muted'}`}
                 >
                   <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
               </div>
 
               <div>
-                <label className="text-sm text-gray-600">API Key</label>
+                <label className="text-sm text-muted-foreground">API Key</label>
                 <input
                   type="password"
                   value={config.api_key}
                   readOnly
-                  className="mt-1 w-full border rounded p-2 bg-gray-50"
+                  className="mt-1 w-full border border-input rounded p-2 bg-muted text-foreground"
                 />
               </div>
 
               <div>
-                <label className="text-sm text-gray-600">Model</label>
+                <label className="text-sm text-muted-foreground">Model</label>
                 <select
                   value={config.model}
                   onChange={(e) => updateConfig({ model: e.target.value })}
                   disabled={isSaving}
-                  className="mt-1 w-full border rounded p-2"
+                  className="mt-1 w-full border border-input rounded p-2 bg-background text-foreground"
                 >
                   <option value="claude-opus-4.5-thinking">Claude Opus 4.5 (Thinking)</option>
                   <option value="claude-opus-4.5">Claude Opus 4.5</option>
@@ -384,7 +386,7 @@ export function KieAIProviderPage() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-600">Temperature</label>
+                <label className="text-sm text-muted-foreground">Temperature</label>
                 <input
                   type="range"
                   min="0"
@@ -395,15 +397,15 @@ export function KieAIProviderPage() {
                   disabled={isSaving}
                   className="mt-1 w-full"
                 />
-                <div className="text-xs text-gray-500 text-right">{config.temperature}</div>
+                <div className="text-xs text-muted-foreground text-right">{config.temperature}</div>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-sm">Cost Tracking</span>
+                <span className="text-sm text-foreground">Cost Tracking</span>
                 <button
                   onClick={() => updateConfig({ cost_tracking_enabled: !config.cost_tracking_enabled })}
                   disabled={isSaving}
-                  className={`w-12 h-6 rounded-full transition-colors ${config.cost_tracking_enabled ? 'bg-green-500' : 'bg-gray-300'}`}
+                  className={`w-12 h-6 rounded-full transition-colors ${config.cost_tracking_enabled ? 'bg-green-500' : 'bg-muted'}`}
                 >
                   <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${config.cost_tracking_enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
@@ -414,8 +416,8 @@ export function KieAIProviderPage() {
       </div>
 
       {/* Test Chat */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <h2 className="text-lg font-semibold mb-4">{'\u{1F4AC}'} Test Chat</h2>
+      <div className="bg-card rounded-lg border border-border p-4">
+        <h2 className="text-lg font-semibold text-foreground mb-4">{'\u{1F4AC}'} Test Chat</h2>
 
         <div className="flex gap-2 mb-4">
           <input
@@ -424,44 +426,45 @@ export function KieAIProviderPage() {
             onChange={(e) => setChatInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && sendChat()}
             placeholder="Enter a message to test the Kie.ai provider..."
-            className="flex-1 border rounded p-2"
+            className="flex-1 border border-input rounded p-2 bg-background text-foreground placeholder:text-muted-foreground"
             disabled={isChatting}
           />
           <button
             onClick={sendChat}
             disabled={isChatting || !chatInput.trim()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
           >
             {isChatting ? 'Sending...' : 'Send'}
           </button>
         </div>
 
         {lastResponse && (
-          <div className="border rounded p-4 bg-gray-50">
+          <div className="border border-border rounded p-4 bg-muted/50">
             <div className="flex items-center justify-between mb-2">
-              <span className="font-medium">Response</span>
-              <span className="text-xs text-gray-500">Model: {lastResponse.model}</span>
+              <span className="font-medium text-foreground">Response</span>
+              <span className="text-xs text-muted-foreground">Model: {lastResponse.model}</span>
             </div>
-            <div className="text-sm mb-4 whitespace-pre-wrap">
+            <div className="text-sm mb-4 whitespace-pre-wrap text-foreground">
               {lastResponse.choices[0]?.message.content}
             </div>
-            <div className="grid grid-cols-4 gap-2 text-xs border-t pt-2">
-              <div>
-                <span className="text-gray-500">Input:</span> {lastResponse.usage.prompt_tokens} tokens
+            <div className="grid grid-cols-4 gap-2 text-xs border-t border-border pt-2">
+              <div className="text-foreground">
+                <span className="text-muted-foreground">Input:</span> {lastResponse.usage.prompt_tokens} tokens
               </div>
-              <div>
-                <span className="text-gray-500">Output:</span> {lastResponse.usage.completion_tokens} tokens
+              <div className="text-foreground">
+                <span className="text-muted-foreground">Output:</span> {lastResponse.usage.completion_tokens} tokens
               </div>
-              <div>
-                <span className="text-gray-500">Cost:</span> {formatCurrency(lastResponse.cost.total_cost)}
+              <div className="text-foreground">
+                <span className="text-muted-foreground">Cost:</span> {formatCurrency(lastResponse.cost.total_cost)}
               </div>
-              <div className="text-green-600">
-                <span className="text-gray-500">Saved:</span> {formatCurrency(lastResponse.cost.savings.savings)} ({lastResponse.cost.savings.savings_percentage}%)
+              <div className="text-green-400">
+                <span className="text-muted-foreground">Saved:</span> {formatCurrency(lastResponse.cost.savings.savings)} ({lastResponse.cost.savings.savings_percentage}%)
               </div>
             </div>
           </div>
         )}
       </div>
     </div>
+    </Layout>
   );
 }

@@ -32,11 +32,11 @@ export function AIConfidenceIndicator({
 
   // Color coding based on confidence level
   const getColorClasses = () => {
-    if (confidence >= 90) return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800';
-    if (confidence >= 75) return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800';
-    if (confidence >= 60) return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800';
-    if (confidence >= 40) return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800';
-    return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800';
+    if (confidence >= 90) return 'bg-green-500/20 text-green-400 border-green-500/30';
+    if (confidence >= 75) return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+    if (confidence >= 60) return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+    if (confidence >= 40) return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+    return 'bg-red-500/20 text-red-400 border-red-500/30';
   };
 
   const getConfidenceLabel = () => {
@@ -72,7 +72,7 @@ export function AIConfidenceIndicator({
         <span className="text-xs">🤖</span>
 
         {/* Confidence Bar */}
-        <div className="w-8 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div className="w-8 h-1.5 bg-muted rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${
               confidence >= 90 ? 'bg-green-500' :
@@ -191,11 +191,11 @@ export function AIConfidenceCard({
   details?: string[];
 }) {
   const getColorClasses = () => {
-    if (confidence >= 90) return 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20';
-    if (confidence >= 75) return 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20';
-    if (confidence >= 60) return 'border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20';
-    if (confidence >= 40) return 'border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20';
-    return 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20';
+    if (confidence >= 90) return 'border-green-500/30 bg-green-500/10';
+    if (confidence >= 75) return 'border-blue-500/30 bg-blue-500/10';
+    if (confidence >= 60) return 'border-yellow-500/30 bg-yellow-500/10';
+    if (confidence >= 40) return 'border-orange-500/30 bg-orange-500/10';
+    return 'border-red-500/30 bg-red-500/10';
   };
 
   const getProgressColor = () => {
@@ -232,7 +232,7 @@ export function AIConfidenceCard({
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-3">
+      <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-3">
         <div
           className={`h-full rounded-full transition-all ${getProgressColor()}`}
           style={{ width: `${confidence}%` }}

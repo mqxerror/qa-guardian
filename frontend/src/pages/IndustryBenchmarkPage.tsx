@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { Layout } from '../components/Layout';
 
 // Types for industry benchmarking
 interface IndustryBenchmark {
@@ -101,13 +102,13 @@ export function IndustryBenchmarkPage() {
 
   const getComparisonBadge = (yourValue: number, industryAvg: number, industryTop10: number, higherIsBetter: boolean) => {
     if (higherIsBetter) {
-      if (yourValue >= industryTop10) return { text: 'Top 10%', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' };
-      if (yourValue >= industryAvg) return { text: 'Above Avg', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' };
-      return { text: 'Below Avg', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' };
+      if (yourValue >= industryTop10) return { text: 'Top 10%', color: 'bg-green-500/20 text-green-400' };
+      if (yourValue >= industryAvg) return { text: 'Above Avg', color: 'bg-blue-500/20 text-blue-400' };
+      return { text: 'Below Avg', color: 'bg-amber-500/20 text-amber-400' };
     } else {
-      if (yourValue <= industryTop10) return { text: 'Top 10%', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' };
-      if (yourValue <= industryAvg) return { text: 'Above Avg', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' };
-      return { text: 'Below Avg', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' };
+      if (yourValue <= industryTop10) return { text: 'Top 10%', color: 'bg-green-500/20 text-green-400' };
+      if (yourValue <= industryAvg) return { text: 'Above Avg', color: 'bg-blue-500/20 text-blue-400' };
+      return { text: 'Below Avg', color: 'bg-amber-500/20 text-amber-400' };
     }
   };
 
@@ -120,10 +121,10 @@ export function IndustryBenchmarkPage() {
 
   const getRankBadge = (rank: string) => {
     switch (rank) {
-      case 'top_10': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
-      case 'top_25': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
-      case 'top_50': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
-      default: return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
+      case 'top_10': return 'bg-green-500/20 text-green-400';
+      case 'top_25': return 'bg-blue-500/20 text-blue-400';
+      case 'top_50': return 'bg-amber-500/20 text-amber-400';
+      default: return 'bg-red-500/20 text-red-400';
     }
   };
 
@@ -140,18 +141,18 @@ export function IndustryBenchmarkPage() {
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
-      case 'high': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300';
-      case 'medium': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
-      default: return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
+      case 'critical': return 'bg-red-500/20 text-red-400';
+      case 'high': return 'bg-orange-500/20 text-orange-400';
+      case 'medium': return 'bg-amber-500/20 text-amber-400';
+      default: return 'bg-green-500/20 text-green-400';
     }
   };
 
   const getEffortBadge = (effort: string) => {
     switch (effort) {
-      case 'high': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300';
-      case 'medium': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
-      default: return 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300';
+      case 'high': return 'bg-purple-500/20 text-purple-400';
+      case 'medium': return 'bg-blue-500/20 text-blue-400';
+      default: return 'bg-cyan-500/20 text-cyan-400';
     }
   };
 
@@ -167,11 +168,11 @@ export function IndustryBenchmarkPage() {
   };
 
   const getMaturityLevel = (score: number) => {
-    if (score >= 90) return { level: 'Elite', color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-900/30' };
-    if (score >= 75) return { level: 'Advanced', color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/30' };
-    if (score >= 60) return { level: 'Intermediate', color: 'text-amber-600', bg: 'bg-amber-100 dark:bg-amber-900/30' };
-    if (score >= 40) return { level: 'Developing', color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900/30' };
-    return { level: 'Initial', color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/30' };
+    if (score >= 90) return { level: 'Elite', color: 'text-green-400', bg: 'bg-green-500/20' };
+    if (score >= 75) return { level: 'Advanced', color: 'text-blue-400', bg: 'bg-blue-500/20' };
+    if (score >= 60) return { level: 'Intermediate', color: 'text-amber-400', bg: 'bg-amber-500/20' };
+    if (score >= 40) return { level: 'Developing', color: 'text-orange-400', bg: 'bg-orange-500/20' };
+    return { level: 'Initial', color: 'text-red-400', bg: 'bg-red-500/20' };
   };
 
   const maturityLevel = getMaturityLevel(overallMaturityScore);
@@ -188,6 +189,7 @@ export function IndustryBenchmarkPage() {
   }
 
   return (
+    <Layout>
     <div className="space-y-6 p-6">
       {/* Step 1: View Industry Benchmark */}
       <div className="flex items-center justify-between">
@@ -261,7 +263,7 @@ export function IndustryBenchmarkPage() {
       {/* Step 2: Your Metrics vs Industry */}
       <div className="rounded-lg border bg-card p-6">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 text-sm">2</span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm">2</span>
           <span>📈</span> Your Metrics vs Industry
         </h2>
         <p className="text-sm text-muted-foreground mb-4">Compare your testing metrics against industry averages and top performers</p>
@@ -327,7 +329,7 @@ export function IndustryBenchmarkPage() {
       {/* Step 3: Percentile Ranking */}
       <div className="rounded-lg border bg-gradient-to-r from-cyan-500/10 to-blue-500/10 p-6">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 text-sm">3</span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500/20 text-cyan-400 text-sm">3</span>
           <span>🏅</span> Percentile Ranking
         </h2>
         <p className="text-sm text-muted-foreground mb-4">See where you rank compared to all {industryName} companies</p>
@@ -363,7 +365,7 @@ export function IndustryBenchmarkPage() {
       {/* Step 4: Gap Analysis and Improvement Plan */}
       <div className="rounded-lg border bg-card p-6">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/30 text-sm">4</span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-500/20 text-violet-400 text-sm">4</span>
           <span>🎯</span> Gap Analysis & Improvement Plan
         </h2>
         <p className="text-sm text-muted-foreground mb-4">Prioritized action plan to reach industry-leading testing maturity</p>
@@ -483,5 +485,6 @@ export function IndustryBenchmarkPage() {
         </div>
       </div>
     </div>
+    </Layout>
   );
 }

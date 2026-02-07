@@ -220,17 +220,17 @@ export function DependencyAlertsPage() {
       case 'HIGH': return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30';
       case 'MEDIUM': return 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30';
       case 'LOW': return 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30';
-      default: return 'text-gray-600 bg-gray-100';
+      default: return 'text-muted-foreground bg-muted';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new': return 'text-red-600 bg-red-100';
-      case 'acknowledged': return 'text-amber-600 bg-amber-100';
-      case 'dismissed': return 'text-gray-500 bg-gray-100';
-      case 'fixed': return 'text-green-600 bg-green-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'new': return 'text-red-400 bg-red-500/20';
+      case 'acknowledged': return 'text-amber-400 bg-amber-500/20';
+      case 'dismissed': return 'text-muted-foreground bg-muted';
+      case 'fixed': return 'text-green-400 bg-green-500/20';
+      default: return 'text-muted-foreground bg-muted';
     }
   };
 
@@ -285,7 +285,7 @@ export function DependencyAlertsPage() {
                     disabled={isSavingConfig}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
               </div>
 
@@ -372,9 +372,9 @@ export function DependencyAlertsPage() {
             <p className="text-3xl font-bold text-amber-600">{summary.acknowledged}</p>
             <p className="text-sm text-amber-600/80">Acknowledged</p>
           </div>
-          <div className="rounded-lg border border-gray-200 bg-gray-50 dark:bg-gray-800 p-4 text-center">
-            <p className="text-3xl font-bold text-gray-500">{summary.dismissed}</p>
-            <p className="text-sm text-gray-500/80">Dismissed</p>
+          <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
+            <p className="text-3xl font-bold text-muted-foreground">{summary.dismissed}</p>
+            <p className="text-sm text-muted-foreground/80">Dismissed</p>
           </div>
           <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-900/20 p-4 text-center">
             <p className="text-3xl font-bold text-green-600">{summary.fixed}</p>
@@ -486,7 +486,7 @@ export function DependencyAlertsPage() {
                                 <span className="font-medium text-foreground">{proj.project_name}</span>
                                 <span className="text-sm text-muted-foreground ml-2">v{proj.installed_version}</span>
                               </div>
-                              <span className={`text-xs px-2 py-1 rounded ${proj.is_direct_dependency ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
+                              <span className={`text-xs px-2 py-1 rounded ${proj.is_direct_dependency ? 'bg-blue-500/20 text-blue-400' : 'bg-muted text-muted-foreground'}`}>
                                 {proj.is_direct_dependency ? 'Direct' : 'Transitive'}
                               </span>
                             </div>
@@ -514,19 +514,19 @@ export function DependencyAlertsPage() {
                       <div className="flex gap-2 pt-2 border-t border-border">
                         <button
                           onClick={(e) => { e.stopPropagation(); updateAlertStatus(alert.id, 'acknowledged'); }}
-                          className="px-3 py-1 bg-amber-100 text-amber-700 rounded hover:bg-amber-200 text-sm"
+                          className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded hover:bg-amber-500/30 text-sm"
                         >
                           Acknowledge
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); updateAlertStatus(alert.id, 'dismissed', 'Not applicable'); }}
-                          className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
+                          className="px-3 py-1 bg-muted text-muted-foreground rounded hover:bg-muted/80 text-sm"
                         >
                           Dismiss
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); updateAlertStatus(alert.id, 'fixed'); }}
-                          className="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-sm"
+                          className="px-3 py-1 bg-green-500/20 text-green-400 rounded hover:bg-green-500/30 text-sm"
                         >
                           Mark Fixed
                         </button>

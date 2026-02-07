@@ -716,6 +716,8 @@ export function SecurityDashboardPage() {
                           border: '1px solid hsl(var(--border))',
                           borderRadius: '8px',
                         }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
+                        itemStyle={{ color: 'hsl(var(--muted-foreground))' }}
                         labelFormatter={(label) => formatChartDate(label as string)}
                       />
                       <Legend />

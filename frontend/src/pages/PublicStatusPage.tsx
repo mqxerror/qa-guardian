@@ -203,7 +203,7 @@ export function PublicStatusPage() {
       case 'up': return { bg: 'bg-green-50 dark:bg-green-950', border: 'border-green-200 dark:border-green-800', text: 'text-green-700 dark:text-green-300', icon: '✓', message: 'All Systems Operational' };
       case 'down': return { bg: 'bg-red-50 dark:bg-red-950', border: 'border-red-200 dark:border-red-800', text: 'text-red-700 dark:text-red-300', icon: '✕', message: 'System Outage' };
       case 'degraded': return { bg: 'bg-yellow-50 dark:bg-yellow-950', border: 'border-yellow-200 dark:border-yellow-800', text: 'text-yellow-700 dark:text-yellow-300', icon: '⚠', message: 'Partial System Outage' };
-      default: return { bg: 'bg-gray-50 dark:bg-gray-900', border: 'border-gray-200 dark:border-gray-700', text: 'text-gray-700 dark:text-gray-300', icon: '?', message: 'Status Unknown' };
+      default: return { bg: 'bg-muted/50', border: 'border-border', text: 'text-muted-foreground', icon: '?', message: 'Status Unknown' };
     }
   };
 
@@ -381,10 +381,10 @@ export function PublicStatusPage() {
                       </span>
                     )}
                     <span className={`text-sm font-medium ${
-                      check.status === 'up' ? 'text-green-600' :
-                      check.status === 'down' ? 'text-red-600' :
-                      check.status === 'degraded' ? 'text-yellow-600' :
-                      'text-gray-500'
+                      check.status === 'up' ? 'text-green-400' :
+                      check.status === 'down' ? 'text-red-400' :
+                      check.status === 'degraded' ? 'text-yellow-400' :
+                      'text-muted-foreground'
                     }`}>
                       {getStatusText(check.status)}
                     </span>
@@ -407,18 +407,18 @@ export function PublicStatusPage() {
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        incident.impact === 'critical' ? 'bg-red-100 text-red-800' :
-                        incident.impact === 'major' ? 'bg-orange-100 text-orange-800' :
-                        incident.impact === 'minor' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
+                        incident.impact === 'critical' ? 'bg-red-500/20 text-red-400' :
+                        incident.impact === 'major' ? 'bg-orange-500/20 text-orange-400' :
+                        incident.impact === 'minor' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-muted text-muted-foreground'
                       }`}>
                         {incident.impact.toUpperCase()}
                       </span>
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        incident.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                        incident.status === 'monitoring' ? 'bg-blue-100 text-blue-800' :
-                        incident.status === 'identified' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
+                        incident.status === 'resolved' ? 'bg-green-500/20 text-green-400' :
+                        incident.status === 'monitoring' ? 'bg-blue-500/20 text-blue-400' :
+                        incident.status === 'identified' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-red-500/20 text-red-400'
                       }`}>
                         {incident.status.charAt(0).toUpperCase() + incident.status.slice(1)}
                       </span>

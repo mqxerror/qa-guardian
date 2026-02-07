@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { devLog } from '../utils/logger';
+import { Layout } from '../components/Layout';
 
 // Types for test improvement analysis
 interface TestImprovementAnalysis {
@@ -96,19 +97,19 @@ export function TestImprovementAnalyzerPage() {
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
-      case 'high': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
-      case 'medium': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
-      case 'low': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'high': return 'bg-red-500/20 text-red-400';
+      case 'medium': return 'bg-amber-500/20 text-amber-400';
+      case 'low': return 'bg-green-500/20 text-green-400';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
-      case 'medium': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
-      case 'low': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'high': return 'bg-red-500/20 text-red-400';
+      case 'medium': return 'bg-amber-500/20 text-amber-400';
+      case 'low': return 'bg-blue-500/20 text-blue-400';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -127,6 +128,7 @@ export function TestImprovementAnalyzerPage() {
   };
 
   return (
+    <Layout>
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -437,5 +439,6 @@ export function TestImprovementAnalyzerPage() {
         </div>
       )}
     </div>
+    </Layout>
   );
 }

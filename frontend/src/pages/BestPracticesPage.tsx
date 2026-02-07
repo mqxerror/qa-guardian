@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { Layout } from '../components/Layout';
 
 // Types for best practices recommendation engine
 interface ProjectMetrics {
@@ -98,10 +99,10 @@ export function BestPracticesPage() {
 
   const getTierBadge = (tier: string) => {
     switch (tier) {
-      case 'top': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
-      case 'mid': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
-      case 'low': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'top': return 'bg-green-500/20 text-green-400';
+      case 'mid': return 'bg-amber-500/20 text-amber-400';
+      case 'low': return 'bg-red-500/20 text-red-400';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -129,18 +130,18 @@ export function BestPracticesPage() {
 
   const getEffortBadge = (effort: string) => {
     switch (effort) {
-      case 'high': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300';
-      case 'medium': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
-      case 'low': return 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'high': return 'bg-purple-500/20 text-purple-400';
+      case 'medium': return 'bg-blue-500/20 text-blue-400';
+      case 'low': return 'bg-cyan-500/20 text-cyan-400';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'adopted': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
-      case 'partial': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
-      default: return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
+      case 'adopted': return 'bg-green-500/20 text-green-400';
+      case 'partial': return 'bg-amber-500/20 text-amber-400';
+      default: return 'bg-red-500/20 text-red-400';
     }
   };
 
@@ -173,6 +174,7 @@ export function BestPracticesPage() {
   }
 
   return (
+    <Layout>
     <div className="space-y-6 p-6">
       {/* Step 1: View Best Practices Recommendations */}
       <div className="flex items-center justify-between">
@@ -247,7 +249,7 @@ export function BestPracticesPage() {
       {/* Step 2: AI compares project metrics */}
       <div className="rounded-lg border bg-card p-6">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 text-sm">2</span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm">2</span>
           <span>📊</span> Project Metrics Comparison
         </h2>
         <p className="text-sm text-muted-foreground mb-4">AI compares metrics across all projects to identify top performers</p>
@@ -312,7 +314,7 @@ export function BestPracticesPage() {
       {/* Step 3: AI identifies what top projects do differently */}
       <div className="rounded-lg border bg-gradient-to-r from-violet-500/10 to-purple-500/10 p-6">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/30 text-sm">3</span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-500/20 text-violet-400 text-sm">3</span>
           <span>🔍</span> What Top Projects Do Differently
         </h2>
         <p className="text-sm text-muted-foreground mb-4">AI identifies practices that differentiate high-performing projects</p>
@@ -363,7 +365,7 @@ export function BestPracticesPage() {
       {/* Step 4: AI suggests adopt these practices from Project X */}
       <div className="rounded-lg border bg-card p-6">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 text-sm">4</span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-green-400 text-sm">4</span>
           <span>💡</span> Adopt These Practices from Top Projects
         </h2>
         <p className="text-sm text-muted-foreground mb-4">AI suggests specific practices to adopt from high-performing projects</p>
@@ -373,9 +375,9 @@ export function BestPracticesPage() {
             <div key={rec.id} className="rounded-lg border bg-muted/50 p-4">
               <div className="flex items-start gap-4">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-full font-bold text-sm flex-shrink-0 ${
-                  index === 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
-                  index === 1 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
-                  'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                  index === 0 ? 'bg-green-500/20 text-green-400' :
+                  index === 1 ? 'bg-blue-500/20 text-blue-400' :
+                  'bg-violet-500/20 text-violet-400'
                 }`}>
                   #{index + 1}
                 </div>
@@ -453,5 +455,6 @@ export function BestPracticesPage() {
         </div>
       </div>
     </div>
+    </Layout>
   );
 }

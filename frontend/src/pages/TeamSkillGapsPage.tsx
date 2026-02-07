@@ -130,28 +130,28 @@ export function TeamSkillGapsPage() {
   const getExpertiseColor = (expertise: string) => {
     switch (expertise) {
       case 'expert':
-        return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+        return 'bg-green-500/20 text-green-400';
       case 'proficient':
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+        return 'bg-blue-500/20 text-blue-400';
       case 'learning':
-        return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+        return 'bg-yellow-500/20 text-yellow-400';
       case 'none':
-        return 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500';
+        return 'bg-muted text-muted-foreground';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+        return 'bg-red-500/20 text-red-400';
       case 'moderate':
-        return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+        return 'bg-yellow-500/20 text-yellow-400';
       case 'minor':
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+        return 'bg-blue-500/20 text-blue-400';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -516,9 +516,9 @@ export function TeamSkillGapsPage() {
                           <div className="text-xs text-muted-foreground">{member.ownedTests} tests</div>
                         </div>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          member.busFactor === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                          member.busFactor === 'warning' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                          'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                          member.busFactor === 'critical' ? 'bg-red-500/20 text-red-400' :
+                          member.busFactor === 'warning' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-green-500/20 text-green-400'
                         }`}>
                           {member.busFactor === 'critical' ? '🚨 High Bus Factor' :
                            member.busFactor === 'warning' ? '⚠️ Watch' :
@@ -577,9 +577,9 @@ export function TeamSkillGapsPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                            suggestion.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                            suggestion.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                            'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                            suggestion.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                            suggestion.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-blue-500/20 text-blue-400'
                           }`}>
                             {suggestion.priority} priority
                           </span>

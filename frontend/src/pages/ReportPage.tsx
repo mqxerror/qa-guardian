@@ -174,20 +174,20 @@ function ScoreBadge({ score, size = 'large' }: { score: number; size?: 'small' |
 // Status badge component
 function StatusBadge({ status }: { status: 'passing' | 'warning' | 'failing' | 'passed' | 'failed' | 'skipped' | 'match' | 'diff' | 'approved' | 'pending' }) {
   const colors: Record<string, string> = {
-    passing: 'bg-green-100 text-green-800',
-    passed: 'bg-green-100 text-green-800',
-    match: 'bg-green-100 text-green-800',
-    approved: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    pending: 'bg-yellow-100 text-yellow-800',
-    failing: 'bg-red-100 text-red-800',
-    failed: 'bg-red-100 text-red-800',
-    diff: 'bg-orange-100 text-orange-800',
-    skipped: 'bg-gray-100 text-gray-800',
+    passing: 'bg-green-500/20 text-green-400',
+    passed: 'bg-green-500/20 text-green-400',
+    match: 'bg-green-500/20 text-green-400',
+    approved: 'bg-green-500/20 text-green-400',
+    warning: 'bg-yellow-500/20 text-yellow-400',
+    pending: 'bg-yellow-500/20 text-yellow-400',
+    failing: 'bg-red-500/20 text-red-400',
+    failed: 'bg-red-500/20 text-red-400',
+    diff: 'bg-orange-500/20 text-orange-400',
+    skipped: 'bg-muted text-muted-foreground',
   };
 
   return (
-    <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[status] || 'bg-gray-100 text-gray-800'}`}>
+    <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[status] || 'bg-muted text-muted-foreground'}`}>
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );
@@ -216,9 +216,9 @@ function ImpactBadge({ impact }: { impact: string }) {
 // Core Web Vitals rating badge
 function CWVRatingBadge({ rating }: { rating: 'good' | 'needs-improvement' | 'poor' }) {
   const colors = {
-    good: 'bg-green-100 text-green-800',
-    'needs-improvement': 'bg-yellow-100 text-yellow-800',
-    poor: 'bg-red-100 text-red-800',
+    good: 'bg-green-500/20 text-green-400',
+    'needs-improvement': 'bg-yellow-500/20 text-yellow-400',
+    poor: 'bg-red-500/20 text-red-400',
   };
 
   const labels = {

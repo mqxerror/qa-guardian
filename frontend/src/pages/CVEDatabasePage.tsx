@@ -342,7 +342,7 @@ export function CVEDatabasePage() {
       case 'HIGH': return 'text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30';
       case 'MEDIUM': return 'text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30';
       case 'LOW': return 'text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30';
-      default: return 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700';
+      default: return 'text-muted-foreground bg-muted';
     }
   };
 

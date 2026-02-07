@@ -3,8 +3,10 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Layout } from '../components/Layout';
 import { toast } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
+import { ArrowLeft, Shield, Plus, Play, AlertTriangle, Check, X, ChevronDown, ChevronRight } from 'lucide-react';
 
 // Feature #770: Dependency Policy Enforcement interfaces
 interface DependencyPolicy {
@@ -324,94 +326,97 @@ export function DependencyPolicyPage() {
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'CRITICAL': return 'text-red-600 bg-red-50';
-      case 'HIGH': return 'text-orange-600 bg-orange-50';
-      case 'MEDIUM': return 'text-yellow-600 bg-yellow-50';
-      case 'LOW': return 'text-blue-600 bg-blue-50';
-      default: return 'text-gray-600 bg-gray-50';
+      case 'CRITICAL': return 'text-red-400 bg-red-500/20';
+      case 'HIGH': return 'text-orange-400 bg-orange-500/20';
+      case 'MEDIUM': return 'text-yellow-400 bg-yellow-500/20';
+      case 'LOW': return 'text-blue-400 bg-blue-500/20';
+      default: return 'text-muted-foreground bg-muted';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'blocked': return 'text-red-600 bg-red-100';
-      case 'warned': return 'text-yellow-600 bg-yellow-100';
-      case 'overridden': return 'text-purple-600 bg-purple-100';
-      case 'resolved': return 'text-green-600 bg-green-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'blocked': return 'text-red-400 bg-red-500/20';
+      case 'warned': return 'text-yellow-400 bg-yellow-500/20';
+      case 'overridden': return 'text-purple-400 bg-purple-500/20';
+      case 'resolved': return 'text-green-400 bg-green-500/20';
+      default: return 'text-muted-foreground bg-muted';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <Layout>
+      <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button onClick={() => navigate('/security')} className="text-gray-500 hover:text-gray-700">
-              &#8592; Back to Security
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/security')} className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-5 w-5" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dependency Policy Enforcement</h1>
-              <p className="text-gray-500">Block builds with dependencies exceeding severity thresholds</p>
+              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                <Shield className="h-6 w-6 text-primary" />
+                Dependency Policy Enforcement
+              </h1>
+              <p className="text-muted-foreground">Block builds with dependencies exceeding severity thresholds</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setShowSimulateBuildModal(true)}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
             >
+              <Play className="h-4 w-4" />
               Simulate Build
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
             >
+              <Plus className="h-4 w-4" />
               Create Policy
             </button>
           </div>
         </div>
-      </header>
 
-      <main className="p-6 space-y-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-5 gap-4">
-          <div className="bg-white rounded-lg p-4 border">
-            <div className="text-sm text-gray-500">Total Policies</div>
-            <div className="text-2xl font-bold text-gray-900">{policies.length}</div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="text-sm text-muted-foreground">Total Policies</div>
+            <div className="text-2xl font-bold text-foreground">{policies.length}</div>
           </div>
-          <div className="bg-white rounded-lg p-4 border">
-            <div className="text-sm text-gray-500">Active Policies</div>
-            <div className="text-2xl font-bold text-green-600">{policies.filter(p => p.enabled).length}</div>
+          <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4">
+            <div className="text-sm text-green-400">Active Policies</div>
+            <div className="text-2xl font-bold text-green-400">{policies.filter(p => p.enabled).length}</div>
           </div>
-          <div className="bg-white rounded-lg p-4 border">
-            <div className="text-sm text-gray-500">Blocked Builds</div>
-            <div className="text-2xl font-bold text-red-600">{violationSummary.blocked}</div>
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+            <div className="text-sm text-red-400">Blocked Builds</div>
+            <div className="text-2xl font-bold text-red-400">{violationSummary.blocked}</div>
           </div>
-          <div className="bg-white rounded-lg p-4 border">
-            <div className="text-sm text-gray-500">Warnings</div>
-            <div className="text-2xl font-bold text-yellow-600">{violationSummary.warned}</div>
+          <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
+            <div className="text-sm text-yellow-400">Warnings</div>
+            <div className="text-2xl font-bold text-yellow-400">{violationSummary.warned}</div>
           </div>
-          <div className="bg-white rounded-lg p-4 border">
-            <div className="text-sm text-gray-500">Overridden</div>
-            <div className="text-2xl font-bold text-purple-600">{violationSummary.overridden}</div>
+          <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 p-4">
+            <div className="text-sm text-purple-400">Overridden</div>
+            <div className="text-2xl font-bold text-purple-400">{violationSummary.overridden}</div>
           </div>
         </div>
 
         {/* Policies Section */}
-        <div className="bg-white rounded-lg border">
-          <div className="px-6 py-4 border-b">
-            <h2 className="text-lg font-semibold">Dependency Policies</h2>
+        <div className="rounded-lg border border-border bg-card">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="text-lg font-semibold text-foreground">Dependency Policies</h2>
           </div>
           <div className="p-6">
             {isLoadingPolicies ? (
-              <div className="text-center py-8 text-gray-500">Loading policies...</div>
+              <div className="text-center py-8 text-muted-foreground">Loading policies...</div>
             ) : policies.length === 0 ? (
               <div className="text-center py-8">
-                <div className="text-gray-500 mb-4">No policies configured yet</div>
+                <div className="text-muted-foreground mb-4">No policies configured yet</div>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                 >
                   Create Your First Policy
                 </button>
@@ -419,9 +424,9 @@ export function DependencyPolicyPage() {
             ) : (
               <div className="space-y-4">
                 {policies.map(policy => (
-                  <div key={policy.id} className="border rounded-lg p-4">
+                  <div key={policy.id} className="rounded-lg border border-border bg-muted/30 p-4">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
+                      <div className="flex items-center gap-4">
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
@@ -429,31 +434,31 @@ export function DependencyPolicyPage() {
                             onChange={(e) => togglePolicyEnabled(policy.id, e.target.checked)}
                             className="sr-only peer"
                           />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          <div className="w-11 h-6 bg-muted peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                         </label>
                         <div>
-                          <div className="font-semibold text-gray-900">{policy.name}</div>
-                          {policy.description && <div className="text-sm text-gray-500">{policy.description}</div>}
+                          <div className="font-semibold text-foreground">{policy.name}</div>
+                          {policy.description && <div className="text-sm text-muted-foreground">{policy.description}</div>}
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4">
+                      <div className="flex items-center gap-4">
                         <span className={`px-3 py-1 rounded-full text-sm ${getSeverityColor(policy.max_allowed_severity)}`}>
                           Max: {policy.max_allowed_severity}
                         </span>
-                        <div className="flex space-x-2 text-sm text-gray-600">
-                          {policy.block_builds && <span className="px-2 py-1 bg-gray-100 rounded">Builds</span>}
-                          {policy.block_deployments && <span className="px-2 py-1 bg-gray-100 rounded">Deployments</span>}
-                          {policy.block_pr_merge && <span className="px-2 py-1 bg-gray-100 rounded">PR Merge</span>}
+                        <div className="flex gap-2 text-sm">
+                          {policy.block_builds && <span className="px-2 py-1 bg-muted rounded text-muted-foreground">Builds</span>}
+                          {policy.block_deployments && <span className="px-2 py-1 bg-muted rounded text-muted-foreground">Deployments</span>}
+                          {policy.block_pr_merge && <span className="px-2 py-1 bg-muted rounded text-muted-foreground">PR Merge</span>}
                         </div>
                         <button
                           onClick={() => deletePolicy(policy.id)}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-red-400 hover:text-red-300 transition-colors"
                         >
-                          Delete
+                          <X className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2 text-sm text-gray-600">
+                    <div className="mt-3 flex flex-wrap gap-2 text-sm text-muted-foreground">
                       <span>Fail on: {[
                         policy.fail_on_critical && 'Critical',
                         policy.fail_on_high && 'High',
@@ -461,7 +466,7 @@ export function DependencyPolicyPage() {
                         policy.fail_on_low && 'Low',
                       ].filter(Boolean).join(', ') || 'None'}</span>
                       {policy.exception_patterns.length > 0 && (
-                        <span className="text-gray-400">| Exceptions: {policy.exception_patterns.join(', ')}</span>
+                        <span className="text-muted-foreground/70">| Exceptions: {policy.exception_patterns.join(', ')}</span>
                       )}
                     </div>
                   </div>
@@ -472,13 +477,13 @@ export function DependencyPolicyPage() {
         </div>
 
         {/* Violations Section */}
-        <div className="bg-white rounded-lg border">
-          <div className="px-6 py-4 border-b flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Policy Violations</h2>
+        <div className="rounded-lg border border-border bg-card">
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">Policy Violations</h2>
             <select
               value={violationStatusFilter}
               onChange={(e) => setViolationStatusFilter(e.target.value as typeof violationStatusFilter)}
-              className="px-3 py-2 border rounded-lg"
+              className="px-3 py-2 rounded-lg border border-border bg-background text-foreground"
             >
               <option value="all">All Statuses</option>
               <option value="blocked">Blocked</option>
@@ -489,59 +494,63 @@ export function DependencyPolicyPage() {
           </div>
           <div className="p-6">
             {isLoadingViolations ? (
-              <div className="text-center py-8 text-gray-500">Loading violations...</div>
+              <div className="text-center py-8 text-muted-foreground">Loading violations...</div>
             ) : filteredViolations.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 No violations found. {policies.filter(p => p.enabled).length === 0 && 'Create and enable a policy first.'}
               </div>
             ) : (
               <div className="space-y-3">
                 {filteredViolations.map(violation => (
-                  <div key={violation.id} className="border rounded-lg overflow-hidden">
+                  <div key={violation.id} className="rounded-lg border border-border overflow-hidden">
                     <div
-                      className="p-4 cursor-pointer hover:bg-gray-50"
+                      className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
                       onClick={() => setExpandedViolation(expandedViolation === violation.id ? null : violation.id)}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center gap-4">
                           <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(violation.status)}`}>
                             {violation.status.toUpperCase()}
                           </span>
                           <div>
-                            <div className="font-medium text-gray-900">{violation.project_name}</div>
-                            <div className="text-sm text-gray-500">{violation.policy_name} &bull; {violation.violation_type}</div>
+                            <div className="font-medium text-foreground">{violation.project_name}</div>
+                            <div className="text-sm text-muted-foreground">{violation.policy_name} &bull; {violation.violation_type}</div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center gap-4">
                           <div className="text-right">
                             <div className="text-sm">
-                              <span className="text-red-600">{violation.summary.critical}C</span>
-                              <span className="text-orange-600 ml-2">{violation.summary.high}H</span>
-                              <span className="text-yellow-600 ml-2">{violation.summary.medium}M</span>
+                              <span className="text-red-400">{violation.summary.critical}C</span>
+                              <span className="text-orange-400 ml-2">{violation.summary.high}H</span>
+                              <span className="text-yellow-400 ml-2">{violation.summary.medium}M</span>
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-muted-foreground">
                               {new Date(violation.created_at).toLocaleString()}
                             </div>
                           </div>
-                          <span className="text-gray-400">{expandedViolation === violation.id ? '\u25BC' : '\u25B6'}</span>
+                          {expandedViolation === violation.id ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          )}
                         </div>
                       </div>
-                      <div className="mt-2 text-sm text-gray-600">{violation.message}</div>
+                      <div className="mt-2 text-sm text-muted-foreground">{violation.message}</div>
                     </div>
                     {expandedViolation === violation.id && (
-                      <div className="border-t bg-gray-50 p-4">
-                        <div className="text-sm font-medium mb-2">Vulnerable Packages:</div>
+                      <div className="border-t border-border bg-muted/20 p-4">
+                        <div className="text-sm font-medium text-foreground mb-2">Vulnerable Packages:</div>
                         <div className="space-y-2">
                           {violation.violations.map((v, i) => (
-                            <div key={i} className="flex items-center justify-between text-sm bg-white p-2 rounded border">
+                            <div key={i} className="flex items-center justify-between text-sm bg-card p-2 rounded border border-border">
                               <div>
-                                <span className="font-mono">{v.package_name}@{v.version}</span>
+                                <span className="font-mono text-foreground">{v.package_name}@{v.version}</span>
                                 <span className={`ml-2 px-2 py-0.5 rounded text-xs ${getSeverityColor(v.severity)}`}>
                                   {v.severity}
                                 </span>
                               </div>
-                              <div className="text-gray-500">
-                                {v.cve_id} {v.fixed_version && `\u2192 Fix: ${v.fixed_version}`}
+                              <div className="text-muted-foreground">
+                                {v.cve_id} {v.fixed_version && `→ Fix: ${v.fixed_version}`}
                               </div>
                             </div>
                           ))}
@@ -553,14 +562,14 @@ export function DependencyPolicyPage() {
                                 const reason = prompt('Enter override reason:');
                                 if (reason) overrideViolation(violation.id, reason);
                               }}
-                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                             >
                               Override &amp; Allow Build
                             </button>
                           </div>
                         )}
                         {violation.overridden_by && (
-                          <div className="mt-3 text-sm text-purple-600">
+                          <div className="mt-3 text-sm text-purple-400">
                             Overridden by {violation.overridden_by}: {violation.override_reason}
                           </div>
                         )}
@@ -572,43 +581,45 @@ export function DependencyPolicyPage() {
             )}
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Create Policy Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Create Dependency Policy</h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-gray-500 hover:text-gray-700">&times;</button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-border">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-foreground">Create Dependency Policy</h3>
+              <button onClick={() => setShowCreateModal(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Policy Name</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Policy Name</label>
                 <input
                   type="text"
                   value={newPolicy.name}
                   onChange={(e) => setNewPolicy({ ...newPolicy, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                   placeholder="e.g., Production Security Policy"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Description</label>
                 <textarea
                   value={newPolicy.description}
                   onChange={(e) => setNewPolicy({ ...newPolicy, description: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                   rows={2}
                   placeholder="Optional description"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Allowed Severity</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Max Allowed Severity</label>
                 <select
                   value={newPolicy.max_allowed_severity}
                   onChange={(e) => setNewPolicy({ ...newPolicy, max_allowed_severity: e.target.value as DependencyPolicy['max_allowed_severity'] })}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                 >
                   <option value="NONE">None (Block all vulnerabilities)</option>
                   <option value="LOW">Low</option>
@@ -618,100 +629,100 @@ export function DependencyPolicyPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Fail On Severity</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Fail On Severity</label>
                 <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center">
+                  <label className="flex items-center text-foreground cursor-pointer">
                     <input
                       type="checkbox"
                       checked={newPolicy.fail_on_critical}
                       onChange={(e) => setNewPolicy({ ...newPolicy, fail_on_critical: e.target.checked })}
-                      className="mr-2"
+                      className="mr-2 rounded border-border"
                     />
                     Critical
                   </label>
-                  <label className="flex items-center">
+                  <label className="flex items-center text-foreground cursor-pointer">
                     <input
                       type="checkbox"
                       checked={newPolicy.fail_on_high}
                       onChange={(e) => setNewPolicy({ ...newPolicy, fail_on_high: e.target.checked })}
-                      className="mr-2"
+                      className="mr-2 rounded border-border"
                     />
                     High
                   </label>
-                  <label className="flex items-center">
+                  <label className="flex items-center text-foreground cursor-pointer">
                     <input
                       type="checkbox"
                       checked={newPolicy.fail_on_medium}
                       onChange={(e) => setNewPolicy({ ...newPolicy, fail_on_medium: e.target.checked })}
-                      className="mr-2"
+                      className="mr-2 rounded border-border"
                     />
                     Medium
                   </label>
-                  <label className="flex items-center">
+                  <label className="flex items-center text-foreground cursor-pointer">
                     <input
                       type="checkbox"
                       checked={newPolicy.fail_on_low}
                       onChange={(e) => setNewPolicy({ ...newPolicy, fail_on_low: e.target.checked })}
-                      className="mr-2"
+                      className="mr-2 rounded border-border"
                     />
                     Low
                   </label>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Block On</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Block On</label>
                 <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center">
+                  <label className="flex items-center text-foreground cursor-pointer">
                     <input
                       type="checkbox"
                       checked={newPolicy.block_builds}
                       onChange={(e) => setNewPolicy({ ...newPolicy, block_builds: e.target.checked })}
-                      className="mr-2"
+                      className="mr-2 rounded border-border"
                     />
                     CI Builds
                   </label>
-                  <label className="flex items-center">
+                  <label className="flex items-center text-foreground cursor-pointer">
                     <input
                       type="checkbox"
                       checked={newPolicy.block_deployments}
                       onChange={(e) => setNewPolicy({ ...newPolicy, block_deployments: e.target.checked })}
-                      className="mr-2"
+                      className="mr-2 rounded border-border"
                     />
                     Deployments
                   </label>
-                  <label className="flex items-center">
+                  <label className="flex items-center text-foreground cursor-pointer">
                     <input
                       type="checkbox"
                       checked={newPolicy.block_pr_merge}
                       onChange={(e) => setNewPolicy({ ...newPolicy, block_pr_merge: e.target.checked })}
-                      className="mr-2"
+                      className="mr-2 rounded border-border"
                     />
                     PR Merge
                   </label>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Exception Patterns (comma-separated)</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Exception Patterns (comma-separated)</label>
                 <input
                   type="text"
                   value={newPolicy.exception_patterns}
                   onChange={(e) => setNewPolicy({ ...newPolicy, exception_patterns: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                   placeholder="e.g., lodash*, @internal/*"
                 />
               </div>
             </div>
-            <div className="px-6 py-4 border-t flex justify-end space-x-3">
+            <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreatePolicy}
                 disabled={!newPolicy.name || isCreatingPolicy}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
                 {isCreatingPolicy ? 'Creating...' : 'Create Policy'}
               </button>
@@ -722,58 +733,62 @@ export function DependencyPolicyPage() {
 
       {/* Simulate Build Modal */}
       {showSimulateBuildModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-lg">
-            <div className="px-6 py-4 border-b flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Simulate Build Check</h3>
-              <button onClick={() => { setShowSimulateBuildModal(false); setSimulationResult(null); }} className="text-gray-500 hover:text-gray-700">&times;</button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card rounded-lg w-full max-w-lg border border-border">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-foreground">Simulate Build Check</h3>
+              <button onClick={() => { setShowSimulateBuildModal(false); setSimulationResult(null); }} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Build Type</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Build Type</label>
                 <select
                   value={simulateBuildType}
                   onChange={(e) => setSimulateBuildType(e.target.value as typeof simulateBuildType)}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                 >
                   <option value="ci">CI Build</option>
                   <option value="deployment">Deployment</option>
                   <option value="pr">PR Merge</option>
                 </select>
               </div>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 This will simulate a build with vulnerable dependencies (lodash, express, axios)
                 to test your policy enforcement.
               </p>
               {simulationResult && (
-                <div className={`p-4 rounded-lg ${simulationResult.allowed ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                  <div className={`font-semibold ${simulationResult.allowed ? 'text-green-800' : 'text-red-800'}`}>
-                    {simulationResult.allowed ? '\u2713 Build Allowed' : '\u2717 Build Blocked'}
+                <div className={`p-4 rounded-lg ${simulationResult.allowed ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+                  <div className={`font-semibold flex items-center gap-2 ${simulationResult.allowed ? 'text-green-400' : 'text-red-400'}`}>
+                    {simulationResult.allowed ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                    {simulationResult.allowed ? 'Build Allowed' : 'Build Blocked'}
                   </div>
-                  <div className={`text-sm mt-1 ${simulationResult.allowed ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`text-sm mt-1 ${simulationResult.allowed ? 'text-green-400/80' : 'text-red-400/80'}`}>
                     {simulationResult.message}
                   </div>
                 </div>
               )}
             </div>
-            <div className="px-6 py-4 border-t flex justify-end space-x-3">
+            <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
               <button
                 onClick={() => { setShowSimulateBuildModal(false); setSimulationResult(null); }}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
               >
                 Close
               </button>
               <button
                 onClick={handleSimulateBuild}
                 disabled={isSimulating || policies.filter(p => p.enabled).length === 0}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
+                <Play className="h-4 w-4" />
                 {isSimulating ? 'Checking...' : 'Run Build Check'}
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </Layout>
   );
 }

@@ -152,22 +152,22 @@ export function AITestReviewPage() {
   const getConfidenceColor = (level: string) => {
     switch (level) {
       case 'high':
-        return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+        return 'bg-green-500/20 text-green-400';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+        return 'bg-yellow-500/20 text-yellow-400';
       default:
-        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+        return 'bg-red-500/20 text-red-400';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+        return 'bg-green-500/20 text-green-400';
       case 'rejected':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+        return 'bg-red-500/20 text-red-400';
       default:
-        return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+        return 'bg-yellow-500/20 text-yellow-400';
     }
   };
 
@@ -191,19 +191,19 @@ export function AITestReviewPage() {
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-card rounded-lg border border-border p-4">
-              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+              <div className="text-2xl font-bold text-yellow-400">
                 {stats.pending}
               </div>
               <div className="text-sm text-muted-foreground">Pending Review</div>
             </div>
             <div className="bg-card rounded-lg border border-border p-4">
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <div className="text-2xl font-bold text-green-400">
                 {stats.approved}
               </div>
               <div className="text-sm text-muted-foreground">Approved</div>
             </div>
             <div className="bg-card rounded-lg border border-border p-4">
-              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+              <div className="text-2xl font-bold text-red-400">
                 {stats.rejected}
               </div>
               <div className="text-sm text-muted-foreground">Rejected</div>
@@ -295,7 +295,7 @@ export function AITestReviewPage() {
                       {test.ai_metadata?.used_real_ai && (
                         <>
                           <span>•</span>
-                          <span className="text-blue-600 dark:text-blue-400">AI Generated</span>
+                          <span className="text-blue-400">AI Generated</span>
                         </>
                       )}
                     </div>

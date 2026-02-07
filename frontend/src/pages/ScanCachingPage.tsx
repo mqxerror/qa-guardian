@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { Layout } from '../components/Layout';
 
 // Feature #317: API base URL from environment
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -224,24 +225,27 @@ export function ScanCachingPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-      </div>
+      <Layout>
+        <div className="p-8 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      </Layout>
     );
   }
 
   return (
+    <Layout>
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <button
             onClick={() => navigate('/security')}
-            className="text-blue-500 hover:text-blue-700 mb-2 flex items-center gap-1"
+            className="text-blue-400 hover:text-blue-300 mb-2 flex items-center gap-1"
           >
             &#8592; Back to Security
           </button>
           <h1 className="text-2xl font-bold">{'\u{1F5C4}\uFE0F'} Dependency Scan Caching</h1>
-          <p className="text-gray-600">Cache scan results for faster subsequent scans</p>
+          <p className="text-muted-foreground">Cache scan results for faster subsequent scans</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -254,7 +258,7 @@ export function ScanCachingPage() {
           <button
             onClick={() => runScan(true)}
             disabled={isScanning}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50"
+            className="px-4 py-2 bg-muted text-foreground rounded hover:bg-muted/80 disabled:opacity-50"
           >
             {'\u{1F504}'} Force Refresh
           </button>
@@ -263,7 +267,7 @@ export function ScanCachingPage() {
 
       {/* Last Scan Result */}
       {lastScan && (
-        <div className={`mb-6 p-4 rounded-lg border ${lastScan.cache_hit ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
+        <div className={`mb-6 p-4 rounded-lg border ${lastScan.cache_hit ? 'bg-green-500/10 border-green-500/30' : 'bg-blue-500/10 border-blue-500/30'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-3xl">{lastScan.cache_hit ? '\u26A1' : '\u{1F50D}'}</span>
@@ -271,7 +275,7 @@ export function ScanCachingPage() {
                 <div className="font-medium">
                   {lastScan.cache_hit ? 'Cache Hit!' : 'Full Scan Completed'}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   Duration: {formatDuration(lastScan.scan_duration_ms)}
                   {lastScan.saved_time_ms && ` (saved ${formatDuration(lastScan.saved_time_ms)})`}
                 </div>
@@ -292,32 +296,32 @@ export function ScanCachingPage() {
       {/* Cache Statistics */}
       {stats && (
         <div className="grid grid-cols-5 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4 text-center">
-            <div className="text-3xl font-bold text-blue-600">{stats.total_entries}</div>
-            <div className="text-sm text-gray-600">Total Entries</div>
+          <div className="bg-card border border-border rounded-lg shadow p-4 text-center">
+            <div className="text-3xl font-bold text-blue-400">{stats.total_entries}</div>
+            <div className="text-sm text-muted-foreground">Total Entries</div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4 text-center">
-            <div className="text-3xl font-bold text-green-600">{stats.valid_entries}</div>
-            <div className="text-sm text-gray-600">Valid</div>
+          <div className="bg-card border border-border rounded-lg shadow p-4 text-center">
+            <div className="text-3xl font-bold text-green-400">{stats.valid_entries}</div>
+            <div className="text-sm text-muted-foreground">Valid</div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4 text-center">
-            <div className="text-3xl font-bold text-purple-600">{stats.total_cache_hits}</div>
-            <div className="text-sm text-gray-600">Cache Hits</div>
+          <div className="bg-card border border-border rounded-lg shadow p-4 text-center">
+            <div className="text-3xl font-bold text-purple-400">{stats.total_cache_hits}</div>
+            <div className="text-sm text-muted-foreground">Cache Hits</div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4 text-center">
-            <div className="text-3xl font-bold text-amber-600">{stats.cache_hit_rate}%</div>
-            <div className="text-sm text-gray-600">Hit Rate</div>
+          <div className="bg-card border border-border rounded-lg shadow p-4 text-center">
+            <div className="text-3xl font-bold text-amber-400">{stats.cache_hit_rate}%</div>
+            <div className="text-sm text-muted-foreground">Hit Rate</div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4 text-center">
-            <div className="text-3xl font-bold text-cyan-600">{formatDuration(stats.total_time_saved_ms)}</div>
-            <div className="text-sm text-gray-600">Time Saved</div>
+          <div className="bg-card border border-border rounded-lg shadow p-4 text-center">
+            <div className="text-3xl font-bold text-cyan-400">{formatDuration(stats.total_time_saved_ms)}</div>
+            <div className="text-sm text-muted-foreground">Time Saved</div>
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-3 gap-6">
         {/* Configuration Panel */}
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-card border border-border rounded-lg shadow p-4">
           <h2 className="text-lg font-semibold mb-4">{'\u2699\uFE0F'} Cache Configuration</h2>
 
           {config && (
@@ -327,19 +331,19 @@ export function ScanCachingPage() {
                 <button
                   onClick={() => updateConfig({ enabled: !config.enabled })}
                   disabled={isSavingConfig}
-                  className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-green-500' : 'bg-gray-300'}`}
+                  className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-green-500' : 'bg-muted'}`}
                 >
                   <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
               </div>
 
               <div>
-                <label className="text-sm text-gray-600">TTL (hours)</label>
+                <label className="text-sm text-muted-foreground">TTL (hours)</label>
                 <select
                   value={config.ttl_hours}
                   onChange={(e) => updateConfig({ ttl_hours: parseInt(e.target.value) })}
                   disabled={isSavingConfig}
-                  className="mt-1 w-full border rounded p-2"
+                  className="mt-1 w-full border border-border rounded p-2 bg-background text-foreground"
                 >
                   <option value="1">1 hour</option>
                   <option value="6">6 hours</option>
@@ -351,13 +355,13 @@ export function ScanCachingPage() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-600">Max Entries</label>
+                <label className="text-sm text-muted-foreground">Max Entries</label>
                 <input
                   type="number"
                   value={config.max_entries}
                   onChange={(e) => updateConfig({ max_entries: parseInt(e.target.value) })}
                   disabled={isSavingConfig}
-                  className="mt-1 w-full border rounded p-2"
+                  className="mt-1 w-full border border-border rounded p-2 bg-background text-foreground"
                 />
               </div>
 
@@ -366,31 +370,31 @@ export function ScanCachingPage() {
                 <button
                   onClick={() => updateConfig({ compression_enabled: !config.compression_enabled })}
                   disabled={isSavingConfig}
-                  className={`w-12 h-6 rounded-full transition-colors ${config.compression_enabled ? 'bg-green-500' : 'bg-gray-300'}`}
+                  className={`w-12 h-6 rounded-full transition-colors ${config.compression_enabled ? 'bg-green-500' : 'bg-muted'}`}
                 >
                   <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${config.compression_enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
               </div>
 
               <div>
-                <label className="text-sm text-gray-600">Invalidation Triggers</label>
+                <label className="text-sm text-muted-foreground">Invalidation Triggers</label>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {config.invalidation_triggers.map((trigger, i) => (
-                    <span key={i} className="px-2 py-1 bg-gray-100 rounded text-xs">{trigger}</span>
+                    <span key={i} className="px-2 py-1 bg-muted rounded text-xs">{trigger}</span>
                   ))}
                 </div>
               </div>
 
-              <div className="pt-4 border-t flex gap-2">
+              <div className="pt-4 border-t border-border flex gap-2">
                 <button
                   onClick={invalidateCache}
-                  className="flex-1 px-3 py-2 bg-amber-100 text-amber-700 rounded hover:bg-amber-200 text-sm"
+                  className="flex-1 px-3 py-2 bg-amber-500/20 text-amber-400 rounded hover:bg-amber-500/30 text-sm"
                 >
                   Invalidate All
                 </button>
                 <button
                   onClick={clearCache}
-                  className="flex-1 px-3 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm"
+                  className="flex-1 px-3 py-2 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 text-sm"
                 >
                   Clear Cache
                 </button>
@@ -400,13 +404,13 @@ export function ScanCachingPage() {
         </div>
 
         {/* Cache Entries Panel */}
-        <div className="col-span-2 bg-white rounded-lg shadow p-4">
+        <div className="col-span-2 bg-card border border-border rounded-lg shadow p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">{'\u{1F4CB}'} Cache Entries</h2>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border rounded p-1 text-sm"
+              className="border border-border rounded p-1 text-sm bg-background text-foreground"
             >
               <option value="all">All Status</option>
               <option value="valid">Valid</option>
@@ -416,7 +420,7 @@ export function ScanCachingPage() {
           </div>
 
           {filteredEntries.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               <div className="text-4xl mb-2">{'\u{1F4ED}'}</div>
               <div>No cache entries found</div>
               <div className="text-sm">Run a scan to create cache entries</div>
@@ -427,49 +431,49 @@ export function ScanCachingPage() {
                 <div
                   key={entry.id}
                   className={`border rounded p-3 ${
-                    entry.status === 'valid' ? 'border-green-200 bg-green-50'
-                    : entry.status === 'stale' ? 'border-amber-200 bg-amber-50'
-                    : 'border-red-200 bg-red-50'
+                    entry.status === 'valid' ? 'border-green-500/30 bg-green-500/10'
+                    : entry.status === 'stale' ? 'border-amber-500/30 bg-amber-500/10'
+                    : 'border-red-500/30 bg-red-500/10'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        entry.status === 'valid' ? 'bg-green-200 text-green-800'
-                        : entry.status === 'stale' ? 'bg-amber-200 text-amber-800'
-                        : 'bg-red-200 text-red-800'
+                        entry.status === 'valid' ? 'bg-green-500/20 text-green-400'
+                        : entry.status === 'stale' ? 'bg-amber-500/20 text-amber-400'
+                        : 'bg-red-500/20 text-red-400'
                       }`}>
                         {entry.status}
                       </span>
                       <span className="text-sm font-medium">{entry.scan_type}</span>
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       {entry.hit_count} hits
                     </div>
                   </div>
 
                   <div className="mt-2 grid grid-cols-4 gap-2 text-xs">
                     <div>
-                      <span className="text-gray-500">Deps:</span>
+                      <span className="text-muted-foreground">Deps:</span>
                       <span className="ml-1 font-medium">{entry.dependencies}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500">Vulns:</span>
+                      <span className="text-muted-foreground">Vulns:</span>
                       <span className="ml-1 font-medium">{entry.vulnerabilities}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500">Duration:</span>
+                      <span className="text-muted-foreground">Duration:</span>
                       <span className="ml-1 font-medium">{formatDuration(entry.scan_duration_ms)}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500">Expires:</span>
+                      <span className="text-muted-foreground">Expires:</span>
                       <span className="ml-1 font-medium">
                         {new Date(entry.expires_at).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
 
-                  <div className="mt-1 text-xs text-gray-400 truncate">
+                  <div className="mt-1 text-xs text-muted-foreground/70 truncate">
                     Key: {entry.cache_key}
                   </div>
                 </div>
@@ -481,20 +485,20 @@ export function ScanCachingPage() {
 
       {/* Storage Info */}
       {stats && (
-        <div className="mt-6 bg-gray-50 rounded-lg p-4">
+        <div className="mt-6 bg-muted/50 rounded-lg p-4">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-4">
-              <span className="text-gray-500">Storage Used:</span>
+              <span className="text-muted-foreground">Storage Used:</span>
               <span className="font-medium">{formatBytes(stats.storage_used_bytes)}</span>
             </div>
             <div className="flex items-center gap-4">
               {stats.oldest_entry && (
-                <span className="text-gray-500">
+                <span className="text-muted-foreground">
                   Oldest: {new Date(stats.oldest_entry).toLocaleDateString()}
                 </span>
               )}
               {stats.newest_entry && (
-                <span className="text-gray-500">
+                <span className="text-muted-foreground">
                   Newest: {new Date(stats.newest_entry).toLocaleDateString()}
                 </span>
               )}
@@ -503,5 +507,6 @@ export function ScanCachingPage() {
         </div>
       )}
     </div>
+    </Layout>
   );
 }
