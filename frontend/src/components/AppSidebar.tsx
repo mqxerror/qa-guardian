@@ -1,12 +1,23 @@
 /**
- * AppSidebar Component - Feature #255
+ * AppSidebar Component - Feature #255, #256
  *
  * Rebuilt using shadcn/ui Sidebar primitives (21st.dev integration).
- * Preserves all existing features from the legacy Sidebar.tsx:
+ * Feature #256: Collapsible navigation groups with icon-only collapsed mode.
+ *
+ * Navigation Groups per spec:
+ * 1. Always visible: Dashboard, Projects
+ * 2. Testing (expanded by default): Schedules, Visual Review, Analytics
+ * 3. Security & Quality (collapsed): Security Scans, Monitoring
+ * 4. AI Features (collapsed): AI Insights Hub, AI Chat
+ * 5. Settings (collapsed): Team, Settings, Billing, API Keys
+ * 6. Developer Tools (collapsed, dev+ role): MCP Hub, Audit Logs
+ *
+ * Features:
  * - Role-based visibility (viewer, qa, developer, admin, owner)
  * - Pinned items with localStorage persistence
  * - Keyboard shortcuts (G+T, G+S, G+A, G+D, G+M)
- * - Collapsible navigation groups
+ * - Collapsible navigation groups with localStorage persistence
+ * - Icon-only collapsed mode with tooltips
  * - Organization switcher
  * - Notification dropdown
  * - Connection status indicator
@@ -15,7 +26,7 @@
  */
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Pin, PanelLeft, LogOut, Bell, RefreshCw, Eye, EyeOff, Building2, Check } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pin, PanelLeft, LogOut, Bell, RefreshCw, Eye, EyeOff, Building2, Check, Users, Key, CreditCard, FileCode, ClipboardList } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useSidebarStore, SidebarSection } from '../stores/sidebarStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
@@ -35,6 +46,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 
@@ -162,14 +174,14 @@ export function AppSidebar() {
     storeToggleSection(section as SidebarSection);
   };
 
-  // Feature #1364: Reset preferences
+  // Feature #1364, #256: Reset preferences with default collapsed groups
   const resetNavPreferences = () => {
+    const defaultCollapsed: SidebarSection[] = ['security', 'ai-mcp', 'settings', 'developer-tools'];
     setPinnedItems([]);
-    setCollapsedSections(['security']);
+    setCollapsedSections(defaultCollapsed);
     setShowAdvancedFeatures(false);
     try {
       localStorage.removeItem('qa-guardian-pinned-items');
-      localStorage.setItem('qa-guardian-collapsed-sections', JSON.stringify(['security']));
       localStorage.removeItem('qa-guardian-show-advanced-features');
     } catch { /* storage unavailable */ }
   };
@@ -280,32 +292,40 @@ export function AppSidebar() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Menu item configurations
-  const coreMenuItems: MenuItemConfig[] = [
-    { path: '/schedules', icon: <SchedulesIcon />, label: 'Schedules', visibility: 'all' },
-    { path: '/analytics', icon: <AnalyticsIcon />, label: 'Analytics', visibility: 'qa' },
-    { path: '/monitoring', icon: <MonitoringIcon />, label: 'Monitoring', visibility: 'qa' },
-    { path: '/services', icon: <ServicesIcon />, label: 'Services', visibility: 'qa' },
-  ];
-
-  const securityMenuItems: MenuItemConfig[] = [
-    { path: '/security', icon: <SecurityIcon />, label: 'Dashboard', visibility: 'qa' },
-    { path: '/security/dast-compare', icon: <DASTIcon />, label: 'DAST Scanning', visibility: 'qa' },
-  ];
-
-  const aiMcpMenuItems: MenuItemConfig[] = [
-    { path: '/ai-insights', icon: <AIInsightsIcon />, label: 'AI Insights', visibility: 'all' },
-    { path: '/ai/test-generator', icon: <AITestGeneratorIcon />, label: 'Test Generator', visibility: 'qa' },
-    { path: '/mcp', icon: <MCPToolsIcon />, label: 'MCP Hub', visibility: 'developer', advancedOnly: true },
-  ];
-
+  // Menu item configurations per Feature #256 spec
+  // Group 2: Testing (expanded by default)
   const testingMenuItems: MenuItemConfig[] = [
-    { path: '/projects', icon: <ProjectsIcon />, label: 'Projects', visibility: 'all' },
-    { path: '/run-history', icon: <RunHistoryIcon />, label: 'Run History', visibility: 'all' },
+    { path: '/schedules', icon: <SchedulesIcon />, label: 'Schedules', visibility: 'all' },
+    { path: '/visual-review', icon: <VisualReviewIcon />, label: 'Visual Review', visibility: 'all' },
+    { path: '/analytics', icon: <AnalyticsIcon />, label: 'Analytics', visibility: 'qa' },
   ];
 
-  const adminMenuItems: MenuItemConfig[] = [
+  // Group 3: Security & Quality (collapsed by default)
+  const securityMenuItems: MenuItemConfig[] = [
+    { path: '/security', icon: <SecurityIcon />, label: 'Security Scans', visibility: 'qa' },
+    { path: '/security/dast-compare', icon: <DASTIcon />, label: 'DAST Scanning', visibility: 'qa' },
+    { path: '/monitoring', icon: <MonitoringIcon />, label: 'Monitoring', visibility: 'qa' },
+  ];
+
+  // Group 4: AI Features (collapsed by default)
+  const aiMenuItems: MenuItemConfig[] = [
+    { path: '/ai-insights', icon: <AIInsightsIcon />, label: 'AI Insights Hub', visibility: 'all' },
+    { path: '/ai/test-generator', icon: <AITestGeneratorIcon />, label: 'Test Generator', visibility: 'qa' },
+    { path: '/mcp/chat', icon: <MCPToolsIcon />, label: 'AI Chat', visibility: 'all' },
+  ];
+
+  // Group 5: Settings (collapsed by default)
+  const settingsMenuItems: MenuItemConfig[] = [
+    { path: '/settings/team', icon: <Users className="h-4 w-4" />, label: 'Team', visibility: 'admin' },
     { path: '/settings', icon: <SettingsIcon />, label: 'Settings', visibility: 'developer' },
+    { path: '/settings/billing', icon: <CreditCard className="h-4 w-4" />, label: 'Billing', visibility: 'admin' },
+    { path: '/settings/api-keys', icon: <Key className="h-4 w-4" />, label: 'API Keys', visibility: 'developer' },
+  ];
+
+  // Group 6: Developer Tools (collapsed by default, dev+ role only)
+  const developerToolsMenuItems: MenuItemConfig[] = [
+    { path: '/mcp', icon: <MCPToolsIcon />, label: 'MCP Hub', visibility: 'developer' },
+    { path: '/audit-logs', icon: <ClipboardList className="h-4 w-4" />, label: 'Audit Logs', visibility: 'admin' },
   ];
 
   // Filter menu items based on role
@@ -321,19 +341,19 @@ export function AppSidebar() {
     });
   };
 
-  const visibleCoreItems = filterMenuItems(coreMenuItems);
   const visibleTestingItems = filterMenuItems(testingMenuItems);
   const visibleSecurityItems = filterMenuItems(securityMenuItems);
-  const visibleAiMcpItems = filterMenuItems(aiMcpMenuItems);
-  const visibleAdminItems = filterMenuItems(adminMenuItems);
+  const visibleAiItems = filterMenuItems(aiMenuItems);
+  const visibleSettingsItems = filterMenuItems(settingsMenuItems);
+  const visibleDeveloperToolsItems = filterMenuItems(developerToolsMenuItems);
 
-  // Active item detection
-  const hasActiveTestingItem = isActive('/projects') || location.pathname.startsWith('/projects/') ||
-    location.pathname.startsWith('/suites/') || location.pathname.startsWith('/tests/') ||
-    location.pathname.startsWith('/runs/') || isActive('/run-history') || isActive('/visual-review');
-  const hasActiveSecurityItem = location.pathname.startsWith('/security');
-  const hasActiveAiMcpItem = location.pathname.startsWith('/ai-insights') ||
-    location.pathname.startsWith('/ai/') || location.pathname.startsWith('/mcp');
+  // Active item detection for each group
+  const hasActiveTestingItem = isActive('/schedules') || isActive('/visual-review') || isActive('/analytics');
+  const hasActiveSecurityItem = location.pathname.startsWith('/security') || isActive('/monitoring');
+  const hasActiveAiItem = location.pathname.startsWith('/ai-insights') ||
+    location.pathname.startsWith('/ai/') || isActive('/mcp/chat');
+  const hasActiveSettingsItem = location.pathname.startsWith('/settings');
+  const hasActiveDeveloperToolsItem = isActive('/mcp') || isActive('/audit-logs');
 
   // Organization handling
   const currentOrg = organizations.find(org => org.is_current) || organizations.find(org => org.id === user?.organization_id);
@@ -447,11 +467,16 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
-      {/* Header */}
+      {/* Header with SidebarTrigger */}
       <SidebarHeader className="border-b border-border">
-        <div className="flex items-center justify-between px-2">
-          {!isCollapsed && (
-            <h1 className="text-xl font-bold text-foreground">QA Guardian</h1>
+        <div className="flex items-center justify-between px-2 py-1">
+          {!isCollapsed ? (
+            <>
+              <h1 className="text-xl font-bold text-foreground">QA Guardian</h1>
+              <SidebarTrigger className="h-7 w-7" />
+            </>
+          ) : (
+            <SidebarTrigger className="h-7 w-7 mx-auto" />
           )}
         </div>
 
@@ -510,11 +535,11 @@ export function AppSidebar() {
               <SidebarMenu>
                 {[
                   { path: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard', visibility: 'all' as const },
-                  ...visibleCoreItems, ...visibleTestingItems, ...visibleSecurityItems, ...visibleAiMcpItems, ...visibleAdminItems,
-                  { path: '/visual-review', icon: <VisualReviewIcon />, label: 'Visual Review', visibility: 'all' as const },
+                  { path: '/projects', icon: <ProjectsIcon />, label: 'Projects', visibility: 'all' as const },
+                  ...visibleTestingItems, ...visibleSecurityItems, ...visibleAiItems, ...visibleSettingsItems, ...visibleDeveloperToolsItems,
                 ]
                   .filter(item => isPinned(item.path))
-                  .map(item => renderNavItem(item))}
+                  .map(item => renderNavItem(item, { showBadge: item.path === '/visual-review', badgeCount: pendingCount }))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -522,73 +547,33 @@ export function AppSidebar() {
 
         {pinnedItems.length > 0 && !isCollapsed && <SidebarSeparator />}
 
-        {/* Dashboard */}
+        {/* Group 1: Always Visible - Dashboard & Projects */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               {renderNavItem({ path: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard', visibility: 'all' })}
+              {renderNavItem({ path: '/projects', icon: <ProjectsIcon />, label: 'Projects', visibility: 'all' })}
+              {renderNavItem({ path: '/run-history', icon: <RunHistoryIcon />, label: 'Run History', visibility: 'all' })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Testing Group */}
-        {renderCollapsibleGroup('Testing', 'testing', <TestingGroupIcon />, [
-          ...visibleTestingItems,
-          // Visual Review with badge
-        ], hasActiveTestingItem, { shortcutKey: 'T' })}
+        {/* Group 2: Testing (expanded by default) */}
+        {renderCollapsibleGroup('Testing', 'testing', <TestingGroupIcon />, visibleTestingItems, hasActiveTestingItem, { shortcutKey: 'T', badge: pendingCount, badgeColor: 'amber' })}
 
-        {/* Visual Review - separate to handle badge */}
-        <SidebarGroup className="-mt-2">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('/visual-review')} tooltip="Visual Review">
-                  <Link to="/visual-review" className="relative group">
-                    <VisualReviewIcon />
-                    <span>Visual Review</span>
-                    {!isCollapsed && isPinned('/visual-review') && (
-                      <Pin className="h-3 w-3 ml-auto text-primary/60 fill-primary/60" />
-                    )}
-                  </Link>
-                </SidebarMenuButton>
-                {pendingCount > 0 && (
-                  <SidebarMenuBadge className="bg-amber-500 text-white">
-                    {pendingCount > 99 ? '99+' : pendingCount}
-                  </SidebarMenuBadge>
-                )}
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Group 3: Security & Quality (collapsed by default) */}
+        {renderCollapsibleGroup('Security & Quality', 'security', <SecurityGroupIcon />, visibleSecurityItems, hasActiveSecurityItem, { badge: securityAlertCount, badgeColor: 'red', shortcutKey: 'S' })}
 
-        {/* Core Items */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {visibleCoreItems.map(item => renderNavItem(item))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Group 4: AI Features (collapsed by default) */}
+        {renderCollapsibleGroup('AI Features', 'ai-mcp', <AIGroupIcon />, visibleAiItems, hasActiveAiItem, { shortcutKey: 'A' })}
 
-        {/* Security Group */}
-        {renderCollapsibleGroup('Security', 'security', <SecurityGroupIcon />, visibleSecurityItems, hasActiveSecurityItem, { badge: securityAlertCount, badgeColor: 'red', shortcutKey: 'S' })}
+        {/* Group 5: Settings (collapsed by default) */}
+        {visibleSettingsItems.length > 0 && renderCollapsibleGroup('Settings', 'settings', <SettingsIcon />, visibleSettingsItems, hasActiveSettingsItem)}
 
-        {/* AI & MCP Group */}
-        {renderCollapsibleGroup('AI & MCP', 'ai-mcp', <AIGroupIcon />, visibleAiMcpItems, hasActiveAiMcpItem, { shortcutKey: 'A' })}
+        {/* Group 6: Developer Tools (collapsed by default, dev+ role only) */}
+        {visibleDeveloperToolsItems.length > 0 && renderCollapsibleGroup('Developer Tools', 'developer-tools', <FileCode className="h-4 w-4" />, visibleDeveloperToolsItems, hasActiveDeveloperToolsItem, { shortcutKey: 'M' })}
 
-        {/* Admin */}
-        {visibleAdminItems.length > 0 && (
-          <SidebarGroup>
-            {!isCollapsed && <SidebarGroupLabel>Admin</SidebarGroupLabel>}
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {visibleAdminItems.map(item => renderNavItem(item))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* Advanced Features Toggle */}
+        {/* Advanced Features Toggle for viewers */}
         {user?.role === 'viewer' && (
           <SidebarGroup>
             <SidebarGroupContent>
