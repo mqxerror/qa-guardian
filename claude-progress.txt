@@ -1,11 +1,11 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 310/333 features passing (93%)**
+- **Progress: 324/345 features passing (93.9%)**
 - **Last Updated**: 2026-02-07
-- **Pending**: 23 features (BMAD R5 Remediation #312-#334)
-- **In Progress**: Feature #312 (Auth middleware on AI test generator routes) - implemented, needs verification
-- **Last Action**: Feature #312 implementation complete, backend restart required for verification
+- **Pending**: 21 features
+- **In Progress**: Feature #327 (Trivy CLI container scanning) - implemented
+- **Last Action**: Feature #327 Trivy CLI implementation complete, needs Trivy installation for full testing
 
 ### Current State
 - 310 of 333 features passing (93%)
@@ -37320,3 +37320,59 @@ Total features: 310 (250 passing, 60 pending)
 - QA-GUARDIAN-REMAINING-PHASES-PLAN.md - Full creative plan
 - QA-GUARDIAN-BMAD-21STDEV-ASSESSMENT.md - 21st.dev feasibility (9/10)
 - QA-GUARDIAN-REASSESSMENT-R4.md - Phase 10 code review (94/100)
+
+---
+
+## Session 2026-02-07 (Session 175) - Feature #327 Trivy CLI Implementation
+
+### Summary
+Implemented real Trivy CLI container scanning to replace the mock/stub implementation.
+
+### Feature #327: Implement real Trivy CLI container scanning
+
+**What was done:**
+1. Created `backend/src/services/trivy-scanner.ts` - A complete Trivy CLI service wrapper with:
+   - `checkTrivyAvailability()` - Detects if Trivy CLI is installed on the system
+   - `scanContainerImage()` - Runs Trivy CLI scans with JSON output
+   - Vulnerability parsing and severity mapping
+   - Result caching (1 hour TTL) to avoid redundant scans
+   - Timeout handling (5 minute default)
+   - Graceful degradation when Trivy is not installed
+
+2. Updated `backend/src/routes/test-runs/security-advanced.ts`:
+   - Replaced stub container scanning with real Trivy integration
+   - Added severity filter mapping to Trivy format
+   - Added skip_cache option for forcing fresh scans
+   - Returns helpful error message when Trivy is not installed
+
+**Implementation Details:**
+- Trivy binary is searched in common locations: `/usr/local/bin/trivy`, `/opt/homebrew/bin/trivy`, etc.
+- Scan results include: vulnerabilities, severity breakdown, fixable count, base image info
+- Layer information is extracted from Trivy JSON output
+- CVSS scores are parsed from multiple sources (NVD, etc.)
+
+**Graceful Degradation:**
+When Trivy is not installed, the API returns:
+```json
+{
+  "success": false,
+  "scan": { "status": "not_available" },
+  "error": "Trivy CLI is not installed on this system. Please install Trivy..."
+}
+```
+
+**Testing:**
+- Backend compiles and runs without errors
+- Could not fully verify via browser due to rate limiting issues
+- API endpoint is functional and returns proper error when Trivy not installed
+
+### Git Commit
+034edc2 - feat(security): Implement real Trivy CLI container scanning - Feature #327
+
+### Status
+Feature implementation complete. Needs Trivy CLI to be installed on the system for full functionality.
+To install Trivy: https://aquasecurity.github.io/trivy/latest/getting-started/installation/
+
+### Next Steps
+- Mark Feature #327 as passing after verification with Trivy installed
+- Continue with remaining BMAD R5 features (#328+)
