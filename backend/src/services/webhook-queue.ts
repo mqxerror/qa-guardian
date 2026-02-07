@@ -111,6 +111,8 @@ const RETRY_DELAYS = [1000, 2000, 4000, 8000, 16000]; // Exponential backoff del
 const WEBHOOK_SIGNATURE_TOLERANCE_SECONDS = 300; // 5 minutes for replay protection
 const DELIVERY_LOG_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
 const DELIVERY_LOG_PREFIX = 'webhook:log:';
+// Feature #321: Auto-disable threshold - disable webhook after N consecutive failures
+const AUTO_DISABLE_THRESHOLD = parseInt(process.env.WEBHOOK_AUTO_DISABLE_THRESHOLD || '10', 10);
 
 // ============================================================================
 // Module State
@@ -124,11 +126,21 @@ let isInitialized = false;
 let lastJobProcessedAt: string | null = null;
 let startedAt: Date | null = null;
 
-// Callback for updating subscription stats
+// Feature #321: Callback result for auto-disable notification
+export interface SubscriptionStatsResult {
+  consecutiveFailures: number;
+  autoDisabled: boolean;
+  disableReason?: string;
+}
+
+// Callback for updating subscription stats (Feature #321: returns auto-disable status)
 let updateSubscriptionStatsCallback: ((
   subscriptionId: string,
   success: boolean
-) => Promise<void>) | null = null;
+) => Promise<SubscriptionStatsResult | void>) | null = null;
+
+// Feature #321: Export threshold for use in webhooks.ts
+export const WEBHOOK_AUTO_DISABLE_THRESHOLD = AUTO_DISABLE_THRESHOLD;
 
 // ============================================================================
 // Signature Functions
@@ -267,9 +279,10 @@ export async function initializeWebhookQueue(): Promise<boolean> {
 
 /**
  * Register callback for updating subscription stats
+ * Feature #321: Callback now returns auto-disable status
  */
 export function registerSubscriptionStatsCallback(
-  callback: (subscriptionId: string, success: boolean) => Promise<void>
+  callback: (subscriptionId: string, success: boolean) => Promise<SubscriptionStatsResult | void>
 ): void {
   updateSubscriptionStatsCallback = callback;
   console.log('[WebhookQueue] Subscription stats callback registered');

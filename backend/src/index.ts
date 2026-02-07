@@ -46,7 +46,8 @@ import { requestTimeoutHook } from './middleware/timeout.js'; // Feature #90: Re
 import { authenticate } from './middleware/auth.js'; // Feature #205: Auth for health/metrics endpoints
 import { initializeCleanupJob, stopCleanupJob, getCleanupStats } from './jobs/cleanup.js'; // Feature #154: Data retention cleanup
 import { initializeExecutionQueue, shutdownExecutionQueue, getQueueHealth, registerExecutionCallback } from './services/execution-queue.js'; // Feature #155: BullMQ execution queue
-import { initializeWebhookQueue, shutdownWebhookQueue, getWebhookQueueHealth } from './services/webhook-queue.js'; // Feature #320: BullMQ webhook queue
+import { initializeWebhookQueue, shutdownWebhookQueue, getWebhookQueueHealth, registerSubscriptionStatsCallback } from './services/webhook-queue.js'; // Feature #320: BullMQ webhook queue
+import { updateSubscriptionDeliveryStats } from './routes/test-runs/webhooks.js'; // Feature #321: Webhook auto-disable
 import { initializeErrorHandlers, getErrorMetrics } from './services/error-tracking.js'; // Feature #164: Error tracking
 import { registerMetricsHooks, getMetricsSummary } from './services/metrics.js'; // Feature #165: API response time tracking
 import { setWebSocketIO } from './services/websocket-events.js'; // Feature #108: WebSocket CRUD events
@@ -773,6 +774,9 @@ async function start() {
     const webhookQueueInitialized = await initializeWebhookQueue();
     if (webhookQueueInitialized) {
       console.log('[Startup] Webhook queue initialized - webhook deliveries will be queued reliably');
+
+      // Feature #321: Register callback for auto-disable on sustained failure
+      registerSubscriptionStatsCallback(updateSubscriptionDeliveryStats);
     } else {
       console.log('[Startup] Webhook queue not available - webhooks will use in-memory delivery');
     }

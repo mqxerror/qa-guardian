@@ -457,6 +457,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       updated_at: now,
       failure_count: 0,
       success_count: 0,
+      consecutive_failures: 0, // Feature #321: Auto-disable tracking
     };
 
     webhookSubscriptions.set(id, subscription);

@@ -7,7 +7,7 @@
 
 import * as crypto from 'crypto';
 import { validateWebhookURL } from '../../utils/index.js';
-import { queueWebhookDelivery, isWebhookQueueReady } from '../../services/webhook-queue.js';
+import { queueWebhookDelivery, isWebhookQueueReady, WEBHOOK_AUTO_DISABLE_THRESHOLD, type SubscriptionStatsResult } from '../../services/webhook-queue.js';
 
 // ============================================================================
 // Webhook Subscription Interface
@@ -41,6 +41,10 @@ export interface WebhookSubscription {
   last_triggered_at?: Date;
   failure_count: number;
   success_count: number;
+  // Feature #321: Auto-disable on sustained failure
+  consecutive_failures: number; // Track consecutive failed deliveries (reset on success)
+  disabled_at?: Date; // Timestamp when auto-disabled
+  disable_reason?: string; // Reason for disable (e.g., "10 consecutive failures")
 }
 
 export type WebhookEventType =
@@ -313,6 +317,125 @@ export function subscriptionMatchesAnyResultStatus(
 }
 
 // ============================================================================
+// Feature #321: Auto-disable on Sustained Failure
+// ============================================================================
+
+/**
+ * Update subscription stats after a delivery attempt
+ * Tracks consecutive failures and auto-disables after threshold
+ *
+ * Feature #321: Auto-disable on sustained failure
+ */
+export async function updateSubscriptionDeliveryStats(
+  subscriptionId: string,
+  success: boolean
+): Promise<SubscriptionStatsResult | void> {
+  const subscription = webhookSubscriptions.get(subscriptionId);
+  if (!subscription) {
+    console.warn(`[WEBHOOK] Cannot update stats: subscription ${subscriptionId} not found`);
+    return;
+  }
+
+  if (success) {
+    // Reset consecutive failures on success
+    subscription.consecutive_failures = 0;
+    subscription.success_count++;
+    subscription.last_triggered_at = new Date();
+    subscription.updated_at = new Date();
+    webhookSubscriptions.set(subscriptionId, subscription);
+
+    return {
+      consecutiveFailures: 0,
+      autoDisabled: false,
+    };
+  }
+
+  // Increment consecutive failures
+  subscription.consecutive_failures = (subscription.consecutive_failures || 0) + 1;
+  subscription.failure_count++;
+  subscription.updated_at = new Date();
+
+  // Feature #321: Check if we should auto-disable
+  if (subscription.consecutive_failures >= WEBHOOK_AUTO_DISABLE_THRESHOLD && subscription.enabled) {
+    subscription.enabled = false;
+    subscription.disabled_at = new Date();
+    subscription.disable_reason = `Auto-disabled after ${subscription.consecutive_failures} consecutive delivery failures`;
+
+    console.warn(
+      `[WEBHOOK] Auto-disabled subscription ${subscription.name} (${subscriptionId}) ` +
+      `after ${subscription.consecutive_failures} consecutive failures`
+    );
+  }
+
+  webhookSubscriptions.set(subscriptionId, subscription);
+
+  return {
+    consecutiveFailures: subscription.consecutive_failures,
+    autoDisabled: !subscription.enabled,
+    disableReason: subscription.disable_reason,
+  };
+}
+
+/**
+ * Re-enable a disabled webhook subscription
+ *
+ * Feature #321: Manual re-enable after auto-disable
+ */
+export function reEnableWebhookSubscription(
+  subscriptionId: string
+): { success: boolean; subscription?: WebhookSubscription; error?: string } {
+  const subscription = webhookSubscriptions.get(subscriptionId);
+  if (!subscription) {
+    return { success: false, error: 'Subscription not found' };
+  }
+
+  if (subscription.enabled) {
+    return { success: false, error: 'Subscription is already enabled' };
+  }
+
+  // Re-enable and reset failure tracking
+  subscription.enabled = true;
+  subscription.consecutive_failures = 0;
+  subscription.disabled_at = undefined;
+  subscription.disable_reason = undefined;
+  subscription.updated_at = new Date();
+
+  webhookSubscriptions.set(subscriptionId, subscription);
+
+  console.log(`[WEBHOOK] Re-enabled subscription ${subscription.name} (${subscriptionId})`);
+
+  return { success: true, subscription };
+}
+
+/**
+ * Get auto-disable status for a subscription
+ *
+ * Feature #321: Check if subscription was auto-disabled
+ */
+export function getWebhookAutoDisableStatus(subscriptionId: string): {
+  found: boolean;
+  enabled?: boolean;
+  consecutiveFailures?: number;
+  disabledAt?: Date;
+  disableReason?: string;
+  warningThreshold?: number;
+} {
+  const subscription = webhookSubscriptions.get(subscriptionId);
+  if (!subscription) {
+    return { found: false };
+  }
+
+  return {
+    found: true,
+    enabled: subscription.enabled,
+    consecutiveFailures: subscription.consecutive_failures || 0,
+    disabledAt: subscription.disabled_at,
+    disableReason: subscription.disable_reason,
+    warningThreshold: Math.floor(WEBHOOK_AUTO_DISABLE_THRESHOLD * 0.7), // Warn at 70% of threshold
+  };
+}
+
+// ============================================================================
 // Webhook Delivery Functions
 // ============================================================================
 
@@ -562,10 +685,9 @@ export async function deliverWebhookWithRetry(
 
       if (response.ok) {
         console.log(`[WEBHOOK] Successfully delivered ${eventType} to ${subscription.name} (attempt ${attempt}/${maxAttempts})`);
-        subscription.success_count++;
-        subscription.last_triggered_at = new Date();
-        subscription.updated_at = new Date();
-        webhookSubscriptions.set(subscription.id, subscription);
+
+        // Feature #321: Update stats with auto-disable tracking (resets consecutive failures)
+        await updateSubscriptionDeliveryStats(subscription.id, true);
 
         // Feature #1295: Log successful delivery
         logEntry.status = 'success';
@@ -589,9 +711,12 @@ export async function deliverWebhookWithRetry(
 
       // Non-retriable error or max retries reached
       console.error(`[WEBHOOK] Failed to deliver ${eventType} to ${subscription.name}: HTTP ${response.status}`);
-      subscription.failure_count++;
-      subscription.updated_at = new Date();
-      webhookSubscriptions.set(subscription.id, subscription);
+
+      // Feature #321: Update stats with auto-disable tracking (may auto-disable)
+      const statsResult = await updateSubscriptionDeliveryStats(subscription.id, false);
+      if (statsResult && statsResult.autoDisabled) {
+        console.warn(`[WEBHOOK] Subscription ${subscription.name} has been auto-disabled`);
+      }
 
       // Feature #1295: Log non-retriable failure
       logEntry.status = 'failed';
@@ -629,9 +754,12 @@ export async function deliverWebhookWithRetry(
 
       // Max retries exhausted
       console.error(`[WEBHOOK] Failed to deliver ${eventType} to ${subscription.name} after ${maxAttempts} attempts: ${error.message}`);
-      subscription.failure_count++;
-      subscription.updated_at = new Date();
-      webhookSubscriptions.set(subscription.id, subscription);
+
+      // Feature #321: Update stats with auto-disable tracking (may auto-disable)
+      const statsResult = await updateSubscriptionDeliveryStats(subscription.id, false);
+      if (statsResult && statsResult.autoDisabled) {
+        console.warn(`[WEBHOOK] Subscription ${subscription.name} has been auto-disabled`);
+      }
 
       // Feature #1295: Log error attempt
       logEntry.status = 'failed';
