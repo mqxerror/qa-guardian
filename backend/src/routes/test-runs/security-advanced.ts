@@ -10,6 +10,7 @@ import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores.js';
 import { runGitleaksScan, checkGitleaksAvailability } from '../sast/gitleaks.js';
 import type { GitleaksFinding } from '../sast/gitleaks.js';
+import { scanContainerImage, checkTrivyAvailability, type TrivyScanResult } from '../../services/trivy-scanner.js';
 
 // Import types and helpers from extracted module
 import {
@@ -1072,73 +1073,65 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
 
   // ============================================
   // Feature #935: Container vulnerability scanning
+  // Feature #327: Real Trivy CLI integration
   // ============================================
-  app.post<{ Querystring: { image: string; project_id?: string; severity?: string; include_layers?: string; include_base?: string } }>('/api/v1/security/container/scan', {
+  app.post<{ Querystring: { image: string; project_id?: string; severity?: string; include_layers?: string; include_base?: string; skip_cache?: string } }>('/api/v1/security/container/scan', {
     preHandler: [authenticate],
   }, async (request, reply) => {
-    const { image, project_id, severity = 'all', include_layers = 'true', include_base = 'true' } = request.query;
+    const { image, project_id, severity = 'all', include_layers = 'true', include_base = 'true', skip_cache = 'false' } = request.query;
     const includeLayers = include_layers === 'true';
     const includeBase = include_base === 'true';
+    const skipCache = skip_cache === 'true';
 
     if (!image) {
       return reply.status(400).send({ error: 'Bad Request', message: 'image parameter is required' });
     }
 
-    const imageRef = image.includes(':') ? image : `${image}:latest`;
-    const imageParts = imageRef.split(':');
-    const imageName = imageParts[0] ?? image;
-    const imageTag = imageParts[1] ?? 'latest';
-    const registry = imageName.includes('/') && imageName.includes('.') ? imageName.split('/')[0] ?? 'docker.io' : 'docker.io';
-
-    const scanId = `container-scan-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const scannedAt = new Date().toISOString();
-
-    // Use sample container vulnerabilities from types module
-    const allVulnerabilities = sampleContainerVulnerabilities;
-
-    // Filter by severity
-    const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
-    const vulnerabilities = severity === 'all'
-      ? allVulnerabilities
-      : allVulnerabilities.filter(v => severityOrder[v.severity as keyof typeof severityOrder] <= severityOrder[severity as keyof typeof severityOrder]);
-
-    const summary = {
-      total_vulnerabilities: vulnerabilities.length,
-      by_severity: {
-        critical: vulnerabilities.filter(v => v.severity === 'critical').length,
-        high: vulnerabilities.filter(v => v.severity === 'high').length,
-        medium: vulnerabilities.filter(v => v.severity === 'medium').length,
-        low: vulnerabilities.filter(v => v.severity === 'low').length,
-      },
-      fixable: vulnerabilities.filter(v => v.fixed_version).length,
-      from_base_image: vulnerabilities.filter(v => v.in_base_image).length,
+    // Map severity filter to Trivy format
+    const severityMap: Record<string, string[]> = {
+      'all': ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'UNKNOWN'],
+      'critical': ['CRITICAL'],
+      'high': ['CRITICAL', 'HIGH'],
+      'medium': ['CRITICAL', 'HIGH', 'MEDIUM'],
+      'low': ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'],
     };
+    const severityFilter = severityMap[severity] || severityMap['all'];
 
+    // Run real Trivy scan
+    const scanResult: TrivyScanResult = await scanContainerImage(image, {
+      severityFilter,
+      skipCache,
+      timeout: 300000, // 5 minute timeout
+    });
+
+    // Build response in the expected format
     const response: Record<string, unknown> = {
-      scan_id: scanId,
-      image: { reference: imageRef, name: imageName, tag: imageTag, registry },
-      scan: { status: 'completed', scanned_at: scannedAt, scanner: 'Trivy', scanner_version: '0.48.0' },
-      summary,
-      vulnerabilities,
+      scan_id: scanResult.scan_id,
+      image: scanResult.image,
+      scan: scanResult.scan,
+      summary: scanResult.summary,
+      vulnerabilities: scanResult.vulnerabilities,
     };
 
-    if (includeLayers) {
-      response.layers = [
-        { id: 'sha256:a1b2c3d4e5f6', command: 'FROM debian:bullseye-slim', size_mb: 80, vulnerability_count: 3, is_base_layer: true },
-        { id: 'sha256:b2c3d4e5f6a7', command: 'RUN apt-get update && apt-get install -y curl openssl', size_mb: 45, vulnerability_count: 2, is_base_layer: false },
-      ];
+    // Include layers if requested and available
+    if (includeLayers && scanResult.layers && scanResult.layers.length > 0) {
+      response.layers = scanResult.layers;
     }
 
-    if (includeBase) {
-      response.base_image = {
-        reference: 'debian:bullseye-slim',
-        vulnerabilities: summary.from_base_image,
-        recommendation: summary.from_base_image > 0 ? 'Consider upgrading to debian:bookworm-slim' : 'Base image is relatively secure',
-      };
+    // Include base image info if requested and available
+    if (includeBase && scanResult.base_image) {
+      response.base_image = scanResult.base_image;
     }
 
+    // Include project_id if provided
     if (project_id) {
       response.project_id = project_id;
+    }
+
+    // Include error message if scan failed or Trivy not available
+    if (scanResult.error) {
+      response.error = scanResult.error;
+      response.trivy_available = checkTrivyAvailability().available;
     }
 
     return response;
