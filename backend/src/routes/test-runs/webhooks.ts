@@ -32,7 +32,7 @@ export interface WebhookSubscription {
   payload_template?: string; // JSON template with {{variable}} interpolation
   // Feature #1294: Webhook retry with exponential backoff
   retry_enabled?: boolean; // Enable retries on failure (default: true)
-  max_retries?: number; // Max retry attempts (default: 5)
+  max_retries?: number; // Max retry attempts (default: 3 per Feature #330)
   // Feature #1304: Webhook batch delivery
   batch_enabled?: boolean; // Enable batching multiple events (default: false)
   batch_size?: number; // Max events per batch (default: 10)
@@ -248,8 +248,12 @@ export async function deleteWebhookSubscriptionFromDb(subscriptionId: string): P
 // Helper Functions
 // ============================================================================
 
-// Feature #1294: Exponential backoff delays in milliseconds (1s, 2s, 4s, 8s, 16s)
-export const RETRY_DELAYS = [1000, 2000, 4000, 8000, 16000];
+// Feature #330: Retry delays per specification (1 min, 5 min, 30 min)
+// Max 3 retry attempts with progressively longer delays
+export const RETRY_DELAYS = [60000, 300000, 1800000]; // 1 min, 5 min, 30 min in ms
+
+// Feature #330: Maximum retry attempts (3 retries = 4 total attempts)
+export const MAX_WEBHOOK_RETRIES = 3;
 
 // Feature #314: Stripe-style HMAC webhook signing
 // Replay protection window in seconds (5 minutes)
@@ -681,7 +685,7 @@ export async function deliverWebhookWithRetry(
       {
         headers: subscription.headers,
         secret: subscription.secret,
-        maxRetries: subscription.max_retries ?? 5,
+        maxRetries: subscription.max_retries ?? MAX_WEBHOOK_RETRIES,
         retryEnabled: subscription.retry_enabled ?? true,
         context,
       }
@@ -715,7 +719,8 @@ export async function deliverWebhookWithRetry(
     };
   }
 
-  const maxRetries = subscription.max_retries ?? 5;
+  // Feature #330: Use MAX_WEBHOOK_RETRIES (3) as default
+  const maxRetries = subscription.max_retries ?? MAX_WEBHOOK_RETRIES;
   const retryEnabled = subscription.retry_enabled ?? true;
   const maxAttempts = retryEnabled ? maxRetries : 1;
 

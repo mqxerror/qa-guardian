@@ -10,6 +10,7 @@
 
 import { query, isDatabaseConnected } from '../database.js';
 import type { WebhookSubscription, WebhookEventType, WebhookDeliveryLog } from '../../routes/test-runs/webhooks.js';
+import { MAX_WEBHOOK_RETRIES } from '../../routes/test-runs/webhooks.js';
 
 // ============================================
 // Column Constants (Feature #100: Replace SELECT * with explicit columns)
@@ -55,7 +56,7 @@ function parseSubscriptionRow(row: any): WebhookSubscription {
     secret: row.secret || undefined,
     payload_template: row.payload_template || undefined,
     retry_enabled: row.retry_enabled ?? true,
-    max_retries: row.max_retries ?? 5,
+    max_retries: row.max_retries ?? MAX_WEBHOOK_RETRIES,
     batch_enabled: row.batch_enabled ?? false,
     batch_size: row.batch_size ?? 10,
     batch_interval_seconds: row.batch_interval_seconds ?? 60,
@@ -143,7 +144,7 @@ export async function createSubscription(subscription: WebhookSubscription): Pro
       subscription.secret || null,
       subscription.payload_template || null,
       subscription.retry_enabled ?? true,
-      subscription.max_retries ?? 5,
+      subscription.max_retries ?? MAX_WEBHOOK_RETRIES,
       subscription.batch_enabled ?? false,
       subscription.batch_size ?? 10,
       subscription.batch_interval_seconds ?? 60,

@@ -6,7 +6,7 @@
  */
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
-import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate, generateWebhookSignature, WEBHOOK_SIGNATURE_TOLERANCE_SECONDS, getWebhookDeliveryLogsFromDb } from './webhooks.js';
+import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate, generateWebhookSignature, WEBHOOK_SIGNATURE_TOLERANCE_SECONDS, getWebhookDeliveryLogsFromDb, MAX_WEBHOOK_RETRIES } from './webhooks.js';
 import { validateWebhookURL } from '../../utils/index.js';
 import { webhookLog } from './alerts.js';
 import { logWebhookDelivery, flattenObject } from './webhook-crud.js';
@@ -223,7 +223,7 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
       },
       retry_config: {
         enabled: subscription.retry_enabled ?? true,
-        max_retries: subscription.max_retries ?? 5,
+        max_retries: subscription.max_retries ?? MAX_WEBHOOK_RETRIES,
       },
       recent_deliveries: recentLogs.map(log => ({
         id: log.id,

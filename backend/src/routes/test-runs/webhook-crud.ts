@@ -14,7 +14,8 @@ import {
   generateWebhookSignature,
   createWebhookSubscription,
   updateWebhookSubscriptionInDb,
-  deleteWebhookSubscriptionFromDb
+  deleteWebhookSubscriptionFromDb,
+  MAX_WEBHOOK_RETRIES
 } from './webhooks.js';
 import { validateWebhookURL } from '../../utils/index.js';
 import { WebhookLogEntry, webhookLog } from './alerts.js';
@@ -320,7 +321,8 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const orgId = getOrganizationId(request);
     const user = request.user as JwtPayload;
-    const { name, url, events, project_id, project_ids, result_statuses, headers, secret, enabled = true, payload_template, retry_enabled = true, max_retries = 5, batch_enabled = false, batch_size = 10, batch_interval_seconds = 60 } = request.body;
+    // Feature #330: Default max_retries is now 3 per specification
+    const { name, url, events, project_id, project_ids, result_statuses, headers, secret, enabled = true, payload_template, retry_enabled = true, max_retries = MAX_WEBHOOK_RETRIES, batch_enabled = false, batch_size = 10, batch_interval_seconds = 60 } = request.body;
 
     // Validate required fields
     if (!name || !url || !events || events.length === 0) {
@@ -417,11 +419,11 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       }
     }
 
-    // Feature #1294: Validate max_retries
-    if (max_retries !== undefined && (max_retries < 0 || max_retries > 10)) {
+    // Feature #1294/#330: Validate max_retries (default is 3, max is 5 to prevent long retry windows)
+    if (max_retries !== undefined && (max_retries < 0 || max_retries > 5)) {
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'max_retries must be between 0 and 10',
+        message: 'max_retries must be between 0 and 5',
       });
     }
 
@@ -519,7 +521,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       has_secret: !!subscription.secret,
       payload_template: subscription.payload_template, // Feature #1291
       retry_enabled: subscription.retry_enabled ?? true, // Feature #1294
-      max_retries: subscription.max_retries ?? 5, // Feature #1294
+      max_retries: subscription.max_retries ?? MAX_WEBHOOK_RETRIES, // Feature #330: Default is 3
       batch_enabled: subscription.batch_enabled ?? false, // Feature #1304: Batch delivery
       batch_size: subscription.batch_size ?? 10, // Feature #1304: Batch delivery
       batch_interval_seconds: subscription.batch_interval_seconds ?? 60, // Feature #1304: Batch delivery
@@ -720,7 +722,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       result_statuses: subscription.result_statuses, // Feature #1300: Filter by result status
       payload_template: subscription.payload_template, // Feature #1291
       retry_enabled: subscription.retry_enabled ?? true, // Feature #1294
-      max_retries: subscription.max_retries ?? 5, // Feature #1294
+      max_retries: subscription.max_retries ?? MAX_WEBHOOK_RETRIES, // Feature #330: Default is 3
       batch_enabled: subscription.batch_enabled ?? false, // Feature #1304: Batch delivery
       batch_size: subscription.batch_size ?? 10, // Feature #1304: Batch delivery
       batch_interval_seconds: subscription.batch_interval_seconds ?? 60, // Feature #1304: Batch delivery

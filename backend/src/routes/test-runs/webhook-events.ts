@@ -24,6 +24,7 @@ import {
   subscriptionMatchesProject,
   subscriptionMatchesAnyResultStatus,
   deliverOrBatchWebhook,
+  MAX_WEBHOOK_RETRIES,
 } from './webhooks.js';
 import { webhookLog, WebhookLogEntry } from './alerts.js';
 
@@ -225,7 +226,7 @@ export async function sendRunStartedWebhook(
     console.log('='.repeat(80));
     console.log(`Subscription: ${subscription.name} (${subscription.id})`);
     console.log(`URL: ${subscription.url}`);
-    console.log(`Retry enabled: ${subscription.retry_enabled ?? true}, Max retries: ${subscription.max_retries ?? 5}`);
+    console.log(`Retry enabled: ${subscription.retry_enabled ?? true}, Max retries: ${subscription.max_retries ?? MAX_WEBHOOK_RETRIES}`);
     console.log('Payload:');
     console.log(JSON.stringify(payload, null, 2));
     console.log('='.repeat(80) + '\n');
