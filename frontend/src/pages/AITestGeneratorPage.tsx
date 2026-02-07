@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
+import { CodeDiffView } from '../components/diff';
 
 interface ConfidenceDetails {
   level: 'high' | 'medium' | 'low';
@@ -92,6 +93,11 @@ export function AITestGeneratorPage() {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [versionHistory, setVersionHistory] = useState<VersionHistory[]>([]);
+
+  // Feature #326: Code diff view state for regeneration
+  const [showDiffView, setShowDiffView] = useState(false);
+  const [originalCodeBeforeRegen, setOriginalCodeBeforeRegen] = useState<string | null>(null);
+  const [pendingNewCode, setPendingNewCode] = useState<string | null>(null);
 
   // Feature #1499: History panel state
   const [savedHistory, setSavedHistory] = useState<SavedGeneration[]>([]);
@@ -260,6 +266,9 @@ export function AITestGeneratorPage() {
     setIsRegenerating(true);
     setError(null);
 
+    // Feature #326: Store original code before regeneration
+    const originalCode = generatedTest.test_code;
+
     try {
       // Call the MCP API to regenerate test with feedback via the execute endpoint
       const response = await fetch('/api/v1/mcp/execute', {
@@ -290,9 +299,18 @@ export function AITestGeneratorPage() {
         const newVersion = (generatedTest.version || 1) + 1;
         const confidenceScore = result.confidence_score ?? 0.85;
         const confidenceDetails = getConfidenceDetails(confidenceScore);
-        const newTest = {
+
+        // Feature #326: Store original and new code for diff view
+        setOriginalCodeBeforeRegen(originalCode);
+        setPendingNewCode(result.generated_code);
+        setShowDiffView(true);
+
+        // Store the new test metadata (code will be applied after diff review)
+        setGeneratedTest({
+          ...generatedTest,
           test_name: result.test_name,
-          test_code: result.generated_code,
+          // Keep original code until diff is accepted
+          test_code: originalCode,
           language: result.language,
           confidence_score: confidenceScore,
           confidence_details: confidenceDetails,
@@ -301,16 +319,10 @@ export function AITestGeneratorPage() {
           ai_metadata: result.ai_metadata || apiResponse.metadata,
           data_source: result.data_source,
           version: newVersion,
-        };
-        setGeneratedTest(newTest);
-        // Add to version history
-        setVersionHistory(prev => [...prev, {
-          version: newVersion,
-          code: result.generated_code,
-          feedback: feedback.trim(),
-          timestamp: new Date(),
-        }]);
-        setFeedback('');
+        });
+
+        // Prepare version history entry (will be added after diff is accepted)
+        setFeedback(feedback.trim()); // Keep feedback for version history
       } else {
         setError(apiResponse.error || 'Failed to regenerate test');
       }
@@ -319,6 +331,48 @@ export function AITestGeneratorPage() {
     } finally {
       setIsRegenerating(false);
     }
+  };
+
+  // Feature #326: Handle diff view accept - apply merged code
+  const handleDiffApply = (mergedCode: string) => {
+    if (generatedTest) {
+      // Update test with merged code
+      setGeneratedTest({
+        ...generatedTest,
+        test_code: mergedCode,
+      });
+
+      // Add to version history
+      setVersionHistory(prev => [...prev, {
+        version: generatedTest.version || 1,
+        code: mergedCode,
+        feedback: feedback,
+        timestamp: new Date(),
+      }]);
+
+      // Clear diff state
+      setShowDiffView(false);
+      setOriginalCodeBeforeRegen(null);
+      setPendingNewCode(null);
+      setFeedback('');
+    }
+  };
+
+  // Feature #326: Handle diff view cancel - keep original code
+  const handleDiffCancel = () => {
+    if (generatedTest && originalCodeBeforeRegen) {
+      // Revert version and keep original code
+      setGeneratedTest({
+        ...generatedTest,
+        version: (generatedTest.version || 2) - 1,
+        test_code: originalCodeBeforeRegen,
+      });
+    }
+
+    // Clear diff state
+    setShowDiffView(false);
+    setOriginalCodeBeforeRegen(null);
+    setPendingNewCode(null);
   };
 
   const handleRestoreVersion = (version: VersionHistory) => {
@@ -830,6 +884,27 @@ Example: Test that a user can login with valid credentials and see the welcome m
                   </pre>
                 </div>
 
+                {/* Feature #326: Code Diff View for Regeneration */}
+                {showDiffView && originalCodeBeforeRegen && pendingNewCode && (
+                  <div className="bg-card rounded-lg border-2 border-primary/50 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-2 bg-primary/10 border-b border-primary/30">
+                      <span className="text-sm font-medium text-foreground flex items-center gap-2">
+                        <span>🔄</span>
+                        Review Changes Before Applying
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Accept or reject individual changes
+                      </span>
+                    </div>
+                    <CodeDiffView
+                      originalCode={originalCodeBeforeRegen}
+                      newCode={pendingNewCode}
+                      onApply={handleDiffApply}
+                      onCancel={handleDiffCancel}
+                    />
+                  </div>
+                )}
+
                 {/* Suggested Variations */}
                 {generatedTest.suggested_variations && generatedTest.suggested_variations.length > 0 && (
                   <div className="bg-card rounded-lg border border-border p-4 space-y-2">
@@ -845,7 +920,8 @@ Example: Test that a user can login with valid credentials and see the welcome m
                   </div>
                 )}
 
-                {/* Regenerate with Feedback Section */}
+                {/* Regenerate with Feedback Section - Hidden during diff review */}
+                {!showDiffView && (
                 <div className="bg-card rounded-lg border border-border p-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -888,6 +964,7 @@ Example: Test that a user can login with valid credentials and see the welcome m
                     )}
                   </button>
                 </div>
+                )}
 
                 {/* Version History */}
                 {versionHistory.length > 1 && (
