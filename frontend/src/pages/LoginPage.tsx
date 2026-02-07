@@ -65,7 +65,7 @@ export function LoginPage() {
             <motion.h2
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.1 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.05 }}
               className="bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-3xl font-bold text-transparent"
             >
               Welcome Back
@@ -73,7 +73,7 @@ export function LoginPage() {
             <motion.p
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.2 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.08 }}
               className="mt-2 text-muted-foreground"
             >
               Sign in to QA Guardian
@@ -110,7 +110,7 @@ export function LoginPage() {
             <motion.div
               initial={prefersReducedMotion ? {} : { opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.1 }}
             >
               <Input
                 id="email"
@@ -128,7 +128,7 @@ export function LoginPage() {
             <motion.div
               initial={prefersReducedMotion ? {} : { opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.4 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.13 }}
             >
               <Input
                 id="password"
@@ -146,7 +146,7 @@ export function LoginPage() {
             <motion.div
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.5 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.16 }}
             >
               <button
                 type="submit"
@@ -184,7 +184,7 @@ export function LoginPage() {
           <motion.button
             initial={prefersReducedMotion ? {} : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.6 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.19 }}
             onClick={() => {
               window.location.href = `${import.meta.env.VITE_API_BASE_URL || 'https://qa.pixelcraftedmedia.com'}/api/v1/auth/google`;
             }}
@@ -215,7 +215,7 @@ export function LoginPage() {
           <motion.div
             initial={prefersReducedMotion ? {} : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.7 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.22 }}
             className="mt-4 text-center"
           >
             <Link to="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
@@ -227,7 +227,7 @@ export function LoginPage() {
           <motion.div
             initial={prefersReducedMotion ? {} : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.8 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.25 }}
             className="mt-6 rounded-lg border border-border bg-muted/30 p-4 text-xs text-muted-foreground"
           >
             <p className="font-medium mb-2 text-muted-foreground">Test accounts (Org 1):</p>
@@ -243,7 +243,7 @@ export function LoginPage() {
           <motion.div
             initial={prefersReducedMotion ? {} : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.9 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.28 }}
             className="mt-6 text-center text-sm text-muted-foreground"
           >
             Don't have an account?{' '}
