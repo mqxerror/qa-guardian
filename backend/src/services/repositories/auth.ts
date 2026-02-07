@@ -692,6 +692,53 @@ export async function revokeRefreshTokenHash(hash: string): Promise<void> {
 }
 
 /**
+ * Feature #233: Atomically revoke a refresh token and return whether it was valid
+ *
+ * This fixes the race condition where two concurrent refresh requests could both
+ * succeed by checking validity separately before revoking. By using a single
+ * UPDATE ... WHERE revoked_at IS NULL RETURNING *, only the first request can
+ * succeed - subsequent requests will find the token already revoked.
+ *
+ * @param hash The token hash to atomically revoke
+ * @returns The user_id if the token was valid and successfully revoked, or null if already revoked/expired
+ */
+export async function atomicRevokeRefreshToken(hash: string): Promise<string | null> {
+  // Memory fallback - use simple check-then-delete (not truly atomic, but acceptable for dev)
+  if (!isDatabaseConnected()) {
+    const entry = memoryRefreshTokens.get(hash);
+    if (entry && entry.expiresAt > new Date()) {
+      memoryRefreshTokens.delete(hash);
+      return entry.userId;
+    }
+    return null;
+  }
+
+  try {
+    // Atomic: UPDATE only if not already revoked AND not expired, return the row if successful
+    const result = await query<any>(
+      `UPDATE refresh_tokens
+       SET revoked_at = NOW()
+       WHERE token_hash = $1
+         AND revoked_at IS NULL
+         AND expires_at > NOW()
+       RETURNING user_id`,
+      [hash]
+    );
+
+    // If rowCount is 0, the token was already revoked or expired
+    if (result && result.rows.length > 0) {
+      // Also clean up memory cache
+      memoryRefreshTokens.delete(hash);
+      return result.rows[0].user_id;
+    }
+  } catch (error) {
+    console.error('[AuthRepo] Failed to atomically revoke refresh token:', error);
+  }
+
+  return null;
+}
+
+/**
  * Clean up expired and revoked refresh tokens
  */
 export async function cleanupExpiredRefreshTokens(): Promise<number> {

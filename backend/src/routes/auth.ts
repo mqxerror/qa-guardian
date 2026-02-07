@@ -36,6 +36,8 @@ import {
   isRefreshTokenHashValid,
   revokeRefreshTokenHash,
   cleanupExpiredRefreshTokens,
+  // Feature #233: Atomic refresh token rotation
+  atomicRevokeRefreshToken,
 } from '../services/repositories/auth.js';
 
 // Re-export types for backward compatibility
@@ -166,6 +168,21 @@ async function revokeRefreshToken(token: string): Promise<void> {
 async function isRefreshTokenValid(token: string): Promise<boolean> {
   const hash = createHash('sha256').update(token).digest('hex');
   return await isRefreshTokenHashValid(hash);
+}
+
+/**
+ * Feature #233: Atomically revoke a refresh token and return the user_id if successful
+ *
+ * This fixes the race condition where two concurrent refresh requests could both
+ * succeed. By using atomic UPDATE ... WHERE revoked_at IS NULL RETURNING *, only
+ * the first request can succeed - subsequent requests will return null.
+ *
+ * @param token The raw refresh token to atomically revoke
+ * @returns The user_id if token was valid and successfully revoked, null otherwise
+ */
+async function atomicRevoke(token: string): Promise<string | null> {
+  const hash = createHash('sha256').update(token).digest('hex');
+  return await atomicRevokeRefreshToken(hash);
 }
 
 // Feature #2099: Seeding completion guard to prevent race conditions
@@ -500,6 +517,7 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Feature #213: Refresh token endpoint - exchange refresh token for new access token
+  // Feature #233: Uses atomic revocation to prevent race condition with concurrent requests
   app.post<{ Body: { refresh_token: string } }>('/api/v1/auth/refresh', async (request, reply) => {
     const { refresh_token } = request.body;
 
@@ -510,15 +528,7 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    // Feature #221: Verify the refresh token is not revoked (DB lookup)
-    if (!await isRefreshTokenValid(refresh_token)) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'Refresh token has been revoked or expired',
-      });
-    }
-
-    // Verify and decode the refresh token
+    // Step 1: Verify and decode the JWT signature first (fast, no DB)
     let payload: any;
     try {
       payload = verifyRefreshToken(refresh_token);
@@ -537,29 +547,40 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    // Get user to ensure they still exist and are valid
+    // Step 2: Feature #233 - Atomically revoke the token and check if it was valid
+    // This prevents race conditions where two concurrent requests with the same
+    // refresh token could both succeed. Only the first request to reach the DB
+    // will successfully revoke the token; subsequent requests will get null.
+    const revokedUserId = await atomicRevoke(refresh_token);
+    if (!revokedUserId) {
+      // Token was already revoked by another concurrent request, or expired
+      return reply.status(401).send({
+        error: 'Unauthorized',
+        message: 'Refresh token has been revoked or expired',
+      });
+    }
+
+    // Step 3: Get user to ensure they still exist and are valid
     const user = await dbGetUserByEmail(payload.email);
     if (!user) {
-      // Feature #221: Revoke in PostgreSQL
-      await revokeRefreshToken(refresh_token);
+      // Token already revoked above, just return error
       return reply.status(401).send({
         error: 'Unauthorized',
         message: 'User not found',
       });
     }
 
-    // Get current organization (may have changed)
+    // Step 4: Get current organization (may have changed)
     const organizationId = await getUserOrganization(user.id);
     if (!organizationId) {
-      // Feature #221: Revoke in PostgreSQL
-      await revokeRefreshToken(refresh_token);
+      // Token already revoked above, just return error
       return reply.status(403).send({
         error: 'Forbidden',
         message: 'User is not associated with any organization',
       });
     }
 
-    // Generate new access token
+    // Step 5: Generate new access token
     const newAccessToken = app.jwt.sign(
       {
         id: user.id,
@@ -570,9 +591,8 @@ export async function authRoutes(app: FastifyInstance) {
       { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
 
-    // Feature #225: Refresh token rotation - revoke old, issue new
+    // Step 6: Feature #225 - Issue new refresh token (old one already revoked atomically)
     // OWASP recommends rotating refresh tokens on each use to limit theft window
-    await revokeRefreshToken(refresh_token);
     const newRefreshToken = generateRefreshToken(user.id, user.email, organizationId);
     await storeRefreshToken(newRefreshToken, user.id);
 
