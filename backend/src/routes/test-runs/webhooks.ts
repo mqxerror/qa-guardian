@@ -2,17 +2,215 @@
  * Test Runs - Webhooks Module
  * Feature #1283-1315: Webhook event delivery and management
  * Feature #329: Persist webhook subscriptions and logs to PostgreSQL
+ * Feature #362: Redis Pub/Sub cache invalidation for horizontal scaling
  *
  * Extracted from test-runs.ts for code quality (#1356)
  */
 
 import * as crypto from 'crypto';
+import { Redis } from 'ioredis';
 import { validateWebhookURL, generateId } from '../../utils/index.js';
 import { queueWebhookDelivery, isWebhookQueueReady, WEBHOOK_AUTO_DISABLE_THRESHOLD, generateWebhookSignature, type SubscriptionStatsResult } from '../../services/webhook-queue.js';
 
 // Re-export generateWebhookSignature for consumers of this module (Feature #357)
 export { generateWebhookSignature };
 import * as webhookRepo from '../../services/repositories/webhooks.js';
+
+// ============================================================================
+// Feature #362: Redis Pub/Sub for Webhook Cache Invalidation
+// ============================================================================
+
+const WEBHOOK_SUBSCRIPTIONS_CHANNEL = 'qa-guardian:webhook-subscriptions-changed';
+
+// Feature #362: Cache TTL as safety net (default 5 minutes)
+const WEBHOOK_CACHE_TTL_MS = parseInt(process.env.WEBHOOK_CACHE_TTL || '300000', 10);
+
+// Feature #362: Track cache timestamps per org for TTL-based refresh
+const orgCacheTimestamps: Map<string, number> = new Map();
+
+// Feature #362: Redis Pub/Sub clients
+let webhookPubClient: Redis | null = null;
+let webhookSubClient: Redis | null = null;
+let webhookPubSubInitialized = false;
+
+/**
+ * Feature #362: Cache invalidation message payload
+ */
+interface WebhookCacheInvalidationMessage {
+  action: 'create' | 'update' | 'delete';
+  subscription_id: string;
+  organization_id: string;
+  timestamp: number;
+  source_instance?: string; // Optional instance ID for debugging
+}
+
+/**
+ * Feature #362: Initialize Redis Pub/Sub for webhook cache invalidation
+ * Call this after database connection is established in startup
+ */
+export async function initializeWebhookPubSub(): Promise<boolean> {
+  if (webhookPubSubInitialized) {
+    return true;
+  }
+
+  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+  const redisPassword = process.env.REDIS_PASSWORD;
+
+  try {
+    const url = new URL(redisUrl);
+    const redisOptions: { host: string; port: number; password?: string; maxRetriesPerRequest: null } = {
+      host: url.hostname,
+      port: parseInt(url.port || '6379', 10),
+      maxRetriesPerRequest: null, // Required for pub/sub
+    };
+
+    if (redisPassword) {
+      redisOptions.password = redisPassword;
+    } else if (url.password) {
+      redisOptions.password = url.password;
+    }
+
+    // Create publisher and subscriber clients
+    webhookPubClient = new Redis(redisOptions);
+    webhookSubClient = new Redis(redisOptions);
+
+    // Wait for connections
+    await Promise.all([
+      new Promise<void>((resolve, reject) => {
+        webhookPubClient!.once('ready', resolve);
+        webhookPubClient!.once('error', reject);
+        setTimeout(() => reject(new Error('Webhook pub client timeout')), 5000);
+      }),
+      new Promise<void>((resolve, reject) => {
+        webhookSubClient!.once('ready', resolve);
+        webhookSubClient!.once('error', reject);
+        setTimeout(() => reject(new Error('Webhook sub client timeout')), 5000);
+      }),
+    ]);
+
+    // Subscribe to the channel
+    await webhookSubClient.subscribe(WEBHOOK_SUBSCRIPTIONS_CHANNEL);
+
+    // Handle incoming messages
+    webhookSubClient.on('message', async (channel: string, message: string) => {
+      if (channel !== WEBHOOK_SUBSCRIPTIONS_CHANNEL) return;
+
+      try {
+        const payload = JSON.parse(message) as WebhookCacheInvalidationMessage;
+        console.log(`[WEBHOOK] Received cache invalidation: ${payload.action} for subscription ${payload.subscription_id} in org ${payload.organization_id}`);
+
+        // Reload subscriptions for this organization from database
+        await reloadOrganizationSubscriptions(payload.organization_id);
+      } catch (err) {
+        console.error('[WEBHOOK] Failed to process cache invalidation message:', err);
+      }
+    });
+
+    webhookPubSubInitialized = true;
+    console.log('[WEBHOOK] Redis Pub/Sub for cache invalidation initialized');
+    return true;
+  } catch (err) {
+    console.warn('[WEBHOOK] Redis Pub/Sub not available, running in single-instance mode:', err instanceof Error ? err.message : err);
+    return false;
+  }
+}
+
+/**
+ * Feature #362: Publish a cache invalidation message to all instances
+ */
+async function publishCacheInvalidation(
+  action: 'create' | 'update' | 'delete',
+  subscriptionId: string,
+  organizationId: string
+): Promise<void> {
+  if (!webhookPubClient || !webhookPubSubInitialized) {
+    return; // No Redis available, single-instance mode
+  }
+
+  const message: WebhookCacheInvalidationMessage = {
+    action,
+    subscription_id: subscriptionId,
+    organization_id: organizationId,
+    timestamp: Date.now(),
+    source_instance: process.env.INSTANCE_ID || process.pid.toString(),
+  };
+
+  try {
+    await webhookPubClient.publish(WEBHOOK_SUBSCRIPTIONS_CHANNEL, JSON.stringify(message));
+    console.log(`[WEBHOOK] Published cache invalidation: ${action} for subscription ${subscriptionId}`);
+  } catch (err) {
+    console.error('[WEBHOOK] Failed to publish cache invalidation:', err);
+  }
+}
+
+/**
+ * Feature #362: Reload all subscriptions for an organization from database
+ */
+async function reloadOrganizationSubscriptions(organizationId: string): Promise<void> {
+  try {
+    const dbSubscriptions = await webhookRepo.loadAllSubscriptions();
+
+    // Remove old entries for this org
+    for (const [id, sub] of webhookSubscriptions.entries()) {
+      if (sub.organization_id === organizationId) {
+        webhookSubscriptions.delete(id);
+      }
+    }
+
+    // Add fresh entries from database
+    for (const [id, sub] of dbSubscriptions) {
+      if (sub.organization_id === organizationId) {
+        webhookSubscriptions.set(id, sub);
+      }
+    }
+
+    // Update cache timestamp
+    orgCacheTimestamps.set(organizationId, Date.now());
+
+    console.log(`[WEBHOOK] Reloaded subscriptions for org ${organizationId}`);
+  } catch (err) {
+    console.error(`[WEBHOOK] Failed to reload subscriptions for org ${organizationId}:`, err);
+  }
+}
+
+/**
+ * Feature #362: Check if cache for an organization is stale (TTL expired)
+ * Used as a safety net even if Pub/Sub messages are missed
+ */
+export function isCacheStale(organizationId: string): boolean {
+  const lastRefresh = orgCacheTimestamps.get(organizationId);
+  if (!lastRefresh) {
+    return true; // Never refreshed, consider stale
+  }
+  return Date.now() - lastRefresh > WEBHOOK_CACHE_TTL_MS;
+}
+
+/**
+ * Feature #362: Ensure fresh cache for an organization
+ * Call this before reading subscriptions to handle TTL-based refresh
+ */
+export async function ensureFreshCache(organizationId: string): Promise<void> {
+  if (isCacheStale(organizationId)) {
+    await reloadOrganizationSubscriptions(organizationId);
+  }
+}
+
+/**
+ * Feature #362: Close Redis Pub/Sub connections gracefully
+ */
+export async function closeWebhookPubSub(): Promise<void> {
+  if (webhookSubClient) {
+    await webhookSubClient.unsubscribe(WEBHOOK_SUBSCRIPTIONS_CHANNEL);
+    await webhookSubClient.quit();
+    webhookSubClient = null;
+  }
+  if (webhookPubClient) {
+    await webhookPubClient.quit();
+    webhookPubClient = null;
+  }
+  webhookPubSubInitialized = false;
+  console.log('[WEBHOOK] Redis Pub/Sub connections closed');
+}
 
 // ============================================================================
 // Webhook Subscription Interface
@@ -285,6 +483,7 @@ export async function initializeWebhookSubscriptionsFromDb(): Promise<void> {
 
 /**
  * Feature #329: Create subscription in both memory and database
+ * Feature #362: Publishes cache invalidation to Redis Pub/Sub for horizontal scaling
  */
 export async function createWebhookSubscriptionInDb(subscription: WebhookSubscription): Promise<WebhookSubscription> {
   // Add to memory first
@@ -298,11 +497,15 @@ export async function createWebhookSubscriptionInDb(subscription: WebhookSubscri
     // Continue with in-memory only
   }
 
+  // Feature #362: Notify other instances about the new subscription
+  await publishCacheInvalidation('create', subscription.id, subscription.organization_id);
+
   return subscription;
 }
 
 /**
  * Feature #329: Update subscription in both memory and database
+ * Feature #362: Publishes cache invalidation to Redis Pub/Sub for horizontal scaling
  */
 export async function updateWebhookSubscriptionInDb(
   subscriptionId: string,
@@ -326,13 +529,21 @@ export async function updateWebhookSubscriptionInDb(
     // Continue with in-memory only
   }
 
+  // Feature #362: Notify other instances about the updated subscription
+  await publishCacheInvalidation('update', subscriptionId, subscription.organization_id);
+
   return subscription;
 }
 
 /**
  * Feature #329: Delete subscription from both memory and database
+ * Feature #362: Publishes cache invalidation to Redis Pub/Sub for horizontal scaling
  */
 export async function deleteWebhookSubscriptionFromDb(subscriptionId: string): Promise<boolean> {
+  // Feature #362: Capture organization_id before deleting from map
+  const subscription = webhookSubscriptions.get(subscriptionId);
+  const organizationId = subscription?.organization_id;
+
   const existed = webhookSubscriptions.delete(subscriptionId);
 
   // Delete from database
@@ -341,6 +552,11 @@ export async function deleteWebhookSubscriptionFromDb(subscriptionId: string): P
   } catch (error) {
     console.error(`[WEBHOOK] Failed to delete subscription ${subscriptionId} from database:`, error);
     // Continue even if DB delete fails
+  }
+
+  // Feature #362: Notify other instances about the deleted subscription
+  if (organizationId) {
+    await publishCacheInvalidation('delete', subscriptionId, organizationId);
   }
 
   return existed;
