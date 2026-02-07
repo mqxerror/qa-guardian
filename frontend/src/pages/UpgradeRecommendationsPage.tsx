@@ -1,0 +1,505 @@
+// Dependency Upgrade Recommendations - Feature #270
+// Show upgrade recommendations with breaking change risk analysis
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Layout } from '../components/Layout';
+import { useAuthStore } from '../stores/authStore';
+import {
+  ArrowUp,
+  ArrowLeft,
+  AlertTriangle,
+  AlertCircle,
+  CheckCircle,
+  Shield,
+  Package,
+  ExternalLink,
+  RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  Download,
+  Info
+} from 'lucide-react';
+
+interface Recommendation {
+  package: string;
+  current_version: string;
+  recommended_version: string;
+  latest_version: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  vulnerabilities: string[];
+  upgrade_type: 'patch' | 'minor' | 'major';
+  risk_level: 'safe' | 'caution' | 'breaking';
+  breaking_changes: boolean;
+  changelog_url: string;
+  description: string;
+  migration_notes?: string[];
+  alternative?: {
+    package: string;
+    reason: string;
+  };
+}
+
+interface UpgradeData {
+  project_id: string;
+  project_name: string;
+  recommendations: Recommendation[];
+  summary: {
+    total_recommendations: number;
+    by_risk_level: {
+      safe: number;
+      caution: number;
+      breaking: number;
+    };
+    by_severity: {
+      critical: number;
+      high: number;
+      medium: number;
+      low: number;
+    };
+    total_vulnerabilities: number;
+    actionable_now: number;
+  };
+  metadata: {
+    generated_at: string;
+    npm_registry_checked: boolean;
+    include_dev: boolean;
+    min_severity: string;
+  };
+}
+
+interface Project {
+  id: string;
+  name: string;
+}
+
+const riskColors = {
+  safe: 'bg-green-500 text-white',
+  caution: 'bg-yellow-500 text-black',
+  breaking: 'bg-red-500 text-white',
+};
+
+const riskBorderColors = {
+  safe: 'border-green-500',
+  caution: 'border-yellow-500',
+  breaking: 'border-red-500',
+};
+
+const severityColors = {
+  critical: 'text-red-500',
+  high: 'text-orange-500',
+  medium: 'text-yellow-600',
+  low: 'text-blue-500',
+};
+
+export function UpgradeRecommendationsPage() {
+  const navigate = useNavigate();
+  const { token } = useAuthStore();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string>('');
+  const [data, setData] = useState<UpgradeData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedPackages, setExpandedPackages] = useState<Set<string>>(new Set());
+  const [riskFilter, setRiskFilter] = useState<string>('all');
+
+  // Fetch projects on mount
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch('/api/v1/projects', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setProjects(data.projects || data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch projects:', err);
+      }
+    };
+    fetchProjects();
+  }, [token]);
+
+  const fetchRecommendations = async () => {
+    if (!selectedProject) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `/api/v1/projects/${selectedProject}/upgrade-recommendations`,
+        {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed with status ${response.status}`);
+      }
+
+      const result = await response.json();
+      setData(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch recommendations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedProject) {
+      fetchRecommendations();
+    }
+  }, [selectedProject]);
+
+  const togglePackageExpand = (packageName: string) => {
+    const newExpanded = new Set(expandedPackages);
+    if (newExpanded.has(packageName)) {
+      newExpanded.delete(packageName);
+    } else {
+      newExpanded.add(packageName);
+    }
+    setExpandedPackages(newExpanded);
+  };
+
+  const filteredRecommendations = data?.recommendations.filter(r =>
+    riskFilter === 'all' || r.risk_level === riskFilter
+  ) ?? [];
+
+  const exportReport = () => {
+    if (!data) return;
+    const report = JSON.stringify(data, null, 2);
+    const blob = new Blob([report], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `upgrade-recommendations-${data.project_name.replace(/\s+/g, '-')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const getRiskIcon = (risk: string) => {
+    switch (risk) {
+      case 'safe':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'caution':
+        return <AlertTriangle className="h-4 w-4" />;
+      case 'breaking':
+        return <AlertCircle className="h-4 w-4" />;
+      default:
+        return <Info className="h-4 w-4" />;
+    }
+  };
+
+  return (
+    <Layout>
+      <div className="p-6 max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/security')}
+              className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                <ArrowUp className="h-6 w-6 text-primary" />
+                Upgrade Recommendations
+              </h1>
+              <p className="text-muted-foreground">Dependency upgrades with breaking change risk analysis</p>
+            </div>
+          </div>
+          {data && (
+            <button
+              onClick={exportReport}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              Export Report
+            </button>
+          )}
+        </div>
+
+        {/* Project Selection */}
+        <div className="rounded-lg border border-border bg-card p-6 mb-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Select Project</h2>
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">Project</label>
+              <select
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Select a project...</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={fetchRecommendations}
+              disabled={!selectedProject || loading}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            >
+              {loading ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Refresh
+            </button>
+          </div>
+          {error && (
+            <div className="mt-4 p-3 rounded-lg bg-destructive/10 text-destructive flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Results */}
+        {data && (
+          <>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="rounded-lg border border-border bg-card p-4">
+                <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                  <Package className="h-4 w-4" />
+                  <span className="text-sm">Total Recommendations</span>
+                </div>
+                <p className="text-3xl font-bold text-foreground">{data.summary.total_recommendations}</p>
+                <p className="text-xs text-muted-foreground">{data.summary.actionable_now} safe to apply now</p>
+              </div>
+
+              <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-4">
+                <div className="flex items-center gap-2 text-green-600 mb-2">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm">Safe Upgrades</span>
+                </div>
+                <p className="text-3xl font-bold text-green-600">{data.summary.by_risk_level.safe}</p>
+                <p className="text-xs text-green-600/70">patch versions</p>
+              </div>
+
+              <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
+                <div className="flex items-center gap-2 text-yellow-600 mb-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-sm">Caution Required</span>
+                </div>
+                <p className="text-3xl font-bold text-yellow-600">{data.summary.by_risk_level.caution}</p>
+                <p className="text-xs text-yellow-600/70">minor versions</p>
+              </div>
+
+              <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-4">
+                <div className="flex items-center gap-2 text-red-600 mb-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="text-sm">Breaking Changes</span>
+                </div>
+                <p className="text-3xl font-bold text-red-600">{data.summary.by_risk_level.breaking}</p>
+                <p className="text-xs text-red-600/70">major versions</p>
+              </div>
+            </div>
+
+            {/* Risk Filter */}
+            <div className="rounded-lg border border-border bg-card p-6 mb-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Filter by Risk Level</h3>
+              <div className="flex gap-4 flex-wrap">
+                <button
+                  onClick={() => setRiskFilter('all')}
+                  className={`px-4 py-2 rounded-lg border transition-colors ${
+                    riskFilter === 'all'
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border hover:bg-muted'
+                  }`}
+                >
+                  All ({data.summary.total_recommendations})
+                </button>
+                <button
+                  onClick={() => setRiskFilter('safe')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                    riskFilter === 'safe'
+                      ? 'bg-green-500 text-white border-green-500'
+                      : 'border-green-500 text-green-500 hover:bg-green-500/10'
+                  }`}
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Safe ({data.summary.by_risk_level.safe})
+                </button>
+                <button
+                  onClick={() => setRiskFilter('caution')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                    riskFilter === 'caution'
+                      ? 'bg-yellow-500 text-black border-yellow-500'
+                      : 'border-yellow-500 text-yellow-500 hover:bg-yellow-500/10'
+                  }`}
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  Caution ({data.summary.by_risk_level.caution})
+                </button>
+                <button
+                  onClick={() => setRiskFilter('breaking')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                    riskFilter === 'breaking'
+                      ? 'bg-red-500 text-white border-red-500'
+                      : 'border-red-500 text-red-500 hover:bg-red-500/10'
+                  }`}
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  Breaking ({data.summary.by_risk_level.breaking})
+                </button>
+              </div>
+            </div>
+
+            {/* Recommendations List */}
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4">
+                Recommendations ({filteredRecommendations.length})
+              </h3>
+              {filteredRecommendations.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+                  <p>No recommendations match the selected filter</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredRecommendations.map((rec) => (
+                    <div
+                      key={rec.package}
+                      className={`rounded-lg border-l-4 ${riskBorderColors[rec.risk_level]} bg-muted/50 overflow-hidden`}
+                    >
+                      <button
+                        onClick={() => togglePackageExpand(rec.package)}
+                        className="w-full p-4 text-left hover:bg-muted/80 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <span className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${riskColors[rec.risk_level]}`}>
+                              {getRiskIcon(rec.risk_level)}
+                              {rec.risk_level.toUpperCase()}
+                            </span>
+                            <div>
+                              <span className="font-semibold text-foreground">{rec.package}</span>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-muted-foreground">{rec.current_version}</span>
+                                <span className="text-muted-foreground">→</span>
+                                <span className="text-green-500 font-medium">{rec.recommended_version}</span>
+                                <span className={`text-xs uppercase ${severityColors[rec.severity]}`}>
+                                  ({rec.severity})
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
+                              {rec.upgrade_type}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              {rec.vulnerabilities.length} CVE{rec.vulnerabilities.length !== 1 ? 's' : ''}
+                            </span>
+                            {expandedPackages.has(rec.package) ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                      {expandedPackages.has(rec.package) && (
+                        <div className="px-4 pb-4 border-t border-border">
+                          <p className="text-sm text-muted-foreground mt-4 mb-4">{rec.description}</p>
+
+                          {/* CVE List */}
+                          <div className="mb-4">
+                            <h5 className="text-sm font-medium text-foreground mb-2">Vulnerabilities Fixed</h5>
+                            <div className="flex flex-wrap gap-2">
+                              {rec.vulnerabilities.map((cve) => (
+                                <span key={cve} className="px-2 py-1 rounded bg-red-500/10 text-red-500 text-xs font-mono">
+                                  {cve}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Migration Notes */}
+                          {rec.migration_notes && rec.migration_notes.length > 0 && (
+                            <div className="mb-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                              <h5 className="text-sm font-medium text-yellow-600 mb-2 flex items-center gap-2">
+                                <AlertTriangle className="h-4 w-4" />
+                                Migration Notes
+                              </h5>
+                              <ul className="list-disc list-inside text-sm text-muted-foreground">
+                                {rec.migration_notes.map((note, i) => (
+                                  <li key={i}>{note}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Alternative Package */}
+                          {rec.alternative && (
+                            <div className="mb-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                              <h5 className="text-sm font-medium text-blue-600 mb-1 flex items-center gap-2">
+                                <Info className="h-4 w-4" />
+                                Alternative Package
+                              </h5>
+                              <p className="text-sm text-muted-foreground">
+                                Consider using <span className="font-mono text-blue-500">{rec.alternative.package}</span>: {rec.alternative.reason}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Changelog Link */}
+                          <a
+                            href={rec.changelog_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                          >
+                            View Changelog
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Empty State */}
+        {!data && !loading && !selectedProject && (
+          <div className="rounded-lg border border-border bg-card p-12 text-center">
+            <ArrowUp className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-xl font-semibold text-foreground mb-2">Dependency Upgrade Recommendations</h2>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+              Select a project above to see upgrade recommendations for vulnerable dependencies,
+              with breaking change risk analysis and migration guidance.
+            </p>
+            <div className="flex flex-wrap gap-4 justify-center text-sm">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <span className="text-muted-foreground">Safe (patch)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                <span className="text-muted-foreground">Caution (minor)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                <span className="text-muted-foreground">Breaking (major)</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+}

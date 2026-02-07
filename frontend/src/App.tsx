@@ -55,6 +55,8 @@ const LicenseCompliancePage = lazy(() => import('./pages/LicenseCompliancePage')
 // Feature #268: SBOM Generation Page
 const SbomPage = lazy(() => import('./pages/SbomPage').then(m => ({ default: m.SbomPage })));
 const ContainerScanPage = lazy(() => import('./pages/ContainerScanPage').then(m => ({ default: m.ContainerScanPage })));
+// Feature #270: Upgrade Recommendations Page
+const UpgradeRecommendationsPage = lazy(() => import('./pages/UpgradeRecommendationsPage').then(m => ({ default: m.UpgradeRecommendationsPage })));
 const DependencyPolicyPage = lazy(() => import('./pages/DependencyPolicyPage').then(m => ({ default: m.DependencyPolicyPage })));
 const AutoPRPage = lazy(() => import('./pages/AutoPRPage').then(m => ({ default: m.AutoPRPage })));
 const DependencyAgePage = lazy(() => import('./pages/DependencyAgePage').then(m => ({ default: m.DependencyAgePage })));
@@ -1318,6 +1320,15 @@ function App() {
           element={
             <ProtectedRoute>
               <ContainerScanPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Feature #270: Upgrade Recommendations Page */}
+        <Route
+          path="/security/upgrade-recommendations"
+          element={
+            <ProtectedRoute>
+              <UpgradeRecommendationsPage />
             </ProtectedRoute>
           }
         />
