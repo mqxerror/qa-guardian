@@ -108,6 +108,7 @@ const SuiteRunHistoryPage = lazy(() => import('./pages/SuiteRunHistoryPage').the
 const ProjectRunHistoryPage = lazy(() => import('./pages/ProjectRunHistoryPage').then(m => ({ default: m.ProjectRunHistoryPage })));
 const RunHistoryPage = lazy(() => import('./pages/RunHistoryPage').then(m => ({ default: m.RunHistoryPage })));
 const ServicesPage = lazy(() => import('./pages/ServicesPage').then(m => ({ default: m.ServicesPage })));
+const OpenAPITestGeneratorPage = lazy(() => import('./pages/OpenAPITestGeneratorPage').then(m => ({ default: m.OpenAPITestGeneratorPage }))); // Feature #324
 
 // Loading fallback for lazy-loaded pages
 const PageLoader = () => (
@@ -1470,6 +1471,15 @@ function App() {
           element={
             <ProtectedRoute>
               <AITestReviewPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Feature #324: OpenAPI/Swagger to Playwright test generation */}
+        <Route
+          path="/ai/openapi-generator"
+          element={
+            <ProtectedRoute>
+              <OpenAPITestGeneratorPage />
             </ProtectedRoute>
           }
         />

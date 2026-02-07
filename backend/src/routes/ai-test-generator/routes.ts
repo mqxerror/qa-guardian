@@ -708,4 +708,204 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       });
     }
   });
+
+  /**
+   * POST /api/v1/ai/openapi-to-tests
+   * Parse OpenAPI/Swagger spec and generate Playwright tests
+   * Feature #324: OpenAPI to Playwright test generation
+   */
+  fastify.post<{
+    Body: {
+      spec?: string; // OpenAPI spec as string (JSON or YAML)
+      specUrl?: string; // URL to fetch spec from
+      baseUrl?: string; // Override base URL for tests
+    };
+  }>('/openapi-to-tests', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    try {
+      const { spec: specContent, specUrl, baseUrl } = request.body;
+
+      // Need either spec content or URL
+      if (!specContent && !specUrl) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Either "spec" (OpenAPI content) or "specUrl" (URL to fetch) is required',
+        });
+      }
+
+      let content = specContent;
+
+      // Fetch spec from URL if provided
+      if (specUrl && !specContent) {
+        try {
+          const response = await fetch(specUrl, {
+            headers: {
+              'Accept': 'application/json, application/yaml, text/yaml, text/plain',
+            },
+            signal: AbortSignal.timeout(30000),
+          });
+
+          if (!response.ok) {
+            return reply.status(400).send({
+              success: false,
+              error: `Failed to fetch spec from URL: HTTP ${response.status}`,
+            });
+          }
+
+          content = await response.text();
+        } catch (fetchError) {
+          return reply.status(400).send({
+            success: false,
+            error: `Failed to fetch spec from URL: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`,
+          });
+        }
+      }
+
+      if (!content) {
+        return reply.status(400).send({
+          success: false,
+          error: 'No spec content available',
+        });
+      }
+
+      // Import the parser dynamically to avoid circular dependencies
+      const { parseAndGenerateTests, parseOpenAPISpec } = await import('../../services/openapi-parser.js');
+
+      // Parse the spec first to get metadata
+      const parseResult = parseOpenAPISpec(content);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          success: false,
+          error: parseResult.error,
+        });
+      }
+
+      // Generate tests
+      const result = parseAndGenerateTests(content, baseUrl);
+
+      if (!result.success) {
+        return reply.status(400).send({
+          success: false,
+          error: result.error,
+        });
+      }
+
+      return reply.send({
+        success: true,
+        apiTitle: result.apiTitle,
+        baseUrl: result.baseUrl,
+        specVersion: parseResult.version,
+        summary: result.summary,
+        tests: result.tests.map(t => ({
+          path: t.path,
+          method: t.method,
+          operationId: t.operationId,
+          summary: t.summary,
+          tags: t.tags,
+          testName: t.testName,
+          testCode: t.testCode,
+        })),
+      });
+    } catch (error) {
+      request.log.error(error, 'Failed to generate tests from OpenAPI spec');
+      return reply.status(500).send({
+        success: false,
+        error: 'Failed to generate tests from OpenAPI spec',
+      });
+    }
+  });
+
+  /**
+   * POST /api/v1/ai/openapi-parse
+   * Parse OpenAPI/Swagger spec without generating tests (for validation/preview)
+   * Feature #324: OpenAPI parsing endpoint
+   */
+  fastify.post<{
+    Body: {
+      spec?: string;
+      specUrl?: string;
+    };
+  }>('/openapi-parse', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    try {
+      const { spec: specContent, specUrl } = request.body;
+
+      if (!specContent && !specUrl) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Either "spec" (OpenAPI content) or "specUrl" (URL to fetch) is required',
+        });
+      }
+
+      let content = specContent;
+
+      if (specUrl && !specContent) {
+        try {
+          const response = await fetch(specUrl, {
+            headers: {
+              'Accept': 'application/json, application/yaml, text/yaml, text/plain',
+            },
+            signal: AbortSignal.timeout(30000),
+          });
+
+          if (!response.ok) {
+            return reply.status(400).send({
+              success: false,
+              error: `Failed to fetch spec from URL: HTTP ${response.status}`,
+            });
+          }
+
+          content = await response.text();
+        } catch (fetchError) {
+          return reply.status(400).send({
+            success: false,
+            error: `Failed to fetch spec from URL: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`,
+          });
+        }
+      }
+
+      if (!content) {
+        return reply.status(400).send({
+          success: false,
+          error: 'No spec content available',
+        });
+      }
+
+      const { parseOpenAPISpec } = await import('../../services/openapi-parser.js');
+      const result = parseOpenAPISpec(content);
+
+      if (!result.success) {
+        return reply.status(400).send({
+          success: false,
+          error: result.error,
+        });
+      }
+
+      return reply.send({
+        success: true,
+        title: result.title,
+        version: result.version,
+        baseUrl: result.baseUrl,
+        endpointCount: result.endpoints,
+        tags: result.spec?.tags?.map(t => ({ name: t.name, description: t.description })) || [],
+        paths: Object.entries(result.spec?.paths || {}).map(([path, item]) => {
+          const methods: string[] = [];
+          if (item.get) methods.push('GET');
+          if (item.post) methods.push('POST');
+          if (item.put) methods.push('PUT');
+          if (item.patch) methods.push('PATCH');
+          if (item.delete) methods.push('DELETE');
+          return { path, methods };
+        }),
+      });
+    } catch (error) {
+      request.log.error(error, 'Failed to parse OpenAPI spec');
+      return reply.status(500).send({
+        success: false,
+        error: 'Failed to parse OpenAPI spec',
+      });
+    }
+  });
 }
