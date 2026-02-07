@@ -1,11 +1,15 @@
 // ============================================================================
 // FEATURE #1326: AI Usage Analytics Dashboard
 // Extracted from App.tsx for code quality compliance (Feature #1357)
+// Feature #317: Use environment-based API URL instead of hardcoded localhost
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+
+// Feature #317: API base URL from environment
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // Types
 interface UsageAnalytics {
@@ -96,16 +100,16 @@ export function AIUsageAnalyticsDashboard() {
     setIsLoading(true);
     try {
       const [analyticsRes, comparisonRes, trendsRes, exportsRes] = await Promise.all([
-        fetch(`http://localhost:3000/api/v1/ai/analytics?period=${period}`, {
+        fetch(`${API_BASE}/api/v1/ai/analytics?period=${period}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`http://localhost:3000/api/v1/ai/analytics/comparison?period=${period}`, {
+        fetch(`${API_BASE}/api/v1/ai/analytics/comparison?period=${period}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`http://localhost:3000/api/v1/ai/analytics/trends?period=${period}`, {
+        fetch(`${API_BASE}/api/v1/ai/analytics/trends?period=${period}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:3000/api/v1/ai/analytics/exports', {
+        fetch(`${API_BASE}/api/v1/ai/analytics/exports`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -127,7 +131,7 @@ export function AIUsageAnalyticsDashboard() {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const response = await fetch('http://localhost:3000/api/v1/ai/analytics/export', {
+      const response = await fetch(`${API_BASE}/api/v1/ai/analytics/export`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

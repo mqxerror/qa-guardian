@@ -1,11 +1,15 @@
 // ============================================================================
 // FEATURE #1324: Provider Health Monitoring
 // Extracted from App.tsx for code quality compliance (Feature #1357)
+// Feature #317: Use environment-based API URL instead of hardcoded localhost
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+
+// Feature #317: API base URL from environment
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // Types
 interface ProviderHealthMetrics {
@@ -92,19 +96,19 @@ export function ProviderHealthPage() {
   const fetchData = async () => {
     try {
       const [healthRes, alertsRes, configRes, trendRes, errorRes] = await Promise.all([
-        fetch('http://localhost:3000/api/v1/ai/health', {
+        fetch(`${API_BASE}/api/v1/ai/health`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:3000/api/v1/ai/health/alerts', {
+        fetch(`${API_BASE}/api/v1/ai/health/alerts`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:3000/api/v1/ai/health/alerts/config', {
+        fetch(`${API_BASE}/api/v1/ai/health/alerts/config`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:3000/api/v1/ai/health/latency-trend?hours=24', {
+        fetch(`${API_BASE}/api/v1/ai/health/latency-trend?hours=24`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:3000/api/v1/ai/health/error-distribution', {
+        fetch(`${API_BASE}/api/v1/ai/health/error-distribution`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -140,7 +144,7 @@ export function ProviderHealthPage() {
   const runHealthCheck = async (provider: 'kie' | 'anthropic') => {
     setIsRunningCheck(provider);
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/ai/health/${provider}/check`, {
+      const response = await fetch(`${API_BASE}/api/v1/ai/health/${provider}/check`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -156,7 +160,7 @@ export function ProviderHealthPage() {
   // Acknowledge alert
   const acknowledgeAlert = async (alertId: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/ai/health/alerts/${alertId}/acknowledge`, {
+      const response = await fetch(`${API_BASE}/api/v1/ai/health/alerts/${alertId}/acknowledge`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -172,7 +176,7 @@ export function ProviderHealthPage() {
   const updateAlertConfig = async (updates: Partial<HealthAlertConfig>) => {
     setIsSavingConfig(true);
     try {
-      const response = await fetch('http://localhost:3000/api/v1/ai/health/alerts/config', {
+      const response = await fetch(`${API_BASE}/api/v1/ai/health/alerts/config`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

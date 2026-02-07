@@ -1,7 +1,11 @@
 // Feature #1322: Anthropic Direct Provider Page
 // Extracted from App.tsx for code quality compliance
+// Feature #317: Use environment-based API URL instead of hardcoded localhost
 
 import React, { useState, useEffect } from 'react';
+
+// Feature #317: API base URL from environment
+const API_BASE = import.meta.env.VITE_API_URL || '';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 
@@ -78,13 +82,13 @@ export function AnthropicProviderPage() {
     setIsLoading(true);
     try {
       const [configRes, statsRes, rateLimitsRes] = await Promise.all([
-        fetch('http://localhost:3000/api/v1/ai/anthropic/config', {
+        fetch(`${API_BASE}/api/v1/ai/anthropic/config`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:3000/api/v1/ai/anthropic/stats', {
+        fetch(`${API_BASE}/api/v1/ai/anthropic/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:3000/api/v1/ai/anthropic/rate-limits', {
+        fetch(`${API_BASE}/api/v1/ai/anthropic/rate-limits`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -102,7 +106,7 @@ export function AnthropicProviderPage() {
   const updateConfig = async (updates: Partial<AnthropicConfig>) => {
     setIsSaving(true);
     try {
-      const response = await fetch('http://localhost:3000/api/v1/ai/anthropic/config', {
+      const response = await fetch(`${API_BASE}/api/v1/ai/anthropic/config`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -126,7 +130,7 @@ export function AnthropicProviderPage() {
     setIsTesting(true);
     setConnectionStatus(null);
     try {
-      const response = await fetch('http://localhost:3000/api/v1/ai/anthropic/test-connection', {
+      const response = await fetch(`${API_BASE}/api/v1/ai/anthropic/test-connection`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -151,7 +155,7 @@ export function AnthropicProviderPage() {
 
     setIsChatting(true);
     try {
-      const response = await fetch('http://localhost:3000/api/v1/ai/anthropic/chat', {
+      const response = await fetch(`${API_BASE}/api/v1/ai/anthropic/chat`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

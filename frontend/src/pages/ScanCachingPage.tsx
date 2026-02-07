@@ -1,8 +1,12 @@
 // ScanCachingPage - extracted from App.tsx
 // Feature #776: Dependency Scan Caching Page
+// Feature #317: Use environment-based API URL instead of hardcoded localhost
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+
+// Feature #317: API base URL from environment
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // Type definitions
 interface ScanCacheEntry {
@@ -87,13 +91,13 @@ export function ScanCachingPage() {
     setIsLoading(true);
     try {
       const [configRes, statsRes, entriesRes] = await Promise.all([
-        fetch(`http://localhost:3000/api/v1/projects/${projectId}/scan-cache/config`, {
+        fetch(`${API_BASE}/api/v1/projects/${projectId}/scan-cache/config`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`http://localhost:3000/api/v1/projects/${projectId}/scan-cache/stats`, {
+        fetch(`${API_BASE}/api/v1/projects/${projectId}/scan-cache/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`http://localhost:3000/api/v1/projects/${projectId}/scan-cache/entries`, {
+        fetch(`${API_BASE}/api/v1/projects/${projectId}/scan-cache/entries`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -118,7 +122,7 @@ export function ScanCachingPage() {
   const runScan = async (forceRefresh: boolean = false) => {
     setIsScanning(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/projects/${projectId}/scan-with-cache`, {
+      const response = await fetch(`${API_BASE}/api/v1/projects/${projectId}/scan-with-cache`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -143,7 +147,7 @@ export function ScanCachingPage() {
   const updateConfig = async (updates: Partial<CacheConfig>) => {
     setIsSavingConfig(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/projects/${projectId}/scan-cache/config`, {
+      const response = await fetch(`${API_BASE}/api/v1/projects/${projectId}/scan-cache/config`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -165,7 +169,7 @@ export function ScanCachingPage() {
   // Invalidate all cache entries
   const invalidateCache = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/projects/${projectId}/scan-cache/invalidate`, {
+      const response = await fetch(`${API_BASE}/api/v1/projects/${projectId}/scan-cache/invalidate`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -187,7 +191,7 @@ export function ScanCachingPage() {
     if (!confirm('Are you sure you want to clear all cache entries?')) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/projects/${projectId}/scan-cache`, {
+      const response = await fetch(`${API_BASE}/api/v1/projects/${projectId}/scan-cache`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

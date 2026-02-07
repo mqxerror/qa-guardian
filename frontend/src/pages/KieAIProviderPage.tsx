@@ -1,7 +1,11 @@
 // Feature #1321: Kie.ai Provider Integration Page
 // Extracted from App.tsx for code quality compliance
+// Feature #317: Use environment-based API URL instead of hardcoded localhost
 
 import React, { useState, useEffect } from 'react';
+
+// Feature #317: API base URL from environment
+const API_BASE = import.meta.env.VITE_API_URL || '';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 
@@ -92,13 +96,13 @@ export function KieAIProviderPage() {
     setIsLoading(true);
     try {
       const [configRes, statsRes, historyRes] = await Promise.all([
-        fetch('http://localhost:3000/api/v1/ai/kie/config', {
+        fetch(`${API_BASE}/api/v1/ai/kie/config`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:3000/api/v1/ai/kie/stats', {
+        fetch(`${API_BASE}/api/v1/ai/kie/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:3000/api/v1/ai/kie/history?limit=10', {
+        fetch(`${API_BASE}/api/v1/ai/kie/history?limit=10`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -119,7 +123,7 @@ export function KieAIProviderPage() {
   const updateConfig = async (updates: Partial<KieAIConfig>) => {
     setIsSaving(true);
     try {
-      const response = await fetch('http://localhost:3000/api/v1/ai/kie/config', {
+      const response = await fetch(`${API_BASE}/api/v1/ai/kie/config`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -143,7 +147,7 @@ export function KieAIProviderPage() {
     setIsTesting(true);
     setConnectionStatus(null);
     try {
-      const response = await fetch('http://localhost:3000/api/v1/ai/kie/test-connection', {
+      const response = await fetch(`${API_BASE}/api/v1/ai/kie/test-connection`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -165,7 +169,7 @@ export function KieAIProviderPage() {
 
     setIsChatting(true);
     try {
-      const response = await fetch('http://localhost:3000/api/v1/ai/kie/chat', {
+      const response = await fetch(`${API_BASE}/api/v1/ai/kie/chat`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
