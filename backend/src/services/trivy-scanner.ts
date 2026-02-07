@@ -7,7 +7,7 @@
  * Falls back gracefully when Trivy is not installed.
  */
 
-import { execSync, spawn } from 'child_process';
+import { execFileSync, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -148,9 +148,9 @@ export function checkTrivyAvailability(): TrivyVersionInfo {
 
     for (const trivyPath of possiblePaths) {
       try {
-        const versionOutput = execSync(`${trivyPath} version 2>&1`, {
+        const versionOutput = execFileSync(trivyPath, ['version'], {
           encoding: 'utf-8',
-          timeout: 5000,
+          timeout: 10000,
         }).trim();
 
         // Parse version - trivy outputs version info in various formats

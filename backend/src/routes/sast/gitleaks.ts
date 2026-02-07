@@ -18,7 +18,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { getProject } from '../../services/repositories/projects.js';
-import { exec, execSync, spawn } from 'child_process';
+import { exec, execFile, execFileSync, spawn } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -28,6 +28,7 @@ import { getSecretPatterns } from './stores.js';
 import * as gitleaksRepo from '../../services/repositories/gitleaks.js';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // ============================================================
 // Gitleaks Types
@@ -283,9 +284,9 @@ export function checkGitleaksAvailability(): GitleaksVersionInfo {
 
     for (const gitleaksPath of possiblePaths) {
       try {
-        const versionOutput = execSync(`${gitleaksPath} version 2>&1`, {
+        const versionOutput = execFileSync(gitleaksPath, ['version'], {
           encoding: 'utf-8',
-          timeout: 5000,
+          timeout: 10000,
         }).trim();
 
         // Parse version - gitleaks outputs: "gitleaks version 8.x.x" or just "8.x.x"
@@ -499,7 +500,7 @@ ${pathPatterns}
  */
 async function countCommits(repoPath: string): Promise<number> {
   try {
-    const { stdout } = await execAsync(`git -C "${repoPath}" rev-list --count HEAD 2>/dev/null || echo "0"`, {
+    const { stdout } = await execFileAsync('git', ['-C', repoPath, 'rev-list', '--count', 'HEAD'], {
       timeout: 5000,
     });
     return parseInt(stdout.trim(), 10) || 0;
