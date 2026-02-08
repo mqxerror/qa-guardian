@@ -515,7 +515,8 @@ export function cleanupExpiredRuns(): number {
   // Clean stale runs without completion time (stuck/orphaned runs)
   for (const [runId, run] of testRuns) {
     if (!runCompletionTimes.has(runId)) {
-      const runAge = now - new Date(run.started_at).getTime();
+      const startedAt = run.started_at ? new Date(run.started_at).getTime() : 0;
+      const runAge = now - startedAt;
       if (runAge > MAX_RUN_AGE_MS) {
         testRuns.delete(runId);
         cleaned++;

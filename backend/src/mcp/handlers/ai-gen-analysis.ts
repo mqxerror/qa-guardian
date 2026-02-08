@@ -215,14 +215,15 @@ export const getCoverageGaps: ToolHandler = async (args, context) => {
     const startTime = Date.now();
 
     // Fetch real project data
-    let project: { id: string; name: string; description?: string } | null = null;
+    type ProjectInfo = { id: string; name: string; description?: string };
+    let project: ProjectInfo | null = null;
     let testSuites: Array<{ id: string; name: string; type: string; test_count?: number }> = [];
     const allTests: Array<{ id: string; name: string; suite_id: string; type?: string; status?: string }> = [];
 
     try {
       // Fetch project details
       const projectResponse = await context.callApi(`/api/v1/projects/${projectId}`);
-      project = projectResponse as typeof project;
+      project = projectResponse as ProjectInfo;
 
       // Fetch all test suites in the project
       const suitesResponse = await context.callApi(`/api/v1/projects/${projectId}/suites`, {

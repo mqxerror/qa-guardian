@@ -4,7 +4,17 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth.js';
 import { query } from '../services/database.js';
+import { QueryResult, QueryResultRow } from 'pg';
 import crypto from 'crypto';
+
+// Helper to handle potentially null query results (when database not connected)
+function ensureResult<T extends QueryResultRow>(result: QueryResult<T> | null): QueryResult<T> {
+  if (!result) {
+    // Return empty result when database not available
+    return { rows: [] as T[], rowCount: 0, command: '', oid: 0, fields: [] };
+  }
+  return result;
+}
 
 // Types
 interface StepTemplate {
@@ -68,14 +78,14 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     sql += ` ORDER BY created_at DESC`;
 
     try {
-      const result = await query(sql, params);
+      const result = ensureResult(await query(sql, params));
       return reply.send({
         templates: result.rows.map(row => ({
           ...row,
           steps: typeof row.steps === 'string' ? JSON.parse(row.steps) : row.steps,
           tags: row.tags || [],
         })),
-        total: result.rowCount,
+        total: result.rowCount ?? 0,
       });
     } catch (error) {
       console.error('[StepTemplates] Failed to list templates:', error);
@@ -91,12 +101,12 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     try {
-      const result = await query(
+      const result = ensureResult(await query(
         `SELECT * FROM step_templates WHERE id = $1 AND organization_id = $2`,
         [templateId, orgId]
-      );
+      ));
 
-      if (result.rowCount === 0) {
+      if ((result.rowCount ?? 0) === 0) {
         return reply.status(404).send({ error: 'Not Found', message: 'Step template not found' });
       }
 
@@ -138,12 +148,12 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     const id = crypto.randomUUID();
 
     try {
-      const result = await query(
+      const result = ensureResult(await query(
         `INSERT INTO step_templates (id, organization_id, suite_id, name, description, steps, tags, created_by)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
         [id, orgId, suite_id || null, name.trim(), description || null, JSON.stringify(steps), tags, user.email]
-      );
+      ));
 
       const row = result.rows[0];
       return reply.status(201).send({
@@ -174,11 +184,11 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
 
     try {
       // Check exists
-      const existing = await query(
+      const existing = ensureResult(await query(
         `SELECT * FROM step_templates WHERE id = $1 AND organization_id = $2`,
         [templateId, orgId]
-      );
-      if (existing.rowCount === 0) {
+      ));
+      if ((existing.rowCount ?? 0) === 0) {
         return reply.status(404).send({ error: 'Not Found', message: 'Step template not found' });
       }
 
@@ -199,10 +209,10 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       updates.push(`updated_at = NOW()`);
       params.push(templateId, orgId);
 
-      const result = await query(
+      const result = ensureResult(await query(
         `UPDATE step_templates SET ${updates.join(', ')} WHERE id = $${idx++} AND organization_id = $${idx} RETURNING *`,
         params
-      );
+      ));
 
       const row = result.rows[0];
       return reply.send({
@@ -231,17 +241,17 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     }
 
     try {
-      const result = await query(
+      const result = ensureResult(await query(
         `DELETE FROM step_templates WHERE id = $1 AND organization_id = $2 RETURNING id, name`,
         [templateId, orgId]
-      );
+      ));
 
-      if (result.rowCount === 0) {
+      if ((result.rowCount ?? 0) === 0) {
         return reply.status(404).send({ error: 'Not Found', message: 'Step template not found' });
       }
 
       return reply.send({
-        message: `Template "${result.rows[0].name}" deleted successfully`,
+        message: `Template "${result.rows[0]?.name ?? 'Unknown'}" deleted successfully`,
         id: templateId,
       });
     } catch (error) {
@@ -269,12 +279,12 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
 
     try {
       // Get existing test
-      const testResult = await query(
+      const testResult = ensureResult(await query(
         `SELECT t.*, ts.organization_id FROM tests t JOIN test_suites ts ON t.suite_id = ts.id WHERE t.id = $1`,
         [testId]
-      );
+      ));
 
-      if (testResult.rowCount === 0) {
+      if ((testResult.rowCount ?? 0) === 0) {
         return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
       }
 
@@ -327,12 +337,12 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
 
     try {
       // Get existing test
-      const testResult = await query(
+      const testResult = ensureResult(await query(
         `SELECT t.*, ts.organization_id FROM tests t JOIN test_suites ts ON t.suite_id = ts.id WHERE t.id = $1`,
         [testId]
-      );
+      ));
 
-      if (testResult.rowCount === 0) {
+      if ((testResult.rowCount ?? 0) === 0) {
         return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
       }
 
@@ -344,13 +354,13 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       const newId = crypto.randomUUID();
       const newName = `${test.name} (Copy)`;
 
-      const result = await query(
+      const result = ensureResult(await query(
         `INSERT INTO tests (id, suite_id, project_id, name, description, type, config, code, enabled, priority, tags)
          SELECT $1, suite_id, project_id, $2, description, type, config, code, enabled, priority, tags
          FROM tests WHERE id = $3
          RETURNING *`,
         [newId, newName, testId]
-      );
+      ));
 
       return reply.status(201).send({
         message: `Test duplicated as "${newName}"`,

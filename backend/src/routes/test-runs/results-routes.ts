@@ -250,7 +250,14 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
       : null;
 
     // Compare steps if requested
-    let stepDiff = null;
+    let stepDiff: {
+      added_count: number;
+      removed_count: number;
+      changed_count: number;
+      added: { action: string; selector: string | undefined }[];
+      removed: { action: string; selector: string | undefined }[];
+      changed: { action: string; selector: string | undefined; base_status: string; compare_status: string; base_value: any; compare_value: any }[];
+    } | null = null;
     if (includeSteps && baseResult.steps && compareResult.steps) {
       const baseSteps = baseResult.steps;
       const compareSteps = compareResult.steps;

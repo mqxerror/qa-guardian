@@ -129,7 +129,17 @@ export async function aiInsightsRoutes(app: FastifyInstance) {
     );
 
     // Generate gap analysis based on metrics below target
-    const gapAnalysis = [];
+    interface GapAnalysisItem {
+      area: string;
+      current_state: string;
+      target_state: string;
+      gap_severity: string;
+      improvement_actions: string[];
+      estimated_effort: string;
+      expected_impact: string;
+      priority: number;
+    }
+    const gapAnalysis: GapAnalysisItem[] = [];
     let priority = 1;
 
     const e2eBenchmark = benchmarks.find(b => b.metric === 'E2E Test Coverage');
@@ -929,7 +939,11 @@ export async function aiInsightsRoutes(app: FastifyInstance) {
     ]);
 
     // Get organization data (sort runs after parallel fetch)
-    const orgRuns = allRuns.sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
+    const orgRuns = allRuns.sort((a, b) => {
+      const dateA = a.started_at ? new Date(a.started_at).getTime() : 0;
+      const dateB = b.started_at ? new Date(b.started_at).getTime() : 0;
+      return dateB - dateA;
+    });
 
     // Generate version numbers based on actual activity
     const now = Date.now();
@@ -941,7 +955,18 @@ export async function aiInsightsRoutes(app: FastifyInstance) {
     const passedRuns = orgRuns.filter(r => r.status === 'passed').length;
 
     // Generate releases based on test activity patterns
-    const releases = [];
+    interface Release {
+      id: string;
+      version: string;
+      name: string;
+      date: string;
+      testsAdded: number;
+      testsModified: number;
+      testsRemoved: number;
+      passRate: number;
+      suiteCount: number;
+    }
+    const releases: Release[] = [];
 
     // Current release (latest)
     releases.push({

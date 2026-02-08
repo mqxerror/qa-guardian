@@ -98,11 +98,11 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Feature #61: Try to get from cache first
     const cacheKey = CacheKeys.projects.detail(id);
-    let project = await cache.get<Project>(cacheKey);
+    let project: Project | null | undefined = await cache.get<Project>(cacheKey);
 
     if (!project) {
       // Cache miss - fetch from database
-      project = await dbGetProject(id);
+      project = await dbGetProject(id) ?? null;
       if (project) {
         // Cache the project
         await cache.set(cacheKey, project, CacheTTL.MEDIUM);
@@ -173,8 +173,8 @@ export async function coreRoutes(app: FastifyInstance) {
       organization_id: orgId,
       name: trimmedName,
       slug,
-      description,
-      base_url,
+      description: description ?? undefined,
+      base_url: base_url ?? undefined,
       archived: false,
       created_at: new Date(),
       updated_at: new Date(),

@@ -10,6 +10,15 @@
  */
 
 import { query, isDatabaseConnected } from '../database.js';
+import type { QueryResult, QueryResultRow } from 'pg';
+
+// Helper to handle potentially null query results (when database not connected)
+function ensureResult<T extends QueryResultRow>(result: QueryResult<T> | null): QueryResult<T> {
+  if (!result) {
+    return { rows: [] as T[], rowCount: 0, command: '', oid: 0, fields: [] };
+  }
+  return result;
+}
 
 // ============================================================================
 // Types
@@ -144,7 +153,7 @@ export async function createLicensePolicy(
     throw new Error('Database not connected');
   }
 
-  const result = await query(
+  const result = ensureResult(await query(
     `INSERT INTO license_policies (
       organization_id, name, description, allowed_licenses, blocked_licenses,
       policy_mode, fail_on_unknown, is_active
@@ -160,25 +169,28 @@ export async function createLicensePolicy(
       policy.fail_on_unknown,
       policy.is_active,
     ]
-  );
+  ));
 
+  if (!result.rows[0]) {
+    throw new Error('Failed to create license policy');
+  }
   return mapRowToLicensePolicy(result.rows[0]);
 }
 
 export async function getLicensePolicy(id: string): Promise<LicensePolicy | null> {
   if (!isDatabaseConnected()) return null;
 
-  const result = await query('SELECT * FROM license_policies WHERE id = $1', [id]);
+  const result = ensureResult(await query('SELECT * FROM license_policies WHERE id = $1', [id]));
   return result.rows.length > 0 ? mapRowToLicensePolicy(result.rows[0]) : null;
 }
 
 export async function getLicensePolicyByOrg(organizationId: string): Promise<LicensePolicy | null> {
   if (!isDatabaseConnected()) return null;
 
-  const result = await query(
+  const result = ensureResult(await query(
     'SELECT * FROM license_policies WHERE organization_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1',
     [organizationId]
-  );
+  ));
   return result.rows.length > 0 ? mapRowToLicensePolicy(result.rows[0]) : null;
 }
 
@@ -224,10 +236,10 @@ export async function updateLicensePolicy(
   if (fields.length === 0) return getLicensePolicy(id);
 
   values.push(id);
-  const result = await query(
+  const result = ensureResult(await query(
     `UPDATE license_policies SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
     values
-  );
+  ));
 
   return result.rows.length > 0 ? mapRowToLicensePolicy(result.rows[0]) : null;
 }
@@ -235,7 +247,7 @@ export async function updateLicensePolicy(
 export async function deleteLicensePolicy(id: string): Promise<boolean> {
   if (!isDatabaseConnected()) return false;
 
-  const result = await query('DELETE FROM license_policies WHERE id = $1', [id]);
+  const result = ensureResult(await query('DELETE FROM license_policies WHERE id = $1', [id]));
   return (result.rowCount ?? 0) > 0;
 }
 
@@ -266,7 +278,7 @@ export async function createLicenseScanResult(
     throw new Error('Database not connected');
   }
 
-  const dbResult = await query(
+  const dbResult = ensureResult(await query(
     `INSERT INTO license_scan_results (
       project_id, organization_id, scanned_at, scan_duration_ms, policy_id,
       total_packages, compliant_packages, violation_count, unknown_license_count,
@@ -290,7 +302,7 @@ export async function createLicenseScanResult(
       result.status,
       result.error_message,
     ]
-  );
+  ));
 
   return mapRowToLicenseScanResult(dbResult.rows[0]);
 }
@@ -303,7 +315,7 @@ export async function getLicenseScanResults(
 
   const { limit = 20, offset = 0 } = options;
 
-  const [results, countResult] = await Promise.all([
+  const [resultsRaw, countResultRaw] = await Promise.all([
     query(
       `SELECT * FROM license_scan_results
        WHERE project_id = $1
@@ -316,6 +328,8 @@ export async function getLicenseScanResults(
       [projectId]
     ),
   ]);
+  const results = ensureResult(resultsRaw);
+  const countResult = ensureResult(countResultRaw);
 
   return {
     items: results.rows.map(mapRowToLicenseScanResult),
@@ -326,13 +340,13 @@ export async function getLicenseScanResults(
 export async function getLatestLicenseScan(projectId: string): Promise<LicenseScanResult | null> {
   if (!isDatabaseConnected()) return null;
 
-  const result = await query(
+  const result = ensureResult(await query(
     `SELECT * FROM license_scan_results
      WHERE project_id = $1
      ORDER BY scanned_at DESC
      LIMIT 1`,
     [projectId]
-  );
+  ));
 
   return result.rows.length > 0 ? mapRowToLicenseScanResult(result.rows[0]) : null;
 }
@@ -340,11 +354,11 @@ export async function getLatestLicenseScan(projectId: string): Promise<LicenseSc
 export async function deleteOldLicenseScans(daysToKeep: number = 90): Promise<number> {
   if (!isDatabaseConnected()) return 0;
 
-  const result = await query(
+  const result = ensureResult(await query(
     `DELETE FROM license_scan_results
      WHERE scanned_at < NOW() - $1 * INTERVAL '1 day'`,
     [daysToKeep]
-  );
+  ));
 
   return result.rowCount ?? 0;
 }
@@ -382,7 +396,7 @@ export async function createSbomEntry(
     throw new Error('Database not connected');
   }
 
-  const result = await query(
+  const result = ensureResult(await query(
     `INSERT INTO sbom_entries (
       project_id, organization_id, format, spec_version, serial_number,
       generated_at, generated_by, total_components, production_components,
@@ -416,7 +430,7 @@ export async function createSbomEntry(
       entry.ntia_compliant,
       entry.missing_elements,
     ]
-  );
+  ));
 
   return mapRowToSbomEntry(result.rows[0]);
 }
@@ -436,7 +450,7 @@ export async function getSbomEntries(
     params.push(format);
   }
 
-  const [results, countResult] = await Promise.all([
+  const [resultsRaw, countResultRaw] = await Promise.all([
     query(
       `SELECT * FROM sbom_entries
        ${whereClause}
@@ -449,6 +463,8 @@ export async function getSbomEntries(
       format ? [projectId, format] : [projectId]
     ),
   ]);
+  const results = ensureResult(resultsRaw);
+  const countResult = ensureResult(countResultRaw);
 
   return {
     items: results.rows.map(mapRowToSbomEntry),
@@ -459,7 +475,7 @@ export async function getSbomEntries(
 export async function getSbomEntry(id: string): Promise<SbomEntry | null> {
   if (!isDatabaseConnected()) return null;
 
-  const result = await query('SELECT * FROM sbom_entries WHERE id = $1', [id]);
+  const result = ensureResult(await query('SELECT * FROM sbom_entries WHERE id = $1', [id]));
   return result.rows.length > 0 ? mapRowToSbomEntry(result.rows[0]) : null;
 }
 
@@ -477,13 +493,13 @@ export async function getLatestSbom(
     params.push(format);
   }
 
-  const result = await query(
+  const result = ensureResult(await query(
     `SELECT * FROM sbom_entries
      ${whereClause}
      ORDER BY generated_at DESC
      LIMIT 1`,
     params
-  );
+  ));
 
   return result.rows.length > 0 ? mapRowToSbomEntry(result.rows[0]) : null;
 }
@@ -491,11 +507,11 @@ export async function getLatestSbom(
 export async function deleteOldSboms(daysToKeep: number = 180): Promise<number> {
   if (!isDatabaseConnected()) return 0;
 
-  const result = await query(
+  const result = ensureResult(await query(
     `DELETE FROM sbom_entries
      WHERE generated_at < NOW() - $1 * INTERVAL '1 day'`,
     [daysToKeep]
-  );
+  ));
 
   return result.rowCount ?? 0;
 }
@@ -541,7 +557,7 @@ export async function createDependencyAnalysis(
     throw new Error('Database not connected');
   }
 
-  const result = await query(
+  const result = ensureResult(await query(
     `INSERT INTO dependency_analysis (
       project_id, organization_id, analyzed_at, analysis_duration_ms,
       total_dependencies, direct_dependencies, transitive_dependencies,
@@ -580,7 +596,7 @@ export async function createDependencyAnalysis(
       analysis.status,
       analysis.error_message,
     ]
-  );
+  ));
 
   return mapRowToDependencyAnalysis(result.rows[0]);
 }
@@ -593,7 +609,7 @@ export async function getDependencyAnalyses(
 
   const { limit = 20, offset = 0 } = options;
 
-  const [results, countResult] = await Promise.all([
+  const [resultsRaw, countResultRaw] = await Promise.all([
     query(
       `SELECT * FROM dependency_analysis
        WHERE project_id = $1
@@ -606,6 +622,8 @@ export async function getDependencyAnalyses(
       [projectId]
     ),
   ]);
+  const results = ensureResult(resultsRaw);
+  const countResult = ensureResult(countResultRaw);
 
   return {
     items: results.rows.map(mapRowToDependencyAnalysis),
@@ -616,13 +634,13 @@ export async function getDependencyAnalyses(
 export async function getLatestDependencyAnalysis(projectId: string): Promise<DependencyAnalysis | null> {
   if (!isDatabaseConnected()) return null;
 
-  const result = await query(
+  const result = ensureResult(await query(
     `SELECT * FROM dependency_analysis
      WHERE project_id = $1
      ORDER BY analyzed_at DESC
      LIMIT 1`,
     [projectId]
-  );
+  ));
 
   return result.rows.length > 0 ? mapRowToDependencyAnalysis(result.rows[0]) : null;
 }
@@ -630,11 +648,11 @@ export async function getLatestDependencyAnalysis(projectId: string): Promise<De
 export async function deleteOldDependencyAnalyses(daysToKeep: number = 90): Promise<number> {
   if (!isDatabaseConnected()) return 0;
 
-  const result = await query(
+  const result = ensureResult(await query(
     `DELETE FROM dependency_analysis
      WHERE analyzed_at < NOW() - $1 * INTERVAL '1 day'`,
     [daysToKeep]
-  );
+  ));
 
   return result.rowCount ?? 0;
 }

@@ -365,17 +365,11 @@ export class SSEClientManager {
 
 /**
  * Parse JSON with enhanced error information.
+ * Uses a discriminated union for proper type narrowing with strictNullChecks.
  */
-export interface JsonParseResult<T> {
-  success: boolean;
-  data?: T;
-  error?: {
-    message: string;
-    position?: number;
-    line?: number;
-    column?: number;
-  };
-}
+export type JsonParseResult<T> =
+  | { success: true; data: T; error?: undefined }
+  | { success: false; data?: undefined; error: { message: string; position?: number; line?: number; column?: number } };
 
 /**
  * Parse JSON with detailed error information for debugging.

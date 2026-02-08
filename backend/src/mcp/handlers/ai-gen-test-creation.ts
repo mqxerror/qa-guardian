@@ -94,14 +94,15 @@ export const generateTestFromDescription: ToolHandler = async (args, context) =>
     // Check if AI router is available
     const aiAvailable = aiRouter.isInitialized();
 
-    let testCode: string;
-    let testName: string;
-    let testSteps: string[];
-    let aiProviderUsed: string;
-    let modelUsed: string;
+    let testCode = '';
+    let testName = 'Generated E2E Test';
+    let testSteps: string[] = [];
+    let aiProviderUsed = 'template';
+    let modelUsed = 'rule-based';
     let inputTokens = 0;
     let outputTokens = 0;
     let confidenceScore = 0.85;
+    let suggestedVariations: string[] = [];
     let usedRealAi = false;
 
     if (useRealAi && aiAvailable) {
@@ -384,11 +385,11 @@ export const generateTest: ToolHandler = async (args, context) => {
     // Check if AI router is available
     const aiAvailable = aiRouter.isInitialized();
 
-    let testName: string;
-    let testCode: string;
-    let testSteps: string[];
-    let confidenceScore: number;
-    let suggestedVariations: string[];
+    let testName = 'Generated Test';
+    let testCode = '';
+    let testSteps: string[] = [];
+    let confidenceScore = 0.85;
+    let suggestedVariations: string[] = [];
     let aiProvider = 'template';
     let aiModel = 'rule-based';
     let inputTokens = 0;

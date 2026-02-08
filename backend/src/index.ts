@@ -500,15 +500,18 @@ async function start() {
       socketSubClient = new Redis(redisOptions);
 
       // Wait for both clients to be ready
+      // Use ! assertion since we just assigned them above
+      const pubClient = socketPubClient!;
+      const subClient = socketSubClient!;
       await Promise.all([
         new Promise<void>((resolve, reject) => {
-          socketPubClient.once('ready', resolve);
-          socketPubClient.once('error', reject);
+          pubClient.once('ready', resolve);
+          pubClient.once('error', reject);
           setTimeout(() => reject(new Error('Redis pub client timeout')), 5000);
         }),
         new Promise<void>((resolve, reject) => {
-          socketSubClient.once('ready', resolve);
-          socketSubClient.once('error', reject);
+          subClient.once('ready', resolve);
+          subClient.once('error', reject);
           setTimeout(() => reject(new Error('Redis sub client timeout')), 5000);
         }),
       ]);

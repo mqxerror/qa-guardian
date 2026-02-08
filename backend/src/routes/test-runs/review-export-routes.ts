@@ -285,7 +285,12 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Build trace info
-    let traceInfo = null;
+    let traceInfo: {
+      available: boolean;
+      url: string;
+      viewer_url: string;
+      description: string;
+    } | null = null;
     if (include_trace && result.trace_file) {
       traceInfo = {
         available: true,
@@ -336,7 +341,7 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     };
 
     // Generate markdown format if requested
-    let markdownReport = null;
+    let markdownReport: string | null = null;
     if (format === 'markdown') {
       const lines: string[] = [
         `# ${bugReport.title}`,

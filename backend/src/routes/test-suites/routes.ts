@@ -113,11 +113,11 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Feature #61: Try to get from cache first
     const cacheKey = CacheKeys.suites.detail(suiteId);
-    let suite = await cache.get<TestSuite>(cacheKey);
+    let suite: TestSuite | null | undefined = await cache.get<TestSuite>(cacheKey);
 
     if (!suite) {
       // Cache miss - fetch from database
-      suite = await dbGetTestSuite(suiteId);
+      suite = await dbGetTestSuite(suiteId) ?? null;
       if (suite) {
         // Cache the suite
         await cache.set(cacheKey, suite, CacheTTL.MEDIUM);
@@ -339,9 +339,9 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Feature #61: Try to get suite from cache first
     const suiteCacheKey = CacheKeys.suites.detail(suiteId);
-    let suite = await cache.get<TestSuite>(suiteCacheKey);
+    let suite: TestSuite | null | undefined = await cache.get<TestSuite>(suiteCacheKey);
     if (!suite) {
-      suite = await dbGetTestSuite(suiteId);
+      suite = await dbGetTestSuite(suiteId) ?? null;
       if (suite) {
         await cache.set(suiteCacheKey, suite, CacheTTL.MEDIUM);
       }
@@ -421,11 +421,11 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Feature #61: Try to get from cache first
     const cacheKey = CacheKeys.tests.detail(testId);
-    let test = await cache.get<Test>(cacheKey);
+    let test: Test | null | undefined = await cache.get<Test>(cacheKey);
 
     if (!test) {
       // Cache miss - fetch from database
-      test = await dbGetTest(testId);
+      test = await dbGetTest(testId) ?? null;
       if (test) {
         // Cache the test
         await cache.set(cacheKey, test, CacheTTL.MEDIUM);

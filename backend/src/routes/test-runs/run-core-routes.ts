@@ -353,8 +353,8 @@ export async function runCoreRoutes(app: FastifyInstance) {
         completed_at: r.completed_at?.toISOString(),
         duration_ms: r.duration_ms,
         results_count: r.results?.length || 0,
-        passed_count: r.results?.filter(res => res.status === 'passed').length || 0,
-        failed_count: r.results?.filter(res => res.status === 'failed').length || 0,
+        passed_count: r.results?.filter((res: { status: string }) => res.status === 'passed').length || 0,
+        failed_count: r.results?.filter((res: { status: string }) => res.status === 'failed').length || 0,
       }));
 
     return {
@@ -467,7 +467,8 @@ export async function runCoreRoutes(app: FastifyInstance) {
       return date; // Already a string from PostgreSQL
     };
 
-    const runsResponse = result.data.map(r => {
+    type ResultStatus = { status: string };
+    const runsResponse = result.data.map((r: { suite_id: string; test_id?: string; id: string; project_id?: string; status: string; browser?: string; branch?: string; created_at: Date | string; started_at?: Date | string | null; completed_at?: Date | string | null; duration_ms?: number; results?: ResultStatus[] }) => {
       const suite = allSuites.get(r.suite_id);
       const test = r.test_id ? allTests.get(r.test_id) : null;
       return {
@@ -485,9 +486,9 @@ export async function runCoreRoutes(app: FastifyInstance) {
         completed_at: toISOString(r.completed_at),
         duration_ms: r.duration_ms,
         results_count: r.results?.length || 0,
-        passed_count: r.results?.filter(res => res.status === 'passed').length || 0,
-        failed_count: r.results?.filter(res => res.status === 'failed').length || 0,
-        skipped_count: r.results?.filter(res => res.status === 'skipped').length || 0,
+        passed_count: r.results?.filter((res: ResultStatus) => res.status === 'passed').length || 0,
+        failed_count: r.results?.filter((res: ResultStatus) => res.status === 'failed').length || 0,
+        skipped_count: r.results?.filter((res: ResultStatus) => res.status === 'skipped').length || 0,
       };
     });
 

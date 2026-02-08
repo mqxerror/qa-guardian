@@ -611,7 +611,7 @@ function parseTransactionCheckRow(row: TransactionCheckRow): TransactionCheck {
     id: row.id,
     organization_id: row.organization_id,
     name: row.name,
-    description: row.description,
+    description: row.description ?? undefined,
     steps: typeof row.steps === 'string' ? JSON.parse(row.steps) : row.steps,
     interval: row.interval_seconds,
     enabled: row.enabled,
@@ -882,10 +882,10 @@ function parseWebhookCheckRow(row: WebhookCheckRow): WebhookCheck {
     id: row.id,
     organization_id: row.organization_id,
     name: row.name,
-    description: row.description,
+    description: row.description ?? undefined,
     webhook_url: row.webhook_url,
-    webhook_secret: row.webhook_secret,
-    expected_interval: row.expected_interval_seconds,
+    webhook_secret: row.webhook_secret ?? undefined,
+    expected_interval: row.expected_interval_seconds ?? 0,
     expected_payload: typeof row.expected_payload === 'string' ? JSON.parse(row.expected_payload) : row.expected_payload,
     enabled: row.enabled,
     created_by: row.created_by,
@@ -943,7 +943,7 @@ function parseWebhookEventRow(row: WebhookEventRow): WebhookEvent {
     payload: typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload,
     payload_valid: row.payload_valid,
     validation_errors: typeof row.validation_errors === 'string' ? JSON.parse(row.validation_errors) : row.validation_errors,
-    signature_valid: row.signature_valid,
+    signature_valid: row.signature_valid ?? undefined,
   };
 }
 

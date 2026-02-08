@@ -874,9 +874,9 @@ export async function flushWebhookBatch(subscriptionId: string): Promise<void> {
     subscription_id: subscriptionId,
     subscription_name: subscription.name,
     events: batch.map(entry => ({
+      ...entry.payload,
       event: entry.eventType,
       timestamp: entry.addedAt.toISOString(),
-      ...entry.payload,
     })) as WebhookPayload[],
     event_types: [...new Set(batch.map(e => e.eventType))],
     first_event_at: firstEntry?.addedAt.toISOString() || new Date().toISOString(),

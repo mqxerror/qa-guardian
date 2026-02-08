@@ -1378,7 +1378,22 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     // Use safe versions from types module
     const safeVersion = safeVersionsMap[packageName] || `${currentVersion.split('.')[0]}.${parseInt(currentVersion.split('.')[1] || '0', 10) + 1}.0`;
 
-    const suggestions = [];
+    interface FixSuggestion {
+      suggestion_id: string;
+      type: string;
+      priority: number;
+      title: string;
+      description: string;
+      safe_version?: string;
+      current_version?: string;
+      fix_code?: { commands: string[] };
+      breaking_changes?: { has_breaking_changes: boolean; risk_level: string };
+      alternative_package?: string;
+      effort_estimate: string;
+      confidence: number;
+      warning?: string;
+    }
+    const suggestions: FixSuggestion[] = [];
 
     // Suggestion 1: Upgrade
     suggestions.push({

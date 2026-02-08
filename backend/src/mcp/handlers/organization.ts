@@ -231,9 +231,14 @@ export const getOrganizationInfo: ToolHandler = async (args, context) => {
     const org = result.organization;
 
     // Fetch additional data if requested
-    let members = undefined;
-    let projects = undefined;
-    let usage = undefined;
+    let members: Array<{ id: string; email: string; name: string; role: string }> | undefined = undefined;
+    let projects: Array<{ id: string; name: string; test_count: number }> | undefined = undefined;
+    let usage: {
+      test_runs_this_month?: number;
+      test_runs_limit?: number;
+      storage_used_mb?: number;
+      storage_limit_mb?: number;
+    } | undefined = undefined;
 
     if (includeMembers) {
       const membersResult = await context.callApi('/api/v1/organization/members') as {
@@ -263,13 +268,22 @@ export const getOrganizationInfo: ToolHandler = async (args, context) => {
       usage = usageResult;
     }
 
-    return {
+    const response: {
+      success: boolean;
+      organization: typeof org;
+      members?: typeof members;
+      projects?: typeof projects;
+      usage?: typeof usage;
+    } = {
       success: true,
       organization: org,
-      ...(members && { members }),
-      ...(projects && { projects }),
-      ...(usage && { usage }),
     };
+
+    if (members) response.members = members;
+    if (projects) response.projects = projects;
+    if (usage) response.usage = usage;
+
+    return response;
   } catch (error) {
     return {
       success: false,

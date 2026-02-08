@@ -1157,7 +1157,7 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // If scan has a scan_id, get the full Gitleaks scan from database
-    let gitleaksScan = null;
+    let gitleaksScan: Awaited<ReturnType<typeof gitleaksRepo.getGitleaksScan>> | null = null;
     if (scan.scan_id) {
       // We need to find by scan_id across all projects
       const projectId = '0'; // Use a placeholder; in real impl would look up properly
