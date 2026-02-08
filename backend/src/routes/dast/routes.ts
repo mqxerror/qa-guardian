@@ -815,10 +815,10 @@ export async function dastRoutes(app: FastifyInstance) {
     try {
       const schema = performGraphQLIntrospection(endpoint, authHeader);
       return reply.send({ schema });
-    } catch (error: any) {
+    } catch (error: unknown) {
       return reply.status(500).send({
         error: 'Failed to introspect GraphQL schema',
-        details: error.message,
+        details: error instanceof Error ? error.message : String(error),
       });
     }
   });

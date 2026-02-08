@@ -1136,18 +1136,22 @@ export async function deliverWebhookWithRetry(
       logWebhookDelivery(logEntry);
 
       return { success: false, attempts: attempt, error: `HTTP ${response.status}`, deliveryId };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const duration = Date.now() - startTime;
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const errorMessage = errorObj.message;
+      const errorCode = (error as { code?: string }).code;
+      const errorStack = errorObj.stack?.substring(0, 500);
 
       if (attempt < maxAttempts) {
-        console.log(`[WEBHOOK] Error delivering to ${subscription.name}: ${error.message}, retrying (attempt ${attempt}/${maxAttempts})`);
+        console.log(`[WEBHOOK] Error delivering to ${subscription.name}: ${errorMessage}, retrying (attempt ${attempt}/${maxAttempts})`);
 
         // Feature #1295: Log failed attempt before retry
         logEntry.status = 'pending_retry';
         logEntry.error = {
-          message: error.message,
-          code: error.code,
-          stack: error.stack?.substring(0, 500),
+          message: errorMessage,
+          code: errorCode,
+          stack: errorStack,
         };
         logEntry.response = {
           status: 0,
@@ -1164,7 +1168,7 @@ export async function deliverWebhookWithRetry(
       }
 
       // Max retries exhausted
-      console.error(`[WEBHOOK] Failed to deliver ${eventType} to ${subscription.name} after ${maxAttempts} attempts: ${error.message}`);
+      console.error(`[WEBHOOK] Failed to deliver ${eventType} to ${subscription.name} after ${maxAttempts} attempts: ${errorMessage}`);
 
       // Feature #321: Update stats with auto-disable tracking (may auto-disable)
       const statsResult = await updateSubscriptionDeliveryStats(subscription.id, false);
@@ -1175,9 +1179,9 @@ export async function deliverWebhookWithRetry(
       // Feature #1295: Log error attempt
       logEntry.status = 'failed';
       logEntry.error = {
-        message: error.message,
-        code: error.code,
-        stack: error.stack?.substring(0, 500),
+        message: errorMessage,
+        code: errorCode,
+        stack: errorStack,
       };
       logEntry.response = {
         status: 0,
@@ -1188,7 +1192,7 @@ export async function deliverWebhookWithRetry(
       logEntry.completed_at = new Date();
       logWebhookDelivery(logEntry);
 
-      return { success: false, attempts: attempt, error: error.message, deliveryId };
+      return { success: false, attempts: attempt, error: errorMessage, deliveryId };
     }
   }
 
@@ -1309,8 +1313,9 @@ export function applyPayloadTemplate(
     const interpolated = interpolateTemplate(subscription.payload_template, defaultPayload);
     // Parse the result as JSON
     return JSON.parse(interpolated);
-  } catch (error: any) {
-    console.error(`[WEBHOOK] Failed to apply payload template for ${subscription.name}: ${error.message}`);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`[WEBHOOK] Failed to apply payload template for ${subscription.name}: ${errorMessage}`);
     // Fall back to default payload on error
     return defaultPayload;
   }

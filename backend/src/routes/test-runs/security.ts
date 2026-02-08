@@ -1489,11 +1489,11 @@ export async function securityRoutes(app: FastifyInstance) {
 
       const result = await generateSbom(options);
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[SBOM] Generation failed:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: `Failed to generate SBOM: ${error.message}`,
+        message: `Failed to generate SBOM: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   });

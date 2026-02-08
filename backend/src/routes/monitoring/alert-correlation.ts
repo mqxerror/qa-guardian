@@ -1024,12 +1024,12 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
           message: `Test alert successfully sent via ${destination_type}`,
           alert_payload: alertData,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`Failed to send test alert to ${destination_type}:`, error);
         return {
           success: false,
           destination_type,
-          error: error.message || 'Failed to send test alert',
+          error: error instanceof Error ? error.message : String(error),
           alert_payload: alertData,
         };
       }

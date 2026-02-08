@@ -598,7 +598,8 @@ async function runPushGitleaksScan(
       );
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`[GitHub Webhook] Gitleaks push scan failed:`, error);
 
     // Update in-memory record with error
@@ -606,7 +607,7 @@ async function runPushGitleaksScan(
     if (pushScanRecord) {
       pushScanRecord.status = 'failed';
       pushScanRecord.completed_at = new Date();
-      pushScanRecord.error = error.message || 'Unknown error';
+      pushScanRecord.error = errorMessage;
     }
 
     // Create a failed scan record in database
@@ -623,7 +624,7 @@ async function runPushGitleaksScan(
       commits_scanned: 0,
       findings: [],
       summary: { total: 0, critical: 0, high: 0, medium: 0, low: 0, by_type: {} },
-      error_message: error.message || 'Unknown error during scan',
+      error_message: errorMessage,
     };
     await gitleaksRepo.createGitleaksScan(failedScan);
   }

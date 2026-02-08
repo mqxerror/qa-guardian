@@ -469,7 +469,7 @@ ${pathPatterns}
 
     console.log('[Gitleaks] No output file found - no findings');
     return { success: true, findings: [], commitsScanned: 0 };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Clean up temp files on error
     try {
       if (fs.existsSync(tempOutputFile)) {
@@ -486,7 +486,7 @@ ${pathPatterns}
     return {
       success: false,
       findings: [],
-      error: error.message || 'Unknown error during Gitleaks scan',
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }
@@ -730,11 +730,11 @@ async function runPatternMatchingScan(
       findings,
       commitsScanned: 0, // Pattern matching doesn't scan commits
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       success: false,
       findings: [],
-      error: error.message || 'Pattern matching scan failed',
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }

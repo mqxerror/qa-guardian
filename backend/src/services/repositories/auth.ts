@@ -951,9 +951,10 @@ export async function seedTestUsers(): Promise<void> {
           email_verified: true,
           created_at: new Date(),
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Ignore duplicate key errors (user already exists with this id)
-        if (error?.code !== '23505') {
+        const dbError = error as { code?: string };
+        if (dbError?.code !== '23505') {
           throw error;
         }
       }

@@ -948,7 +948,7 @@ def verify_webhook_signature(body: bytes, signature_header: str, secret: str, to
         offset: offsetNum,
         source: 'database', // Indicates data comes from persistent storage
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[WEBHOOK] Failed to get delivery history from database:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
@@ -1004,7 +1004,7 @@ def verify_webhook_signature(body: bytes, signature_header: str, secret: str, to
         offset: offsetNum,
         source: 'database',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[WEBHOOK] Failed to get delivery history from database:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',

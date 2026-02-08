@@ -241,9 +241,9 @@ export async function startGraphQLScan(config: GraphQLScanConfig): Promise<Graph
         progress: scan.progress,
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       scan.status = 'failed';
-      scan.error = error.message || 'Unknown error during scan';
+      scan.error = error instanceof Error ? error.message : String(error);
       scan.completedAt = new Date().toISOString();
       await updateGraphqlScan(scanId, {
         status: scan.status,
