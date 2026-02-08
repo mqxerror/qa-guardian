@@ -2073,7 +2073,7 @@ function AIRouterPage() {
       case 'critical': return { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' };
       case 'warning': return { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' };
       case 'info': return { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' };
-      default: return { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' };
+      default: return { bg: 'bg-muted/50', text: 'text-muted-foreground', border: 'border-border' };
     }
   };
 
@@ -2562,7 +2562,7 @@ function AIRouterPage() {
       miss: 'bg-red-50 border-red-200 text-red-800',
       store: 'bg-blue-50 border-blue-200 text-blue-800',
       invalidate: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-      expire: 'bg-gray-50 border-gray-200 text-gray-800',
+      expire: 'bg-muted/50 border-border text-muted-foreground',
       evict: 'bg-orange-50 border-orange-200 text-orange-800',
     };
     return colors[type];
@@ -2728,7 +2728,7 @@ function AIRouterPage() {
       </div>
 
       {/* Feature #1327: Hot-Swap Provider Section */}
-      <div className="mb-6 bg-white rounded-lg shadow p-4">
+      <div className="mb-6 bg-card rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -2787,7 +2787,7 @@ function AIRouterPage() {
                 <span className={`text-xs px-2 py-0.5 rounded ${
                   activeProvider?.available_providers?.find(p => p.id === 'kie')?.enabled
                     ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-500'
+                    : 'bg-muted text-muted-foreground'
                 }`}>
                   {activeProvider?.available_providers?.find(p => p.id === 'kie')?.enabled ? '✓ Enabled' : '○ Disabled'}
                 </span>
@@ -2847,7 +2847,7 @@ function AIRouterPage() {
                 <span className={`text-xs px-2 py-0.5 rounded ${
                   activeProvider?.available_providers?.find(p => p.id === 'anthropic')?.enabled
                     ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-500'
+                    : 'bg-muted text-muted-foreground'
                 }`}>
                   {activeProvider?.available_providers?.find(p => p.id === 'anthropic')?.enabled ? '✓ Enabled' : '○ Disabled'}
                 </span>
@@ -2869,7 +2869,7 @@ function AIRouterPage() {
 
         {/* Last Switch Info */}
         {activeProvider?.last_switch && (
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg text-sm">
+          <div className="mt-4 p-3 bg-muted/50 rounded-lg text-sm">
             <div className="flex items-center gap-2 text-gray-600">
               <span>📝</span>
               <span>Last switch: {activeProvider.last_switch.from} → {activeProvider.last_switch.to}</span>
@@ -2888,7 +2888,7 @@ function AIRouterPage() {
       {/* Provider Switch Modal */}
       {showSwitchModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+          <div className="bg-card rounded-lg shadow-xl w-full max-w-md p-6">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <span>⚡</span> Switch Provider
             </h3>
@@ -2970,27 +2970,27 @@ function AIRouterPage() {
       {/* Stats Grid */}
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-          <div className="bg-white rounded-lg shadow p-3 text-center">
+          <div className="bg-card rounded-lg shadow p-3 text-center">
             <div className="text-2xl font-bold text-blue-600">{formatNumber(stats.total_requests)}</div>
             <div className="text-xs text-gray-600">Total Requests</div>
           </div>
-          <div className="bg-white rounded-lg shadow p-3 text-center">
+          <div className="bg-card rounded-lg shadow p-3 text-center">
             <div className="text-2xl font-bold text-green-600">{stats.primary_success_rate}%</div>
             <div className="text-xs text-gray-600">Primary Success</div>
           </div>
-          <div className="bg-white rounded-lg shadow p-3 text-center">
+          <div className="bg-card rounded-lg shadow p-3 text-center">
             <div className="text-2xl font-bold text-amber-600">{formatNumber(stats.fallback_requests)}</div>
             <div className="text-xs text-gray-600">Fallbacks</div>
           </div>
-          <div className="bg-white rounded-lg shadow p-3 text-center">
+          <div className="bg-card rounded-lg shadow p-3 text-center">
             <div className="text-2xl font-bold text-purple-600">{stats.fallback_success_rate}%</div>
             <div className="text-xs text-gray-600">Fallback Success</div>
           </div>
-          <div className="bg-white rounded-lg shadow p-3 text-center">
+          <div className="bg-card rounded-lg shadow p-3 text-center">
             <div className="text-2xl font-bold text-cyan-600">{stats.avg_latency_ms}ms</div>
             <div className="text-xs text-gray-600">Avg Latency</div>
           </div>
-          <div className="bg-white rounded-lg shadow p-3 text-center">
+          <div className="bg-card rounded-lg shadow p-3 text-center">
             <div className="text-2xl font-bold text-red-600">{stats.errors}</div>
             <div className="text-xs text-gray-600">Errors</div>
           </div>
@@ -2999,7 +2999,7 @@ function AIRouterPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Configuration */}
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-card rounded-lg shadow p-4">
           <h2 className="text-lg font-semibold mb-4">⚙️ Router Configuration</h2>
           {config && (
             <div className="space-y-4">
@@ -3075,7 +3075,7 @@ function AIRouterPage() {
         </div>
 
         {/* Circuit Breakers */}
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-card rounded-lg shadow p-4">
           <h2 className="text-lg font-semibold mb-4">⚡ Circuit Breakers</h2>
 
           {circuitBreakers.map((cb) => (
@@ -3132,7 +3132,7 @@ function AIRouterPage() {
         </div>
 
         {/* Test Failover */}
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-card rounded-lg shadow p-4">
           <h2 className="text-lg font-semibold mb-4">🧪 Test Failover</h2>
 
           <div className="space-y-2 mb-4">
@@ -3176,12 +3176,12 @@ function AIRouterPage() {
       </div>
 
       {/* Feature #1331: Retry Configuration with Exponential Backoff */}
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-card rounded-lg shadow p-4">
         <h2 className="text-lg font-semibold mb-4">🔄 Retry Configuration</h2>
         <p className="text-sm text-gray-500 mb-4">Configure automatic retries with exponential backoff for transient failures</p>
 
         {/* Retry Enable Toggle */}
-        <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between mb-4 p-3 bg-muted/50 rounded-lg">
           <div>
             <div className="font-medium">Enable Retries</div>
             <div className="text-xs text-gray-500">Automatically retry failed AI requests</div>
@@ -3259,7 +3259,7 @@ function AIRouterPage() {
             <div className="mb-4">
               <h3 className="text-sm font-medium mb-2">Retry Conditions</h3>
               <div className="flex flex-wrap gap-3">
-                <label className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200">
+                <label className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg cursor-pointer hover:bg-muted/80">
                   <input
                     type="checkbox"
                     checked={retryConfig.retry_on_timeout}
@@ -3268,7 +3268,7 @@ function AIRouterPage() {
                   />
                   <span className="text-sm">⏱️ Timeout</span>
                 </label>
-                <label className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200">
+                <label className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg cursor-pointer hover:bg-muted/80">
                   <input
                     type="checkbox"
                     checked={retryConfig.retry_on_rate_limit}
@@ -3277,7 +3277,7 @@ function AIRouterPage() {
                   />
                   <span className="text-sm">🚦 Rate Limit</span>
                 </label>
-                <label className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200">
+                <label className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg cursor-pointer hover:bg-muted/80">
                   <input
                     type="checkbox"
                     checked={retryConfig.retry_on_error}
@@ -3359,7 +3359,7 @@ function AIRouterPage() {
                     <div className="text-xs text-gray-500">Client Error</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 p-2 bg-gray-100 rounded">
+                <div className="flex items-center gap-2 p-2 bg-muted rounded">
                   <span>🖥️</span>
                   <div>
                     <div className="text-sm font-medium">{retryStats.by_error_type.server_error}</div>
@@ -3401,7 +3401,7 @@ function AIRouterPage() {
             <div>
               <h3 className="text-sm font-medium mb-2">📋 Retry Event Logs</h3>
               {retryLogs.length === 0 ? (
-                <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+                <div className="text-center py-6 text-gray-500 bg-muted/50 rounded-lg">
                   <div className="text-2xl mb-2">📭</div>
                   <div className="text-sm">No retry events logged yet</div>
                   <div className="text-xs text-gray-400 mt-1">Simulate a retry scenario to see logs</div>
@@ -3440,7 +3440,7 @@ function AIRouterPage() {
       </div>
 
       {/* Feature #1334: Timeout Configuration */}
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-card rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold">⏱️ Timeout Configuration</h2>
@@ -3448,7 +3448,7 @@ function AIRouterPage() {
           </div>
           <button
             onClick={resetToDefaultTimeouts}
-            className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+            className="px-3 py-1 text-sm bg-muted text-muted-foreground rounded hover:bg-muted/80"
           >
             Reset to Defaults
           </button>
@@ -3487,8 +3487,8 @@ function AIRouterPage() {
                 key={ft.feature}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   ft.enabled
-                    ? 'bg-white border-blue-200 shadow-sm'
-                    : 'bg-gray-50 border-gray-200 opacity-60'
+                    ? 'bg-card border-blue-200 shadow-sm'
+                    : 'bg-muted border-border opacity-60'
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">
@@ -3506,7 +3506,7 @@ function AIRouterPage() {
                       onChange={(e) => updateFeatureTimeout(ft.feature, { enabled: e.target.checked })}
                       className="sr-only peer"
                     />
-                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
 
@@ -3524,7 +3524,7 @@ function AIRouterPage() {
                         step="5000"
                         value={ft.timeout_ms}
                         onChange={(e) => updateFeatureTimeout(ft.feature, { timeout_ms: parseInt(e.target.value) })}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
                       />
                       <div className="flex justify-between text-xs text-gray-400 mt-1">
                         <span>5s</span>
@@ -3603,7 +3603,7 @@ function AIRouterPage() {
                       <span className="text-gray-700">{ft.name}</span>
                       <span className="font-medium">{count}</span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-amber-400 to-red-500 rounded-full transition-all"
                         style={{ width: `${percentage}%` }}
@@ -3620,7 +3620,7 @@ function AIRouterPage() {
         <div>
           <h3 className="text-sm font-medium mb-3">📋 Timeout Event Logs</h3>
           {timeoutEvents.length === 0 ? (
-            <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+            <div className="text-center py-6 text-gray-500 bg-muted/50 rounded-lg">
               <div className="text-2xl mb-2">⏱️</div>
               <div className="text-sm">No timeout events logged yet</div>
               <div className="text-xs text-gray-400 mt-1">Test a feature timeout to see logs</div>
@@ -3670,7 +3670,7 @@ function AIRouterPage() {
       </div>
 
       {/* Feature #1333: Model Selection per Feature */}
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-card rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -3692,7 +3692,7 @@ function AIRouterPage() {
                 quality_tier: 'standard' as const
               })));
             }}
-            className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+            className="px-3 py-1 text-sm bg-muted text-muted-foreground rounded hover:bg-muted/80"
           >
             🔄 Reset All to Default
           </button>
@@ -3716,7 +3716,7 @@ function AIRouterPage() {
                   e.target.value = ''; // Reset dropdown after selection
                 }
               }}
-              className="border rounded px-2 py-1 text-sm bg-white"
+              className="border rounded px-2 py-1 text-sm bg-card"
               defaultValue=""
             >
               <option value="">Set all features to...</option>
@@ -3742,7 +3742,7 @@ function AIRouterPage() {
               <select
                 value={orgDefaultModel}
                 onChange={(e) => setOrgDefaultModel(e.target.value as AIModelType)}
-                className="border rounded-lg px-3 py-2 font-medium bg-white"
+                className="border rounded-lg px-3 py-2 font-medium bg-card"
               >
                 <option value="claude-opus-4.5-thinking">🧠 Opus 4.5 Thinking ($$$)</option>
                 <option value="claude-opus-4.5">🎯 Opus 4.5 ($$$)</option>
@@ -3771,8 +3771,8 @@ function AIRouterPage() {
                   key={config.feature}
                   className={`p-4 rounded-lg border-2 transition-all ${
                     config.override_org_default
-                      ? 'border-purple-300 bg-purple-50'
-                      : 'border-gray-200 bg-gray-50'
+                      ? 'border-purple-300 bg-purple-50 dark:bg-purple-900/20'
+                      : 'border-border bg-muted/50'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -3792,7 +3792,7 @@ function AIRouterPage() {
                     <select
                       value={config.model}
                       onChange={(e) => updateFeatureModel(config.feature, e.target.value as AIModelType)}
-                      className="w-full border rounded px-2 py-1.5 text-sm bg-white"
+                      className="w-full border rounded px-2 py-1.5 text-sm bg-card"
                     >
                       <option value="claude-opus-4.5-thinking">🧠 Opus 4.5 Thinking</option>
                       <option value="claude-opus-4.5">🎯 Opus 4.5</option>
@@ -3835,7 +3835,7 @@ function AIRouterPage() {
         {/* Model Usage Statistics */}
         <div className="mb-6">
           <h3 className="text-sm font-medium mb-3">📊 Model Usage by Feature (This Month)</h3>
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-muted/50 rounded-lg p-4">
             <div className="grid grid-cols-4 gap-4 mb-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">
@@ -3875,7 +3875,7 @@ function AIRouterPage() {
                       <span className="w-6">{getFeatureIcon(stat.feature)}</span>
                       <span className="w-28 text-sm font-medium truncate">{config?.name}</span>
                       <span className="w-20 text-xs text-gray-500">{modelInfo.icon} {modelInfo.name.split(' ')[0]}</span>
-                      <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
                         <div
                           className={`h-full ${
                             stat.model.includes('opus') ? 'bg-purple-500' :
@@ -3901,7 +3901,7 @@ function AIRouterPage() {
             {featureModelConfigs
               .filter(c => c.model.includes('opus') && c.feature !== 'analysis' && c.feature !== 'code_review')
               .map(c => (
-                <div key={c.feature} className="flex items-center justify-between p-2 bg-white rounded border border-green-200">
+                <div key={c.feature} className="flex items-center justify-between p-2 bg-card rounded border border-green-200">
                   <div className="flex items-center gap-2">
                     <span>{getFeatureIcon(c.feature)}</span>
                     <span className="font-medium">{c.name}</span>
@@ -3924,7 +3924,7 @@ function AIRouterPage() {
       </div>
 
       {/* Feature #1335: Provider-specific Rate Limiting */}
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-card rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -3965,7 +3965,7 @@ function AIRouterPage() {
                   </div>
                   <button
                     onClick={() => acknowledgeRateLimitAlert(alert.id)}
-                    className="px-2 py-1 text-xs bg-white rounded border hover:bg-gray-50"
+                    className="px-2 py-1 text-xs bg-card rounded border hover:bg-muted"
                   >
                     Dismiss
                   </button>
@@ -4007,7 +4007,7 @@ function AIRouterPage() {
                       setEditingRateLimitProvider(config.provider);
                       setShowRateLimitConfigModal(true);
                     }}
-                    className="text-xs px-2 py-1 bg-white rounded border hover:bg-gray-50"
+                    className="text-xs px-2 py-1 bg-card rounded border hover:bg-muted"
                   >
                     ⚙️ Configure
                   </button>
@@ -4023,7 +4023,7 @@ function AIRouterPage() {
                         {status?.requests_remaining_minute || 0} / {config.requests_per_minute} remaining
                       </span>
                     </div>
-                    <div className="h-2 bg-white rounded-full overflow-hidden">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className={`h-full transition-all ${
                           minuteUsage >= 90 ? 'bg-red-500' :
@@ -4047,7 +4047,7 @@ function AIRouterPage() {
                         {status?.requests_remaining_hour || 0} / {config.requests_per_hour} remaining
                       </span>
                     </div>
-                    <div className="h-2 bg-white rounded-full overflow-hidden">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className={`h-full transition-all ${
                           hourUsage >= 90 ? 'bg-red-500' :
@@ -4071,7 +4071,7 @@ function AIRouterPage() {
                         {((status?.tokens_remaining_minute || 0) / 1000).toFixed(1)}k / {(config.tokens_per_minute / 1000).toFixed(0)}k remaining
                       </span>
                     </div>
-                    <div className="h-2 bg-white rounded-full overflow-hidden">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className={`h-full transition-all ${
                           tokenUsage >= 90 ? 'bg-red-500' :
@@ -4089,7 +4089,7 @@ function AIRouterPage() {
                 <div className="flex items-center justify-between text-xs border-t pt-3">
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">On limit:</span>
-                    <span className="flex items-center gap-1 px-2 py-0.5 bg-white rounded border">
+                    <span className="flex items-center gap-1 px-2 py-0.5 bg-card rounded border">
                       {getStrategyIcon(config.strategy_on_limit)} {getStrategyLabel(config.strategy_on_limit)}
                     </span>
                   </div>
@@ -4105,7 +4105,7 @@ function AIRouterPage() {
                     <div className="text-xs font-medium text-gray-600 mb-2">📋 Request Queue ({status.current_queue_size})</div>
                     <div className="space-y-1">
                       {status.queued_requests.slice(0, 3).map((req, idx) => (
-                        <div key={req.id} className="flex items-center justify-between text-xs bg-white rounded p-2 border">
+                        <div key={req.id} className="flex items-center justify-between text-xs bg-card rounded p-2 border">
                           <div className="flex items-center gap-2">
                             <span className={`px-1.5 py-0.5 rounded text-white text-[10px] ${
                               req.priority === 'high' ? 'bg-red-500' :
@@ -4143,7 +4143,7 @@ function AIRouterPage() {
         {/* Rate Limit Event Log */}
         <div className="mb-4">
           <h3 className="text-sm font-medium mb-2">📜 Recent Rate Limit Events</h3>
-          <div className="bg-gray-50 rounded-lg p-3 max-h-48 overflow-y-auto">
+          <div className="bg-muted/50 rounded-lg p-3 max-h-48 overflow-y-auto">
             {rateLimitEvents.length === 0 ? (
               <div className="text-center text-sm text-gray-500 py-4">No rate limit events yet</div>
             ) : (
@@ -4195,7 +4195,7 @@ function AIRouterPage() {
       {/* Rate Limit Config Modal */}
       {showRateLimitConfigModal && editingRateLimitProvider && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 m-4">
+          <div className="bg-card rounded-lg shadow-xl w-full max-w-lg p-6 m-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
                 ⚙️ Configure Rate Limits - {editingRateLimitProvider === 'kie' ? 'Kie.ai' : 'Anthropic'}
@@ -4270,7 +4270,7 @@ function AIRouterPage() {
 
                   {/* Queue Settings */}
                   {config.strategy_on_limit === 'queue' && (
-                    <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded">
+                    <div className="grid grid-cols-2 gap-4 p-3 bg-muted/50 rounded">
                       <div>
                         <label className="block text-xs font-medium mb-1">Max Queue Size</label>
                         <input
@@ -4331,7 +4331,7 @@ function AIRouterPage() {
                   <div className="flex justify-end gap-2 pt-4 border-t">
                     <button
                       onClick={() => setShowRateLimitConfigModal(false)}
-                      className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                      className="px-4 py-2 text-gray-600 hover:bg-muted rounded"
                     >
                       Cancel
                     </button>
@@ -4350,7 +4350,7 @@ function AIRouterPage() {
       )}
 
       {/* Feature #1339: Fallback Rules Configuration UI */}
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-card rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -4394,14 +4394,14 @@ function AIRouterPage() {
         </div>
 
         {/* Fallback by Trigger Type */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+        <div className="mb-6 p-4 bg-muted/50 rounded-lg">
           <h3 className="text-sm font-medium mb-3">📊 Fallbacks by Trigger</h3>
           <div className="flex flex-wrap gap-3">
             {(['timeout', 'rate_limit', 'error', 'server_error', 'network_error'] as FallbackTrigger[]).map(trigger => (
-              <div key={trigger} className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border">
+              <div key={trigger} className="flex items-center gap-2 px-3 py-2 bg-card rounded-lg border">
                 <span>{getTriggerIcon(trigger)}</span>
                 <span className="text-sm font-medium">{getTriggerLabel(trigger)}</span>
-                <span className="px-2 py-0.5 text-xs bg-gray-100 rounded-full font-mono">
+                <span className="px-2 py-0.5 text-xs bg-muted rounded-full font-mono">
                   {fallbackStats.by_trigger[trigger]}
                 </span>
               </div>
@@ -4420,8 +4420,8 @@ function AIRouterPage() {
                   key={rule.id}
                   className={`p-4 rounded-lg border-2 transition-all ${
                     rule.enabled
-                      ? 'bg-white border-blue-200'
-                      : 'bg-gray-50 border-gray-200 opacity-70'
+                      ? 'bg-card border-blue-200'
+                      : 'bg-muted border-border opacity-70'
                   }`}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -4449,7 +4449,7 @@ function AIRouterPage() {
                           onChange={(e) => updateFallbackRule(rule.id, { enabled: e.target.checked })}
                           className="sr-only peer"
                         />
-                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                       </label>
                       <button
                         onClick={() => {
@@ -4478,7 +4478,7 @@ function AIRouterPage() {
                   {/* Triggers */}
                   <div className="flex flex-wrap gap-2 mb-3">
                     {rule.triggers.map(trigger => (
-                      <span key={trigger} className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 rounded">
+                      <span key={trigger} className="flex items-center gap-1 px-2 py-1 text-xs bg-muted rounded">
                         {getTriggerIcon(trigger)} {getTriggerLabel(trigger)}
                       </span>
                     ))}
@@ -4540,7 +4540,7 @@ function AIRouterPage() {
                 className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
                   isTestingFallback && testingFallbackTrigger === trigger
                     ? 'bg-blue-500 text-white animate-pulse'
-                    : 'bg-white border hover:border-blue-400 hover:bg-blue-50'
+                    : 'bg-card border hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                 } disabled:opacity-50`}
               >
                 {isTestingFallback && testingFallbackTrigger === trigger ? '⏳' : getTriggerIcon(trigger)}
@@ -4554,7 +4554,7 @@ function AIRouterPage() {
         <div>
           <h3 className="text-sm font-medium mb-3">📋 Recent Fallback Events</h3>
           {fallbackTestResults.length === 0 ? (
-            <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+            <div className="text-center py-6 text-gray-500 bg-muted/50 rounded-lg">
               <div className="text-2xl mb-2">📭</div>
               <div className="text-sm">No fallback events recorded yet</div>
               <div className="text-xs text-gray-400 mt-1">Test a fallback scenario to see events</div>
@@ -4601,7 +4601,7 @@ function AIRouterPage() {
       {/* Fallback Rule Configuration Modal */}
       {showFallbackRuleModal && editingFallbackRule && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 m-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl p-6 m-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">⚙️ Configure Fallback Rule</h3>
               <button onClick={() => setShowFallbackRuleModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
@@ -4632,8 +4632,8 @@ function AIRouterPage() {
                       key={trigger}
                       className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
                         editingFallbackRule.triggers.includes(trigger)
-                          ? 'bg-blue-100 border-blue-400'
-                          : 'bg-white border-gray-200 hover:border-gray-400'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-400'
+                          : 'bg-card border-border hover:border-muted-foreground'
                       }`}
                     >
                       <input
@@ -4793,7 +4793,7 @@ function AIRouterPage() {
               </div>
 
               {/* Options */}
-              <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+              <div className="p-3 bg-muted/50 rounded-lg space-y-2">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -4853,7 +4853,7 @@ function AIRouterPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowFallbackRuleModal(false)}
-                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                    className="px-4 py-2 text-gray-600 hover:bg-muted rounded"
                   >
                     Cancel
                   </button>
@@ -4871,7 +4871,7 @@ function AIRouterPage() {
       )}
 
       {/* Feature #1329: Monthly AI Budget Limits */}
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-card rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -4888,7 +4888,7 @@ function AIRouterPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowBudgetResetModal(true)}
-              className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+              className="px-3 py-1 text-sm bg-muted text-muted-foreground rounded hover:bg-muted/80"
             >
               🔄 Reset Budget
             </button>
@@ -4920,7 +4920,7 @@ function AIRouterPage() {
           </div>
 
           {/* Progress bar with limits */}
-          <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
+          <div className="relative h-6 bg-muted rounded-full overflow-hidden">
             <div
               className={`h-full transition-all ${
                 getBudgetStatus() === 'blocked' ? 'bg-red-500' :
@@ -4973,7 +4973,7 @@ function AIRouterPage() {
           <div className="space-y-4">
             <h3 className="text-sm font-medium">⚙️ Budget Configuration</h3>
 
-            <div className="p-3 bg-gray-50 rounded-lg">
+            <div className="p-3 bg-muted/50 rounded-lg">
               <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Budget</label>
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">$</span>
@@ -5080,7 +5080,7 @@ function AIRouterPage() {
               {Object.entries(spendingData.by_provider).map(([provider, cents]) => (
                 <div key={provider} className="flex items-center gap-2 mb-2">
                   <span className="w-16 text-sm font-medium capitalize">{provider}</span>
-                  <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
                     <div
                       className={`h-full ${provider === 'kie' ? 'bg-gradient-to-r from-teal-400 to-teal-500' : 'bg-gradient-to-r from-blue-400 to-blue-500'}`}
                       style={{ width: `${(cents / spendingData.current_month_spend_cents) * 100}%` }}
@@ -5125,7 +5125,7 @@ function AIRouterPage() {
               </select>
             </div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-muted/50 rounded-lg p-4">
             {/* Mini chart showing daily spending */}
             <div className="flex items-end gap-1 h-32 mb-2">
               {spendingData.daily_spend.map((day, idx) => {
@@ -5200,7 +5200,7 @@ function AIRouterPage() {
                 URL.revokeObjectURL(url);
                 alert('✅ Budget report downloaded as CSV');
               }}
-              className="px-3 py-2 bg-white border border-blue-300 text-blue-700 rounded hover:bg-blue-50 flex items-center gap-2"
+              className="px-3 py-2 bg-card border border-blue-300 text-blue-700 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2"
             >
               <span>📊</span> Export CSV
             </button>
@@ -5239,7 +5239,7 @@ function AIRouterPage() {
                 URL.revokeObjectURL(url);
                 alert('✅ Detailed budget report downloaded as JSON');
               }}
-              className="px-3 py-2 bg-white border border-blue-300 text-blue-700 rounded hover:bg-blue-50 flex items-center gap-2"
+              className="px-3 py-2 bg-card border border-blue-300 text-blue-700 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2"
             >
               <span>📋</span> Export JSON
             </button>
@@ -5286,7 +5286,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
                 URL.revokeObjectURL(url);
                 alert('✅ Budget summary downloaded as TXT');
               }}
-              className="px-3 py-2 bg-white border border-blue-300 text-blue-700 rounded hover:bg-blue-50 flex items-center gap-2"
+              className="px-3 py-2 bg-card border border-blue-300 text-blue-700 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2"
             >
               <span>📝</span> Export Summary
             </button>
@@ -5359,7 +5359,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
         </div>
 
         {/* Simulate Spending */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+        <div className="mb-6 p-4 bg-muted/50 rounded-lg">
           <h3 className="text-sm font-medium mb-3">🧪 Simulate Spending</h3>
           <div className="flex flex-wrap gap-2">
             <button
@@ -5402,7 +5402,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
         <div>
           <h3 className="text-sm font-medium mb-3">🔔 Budget Alerts</h3>
           {budgetAlerts.length === 0 ? (
-            <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+            <div className="text-center py-6 text-gray-500 bg-muted/50 rounded-lg">
               <div className="text-2xl mb-2">🔕</div>
               <div className="text-sm">No budget alerts</div>
             </div>
@@ -5449,7 +5449,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
       {/* Budget Reset Modal */}
       {showBudgetResetModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <h3 className="text-lg font-semibold mb-4">🔄 Reset Monthly Budget</h3>
             <p className="text-gray-600 mb-4">
               This will reset your current month's spending to $0.00 and clear all spending history.
@@ -5477,7 +5477,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
       )}
 
       {/* Feature #1330: AI Cost Alert Notifications */}
-      <div className="bg-white rounded-lg shadow p-4 mt-6">
+      <div className="bg-card rounded-lg shadow p-4 mt-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">🔔 Cost Alert Notifications</h2>
           <button
@@ -5493,7 +5493,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
           <div className="space-y-4">
             <h3 className="font-medium text-gray-800 border-b pb-2">📊 Alert Thresholds (50%, 80%, 100%)</h3>
             {alertNotificationConfig.thresholds.map((threshold, index) => (
-              <div key={threshold.percentage} className="border rounded-lg p-3 bg-gray-50">
+              <div key={threshold.percentage} className="border rounded-lg p-3 bg-muted/50">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className={`text-lg ${threshold.percentage === 100 ? '🚨' : threshold.percentage >= 80 ? '⚠️' : '📍'}`}>
@@ -5779,7 +5779,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
       {/* Test Notification Modal */}
       {showTestNotificationModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <h3 className="text-lg font-semibold mb-4">📧 Send Test Alert</h3>
             <p className="text-gray-600 mb-4">
               Send a test notification to verify your alert configuration is working correctly.
@@ -5797,7 +5797,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
                     className={`flex-1 py-2 px-3 rounded border text-sm font-medium ${
                       testNotificationThreshold === threshold
                         ? 'bg-blue-500 text-white border-blue-500'
-                        : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
+                        : 'bg-muted/50 text-muted-foreground border-border hover:bg-muted'
                     }`}
                   >
                     {threshold}%
@@ -5806,7 +5806,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded p-3 mb-4 text-sm">
+            <div className="bg-muted/50 rounded p-3 mb-4 text-sm">
               <div className="font-medium mb-1">Preview:</div>
               <div className="text-gray-600">
                 <div>• Channels: {[
@@ -5838,7 +5838,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
       )}
 
       {/* Feature #1332: AI Response Caching */}
-      <div className="bg-white rounded-lg shadow p-4 mt-6">
+      <div className="bg-card rounded-lg shadow p-4 mt-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-semibold">💾 AI Response Caching</h2>
@@ -5992,7 +5992,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
                 onChange={(e) => previewCacheKey(e.target.value)}
               />
               {cacheKeyPreview && (
-                <div className="bg-gray-100 rounded p-2 font-mono text-xs break-all">
+                <div className="bg-muted rounded p-2 font-mono text-xs break-all">
                   {cacheKeyPreview}
                 </div>
               )}
@@ -6005,7 +6005,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
 
             <div className="space-y-2">
               {(Object.entries(cacheConfig.cache_by_feature) as [AIFeatureType, { enabled: boolean; ttl_seconds: number }][]).map(([feature, config]) => (
-                <div key={feature} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                <div key={feature} className="flex items-center justify-between p-2 bg-muted/50 rounded border">
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -6138,9 +6138,9 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
                 <div
                   key={entry.id}
                   className={`p-3 rounded border ${
-                    entry.status === 'active' ? 'bg-green-50 border-green-200' :
-                    entry.status === 'expired' ? 'bg-gray-50 border-gray-200' :
-                    'bg-yellow-50 border-yellow-200'
+                    entry.status === 'active' ? 'bg-green-50 dark:bg-green-900/20 border-green-200' :
+                    entry.status === 'expired' ? 'bg-muted/50 border-border' :
+                    'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -6172,7 +6172,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
       {/* Cache Clear Confirmation Modal */}
       {showCacheClearModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <h3 className="text-lg font-semibold mb-4">🗑️ Clear AI Cache</h3>
             <p className="text-gray-600 mb-4">
               Are you sure you want to clear all cached AI responses? This will remove {cacheStats.active_entries.toLocaleString()} cached entries ({cacheStats.cache_size_mb.toFixed(1)} MB).
@@ -6199,7 +6199,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
       )}
 
       {/* Switch Logs */}
-      <div className="bg-white rounded-lg shadow p-4 mt-6">
+      <div className="bg-card rounded-lg shadow p-4 mt-6">
         <h2 className="text-lg font-semibold mb-4">📋 Provider Switch Logs</h2>
 
         {logs.length === 0 ? (
@@ -6237,7 +6237,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
       </div>
 
       {/* Feature #1337: API Key Management */}
-      <div className="bg-white rounded-lg shadow p-6 mt-6">
+      <div className="bg-card rounded-lg shadow p-6 mt-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -6260,7 +6260,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
             <div
               key={key.id}
               className={`border rounded-lg p-4 transition-all ${
-                key.is_active ? 'border-gray-200 bg-white' : 'border-gray-200 bg-gray-50 opacity-60'
+                key.is_active ? 'border-border bg-card' : 'border-border bg-muted opacity-60'
               }`}
             >
               <div className="flex items-start justify-between">
@@ -6286,7 +6286,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
                         key.role === 'primary' ? 'bg-blue-100 text-blue-700' :
                         key.role === 'standby' ? 'bg-amber-100 text-amber-700' :
-                        'bg-gray-100 text-gray-500'
+                        'bg-muted text-muted-foreground'
                       }`}>
                         {key.role === 'primary' ? '🔷 Primary' :
                          key.role === 'standby' ? '🔶 Standby' :
@@ -6343,8 +6343,8 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
                     onClick={() => toggleKeyActive(key.id)}
                     className={`px-3 py-1.5 text-sm border rounded flex items-center gap-1 ${
                       key.is_active
-                        ? 'border-gray-300 text-gray-600 hover:bg-gray-50'
-                        : 'border-green-300 text-green-600 hover:bg-green-50'
+                        ? 'border-border text-muted-foreground hover:bg-muted/50'
+                        : 'border-green-300 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
                     }`}
                   >
                     {key.is_active ? '⏸️ Disable' : '▶️ Enable'}
@@ -6465,7 +6465,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
             if (providerKeys.length < 2) return null;
 
             return (
-              <div key={provider} className="mb-4 p-4 border rounded-lg bg-gray-50">
+              <div key={provider} className="mb-4 p-4 border rounded-lg bg-muted/50">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-lg">{provider === 'kie' ? '🤖' : '🔵'}</span>
                   <span className="font-medium capitalize">{provider}</span>
@@ -6555,7 +6555,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
               <div
                 key={log.id}
                 className={`flex items-center justify-between p-3 rounded border text-sm ${
-                  log.success ? 'bg-gray-50 border-gray-200' : 'bg-red-50 border-red-200'
+                  log.success ? 'bg-muted/50 border-border' : 'bg-red-50 dark:bg-red-900/20 border-red-200'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -6598,7 +6598,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => `  ${f.replace('_', ' 
       {/* API Key Modal */}
       {showKeyModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+          <div className="bg-card rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
             <h3 className="text-lg font-semibold mb-4">
               {keyModalMode === 'add' ? '➕ Add New API Key' : '🔄 Rotate API Key'}
             </h3>
