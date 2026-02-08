@@ -14,6 +14,7 @@
 import * as readline from 'readline';
 import * as http from 'http';
 import { randomUUID } from 'crypto';
+import { fileURLToPath } from 'url';
 
 // Feature #1356: Import types from extracted module
 import {
@@ -1482,6 +1483,8 @@ export { loadConfigFile, parseArgs, main } from './mcp-cli.js';
 
 // Run if executed directly - delegates to mcp-cli.ts
 // Note: For direct execution, use mcp-cli.ts instead
-if (require.main === module) {
+// Feature #431: Updated for ES module compatibility with Claude Code MCP integration
+const isServerMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+if (isServerMainModule) {
   import('./mcp-cli.js').then(cli => cli.main());
 }

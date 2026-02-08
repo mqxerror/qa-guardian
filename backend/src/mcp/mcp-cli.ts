@@ -1,15 +1,18 @@
+#!/usr/bin/env node
 /**
  * MCP Server CLI Module
  *
  * Handles command-line argument parsing, config file loading, and the main entry point.
  *
  * Feature #1356: Extracted from server.ts to reduce file size
+ * Feature #431: Hardened for Claude Code MCP integration
  *
  * @module mcp-cli
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { MCPServer } from './server.js';
 import type { ServerConfig } from './mcp-types.js';
 
@@ -100,6 +103,7 @@ export function loadConfigFile(configPath: string): Partial<ServerConfig> {
 
 /**
  * Parse command line arguments into server configuration
+ * Feature #431: Added MCP_API_KEY environment variable support
  *
  * @returns Server configuration parsed from CLI args
  */
@@ -108,6 +112,16 @@ export function parseArgs(): ServerConfig {
   const config: ServerConfig = {
     transport: 'stdio',
   };
+
+  // Feature #431: Support MCP_API_KEY environment variable for Claude Code integration
+  // Environment variables are checked first, then config file, then CLI args (highest priority)
+  if (process.env.MCP_API_KEY) {
+    config.apiKey = process.env.MCP_API_KEY;
+    config.requireAuth = true;
+  }
+  if (process.env.API_URL) {
+    config.apiUrl = process.env.API_URL;
+  }
 
   // First pass: look for config file
   for (let i = 0; i < args.length; i++) {
@@ -277,8 +291,9 @@ export async function main(): Promise<void> {
   }
 }
 
-// Run if executed directly
-// Note: When this file is the main module, start the server
-if (require.main === module) {
+// Run if executed directly (ES modules version)
+// Feature #431: Updated for ES module compatibility with Claude Code MCP integration
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMainModule) {
   main();
 }

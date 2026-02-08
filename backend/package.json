@@ -4,6 +4,9 @@
   "description": "QA Guardian Backend API",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "qa-guardian-mcp": "./dist/mcp/mcp-cli.js"
+  },
   "scripts": {
     "dev": "node --import tsx src/index.ts",
     "dev:watch": "tsx watch src/index.ts",

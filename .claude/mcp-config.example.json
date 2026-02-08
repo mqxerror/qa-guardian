@@ -1,0 +1,150 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/schemas/mcp-config.schema.json",
+  "mcpServers": {
+    "qa-guardian": {
+      "command": "node",
+      "args": ["./backend/dist/mcp/mcp-cli.js", "--transport", "stdio"],
+      "env": {
+        "MCP_API_KEY": "<your-api-key-here>",
+        "API_URL": "http://localhost:3001"
+      }
+    }
+  },
+  "_documentation": {
+    "description": "QA Guardian MCP Server - 170+ tools for AI-native test management",
+    "setup": [
+      "1. Generate an API key at http://localhost:5173/settings/api-keys",
+      "2. Replace <your-api-key-here> with your actual API key",
+      "3. Copy this file to ~/.claude/mcp-config.json",
+      "4. Restart Claude Code to load the MCP server"
+    ],
+    "top_20_tools": {
+      "project_management": [
+        {
+          "name": "list_projects",
+          "description": "List all projects in your organization with pagination",
+          "example": { "limit": 10, "offset": 0 }
+        },
+        {
+          "name": "create_project",
+          "description": "Create a new test project",
+          "example": { "name": "My Project", "description": "E2E tests for my app", "base_url": "https://myapp.com" }
+        },
+        {
+          "name": "get_project",
+          "description": "Get details of a specific project",
+          "example": { "project_id": "proj_abc123" }
+        }
+      ],
+      "test_suites": [
+        {
+          "name": "list_test_suites",
+          "description": "List test suites in a project with filtering",
+          "example": { "project_id": "proj_abc123", "type": "e2e" }
+        },
+        {
+          "name": "create_test_suite",
+          "description": "Create a new test suite",
+          "example": { "project_id": "proj_abc123", "name": "Login Tests", "type": "e2e" }
+        }
+      ],
+      "test_execution": [
+        {
+          "name": "trigger_test_run",
+          "description": "Execute a test or suite and get results",
+          "example": { "suite_id": "suite_abc123", "browser": "chromium", "headless": true }
+        },
+        {
+          "name": "get_run_status",
+          "description": "Check the status of a running test",
+          "example": { "run_id": "run_abc123" }
+        },
+        {
+          "name": "list_recent_runs",
+          "description": "Get recent test runs with filtering",
+          "example": { "limit": 20, "status": "failed" }
+        },
+        {
+          "name": "get_test_results",
+          "description": "Get detailed results from a test run",
+          "example": { "run_id": "run_abc123", "include_artifacts": true }
+        }
+      ],
+      "analytics": [
+        {
+          "name": "get_test_analytics",
+          "description": "Get analytics and trends for test execution",
+          "example": { "project_id": "proj_abc123", "period": "7d" }
+        },
+        {
+          "name": "get_flaky_tests",
+          "description": "Identify flaky tests that fail intermittently",
+          "example": { "project_id": "proj_abc123", "threshold": 0.2 }
+        }
+      ],
+      "visual_regression": [
+        {
+          "name": "get_visual_baselines",
+          "description": "Get visual baselines for a test",
+          "example": { "test_id": "test_abc123" }
+        },
+        {
+          "name": "approve_visual_change",
+          "description": "Approve a visual change and update baseline",
+          "example": { "test_id": "test_abc123", "run_id": "run_xyz789" }
+        }
+      ],
+      "security_scanning": [
+        {
+          "name": "run_security_scan",
+          "description": "Run DAST security scan on a URL",
+          "example": { "project_id": "proj_abc123", "target_url": "https://myapp.com", "scan_type": "baseline" }
+        },
+        {
+          "name": "get_security_findings",
+          "description": "Get security vulnerabilities found",
+          "example": { "project_id": "proj_abc123", "severity": "high" }
+        }
+      ],
+      "ai_features": [
+        {
+          "name": "generate_test",
+          "description": "AI-generate a test from natural language description",
+          "example": { "description": "Test that user can log in with valid credentials", "project_id": "proj_abc123" }
+        },
+        {
+          "name": "analyze_failure",
+          "description": "AI-analyze why a test failed",
+          "example": { "run_id": "run_abc123" }
+        },
+        {
+          "name": "suggest_test_improvements",
+          "description": "Get AI suggestions for improving test reliability",
+          "example": { "test_id": "test_abc123" }
+        }
+      ],
+      "monitoring": [
+        {
+          "name": "create_uptime_check",
+          "description": "Create an uptime monitoring check",
+          "example": { "name": "API Health", "url": "https://api.myapp.com/health", "interval_seconds": 60 }
+        },
+        {
+          "name": "get_uptime_status",
+          "description": "Get current uptime status for all checks",
+          "example": {}
+        }
+      ]
+    },
+    "authentication": {
+      "method": "API Key",
+      "header": "X-API-Key",
+      "env_var": "MCP_API_KEY",
+      "scopes": ["mcp:read", "mcp:write", "mcp:execute"]
+    },
+    "rate_limits": {
+      "default": "100 requests per minute",
+      "burst": "20 requests per 10 seconds"
+    }
+  }
+}
