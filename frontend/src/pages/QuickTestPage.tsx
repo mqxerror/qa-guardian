@@ -13,8 +13,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Layout } from '../components/Layout';
-import { useAuthStore } from '../stores/authStore';
-import { useSocketStore } from '../stores/socketStore';
+import { useQuickTestSocket, WaveState, QuickTestSummary } from '../hooks/useQuickTestSocket';
 import {
   PageHeader,
   AnimatedCard,
@@ -317,8 +316,17 @@ function ScoreDisplay({ summary }: ScoreDisplayProps) {
 // ============================================================
 
 export function QuickTestPage() {
-  const { token } = useAuthStore();
-  const { socket, isConnected } = useSocketStore();
+  // Feature #441: Use the useQuickTestSocket hook for real-time updates
+  const {
+    runId: currentRunId,
+    url: testingUrl,
+    status: testStatus,
+    waves: hookWaves,
+    summary,
+    isConnected,
+    startTest: hookStartTest,
+    reset: resetTest,
+  } = useQuickTestSocket();
 
   // URL Input State
   const [url, setUrl] = useState('');
@@ -326,18 +334,8 @@ export function QuickTestPage() {
   const [recentUrls, setRecentUrls] = useState<string[]>([]);
   const [showRecentUrls, setShowRecentUrls] = useState(false);
 
-  // Test State
-  const [isRunning, setIsRunning] = useState(false);
-  const [currentRunId, setCurrentRunId] = useState<string | null>(null);
-  const [waves, setWaves] = useState<WaveData[]>(() =>
-    WAVE_DEFINITIONS.map(def => ({
-      ...def,
-      status: 'waiting' as const,
-      steps: def.steps.map(s => ({ ...s })),
-      expanded: false,
-    }))
-  );
-  const [result, setResult] = useState<QuickTestResult | null>(null);
+  // UI State for wave expansion (not managed by hook)
+  const [waveExpanded, setWaveExpanded] = useState<Record<number, boolean>>({});
 
   // History State
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -345,6 +343,25 @@ export function QuickTestPage() {
 
   // Refs
   const urlInputRef = useRef<HTMLInputElement>(null);
+
+  // Derive running state from hook
+  const isRunning = testStatus === 'running';
+
+  // Merge hook waves with local UI state (expanded) and icons
+  const waves: WaveData[] = hookWaves.map((w, idx) => ({
+    ...w,
+    icon: WAVE_DEFINITIONS[idx]?.icon || Globe,
+    expanded: waveExpanded[w.wave] || false,
+  }));
+
+  // Create result object from hook state
+  const result: QuickTestResult | null = currentRunId ? {
+    runId: currentRunId,
+    url: testingUrl || '',
+    timestamp: new Date(),
+    status: testStatus === 'completed' ? 'completed' : testStatus === 'failed' ? 'failed' : 'running',
+    summary: summary || undefined,
+  } : null;
 
   // Load recent URLs and history from localStorage
   useEffect(() => {
@@ -365,100 +382,28 @@ export function QuickTestPage() {
     }
   }, []);
 
-  // Socket event handlers
+  // Update history when test completes
   useEffect(() => {
-    if (!socket || !currentRunId) return;
-
-    const handleWaveStart = (data: { wave: number; name: string }) => {
-      setWaves(prev =>
-        prev.map(w =>
-          w.wave === data.wave
-            ? { ...w, status: 'running', startedAt: new Date() }
-            : w
-        )
-      );
-    };
-
-    const handleWaveComplete = (data: { wave: number; data: Record<string, unknown>; completedAt: Date }) => {
-      setWaves(prev =>
-        prev.map(w =>
-          w.wave === data.wave
-            ? {
-                ...w,
-                status: 'completed',
-                completedAt: new Date(data.completedAt),
-                duration: w.startedAt ? Date.now() - w.startedAt.getTime() : undefined,
-                data: data.data,
-                steps: w.steps.map(s => ({ ...s, status: 'completed' as const })),
-              }
-            : w
-        )
-      );
-    };
-
-    const handleWaveError = (data: { wave: number; error: string }) => {
-      setWaves(prev =>
-        prev.map(w =>
-          w.wave === data.wave
-            ? { ...w, status: 'failed', error: data.error }
-            : w
-        )
-      );
-    };
-
-    const handleTestComplete = (data: { summary: QuickTestResult['summary'] }) => {
-      setIsRunning(false);
-      // Feature #442: Use functional update to avoid stale closure on 'result'
-      setResult(prev => {
-        if (!prev) return null;
-        const updatedResult = { ...prev, status: 'completed' as const, summary: data.summary };
-
-        // Update history using the fresh result from functional update
-        const newEntry: HistoryEntry = {
-          runId: prev.runId,
-          url: prev.url,
-          timestamp: prev.timestamp,
-          score: data.summary?.overallScore,
-        };
-        setHistory(prevHistory => {
-          const updated = [newEntry, ...prevHistory.filter(h => h.runId !== newEntry.runId)].slice(0, MAX_HISTORY);
-          try {
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-          } catch {
-            // Ignore localStorage errors
-          }
-          return updated;
-        });
-
-        return updatedResult;
+    if (testStatus === 'completed' && currentRunId && testingUrl && summary) {
+      const newEntry: HistoryEntry = {
+        runId: currentRunId,
+        url: testingUrl,
+        timestamp: new Date(),
+        score: summary.overallScore,
+      };
+      setHistory(prevHistory => {
+        const updated = [newEntry, ...prevHistory.filter(h => h.runId !== newEntry.runId)].slice(0, MAX_HISTORY);
+        try {
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+        } catch {
+          // Ignore localStorage errors
+        }
+        return updated;
       });
-    };
+    }
+  }, [testStatus, currentRunId, testingUrl, summary]);
 
-    const handleTestError = (data: { error: string }) => {
-      setIsRunning(false);
-      setResult(prev =>
-        prev ? { ...prev, status: 'failed' } : null
-      );
-      console.error('[Quick Test] Error:', data.error);
-    };
-
-    // Subscribe to events
-    socket.on('wave:start', handleWaveStart);
-    socket.on('wave:complete', handleWaveComplete);
-    socket.on('wave:error', handleWaveError);
-    socket.on('quick-test:complete', handleTestComplete);
-    socket.on('quick-test:error', handleTestError);
-
-    return () => {
-      socket.off('wave:start', handleWaveStart);
-      socket.off('wave:complete', handleWaveComplete);
-      socket.off('wave:error', handleWaveError);
-      socket.off('quick-test:complete', handleTestComplete);
-      socket.off('quick-test:error', handleTestError);
-    };
-  }, [socket, currentRunId, result]);
-
-  // Start test
+  // Start test using the hook
   const startTest = useCallback(async () => {
     // Validate URL
     if (!url.trim()) {
@@ -479,23 +424,7 @@ export function QuickTestPage() {
     }
 
     setUrlError(null);
-    setIsRunning(true);
-
-    // Reset waves
-    setWaves(
-      WAVE_DEFINITIONS.map(def => ({
-        ...def,
-        status: 'waiting' as const,
-        steps: def.steps.map(s => ({ ...s, status: 'pending' as const })),
-        expanded: false,
-        data: undefined,
-        error: undefined,
-        startedAt: undefined,
-        completedAt: undefined,
-        duration: undefined,
-      }))
-    );
-    setResult(null);
+    setWaveExpanded({}); // Reset expansions
 
     // Save to recent URLs
     setRecentUrls(prev => {
@@ -508,34 +437,12 @@ export function QuickTestPage() {
       return updated;
     });
 
-    try {
-      const response = await fetch('/api/v1/quick-test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ url: testUrl }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to start test');
-      }
-
-      const data = await response.json();
-      setCurrentRunId(data.runId);
-      setResult({
-        runId: data.runId,
-        url: testUrl,
-        timestamp: new Date(),
-        status: 'running',
-      });
-    } catch (err) {
-      setIsRunning(false);
-      setUrlError(err instanceof Error ? err.message : 'Failed to start test');
+    // Use hook's startTest function
+    const result = await hookStartTest(testUrl);
+    if ('error' in result) {
+      setUrlError(result.error);
     }
-  }, [url, token]);
+  }, [url, hookStartTest]);
 
   // Handle enter key
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -544,13 +451,15 @@ export function QuickTestPage() {
     }
   };
 
-  // Toggle wave expansion
+  // Toggle wave expansion - uses local UI state since hook doesn't manage expansion
   const toggleWaveExpand = (waveIndex: number) => {
-    setWaves(prev =>
-      prev.map((w, idx) =>
-        idx === waveIndex ? { ...w, expanded: !w.expanded } : w
-      )
-    );
+    const waveNum = waves[waveIndex]?.wave;
+    if (waveNum) {
+      setWaveExpanded(prev => ({
+        ...prev,
+        [waveNum]: !prev[waveNum],
+      }));
+    }
   };
 
   // Select from history
