@@ -910,9 +910,12 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
   // ============================================================
 
   // Get PR scan configuration for a repository
+  // Feature #399: Add authentication to protect config endpoints
   app.get<{
     Params: { owner: string; repo: string };
-  }>('/api/v1/github/webhooks/config/:owner/:repo', async (request) => {
+  }>('/api/v1/github/webhooks/config/:owner/:repo', {
+    preHandler: [authenticate, requireScopes(['read'])],
+  }, async (request) => {
     const { owner, repo } = request.params;
     const repoFullName = `${owner}/${repo}`;
 
@@ -925,10 +928,13 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Update PR scan configuration for a repository
+  // Feature #399: Add authentication to protect config endpoints (admin only)
   app.patch<{
     Params: { owner: string; repo: string };
     Body: Partial<PRScanConfig>;
-  }>('/api/v1/github/webhooks/config/:owner/:repo', async (request) => {
+  }>('/api/v1/github/webhooks/config/:owner/:repo', {
+    preHandler: [authenticate, requireScopes(['write'])],
+  }, async (request) => {
     const { owner, repo } = request.params;
     const repoFullName = `${owner}/${repo}`;
     const updates = request.body;
@@ -951,9 +957,12 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
   // ============================================================
 
   // Manually trigger a PR scan (for testing or re-scanning)
+  // Feature #399: Add authentication to protect scan trigger endpoints
   app.post<{
     Params: { owner: string; repo: string; prNumber: string };
-  }>('/api/v1/github/webhooks/scan/:owner/:repo/:prNumber', async (request, reply) => {
+  }>('/api/v1/github/webhooks/scan/:owner/:repo/:prNumber', {
+    preHandler: [authenticate, requireScopes(['execute'])],
+  }, async (request, reply) => {
     const { owner, repo, prNumber } = request.params;
     const repoFullName = `${owner}/${repo}`;
     const pr = parseInt(prNumber, 10);
@@ -1025,9 +1034,12 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
   // ============================================================
 
   // Get scan results for a specific PR
+  // Feature #399: Add authentication to protect scan results endpoints
   app.get<{
     Params: { owner: string; repo: string; prNumber: string };
-  }>('/api/v1/github/webhooks/scan/:owner/:repo/:prNumber', async (request, reply) => {
+  }>('/api/v1/github/webhooks/scan/:owner/:repo/:prNumber', {
+    preHandler: [authenticate, requireScopes(['read'])],
+  }, async (request, reply) => {
     const { owner, repo, prNumber } = request.params;
     const repoFullName = `${owner}/${repo}`;
     const pr = parseInt(prNumber, 10);
@@ -1080,9 +1092,12 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
   // ============================================================
 
   // Get Gitleaks config for push scanning (per project)
+  // Feature #399: Add authentication to protect Gitleaks config endpoints
   app.get<{
     Params: { projectId: string };
-  }>('/api/v1/github/webhooks/gitleaks/config/:projectId', async (request) => {
+  }>('/api/v1/github/webhooks/gitleaks/config/:projectId', {
+    preHandler: [authenticate, requireScopes(['read'])],
+  }, async (request) => {
     const { projectId } = request.params;
 
     const config = await gitleaksRepo.getGitleaksConfigOrDefault(projectId);
@@ -1096,10 +1111,13 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Update Gitleaks config for push scanning (enable/disable auto-scan)
+  // Feature #399: Add authentication to protect Gitleaks config endpoints (write access)
   app.patch<{
     Params: { projectId: string };
     Body: Partial<GitleaksConfig>;
-  }>('/api/v1/github/webhooks/gitleaks/config/:projectId', async (request) => {
+  }>('/api/v1/github/webhooks/gitleaks/config/:projectId', {
+    preHandler: [authenticate, requireScopes(['write'])],
+  }, async (request) => {
     const { projectId } = request.params;
     const updates = request.body;
 
@@ -1142,9 +1160,12 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Get specific push scan result
+  // Feature #399: Add authentication to protect scan result endpoints
   app.get<{
     Params: { owner: string; repo: string; sha: string };
-  }>('/api/v1/github/webhooks/gitleaks/scans/:owner/:repo/:sha', async (request, reply) => {
+  }>('/api/v1/github/webhooks/gitleaks/scans/:owner/:repo/:sha', {
+    preHandler: [authenticate, requireScopes(['read'])],
+  }, async (request, reply) => {
     const { owner, repo, sha } = request.params;
     const scanKey = `${owner}/${repo}:${sha}`;
 
@@ -1171,10 +1192,13 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Manual trigger: Simulate a push event for testing
+  // Feature #399: Add authentication to protect test trigger endpoints
   app.post<{
     Params: { owner: string; repo: string };
     Body: { branch?: string; sha?: string };
-  }>('/api/v1/github/webhooks/gitleaks/test/:owner/:repo', async (request) => {
+  }>('/api/v1/github/webhooks/gitleaks/test/:owner/:repo', {
+    preHandler: [authenticate, requireScopes(['execute'])],
+  }, async (request) => {
     const { owner, repo } = request.params;
     const { branch = 'main', sha } = request.body;
     const repoFullName = `${owner}/${repo}`;
