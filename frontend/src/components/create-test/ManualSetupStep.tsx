@@ -295,7 +295,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
               <select
                 value={formState.devicePreset}
                 onChange={(e) => updateField('devicePreset', e.target.value as 'desktop' | 'mobile')}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
               >
                 <option value="desktop">Desktop</option>
                 <option value="mobile">Mobile</option>
@@ -308,7 +308,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
                 onChange={(e) => updateField('performanceThreshold', parseInt(e.target.value) || 50)}
                 min={0}
                 max={100}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
               />
             </FormField>
           </div>
@@ -321,7 +321,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
               <select
                 value={formState.wcagLevel}
                 onChange={(e) => updateField('wcagLevel', e.target.value as 'A' | 'AA' | 'AAA')}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
               >
                 <option value="A">Level A (Minimum)</option>
                 <option value="AA">Level AA (Recommended)</option>
@@ -341,7 +341,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
                 onChange={(e) => updateField('virtualUsers', parseInt(e.target.value) || 10)}
                 min={1}
                 max={10000}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
               />
             </FormField>
             <div className="grid grid-cols-2 gap-4">
@@ -352,7 +352,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
                   onChange={(e) => updateField('duration', parseInt(e.target.value) || 60)}
                   min={10}
                   max={3600}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
                 />
               </FormField>
               <FormField label="Ramp-up (seconds)">
@@ -362,7 +362,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
                   onChange={(e) => updateField('rampUp', parseInt(e.target.value) || 10)}
                   min={0}
                   max={300}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
                 />
               </FormField>
             </div>
@@ -408,7 +408,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
                   onChange={(e) => updateField('name', e.target.value)}
                   onBlur={() => handleBlur('name')}
                   placeholder="Enter test name"
-                  className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
                     touched.name && errors.name
                       ? 'border-red-500 focus:ring-red-500'
                       : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
@@ -423,7 +423,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
                   onChange={(e) => updateField('targetUrl', e.target.value)}
                   onBlur={() => handleBlur('targetUrl')}
                   placeholder={projectBaseUrl || 'https://your-site.com'}
-                  className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
                     touched.targetUrl && errors.targetUrl
                       ? 'border-red-500 focus:ring-red-500'
                       : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
@@ -437,7 +437,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
                   onChange={(e) => updateField('description', e.target.value)}
                   placeholder="Describe what this test does..."
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground resize-none"
                 />
               </FormField>
             </>
@@ -458,7 +458,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
                   <input
                     type="text"
                     placeholder="smoke, regression, critical"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
                   />
                 </FormField>
 
@@ -469,7 +469,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
                     min={1000}
                     max={300000}
                     step={1000}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
                   />
                 </FormField>
 
@@ -479,7 +479,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
                     defaultValue={0}
                     min={0}
                     max={5}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
                   />
                 </FormField>
               </div>

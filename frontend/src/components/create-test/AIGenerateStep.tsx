@@ -126,7 +126,7 @@ const EditModal: React.FC<EditModalProps> = ({
           <select
             value={editTestType || ''}
             onChange={(e) => setEditTestType(e.target.value as DetectedTestType)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
           >
             <option value="">Select type...</option>
             {Object.entries(TEST_TYPE_CONFIG).map(([key, config]) => (
@@ -145,7 +145,7 @@ const EditModal: React.FC<EditModalProps> = ({
             value={editUrl}
             onChange={(e) => setEditUrl(e.target.value)}
             placeholder={projectBaseUrl || 'https://your-site.com'}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
           />
         </div>
 
@@ -166,7 +166,7 @@ const EditModal: React.FC<EditModalProps> = ({
               };
               setEditViewport({ preset, ...presetDimensions[preset] });
             }}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
           >
             {Object.entries(VIEWPORT_CONFIG).map(([key, config]) => (
               <option key={key} value={key}>{config.icon} {config.label}</option>
@@ -179,7 +179,7 @@ const EditModal: React.FC<EditModalProps> = ({
                 value={editViewport.width}
                 onChange={(e) => setEditViewport({ ...editViewport, width: parseInt(e.target.value) || 0 })}
                 placeholder="Width"
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
               />
               <span className="py-2 text-gray-500">×</span>
               <input
@@ -187,7 +187,7 @@ const EditModal: React.FC<EditModalProps> = ({
                 value={editViewport.height}
                 onChange={(e) => setEditViewport({ ...editViewport, height: parseInt(e.target.value) || 0 })}
                 placeholder="Height"
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
               />
             </div>
           )}
@@ -312,7 +312,7 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
           value={input}
           onChange={handleInputChange}
           placeholder="Example: Test the login form on https://myapp.com using mobile viewport..."
-          className="w-full h-32 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full h-32 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-input text-foreground placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           autoFocus
         />
         <div className="flex items-center justify-between mt-2">

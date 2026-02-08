@@ -198,7 +198,7 @@ const StepRow: React.FC<{
       <select
         value={step.action}
         onChange={(e) => onUpdate(step.id, { action: e.target.value as StepAction })}
-        className="w-32 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        className="w-32 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-input text-foreground"
         title="Select action"
       >
         {(Object.entries(ACTION_CONFIG) as [StepAction, ActionConfig][]).map(([action, cfg]) => (
@@ -215,7 +215,7 @@ const StepRow: React.FC<{
         onChange={(e) => onUpdate(step.id, { selector: e.target.value })}
         placeholder={config.placeholder.selector || 'Selector (optional)'}
         disabled={!config.requiresSelector && !step.selector}
-        className={`flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono ${
+        className={`flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-input text-foreground font-mono ${
           !config.requiresSelector && !step.selector ? 'opacity-50' : ''
         }`}
         title="CSS selector"
@@ -228,7 +228,7 @@ const StepRow: React.FC<{
         onChange={(e) => onUpdate(step.id, { value: e.target.value })}
         placeholder={config.placeholder.value || 'Value (optional)'}
         disabled={!config.requiresValue && !step.value}
-        className={`w-40 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+        className={`w-40 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-input text-foreground ${
           !config.requiresValue && !step.value ? 'opacity-50' : ''
         }`}
         title="Value"

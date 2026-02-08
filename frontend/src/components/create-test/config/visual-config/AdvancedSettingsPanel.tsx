@@ -55,7 +55,7 @@ export const AdvancedSettingsPanel: React.FC<AdvancedSettingsPanelProps> = ({
               value={waitForSelector}
               onChange={(e) => onWaitForSelectorChange(e.target.value)}
               placeholder="[data-loaded='true'], .content-ready"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground font-mono text-sm"
             />
           </FormField>
 
@@ -68,7 +68,7 @@ export const AdvancedSettingsPanel: React.FC<AdvancedSettingsPanelProps> = ({
               min={0}
               max={10000}
               step={100}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
             />
           </FormField>
 
@@ -82,7 +82,7 @@ export const AdvancedSettingsPanel: React.FC<AdvancedSettingsPanelProps> = ({
                 onHideSelectorsChange(selectors);
               }}
               placeholder=".ad-banner, .cookie-popup, [data-dynamic]"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground font-mono text-sm"
             />
           </FormField>
         </div>

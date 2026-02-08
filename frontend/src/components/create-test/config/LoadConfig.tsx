@@ -238,7 +238,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
           value={config.name}
           onChange={(e) => updateField('name', e.target.value)}
           placeholder="Load Test - API Endpoint"
-          className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+          className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
             errors.name
               ? 'border-red-500 focus:ring-red-500'
               : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
@@ -253,7 +253,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
           value={config.targetUrl}
           onChange={(e) => updateField('targetUrl', e.target.value)}
           placeholder={projectBaseUrl ? `${projectBaseUrl}/api` : 'https://your-site.com/api'}
-          className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+          className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
             errors.targetUrl
               ? 'border-red-500 focus:ring-red-500'
               : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
@@ -268,7 +268,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
           onChange={(e) => updateField('description', e.target.value)}
           placeholder="Describe what this load test measures..."
           rows={2}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground resize-none"
         />
       </FormField>
 
@@ -287,7 +287,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
             onChange={(e) => updateField('virtualUsers', parseInt(e.target.value) || 1)}
             min={1}
             max={10000}
-            className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+            className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
               errors.virtualUsers
                 ? 'border-red-500'
                 : 'border-gray-300 dark:border-gray-600'
@@ -308,7 +308,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
             onChange={(e) => updateField('duration', parseInt(e.target.value) || 60)}
             min={10}
             max={3600}
-            className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+            className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
               errors.duration
                 ? 'border-red-500'
                 : 'border-gray-300 dark:border-gray-600'
@@ -324,7 +324,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
             onChange={(e) => updateField('rampUp', parseInt(e.target.value) || 0)}
             min={0}
             max={300}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
           />
         </FormField>
       </div>
@@ -382,7 +382,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
             onChange={(e) => updateField('k6Script', e.target.value)}
             placeholder={DEFAULT_K6_SCRIPT}
             rows={12}
-            className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm resize-none ${
+            className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground font-mono text-sm resize-none ${
               errors.k6Script
                 ? 'border-red-500'
                 : 'border-gray-300 dark:border-gray-600'
@@ -426,7 +426,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
                   min={0}
                   max={30000}
                   step={100}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
                 />
               </FormField>
 
@@ -442,7 +442,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
                   min={0}
                   max={100}
                   step={0.1}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
                 />
               </FormField>
             </div>

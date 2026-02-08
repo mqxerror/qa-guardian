@@ -271,8 +271,8 @@ export const URLInput: React.FC<URLInputProps> = ({
           }
           className={`
             w-full px-4 py-2.5 rounded-lg border
-            bg-white dark:bg-gray-700
-            text-gray-900 dark:text-white
+            bg-input
+            text-foreground
             placeholder-gray-400 dark:placeholder-gray-500
             transition-colors duration-200
             ${getBorderClass()}

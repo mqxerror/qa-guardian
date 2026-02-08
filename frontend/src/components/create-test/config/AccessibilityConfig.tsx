@@ -219,7 +219,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
           value={config.name}
           onChange={(e) => updateField('name', e.target.value)}
           placeholder="Accessibility Audit - Homepage"
-          className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+          className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
             errors.name
               ? 'border-red-500 focus:ring-red-500'
               : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
@@ -234,7 +234,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
           value={config.targetUrl}
           onChange={(e) => updateField('targetUrl', e.target.value)}
           placeholder={projectBaseUrl || 'https://your-site.com'}
-          className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+          className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
             errors.targetUrl
               ? 'border-red-500 focus:ring-red-500'
               : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
@@ -249,7 +249,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
           onChange={(e) => updateField('description', e.target.value)}
           placeholder="Describe what this accessibility test checks..."
           rows={2}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground resize-none"
         />
       </FormField>
 
@@ -321,7 +321,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
                   onChange={(e) => updateThreshold(severity.key, parseInt(e.target.value) || 0)}
                   min={0}
                   max={100}
-                  className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center"
+                  className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-input text-foreground text-center"
                 />
                 <span className="text-xs text-gray-500">max issues</span>
               </div>
@@ -390,7 +390,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
                 value={config.waitForSelector}
                 onChange={(e) => updateField('waitForSelector', e.target.value)}
                 placeholder="[data-loaded='true'], .content-ready"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground font-mono text-sm"
               />
             </FormField>
 
@@ -417,7 +417,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
                   updateField('excludeRules', rules);
                 }}
                 placeholder="color-contrast, html-has-lang"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground font-mono text-sm"
               />
             </FormField>
           </div>

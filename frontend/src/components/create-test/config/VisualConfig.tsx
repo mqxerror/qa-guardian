@@ -212,7 +212,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
           value={config.name}
           onChange={(e) => updateField('name', e.target.value)}
           placeholder="Visual Test - Homepage"
-          className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+          className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
             errors.name
               ? 'border-red-500 focus:ring-red-500'
               : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
@@ -227,7 +227,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
           value={config.targetUrl}
           onChange={(e) => updateField('targetUrl', e.target.value)}
           placeholder={projectBaseUrl || 'https://your-site.com'}
-          className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+          className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
             errors.targetUrl
               ? 'border-red-500 focus:ring-red-500'
               : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
@@ -242,7 +242,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
           onChange={(e) => updateField('description', e.target.value)}
           placeholder="Describe what this visual test verifies..."
           rows={2}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground resize-none"
         />
       </FormField>
 
@@ -379,7 +379,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
             value={config.elementSelector}
             onChange={(e) => updateField('elementSelector', e.target.value)}
             placeholder="#header, .main-content, [data-testid='hero']"
-            className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm ${
+            className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground font-mono text-sm ${
               errors.elementSelector
                 ? 'border-red-500 focus:ring-red-500'
                 : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
@@ -411,7 +411,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
               min={0}
               max={10}
               step={0.5}
-              className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center"
+              className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-input text-foreground text-center"
             />
             <span className="text-sm text-gray-500 dark:text-gray-400">sec</span>
           </div>

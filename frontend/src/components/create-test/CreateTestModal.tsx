@@ -402,7 +402,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
       {/* Modal content - fixed width max-w-2xl */}
       <div
         ref={modalRef}
-        className="relative z-10 w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden"
+        className="relative z-10 w-full max-w-2xl bg-card rounded-xl shadow-2xl overflow-hidden"
         role="document"
       >
         {/* Header */}
@@ -701,7 +701,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
               <div className="w-full border-t border-gray-200 dark:border-gray-700" />
             </div>
             <div className="relative flex justify-center">
-              <span className="px-4 text-sm text-gray-500 bg-white dark:bg-gray-800">or</span>
+              <span className="px-4 text-sm text-gray-500 bg-card">or</span>
             </div>
           </div>
 

@@ -67,7 +67,7 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
               value={customViewportName}
               onChange={(e) => setCustomViewportName(e.target.value)}
               placeholder="Viewport name (e.g., Our Kiosk Display)"
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
             />
             <div className="flex items-center gap-2">
               <input
@@ -76,7 +76,7 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
                 onChange={(e) => setCustomViewportWidth(Math.min(3840, Math.max(320, parseInt(e.target.value) || 320)))}
                 min={320}
                 max={3840}
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
                 placeholder="Width"
               />
               <span className="text-gray-400">×</span>
@@ -86,7 +86,7 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
                 onChange={(e) => setCustomViewportHeight(Math.min(2160, Math.max(240, parseInt(e.target.value) || 240)))}
                 min={240}
                 max={2160}
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-input text-foreground"
                 placeholder="Height"
               />
             </div>

@@ -226,7 +226,7 @@ export const TestTypeCards: React.FC<TestTypeCardsProps> = ({
             tabIndex={isSelected || (selectedType === null && index === 0) ? 0 : -1}
             className={`
               relative flex flex-col items-center p-4 rounded-xl border-2
-              bg-white dark:bg-gray-800
+              bg-card
               transition-all duration-200 ease-out
               cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
               disabled:opacity-50 disabled:cursor-not-allowed
