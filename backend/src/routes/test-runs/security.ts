@@ -299,7 +299,7 @@ export async function securityRoutes(app: FastifyInstance) {
     const { projectId } = request.params;
     const { scan_type, target_url, branch } = request.body || {};
     const orgId = getOrganizationId(request);
-    const user = (request as any).user;
+    const user = request.user as JwtPayload;
 
     // Validate project exists
     const project = await dbGetProject(projectId);
@@ -637,7 +637,7 @@ export async function securityRoutes(app: FastifyInstance) {
     const { vulnerabilityId } = request.params;
     const { reason, comment, expires_at } = request.body || {};
     const orgId = getOrganizationId(request);
-    const user = (request as any).user;
+    const user = request.user as JwtPayload;
 
     // Validate reason
     const validReasons: DismissReason[] = ['false_positive', 'accepted_risk', 'not_applicable', 'will_not_fix', 'mitigated'];
@@ -1279,7 +1279,7 @@ export async function securityRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const orgId = getOrganizationId(request);
     const { name, description, allowlist, blocklist } = request.body || {};
-    const user = (request as any).user;
+    const user = request.user as JwtPayload;
 
     // Get current policy or create new one
     const currentPolicy = getLicensePolicy(orgId);
@@ -1467,7 +1467,7 @@ export async function securityRoutes(app: FastifyInstance) {
     const { projectId } = request.params;
     const { format = 'cyclonedx', include_dev_dependencies = false } = request.body || {};
     const orgId = getOrganizationId(request);
-    const user = (request as any).user as JwtPayload;
+    const user = request.user as JwtPayload;
 
     // Verify project exists and belongs to organization
     const project = await dbGetProject(projectId);

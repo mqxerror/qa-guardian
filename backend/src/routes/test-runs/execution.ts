@@ -94,6 +94,10 @@ export interface StepResult {
   duration_ms: number;
   error?: string;
   viewport?: string; // Viewport info for multi-viewport tests
+  // Feature #414: Step screenshot support for artifact listing
+  screenshot?: string; // Path to screenshot file
+  screenshot_path?: string; // Alternative path to screenshot file
+  screenshot_base64?: string; // Base64 encoded screenshot
   // Feature #1065: AI healing selector tracking
   was_healed?: boolean; // True if this step was auto-healed
   original_selector?: string; // The original selector that failed
@@ -227,10 +231,13 @@ export interface StepResult {
       failed_requests?: number;
       success_rate?: string;
       requests_per_second?: string;
+      data_transferred?: number; // Feature #414: Added for run comparison
     };
     response_times?: {
       min?: number;
       avg?: number;
+      median?: number; // Feature #414: Added for run comparison
+      p90?: number; // Feature #414: Added for run comparison
       p95?: number;
       p99?: number;
       max?: number;
@@ -287,6 +294,7 @@ export interface TestRunResult {
   duration_ms: number;
   steps: StepResult[];
   error?: string;
+  error_message?: string; // Feature #414: Alias for error for remediation analytics
   screenshot_base64?: string;
   trace_file?: string; // Path to the trace file
   video_file?: string; // Path to the video recording file
@@ -317,6 +325,8 @@ export interface TestRunResult {
   // Viewport info for screenshot filenames
   viewport_width?: number;
   viewport_height?: number;
+  // Feature #414: Browser info for artifact routes
+  browser?: string;
   // Feature #1968: Load test results for UI display
   load_test?: any;
   // Feature #912: Review status
@@ -353,6 +363,10 @@ export interface TestRun {
   results?: TestRunResult[];
   error?: string;
   accessibility_results?: any; // Results from accessibility testing
+  // Feature #414: Test type specific results for executor
+  lighthouseResults?: Record<string, unknown>; // Lighthouse audit results
+  loadTestResults?: Record<string, unknown>; // K6 load test results
+  a11yResults?: Record<string, unknown>; // Accessibility test results
   run_env_vars?: Record<string, string>; // Feature #894: Run-specific environment variables
   priority?: number; // Feature #896: Run priority (lower = higher priority, default: 100)
   // Feature #1283: Trigger info for webhook events
@@ -364,6 +378,13 @@ export interface TestRun {
   passed_count?: number;
   failed_count?: number;
   skipped_count?: number;
+  // Feature #414: Test IDs for rerun scenarios (subset of tests to run)
+  test_ids?: string[];
+  // Feature #414: Environment context for remediation analytics
+  environment?: string;
+  ci_pipeline_id?: string;
+  os?: string;
+  operating_system?: string;
 }
 
 /**

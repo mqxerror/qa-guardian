@@ -11,6 +11,14 @@ import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/au
 import { getTest, getTestSuite } from '../test-suites.js';
 import { testRuns, TestRun, TestRunResult } from './execution.js';
 import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
+import { TestSuite, Test } from '../test-suites/types.js';
+
+// Feature #414: Extended save result with quota info
+interface SaveResultWithQuota {
+  success: boolean;
+  isQuotaExceeded?: boolean;
+  suggestions?: string[];
+}
 
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
@@ -143,12 +151,12 @@ let targetRun: any;
     const saveResult = saveBaselineToFile(testId, screenshotBuffer, viewportId, branch);
 
     // Feature #604: Handle storage quota exceeded
-    if (!saveResult.success && (saveResult as any).isQuotaExceeded) {
+    if (!saveResult.success && saveResult.isQuotaExceeded) {
       return reply.status(507).send({
         error: 'Storage quota exceeded',
         message: 'Unable to approve baseline due to storage quota limits.',
         isQuotaExceeded: true,
-        suggestions: (saveResult as any).suggestions,
+        suggestions: saveResult.suggestions,
       });
     }
 
@@ -172,9 +180,9 @@ let targetRun: any;
       createdByUserEmail: currentMetadata?.createdByUserEmail || user?.email || 'unknown',
       // Feature #266: Record viewport dimensions
       viewport: {
-        width: testResult.viewport_width || (test as any).viewport_width || 1280,
-        height: testResult.viewport_height || (test as any).viewport_height || 720,
-        preset: (test as any).viewport_preset,
+        width: testResult.viewport_width || test.viewport_width || 1280,
+        height: testResult.viewport_height || test.viewport_height || 720,
+        preset: test.viewport_preset,
       },
       // Feature #266: Record browser info
       browser: {
@@ -200,13 +208,13 @@ let targetRun: any;
     console.log(`[Visual] Baseline approved for test ${testId} branch ${branch} by ${user?.email || 'unknown'} from run ${targetRun.id} (version ${newVersion})`);
 
     // Feature #1310: Send baseline.approved webhook
-    const suite = await getTestSuite((test as any).suite_id);
+    const suiteApprove = await getTestSuite(test.suite_id) as TestSuite | null;
     sendBaselineApprovedWebhook(orgId, {
       test_id: testId,
       test_name: test.name,
-      suite_id: (test as any).suite_id,
-      suite_name: suite?.name || 'Unknown Suite',
-      project_id: (suite as any)?.project_id || '',
+      suite_id: test.suite_id,
+      suite_name: suiteApprove?.name || 'Unknown Suite',
+      project_id: suiteApprove?.project_id || '',
       run_id: targetRun.id,
       viewport_id: viewportId,
       branch,
@@ -321,12 +329,12 @@ let targetRun: any;
     const screenshotBuffer = Buffer.from(screenshotBase64, 'base64');
     const saveResult = saveBaselineToFile(test_id, screenshotBuffer, viewportId, branch);
 
-    if (!saveResult.success && (saveResult as any).isQuotaExceeded) {
+    if (!saveResult.success && saveResult.isQuotaExceeded) {
       return reply.status(507).send({
         error: 'Storage quota exceeded',
         message: 'Unable to approve baseline due to storage quota limits.',
         isQuotaExceeded: true,
-        suggestions: (saveResult as any).suggestions,
+        suggestions: saveResult.suggestions,
       });
     }
 
@@ -343,9 +351,9 @@ let targetRun: any;
       createdByUserId: currentMetadata?.createdByUserId || user?.id || 'unknown',
       createdByUserEmail: currentMetadata?.createdByUserEmail || user?.email || 'unknown',
       viewport: {
-        width: testResult.viewport_width || (test as any).viewport_width || 1280,
-        height: testResult.viewport_height || (test as any).viewport_height || 720,
-        preset: (test as any).viewport_preset,
+        width: testResult.viewport_width || test.viewport_width || 1280,
+        height: testResult.viewport_height || test.viewport_height || 720,
+        preset: test.viewport_preset,
       },
       browser: {
         name: targetRun.browser || 'chromium',
@@ -368,13 +376,13 @@ let targetRun: any;
     console.log(`[Visual] Baseline approved for test ${test_id} branch ${branch} by ${user?.email || 'unknown'} from run ${targetRun.id} (version ${newVersion})`);
 
     // Send webhook
-    const suite = await getTestSuite((test as any).suite_id);
+    const suiteForWebhook = await getTestSuite(test.suite_id) as TestSuite | null;
     sendBaselineApprovedWebhook(orgId, {
       test_id,
       test_name: test.name,
-      suite_id: (test as any).suite_id,
-      suite_name: suite?.name || 'Unknown Suite',
-      project_id: (suite as any)?.project_id || '',
+      suite_id: test.suite_id,
+      suite_name: suiteForWebhook?.name || 'Unknown Suite',
+      project_id: suiteForWebhook?.project_id || '',
       run_id: targetRun.id,
       viewport_id: viewportId,
       branch,
@@ -663,12 +671,12 @@ let targetRun: any;
     const saveResult = saveBaselineToFile(testId, sourceBaseline, viewportId, targetBranch);
 
     // Feature #604: Handle storage quota exceeded
-    if (!saveResult.success && (saveResult as any).isQuotaExceeded) {
+    if (!saveResult.success && saveResult.isQuotaExceeded) {
       return reply.status(507).send({
         error: 'Storage quota exceeded',
         message: 'Unable to merge baseline due to storage quota limits.',
         isQuotaExceeded: true,
-        suggestions: (saveResult as any).suggestions,
+        suggestions: saveResult.suggestions,
       });
     }
 
@@ -692,9 +700,9 @@ let targetRun: any;
       createdByUserEmail: existingTargetMetadata?.createdByUserEmail || sourceMetadata?.createdByUserEmail || user?.email || 'unknown',
       // Feature #266: Copy viewport and browser info from source metadata or use defaults
       viewport: sourceMetadata?.viewport || existingTargetMetadata?.viewport || {
-        width: (test as any).viewport_width || 1280,
-        height: (test as any).viewport_height || 720,
-        preset: (test as any).viewport_preset,
+        width: test.viewport_width || 1280,
+        height: test.viewport_height || 720,
+        preset: test.viewport_preset,
       },
       browser: sourceMetadata?.browser || existingTargetMetadata?.browser || {
         name: 'chromium',

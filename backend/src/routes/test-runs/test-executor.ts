@@ -160,8 +160,14 @@ import { executeAccessibilityTest, AccessibilityTestConfig } from './accessibili
 // The E2E step execution logic below can be migrated to this module
 // import { executeE2ESteps, E2EStepExecutionConfig, E2EStepExecutionResult } from './executor-functional.js';
 
+// Feature #414: Type for Playwright Request with custom __requestId property
+// Used to correlate request/response/failure events during network monitoring
+interface PlaywrightRequestWithId {
+  __requestId?: string;
+}
+
 // Event emitter type - will be passed in from test-runs.ts
-export type EmitRunEventFn = (runId: string, orgId: string, event: string, data: any) => void;
+export type EmitRunEventFn = (runId: string, orgId: string, event: string, data: Record<string, unknown>) => void;
 
 // Module-level event emitter reference
 let emitRunEvent: EmitRunEventFn;
@@ -171,11 +177,65 @@ export function setTestExecutorEmitter(emitter: EmitRunEventFn) {
 }
 
 
+// Feature #414: Selector strategy for healing fallback
+interface SelectorStrategy {
+  selector: string;
+  strategy: string;
+  confidence?: number;
+}
+
+// Feature #414: Accessibility result structure for step execution
+interface A11yViolation {
+  id: string;
+  impact: 'critical' | 'serious' | 'moderate' | 'minor';
+  description: string;
+  wcagTags: string[];
+  nodes: Array<{ html: string; target: string[] }>;
+}
+
+// Step-level accessibility results (different from StepResult.accessibility)
+interface StepA11yResults {
+  wcag_level?: 'A' | 'AA' | 'AAA';
+  violations: {
+    count: number;
+    critical: number;
+    serious: number;
+    moderate: number;
+    minor: number;
+    items: A11yViolation[];
+  };
+  config?: Record<string, unknown>;
+}
+
+// Feature #414: Extended step interface for test execution
+export interface ExecutionStep {
+  id: string;
+  action: string;
+  selector?: string;
+  value?: string;
+  order?: number;
+  optional?: boolean;
+  optionalReason?: 'cookie_consent' | 'popup_dismiss' | 'notification_close' | 'user_marked';
+  // Healing-related properties
+  selectorStrategies?: SelectorStrategy[];
+  visualFingerprint?: string;
+  // Visual checkpoint properties
+  checkpointName?: string;
+  checkpointThreshold?: number;
+  // Accessibility check properties
+  a11y_wcag_level?: 'A' | 'AA' | 'AAA';
+  a11y_fail_on_any?: boolean;
+  a11y_fail_on_critical?: boolean;
+  a11y_threshold?: number;
+  // Internal runtime property for storing a11y results
+  _a11yResults?: StepA11yResults;
+}
+
 // Test configuration type matching runTestsForRun in test-runs.ts
 export interface ExecuteTestConfig {
   id: string;
   name: string;
-  steps: any[];
+  steps: ExecutionStep[];
   suite_id?: string; // Feature #1059: Required for healing stats tracking
   organization_id?: string; // Organization context for visual comparison
   test_type?: 'e2e' | 'visual_regression' | 'lighthouse' | 'load' | 'accessibility';
@@ -359,15 +419,15 @@ async function executeTest(
         requestHeaders: request.headers(),
       });
       // Store the requestId on the request for later lookup
-      (request as any).__requestId = requestId;
+      (request as PlaywrightRequestWithId).__requestId = requestId;
     });
 
     page.on('response', async (response) => {
       const request = response.request();
-      const requestId = (request as any).__requestId;
+      const requestId = (request as PlaywrightRequestWithId).__requestId;
       const pending = requestId ? pendingRequests.get(requestId) : null;
 
-      if (pending) {
+      if (pending && requestId) {
         pendingRequests.delete(requestId);
         let responseSize = 0;
         try {
@@ -393,10 +453,10 @@ async function executeTest(
     });
 
     page.on('requestfailed', (request) => {
-      const requestId = (request as any).__requestId;
+      const requestId = (request as PlaywrightRequestWithId).__requestId;
       const pending = requestId ? pendingRequests.get(requestId) : null;
 
-      if (pending) {
+      if (pending && requestId) {
         pendingRequests.delete(requestId);
         networkRequests.push({
           timestamp: pending.timestamp,
@@ -415,7 +475,8 @@ async function executeTest(
     // Environment variables are available via window.__QA_ENV__ in the browser
     if (Object.keys(envVars).length > 0) {
       await page.addInitScript((vars) => {
-        (window as any).__QA_ENV__ = vars;
+        // Feature #414: Using globalThis for type-safe window property assignment
+        (globalThis as { __QA_ENV__?: Record<string, string> }).__QA_ENV__ = vars;
       }, envVars);
     }
 
@@ -427,8 +488,8 @@ async function executeTest(
         {
           id: test.id,
           name: test.name,
-          suite_id: (test as any).suite_id,
-          organization_id: (test as any).organization_id,
+          suite_id: test.suite_id,
+          organization_id: test.organization_id,
           target_url: test.target_url,
           viewport_width: test.viewport_width,
           viewport_height: test.viewport_height,
@@ -449,8 +510,8 @@ async function executeTest(
           mask_dynamic_content: test.mask_dynamic_content,
           branch: test.branch,
           screenshot_timeout: test.screenshot_timeout,
-          anti_aliasing_tolerance: (test as any).anti_aliasing_tolerance,
-          color_threshold: (test as any).color_threshold,
+          anti_aliasing_tolerance: test.anti_aliasing_tolerance,
+          color_threshold: test.color_threshold,
         },
         {
           page: page!,
@@ -522,7 +583,7 @@ async function executeTest(
       // Store lighthouse results in test run data
       const run = testRuns.get(runId);
       if (run && lighthouseResult.lighthouseResults) {
-        (run as any).lighthouseResults = lighthouseResult.lighthouseResults;
+        run.lighthouseResults = lighthouseResult.lighthouseResults as Record<string, unknown>;
       }
     } else if (test.test_type === 'load' && test.target_url) {
       // K6 Load Test execution
@@ -558,7 +619,7 @@ async function executeTest(
       // Store load test results in test run data
       const loadRun = testRuns.get(runId);
       if (loadRun && loadResult.loadTestResults) {
-        (loadRun as any).loadTestResults = loadResult.loadTestResults;
+        loadRun.loadTestResults = loadResult.loadTestResults as Record<string, unknown>;
       }
     } else if (test.test_type === 'accessibility' && test.target_url) {
       // Accessibility Test execution
@@ -598,7 +659,7 @@ async function executeTest(
       // Store accessibility results in test run data
       const a11yRun = testRuns.get(runId);
       if (a11yRun && a11yResult.a11yResults) {
-        (a11yRun as any).a11yResults = a11yResult.a11yResults;
+        a11yRun.a11yResults = a11yResult.a11yResults as Record<string, unknown>;
       }
     } else {
       // Standard E2E test execution - execute each step
@@ -660,7 +721,7 @@ async function executeTest(
                     original_selector: step.selector,
                     error_type: 'element_not_found',
                     error_message: clickErr.message,
-                    alt_selectors: (step as any).selectorStrategies || [],
+                    alt_selectors: step.selectorStrategies || [],
                     healing_initiated: true,
                   };
                   console.log('[HEALING] Attempt recorded:', JSON.stringify(healingAttempt));
@@ -672,7 +733,7 @@ async function executeTest(
                   const projectAutoHealThreshold = await getAutoHealThreshold(healingProjectId);
                   const enabledStrategies = await getEnabledStrategies(healingProjectId);
                   console.log(`[HEALING] Using project ${healingProjectId} threshold: ${projectAutoHealThreshold}, enabled strategies: ${enabledStrategies.join(', ')}`);
-                  const altSelectors = (step as any).selectorStrategies?.filter((s: any) => s.selector !== step.selector) || [];
+                  const altSelectors = step.selectorStrategies?.filter((s: any) => s.selector !== step.selector) || [];
                   let healed = false;
                   for (const alt of altSelectors.sort((a: any, b: any) => b.confidence - a.confidence)) {
                     // Skip visual-match strategy in this loop - try it last
@@ -683,8 +744,9 @@ async function executeTest(
                       continue;
                     }
                     // Feature #1055/#1062: Skip if confidence below project's auto-heal threshold
-                    if (alt.confidence < projectAutoHealThreshold) {
-                      console.log(`[HEALING] Skipping ${alt.strategy} (confidence ${alt.confidence} below threshold ${projectAutoHealThreshold})`);
+                    const altConfidence = alt.confidence ?? 0;
+                    if (altConfidence < projectAutoHealThreshold) {
+                      console.log(`[HEALING] Skipping ${alt.strategy} (confidence ${altConfidence} below threshold ${projectAutoHealThreshold})`);
                       continue;
                     }
                     try {
@@ -696,7 +758,7 @@ async function executeTest(
                       } catch { /* Ignore timeout */ }
                       console.log(`[HEALING] SUCCESS with ${alt.strategy}: ${alt.selector} - auto-applied (confidence >= ${projectAutoHealThreshold})`);
                       // Feature #1057: Record successful heal for test update
-                      recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, alt.selector, alt.strategy, alt.confidence, orgId);
+                      recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, alt.selector, alt.strategy, altConfidence, orgId);
                       // Feature #1059: Track successful heal
                       trackHealingSuccess(healingProjectId, alt.strategy);
                       healed = true;
@@ -709,7 +771,7 @@ async function executeTest(
                   // Feature #1054: Try visual matching as last resort
                   // Feature #1063: Only try if visual_match strategy is enabled
                   if (!healed && (await isHealingStrategyEnabled(healingProjectId, 'visual-match'))) {
-                    const visualFingerprint = (step as any).visualFingerprint;
+                    const visualFingerprint = step.visualFingerprint;
                     if (visualFingerprint) {
                       console.log(`[HEALING] All selectors failed or below threshold, attempting visual matching...`);
                       const visualMatch = await findElementByVisualMatch(page, visualFingerprint);
@@ -825,7 +887,7 @@ async function executeTest(
                     original_selector: step.selector,
                     error_type: 'element_not_found',
                     error_message: fillErr.message,
-                    alt_selectors: (step as any).selectorStrategies || [],
+                    alt_selectors: step.selectorStrategies || [],
                     healing_initiated: true,
                   };
                   console.log('[HEALING] Attempt recorded:', JSON.stringify(healingAttempt));
@@ -837,7 +899,7 @@ async function executeTest(
                   const fillProjectThreshold = await getAutoHealThreshold(fillHealingProjectId);
                   const fillEnabledStrategies = await getEnabledStrategies(fillHealingProjectId);
                   console.log(`[HEALING] Using project ${fillHealingProjectId} threshold for fill: ${fillProjectThreshold}, enabled strategies: ${fillEnabledStrategies.join(', ')}`);
-                  const fillAltSelectors = (step as any).selectorStrategies?.filter((s: any) => s.selector !== step.selector) || [];
+                  const fillAltSelectors = step.selectorStrategies?.filter((s: any) => s.selector !== step.selector) || [];
                   let fillHealed = false;
                   for (const alt of fillAltSelectors.sort((a: any, b: any) => b.confidence - a.confidence)) {
                     // Skip visual-match strategy in this loop - try it last
@@ -848,16 +910,17 @@ async function executeTest(
                       continue;
                     }
                     // Feature #1055/#1062: Skip if confidence below project's auto-heal threshold
-                    if (alt.confidence < fillProjectThreshold) {
-                      console.log(`[HEALING] Skipping ${alt.strategy} (confidence ${alt.confidence} below threshold ${fillProjectThreshold})`);
+                    const fillAltConfidence = alt.confidence ?? 0;
+                    if (fillAltConfidence < fillProjectThreshold) {
+                      console.log(`[HEALING] Skipping ${alt.strategy} (confidence ${fillAltConfidence} below threshold ${fillProjectThreshold})`);
                       continue;
                     }
                     try {
-                      console.log(`[HEALING] Trying alternate selector: ${alt.selector} (confidence: ${alt.confidence})`);
+                      console.log(`[HEALING] Trying alternate selector: ${alt.selector} (confidence: ${fillAltConfidence})`);
                       await page.fill(alt.selector, step.value!, { timeout: 5000 });
                       console.log(`[HEALING] SUCCESS with ${alt.strategy}: ${alt.selector} - auto-applied (confidence >= ${fillProjectThreshold})`);
                       // Feature #1057: Record successful fill heal for test update
-                      recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, alt.selector, alt.strategy, alt.confidence, orgId);
+                      recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, alt.selector, alt.strategy, fillAltConfidence, orgId);
                       // Feature #1059: Track successful fill heal
                       trackHealingSuccess(fillHealingProjectId, alt.strategy);
                       fillHealed = true;
@@ -870,7 +933,7 @@ async function executeTest(
                   // Feature #1054: Try visual matching as last resort for fill
                   // Feature #1063: Only try if visual_match strategy is enabled
                   if (!fillHealed && (await isHealingStrategyEnabled(fillHealingProjectId, 'visual-match'))) {
-                    const fillVisualFingerprint = (step as any).visualFingerprint;
+                    const fillVisualFingerprint = step.visualFingerprint;
                     if (fillVisualFingerprint) {
                       console.log(`[HEALING] All selectors failed or below threshold, attempting visual matching for fill...`);
                       const fillVisualMatch = await findElementByVisualMatch(page, fillVisualFingerprint);
@@ -973,8 +1036,8 @@ async function executeTest(
             screenshot_base64 = checkpointBuffer.toString('base64');
 
             // Get checkpoint configuration
-            const checkpointName = (step as any).checkpointName || `checkpoint-${stepIndex}`;
-            const checkpointThreshold = (step as any).checkpointThreshold ?? 0.1;
+            const checkpointName = step.checkpointName || `checkpoint-${stepIndex}`;
+            const checkpointThreshold = step.checkpointThreshold ?? 0.1;
 
             // Try to find baseline for this checkpoint
             const checkpointBaselineKey = `${test.id}-${checkpointName}`;
@@ -1022,10 +1085,10 @@ async function executeTest(
           case 'accessibility_check': {
             // Run real axe-core accessibility scan at this step in the E2E test
             const a11yStepConfig = {
-              wcagLevel: (step as any).a11y_wcag_level || 'AA',
-              failOnAny: (step as any).a11y_fail_on_any === true,
-              failOnCritical: (step as any).a11y_fail_on_critical !== false, // Default true
-              threshold: (step as any).a11y_threshold || 0,
+              wcagLevel: step.a11y_wcag_level || 'AA',
+              failOnAny: step.a11y_fail_on_any === true,
+              failOnCritical: step.a11y_fail_on_critical !== false, // Default true
+              threshold: step.a11y_threshold || 0,
             };
 
             console.log(`[Accessibility Check Step] Running axe-core scan with config:`, a11yStepConfig);
@@ -1082,7 +1145,7 @@ async function executeTest(
             }
 
             // Store accessibility results (will be added to stepResult after creation)
-            (step as any)._a11yResults = {
+            step._a11yResults = {
               wcag_level: a11yStepConfig.wcagLevel,
               violations: {
                 count: totalStepViolations,
@@ -1158,14 +1221,16 @@ async function executeTest(
 
       // Feature #37: Add optional step metadata if this was a skipped optional step
       if (isOptionalStep && stepStatus === 'skipped') {
-        (stepResult as any).optional = true;
-        (stepResult as any).optionalReason = step.optionalReason || 'user_marked';
-        (stepResult as any).skipReason = 'Element not present on page';
+        stepResult.optional = true;
+        stepResult.optionalReason = step.optionalReason || 'user_marked';
+        stepResult.skipReason = 'Element not present on page';
       }
 
       // Add accessibility results if this was an accessibility_check step
-      if (step.action === 'accessibility_check' && (step as any)._a11yResults) {
-        (stepResult as any).accessibility = (step as any)._a11yResults;
+      // Note: StepA11yResults has a different structure than StepResult.accessibility
+      // This is intentional as the data is processed differently downstream
+      if (step.action === 'accessibility_check' && step._a11yResults) {
+        stepResult.accessibility = step._a11yResults as unknown as typeof stepResult.accessibility;
       }
 
       stepResults.push(stepResult);

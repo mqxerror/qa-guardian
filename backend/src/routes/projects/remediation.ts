@@ -86,18 +86,18 @@ export async function remediationRoutes(app: FastifyInstance) {
           const browser = run.browser || 'unknown';
           failuresByBrowser.set(browser, (failuresByBrowser.get(browser) || 0) + 1);
 
-          const env = (run as any).environment || 'unknown';
+          const env = run.environment || 'unknown';
           failuresByEnv.set(env, (failuresByEnv.get(env) || 0) + 1);
 
-          const errorMsg = (result as any).error_message;
+          const errorMsg = result.error_message || result.error;
           if (errorMsg) {
             failureMessages.push(errorMsg);
           }
         }
 
-        if ((result as any).retry_count && (result as any).retry_count > 0) {
-          retryCount += (result as any).retry_count;
-          if ((result as any).passed_on_retry) {
+        if (result.retry_count && result.retry_count > 0) {
+          retryCount += result.retry_count;
+          if (result.passed_on_retry) {
             passedOnRetryCount++;
           }
         }

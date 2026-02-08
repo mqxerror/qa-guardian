@@ -539,7 +539,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
         dayData.total_runs++;
 
         // Get violations from accessibility results
-        const a11yResults = (run as any).accessibility_results;
+        const a11yResults = run.accessibility_results;
         if (a11yResults && a11yResults.violations) {
           const violations = a11yResults.violations.items || [];
           const violationCount = violations.length;

@@ -73,17 +73,8 @@ import {
 
 import { getTestSuite } from '../test-suites.js';
 
-// Selector strategy for healing
-interface SelectorStrategy {
-  selector: string;
-  strategy: string;
-  confidence: number;
-}
-
-// Extended step type with healing properties
-interface ExecutableStep extends TestStep {
-  selectorStrategies?: SelectorStrategy[];
-}
+// Note: SelectorStrategy and ExecutableStep are no longer needed -
+// TestStep now includes selectorStrategies property (Feature #414)
 
 // Event emitter type - passed in from caller
 export type EmitRunEventFn = (runId: string, orgId: string, event: string, data: Record<string, unknown>) => void;
@@ -139,6 +130,7 @@ export async function executeE2ESteps(config: E2EStepExecutionConfig): Promise<E
     const stepStart = Date.now();
     let stepStatus: 'passed' | 'failed' | 'skipped' = 'passed';
     let stepError: string | undefined;
+    let stepA11yResults: A11yStepResults | undefined;
 
     // Emit step start event
     emitRunEvent(runId, orgId, 'step-start', {
@@ -268,8 +260,8 @@ export async function executeE2ESteps(config: E2EStepExecutionConfig): Promise<E
             testError = stepError;
           }
           if (result.screenshot_base64) screenshot_base64 = result.screenshot_base64;
-          // Store accessibility results on step for later extraction
-          (step as any)._a11yResults = result.a11yResults;
+          // Store accessibility results in step-scoped variable for later use
+          stepA11yResults = result.a11yResults;
           break;
         }
 
@@ -307,14 +299,18 @@ export async function executeE2ESteps(config: E2EStepExecutionConfig): Promise<E
 
     // Feature #37: Add optional step metadata if this was a skipped optional step
     if (isOptionalStep && stepStatus === 'skipped') {
-      (stepResult as any).optional = true;
-      (stepResult as any).optionalReason = step.optionalReason || 'user_marked';
-      (stepResult as any).skipReason = 'Element not present on page';
+      stepResult.optional = true;
+      stepResult.optionalReason = step.optionalReason || 'user_marked';
+      stepResult.skipReason = 'Element not present on page';
     }
 
     // Add accessibility results if this was an accessibility_check step
-    if (step.action === 'accessibility_check' && (step as any)._a11yResults) {
-      (stepResult as any).accessibility = (step as any)._a11yResults;
+    if (step.action === 'accessibility_check' && stepA11yResults) {
+      stepResult.accessibility = {
+        violations: stepA11yResults.violations.items,
+        score: 100 - stepA11yResults.violations.count, // Simple score calculation
+        wcagLevel: stepA11yResults.wcag_level as 'A' | 'AA' | 'AAA',
+      };
     }
 
     stepResults.push(stepResult);
@@ -428,7 +424,7 @@ async function tryHealing(
   const enabledStrategies = await getEnabledStrategies(healingProjectId);
   console.log(`[HEALING] Using project ${healingProjectId} threshold: ${projectAutoHealThreshold}, enabled strategies: ${enabledStrategies.join(', ')}`);
 
-  const altSelectors = (step as ExecutableStep).selectorStrategies?.filter((s: SelectorStrategy) => s.selector !== step.selector) || [];
+  const altSelectors = step.selectorStrategies?.filter(s => s.selector !== step.selector) || [];
 
   // Try alternate selectors
   for (const alt of altSelectors.sort((a, b) => b.confidence - a.confidence)) {
@@ -458,7 +454,7 @@ async function tryHealing(
 
   // Try visual matching as last resort
   if (await isHealingStrategyEnabled(healingProjectId, 'visual-match')) {
-    const visualFingerprint = (step as any).visualFingerprint;
+    const visualFingerprint = step.visualFingerprint;
     if (visualFingerprint) {
       console.log(`[HEALING] All selectors failed or below threshold, attempting visual matching...`);
       const visualMatch = await findElementByVisualMatch(page, visualFingerprint);
@@ -559,7 +555,7 @@ async function tryHealingForFill(
   const enabledStrategies = await getEnabledStrategies(healingProjectId);
   console.log(`[HEALING] Using project ${healingProjectId} threshold for fill: ${projectThreshold}, enabled strategies: ${enabledStrategies.join(', ')}`);
 
-  const altSelectors = (step as ExecutableStep).selectorStrategies?.filter((s: SelectorStrategy) => s.selector !== step.selector) || [];
+  const altSelectors = step.selectorStrategies?.filter(s => s.selector !== step.selector) || [];
 
   for (const alt of altSelectors.sort((a, b) => b.confidence - a.confidence)) {
     if (alt.strategy === 'visual-match') continue;
@@ -583,7 +579,7 @@ async function tryHealingForFill(
 
   // Try visual matching for fill
   if (await isHealingStrategyEnabled(healingProjectId, 'visual-match')) {
-    const visualFingerprint = (step as any).visualFingerprint;
+    const visualFingerprint = step.visualFingerprint;
     if (visualFingerprint) {
       console.log(`[HEALING] All selectors failed or below threshold, attempting visual matching for fill...`);
       const visualMatch = await findElementByVisualMatch(page, visualFingerprint);
@@ -661,8 +657,8 @@ async function executeVisualCheckpoint(
   const checkpointBuffer = await page.screenshot();
   const screenshot_base64 = checkpointBuffer.toString('base64');
 
-  const checkpointName = (step as any).checkpointName || `checkpoint-${stepIndex}`;
-  const checkpointThreshold = (step as any).checkpointThreshold ?? 0.1;
+  const checkpointName = step.checkpointName || `checkpoint-${stepIndex}`;
+  const checkpointThreshold = step.checkpointThreshold ?? 0.1;
 
   const checkpointBaselineKey = `${test.id}-${checkpointName}`;
   const checkpointBaselinePath = path.join(BASELINES_DIR, `${checkpointBaselineKey}.png`);
@@ -715,10 +711,10 @@ async function executeAccessibilityCheckStep(
   a11yResults?: A11yStepResults;
 }> {
   const a11yStepConfig = {
-    wcagLevel: (step as any).a11y_wcag_level || 'AA',
-    failOnAny: (step as any).a11y_fail_on_any === true,
-    failOnCritical: (step as any).a11y_fail_on_critical !== false,
-    threshold: (step as any).a11y_threshold || 0,
+    wcagLevel: step.a11y_wcag_level || 'AA',
+    failOnAny: step.a11y_fail_on_any === true,
+    failOnCritical: step.a11y_fail_on_critical !== false,
+    threshold: step.a11y_threshold || 0,
   };
 
   console.log(`[Accessibility Check Step] Running axe-core scan with config:`, a11yStepConfig);

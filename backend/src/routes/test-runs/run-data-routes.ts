@@ -9,8 +9,9 @@ import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { getTest, getTestSuite, getTestsMap } from '../test-suites.js';
 import { getProjectEnvVars } from '../projects.js';
 import { EnvironmentVariable } from '../projects/types.js';
-import { testRuns, TestRun, ConsoleLog, NetworkRequest } from './execution.js';
+import { testRuns, TestRun, ConsoleLog, NetworkRequest, StepResult } from './execution.js';
 import { getTestRun as dbGetTestRun } from '../../services/repositories/test-runs.js';
+import { TestSuite, Test } from '../test-suites/types.js';
 
 // Helper: get test run from Map first, then fall back to DB
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
@@ -499,9 +500,10 @@ export async function runDataRoutes(app: FastifyInstance) {
     const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
 
     // Browser breakdown (from suite config)
-    const browserInfo = suite ? {
-      browser: (suite as any).browser || 'chromium',
-      viewport: (suite as any).viewport || { width: 1280, height: 720 },
+    const typedSuite = suite as TestSuite | null;
+    const browserInfo = typedSuite ? {
+      browser: typedSuite.browser || 'chromium',
+      viewport: { width: typedSuite.viewport_width || 1280, height: typedSuite.viewport_height || 720 },
     } : {
       browser: 'unknown',
       viewport: { width: 1280, height: 720 },
@@ -510,8 +512,8 @@ export async function runDataRoutes(app: FastifyInstance) {
     // Test type breakdown
     const testTypeBreakdown: Record<string, { count: number; passed: number; failed: number }> = {};
     for (const result of results) {
-      const testInfo = await getTest(result.test_id);
-      const testType = (testInfo as any)?.test_type || 'e2e';
+      const testInfo = await getTest(result.test_id) as Test | null;
+      const testType = testInfo?.test_type || 'e2e';
       if (!testTypeBreakdown[testType]) {
         testTypeBreakdown[testType] = { count: 0, passed: 0, failed: 0 };
       }
@@ -614,29 +616,30 @@ export async function runDataRoutes(app: FastifyInstance) {
     }
 
     // Set or merge environment variables
-    if (merge && (run as any).run_env_vars) {
-      (run as any).run_env_vars = { ...(run as any).run_env_vars, ...env_vars };
+    if (merge && run.run_env_vars) {
+      run.run_env_vars = { ...run.run_env_vars, ...env_vars };
     } else {
-      (run as any).run_env_vars = { ...env_vars };
+      run.run_env_vars = { ...env_vars };
     }
 
     testRuns.set(runId, run);
     console.log(`[ENV] Set ${Object.keys(env_vars).length} environment variables for run ${runId} (merge=${merge})`);
 
     // Get the suite and project env vars for the response
-    const suite = await getTestSuite(run.suite_id);
-    const projectId = (suite as any)?.project_id;
+    const suite = await getTestSuite(run.suite_id) as TestSuite | null;
+    const projectId = suite?.project_id;
     const projectEnvVarsArray = projectId ? (await getProjectEnvVars(projectId)) || [] : [];
 
+    const runEnvVars = run.run_env_vars || {};
     return {
       run_id: runId,
       status: run.status,
       environment: {
-        run_env_vars: (run as any).run_env_vars,
-        run_env_var_count: Object.keys((run as any).run_env_vars).length,
+        run_env_vars: runEnvVars,
+        run_env_var_count: Object.keys(runEnvVars).length,
         project_env_var_count: projectEnvVarsArray.length,
-        total_env_var_count: Object.keys((run as any).run_env_vars).length + projectEnvVarsArray.filter(
-          (pv: EnvironmentVariable) => !(run as TestRun & { run_env_vars: Record<string, string> }).run_env_vars[pv.key] // Only count project vars not overridden by run vars
+        total_env_var_count: Object.keys(runEnvVars).length + projectEnvVarsArray.filter(
+          (pv: EnvironmentVariable) => !runEnvVars[pv.key] // Only count project vars not overridden by run vars
         ).length,
         merge_mode: merge,
       },
@@ -660,29 +663,28 @@ export async function runDataRoutes(app: FastifyInstance) {
     }
 
     // Get the suite and project env vars
-    const suite = await getTestSuite(run.suite_id);
-    const projectId = (suite as any)?.project_id;
+    const suiteEnv = await getTestSuite(run.suite_id) as TestSuite | null;
+    const projectId = suiteEnv?.project_id;
     const projectEnvVarsArray = projectId ? (await getProjectEnvVars(projectId)) || [] : [];
 
     // Build merged view of env vars (with masking for sensitive project vars)
     const projectVars: Record<string, { value: string; masked: boolean; source: 'project' }> = {};
     for (const envVar of projectEnvVarsArray) {
-      projectVars[(envVar as any).key] = {
-        value: (envVar as any).masked ? '********' : (envVar as any).value,
-        masked: (envVar as any).masked,
+      projectVars[envVar.key] = {
+        value: envVar.is_secret ? '********' : envVar.value,
+        masked: envVar.is_secret,
         source: 'project',
       };
     }
 
+    const runEnvVarsGet = run.run_env_vars || {};
     const runVars: Record<string, { value: string; masked: boolean; source: 'run' }> = {};
-    if ((run as any).run_env_vars) {
-      for (const [key, value] of Object.entries((run as any).run_env_vars)) {
-        runVars[key] = {
-          value: value as string,
-          masked: false,
-          source: 'run',
-        };
-      }
+    for (const [key, value] of Object.entries(runEnvVarsGet)) {
+      runVars[key] = {
+        value: value,
+        masked: false,
+        source: 'run',
+      };
     }
 
     // Effective env vars (run vars override project vars)
@@ -692,7 +694,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     for (const [key, varInfo] of Object.entries(projectVars)) {
       effectiveVars[key] = {
         ...varInfo,
-        overridden: (run as any).run_env_vars ? key in (run as any).run_env_vars : false,
+        overridden: key in runEnvVarsGet,
       };
     }
 
@@ -743,7 +745,7 @@ export async function runDataRoutes(app: FastifyInstance) {
       });
     }
 
-    if (!(run as any).run_env_vars) {
+    if (!run.run_env_vars) {
       return {
         run_id: runId,
         status: run.status,
@@ -757,15 +759,15 @@ export async function runDataRoutes(app: FastifyInstance) {
     if (keys && Array.isArray(keys) && keys.length > 0) {
       // Delete specific keys
       for (const key of keys) {
-        if ((run as any).run_env_vars[key] !== undefined) {
-          delete (run as any).run_env_vars[key];
+        if (run.run_env_vars[key] !== undefined) {
+          delete run.run_env_vars[key];
           deletedCount++;
         }
       }
     } else {
       // Delete all env vars
-      deletedCount = Object.keys((run as any).run_env_vars).length;
-      (run as any).run_env_vars = {};
+      deletedCount = Object.keys(run.run_env_vars).length;
+      run.run_env_vars = {};
     }
 
     testRuns.set(runId, run);
@@ -775,7 +777,7 @@ export async function runDataRoutes(app: FastifyInstance) {
       run_id: runId,
       status: run.status,
       deleted_count: deletedCount,
-      remaining_env_vars: (run as any).run_env_vars,
+      remaining_env_vars: run.run_env_vars,
       message: deletedCount > 0
         ? `Successfully deleted ${deletedCount} environment variables`
         : 'No matching environment variables found to delete',
@@ -832,19 +834,20 @@ export async function runDataRoutes(app: FastifyInstance) {
     }
 
     // Type alias for local use
-    type TestRun = typeof baseRun;
+    type LocalTestRun = typeof baseRun;
 
     // Find K6 load test results in both runs
-    const findLoadTestResult = (run: TestRun) => {
+    const findLoadTestResult = (run: LocalTestRun) => {
       if (!run.results) return null;
       for (const result of run.results) {
         if (result.steps) {
           for (const step of result.steps) {
-            if ((step as any).load_test) {
+            // StepResult already has load_test optional property
+            if (step.load_test) {
               return {
                 test_id: result.test_id,
                 test_name: result.test_name,
-                load_test: (step as any).load_test,
+                load_test: step.load_test,
               };
             }
           }
@@ -923,12 +926,12 @@ export async function runDataRoutes(app: FastifyInstance) {
           true // Lower is better
         ),
         success_rate: calculateDelta(
-          parseFloat(baseSummary.success_rate) || 0,
-          parseFloat(compareSummary.success_rate) || 0
+          parseFloat(baseSummary.success_rate || '0') || 0,
+          parseFloat(compareSummary.success_rate || '0') || 0
         ),
         requests_per_second: calculateDelta(
-          parseFloat(baseSummary.requests_per_second) || 0,
-          parseFloat(compareSummary.requests_per_second) || 0
+          parseFloat(baseSummary.requests_per_second || '0') || 0,
+          parseFloat(compareSummary.requests_per_second || '0') || 0
         ),
         data_transferred: calculateDelta(
           Number(baseSummary.data_transferred) || 0,

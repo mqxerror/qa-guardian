@@ -662,7 +662,7 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
 
     return {
       run_id: runId,
-      run_name: (run as any).name || `Test Run ${runId}`,
+      run_name: run.suite_name || `Test Run ${runId}`,
       generated_at: new Date().toISOString(),
       summary,
     };
@@ -700,17 +700,32 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     const errorMessage = testResult.error || '';
 
     // Generate comprehensive root cause analysis with AI confidence scoring
-    const rootCauseAnalysis = generateRootCauseAnalysis(errorMessage, testResult as any, run as any);
+    const rootCauseAnalysis = generateRootCauseAnalysis(errorMessage, testResult, { browser: run.browser });
 
     // Feature #1079: Gather additional evidence artifacts
-    const evidenceArtifacts = generateEvidenceArtifacts(errorMessage, testResult as any, run as any);
+    // Adapt testResult for function signature (convert console_logs timestamp to string)
+    const adaptedTestResult = {
+      test_name: testResult.test_name,
+      status: testResult.status,
+      error: testResult.error,
+      screenshot_base64: testResult.screenshot_base64,
+      trace_file: testResult.trace_file,
+      video_file: testResult.video_file,
+      console_logs: testResult.console_logs?.map(log => ({
+        level: log.level,
+        message: log.message,
+        timestamp: log.timestamp?.toString(),
+      })),
+      steps: testResult.steps,
+    };
+    const evidenceArtifacts = generateEvidenceArtifacts(errorMessage, adaptedTestResult, { browser: run.browser });
 
     // Feature #1080: Generate AI-suggested remediation actions
     const suggestedActions = generateSuggestedActions(
       errorMessage,
       rootCauseAnalysis.primary_cause.id,
-      testResult as any,
-      run as any
+      testResult,
+      { browser: run.browser }
     );
 
     // Feature #1081: Generate historical pattern matching data
@@ -793,12 +808,12 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
           status: testResult.status,
           error: testResult.error,
           steps: testResult.steps,
-          duration: (testResult as any).duration,
+          duration: testResult.duration_ms,
         },
         {
           id: runId,
           browser: run.browser,
-          environment: (run as any).environment,
+          environment: run.branch, // Use branch as environment fallback
           branch: run.branch,
           created_at: run.created_at instanceof Date ? run.created_at.toISOString() : String(run.created_at),
         }

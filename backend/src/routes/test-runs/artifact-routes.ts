@@ -22,6 +22,24 @@ import {
   ArtifactToDelete,
   DownloadArtifactInfo,
 } from './artifact-types.js';
+import { TestRunResult } from './execution.js';
+import { AddressInfo } from 'net';
+
+// Feature #414: Type-safe server port extraction
+interface FastifyServerWithAddress {
+  server?: {
+    address?: () => AddressInfo | string | null;
+  };
+}
+
+function getServerPort(server: unknown): number {
+  const typedServer = server as FastifyServerWithAddress;
+  const address = typedServer?.server?.address?.();
+  if (address && typeof address === 'object' && 'port' in address) {
+    return address.port;
+  }
+  return 3001; // Default port
+}
 
 /**
  * Register artifact routes on the Fastify app
@@ -282,7 +300,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     // Build base URL
     const hostname = request.hostname.includes(':') ? request.hostname.split(':')[0] : request.hostname;
-    const port = (request.server as any)?.server?.address?.()?.port || 3001;
+    const port = getServerPort(request.server);
     const baseUrl = `${request.protocol}://${hostname}:${port}`;
 
     for (const result of run.results) {
@@ -444,7 +462,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     // Build base URL
     const hostname = request.hostname.includes(':') ? request.hostname.split(':')[0] : request.hostname;
-    const port = (request.server as any)?.server?.address?.()?.port || 3001;
+    const port = getServerPort(request.server);
     const baseUrl = `${request.protocol}://${hostname}:${port}`;
 
     // Use ScreenshotInfo from types module
@@ -511,9 +529,8 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
       }
 
       // Add step screenshots if available
-      const resultAny = result as any;
-      if (resultAny.step_results && Array.isArray(resultAny.step_results)) {
-        resultAny.step_results.forEach((step: any, index: number) => {
+      if (result.steps && Array.isArray(result.steps)) {
+        result.steps.forEach((step, index) => {
           if (step.screenshot || step.screenshot_path || step.screenshot_base64) {
             const stepScreenshot: ScreenshotInfo = {
               id: `${runId}-${result.test_id}-step-${index}`,
@@ -834,12 +851,12 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
         duration_formatted: `${Math.floor(testDuration / 60000)}:${String(Math.floor((testDuration % 60000) / 1000)).padStart(2, '0')}`,
       },
       test_info: {
-        browser: (result as any).browser || run.browser || 'chromium',
-        viewport: (result as any).viewport_width && (result as any).viewport_height
-          ? { width: (result as any).viewport_width, height: (result as any).viewport_height }
+        browser: result.browser || run.browser || 'chromium',
+        viewport: result.viewport_width && result.viewport_height
+          ? { width: result.viewport_width, height: result.viewport_height }
           : null,
-        started_at: (result as any).started_at?.toISOString ? (result as any).started_at.toISOString() : (result as any).started_at,
-        completed_at: (result as any).completed_at?.toISOString ? (result as any).completed_at.toISOString() : (result as any).completed_at,
+        started_at: result.started_at instanceof Date ? result.started_at.toISOString() : result.started_at,
+        completed_at: result.completed_at instanceof Date ? result.completed_at.toISOString() : result.completed_at,
       },
       playback_notes: format === 'mp4'
         ? 'MP4 format requested. If not available, WebM format will be returned.'
@@ -905,12 +922,12 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
         file_exists: traceExists,
       },
       test_info: {
-        browser: (result as any).browser || run.browser || 'chromium',
-        viewport: (result as any).viewport_width && (result as any).viewport_height
-          ? { width: (result as any).viewport_width, height: (result as any).viewport_height }
+        browser: result.browser || run.browser || 'chromium',
+        viewport: result.viewport_width && result.viewport_height
+          ? { width: result.viewport_width, height: result.viewport_height }
           : null,
-        started_at: (result as any).started_at?.toISOString ? (result as any).started_at.toISOString() : (result as any).started_at,
-        completed_at: (result as any).completed_at?.toISOString ? (result as any).completed_at.toISOString() : (result as any).completed_at,
+        started_at: result.started_at instanceof Date ? result.started_at.toISOString() : result.started_at,
+        completed_at: result.completed_at instanceof Date ? result.completed_at.toISOString() : result.completed_at,
         duration_ms: result.duration_ms,
       },
       viewer_instructions: 'To view the trace, download it and open with: npx playwright show-trace <trace.zip>',

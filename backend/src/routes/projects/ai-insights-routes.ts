@@ -3,7 +3,7 @@
 // Includes industry benchmarks, cross-project patterns, personalized insights, team skills, learning stats, releases
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId } from '../../middleware/auth.js';
+import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { getTestSuite, listAllTestSuites, listAllTests } from '../../services/repositories/test-suites.js';
 import { listTestRunsByOrg } from '../../services/repositories/test-runs.js';
 import { listProjects as dbListProjects } from '../../services/repositories/projects.js';
@@ -419,9 +419,10 @@ export async function aiInsightsRoutes(app: FastifyInstance) {
     preHandler: [authenticate],
   }, async (request) => {
     const orgId = getOrganizationId(request);
-    const userId = (request as any).user?.id || 'unknown';
-    const userRole = (request as any).user?.role || 'developer';
-    const userName = (request as any).user?.name || 'User';
+    const user = request.user as JwtPayload | undefined;
+    const userId = user?.id || 'unknown';
+    const userRole = user?.role || 'developer';
+    const userName = user?.email?.split('@')[0] || 'User';
     const timeframe = request.query.timeframe || 'today';
     const showAll = request.query.show_all === 'true';
 

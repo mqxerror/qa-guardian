@@ -141,6 +141,21 @@ export interface TestStep {
   // Feature #37: Optional step support for cookie consent and popup handling
   optional?: boolean; // If true, step is skipped if element not found (2s timeout)
   optionalReason?: 'cookie_consent' | 'popup_dismiss' | 'notification_close' | 'user_marked';
+  // Feature #414: Visual checkpoint properties
+  checkpointName?: string; // Name for visual checkpoint step
+  checkpointThreshold?: number; // Diff threshold for visual checkpoint (default: 0.1)
+  // Feature #414: Accessibility check step properties
+  a11y_wcag_level?: 'A' | 'AA' | 'AAA'; // WCAG level for inline a11y check
+  a11y_fail_on_any?: boolean; // Fail on any violation
+  a11y_fail_on_critical?: boolean; // Fail on critical/serious violations
+  a11y_threshold?: number; // Max violations allowed
+  // Feature #414: Healing properties for test execution
+  visualFingerprint?: string; // Visual fingerprint for visual-match healing
+  selectorStrategies?: Array<{
+    selector: string;
+    strategy: string;
+    confidence: number;
+  }>;
 }
 
 export interface ProjectParams {

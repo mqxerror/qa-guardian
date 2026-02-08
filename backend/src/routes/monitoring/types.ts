@@ -472,6 +472,12 @@ export interface AlertGroup {
   acknowledged_by?: string;
   acknowledged_at?: Date;
   resolved_at?: Date;
+  // Resolution fields
+  resolved_by?: string;
+  resolution_notes?: string;
+  resolution_time_seconds?: number;
+  // Severity field
+  severity?: 'critical' | 'high' | 'medium' | 'low';
   // Snooze fields
   snoozed_until?: Date;
   snoozed_by?: string;

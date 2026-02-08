@@ -36,6 +36,17 @@ interface SelectorStrategy {
   confidence: number;
 }
 
+// Feature #414: Interface for element info returned by generateSelectorScript
+interface ElementInfo {
+  selector: string;
+  selectorStrategies?: SelectorStrategy[];
+  tagName: string;
+  text: string;
+  id?: string;
+  name?: string;
+  className?: string;
+}
+
 interface RecordingSession {
   id: string;
   organization_id: string;
@@ -516,22 +527,14 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
 
       try {
         // Get element info before clicking
-        const elementInfo = await session.page.evaluate(generateSelectorScript(x, y)) as {
-          selector: string;
-          selectorStrategies?: SelectorStrategy[];
-          tagName: string;
-          text: string;
-          id?: string;
-          name?: string;
-          className?: string;
-        } | null;
+        const elementInfo = await session.page.evaluate(generateSelectorScript(x, y)) as ElementInfo | null;
 
         // Click at coordinates
         await session.page.mouse.click(x, y);
         session.dirty = true;
 
         // Record the action with multiple selector strategies
-        const action: any = {
+        const action: RecordingSession['actions'][number] = {
           action: 'click',
           selector: elementInfo?.selector || `click(${x}, ${y})`,
           selectorStrategies: elementInfo?.selectorStrategies || [],
@@ -613,7 +616,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
         await session.page.keyboard.type(text);
         session.dirty = true;
 
-        const action: any = {
+        const action: RecordingSession['actions'][number] = {
           action: 'fill',
           selector: focusedInfo?.selector || '',
           value: text,
@@ -638,7 +641,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
         await session.page.keyboard.press(key);
         session.dirty = true;
 
-        const action: any = {
+        const action: RecordingSession['actions'][number] = {
           action: 'keypress',
           value: key,
           timestamp: Date.now(),
@@ -663,7 +666,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
 
         // Record significant scrolls (debounce small movements)
         if (Math.abs(deltaY) > 50 || Math.abs(deltaX) > 50) {
-          const action: any = {
+          const action: RecordingSession['actions'][number] = {
             action: 'scroll',
             value: JSON.stringify({ x: deltaX, y: deltaY }),
             timestamp: Date.now(),
@@ -685,11 +688,11 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       touchSession(session);
 
       try {
-        const elementInfo = await session.page.evaluate(generateSelectorScript(x, y)) as any;
+        const elementInfo = await session.page.evaluate(generateSelectorScript(x, y)) as ElementInfo | null;
         await session.page.mouse.move(x, y);
         session.dirty = true;
 
-        const action: any = {
+        const action: RecordingSession['actions'][number] = {
           action: 'hover',
           selector: elementInfo?.selector || `hover(${x}, ${y})`,
           selectorStrategies: elementInfo?.selectorStrategies || [],
@@ -713,9 +716,9 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       touchSession(session);
 
       try {
-        const elementInfo = await session.page.evaluate(generateSelectorScript(x, y)) as any;
+        const elementInfo = await session.page.evaluate(generateSelectorScript(x, y)) as ElementInfo | null;
 
-        const action: any = {
+        const action: RecordingSession['actions'][number] = {
           action: 'select',
           selector: elementInfo?.selector || '',
           value,
@@ -741,7 +744,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
         await session.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
         session.dirty = true;
 
-        const action: any = {
+        const action: RecordingSession['actions'][number] = {
           action: 'navigate',
           url,
           timestamp: Date.now(),

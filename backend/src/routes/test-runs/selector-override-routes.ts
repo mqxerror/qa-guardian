@@ -13,11 +13,29 @@
  * Extracted from test-runs.ts to reduce file size.
  */
 
-import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
+import { FastifyInstance, FastifyRequest } from 'fastify';
+import { authenticate, getOrganizationId, JwtPayload, ApiKeyPayload, InternalServicePayload } from '../../middleware/auth.js';
 import { testRuns, selectorOverrides, healedSelectorHistory, SelectorOverride, TestRun } from './execution.js';
 import { getTestRun } from '../../services/repositories/test-runs.js';
 import { getTest } from '../test-suites.js';
+
+// Type-safe user accessor for authenticated requests
+// Returns non-optional JwtPayload since authenticate middleware ensures user exists
+type AuthUser = JwtPayload | ApiKeyPayload | InternalServicePayload;
+function getUser(request: FastifyRequest): JwtPayload {
+  const user = (request as unknown as { user: AuthUser }).user;
+  // Only JwtPayload has email, so check for it and return a safe fallback
+  if (user && 'email' in user) {
+    return user as JwtPayload;
+  }
+  // For API key or internal service auth, create a JwtPayload-like object
+  return {
+    id: user?.id || 'unknown',
+    email: 'api@system.local',
+    role: 'developer',
+    organization_id: user?.organization_id || '',
+  };
+}
 
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
@@ -41,7 +59,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { runId, testId } = request.params;
-    const user = (request as any).user as JwtPayload;
+    const user = getUser(request);
     const orgId = getOrganizationId(request);
 
     // Get the test run
@@ -119,7 +137,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
   }, async (request, reply) => {
     const { runId, testId, stepId } = request.params;
     const { new_selector, notes, apply_to_test, simulate_healed, healing_strategy, healing_confidence } = request.body || {};
-    const user = (request as any).user as JwtPayload;
+    const user = getUser(request);
     const orgId = getOrganizationId(request);
 
     if (!new_selector || typeof new_selector !== 'string') {
@@ -226,7 +244,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
   }, async (request, reply) => {
     const { runId, testId, stepId } = request.params;
     const { apply_to_test } = request.body || {};
-    const user = (request as any).user as JwtPayload;
+    const user = getUser(request);
     const orgId = getOrganizationId(request);
 
     // Get the test run
@@ -310,7 +328,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
   }, async (request, reply) => {
     const { runId, testId, stepId } = request.params;
     const { reason, suggest_selector } = request.body || {};
-    const user = (request as any).user as JwtPayload;
+    const user = getUser(request);
     const orgId = getOrganizationId(request);
 
     // Get the test run
@@ -407,7 +425,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { testId } = request.params;
-    const user = (request as any).user as JwtPayload;
+    const user = getUser(request);
     const orgId = getOrganizationId(request);
 
     // Check if test exists and belongs to the organization
@@ -441,7 +459,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { testId, stepId } = request.params;
-    const user = (request as any).user as JwtPayload;
+    const user = getUser(request);
     const orgId = getOrganizationId(request);
 
     // Check if test exists and belongs to the organization

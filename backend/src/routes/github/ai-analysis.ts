@@ -38,9 +38,22 @@ import {
 // Route Registration
 // ============================================================================
 
+// Feature #414: Type for AI analysis helpers exposed on Fastify instance
+interface AIAnalysisHelpers {
+  analyzeTestForImprovements: typeof analyzeTestForImprovements;
+  explainAnomaly: typeof explainAnomaly;
+  getDetectedAnomalies: typeof getDetectedAnomalies;
+  generateReleaseNotes: typeof generateReleaseNotes;
+  analyzeElementWithVision: typeof analyzeElementWithVision;
+  getHealingSuggestions: typeof getHealingSuggestions;
+  explainPlaywrightTest: typeof explainPlaywrightTest;
+  generateTestFromAnnotations: typeof generateTestFromAnnotations;
+  analyzeScreenshotForTest: typeof analyzeScreenshotForTest;
+}
+
 export async function aiAnalysisRoutes(app: FastifyInstance): Promise<void> {
   // Export the helper functions for use by other modules
-  (app as any).aiAnalysis = {
+  (app as FastifyInstance & { aiAnalysis?: AIAnalysisHelpers }).aiAnalysis = {
     analyzeTestForImprovements,
     explainAnomaly,
     getDetectedAnomalies,

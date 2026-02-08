@@ -10,10 +10,10 @@
  * - POST /api/v1/tests/:testId/runs - Trigger test run for a single test
  */
 
-import { FastifyInstance } from 'fastify';
-import { authenticate, requireScopes, getOrganizationId } from '../../middleware/auth.js';
+import { FastifyInstance, FastifyRequest } from 'fastify';
+import { authenticate, requireScopes, getOrganizationId, JwtPayload, ApiKeyPayload, InternalServicePayload } from '../../middleware/auth.js';
 import { getTestSuite, getTest, listTests } from '../test-suites.js';
-import { testRuns, BrowserType, createTestRun as dbCreateTestRun } from './execution.js';
+import { testRuns, BrowserType, TestRun, TestType, createTestRun as dbCreateTestRun } from './execution.js';
 // Feature #61: Redis caching
 import { getCache, CacheKeys } from '../../services/cache.js';
 // Feature #155: Execution queue for concurrency limits
@@ -40,16 +40,16 @@ interface RerunBody {
   branch?: string;
 }
 
-// Type for TestRun - simplified version for route handlers
-interface TestRun {
-  id: string;
-  suite_id: string;
-  test_id?: string;
-  organization_id: string;
-  browser: BrowserType;
-  branch: string;
-  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled' | 'cancelling' | 'paused';
-  created_at: Date;
+// Extended TestRun for rerun with test_ids
+interface RerunTestRun extends TestRun {
+  test_ids?: string[];
+}
+
+// Type-safe user accessor for authenticated requests
+type AuthUser = JwtPayload | ApiKeyPayload | InternalServicePayload;
+function getUserId(request: FastifyRequest): string | undefined {
+  const user = (request as unknown as { user?: AuthUser }).user;
+  return user?.id;
 }
 
 // Import runTestsForRun from parent module (will be passed as dependency)
@@ -103,10 +103,10 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
         created_at: new Date(),
       };
 
-      testRuns.set(id, run as any);
+      testRuns.set(id, run);
 
       // Persist to database so the run appears in history and survives server restarts
-      dbCreateTestRun(run as any).catch(err =>
+      dbCreateTestRun(run).catch(err =>
         console.error('[RunTrigger] Failed to persist test run to database:', err)
       );
 
@@ -117,13 +117,13 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       // Feature #155: Queue test execution with concurrency limits
       // enqueueOrExecute will queue the job if queue is available, otherwise execute directly
       const queueResult = await enqueueOrExecute(id, 'e2e', {
-        triggeredBy: (request.user as any)?.id,
+        triggeredBy: getUserId(request),
       });
 
       // Update status to 'queued' if the run was queued (not executed directly)
       if (queueResult.queued) {
         run.status = 'pending'; // pending = waiting in queue
-        testRuns.set(id, run as any);
+        testRuns.set(id, run);
         console.log(`[RunTrigger] Run ${id} queued at position ${queueResult.position || 'unknown'}`);
       }
 
@@ -180,10 +180,10 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
         created_at: new Date(),
       };
 
-      testRuns.set(id, run as any);
+      testRuns.set(id, run);
 
       // Persist to database so the run appears in history and survives server restarts
-      dbCreateTestRun(run as any).catch(err =>
+      dbCreateTestRun(run).catch(err =>
         console.error('[RunTrigger] Failed to persist test run to database:', err)
       );
 
@@ -194,15 +194,15 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
 
       // Feature #155: Queue test execution with concurrency limits
       // Determine test type for queue prioritization
-      const testType = test.test_type || 'e2e';
-      const queueResult = await enqueueOrExecute(id, testType as any, {
-        triggeredBy: (request.user as any)?.id,
+      const testType: TestType = (test.test_type as TestType) || 'e2e';
+      const queueResult = await enqueueOrExecute(id, testType, {
+        triggeredBy: getUserId(request),
       });
 
       // Update status if queued
       if (queueResult.queued) {
         run.status = 'pending';
-        testRuns.set(id, run as any);
+        testRuns.set(id, run);
         console.log(`[RunTrigger] Run ${id} queued at position ${queueResult.position || 'unknown'}`);
       }
 
@@ -262,7 +262,8 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       const branchToUse: string = requestBranch || 'main';
 
       const id = crypto.randomUUID();
-      const run: any = {
+      // Use base TestRun interface and store test_ids separately for rerun logic
+      const run: TestRun = {
         id,
         suite_id,
         organization_id: orgId,
@@ -270,13 +271,15 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
         branch: branchToUse,
         status: 'pending',
         created_at: new Date(),
-        test_ids: validTestIds, // Store which tests to rerun
       };
+      // Store test_ids in the run for rerun handling (using type assertion for extended property)
+      const rerunRun = run as RerunTestRun;
+      rerunRun.test_ids = validTestIds;
 
-      testRuns.set(id, run);
+      testRuns.set(id, rerunRun);
 
       // Persist to database
-      dbCreateTestRun(run).catch(err =>
+      dbCreateTestRun(rerunRun).catch(err =>
         console.error('[RunTrigger] Failed to persist rerun to database:', err)
       );
 
@@ -289,7 +292,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
 
       // Feature #155: Queue test execution with concurrency limits
       const queueResult = await enqueueOrExecute(id, 'e2e', {
-        triggeredBy: (request.user as any)?.id,
+        triggeredBy: getUserId(request),
       });
 
       if (queueResult.queued) {

@@ -148,8 +148,10 @@ export function parseOpenAPISpec(content: string): { info: any; endpoints: OpenA
       if (operation.responses) {
         endpoint.responses = {};
         for (const [code, response] of Object.entries(operation.responses)) {
+          // Feature #414: OpenAPI response object has optional description property
+          const responseObj = response as { description?: string };
           endpoint.responses[code] = {
-            description: (response as any).description || '',
+            description: responseObj.description || '',
           };
         }
       }

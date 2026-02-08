@@ -6,7 +6,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, getOrganizationId } from '../../middleware/auth.js';
+import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores.js';
 import { runGitleaksScan, checkGitleaksAvailability } from '../sast/gitleaks.js';
 import type { GitleaksFinding } from '../sast/gitleaks.js';
@@ -325,7 +325,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     const { secretId } = request.params;
     const { force_recheck } = request.query;
     const orgId = getOrganizationId(request);
-    const user = (request as any).user;
+    const user = request.user as JwtPayload;
     const forceRecheck = force_recheck === 'true';
 
     // Parse secret ID format: secret-{projectId}-{index}
@@ -452,7 +452,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     const { projectId } = request.params;
     const { format = 'cyclonedx', include_dev } = request.query;
     const orgId = getOrganizationId(request);
-    const user = (request as any).user;
+    const user = request.user as JwtPayload;
     const includeDevDeps = include_dev === 'true';
 
     // Verify project exists
@@ -1027,7 +1027,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
       ...existingPolicy,
       ...body,
       updated_at: new Date().toISOString(),
-      updated_by: (request as any).user?.email || 'owner@example.com',
+      updated_by: (request.user as JwtPayload)?.email || 'owner@example.com',
     };
 
     securityPolicies.set(projectId, updatedPolicy);

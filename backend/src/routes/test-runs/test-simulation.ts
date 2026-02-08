@@ -464,7 +464,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
     simulatedLighthouseError = {
       enabled: true,
       errorType: errorType as 'dns_resolution' | 'connection_timeout' | 'connection_refused' | 'ssl_error' | 'unreachable',
-      ...(errorType === 'ssl_error' ? { sslErrorCode: sslErrorCode as any } : {}),
+      ...(errorType === 'ssl_error' ? { sslErrorCode: sslErrorCode as 'CERT_HAS_EXPIRED' | 'CERT_AUTHORITY_INVALID' | 'CERT_COMMON_NAME_INVALID' | 'CERT_REVOKED' | 'SSL_VERSION_OR_CIPHER_MISMATCH' | 'CERT_WEAK_KEY' } : {}),
     };
     console.log(`[Lighthouse] Unreachable URL simulation ENABLED (errorType: ${errorType}${errorType === 'ssl_error' ? `, sslErrorCode: ${sslErrorCode}` : ''})`);
 

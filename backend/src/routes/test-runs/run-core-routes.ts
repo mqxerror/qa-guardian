@@ -8,7 +8,10 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites.js';
-import { testRuns, runningBrowsers, TestRun, BrowserType, TestRunResult } from './execution.js';
+import { testRuns, runningBrowsers, TestRun, BrowserType, TestRunResult, TestRunStatus } from './execution.js';
+
+// Feature #414: Valid TestRunStatus values for validation
+const validStatuses: TestRunStatus[] = ['pending', 'running', 'paused', 'passed', 'failed', 'warning', 'error', 'cancelled', 'cancelling', 'visual_approved', 'visual_rejected'];
 import { getTestRun as dbGetTestRun, listTestRunsBySuite as dbListTestRunsBySuite, listTestRunsByOrg as dbListTestRunsByOrg, listTestRunsByTestId as dbListTestRunsByTestId, listTestRunsPaginated } from '../../services/repositories/test-runs.js';
 // Feature #61: Redis caching
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
@@ -445,11 +448,16 @@ export async function runCoreRoutes(app: FastifyInstance) {
 
     if (!result) {
       // Use new paginated function for efficient server-side pagination
+      // Feature #414: Validate status against valid TestRunStatus values
+      const validatedStatus = status && validStatuses.includes(status as TestRunStatus)
+        ? (status as TestRunStatus)
+        : undefined;
+
       result = await listTestRunsPaginated(orgId, {
         page: Number(page),
         limit: Number(limit),
         offset: offset !== undefined ? Number(offset) : undefined,
-        status: status as any,
+        status: validatedStatus,
         suite_id,
         project_id,
       });

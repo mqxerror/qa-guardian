@@ -10,8 +10,8 @@
  * Feature #248: Split alert-grouping-routing.ts for maintainability
  */
 
-import { FastifyInstance } from 'fastify';
-import { authenticate, requireRoles, getOrganizationId } from '../../middleware/auth.js';
+import { FastifyInstance, FastifyRequest } from 'fastify';
+import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload, InternalServicePayload } from '../../middleware/auth.js';
 import { logAuditEntry } from '../audit-logs.js';
 
 import {
@@ -19,6 +19,20 @@ import {
   AlertGroup,
   GroupedAlert,
 } from './types.js';
+
+// Type-safe user accessor for authenticated requests
+type AuthUser = JwtPayload | ApiKeyPayload | InternalServicePayload;
+function getUser(request: FastifyRequest): AuthUser | undefined {
+  return (request as unknown as { user?: AuthUser }).user;
+}
+
+// Helper to get user email (only JwtPayload has email)
+function getUserEmail(user: AuthUser | undefined): string | undefined {
+  if (user && 'email' in user) {
+    return (user as JwtPayload).email;
+  }
+  return undefined;
+}
 
 import {
   alertGroupingRules,
@@ -309,7 +323,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const { groupId } = request.params as { groupId: string };
       const { note } = request.body as { note?: string };
-      const user = (request as any).user;
+      const user = getUser(request);
 
       const group = alertGroups.get(groupId);
       if (!group) {
@@ -330,7 +344,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
 
       // Update group status to acknowledged
       group.status = 'acknowledged';
-      group.acknowledged_by = user?.email || user?.id || 'unknown';
+      group.acknowledged_by = getUserEmail(user) || user?.id || 'unknown';
       group.acknowledged_at = new Date();
 
       // Cancel any pending escalations for this group
@@ -366,7 +380,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const { groupId } = request.params as { groupId: string };
       const { resolution_notes } = request.body as { resolution_notes?: string };
-      const user = (request as any).user;
+      const user = getUser(request);
 
       const group = alertGroups.get(groupId);
       if (!group) {
@@ -390,11 +404,12 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       // Update group status to resolved
       group.status = 'resolved';
       group.resolved_at = resolvedAt;
-      (group as any).resolved_by = user?.email || user?.id || 'unknown';
-      (group as any).resolution_notes = resolution_notes || '';
-      (group as any).resolution_time_seconds = resolutionTimeSeconds;
+      const resolverEmail = 'email' in (user || {}) ? (user as JwtPayload).email : undefined;
+      group.resolved_by = resolverEmail || user?.id || 'unknown';
+      group.resolution_notes = resolution_notes || '';
+      group.resolution_time_seconds = resolutionTimeSeconds;
 
-      console.log(`Alert group ${groupId} resolved by ${(group as any).resolved_by} - resolution time: ${resolutionTimeSeconds}s`);
+      console.log(`Alert group ${groupId} resolved by ${group.resolved_by} - resolution time: ${resolutionTimeSeconds}s`);
 
       return {
         success: true,
@@ -426,7 +441,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const { groupId } = request.params as { groupId: string };
       const { duration_hours } = request.body as { duration_hours: number };
-      const user = (request as any).user;
+      const user = getUser(request);
 
       if (!duration_hours || ![1, 4, 24].includes(duration_hours)) {
         return reply.status(400).send({ error: 'Invalid duration. Must be 1, 4, or 24 hours.' });
@@ -450,7 +465,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
 
       group.snoozed_at = snoozedAt;
       group.snoozed_until = snoozedUntil;
-      group.snoozed_by = user?.email || user?.id || 'unknown';
+      group.snoozed_by = getUserEmail(user) || user?.id || 'unknown';
       group.snooze_duration_hours = duration_hours;
 
       console.log(`Alert group ${groupId} snoozed by ${group.snoozed_by} for ${duration_hours}h until ${snoozedUntil.toISOString()}`);
@@ -486,7 +501,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const orgId = getOrganizationId(request);
       const { groupId } = request.params as { groupId: string };
-      const user = (request as any).user;
+      const user = getUser(request);
 
       const group = alertGroups.get(groupId);
       if (!group) {
@@ -507,7 +522,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       group.snoozed_by = undefined;
       group.snooze_duration_hours = undefined;
 
-      console.log(`Alert group ${groupId} unsnoozed by ${user?.email || 'unknown'} - was snoozed until ${wasSnoozedUntil.toISOString()}`);
+      console.log(`Alert group ${groupId} unsnoozed by ${getUserEmail(user) || 'unknown'} - was snoozed until ${wasSnoozedUntil.toISOString()}`);
 
       return {
         success: true,
@@ -571,7 +586,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         ...a,
         group_id: g.id,
         group_status: g.status,
-        severity: (g as any).severity || 'medium', // Default severity
+        severity: g.severity || 'medium', // Default severity
         source: g.group_key.includes('API') ? 'api' :
                 g.group_key.includes('Database') ? 'database' :
                 g.group_key.includes('Redis') ? 'cache' : 'system',
@@ -615,9 +630,9 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
           resolved: groups.filter(g => g.status === 'resolved').length,
         },
         avg_resolution_time_seconds: (() => {
-          const resolved = groups.filter(g => g.status === 'resolved' && (g as any).resolution_time_seconds);
+          const resolved = groups.filter(g => g.status === 'resolved' && g.resolution_time_seconds);
           if (resolved.length === 0) return null;
-          const total = resolved.reduce((sum, g) => sum + ((g as any).resolution_time_seconds || 0), 0);
+          const total = resolved.reduce((sum, g) => sum + (g.resolution_time_seconds || 0), 0);
           return Math.round(total / resolved.length);
         })(),
       };
@@ -707,7 +722,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         ...a,
         group_id: g.id,
         group_status: g.status,
-        severity: (g as any).severity || 'medium',
+        severity: g.severity || 'medium',
         source: g.group_key.includes('API') ? 'api' :
                 g.group_key.includes('Database') ? 'database' :
                 g.group_key.includes('Redis') ? 'cache' : 'system',

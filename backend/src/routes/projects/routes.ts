@@ -34,7 +34,7 @@ import {
   deleteProjectEnvVar as dbDeleteProjectEnvVar,
 } from './stores.js';
 import { hasProjectAccess } from './utils.js';
-import { testRuns, BrowserType } from '../test-runs/execution.js';
+import { testRuns, BrowserType, TestRun, TestRunResult } from '../test-runs/execution.js';
 // Feature #61: Redis caching
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
 // Feature #108: WebSocket events for real-time cache invalidation
@@ -706,7 +706,7 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Create and start the test run
     const runId = crypto.randomUUID();
-    const testRunData = {
+    const testRunData: TestRun = {
       id: runId,
       suite_id: smokeSuite.id,
       test_id: testId,
@@ -715,15 +715,15 @@ export async function coreRoutes(app: FastifyInstance) {
       branch: 'main',
       status: 'pending',
       created_at: new Date(),
-      started_at: null as Date | null,
-      completed_at: null as Date | null,
-      duration_ms: null as number | null,
-      results: [] as any[],
-      error: null as string | null,
+      started_at: undefined,
+      completed_at: undefined,
+      duration_ms: undefined,
+      results: [] as TestRunResult[],
+      error: undefined,
     };
     // Persist to DB and populate in-memory Map (execution engine reads from Map)
-    await dbCreateTestRunAsync(testRunData as any);
-    testRuns.set(runId, testRunData as any);
+    await dbCreateTestRunAsync(testRunData);
+    testRuns.set(runId, testRunData);
 
     // Import and run tests (this will start executing in the background)
     // We need to dynamically import to avoid circular dependency

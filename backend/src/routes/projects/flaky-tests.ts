@@ -154,11 +154,11 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
         // Feature #1099: Extract environment info from run
         const browser = run.browser || 'unknown';
         // Determine environment: CI vs local (check for common CI env indicators)
-        const environment = (run as any).environment ||
-          ((run as any).ci_pipeline_id ? 'CI' :
-           ((run as any).branch && (run as any).branch !== 'main' ? 'CI' : 'local'));
+        const environment = run.environment ||
+          (run.ci_pipeline_id ? 'CI' :
+           (run.branch && run.branch !== 'main' ? 'CI' : 'local'));
         // Determine OS (from run metadata or default to unknown)
-        const os = (run as any).os || (run as any).operating_system || 'unknown';
+        const os = run.os || run.operating_system || 'unknown';
 
         // Helper to update environment map
         const updateEnvMap = (map: Map<string, { pass: number; fail: number }>, key: string, passed: boolean) => {

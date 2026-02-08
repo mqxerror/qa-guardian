@@ -230,8 +230,8 @@ export async function runTestsForRun(runId: string) {
     } else {
       // Running all tests in suite (or a subset if test_ids specified for rerun)
       let suiteTests = await listTests(run.suite_id);
-      if ((run as any).test_ids && Array.isArray((run as any).test_ids)) {
-        const testIdSet = new Set((run as any).test_ids as string[]);
+      if (run.test_ids && Array.isArray(run.test_ids)) {
+        const testIdSet = new Set(run.test_ids);
         suiteTests = suiteTests.filter(t => testIdSet.has(t.id));
       }
       testsToRun = suiteTests.map(t => ({
@@ -374,11 +374,11 @@ export async function runTestsForRun(runId: string) {
     // Set test_type and accessibility_results for analytics
     if (testsToRun.length > 0) {
       const firstTest = testsToRun[0];
-      run.test_type = firstTest.test_type as any;
+      run.test_type = firstTest.test_type;
 
       if (firstTest.test_type === 'accessibility' && results.length > 0) {
         const a11yResult = results[0];
-        const a11yStep = a11yResult.steps?.find((s: any) => s.action === 'axe_core_scan');
+        const a11yStep = a11yResult.steps?.find((s) => s.action === 'axe_core_scan');
         if (a11yStep?.accessibility) {
           run.accessibility_results = a11yStep.accessibility;
         }

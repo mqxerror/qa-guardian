@@ -16,7 +16,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { testRuns, TestRun } from './execution.js';
 import { getTestRun } from '../../services/repositories/test-runs.js';
-import { getTestSuite } from '../test-suites.js';
+import { getTestSuite, listTests, getTest } from '../test-suites.js';
 
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
@@ -39,7 +39,7 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     const { runId, testId } = request.params;
     const { notes } = request.body || {};
     const orgId = getOrganizationId(request);
-    const userId = (request as any).user?.id;
+    const userId = (request as unknown as { user?: { id?: string } }).user?.id;
 
     // Verify run exists and belongs to user's organization
     const run = await getTestRunWithFallback(runId);
@@ -217,8 +217,7 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
 
     // Get test and suite info
     const suite = await getTestSuite(run.suite_id);
-    const suiteAny = suite as any;
-    const test = suiteAny?.tests?.find((t: any) => t.id === testId);
+    const test = await getTest(testId);
 
     // Extract error information
     const errorMessage = result.error || 'Unknown error';
@@ -448,8 +447,31 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     // Get test suite info
     const suite = await getTestSuite(run.suite_id);
 
-    // Build export data - cast run to any for optional properties that may exist at runtime
-    const runAny = run as any;
+    // Define result data interface for type safety
+    interface ExportResultData {
+      test_id: string;
+      test_name: string;
+      status: string;
+      duration_ms: number;
+      started_at: Date | null;
+      completed_at: Date | null;
+      error_message: string | null;
+      steps?: Array<{
+        action: string;
+        selector?: string;
+        value?: string;
+        status: string;
+        duration_ms: number;
+        error: string | null;
+      }>;
+      artifacts?: {
+        screenshot_url: string | null;
+        video_url: string | null;
+        trace_url: string | null;
+      };
+    }
+
+    // Build export data using interface properties
     const results = run.results || [];
     const exportData = {
       run_id: run.id,
@@ -460,23 +482,21 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
       completed_at: run.completed_at,
       duration_ms: run.duration_ms,
       browser: run.browser,
-      viewport: runAny.viewport || null,
+      viewport: null as string | null, // Viewport is on step level, not run level
       total_tests: results.length,
       passed: results.filter(r => r.status === 'passed').length,
       failed: results.filter(r => r.status === 'failed').length,
       skipped: results.filter(r => r.status === 'skipped').length,
       error: results.filter(r => r.status === 'error').length,
       results: results.map(result => {
-        // Cast result to any for optional properties that may exist at runtime
-        const resultAny = result as any;
-        const resultData: any = {
+        const resultData: ExportResultData = {
           test_id: result.test_id,
           test_name: result.test_name,
           status: result.status,
           duration_ms: result.duration_ms,
-          started_at: resultAny.started_at || null,
-          completed_at: resultAny.completed_at || null,
-          error_message: resultAny.error_message || result.error || null,
+          started_at: result.started_at || null,
+          completed_at: result.completed_at || null,
+          error_message: result.error || null,
         };
 
         if (includeSteps && result.steps) {
@@ -491,12 +511,11 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
         }
 
         if (includeArtifacts) {
-          // Cast to any to access optional URL properties that may exist at runtime
-          const resultAny = result as any;
+          // Generate artifact URLs from file paths if available
           resultData.artifacts = {
-            screenshot_url: resultAny.screenshot_url || null,
-            video_url: resultAny.video_url || null,
-            trace_url: resultAny.trace_url || null,
+            screenshot_url: result.screenshot_base64 ? `/api/v1/runs/${run.id}/results/${result.test_id}/screenshot/base64` : null,
+            video_url: result.video_file ? `/api/v1/runs/${run.id}/results/${result.test_id}/video` : null,
+            trace_url: result.trace_file ? `/api/v1/runs/${run.id}/results/${result.test_id}/trace` : null,
           };
         }
 

@@ -12,7 +12,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireRoles, getOrganizationId } from '../../middleware/auth.js';
+import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 
 import {
   AlertCorrelationConfig,
@@ -169,7 +169,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     async (request, reply) => {
       const { correlationId } = request.params;
       const orgId = getOrganizationId(request);
-      const user = (request as any).user;
+      const user = request.user as JwtPayload;
 
       const correlation = alertCorrelations.get(correlationId);
       if (!correlation || correlation.organization_id !== orgId) {
@@ -313,7 +313,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
               check_type: 'uptime',
               location: i < 3 ? 'US East' : locations[i % locations.length], // First 3 same location
               error_message: errorMessages[Math.floor(i / 2) % errorMessages.length], // Pairs have similar errors
-              severity: ['low', 'medium', 'high', 'critical'][i % 4] as any,
+              severity: (['low', 'medium', 'high', 'critical'] as const)[i % 4],
               triggered_at: new Date(),
             };
             break;
@@ -425,7 +425,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     },
     async (request) => {
       const orgId = getOrganizationId(request);
-      const user = (request as any).user;
+      const user = request.user as JwtPayload;
       const body = request.body;
 
       const runbookId = `runbook-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -662,7 +662,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     },
     async (request, reply) => {
       const { destination_type, config, test_alert } = request.body;
-      const user = (request as any).user;
+      const user = request.user as JwtPayload;
 
       const alertPayload = test_alert || {
         check_name: 'Test Alert',

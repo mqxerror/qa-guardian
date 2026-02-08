@@ -10,7 +10,7 @@
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { pool } from '../../services/database.js';
-import { authenticate } from '../../middleware/auth.js';
+import { authenticate, JwtPayload } from '../../middleware/auth.js';
 
 /**
  * Parse user agent string to extract browser and OS
@@ -165,7 +165,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(503).send({ error: 'Database not available' });
       }
 
-      const user = (request as any).user;
+      const user = request.user as JwtPayload;
       const organizationId = user?.organization_id;
 
       if (!organizationId) {
@@ -269,7 +269,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const params = request.params as { id: string };
-      const user = (request as any).user;
+      const user = request.user as JwtPayload;
       const userId = user?.id;
       const organizationId = user?.organization_id;
 
@@ -317,7 +317,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const params = request.params as { id: string };
-      const user = (request as any).user;
+      const user = request.user as JwtPayload;
       const organizationId = user?.organization_id;
 
       if (!organizationId) {
@@ -356,7 +356,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(503).send({ error: 'Database not available' });
       }
 
-      const user = (request as any).user;
+      const user = request.user as JwtPayload;
       const organizationId = user?.organization_id;
 
       if (!organizationId) {

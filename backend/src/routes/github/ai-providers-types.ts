@@ -412,7 +412,7 @@ export async function callKieAI(
       return { error: `Kie.ai API error (${response.status}): ${errorBody || response.statusText}` };
     }
 
-    const data = await response.json() as any;
+    const data = await response.json() as KieAIChatResponse;
     return {
       content: data.choices?.[0]?.message?.content || 'No response content',
       inputTokens: data.usage?.prompt_tokens || 0,
@@ -467,7 +467,7 @@ export async function callAnthropicDirect(
       return { error: `Anthropic API error (${response.status}): ${errorBody || response.statusText}` };
     }
 
-    const data = await response.json() as any;
+    const data = await response.json() as AnthropicChatResponse;
     return {
       content: data.content?.[0]?.text || 'No response content',
       inputTokens: data.usage?.input_tokens || 0,

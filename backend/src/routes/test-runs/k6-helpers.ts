@@ -618,7 +618,7 @@ export function validateK6ScriptSyntax(script: string): K6SyntaxValidationResult
       let column: number | undefined;
 
       // Look for line info in the error stack if available
-      const stack = (err as any).stack || '';
+      const stack = err instanceof Error ? err.stack || '' : '';
       const lineMatch = stack.match(/<anonymous>:(\d+):(\d+)/);
       if (lineMatch) {
         lineNumber = parseInt(lineMatch[1], 10);

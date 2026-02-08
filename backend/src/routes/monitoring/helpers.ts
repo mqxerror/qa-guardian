@@ -151,8 +151,8 @@ export async function runCheck(check: UptimeCheck, location: MonitoringLocation)
   try {
     const startTime = performance.now();
     const response = await fetch(check.url, {
-      method: (check as any).method || 'GET',
-      headers: (check as any).headers || {},
+      method: check.method || 'GET',
+      headers: check.headers || {},
       signal: AbortSignal.timeout(check.timeout || 30000),
       redirect: 'follow',
     });

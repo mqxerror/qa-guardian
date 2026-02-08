@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth.js';
 import { getTestSuite } from './test-suites.js';
 import { listTestRunsBySchedule, createTestRun } from '../services/repositories/test-runs.js';
+import type { TestRun, BrowserType as TestRunBrowserType } from './test-runs/execution.js';
 import { sendScheduleTriggeredWebhook } from './test-runs/webhook-events.js';
 // Feature #145: Cache invalidation for schedule mutations
 import { getCache } from '../services/cache.js';
@@ -359,17 +360,19 @@ export async function scheduleRoutes(app: FastifyInstance) {
 
     // Create a test run with schedule_id
     const runId = crypto.randomUUID();
-    const run = {
+    const run: TestRun = {
       id: runId,
       suite_id: schedule.suite_id,
       organization_id: orgId,
-      browser: schedule.browsers[0] || 'chromium' as const,
-      status: 'pending' as const,
+      browser: (schedule.browsers[0] || 'chromium') as TestRunBrowserType,
+      branch: 'main',
+      status: 'pending',
       created_at: new Date(),
       schedule_id: id, // Link to schedule
+      triggered_by: 'schedule',
     };
 
-    await createTestRun(run as any);
+    await createTestRun(run);
 
     // Update schedule metadata via repository
     await updateScheduleRepo(id, {
