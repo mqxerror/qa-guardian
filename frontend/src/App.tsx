@@ -6,7 +6,7 @@ import { RoleProtectedRoute } from './components/RoleProtectedRoute';
 import { Navigation } from './components/Navigation';
 import { Layout } from './components/Layout';
 import { RouteErrorBoundary, ErrorFallback } from './components/ErrorBoundary';
-import { AIInsightsHub, AIInsightsIndex } from './components/AIInsightsHub';
+// Feature #412: AIInsightsHub deleted - child pages promoted to /ai/* routes
 import { MCPHub, MCPHubIndex } from './components/MCPHub';
 import { QAChatWidget } from './components/QAChatWidget';
 import { useAuthStore } from './stores/authStore';
@@ -67,8 +67,8 @@ const MultiLanguageDependencyPage = lazy(() => import('./pages/MultiLanguageDepe
 const VulnerabilityHistoryPage = lazy(() => import('./pages/VulnerabilityHistoryPage').then(m => ({ default: m.VulnerabilityHistoryPage })));
 const ExploitabilityAnalysisPage = lazy(() => import('./pages/ExploitabilityAnalysisPage').then(m => ({ default: m.ExploitabilityAnalysisPage })));
 const ScanCachingPage = lazy(() => import('./pages/ScanCachingPage').then(m => ({ default: m.ScanCachingPage })));
-const KieAIProviderPage = lazy(() => import('./pages/KieAIProviderPage').then(m => ({ default: m.KieAIProviderPage })));
-const AnthropicProviderPage = lazy(() => import('./pages/AnthropicProviderPage').then(m => ({ default: m.AnthropicProviderPage })));
+// Feature #412: KieAIProviderPage content moved to SettingsPage AI tab
+// Feature #412: AnthropicProviderPage content moved to SettingsPage AI tab
 const DependencyAlertsPage = lazy(() => import('./pages/DependencyAlertsPage').then(m => ({ default: m.DependencyAlertsPage })));
 const MCPChatPage = lazy(() => import('./pages/MCPChatPage').then(m => ({ default: m.MCPChatPage })));
 // Feature #411: AIRunComparisonPage removed - dead demo page with mock data
@@ -85,8 +85,9 @@ const ReleaseNotesPage = lazy(() => import('./pages/ReleaseNotesPage').then(m =>
 // Feature #411: AILearningPage removed - dead demo page with mock data
 const TestDocumentationPage = lazy(() => import('./pages/TestDocumentationPage').then(m => ({ default: m.TestDocumentationPage })));
 const ProviderHealthPage = lazy(() => import('./pages/ProviderHealthPage').then(m => ({ default: m.ProviderHealthPage })));
-const AICostTrackingPage = lazy(() => import('./pages/AICostTrackingPage').then(m => ({ default: m.AICostTrackingPage })));
-const AIUsageAnalyticsDashboard = lazy(() => import('./pages/AIUsageAnalyticsDashboard').then(m => ({ default: m.AIUsageAnalyticsDashboard })));
+// Feature #412: AICostTrackingPage merged into AIAnalyticsPage
+// Feature #412: AIUsageAnalyticsDashboard merged into AIAnalyticsPage
+const AIAnalyticsPage = lazy(() => import('./pages/AIAnalyticsPage').then(m => ({ default: m.AIAnalyticsPage })));
 // Feature #411: AIThinkingDemoPage removed - dead demo page with mock data
 // Feature #411: AIConfidenceDemoPage removed - dead demo page with mock data
 const FlakyTestsDashboardPage = lazy(() => import('./pages/FlakyTestsDashboardPage').then(m => ({ default: m.FlakyTestsDashboardPage })));
@@ -589,7 +590,7 @@ function AICommandPalette() {
       category: 'navigation',
       action: () => {
         expandSection('ai-mcp');
-        navigate('/ai-insights');
+        navigate('/ai/flaky-tests');
         setIsOpen(false);
         setTimeout(() => {
           document.querySelector('[data-section="ai-mcp"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -611,9 +612,9 @@ function AICommandPalette() {
     { id: 'nav-security', icon: '🔒', label: 'Go to Security', description: 'View security scans', category: 'navigation', shortcut: 'G S', action: () => { navigate('/security'); setIsOpen(false); } },
     { id: 'nav-monitoring', icon: '📡', label: 'Go to Monitoring', description: 'Monitor uptime and performance', category: 'navigation', action: () => { navigate('/monitoring'); setIsOpen(false); } },
     // AI Insights
-    { id: 'nav-ai-insights', icon: '🤖', label: 'Go to AI Insights', description: 'View AI-powered insights hub', category: 'navigation', shortcut: 'G I', action: () => { navigate('/ai-insights'); setIsOpen(false); } },
-    { id: 'nav-flaky-tests', icon: '⚡', label: 'Flaky Tests', description: 'Analyze flaky test patterns', category: 'navigation', action: () => { navigate('/ai-insights/flaky-tests'); setIsOpen(false); } },
-    { id: 'nav-benchmarks', icon: '🏆', label: 'Industry Benchmarks', description: 'Compare against industry standards', category: 'navigation', action: () => { navigate('/ai-insights/industry-benchmark'); setIsOpen(false); } },
+    // Feature #412: Updated AI routes from /ai-insights/* to /ai/*
+    { id: 'nav-ai-flaky', icon: '⚡', label: 'Flaky Tests', description: 'Analyze flaky test patterns', category: 'navigation', shortcut: 'G I', action: () => { navigate('/ai/flaky-tests'); setIsOpen(false); } },
+    { id: 'nav-ai-analytics', icon: '📊', label: 'AI Analytics', description: 'AI usage and cost analytics', category: 'navigation', action: () => { navigate('/ai/analytics'); setIsOpen(false); } },
     // Organization - Feature #1832: Unified Settings page
     { id: 'nav-settings', icon: '⚙️', label: 'Go to Settings', description: 'Organization settings', category: 'navigation', shortcut: 'G ,', action: () => { navigate('/settings'); setIsOpen(false); } },
     { id: 'nav-team', icon: '👥', label: 'Team Members', description: 'Manage team members', category: 'navigation', action: () => { navigate('/settings?tab=team'); setIsOpen(false); } },
@@ -637,8 +638,8 @@ function AICommandPalette() {
       '/visual-review': { icon: '👁️', label: 'Visual Review' },
       '/security': { icon: '🔒', label: 'Security' },
       '/monitoring': { icon: '📡', label: 'Monitoring' },
-      '/ai-insights': { icon: '🤖', label: 'AI Insights' },
-      '/ai-insights/flaky-tests': { icon: '⚡', label: 'Flaky Tests' },
+      '/ai/flaky-tests': { icon: '⚡', label: 'Flaky Tests' },
+      '/ai/analytics': { icon: '📊', label: 'AI Analytics' },
       '/settings': { icon: '⚙️', label: 'Settings' },
       '/organization/members': { icon: '👥', label: 'Team' },
       '/organization/settings': { icon: '⚙️', label: 'Settings' },
@@ -1410,23 +1411,9 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #319: AI settings pages require admin/owner role */}
-        <Route
-          path="/ai/kie-provider"
-          element={
-            <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
-              <KieAIProviderPage />
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/ai/anthropic-provider"
-          element={
-            <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
-              <AnthropicProviderPage />
-            </RoleProtectedRoute>
-          }
-        />
+        {/* Feature #412: AI provider pages removed - content moved to /settings?tab=ai-config */}
+        <Route path="/ai/kie-provider" element={<Navigate to="/settings?tab=ai-config" replace />} />
+        <Route path="/ai/anthropic-provider" element={<Navigate to="/settings?tab=ai-config" replace />} />
         <Route
           path="/ai/router"
           element={
@@ -1443,19 +1430,13 @@ function App() {
             </RoleProtectedRoute>
           }
         />
-        <Route
-          path="/ai/costs"
-          element={
-            <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
-              <AICostTrackingPage />
-            </RoleProtectedRoute>
-          }
-        />
+        {/* Feature #412: /ai/costs and /ai/analytics merged into single AIAnalyticsPage */}
+        <Route path="/ai/costs" element={<Navigate to="/ai/analytics" replace />} />
         <Route
           path="/ai/analytics"
           element={
             <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
-              <AIUsageAnalyticsDashboard />
+              <AIAnalyticsPage />
             </RoleProtectedRoute>
           }
         />
@@ -1492,27 +1473,44 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #1362: AI Insights Hub with nested routes */}
+        {/* Feature #412: AIInsightsHub wrapper deleted - child pages promoted to direct /ai/* routes */}
+        <Route path="/ai-insights" element={<Navigate to="/ai/flaky-tests" replace />} />
+        <Route path="/ai-insights/flaky-tests" element={<Navigate to="/ai/flaky-tests" replace />} />
+        <Route path="/ai-insights/test-analyzer" element={<Navigate to="/ai/test-analyzer" replace />} />
+        <Route path="/ai-insights/test-documentation" element={<Navigate to="/ai/test-documentation" replace />} />
+        <Route path="/ai-insights/release-notes" element={<Navigate to="/ai/release-notes" replace />} />
         <Route
-          path="/ai-insights"
+          path="/ai/flaky-tests"
           element={
             <ProtectedRoute>
-              <AIInsightsHub />
+              <FlakyTestsDashboardPage />
             </ProtectedRoute>
           }
-        >
-          <Route index element={<AIInsightsIndex />} />
-          <Route path="flaky-tests" element={<FlakyTestsDashboardPage />} />
-          {/* Feature #411: organization route removed - dead demo page */}
-          {/* Feature #411: best-practices route removed - dead demo page */}
-          <Route path="test-analyzer" element={<TestImprovementAnalyzerPage />} />
-          {/* Feature #411: industry-benchmark route removed - dead demo page */}
-          <Route path="test-documentation" element={<TestDocumentationPage />} />
-          <Route path="release-notes" element={<ReleaseNotesPage />} />
-          {/* Feature #411: personalized route removed - dead demo page */}
-          {/* Feature #411: team-skills route removed - dead demo page */}
-          {/* Feature #411: learning route removed - dead demo page */}
-        </Route>
+        />
+        <Route
+          path="/ai/test-analyzer"
+          element={
+            <ProtectedRoute>
+              <TestImprovementAnalyzerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai/test-documentation"
+          element={
+            <ProtectedRoute>
+              <TestDocumentationPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai/release-notes"
+          element={
+            <ProtectedRoute>
+              <ReleaseNotesPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Feature #1832: Unified Settings page with tabbed layout */}
         <Route

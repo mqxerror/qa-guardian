@@ -38,8 +38,8 @@ export { MultiLanguageDependencyPage } from './MultiLanguageDependencyPage';
 export { VulnerabilityHistoryPage } from './VulnerabilityHistoryPage';
 export { ExploitabilityAnalysisPage } from './ExploitabilityAnalysisPage';
 export { ScanCachingPage } from './ScanCachingPage';
-export { KieAIProviderPage } from './KieAIProviderPage';
-export { AnthropicProviderPage } from './AnthropicProviderPage';
+// Feature #412: KieAIProviderPage content moved to SettingsPage AI tab
+// Feature #412: AnthropicProviderPage content moved to SettingsPage AI tab
 export { DependencyAlertsPage } from './DependencyAlertsPage';
 export { MCPChatPage } from './MCPChatPage';
 // Feature #411: AIRunComparisonPage removed - dead demo page
@@ -56,8 +56,9 @@ export { ReleaseNotesPage } from './ReleaseNotesPage';
 // Feature #411: AILearningPage removed - dead demo page
 export { TestDocumentationPage } from './TestDocumentationPage';
 export { ProviderHealthPage } from './ProviderHealthPage';
-export { AICostTrackingPage } from './AICostTrackingPage';
-export { AIUsageAnalyticsDashboard } from './AIUsageAnalyticsDashboard';
+// Feature #412: AICostTrackingPage merged into AIAnalyticsPage
+// Feature #412: AIUsageAnalyticsDashboard merged into AIAnalyticsPage
+export { AIAnalyticsPage } from './AIAnalyticsPage';
 // Feature #411: AIThinkingDemoPage removed - dead demo page
 // Feature #411: AIConfidenceDemoPage removed - dead demo page
 export { FlakyTestsDashboardPage } from './FlakyTestsDashboardPage';
