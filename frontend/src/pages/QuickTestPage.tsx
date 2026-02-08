@@ -40,6 +40,11 @@ import {
   Smartphone,
   X,
   Maximize2,
+  Eye,
+  BarChart2,
+  Lightbulb,
+  AlertTriangle,
+  Accessibility,
 } from 'lucide-react';
 
 // ============================================================
@@ -339,11 +344,196 @@ function WaveCard({ wave, onToggleExpand, onScreenshotClick }: WaveCardProps) {
             </div>
           )}
 
+          {/* Feature #467: AI Analysis details for Wave 4 */}
+          {wave.wave === 4 && wave.status === 'completed' && wave.data && (
+            <AIAnalysisDetails data={wave.data as AIAnalysisData} />
+          )}
+
           {wave.error && (
             <div className="mt-2 p-2 rounded bg-destructive/10 text-destructive text-sm">
               {wave.error}
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Feature #467: AI Analysis Details Component
+// ============================================================
+
+interface AIAnalysisData {
+  testSuggestions?: Array<{
+    type: string;
+    name: string;
+    description: string;
+    priority: string;
+    source?: 'vision' | 'metrics';
+  }>;
+  uxIssues?: Array<{
+    severity: string;
+    issue: string;
+    recommendation: string;
+    source?: 'vision' | 'metrics';
+  }>;
+  accessibilityRecommendations?: Array<{
+    recommendation: string;
+    source?: 'vision' | 'metrics';
+  }> | string[];
+  summary?: string;
+  visionAnalysisIncluded?: boolean;
+}
+
+function SourceBadge({ source }: { source?: 'vision' | 'metrics' }) {
+  if (source === 'vision') {
+    return (
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-purple-500/20 text-purple-400">
+        <Eye className="w-3 h-3" />
+        Vision
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-blue-500/20 text-blue-400">
+      <BarChart2 className="w-3 h-3" />
+      Metrics
+    </span>
+  );
+}
+
+function PriorityBadge({ priority }: { priority: string }) {
+  const colors: Record<string, string> = {
+    high: 'bg-destructive/20 text-destructive',
+    medium: 'bg-warning/20 text-warning',
+    low: 'bg-success/20 text-success',
+  };
+  return (
+    <span className={`px-1.5 py-0.5 rounded text-xs ${colors[priority] || 'bg-muted text-muted-foreground'}`}>
+      {priority}
+    </span>
+  );
+}
+
+function SeverityBadge({ severity }: { severity: string }) {
+  const colors: Record<string, string> = {
+    critical: 'bg-destructive/20 text-destructive',
+    major: 'bg-warning/20 text-warning',
+    minor: 'bg-muted text-muted-foreground',
+  };
+  return (
+    <span className={`px-1.5 py-0.5 rounded text-xs ${colors[severity] || 'bg-muted text-muted-foreground'}`}>
+      {severity}
+    </span>
+  );
+}
+
+function AIAnalysisDetails({ data }: { data: AIAnalysisData }) {
+  const hasTestSuggestions = data.testSuggestions && data.testSuggestions.length > 0;
+  const hasUxIssues = data.uxIssues && data.uxIssues.length > 0;
+  const hasAccessibility = data.accessibilityRecommendations && data.accessibilityRecommendations.length > 0;
+
+  if (!hasTestSuggestions && !hasUxIssues && !hasAccessibility && !data.summary) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border space-y-4">
+      {/* Vision Analysis Indicator */}
+      {data.visionAnalysisIncluded && (
+        <div className="flex items-center gap-2 text-xs text-purple-400 bg-purple-500/10 px-2 py-1 rounded">
+          <Eye className="w-3 h-3" />
+          <span>Vision analysis included - AI analyzed the screenshot for visual insights</span>
+        </div>
+      )}
+
+      {/* Summary */}
+      {data.summary && (
+        <div className="text-sm text-foreground/80 italic">
+          &ldquo;{data.summary}&rdquo;
+        </div>
+      )}
+
+      {/* Test Suggestions */}
+      {hasTestSuggestions && (
+        <div>
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+            <Lightbulb className="w-3.5 h-3.5" />
+            Test Suggestions
+          </div>
+          <div className="space-y-2">
+            {data.testSuggestions!.slice(0, 3).map((suggestion, idx) => (
+              <div key={idx} className="p-2 rounded bg-background/50 text-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-foreground">{suggestion.name}</span>
+                  <span className="text-xs text-muted-foreground px-1.5 py-0.5 bg-muted rounded">{suggestion.type}</span>
+                  <PriorityBadge priority={suggestion.priority} />
+                  <SourceBadge source={suggestion.source} />
+                </div>
+                <div className="text-xs text-muted-foreground">{suggestion.description}</div>
+              </div>
+            ))}
+            {data.testSuggestions!.length > 3 && (
+              <div className="text-xs text-muted-foreground text-center">
+                +{data.testSuggestions!.length - 3} more suggestions
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* UX Issues */}
+      {hasUxIssues && (
+        <div>
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            UX Issues
+          </div>
+          <div className="space-y-2">
+            {data.uxIssues!.slice(0, 3).map((issue, idx) => (
+              <div key={idx} className="p-2 rounded bg-background/50 text-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-foreground">{issue.issue}</span>
+                  <SeverityBadge severity={issue.severity} />
+                  <SourceBadge source={issue.source} />
+                </div>
+                <div className="text-xs text-muted-foreground">{issue.recommendation}</div>
+              </div>
+            ))}
+            {data.uxIssues!.length > 3 && (
+              <div className="text-xs text-muted-foreground text-center">
+                +{data.uxIssues!.length - 3} more issues
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Accessibility Recommendations */}
+      {hasAccessibility && (
+        <div>
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+            <Accessibility className="w-3.5 h-3.5" />
+            Accessibility
+          </div>
+          <div className="space-y-1.5">
+            {data.accessibilityRecommendations!.slice(0, 3).map((rec, idx) => {
+              const recText = typeof rec === 'string' ? rec : rec.recommendation;
+              const recSource = typeof rec === 'string' ? undefined : rec.source;
+              return (
+                <div key={idx} className="flex items-start gap-2 p-2 rounded bg-background/50 text-sm">
+                  <span className="flex-1 text-foreground/80">{recText}</span>
+                  <SourceBadge source={recSource} />
+                </div>
+              );
+            })}
+            {data.accessibilityRecommendations!.length > 3 && (
+              <div className="text-xs text-muted-foreground text-center">
+                +{data.accessibilityRecommendations!.length - 3} more recommendations
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
