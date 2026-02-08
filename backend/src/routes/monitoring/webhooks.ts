@@ -14,8 +14,10 @@
  */
 
 import { FastifyInstance } from 'fastify';
+import { randomBytes } from 'node:crypto';
 import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { logAuditEntry } from '../audit-logs.js';
+import { generateId } from '../../utils/index.js';
 import { WebhookCheck, WebhookEvent } from './types.js';
 import {
   createWebhookCheck,
@@ -96,9 +98,9 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      // Generate unique webhook ID and URL
-      const checkId = `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const webhookToken = Math.random().toString(36).substr(2, 16) + Math.random().toString(36).substr(2, 16);
+      // Generate unique webhook ID and URL using crypto for security
+      const checkId = generateId('webhook');
+      const webhookToken = randomBytes(24).toString('hex'); // 48-char secure token
 
       const check: WebhookCheck = {
         id: checkId,

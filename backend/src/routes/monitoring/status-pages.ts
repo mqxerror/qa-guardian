@@ -11,8 +11,10 @@
  */
 
 import { FastifyInstance } from 'fastify';
+import { randomBytes } from 'node:crypto';
 import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { logAuditEntry } from '../audit-logs.js';
+import { generateId, generateSimpleId } from '../../utils/index.js';
 import {
   StatusPage,
   StatusPageCheck,
@@ -247,8 +249,8 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       // Check if slug is already taken
       const existingBySlug = await dbGetStatusPageBySlug(slug);
       if (existingBySlug) {
-        // Add a random suffix to make it unique
-        slug = `${slug}-${Math.random().toString(36).substring(2, 7)}`;
+        // Add a random suffix to make it unique using crypto
+        slug = `${slug}-${randomBytes(3).toString('hex')}`; // 6-char hex suffix
       }
 
       const statusPage: StatusPage = {
@@ -818,8 +820,8 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
             already_subscribed: true
           });
         } else {
-          // Resend verification
-          const verificationToken = `verify_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+          // Resend verification using secure token
+          const verificationToken = `verify_${Date.now()}_${randomBytes(12).toString('hex')}`;
           existingSub.verification_token = verificationToken;
 
           // Log verification link (in production, this would send an email)
@@ -836,9 +838,9 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
         }
       }
 
-      // Create new subscription
-      const verificationToken = `verify_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      const unsubscribeToken = `unsub_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      // Create new subscription with secure tokens
+      const verificationToken = `verify_${Date.now()}_${randomBytes(12).toString('hex')}`;
+      const unsubscribeToken = `unsub_${Date.now()}_${randomBytes(12).toString('hex')}`;
 
       const subscription: StatusPageSubscription = {
         id: Date.now().toString(),
