@@ -17,7 +17,7 @@ import {
   deleteWebhookSubscriptionFromDb,
   MAX_WEBHOOK_RETRIES
 } from './webhooks.js';
-import { validateWebhookURL, generateId } from '../../utils/index.js';
+import { validateWebhookURL, validateWebhookURLWithDNS, generateId } from '../../utils/index.js';
 import { WebhookLogEntry, webhookLog } from './alerts.js';
 
 /**
@@ -168,8 +168,9 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       });
     }
 
-    // Feature #315: SSRF protection - validate URL before testing
-    const ssrfValidation = validateWebhookURL(url);
+    // Feature #315 + #400: SSRF protection with DNS resolution check
+    // This prevents DNS rebinding attacks where a hostname resolves to a private IP
+    const ssrfValidation = await validateWebhookURLWithDNS(url);
     if (!ssrfValidation.safe) {
       return reply.status(400).send({
         error: 'Security Error',
@@ -340,8 +341,9 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       });
     }
 
-    // Feature #315: SSRF protection - validate URL is not targeting internal resources
-    const ssrfValidation = validateWebhookURL(url);
+    // Feature #315 + #400: SSRF protection with DNS resolution check
+    // This prevents DNS rebinding attacks where a hostname resolves to a private IP
+    const ssrfValidation = await validateWebhookURLWithDNS(url);
     if (!ssrfValidation.safe) {
       return reply.status(400).send({
         error: 'Security Error',
@@ -583,9 +585,10 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       });
     }
 
-    // Feature #315: SSRF protection - validate updated URL
+    // Feature #315 + #400: SSRF protection with DNS resolution check
+    // This prevents DNS rebinding attacks where a hostname resolves to a private IP
     if (updates.url) {
-      const ssrfValidation = validateWebhookURL(updates.url);
+      const ssrfValidation = await validateWebhookURLWithDNS(updates.url);
       if (!ssrfValidation.safe) {
         return reply.status(400).send({
           error: 'Security Error',

@@ -9,7 +9,7 @@
 
 import * as crypto from 'crypto';
 import { Redis } from 'ioredis';
-import { validateWebhookURL, generateId } from '../../utils/index.js';
+import { validateWebhookURL, validateWebhookURLWithDNS, generateId } from '../../utils/index.js';
 import { queueWebhookDelivery, isWebhookQueueReady, WEBHOOK_AUTO_DISABLE_THRESHOLD, generateWebhookSignature, type SubscriptionStatsResult } from '../../services/webhook-queue.js';
 
 // Re-export generateWebhookSignature for consumers of this module (Feature #357)
@@ -999,8 +999,9 @@ export async function deliverWebhookWithRetry(
   // Fallback: Direct delivery (in-memory, not reliable on restart)
   console.log(`[WEBHOOK] Using direct delivery for ${eventType} to ${subscription.name}`);
 
-  // Feature #315: SSRF protection - validate URL before delivery
-  const ssrfValidation = validateWebhookURL(subscription.url);
+  // Feature #315 + #400: SSRF protection with DNS resolution check
+  // This prevents DNS rebinding attacks where a hostname resolves to a private IP
+  const ssrfValidation = await validateWebhookURLWithDNS(subscription.url);
   if (!ssrfValidation.safe) {
     console.error(`[WEBHOOK] SSRF protection blocked delivery to ${subscription.url}: ${ssrfValidation.error}`);
     return {

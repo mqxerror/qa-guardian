@@ -7,7 +7,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate, generateWebhookSignature, WEBHOOK_SIGNATURE_TOLERANCE_SECONDS, getWebhookDeliveryLogsFromDb, MAX_WEBHOOK_RETRIES } from './webhooks.js';
-import { validateWebhookURL, generateId } from '../../utils/index.js';
+import { validateWebhookURL, validateWebhookURLWithDNS, generateId } from '../../utils/index.js';
 import { webhookLog } from './alerts.js';
 import { logWebhookDelivery, flattenObject } from './webhook-crud.js';
 import * as webhookRepo from '../../services/repositories/webhooks.js';
@@ -316,8 +316,9 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
       });
     }
 
-    // Feature #315: SSRF protection - validate URL before delivery
-    const ssrfValidation = validateWebhookURL(subscription.url);
+    // Feature #315 + #400: SSRF protection with DNS resolution check
+    // This prevents DNS rebinding attacks where a hostname resolves to a private IP
+    const ssrfValidation = await validateWebhookURLWithDNS(subscription.url);
     if (!ssrfValidation.safe) {
       return reply.status(400).send({
         error: 'Security Error',

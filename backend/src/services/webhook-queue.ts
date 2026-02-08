@@ -15,7 +15,7 @@
 import { Queue, Worker, Job, QueueEvents, JobsOptions } from 'bullmq';
 import { Redis as IORedis } from 'ioredis';
 import * as crypto from 'crypto';
-import { validateWebhookURL, generateId } from '../utils/index.js';
+import { validateWebhookURL, validateWebhookURLWithDNS, generateId } from '../utils/index.js';
 
 // ============================================================================
 // Types and Interfaces
@@ -303,8 +303,9 @@ async function processWebhookJob(job: Job<WebhookJobData>): Promise<WebhookDeliv
 
   console.log(`[WebhookQueue] Processing job ${job.id} for ${data.subscriptionName} (attempt ${attemptNumber}/${data.maxRetries + 1})`);
 
-  // SSRF protection - validate URL
-  const ssrfValidation = validateWebhookURL(data.url);
+  // Feature #315 + #400: SSRF protection with DNS resolution check
+  // This prevents DNS rebinding attacks where a hostname resolves to a private IP
+  const ssrfValidation = await validateWebhookURLWithDNS(data.url);
   if (!ssrfValidation.safe) {
     const error = `SSRF protection: ${ssrfValidation.error}`;
     console.error(`[WebhookQueue] ${error}`);
