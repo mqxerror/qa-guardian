@@ -16,6 +16,9 @@ import { chromium, Browser, Page, BrowserContext } from 'playwright';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 // Feature #36: Import device presets for mobile emulation
 import { TestDeviceConfig, resolveDeviceConfig } from './device-presets.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:recording');
 
 // Max concurrent recording sessions (configurable via env var)
 const MAX_RECORDING_SESSIONS = parseInt(process.env.MAX_RECORDING_SESSIONS || '3', 10);
@@ -139,7 +142,7 @@ function detectOptionalStep(
     // Check cookie consent patterns
     for (const pattern of OPTIONAL_STEP_PATTERNS.cookie_consent) {
       if (identifier.includes(pattern.toLowerCase())) {
-        console.log(`[RECORDER] Auto-marked optional (cookie_consent): "${identifier}" matched pattern "${pattern}"`);
+        logger.info(`[RECORDER] Auto-marked optional (cookie_consent): "${identifier}" matched pattern "${pattern}"`);
         return { optional: true, reason: 'cookie_consent' };
       }
     }
@@ -147,7 +150,7 @@ function detectOptionalStep(
     // Check popup dismiss patterns
     for (const pattern of OPTIONAL_STEP_PATTERNS.popup_dismiss) {
       if (identifier.includes(pattern.toLowerCase())) {
-        console.log(`[RECORDER] Auto-marked optional (popup_dismiss): "${identifier}" matched pattern "${pattern}"`);
+        logger.info(`[RECORDER] Auto-marked optional (popup_dismiss): "${identifier}" matched pattern "${pattern}"`);
         return { optional: true, reason: 'popup_dismiss' };
       }
     }
@@ -155,7 +158,7 @@ function detectOptionalStep(
     // Check notification close patterns
     for (const pattern of OPTIONAL_STEP_PATTERNS.notification_close) {
       if (identifier.includes(pattern.toLowerCase())) {
-        console.log(`[RECORDER] Auto-marked optional (notification_close): "${identifier}" matched pattern "${pattern}"`);
+        logger.info(`[RECORDER] Auto-marked optional (notification_close): "${identifier}" matched pattern "${pattern}"`);
         return { optional: true, reason: 'notification_close' };
       }
     }
@@ -184,7 +187,7 @@ function startCleanupInterval() {
 
       const inactiveFor = now - session.lastActivity;
       if (inactiveFor > SESSION_INACTIVITY_TIMEOUT) {
-        console.log(`[RECORDER] Auto-cleaning orphaned session ${sessionId} (inactive for ${Math.round(inactiveFor / 1000)}s)`);
+        logger.info(`[RECORDER] Auto-cleaning orphaned session ${sessionId} (inactive for ${Math.round(inactiveFor / 1000)}s)`);
         session.status = 'stopped';
         await cleanupSession(session);
         recordingSessions.delete(sessionId);
@@ -204,21 +207,21 @@ function startCleanupInterval() {
     cleanupInterval.unref();
   }
 
-  console.log('[RECORDER] Started periodic cleanup interval (every 30s, timeout 5min)');
+  logger.info('[RECORDER] Started periodic cleanup interval (every 30s, timeout 5min)');
 }
 
 /**
  * Cleanup ALL active recording sessions (for server shutdown)
  */
 async function cleanupAllSessions() {
-  console.log(`[RECORDER] Cleaning up all ${recordingSessions.size} active recording sessions...`);
+  logger.info(`[RECORDER] Cleaning up all ${recordingSessions.size} active recording sessions...`);
 
   const cleanupPromises: Promise<void>[] = [];
   for (const [sessionId, session] of recordingSessions.entries()) {
     if (session.status === 'recording') {
       session.status = 'stopped';
       cleanupPromises.push(cleanupSession(session).then(() => {
-        console.log(`[RECORDER] Cleaned up session ${sessionId} on shutdown`);
+        logger.info(`[RECORDER] Cleaned up session ${sessionId} on shutdown`);
       }));
     }
   }
@@ -233,17 +236,17 @@ async function cleanupAllSessions() {
     cleanupInterval = null;
   }
 
-  console.log('[RECORDER] All sessions cleaned up');
+  logger.info('[RECORDER] All sessions cleaned up');
 }
 
 // Register process signal handlers for graceful shutdown
 process.on('SIGTERM', async () => {
-  console.log('[RECORDER] SIGTERM received, cleaning up sessions...');
+  logger.info('[RECORDER] SIGTERM received, cleaning up sessions...');
   await cleanupAllSessions();
 });
 
 process.on('SIGINT', async () => {
-  console.log('[RECORDER] SIGINT received, cleaning up sessions...');
+  logger.info('[RECORDER] SIGINT received, cleaning up sessions...');
   await cleanupAllSessions();
 });
 
@@ -451,14 +454,14 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       const { sessionId } = data;
       socket.join(`recording:${sessionId}`);
       socketSessionMap.set(socket.id, sessionId);
-      console.log(`[RECORDER] Client ${socket.id} joined recording:${sessionId}`);
+      logger.info(`[RECORDER] Client ${socket.id} joined recording:${sessionId}`);
 
       // Cancel any pending disconnect cleanup timer for this session
       const existingTimer = disconnectTimers.get(sessionId);
       if (existingTimer) {
         clearTimeout(existingTimer);
         disconnectTimers.delete(sessionId);
-        console.log(`[RECORDER] Cancelled disconnect cleanup timer for session ${sessionId} (client reconnected)`);
+        logger.info(`[RECORDER] Cancelled disconnect cleanup timer for session ${sessionId} (client reconnected)`);
       }
 
       // Touch session activity
@@ -473,7 +476,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       const { sessionId } = data;
       socket.leave(`recording:${sessionId}`);
       socketSessionMap.delete(socket.id);
-      console.log(`[RECORDER] Client ${socket.id} left recording:${sessionId}`);
+      logger.info(`[RECORDER] Client ${socket.id} left recording:${sessionId}`);
     });
 
     // Handle socket disconnect - start grace period
@@ -489,11 +492,11 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       // Check if any other sockets are still connected to this session's room
       const room = socketIO.sockets.adapter.rooms.get(`recording:${sessionId}`);
       if (room && room.size > 0) {
-        console.log(`[RECORDER] Socket ${socket.id} disconnected, but ${room.size} other client(s) still connected to session ${sessionId}`);
+        logger.info(`[RECORDER] Socket ${socket.id} disconnected, but ${room.size} other client(s) still connected to session ${sessionId}`);
         return;
       }
 
-      console.log(`[RECORDER] All clients disconnected from session ${sessionId}. Starting ${DISCONNECT_GRACE_PERIOD / 1000}s grace period...`);
+      logger.info(`[RECORDER] All clients disconnected from session ${sessionId}. Starting ${DISCONNECT_GRACE_PERIOD / 1000}s grace period...`);
 
       // Start grace period timer
       const timer = setTimeout(async () => {
@@ -504,15 +507,15 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
         // Check once more if any clients reconnected
         const currentRoom = socketIO.sockets.adapter.rooms.get(`recording:${sessionId}`);
         if (currentRoom && currentRoom.size > 0) {
-          console.log(`[RECORDER] Client reconnected to session ${sessionId} during grace period, skipping cleanup`);
+          logger.info(`[RECORDER] Client reconnected to session ${sessionId} during grace period, skipping cleanup`);
           return;
         }
 
-        console.log(`[RECORDER] Grace period expired for session ${sessionId}. Auto-cleaning orphaned session.`);
+        logger.info(`[RECORDER] Grace period expired for session ${sessionId}. Auto-cleaning orphaned session.`);
         sess.status = 'stopped';
         await cleanupSession(sess);
         recordingSessions.delete(sessionId);
-        console.log(`[RECORDER] Orphaned session ${sessionId} cleaned up after disconnect`);
+        logger.info(`[RECORDER] Orphaned session ${sessionId} cleaned up after disconnect`);
       }, DISCONNECT_GRACE_PERIOD);
 
       disconnectTimers.set(sessionId, timer);
@@ -562,7 +565,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
 
         // Emit action to frontend
         socketIO.to(`recording:${sessionId}`).emit('recording:action', action);
-        console.log(`[RECORDER] Click at (${x}, ${y}) -> ${elementInfo?.selector || 'unknown'}`);
+        logger.info(`[RECORDER] Click at (${x}, ${y}) -> ${elementInfo?.selector || 'unknown'}`);
 
         // Feature #34: Verify actual clicked element after click (may differ due to navigation/animations)
         try {
@@ -584,7 +587,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
           });
         } catch { /* page may have navigated, skip verification */ }
       } catch (err) {
-        console.error(`[RECORDER] Click error:`, err);
+        logger.error({ err }, '[RECORDER] Click error');
       }
     });
 
@@ -626,7 +629,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
         session.actions.push(action);
         socketIO.to(`recording:${sessionId}`).emit('recording:action', action);
       } catch (err) {
-        console.error(`[RECORDER] Type error:`, err);
+        logger.error({ err }, '[RECORDER] Type error');
       }
     });
 
@@ -649,7 +652,7 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
         session.actions.push(action);
         socketIO.to(`recording:${sessionId}`).emit('recording:action', action);
       } catch (err) {
-        console.error(`[RECORDER] Keypress error:`, err);
+        logger.error({ err }, '[RECORDER] Keypress error');
       }
     });
 
@@ -673,10 +676,10 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
           };
           session.actions.push(action);
           socketIO.to(`recording:${sessionId}`).emit('recording:action', action);
-          console.log(`[RECORDER] Scroll delta (${deltaX}, ${deltaY})`);
+          logger.info(`[RECORDER] Scroll delta (${deltaX}, ${deltaY})`);
         }
       } catch (err) {
-        console.error(`[RECORDER] Scroll error:`, err);
+        logger.error({ err }, '[RECORDER] Scroll error');
       }
     });
 
@@ -702,9 +705,9 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
         };
         session.actions.push(action);
         socketIO.to(`recording:${sessionId}`).emit('recording:action', action);
-        console.log(`[RECORDER] Hover at (${x}, ${y}) -> ${elementInfo?.selector || 'unknown'}`);
+        logger.info(`[RECORDER] Hover at (${x}, ${y}) -> ${elementInfo?.selector || 'unknown'}`);
       } catch (err) {
-        console.error(`[RECORDER] Hover error:`, err);
+        logger.error({ err }, '[RECORDER] Hover error');
       }
     });
 
@@ -727,9 +730,9 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
         };
         session.actions.push(action);
         socketIO.to(`recording:${sessionId}`).emit('recording:action', action);
-        console.log(`[RECORDER] Select at (${x}, ${y}) -> ${value}`);
+        logger.info(`[RECORDER] Select at (${x}, ${y}) -> ${value}`);
       } catch (err) {
-        console.error(`[RECORDER] Select error:`, err);
+        logger.error({ err }, '[RECORDER] Select error');
       }
     });
 
@@ -751,9 +754,9 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
         };
         session.actions.push(action);
         socketIO.to(`recording:${sessionId}`).emit('recording:action', action);
-        console.log(`[RECORDER] Navigated to: ${url}`);
+        logger.info(`[RECORDER] Navigated to: ${url}`);
       } catch (err) {
-        console.error(`[RECORDER] Navigate error:`, err);
+        logger.error({ err }, '[RECORDER] Navigate error');
       }
     });
   });
@@ -831,7 +834,7 @@ async function cleanupSession(session: RecordingSession) {
       await session.browser.close().catch(() => {});
     }
   } catch (err) {
-    console.error(`[RECORDER] Cleanup error for session ${session.id}:`, err);
+    logger.error({ err, sessionId: session.id }, '[RECORDER] Cleanup error for session');
   }
 
   session.page = null;
@@ -907,7 +910,7 @@ export async function recordingRoutes(app: FastifyInstance) {
 
     // Launch Playwright browser asynchronously
     try {
-      console.log(`[RECORDER] Launching Playwright browser for session ${sessionId}...`);
+      logger.info(`[RECORDER] Launching Playwright browser for session ${sessionId}...`);
 
       const browser = await chromium.launch({
         headless: true,
@@ -932,7 +935,7 @@ export async function recordingRoutes(app: FastifyInstance) {
         contextOptions.deviceScaleFactor = resolvedDevice.deviceScaleFactor;
         contextOptions.isMobile = resolvedDevice.isMobile;
         contextOptions.hasTouch = resolvedDevice.hasTouch;
-        console.log(`[RECORDER] Device emulation enabled: ${resolvedDevice.displayName} (${resolvedDevice.viewport.width}x${resolvedDevice.viewport.height}, mobile=${resolvedDevice.isMobile}, touch=${resolvedDevice.hasTouch})`);
+        logger.info(`[RECORDER] Device emulation enabled: ${resolvedDevice.displayName} (${resolvedDevice.viewport.width}x${resolvedDevice.viewport.height}, mobile=${resolvedDevice.isMobile}, touch=${resolvedDevice.hasTouch})`);
       }
 
       const context = await browser.newContext(contextOptions);
@@ -970,9 +973,9 @@ export async function recordingRoutes(app: FastifyInstance) {
       // Start screenshot streaming
       startScreenshotStreaming(session);
 
-      console.log(`[RECORDER] Started recording session ${sessionId} for URL: ${target_url}`);
+      logger.info(`[RECORDER] Started recording session ${sessionId} for URL: ${target_url}`);
     } catch (err) {
-      console.error(`[RECORDER] Failed to launch browser for session ${sessionId}:`, err);
+      logger.error({ err, sessionId }, '[RECORDER] Failed to launch browser for session');
       session.status = 'error';
       await cleanupSession(session);
 
@@ -1058,7 +1061,7 @@ export async function recordingRoutes(app: FastifyInstance) {
     // Cleanup browser resources
     await cleanupSession(session);
 
-    console.log(`[RECORDER] Stopped recording session ${sessionId}. Actions: ${session.actions.length}`);
+    logger.info(`[RECORDER] Stopped recording session ${sessionId}. Actions: ${session.actions.length}`);
 
     return {
       session_id: sessionId,

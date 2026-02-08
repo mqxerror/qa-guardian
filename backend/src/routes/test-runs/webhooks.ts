@@ -11,6 +11,9 @@ import * as crypto from 'crypto';
 import { Redis } from 'ioredis';
 import { validateWebhookURL, validateWebhookURLWithDNS, generateId } from '../../utils/index.js';
 import { queueWebhookDelivery, isWebhookQueueReady, WEBHOOK_AUTO_DISABLE_THRESHOLD, generateWebhookSignature, type SubscriptionStatsResult } from '../../services/webhook-queue.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:webhooks');
 
 // Re-export generateWebhookSignature for consumers of this module (Feature #357)
 export { generateWebhookSignature };
@@ -97,20 +100,20 @@ export async function initializeWebhookPubSub(): Promise<boolean> {
 
       try {
         const payload = JSON.parse(message) as WebhookCacheInvalidationMessage;
-        console.log(`[WEBHOOK] Received cache invalidation: ${payload.action} for subscription ${payload.subscription_id} in org ${payload.organization_id}`);
+        logger.info({ action: payload.action, subscriptionId: payload.subscription_id, organizationId: payload.organization_id }, 'Received cache invalidation');
 
         // Reload subscriptions for this organization from database
         await reloadOrganizationSubscriptions(payload.organization_id);
       } catch (err) {
-        console.error('[WEBHOOK] Failed to process cache invalidation message:', err);
+        logger.error({ err }, 'Failed to process cache invalidation message');
       }
     });
 
     webhookPubSubInitialized = true;
-    console.log('[WEBHOOK] Redis Pub/Sub for cache invalidation initialized');
+    logger.info('Redis Pub/Sub for cache invalidation initialized');
     return true;
   } catch (err) {
-    console.warn('[WEBHOOK] Redis Pub/Sub not available, running in single-instance mode:', err instanceof Error ? err.message : err);
+    logger.warn({ err: err instanceof Error ? err.message : err }, 'Redis Pub/Sub not available, running in single-instance mode');
     return false;
   }
 }
@@ -137,9 +140,9 @@ async function publishCacheInvalidation(
 
   try {
     await webhookPubClient.publish(WEBHOOK_SUBSCRIPTIONS_CHANNEL, JSON.stringify(message));
-    console.log(`[WEBHOOK] Published cache invalidation: ${action} for subscription ${subscriptionId}`);
+    logger.info({ action, subscriptionId }, 'Published cache invalidation');
   } catch (err) {
-    console.error('[WEBHOOK] Failed to publish cache invalidation:', err);
+    logger.error({ err }, 'Failed to publish cache invalidation');
   }
 }
 
@@ -167,9 +170,9 @@ async function reloadOrganizationSubscriptions(organizationId: string): Promise<
     // Update cache timestamp
     orgCacheTimestamps.set(organizationId, Date.now());
 
-    console.log(`[WEBHOOK] Reloaded subscriptions for org ${organizationId}`);
+    logger.info({ organizationId }, 'Reloaded subscriptions for org');
   } catch (err) {
-    console.error(`[WEBHOOK] Failed to reload subscriptions for org ${organizationId}:`, err);
+    logger.error({ err, organizationId }, 'Failed to reload subscriptions for org');
   }
 }
 
@@ -209,7 +212,7 @@ export async function closeWebhookPubSub(): Promise<void> {
     webhookPubClient = null;
   }
   webhookPubSubInitialized = false;
-  console.log('[WEBHOOK] Redis Pub/Sub connections closed');
+  logger.info('Redis Pub/Sub connections closed');
 }
 
 // ============================================================================
@@ -467,9 +470,9 @@ export async function initializeWebhookSubscriptionsFromDb(): Promise<void> {
       webhookSubscriptions.set(id, sub);
     }
     subscriptionsLoadedFromDb = true;
-    console.log(`[WEBHOOK] Initialized ${webhookSubscriptions.size} subscriptions from database`);
+    logger.info({ count: webhookSubscriptions.size }, 'Initialized subscriptions from database');
   } catch (error) {
-    console.error('[WEBHOOK] Failed to load subscriptions from database:', error);
+    logger.error({ error }, 'Failed to load subscriptions from database');
     // Continue with empty cache - will work in-memory only
   }
 }
@@ -486,7 +489,7 @@ export async function createWebhookSubscriptionInDb(subscription: WebhookSubscri
   try {
     await webhookRepo.createSubscription(subscription);
   } catch (error) {
-    console.error(`[WEBHOOK] Failed to persist subscription ${subscription.id} to database:`, error);
+    logger.error({ error, subscriptionId: subscription.id }, 'Failed to persist subscription to database');
     // Continue with in-memory only
   }
 
@@ -518,7 +521,7 @@ export async function updateWebhookSubscriptionInDb(
   try {
     await webhookRepo.updateSubscription(subscriptionId, updates);
   } catch (error) {
-    console.error(`[WEBHOOK] Failed to persist subscription update ${subscriptionId} to database:`, error);
+    logger.error({ error, subscriptionId }, 'Failed to persist subscription update to database');
     // Continue with in-memory only
   }
 
@@ -543,7 +546,7 @@ export async function deleteWebhookSubscriptionFromDb(subscriptionId: string): P
   try {
     await webhookRepo.deleteSubscription(subscriptionId);
   } catch (error) {
-    console.error(`[WEBHOOK] Failed to delete subscription ${subscriptionId} from database:`, error);
+    logger.error({ error, subscriptionId }, 'Failed to delete subscription from database');
     // Continue even if DB delete fails
   }
 
@@ -717,7 +720,7 @@ export async function updateSubscriptionDeliveryStats(
 ): Promise<SubscriptionStatsResult | void> {
   const subscription = webhookSubscriptions.get(subscriptionId);
   if (!subscription) {
-    console.warn(`[WEBHOOK] Cannot update stats: subscription ${subscriptionId} not found`);
+    logger.warn({ subscriptionId }, 'Cannot update stats: subscription not found');
     return;
   }
 
@@ -734,7 +737,7 @@ export async function updateSubscriptionDeliveryStats(
       consecutive_failures: 0,
       success_count: subscription.success_count,
       last_triggered_at: subscription.last_triggered_at,
-    }).catch(err => console.error(`[WEBHOOK] Failed to persist stats update:`, err));
+    }).catch(err => logger.error({ err }, 'Failed to persist stats update'));
 
     return {
       consecutiveFailures: 0,
@@ -753,10 +756,7 @@ export async function updateSubscriptionDeliveryStats(
     subscription.disabled_at = new Date();
     subscription.disable_reason = `Auto-disabled after ${subscription.consecutive_failures} consecutive delivery failures`;
 
-    console.warn(
-      `[WEBHOOK] Auto-disabled subscription ${subscription.name} (${subscriptionId}) ` +
-      `after ${subscription.consecutive_failures} consecutive failures`
-    );
+    logger.warn({ subscriptionId, name: subscription.name, consecutiveFailures: subscription.consecutive_failures }, 'Auto-disabled subscription after consecutive failures');
   }
 
   webhookSubscriptions.set(subscriptionId, subscription);
@@ -768,7 +768,7 @@ export async function updateSubscriptionDeliveryStats(
     enabled: subscription.enabled,
     disabled_at: subscription.disabled_at,
     disable_reason: subscription.disable_reason,
-  }).catch(err => console.error(`[WEBHOOK] Failed to persist stats update:`, err));
+  }).catch(err => logger.error({ err }, 'Failed to persist stats update'));
 
   return {
     consecutiveFailures: subscription.consecutive_failures,
@@ -803,7 +803,7 @@ export function reEnableWebhookSubscription(
 
   webhookSubscriptions.set(subscriptionId, subscription);
 
-  console.log(`[WEBHOOK] Re-enabled subscription ${subscription.name} (${subscriptionId})`);
+  logger.info({ subscriptionId, name: subscription.name }, 'Re-enabled subscription');
 
   return { success: true, subscription };
 }
@@ -861,7 +861,7 @@ export async function flushWebhookBatch(subscriptionId: string): Promise<void> {
     webhookBatchTimers.delete(subscriptionId);
   }
 
-  console.log(`[WEBHOOK] Flushing batch of ${batch.length} events for subscription ${subscription.name}`);
+  logger.info({ subscriptionId, name: subscription.name, batchSize: batch.length }, 'Flushing batch of events');
 
   // Use the first entry's context for logging
   const firstEntry = batch[0];
@@ -915,7 +915,7 @@ export async function addToBatch(
     addedAt: new Date(),
   });
 
-  console.log(`[WEBHOOK] Added event to batch for ${subscription.name} (${batch.length}/${batchSize})`);
+  logger.info({ name: subscription.name, batchLength: batch.length, batchSize }, 'Added event to batch');
 
   // Flush if batch is full
   if (batch.length >= batchSize) {
@@ -984,7 +984,7 @@ export async function deliverWebhookWithRetry(
     );
 
     if (result.queued) {
-      console.log(`[WEBHOOK] Queued ${eventType} for ${subscription.name} (job: ${result.jobId})`);
+      logger.info({ eventType, name: subscription.name, jobId: result.jobId }, 'Queued webhook for delivery');
       // Return success since it's queued - actual delivery happens async
       return {
         success: true,
@@ -993,17 +993,17 @@ export async function deliverWebhookWithRetry(
       };
     }
     // If queueing failed, fall through to direct delivery
-    console.warn(`[WEBHOOK] Queue unavailable, falling back to direct delivery: ${result.error}`);
+    logger.warn({ error: result.error }, 'Queue unavailable, falling back to direct delivery');
   }
 
   // Fallback: Direct delivery (in-memory, not reliable on restart)
-  console.log(`[WEBHOOK] Using direct delivery for ${eventType} to ${subscription.name}`);
+  logger.info({ eventType, name: subscription.name }, 'Using direct delivery for webhook');
 
   // Feature #315 + #400: SSRF protection with DNS resolution check
   // This prevents DNS rebinding attacks where a hostname resolves to a private IP
   const ssrfValidation = await validateWebhookURLWithDNS(subscription.url);
   if (!ssrfValidation.safe) {
-    console.error(`[WEBHOOK] SSRF protection blocked delivery to ${subscription.url}: ${ssrfValidation.error}`);
+    logger.error({ url: subscription.url, error: ssrfValidation.error }, 'SSRF protection blocked delivery');
     return {
       success: false,
       attempts: 0,
@@ -1089,7 +1089,7 @@ export async function deliverWebhookWithRetry(
       };
 
       if (response.ok) {
-        console.log(`[WEBHOOK] Successfully delivered ${eventType} to ${subscription.name} (attempt ${attempt}/${maxAttempts})`);
+        logger.info({ eventType, name: subscription.name, attempt, maxAttempts }, 'Successfully delivered webhook');
 
         // Feature #321: Update stats with auto-disable tracking (resets consecutive failures)
         await updateSubscriptionDeliveryStats(subscription.id, true);
@@ -1104,7 +1104,7 @@ export async function deliverWebhookWithRetry(
 
       // Check if error is retriable (5xx errors)
       if (response.status >= 500 && attempt < maxAttempts) {
-        console.log(`[WEBHOOK] Server error ${response.status} for ${subscription.name}, retrying (attempt ${attempt}/${maxAttempts})`);
+        logger.info({ status: response.status, name: subscription.name, attempt, maxAttempts }, 'Server error, retrying');
         logEntry.status = 'pending_retry';
         logWebhookDelivery(logEntry);
 
@@ -1115,12 +1115,12 @@ export async function deliverWebhookWithRetry(
       }
 
       // Non-retriable error or max retries reached
-      console.error(`[WEBHOOK] Failed to deliver ${eventType} to ${subscription.name}: HTTP ${response.status}`);
+      logger.error({ eventType, name: subscription.name, status: response.status }, 'Failed to deliver webhook');
 
       // Feature #321: Update stats with auto-disable tracking (may auto-disable)
       const statsResult = await updateSubscriptionDeliveryStats(subscription.id, false);
       if (statsResult && statsResult.autoDisabled) {
-        console.warn(`[WEBHOOK] Subscription ${subscription.name} has been auto-disabled`);
+        logger.warn({ name: subscription.name }, 'Subscription has been auto-disabled');
       }
 
       // Feature #1295: Log non-retriable failure
@@ -1138,7 +1138,7 @@ export async function deliverWebhookWithRetry(
       const errorStack = errorObj.stack?.substring(0, 500);
 
       if (attempt < maxAttempts) {
-        console.log(`[WEBHOOK] Error delivering to ${subscription.name}: ${errorMessage}, retrying (attempt ${attempt}/${maxAttempts})`);
+        logger.info({ name: subscription.name, error: errorMessage, attempt, maxAttempts }, 'Error delivering, retrying');
 
         // Feature #1295: Log failed attempt before retry
         logEntry.status = 'pending_retry';
@@ -1162,12 +1162,12 @@ export async function deliverWebhookWithRetry(
       }
 
       // Max retries exhausted
-      console.error(`[WEBHOOK] Failed to deliver ${eventType} to ${subscription.name} after ${maxAttempts} attempts: ${errorMessage}`);
+      logger.error({ eventType, name: subscription.name, attempts: maxAttempts, error: errorMessage }, 'Failed to deliver after max attempts');
 
       // Feature #321: Update stats with auto-disable tracking (may auto-disable)
       const statsResult = await updateSubscriptionDeliveryStats(subscription.id, false);
       if (statsResult && statsResult.autoDisabled) {
-        console.warn(`[WEBHOOK] Subscription ${subscription.name} has been auto-disabled`);
+        logger.warn({ name: subscription.name }, 'Subscription has been auto-disabled');
       }
 
       // Feature #1295: Log error attempt
@@ -1211,10 +1211,10 @@ export function logWebhookDelivery(log: WebhookDeliveryLog): void {
 
   // Feature #329: Persist to database asynchronously (fire and forget)
   webhookRepo.createDeliveryLog(log).catch(error => {
-    console.error(`[WEBHOOK] Failed to persist delivery log ${log.id} to database:`, error);
+    logger.error({ error, logId: log.id }, 'Failed to persist delivery log to database');
   });
 
-  console.log(`[WEBHOOK] Logged delivery ${log.id}: ${log.status} (${log.event_type} -> ${log.subscription_name})`);
+  logger.info({ logId: log.id, status: log.status, eventType: log.event_type, subscriptionName: log.subscription_name }, 'Logged delivery');
 }
 
 // Feature #1295: Get delivery logs for a subscription
@@ -1227,7 +1227,7 @@ export async function getWebhookDeliveryLogsFromDb(
     // Try database first
     return await webhookRepo.getDeliveryLogs(subscriptionId, options);
   } catch (error) {
-    console.error(`[WEBHOOK] Failed to get delivery logs from database, using in-memory:`, error);
+    logger.error({ error, subscriptionId }, 'Failed to get delivery logs from database, using in-memory');
     // Fall back to in-memory
     return getWebhookDeliveryLogsInMemory(subscriptionId, options);
   }
@@ -1309,7 +1309,7 @@ export function applyPayloadTemplate(
     return JSON.parse(interpolated);
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`[WEBHOOK] Failed to apply payload template for ${subscription.name}: ${errorMessage}`);
+    logger.error({ name: subscription.name, error: errorMessage }, 'Failed to apply payload template');
     // Fall back to default payload on error
     return defaultPayload;
   }

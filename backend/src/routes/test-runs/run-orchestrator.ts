@@ -48,6 +48,10 @@ import {
   sendRunPassedWebhook,
 } from './webhook-events.js';
 
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:run-orchestrator');
+
 // Socket.IO server instance (set by index.ts after server starts)
 let io: SocketIOServer | null = null;
 
@@ -81,15 +85,15 @@ export function emitRunEvent(runId: string, orgId: string, event: string, data: 
     io.to(`run:${runId}`).emit(event, payload);
     // Also emit to organization room for cross-tab sync
     io.to(`org:${orgId}`).emit(event, payload);
-    console.log(`[Socket.IO] Emitted ${event} for run ${runId} (org: ${orgId})`);
+    logger.info(`[Socket.IO] Emitted ${event} for run ${runId} (org: ${orgId})`);
   } else if (isPublisherAvailable()) {
     // Feature #200: Redis Pub/Sub fallback (worker mode)
     publishToRedis(runId, orgId, event, data).catch((err) => {
-      console.error(`[RedisEvents] Failed to publish ${event} for run ${runId}:`, err);
+      logger.error({ err, event, runId }, '[RedisEvents] Failed to publish event');
     });
   } else {
     // Neither Socket.IO nor Redis available - log warning
-    console.warn(`[Events] No event transport available for ${event} (run: ${runId})`);
+    logger.warn(`[Events] No event transport available for ${event} (run: ${runId})`);
   }
 }
 
@@ -140,7 +144,7 @@ export async function runTestsForRun(runId: string) {
 
   // Persist running status to database
   dbUpdateTestRun(runId, { status: 'running', started_at: run.started_at }).catch(err =>
-    console.error('[RunStart] Failed to persist running status to database:', err)
+    logger.error({ err }, '[RunStart] Failed to persist running status to database')
   );
 
   // Emit run started event
@@ -160,7 +164,7 @@ export async function runTestsForRun(runId: string) {
       pr_number: run.pr_number,
     };
     sendRunStartedWebhook(run, { id: suite.id, name: suite.name, project_id: suite.project_id }, triggerInfo)
-      .catch(err => console.error('[WEBHOOK] Error sending run started webhook:', err));
+      .catch(err => logger.error({ err }, '[WEBHOOK] Error sending run started webhook'));
   }
 
   let browser: Browser | null = null;
@@ -304,7 +308,7 @@ export async function runTestsForRun(runId: string) {
     // Execute each test with retries
     for (let testIndex = 0; testIndex < testsToRun.length; testIndex++) {
       if (isCancelled()) {
-        console.log(`[CANCELLED] Test run ${runId} was cancelled`);
+        logger.info(`[CANCELLED] Test run ${runId} was cancelled`);
         run.status = 'cancelled';
         break;
       }
@@ -317,13 +321,13 @@ export async function runTestsForRun(runId: string) {
       // Retry logic
       while ((result.status === 'failed' || result.status === 'error') && retryAttempt < maxRetries) {
         if (isCancelled()) {
-          console.log(`[CANCELLED] Test run ${runId} was cancelled during retry`);
+          logger.info(`[CANCELLED] Test run ${runId} was cancelled during retry`);
           run.status = 'cancelled';
           break;
         }
 
         retryAttempt++;
-        console.log(`[RETRY] Retrying test "${test.name}" (attempt ${retryAttempt}/${maxRetries})`);
+        logger.info(`[RETRY] Retrying test "${test.name}" (attempt ${retryAttempt}/${maxRetries})`);
 
         emitRunEvent(runId, orgId, 'test-retry', {
           testId: test.id,
@@ -336,7 +340,7 @@ export async function runTestsForRun(runId: string) {
 
         if (result.status === 'passed') {
           passedOnRetry = true;
-          console.log(`[RETRY] Test "${test.name}" passed on retry attempt ${retryAttempt}`);
+          logger.info(`[RETRY] Test "${test.name}" passed on retry attempt ${retryAttempt}`);
         }
       }
 
@@ -364,7 +368,7 @@ export async function runTestsForRun(runId: string) {
       run.status = hasError ? 'error' : hasFailure ? 'failed' : 'passed';
     } else if (runStatus === 'cancelling') {
       run.status = 'cancelled';
-      console.log(`[CANCELLED] Test run ${runId} transitioned from 'cancelling' to 'cancelled'`);
+      logger.info(`[CANCELLED] Test run ${runId} transitioned from 'cancelling' to 'cancelled'`);
     }
 
     run.results = results;
@@ -409,7 +413,7 @@ export async function runTestsForRun(runId: string) {
       test_type: run.test_type,
       accessibility_results: run.accessibility_results,
     }).catch(err =>
-      console.error('[RunComplete] Failed to persist completed run to database:', err)
+      logger.error({ err }, '[RunComplete] Failed to persist completed run to database')
     );
 
     // Feature #212: Invalidate test run listing caches
@@ -421,7 +425,7 @@ export async function runTestsForRun(runId: string) {
       }
       await cache.invalidate(`runs:list:${orgId}:*`);
     } catch (cacheErr) {
-      console.error('[RunComplete] Cache invalidation failed (non-critical):', cacheErr);
+      logger.error({ err: cacheErr }, '[RunComplete] Cache invalidation failed (non-critical)');
     }
 
     // Emit run complete event
@@ -442,7 +446,7 @@ export async function runTestsForRun(runId: string) {
       try {
         await checkAndSendAlerts(run, results);
       } catch (alertErr) {
-        console.error('[ALERT] Error checking/sending alerts:', alertErr);
+        logger.error({ err: alertErr }, '[ALERT] Error checking/sending alerts');
       }
     }
 
@@ -450,16 +454,16 @@ export async function runTestsForRun(runId: string) {
     const suiteForWebhook = await getTestSuite(run.suite_id);
     if (suiteForWebhook) {
       sendRunCompletedWebhook(run, { id: suiteForWebhook.id, name: suiteForWebhook.name, project_id: suiteForWebhook.project_id }, results)
-        .catch(err => console.error('[WEBHOOK] Error sending run completed webhook:', err));
+        .catch(err => logger.error({ err }, '[WEBHOOK] Error sending run completed webhook'));
 
       if (run.status === 'failed' || run.status === 'error') {
         sendRunFailedWebhook(run, { id: suiteForWebhook.id, name: suiteForWebhook.name, project_id: suiteForWebhook.project_id }, results)
-          .catch(err => console.error('[WEBHOOK] Error sending run failed webhook:', err));
+          .catch(err => logger.error({ err }, '[WEBHOOK] Error sending run failed webhook'));
       }
 
       if (run.status === 'passed') {
         sendRunPassedWebhook(run, { id: suiteForWebhook.id, name: suiteForWebhook.name, project_id: suiteForWebhook.project_id }, results)
-          .catch(err => console.error('[WEBHOOK] Error sending run passed webhook:', err));
+          .catch(err => logger.error({ err }, '[WEBHOOK] Error sending run passed webhook'));
       }
 
       // Feature #1957: Update test status from 'draft' to 'active'
@@ -467,7 +471,7 @@ export async function runTestsForRun(runId: string) {
         const test = await getTest(result.test_id);
         if (test && test.status === 'draft') {
           await updateTest(result.test_id, { status: 'active', updated_at: new Date() });
-          console.log(`[STATUS] Test "${test.name}" promoted from draft to active after first run (status: ${result.status})`);
+          logger.info(`[STATUS] Test "${test.name}" promoted from draft to active after first run (status: ${result.status})`);
         }
       }
     }

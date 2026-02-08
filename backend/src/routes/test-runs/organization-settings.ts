@@ -13,7 +13,10 @@
 import { FastifyInstance } from 'fastify';
 import * as fs from 'fs';
 import * as path from 'path';
+import { createLogger } from '../../services/logger.js';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
+
+const logger = createLogger('route:test-runs:org-settings');
 import { testRuns, TestRun } from './execution.js';
 import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
 import { getTestSuite } from '../test-suites.js';
@@ -112,7 +115,7 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
       // Update the setting
       artifactRetentionSettings.set(orgId, retention_days);
 
-      console.log(`[ARTIFACT RETENTION] Organization ${orgId} retention policy updated to ${retention_days} days by ${user.email}`);
+      logger.info(`[ARTIFACT RETENTION] Organization ${orgId} retention policy updated to ${retention_days} days by ${user.email}`);
 
       return {
         retention_days,
@@ -250,7 +253,7 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
       const rgbToHex = (rgb: [number, number, number]) =>
         '#' + rgb.map(c => c.toString(16).padStart(2, '0')).join('');
 
-      console.log(`[VISUAL SETTINGS] Organization ${orgId} diff colors updated by ${user.email}`);
+      logger.info(`[VISUAL SETTINGS] Organization ${orgId} diff colors updated by ${user.email}`);
 
       return {
         diff_color: {
@@ -400,15 +403,15 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
             fs.unlinkSync(filePath);
             traceFilesDeleted++;
           } catch (err) {
-            console.error(`Failed to delete trace file ${file}:`, err);
+            logger.error({ err, file }, 'Failed to delete trace file');
           }
         }
       }
     } catch (err) {
-      console.error('Failed to read trace directory:', err);
+      logger.error({ err }, 'Failed to read trace directory');
     }
 
-    console.log(`[ARTIFACT CLEANUP] Organization ${orgId}: Deleted ${deletedRuns.length} runs, ${traceFilesDeleted} trace files (${Math.round(bytesFreed / 1024)} KB) by ${user.email}`);
+    logger.info(`[ARTIFACT CLEANUP] Organization ${orgId}: Deleted ${deletedRuns.length} runs, ${traceFilesDeleted} trace files (${Math.round(bytesFreed / 1024)} KB) by ${user.email}`);
 
     return {
       retention_days: retentionDays,

@@ -17,6 +17,9 @@ import * as path from 'path';
 import { Page } from 'playwright';
 import { PNG } from 'pngjs';
 import { Locator } from 'playwright';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:execute-helpers');
 
 // Import from existing modules
 import {
@@ -162,11 +165,11 @@ export async function findElementByVisualMatch(
   fingerprintFilename: string,
   searchRegion?: { x: number; y: number; width: number; height: number }
 ): Promise<VisualMatchResult> {
-  console.log(`[HEALING] Visual matching initiated for fingerprint: ${fingerprintFilename}`);
+  logger.info(`[HEALING] Visual matching initiated for fingerprint: ${fingerprintFilename}`);
 
   const fingerprintPath = path.join(SCREENSHOTS_DIR, fingerprintFilename);
   if (!fs.existsSync(fingerprintPath)) {
-    console.log(`[HEALING] Fingerprint file not found: ${fingerprintPath}`);
+    logger.info(`[HEALING] Fingerprint file not found: ${fingerprintPath}`);
     return { found: false, confidence: 0, matchMethod: 'none' };
   }
 
@@ -183,7 +186,7 @@ export async function findElementByVisualMatch(
     const pageWidth = pagePng.width;
     const pageHeight = pagePng.height;
 
-    console.log(`[HEALING] Fingerprint size: ${fpWidth}x${fpHeight}, Page size: ${pageWidth}x${pageHeight}`);
+    logger.info(`[HEALING] Fingerprint size: ${fpWidth}x${fpHeight}, Page size: ${pageWidth}x${pageHeight}`);
 
     // Sliding window search for best match
     // Dynamically import pixelmatch (ESM module)
@@ -207,7 +210,7 @@ export async function findElementByVisualMatch(
     const maxY = Math.min(searchY + searchHeight, pageHeight - fpHeight);
 
     if (maxX <= 0 || maxY <= 0) {
-      console.log('[HEALING] Fingerprint larger than search area, cannot match');
+      logger.info('[HEALING] Fingerprint larger than search area, cannot match');
       return { found: false, confidence: 0, matchMethod: 'pixelmatch' };
     }
 
@@ -276,7 +279,7 @@ export async function findElementByVisualMatch(
     const totalPixels = fpWidth * fpHeight;
     const foundThreshold = 0.7; // 70% confidence threshold
 
-    console.log(`[HEALING] Visual match result: confidence=${bestMatch.confidence.toFixed(3)}, position=(${bestMatch.x}, ${bestMatch.y})`);
+    logger.info(`[HEALING] Visual match result: confidence=${bestMatch.confidence.toFixed(3)}, position=(${bestMatch.x}, ${bestMatch.y})`);
 
     if (bestMatch.confidence >= foundThreshold) {
       return {
@@ -302,7 +305,7 @@ export async function findElementByVisualMatch(
       totalPixels,
     };
   } catch (err: unknown) {
-    console.error('[HEALING] Visual matching error:', err instanceof Error ? err.message : String(err));
+    logger.error({ error: err instanceof Error ? err.message : String(err) }, '[HEALING] Visual matching error');
     return { found: false, confidence: 0, matchMethod: 'none' };
   }
 }
@@ -319,10 +322,10 @@ export function saveCrashDump(data: CrashDumpData): string {
 
   try {
     fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
-    console.log(`[Visual][CrashDump] Saved crash dump to ${filename}`);
+    logger.info(`[Visual][CrashDump] Saved crash dump to ${filename}`);
     return filename;
   } catch (err) {
-    console.error(`[Visual][CrashDump] Failed to save crash dump:`, err);
+    logger.error({ err }, '[Visual][CrashDump] Failed to save crash dump');
     return '';
   }
 }
@@ -340,7 +343,7 @@ export async function saveScreenshotWithRetry(
   // Feature #604: Check storage quota before attempting save
   const quotaCheck = checkStorageQuota(screenshotBuffer.length);
   if (!quotaCheck.allowed && quotaCheck.error) {
-    console.error(`[Visual] Storage quota exceeded. Used: ${quotaCheck.error.usedBytes} bytes, Quota: ${quotaCheck.error.quotaBytes} bytes`);
+    logger.error(`[Visual] Storage quota exceeded. Used: ${quotaCheck.error.usedBytes} bytes, Quota: ${quotaCheck.error.quotaBytes} bytes`);
     return {
       success: false,
       error: 'Storage quota exceeded',
@@ -352,14 +355,14 @@ export async function saveScreenshotWithRetry(
 
   // Log warning if approaching quota
   if (quotaCheck.warning) {
-    console.warn(`[Visual] ${quotaCheck.warning}`);
+    logger.warn(`[Visual] ${quotaCheck.warning}`);
   }
 
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= config.maxRetries; attempt++) {
     try {
-      console.log(`[Visual] Screenshot save attempt ${attempt}/${config.maxRetries} to ${targetPath}`);
+      logger.info(`[Visual] Screenshot save attempt ${attempt}/${config.maxRetries} to ${targetPath}`);
 
       // Ensure directory exists
       const dir = path.dirname(targetPath);
@@ -385,7 +388,7 @@ export async function saveScreenshotWithRetry(
         }
       });
 
-      console.log(`[Visual] Screenshot saved successfully on attempt ${attempt}`);
+      logger.info(`[Visual] Screenshot saved successfully on attempt ${attempt}`);
       return { success: true, attempts: attempt };
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
@@ -395,18 +398,18 @@ export async function saveScreenshotWithRetry(
                             lastError.message.includes('ETIMEDOUT') ||
                             lastError.message.includes('ENOTFOUND');
 
-      console.error(`[Visual] Screenshot save attempt ${attempt}/${config.maxRetries} failed: ${lastError.message}`);
+      logger.error(`[Visual] Screenshot save attempt ${attempt}/${config.maxRetries} failed: ${lastError.message}`);
 
       // Wait before retrying (except on last attempt)
       if (attempt < config.maxRetries) {
-        console.log(`[Visual] Retrying in ${config.retryDelayMs}ms...`);
+        logger.info(`[Visual] Retrying in ${config.retryDelayMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, config.retryDelayMs));
       }
     }
   }
 
   const errorMessage = lastError?.message || 'Unknown upload error';
-  console.error(`[Visual] All ${config.maxRetries} screenshot save attempts failed: ${errorMessage}`);
+  logger.error(`[Visual] All ${config.maxRetries} screenshot save attempts failed: ${errorMessage}`);
 
   return {
     success: false,
@@ -429,7 +432,7 @@ export async function saveBaselineWithRetry(
   if (!result.success) {
     // Feature #604: Handle storage quota exceeded - don't store for retry since it will fail again
     if (result.isQuotaExceeded) {
-      console.error(`[Visual] Storage quota exceeded - baseline save blocked for test ${testId}`);
+      logger.error(`[Visual] Storage quota exceeded - baseline save blocked for test ${testId}`);
       return {
         success: false,
         error: result.error,
@@ -453,7 +456,7 @@ export async function saveBaselineWithRetry(
       organizationId: organizationId || 'unknown',
     });
 
-    console.error(`[Visual] Stored failed upload ${failedUploadId} for manual retry`);
+    logger.error(`[Visual] Stored failed upload ${failedUploadId} for manual retry`);
     return {
       success: false,
       error: result.error,
@@ -461,7 +464,7 @@ export async function saveBaselineWithRetry(
     };
   }
 
-  console.log(`[Visual] Saved baseline for test ${testId} viewport ${viewportId} branch ${branch}`);
+  logger.info(`[Visual] Saved baseline for test ${testId} viewport ${viewportId} branch ${branch}`);
   return { success: true };
 }
 
@@ -471,7 +474,7 @@ export function saveBaseline(testId: string, screenshotBuffer: Buffer, viewportI
   // Check storage quota before saving
   const quotaCheck = checkStorageQuota(screenshotBuffer.length);
   if (!quotaCheck.allowed && quotaCheck.error) {
-    console.error(`[Visual] Storage quota exceeded. Cannot save baseline for test ${testId}`);
+    logger.error(`[Visual] Storage quota exceeded. Cannot save baseline for test ${testId}`);
     return {
       success: false,
       error: 'Storage quota exceeded',
@@ -482,7 +485,7 @@ export function saveBaseline(testId: string, screenshotBuffer: Buffer, viewportI
 
   const baselinePath = getBaselinePath(testId, viewportId, branch);
   fs.writeFileSync(baselinePath, screenshotBuffer);
-  console.log(`[Visual] Saved baseline for test ${testId} viewport ${viewportId} branch ${branch}`);
+  logger.info(`[Visual] Saved baseline for test ${testId} viewport ${viewportId} branch ${branch}`);
   return { success: true };
 }
 
@@ -497,7 +500,7 @@ export async function checkPageDimensions(page: Page): Promise<PageDimensionsRes
     let dimensions;
     const oversizedState = getSimulatedOversizedPage();
     if (oversizedState.enabled) {
-      console.log(`[Visual][SimulatedOversized] Using simulated page dimensions: ${oversizedState.dimensions.width}x${oversizedState.dimensions.height}`);
+      logger.info(`[Visual][SimulatedOversized] Using simulated page dimensions: ${oversizedState.dimensions.width}x${oversizedState.dimensions.height}`);
       dimensions = { ...oversizedState.dimensions };
     } else {
       dimensions = await page.evaluate(() => ({
@@ -535,7 +538,7 @@ export async function checkPageDimensions(page: Page): Promise<PageDimensionsRes
       reason,
     };
   } catch (err) {
-    console.error('[Visual] Failed to check page dimensions:', err);
+    logger.error({ err }, '[Visual] Failed to check page dimensions');
     return {
       width: 0,
       height: 0,
@@ -568,7 +571,7 @@ export async function captureScreenshotWithTimeout(
     if (isFullPage && !options.element) {
       const pageDimensions = await checkPageDimensions(page);
       if (pageDimensions.isOversized) {
-        console.log(`[Visual][Screenshot] Page too large for full-page capture: ${pageDimensions.reason}`);
+        logger.info(`[Visual][Screenshot] Page too large for full-page capture: ${pageDimensions.reason}`);
         return {
           buffer: null,
           timedOut: false,
@@ -607,7 +610,7 @@ export async function captureScreenshotWithTimeout(
     const errorMessage = err instanceof Error ? err.message : String(err);
     const isTimeout = errorMessage.includes('timed out') || errorMessage.includes('timeout');
 
-    console.error(`[Visual][Screenshot] ${isTimeout ? 'Timeout' : 'Error'}: ${errorMessage}`);
+    logger.error(`[Visual][Screenshot] ${isTimeout ? 'Timeout' : 'Error'}: ${errorMessage}`);
 
     return {
       buffer: null,
@@ -642,7 +645,7 @@ export async function getIgnoreRegionsFromSelectors(page: Page, selectors: strin
         // Feature #603: Generate warning for mask selector that matched 0 elements
         const warning = `Mask selector matched 0 elements: '${selector}'`;
         warnings.push(warning);
-        console.log(`[Visual] ${warning}`);
+        logger.info(`[Visual] ${warning}`);
         continue;
       }
 
@@ -660,14 +663,14 @@ export async function getIgnoreRegionsFromSelectors(page: Page, selectors: strin
             height: boundingBox.height,
             name: `${selector}${count > 1 ? ` [${j + 1}]` : ''}`,
           });
-          console.log(`[Visual] Resolved selector "${selector}"${count > 1 ? ` [${j + 1}]` : ''} to region: ${boundingBox.x},${boundingBox.y} ${boundingBox.width}x${boundingBox.height}`);
+          logger.info(`[Visual] Resolved selector "${selector}"${count > 1 ? ` [${j + 1}]` : ''} to region: ${boundingBox.x},${boundingBox.y} ${boundingBox.width}x${boundingBox.height}`);
         }
       }
     } catch (err) {
       // Feature #603: Include error in warnings
       const warning = `Error resolving mask selector '${selector}': ${err}`;
       warnings.push(warning);
-      console.log(`[Visual] ${warning}`);
+      logger.info(`[Visual] ${warning}`);
     }
   }
 

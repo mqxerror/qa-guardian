@@ -40,6 +40,9 @@ import {
   generateCustomMetricValues,
   CustomMetricDefinition,
 } from './k6-helpers.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:load-test-executor');
 
 // ============================================================================
 // Threshold Evaluation (Feature #45)
@@ -333,7 +336,7 @@ function evaluateThresholds(
 
     if (actualValue === null || actualValue === undefined) {
       // Metric not found - skip but log warning
-      console.warn(`[K6 Threshold] Metric not found: ${threshold.metric}`);
+      logger.warn(`[K6 Threshold] Metric not found: ${threshold.metric}`);
       results.push({
         metric: threshold.metric,
         expression: threshold.expression,
@@ -534,7 +537,7 @@ async function runK6(
     const startTime = Date.now();
     let lastProgress = 0;
 
-    console.log(`[K6] Starting real K6 execution: k6 run --summary-export=${summaryPath} ${scriptPath}`);
+    logger.info(`[K6] Starting real K6 execution: k6 run --summary-export=${summaryPath} ${scriptPath}`);
 
     const k6Process = spawn('k6', [
       'run',
@@ -582,26 +585,26 @@ async function runK6(
         }
       }
 
-      console.log(`[K6 stdout] ${output.trim()}`);
+      logger.info(`[K6 stdout] ${output.trim()}`);
     });
 
     k6Process.stderr?.on('data', (data: Buffer) => {
       stderr += data.toString();
-      console.log(`[K6 stderr] ${data.toString().trim()}`);
+      logger.info(`[K6 stderr] ${data.toString().trim()}`);
     });
 
     k6Process.on('error', (err) => {
-      console.error(`[K6] Process error: ${err.message}`);
+      logger.error(`[K6] Process error: ${err.message}`);
       resolve({ success: false, error: `K6 process error: ${err.message}` });
     });
 
     k6Process.on('close', (code) => {
       const duration = Date.now() - startTime;
-      console.log(`[K6] Process exited with code ${code} after ${duration}ms`);
+      logger.info(`[K6] Process exited with code ${code} after ${duration}ms`);
 
       if (code !== 0 && code !== null) {
         // K6 returns non-zero when thresholds fail, which is still valid output
-        console.log(`[K6] Non-zero exit code, checking for summary file...`);
+        logger.info(`[K6] Non-zero exit code, checking for summary file...`);
       }
 
       // Try to read the summary file
@@ -628,7 +631,7 @@ async function runK6(
     const timeout = (totalDuration + 60) * 1000; // Add 60s buffer
     setTimeout(() => {
       if (k6Process.exitCode === null) {
-        console.log(`[K6] Timeout after ${timeout}ms, killing process`);
+        logger.info(`[K6] Timeout after ${timeout}ms, killing process`);
         k6Process.kill('SIGTERM');
         resolve({ success: false, error: `K6 process timed out after ${timeout}ms` });
       }
@@ -794,14 +797,14 @@ export async function executeLoadTest(
   let testError: string | undefined;
   let loadTestResults: LoadTestResults | undefined;
 
-  console.log(`[Load Test] Starting load test for ${test.name} (USE_REAL_K6=${USE_REAL_K6})`);
+  logger.info(`[Load Test] Starting load test for ${test.name} (USE_REAL_K6=${USE_REAL_K6})`);
 
   try {
     // Validate K6 script imports
     if (test.k6_script) {
       const importCheck = validateK6ScriptImports(test.k6_script);
       if (!importCheck.valid) {
-        console.log(`[Load Test] Import error: ${importCheck.error}`);
+        logger.info(`[Load Test] Import error: ${importCheck.error}`);
         emitRunEvent(runId, orgId, 'step-start', {
           testId: test.id,
           stepIndex: 0,
@@ -922,7 +925,7 @@ export async function executeLoadTest(
         // Generate and write K6 script
         const k6Script = generateK6Script(test);
         fs.writeFileSync(scriptPath, k6Script);
-        console.log(`[K6] Script written to ${scriptPath}`);
+        logger.info(`[K6] Script written to ${scriptPath}`);
 
         // Run K6
         const k6Result = await runK6(scriptPath, summaryPath, context, test, totalDuration);
@@ -956,11 +959,11 @@ export async function executeLoadTest(
           if (fs.existsSync(scriptPath)) fs.unlinkSync(scriptPath);
           if (fs.existsSync(summaryPath)) fs.unlinkSync(summaryPath);
         } catch (cleanupError) {
-          console.warn(`[K6] Failed to cleanup temp files: ${cleanupError}`);
+          logger.warn(`[K6] Failed to cleanup temp files: ${cleanupError}`);
         }
 
       } catch (k6Error) {
-        console.error(`[K6] Execution error: ${k6Error}`);
+        logger.error(`[K6] Execution error: ${k6Error}`);
         testStatus = 'error';
         testError = `K6 execution error: ${k6Error instanceof Error ? k6Error.message : 'Unknown error'}`;
         loadTestResults = {
@@ -971,7 +974,7 @@ export async function executeLoadTest(
 
     } else {
       // Simulated K6 execution (for CI/testing or when server error is simulated)
-      console.log(`[K6] Running in simulated mode`);
+      logger.info(`[K6] Running in simulated mode`);
 
       // Simulate load test phases with progress updates
       const phases = [

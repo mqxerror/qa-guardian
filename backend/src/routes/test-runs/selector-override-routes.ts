@@ -18,6 +18,9 @@ import { authenticate, getOrganizationId, JwtPayload, ApiKeyPayload, InternalSer
 import { testRuns, selectorOverrides, healedSelectorHistory, SelectorOverride, TestRun } from './execution.js';
 import { getTestRun } from '../../services/repositories/test-runs.js';
 import { getTest } from '../test-suites.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:selector-override');
 
 // Type-safe user accessor for authenticated requests
 // Returns non-optional JwtPayload since authenticate middleware ensures user exists
@@ -213,13 +216,13 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
           testStep.selector = new_selector;
           test.updated_at = new Date();
           testUpdated = true;
-          console.log(`[SELECTOR OVERRIDE] Updated test definition for step ${stepId} in test ${testId}`);
+          logger.info(`[SELECTOR OVERRIDE] Updated test definition for step ${stepId} in test ${testId}`);
         }
       }
     }
 
-    console.log(`[SELECTOR OVERRIDE] User ${user.email} updated selector for step ${stepId} in test ${testId}`);
-    console.log(`[SELECTOR OVERRIDE] Original: ${originalSelector}, New: ${new_selector}`);
+    logger.info(`[SELECTOR OVERRIDE] User ${user.email} updated selector for step ${stepId} in test ${testId}`);
+    logger.info(`[SELECTOR OVERRIDE] Original: ${originalSelector}, New: ${new_selector}`);
 
     return {
       run_id: runId,
@@ -296,12 +299,12 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
           testStep.selector = step.healed_selector;
           test.updated_at = new Date();
           testUpdated = true;
-          console.log(`[ACCEPT HEALED] Applied healed selector to test definition for step ${stepId}`);
+          logger.info(`[ACCEPT HEALED] Applied healed selector to test definition for step ${stepId}`);
         }
       }
     }
 
-    console.log(`[ACCEPT HEALED] User ${user.email} accepted healed selector for step ${stepId} in test ${testId}`);
+    logger.info(`[ACCEPT HEALED] User ${user.email} accepted healed selector for step ${stepId} in test ${testId}`);
 
     return {
       run_id: runId,
@@ -400,7 +403,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
       step.suggested_selector = suggest_selector;
     }
 
-    console.log(`[REJECT HEALED] User ${user.email} rejected healed selector for step ${stepId} in test ${testId}. Reason: ${reason || 'Not provided'}`);
+    logger.info(`[REJECT HEALED] User ${user.email} rejected healed selector for step ${stepId} in test ${testId}. Reason: ${reason || 'Not provided'}`);
 
     return {
       run_id: runId,
@@ -489,7 +492,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     // Remove the override
     selectorOverrides.delete(overrideKey);
 
-    console.log(`[SELECTOR REVERT] User ${user.email} reverted selector for step ${stepId} in test ${testId}`);
+    logger.info(`[SELECTOR REVERT] User ${user.email} reverted selector for step ${stepId} in test ${testId}`);
 
     return {
       test_id: testId,

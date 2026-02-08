@@ -11,6 +11,9 @@ import { Page } from 'playwright';
 import { execFile } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:lighthouse-executor');
 
 /**
  * Resolve the Chromium binary path from Playwright's cache.
@@ -554,9 +557,9 @@ export async function runRealLighthouseAudit(
 
   const lighthouseBin = resolveLighthouseBin();
   const chromePath = resolveChromePath() || process.env.CHROME_PATH || '';
-  console.log(`[Lighthouse] Using binary: ${lighthouseBin}`);
-  console.log(`[Lighthouse] CHROME_PATH resolved to: ${chromePath || '(empty)'}`);
-  console.log(`[Lighthouse] Args: ${JSON.stringify(args)}`);
+  logger.info(`[Lighthouse] Using binary: ${lighthouseBin}`);
+  logger.info(`[Lighthouse] CHROME_PATH resolved to: ${chromePath || '(empty)'}`);
+  logger.info(`[Lighthouse] Args: ${JSON.stringify(args)}`);
 
   const lhrJson = await new Promise<string>((resolve, reject) => {
     const child = execFile(lighthouseBin, args, {
@@ -566,9 +569,9 @@ export async function runRealLighthouseAudit(
     }, (error, stdout, stderr) => {
       if (error) {
         const stderrSnippet = stderr ? stderr.slice(0, 500) : '';
-        console.error(`[Lighthouse] CLI error (code ${error.code ?? 'unknown'}): ${error.message}`);
-        if (stderrSnippet) console.error(`[Lighthouse] stderr: ${stderrSnippet}`);
-        if (stdout) console.error(`[Lighthouse] stdout (first 500): ${stdout.slice(0, 500)}`);
+        logger.error(`[Lighthouse] CLI error (code ${error.code ?? 'unknown'}): ${error.message}`);
+        if (stderrSnippet) logger.error(`[Lighthouse] stderr: ${stderrSnippet}`);
+        if (stdout) logger.error(`[Lighthouse] stdout (first 500): ${stdout.slice(0, 500)}`);
         reject(new Error(
           `Lighthouse CLI failed (code ${error.code ?? 'unknown'}): ${error.message}` +
           (stderrSnippet ? `\nstderr: ${stderrSnippet}` : '')

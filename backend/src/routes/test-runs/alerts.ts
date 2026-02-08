@@ -9,6 +9,10 @@
  * - In-memory stores for alert channels and logs
  */
 
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:alerts');
+
 // ============================================
 // Types and Interfaces
 // ============================================
@@ -176,14 +180,14 @@ export async function sendSlackAlert(
   projectName: string
 ): Promise<void> {
   if (!channel.slack_channel) {
-    console.log('[SLACK ALERT] No Slack channel configured for alert channel:', channel.id);
+    logger.info({ channelId: channel.id }, '[SLACK ALERT] No Slack channel configured for alert channel');
     return;
   }
 
   // Get Slack connection for this organization
   const slackConnection = slackConnections.get(channel.organization_id);
   if (!slackConnection) {
-    console.log('[SLACK ALERT] No Slack workspace connected for organization:', channel.organization_id);
+    logger.info({ organizationId: channel.organization_id }, '[SLACK ALERT] No Slack workspace connected for organization');
     return;
   }
 
@@ -221,14 +225,14 @@ ${failureDetails}
   const channelName = slackChannel?.name || channel.slack_channel;
 
   // Log Slack message to console (development mode)
-  console.log('\n' + '='.repeat(80));
-  console.log('[SLACK ALERT] Sending test failure notification to Slack');
-  console.log('='.repeat(80));
-  console.log(`Workspace: ${slackConnection.workspace_name}`);
-  console.log(`Channel: #${channelName} (${channel.slack_channel})`);
-  console.log('-'.repeat(80));
-  console.log(message);
-  console.log('='.repeat(80) + '\n');
+  logger.info('\n' + '='.repeat(80));
+  logger.info('[SLACK ALERT] Sending test failure notification to Slack');
+  logger.info('='.repeat(80));
+  logger.info(`Workspace: ${slackConnection.workspace_name}`);
+  logger.info(`Channel: #${channelName} (${channel.slack_channel})`);
+  logger.info('-'.repeat(80));
+  logger.info(message);
+  logger.info('='.repeat(80) + '\n');
 
   // Store in Slack log for viewing via API
   slackLog.unshift({
@@ -260,7 +264,7 @@ export async function sendEmailAlert(
   projectName: string
 ): Promise<void> {
   if (!channel.email_addresses || channel.email_addresses.length === 0) {
-    console.log('[EMAIL ALERT] No email addresses configured for channel:', channel.id);
+    logger.info({ channelId: channel.id }, '[EMAIL ALERT] No email addresses configured for channel');
     return;
   }
 
@@ -312,14 +316,14 @@ This email was sent by QA Guardian. Configure your alert preferences in Settings
 `;
 
   // Log email to console (development mode)
-  console.log('\n' + '='.repeat(80));
-  console.log('[EMAIL ALERT] Sending test failure notification');
-  console.log('='.repeat(80));
-  console.log(`To: ${channel.email_addresses.join(', ')}`);
-  console.log(`Subject: ${subject}`);
-  console.log('-'.repeat(80));
-  console.log(body);
-  console.log('='.repeat(80) + '\n');
+  logger.info('\n' + '='.repeat(80));
+  logger.info('[EMAIL ALERT] Sending test failure notification');
+  logger.info('='.repeat(80));
+  logger.info(`To: ${channel.email_addresses.join(', ')}`);
+  logger.info(`Subject: ${subject}`);
+  logger.info('-'.repeat(80));
+  logger.info(body);
+  logger.info('='.repeat(80) + '\n');
 
   // Store in email log for viewing via API
   // In development, emails are "sent" successfully (logged to console)
@@ -352,7 +356,7 @@ export async function sendWebhookAlert(
   projectName: string
 ): Promise<void> {
   if (!channel.webhook_url) {
-    console.log('[WEBHOOK ALERT] No webhook URL configured for channel:', channel.id);
+    logger.info({ channelId: channel.id }, '[WEBHOOK ALERT] No webhook URL configured for channel');
     return;
   }
 
@@ -402,13 +406,13 @@ export async function sendWebhookAlert(
   };
 
   // Log webhook to console (development mode)
-  console.log('\n' + '='.repeat(80));
-  console.log('[WEBHOOK ALERT] Sending test failure webhook');
-  console.log('='.repeat(80));
-  console.log(`URL: ${channel.webhook_url}`);
-  console.log('Payload:');
-  console.log(JSON.stringify(payload, null, 2));
-  console.log('='.repeat(80) + '\n');
+  logger.info('\n' + '='.repeat(80));
+  logger.info('[WEBHOOK ALERT] Sending test failure webhook');
+  logger.info('='.repeat(80));
+  logger.info(`URL: ${channel.webhook_url}`);
+  logger.info('Payload:');
+  logger.info(JSON.stringify(payload, null, 2));
+  logger.info('='.repeat(80) + '\n');
 
   // Attempt to send the webhook
   let success = false;
@@ -430,13 +434,13 @@ export async function sendWebhookAlert(
 
     if (!response.ok) {
       errorMsg = `HTTP ${response.status}: ${response.statusText}`;
-      console.log(`[WEBHOOK ALERT] Failed to deliver webhook: ${errorMsg}`);
+      logger.info(`[WEBHOOK ALERT] Failed to deliver webhook: ${errorMsg}`);
     } else {
-      console.log(`[WEBHOOK ALERT] Webhook delivered successfully (HTTP ${response.status})`);
+      logger.info(`[WEBHOOK ALERT] Webhook delivered successfully (HTTP ${response.status})`);
     }
   } catch (err) {
     errorMsg = err instanceof Error ? err.message : 'Unknown error';
-    console.log(`[WEBHOOK ALERT] Failed to deliver webhook: ${errorMsg}`);
+    logger.info(`[WEBHOOK ALERT] Failed to deliver webhook: ${errorMsg}`);
   }
 
   // Store in webhook log for viewing via API
@@ -510,7 +514,7 @@ export async function checkAndSendAlerts(
 
     // If suppress_on_retry_success is enabled and ALL failures recovered on retry, suppress the alert
     if (channel.suppress_on_retry_success && testsPassedOnRetry.length > 0 && actualFailures.length === 0) {
-      console.log(`[ALERT] Suppressed alert for channel ${channel.name} - all tests passed on retry`);
+      logger.info(`[ALERT] Suppressed alert for channel ${channel.name} - all tests passed on retry`);
       continue;
     }
 
@@ -533,13 +537,13 @@ export async function checkAndSendAlerts(
     }
 
     if (!shouldAlert) {
-      console.log(`[ALERT] Condition not met for channel ${channel.name} (${channel.condition})`);
+      logger.info(`[ALERT] Condition not met for channel ${channel.name} (${channel.condition})`);
       continue;
     }
 
     // Log retry suppression info if relevant
     if (channel.suppress_on_retry_success && testsPassedOnRetry.length > 0) {
-      console.log(`[ALERT] ${testsPassedOnRetry.length} test(s) passed on retry, but ${actualFailures.length} still failed - sending alert`);
+      logger.info(`[ALERT] ${testsPassedOnRetry.length} test(s) passed on retry, but ${actualFailures.length} still failed - sending alert`);
     }
 
     // Send alert based on channel type
@@ -556,7 +560,7 @@ export async function checkAndSendAlerts(
           break;
       }
     } catch (err) {
-      console.error(`[ALERT] Failed to send alert via channel ${channel.name}:`, err);
+      logger.error({ err, channelName: channel.name }, '[ALERT] Failed to send alert via channel');
     }
   }
 }

@@ -40,6 +40,9 @@ import {
   setRejectionMetadata,
 } from './visual-regression.js';
 import { sendBaselineApprovedWebhook } from './webhook-events.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:visual-approval');
 
 // Helper to get user from request
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -131,7 +134,7 @@ let targetRun: any;
     if (expectedVersion !== undefined && expectedVersion !== currentVersion) {
       const modifiedBy = currentMetadata?.approvedBy || 'another user';
       const modifiedAt = currentMetadata?.approvedAt ? new Date(currentMetadata.approvedAt).toLocaleString() : 'recently';
-      console.log(`[Visual] Concurrent modification detected for test ${testId}: expected version ${expectedVersion}, current version ${currentVersion}`);
+      logger.info(`[Visual] Concurrent modification detected for test ${testId}: expected version ${expectedVersion}, current version ${currentVersion}`);
       return reply.status(409).send({
         error: 'Conflict',
         message: 'Baseline was modified by another user',
@@ -205,7 +208,7 @@ let targetRun: any;
       sourceRunId: targetRun.id,
     }, screenshotBuffer);
 
-    console.log(`[Visual] Baseline approved for test ${testId} branch ${branch} by ${user?.email || 'unknown'} from run ${targetRun.id} (version ${newVersion})`);
+    logger.info(`[Visual] Baseline approved for test ${testId} branch ${branch} by ${user?.email || 'unknown'} from run ${targetRun.id} (version ${newVersion})`);
 
     // Feature #1310: Send baseline.approved webhook
     const suiteApprove = await getTestSuite(test.suite_id) as TestSuite | null;
@@ -225,7 +228,7 @@ let targetRun: any;
       viewport: metadata.viewport,
       browser: metadata.browser,
     }).catch(err => {
-      console.error('[WEBHOOK] Failed to send baseline.approved webhook:', err);
+      logger.error('[WEBHOOK] Failed to send baseline.approved webhook:', err);
     });
 
     return {
@@ -373,7 +376,7 @@ let targetRun: any;
       sourceRunId: targetRun.id,
     }, screenshotBuffer);
 
-    console.log(`[Visual] Baseline approved for test ${test_id} branch ${branch} by ${user?.email || 'unknown'} from run ${targetRun.id} (version ${newVersion})`);
+    logger.info(`[Visual] Baseline approved for test ${test_id} branch ${branch} by ${user?.email || 'unknown'} from run ${targetRun.id} (version ${newVersion})`);
 
     // Send webhook
     const suiteForWebhook = await getTestSuite(test.suite_id) as TestSuite | null;
@@ -393,7 +396,7 @@ let targetRun: any;
       viewport: metadata.viewport,
       browser: metadata.browser,
     }).catch(err => {
-      console.error('[WEBHOOK] Failed to send baseline.approved webhook:', err);
+      logger.error('[WEBHOOK] Failed to send baseline.approved webhook:', err);
     });
 
     return {
@@ -426,9 +429,9 @@ let targetRun: any;
         fs.unlinkSync(baselinePath);
       }
     } catch (err) {
-      console.error(`[Visual] Failed to delete baseline at ${baselinePath}:`, err);
+      logger.error({ err, baselinePath }, '[Visual] Failed to delete baseline');
     }
-    console.log(`[Visual] Baseline rejected for test ${test_id} viewport ${viewportId}${reason ? ` reason: ${reason}` : ''}`);
+    logger.info(`[Visual] Baseline rejected for test ${test_id} viewport ${viewportId}${reason ? ` reason: ${reason}` : ''}`);
     return reply.status(200).send({ success: true, message: 'Baseline rejected' });
   });
 
@@ -490,7 +493,7 @@ let targetRun: any;
     };
     setRejectionMetadata(metadata);
 
-    console.log(`[Visual] Visual changes rejected for test ${testId} by ${user?.email || 'unknown'} from run ${runId}${reason ? ` with reason: ${reason}` : ''}`);
+    logger.info(`[Visual] Visual changes rejected for test ${testId} by ${user?.email || 'unknown'} from run ${runId}${reason ? ` with reason: ${reason}` : ''}`);
 
     return {
       success: true,
@@ -722,7 +725,7 @@ let targetRun: any;
       branch: targetBranch,
     }, sourceBaseline);
 
-    console.log(`[Visual] Baseline merged from branch '${sourceBranch}' to '${targetBranch}' for test ${testId} by ${user?.email || 'unknown'} (version ${historyEntry.version})`);
+    logger.info(`[Visual] Baseline merged from branch '${sourceBranch}' to '${targetBranch}' for test ${testId} by ${user?.email || 'unknown'} (version ${historyEntry.version})`);
 
     return {
       success: true,

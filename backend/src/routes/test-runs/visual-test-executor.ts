@@ -41,6 +41,9 @@ import {
 import { getTestSuite, IgnoreRegion } from '../test-suites.js';
 import { getProjectVisualSettings } from '../projects.js';
 import { sendVisualDiffWebhook } from './webhook-events.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:visual-test-executor');
 
 /**
  * Configuration for a visual regression test
@@ -408,13 +411,13 @@ async function hideElements(
       if (count === 0) {
         const warning = `Mask selector matched 0 elements: '${selector}'`;
         warnings.push(warning);
-        console.log(`[Visual] ${warning}`);
+        logger.info(`[Visual] ${warning}`);
       }
       hiddenCount += count;
     } catch (err) {
       const warning = `Error resolving mask selector '${selector}': ${err}`;
       warnings.push(warning);
-      console.log(`[Visual] ${warning}`);
+      logger.info(`[Visual] ${warning}`);
     }
   }
 
@@ -444,13 +447,13 @@ async function removeElements(
       if (count === 0) {
         const warning = `Mask selector matched 0 elements: '${selector}'`;
         warnings.push(warning);
-        console.log(`[Visual] ${warning}`);
+        logger.info(`[Visual] ${warning}`);
       }
       removedCount += count;
     } catch (err) {
       const warning = `Error resolving mask selector '${selector}': ${err}`;
       warnings.push(warning);
-      console.log(`[Visual] ${warning}`);
+      logger.info(`[Visual] ${warning}`);
     }
   }
 
@@ -545,7 +548,7 @@ export async function executeVisualTest(
   try {
     // Feature #606: Check for simulated browser crash
     if (getSimulatedBrowserCrash()) {
-      console.log(`[Visual][SimulatedCrash] Simulating browser crash for test ${test.id}`);
+      logger.info(`[Visual][SimulatedCrash] Simulating browser crash for test ${test.id}`);
       throw new Error('Browser process terminated unexpectedly: Target page, context or browser has been closed');
     }
 
@@ -560,7 +563,7 @@ export async function executeVisualTest(
     const isHttpError = statusCode >= 400;
 
     if (isHttpError) {
-      console.error(`[Visual][Navigation] HTTP ${statusCode} error at ${test.target_url}`);
+      logger.error(`[Visual][Navigation] HTTP ${statusCode} error at ${test.target_url}`);
       emitRunEvent(runId, orgId, 'step-complete', {
         testId: test.id,
         stepIndex: 0,
@@ -759,7 +762,7 @@ export async function executeVisualTest(
 
       // Handle oversized page
       if (captureResult.isOversized) {
-        console.error(`[Visual][Oversized] Page too large for test ${test.id} viewport ${viewport.id}`);
+        logger.error(`[Visual][Oversized] Page too large for test ${test.id} viewport ${viewport.id}`);
         stepResults.push({
           id: `visual_screenshot_${viewport.id}`,
           action: 'visual_screenshot',
@@ -780,7 +783,7 @@ export async function executeVisualTest(
 
       // Handle screenshot timeout
       if (captureResult.timedOut || !captureResult.buffer) {
-        console.error(`[Visual][Timeout] Screenshot capture timed out for test ${test.id} viewport ${viewport.id}`);
+        logger.error(`[Visual][Timeout] Screenshot capture timed out for test ${test.id} viewport ${viewport.id}`);
         stepResults.push({
           id: `visual_screenshot_${viewport.id}`,
           action: 'visual_screenshot',
@@ -832,7 +835,7 @@ export async function executeVisualTest(
             const datetimeResult = await getIgnoreRegionsFromSelectors(page, datetimeSelectors);
             combinedIgnoreRegions = [...combinedIgnoreRegions, ...datetimeResult.regions];
             datetimeMaskWarnings = datetimeResult.warnings;
-            console.log(`[Visual] Masked ${datetimeResult.regions.length} datetime regions from selectors`);
+            logger.info(`[Visual] Masked ${datetimeResult.regions.length} datetime regions from selectors`);
           }
         }
 
@@ -847,7 +850,7 @@ export async function executeVisualTest(
           const dynamicResult = await getIgnoreRegionsFromSelectors(page, dynamicContentSelectors);
           combinedIgnoreRegions = [...combinedIgnoreRegions, ...dynamicResult.regions];
           if (dynamicResult.regions.length > 0) {
-            console.log(`[Visual] Auto-masked ${dynamicResult.regions.length} dynamic content regions`);
+            logger.info(`[Visual] Auto-masked ${dynamicResult.regions.length} dynamic content regions`);
           }
         }
 
@@ -928,7 +931,7 @@ export async function executeVisualTest(
                 total_pixels: comparison.totalPixels || 0,
                 threshold: actualThreshold,
                 target_url: test.target_url,
-              }).catch(err => console.error('[WEBHOOK] Error sending visual diff webhook:', err));
+              }).catch(err => logger.error(`[WEBHOOK] Error sending visual diff webhook: ${err}`));
             }
           }
         }
@@ -1021,7 +1024,7 @@ export async function executeVisualTest(
     if (isBrowserCrash) {
       testStatus = 'error';
       testError = 'Browser process terminated unexpectedly - the browser crashed during test execution.';
-      console.error(`[Visual][BrowserCrash] Browser crashed during visual test ${test.id}: ${visualStepError}`);
+      logger.error(`[Visual][BrowserCrash] Browser crashed during visual test ${test.id}: ${visualStepError}`);
 
       const crashSuggestion = 'Try running the test again. If the crash persists, check if the target page has memory issues or reduce test parallelism.';
 

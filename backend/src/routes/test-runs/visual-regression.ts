@@ -15,6 +15,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PNG } from 'pngjs';
 import { IgnoreRegion } from '../test-suites.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:visual-regression');
 
 // Baselines directory for visual regression baseline screenshots
 export const BASELINES_DIR = path.join(process.cwd(), 'baselines');
@@ -124,9 +127,9 @@ function loadBaselineMetadata(): void {
       for (const [key, value] of Object.entries(data)) {
         baselineMetadataStore.set(key, value as BaselineMetadata);
       }
-      console.log(`[Visual] Loaded ${baselineMetadataStore.size} baseline metadata entries`);
+      logger.info(`[Visual] Loaded ${baselineMetadataStore.size} baseline metadata entries`);
     } catch (error) {
-      console.error('[Visual] Failed to load baseline metadata:', error);
+      logger.error(`[Visual] Failed to load baseline metadata: ${error}`);
     }
   }
 }
@@ -150,7 +153,7 @@ export function setBaselineMetadata(metadata: BaselineMetadata): void {
   const key = getBaselineMetadataKey(metadata.testId, metadata.viewportId, metadata.branch);
   baselineMetadataStore.set(key, metadata);
   saveBaselineMetadataToFile();
-  console.log(`[Visual] Saved baseline metadata for test ${metadata.testId} viewport ${metadata.viewportId} branch ${metadata.branch}`);
+  logger.info(`[Visual] Saved baseline metadata for test ${metadata.testId} viewport ${metadata.viewportId} branch ${metadata.branch}`);
 }
 
 // Get baseline metadata
@@ -177,9 +180,9 @@ function loadBaselineHistory(): void {
       for (const [key, value] of Object.entries(data)) {
         baselineHistoryStore.set(key, value as BaselineHistoryEntry[]);
       }
-      console.log(`[Visual] Loaded baseline history for ${baselineHistoryStore.size} tests`);
+      logger.info(`[Visual] Loaded baseline history for ${baselineHistoryStore.size} tests`);
     } catch (error) {
-      console.error('[Visual] Failed to load baseline history:', error);
+      logger.error(`[Visual] Failed to load baseline history: ${error}`);
     }
   }
 }
@@ -227,7 +230,7 @@ export function addBaselineHistoryEntry(entry: Omit<BaselineHistoryEntry, 'id' |
   baselineHistoryStore.set(key, history);
   saveBaselineHistoryToFile();
 
-  console.log(`[Visual] Added baseline history entry v${version} for test ${entry.testId} viewport ${entry.viewportId} branch ${branch}`);
+  logger.info(`[Visual] Added baseline history entry v${version} for test ${entry.testId} viewport ${entry.viewportId} branch ${branch}`);
   return historyEntry;
 }
 
@@ -273,7 +276,7 @@ export function getBaselinePath(testId: string, viewportId: string = 'default', 
 export function saveBaseline(testId: string, screenshotBuffer: Buffer, viewportId: string = 'default', branch: string = 'main'): { success: boolean; error?: string; isQuotaExceeded?: boolean; suggestions?: string[] } {
   const baselinePath = getBaselinePath(testId, viewportId, branch);
   fs.writeFileSync(baselinePath, screenshotBuffer);
-  console.log(`[Visual] Saved baseline for test ${testId} viewport ${viewportId} branch ${branch}`);
+  logger.info(`[Visual] Saved baseline for test ${testId} viewport ${viewportId} branch ${branch}`);
   return { success: true };
 }
 
@@ -300,7 +303,7 @@ export function loadBaselineWithValidation(testId: string, viewportId: string = 
     // Validate PNG signature (first 8 bytes)
     const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
     if (buffer.length < 8 || !buffer.subarray(0, 8).equals(PNG_SIGNATURE)) {
-      console.error(`[Visual][Corrupted] Baseline image has invalid PNG signature: ${baselinePath}`);
+      logger.error(`[Visual][Corrupted] Baseline image has invalid PNG signature: ${baselinePath}`);
       return {
         buffer: null,
         corrupted: true,
@@ -313,7 +316,7 @@ export function loadBaselineWithValidation(testId: string, viewportId: string = 
     try {
       PNG.sync.read(buffer);
     } catch (parseErr) {
-      console.error(`[Visual][Corrupted] Baseline image failed PNG parsing: ${baselinePath}`, parseErr);
+      logger.error(`[Visual][Corrupted] Baseline image failed PNG parsing: ${baselinePath} - ${parseErr}`);
       return {
         buffer: null,
         corrupted: true,
@@ -324,7 +327,7 @@ export function loadBaselineWithValidation(testId: string, viewportId: string = 
 
     return { buffer, corrupted: false, path: baselinePath };
   } catch (err) {
-    console.error(`[Visual][Corrupted] Failed to read baseline file: ${baselinePath}`, err);
+    logger.error(`[Visual][Corrupted] Failed to read baseline file: ${baselinePath} - ${err}`);
     return {
       buffer: null,
       corrupted: true,
@@ -476,9 +479,9 @@ function loadRejectionMetadata(): void {
       for (const [key, value] of Object.entries(data)) {
         rejectionMetadataStore.set(key, value as RejectionMetadata);
       }
-      console.log(`[Visual] Loaded ${rejectionMetadataStore.size} rejection metadata entries`);
+      logger.info(`[Visual] Loaded ${rejectionMetadataStore.size} rejection metadata entries`);
     } catch (error) {
-      console.error('[Visual] Failed to load rejection metadata:', error);
+      logger.error(`[Visual] Failed to load rejection metadata: ${error}`);
     }
   }
 }
@@ -502,7 +505,7 @@ export function setRejectionMetadata(metadata: RejectionMetadata): void {
   const key = getRejectionMetadataKey(metadata.runId, metadata.testId, metadata.viewportId);
   rejectionMetadataStore.set(key, metadata);
   saveRejectionMetadataToFile();
-  console.log(`[Visual] Saved rejection metadata for run ${metadata.runId} test ${metadata.testId} viewport ${metadata.viewportId}`);
+  logger.info(`[Visual] Saved rejection metadata for run ${metadata.runId} test ${metadata.testId} viewport ${metadata.viewportId}`);
 }
 
 // Get rejection metadata
@@ -573,7 +576,7 @@ export async function compareScreenshots(
 
     // Check dimensions match
     if (baselinePng.width !== currentPng.width || baselinePng.height !== currentPng.height) {
-      console.log(`[Visual] Dimension mismatch: baseline ${baselinePng.width}x${baselinePng.height}, current ${currentPng.width}x${currentPng.height}`);
+      logger.info(`[Visual] Dimension mismatch: baseline ${baselinePng.width}x${baselinePng.height}, current ${currentPng.width}x${currentPng.height}`);
       // Return as 100% different if dimensions don't match
       return {
         hasBaseline: true,
@@ -587,7 +590,7 @@ export async function compareScreenshots(
 
     // Apply ignore regions to both images if specified
     if (ignoreRegions && ignoreRegions.length > 0) {
-      console.log(`[Visual] Applying ${ignoreRegions.length} ignore region(s)`);
+      logger.info(`[Visual] Applying ${ignoreRegions.length} ignore region(s)`);
       applyIgnoreRegions(baselinePng, ignoreRegions);
       applyIgnoreRegions(currentPng, ignoreRegions);
     }
@@ -604,7 +607,7 @@ export async function compareScreenshots(
 
     // Log anti-aliasing settings if not using default
     if (effectiveTolerance !== 'off' || aaOptions?.colorThreshold !== undefined) {
-      console.log(`[Visual] Anti-aliasing tolerance: ${effectiveTolerance}, threshold: ${effectiveThreshold.toFixed(2)}`);
+      logger.info(`[Visual] Anti-aliasing tolerance: ${effectiveTolerance}, threshold: ${effectiveThreshold.toFixed(2)}`);
     }
 
     // Perform pixel-by-pixel comparison
@@ -630,7 +633,7 @@ export async function compareScreenshots(
     const diffBuffer = PNG.sync.write(diffPng);
     const diffImage = diffBuffer.toString('base64');
 
-    console.log(`[Visual] Comparison: ${mismatchedPixels} of ${totalPixels} pixels differ (${diffPercentage.toFixed(2)}%)`);
+    logger.info(`[Visual] Comparison: ${mismatchedPixels} of ${totalPixels} pixels differ (${diffPercentage.toFixed(2)}%)`);
 
     return {
       hasBaseline: true,
@@ -653,7 +656,7 @@ export async function compareScreenshots(
                               errorMessage.includes('bad header');
 
     if (isCorruptionError) {
-      console.error('[Visual][Corrupted] Baseline image corrupted or unreadable:', err);
+      logger.error(`[Visual][Corrupted] Baseline image corrupted or unreadable: ${err}`);
       return {
         hasBaseline: true,
         diffPercentage: 100,
@@ -662,7 +665,7 @@ export async function compareScreenshots(
       };
     }
 
-    console.error('[Visual] Error comparing screenshots:', err);
+    logger.error(`[Visual] Error comparing screenshots: ${err}`);
     return {
       hasBaseline: true,
       diffPercentage: 100,

@@ -22,6 +22,9 @@
 import { FastifyInstance } from 'fastify';
 import fs from 'fs';
 import path from 'path';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:test-simulation');
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import {
   setSimulatedStorageQuotaExceeded,
@@ -224,11 +227,11 @@ export function getCrashDumpsDir(): string {
 export async function testSimulationRoutes(app: FastifyInstance): Promise<void> {
   // Only register routes in non-production environments
   if (process.env.NODE_ENV === 'production') {
-    console.log('[Test Simulation] Routes disabled in production');
+    logger.info('[Test Simulation] Routes disabled in production');
     return;
   }
 
-  console.log('[Test Simulation] Registering development-only test simulation routes');
+  logger.info('[Test Simulation] Registering development-only test simulation routes');
 
   // ============================================
   // Visual Test Simulation Routes
@@ -305,7 +308,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
     preHandler: [authenticate],
   }, async (request, reply) => {
     simulatedBrowserCrashState.enabled = true;
-    console.log('[Visual] Browser crash simulation ENABLED');
+    logger.info('[Visual] Browser crash simulation ENABLED');
     return {
       success: true,
       message: 'Browser crash simulation enabled - next visual test will simulate a browser crash',
@@ -317,7 +320,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
     preHandler: [authenticate],
   }, async (request, reply) => {
     simulatedBrowserCrashState.enabled = false;
-    console.log('[Visual] Browser crash simulation DISABLED');
+    logger.info('[Visual] Browser crash simulation DISABLED');
     return {
       success: true,
       message: 'Browser crash simulation disabled',
@@ -417,7 +420,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
       scrollWidth: body.width || 1920,
       scrollHeight: body.height || 50000,
     };
-    console.log(`[Visual] Oversized page simulation ENABLED (${simulatedOversizedPageState.dimensions.width}x${simulatedOversizedPageState.dimensions.height})`);
+    logger.info(`[Visual] Oversized page simulation ENABLED (${simulatedOversizedPageState.dimensions.width}x${simulatedOversizedPageState.dimensions.height})`);
     return {
       success: true,
       message: 'Oversized page simulation enabled - next visual test will simulate an oversized page',
@@ -430,7 +433,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
     preHandler: [authenticate],
   }, async (request, reply) => {
     simulatedOversizedPageState.enabled = false;
-    console.log('[Visual] Oversized page simulation DISABLED');
+    logger.info('[Visual] Oversized page simulation DISABLED');
     return {
       success: true,
       message: 'Oversized page simulation disabled',
@@ -466,7 +469,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
       errorType: errorType as 'dns_resolution' | 'connection_timeout' | 'connection_refused' | 'ssl_error' | 'unreachable',
       ...(errorType === 'ssl_error' ? { sslErrorCode: sslErrorCode as 'CERT_HAS_EXPIRED' | 'CERT_AUTHORITY_INVALID' | 'CERT_COMMON_NAME_INVALID' | 'CERT_REVOKED' | 'SSL_VERSION_OR_CIPHER_MISMATCH' | 'CERT_WEAK_KEY' } : {}),
     };
-    console.log(`[Lighthouse] Unreachable URL simulation ENABLED (errorType: ${errorType}${errorType === 'ssl_error' ? `, sslErrorCode: ${sslErrorCode}` : ''})`);
+    logger.info(`[Lighthouse] Unreachable URL simulation ENABLED (errorType: ${errorType}${errorType === 'ssl_error' ? `, sslErrorCode: ${sslErrorCode}` : ''})`);
 
     return {
       success: true,
@@ -481,7 +484,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
     preHandler: [authenticate],
   }, async (request, reply) => {
     simulatedLighthouseError = { enabled: false };
-    console.log('[Lighthouse] Unreachable URL simulation DISABLED');
+    logger.info('[Lighthouse] Unreachable URL simulation DISABLED');
     return {
       success: true,
       message: 'Unreachable URL simulation disabled',
@@ -507,7 +510,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
       enabled: true,
       redirectUrl: redirectUrl || 'http://localhost:5173/login',
     };
-    console.log(`[Lighthouse] Auth redirect simulation ENABLED, will redirect to: ${simulatedAuthRedirect.redirectUrl}`);
+    logger.info(`[Lighthouse] Auth redirect simulation ENABLED, will redirect to: ${simulatedAuthRedirect.redirectUrl}`);
     return {
       success: true,
       message: 'Auth redirect simulation enabled',
@@ -519,7 +522,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
     preHandler: [authenticate],
   }, async (request, reply) => {
     simulatedAuthRedirect = { enabled: false };
-    console.log('[Lighthouse] Auth redirect simulation DISABLED');
+    logger.info('[Lighthouse] Auth redirect simulation DISABLED');
     return {
       success: true,
       message: 'Auth redirect simulation disabled',
@@ -543,7 +546,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
         enabled: true,
         partialMetrics: partialMetrics || undefined,
       };
-      console.log('[Lighthouse] Audit timeout simulation ENABLED', { partialMetrics });
+      logger.info(`[Lighthouse] Audit timeout simulation ENABLED with partialMetrics: ${JSON.stringify(partialMetrics)}`);
       return {
         success: true,
         message: 'Audit timeout simulation enabled',
@@ -556,7 +559,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
     preHandler: [authenticate],
   }, async (request, reply) => {
     simulatedAuditTimeout = { enabled: false };
-    console.log('[Lighthouse] Audit timeout simulation DISABLED');
+    logger.info('[Lighthouse] Audit timeout simulation DISABLED');
     return {
       success: true,
       message: 'Audit timeout simulation disabled',
@@ -578,7 +581,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
       enabled: true,
       retryCount: 0,
     };
-    console.log('[Lighthouse] Browser crash simulation ENABLED');
+    logger.info('[Lighthouse] Browser crash simulation ENABLED');
     return {
       success: true,
       message: 'Browser crash simulation enabled - next Lighthouse audit will simulate a browser crash',
@@ -590,7 +593,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
     preHandler: [authenticate],
   }, async (request, reply) => {
     simulatedLighthouseBrowserCrash = { enabled: false };
-    console.log('[Lighthouse] Browser crash simulation DISABLED');
+    logger.info('[Lighthouse] Browser crash simulation DISABLED');
     return {
       success: true,
       message: 'Browser crash simulation disabled',
@@ -613,7 +616,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
       enabled: true,
       contentType: contentType || 'application/json',
     };
-    console.log(`[Lighthouse] Non-HTML response simulation ENABLED with content type: ${simulatedLighthouseNonHtmlResponse.contentType}`);
+    logger.info(`[Lighthouse] Non-HTML response simulation ENABLED with content type: ${simulatedLighthouseNonHtmlResponse.contentType}`);
     return {
       success: true,
       message: `Non-HTML response simulation enabled - next Lighthouse audit will simulate a ${simulatedLighthouseNonHtmlResponse.contentType} response`,
@@ -625,7 +628,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
     preHandler: [authenticate],
   }, async (request, reply) => {
     simulatedLighthouseNonHtmlResponse = { enabled: false };
-    console.log('[Lighthouse] Non-HTML response simulation DISABLED');
+    logger.info('[Lighthouse] Non-HTML response simulation DISABLED');
     return {
       success: true,
       message: 'Non-HTML response simulation disabled',
@@ -706,7 +709,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
           functionName: functionName,
         },
       };
-      console.log(`[K6] Enabled runtime error simulation: ${simulatedK6RuntimeError.errorType}`);
+      logger.info(`[K6] Enabled runtime error simulation: ${simulatedK6RuntimeError.errorType}`);
       return {
         message: 'K6 runtime error simulation enabled',
         errorType: simulatedK6RuntimeError.errorType,
@@ -719,7 +722,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
     preHandler: [authenticate],
   }, async (request, reply) => {
     simulatedK6RuntimeError = { enabled: false };
-    console.log(`[K6] Disabled runtime error simulation`);
+    logger.info(`[K6] Disabled runtime error simulation`);
     return { message: 'K6 runtime error simulation disabled' };
   });
 
@@ -740,7 +743,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
         errorType: errorType || 'connection_refused',
         failureRate: failureRate ?? 95, // Default 95% failure rate
       };
-      console.log(`[K6] Enabled server unavailable simulation: ${simulatedK6ServerUnavailable.errorType} with ${simulatedK6ServerUnavailable.failureRate}% failure rate`);
+      logger.info(`[K6] Enabled server unavailable simulation: ${simulatedK6ServerUnavailable.errorType} with ${simulatedK6ServerUnavailable.failureRate}% failure rate`);
       return {
         message: 'K6 server unavailable simulation enabled',
         errorType: simulatedK6ServerUnavailable.errorType,
@@ -753,7 +756,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
     preHandler: [authenticate],
   }, async (request, reply) => {
     simulatedK6ServerUnavailable = { enabled: false };
-    console.log(`[K6] Disabled server unavailable simulation`);
+    logger.info(`[K6] Disabled server unavailable simulation`);
     return { message: 'K6 server unavailable simulation disabled' };
   });
 
@@ -775,7 +778,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
         abortAfterPercent: abortAfterPercent ?? 65,
         peakUsage: peakUsage,
       };
-      console.log(`[K6] Enabled resource exhaustion simulation: ${simulatedK6ResourceExhaustion.resourceType} at ${simulatedK6ResourceExhaustion.abortAfterPercent}%`);
+      logger.info(`[K6] Enabled resource exhaustion simulation: ${simulatedK6ResourceExhaustion.resourceType} at ${simulatedK6ResourceExhaustion.abortAfterPercent}%`);
       return {
         message: 'K6 resource exhaustion simulation enabled',
         resourceType: simulatedK6ResourceExhaustion.resourceType,
@@ -788,7 +791,7 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
     preHandler: [authenticate],
   }, async (request, reply) => {
     simulatedK6ResourceExhaustion = { enabled: false };
-    console.log(`[K6] Disabled resource exhaustion simulation`);
+    logger.info(`[K6] Disabled resource exhaustion simulation`);
     return { message: 'K6 resource exhaustion simulation disabled' };
   });
 
@@ -798,5 +801,5 @@ export async function testSimulationRoutes(app: FastifyInstance): Promise<void> 
     return { simulatedResourceExhaustion: simulatedK6ResourceExhaustion };
   });
 
-  console.log('[Test Simulation] Registered all development-only test simulation routes');
+  logger.info('[Test Simulation] Registered all development-only test simulation routes');
 }

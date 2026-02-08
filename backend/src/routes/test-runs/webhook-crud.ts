@@ -19,6 +19,9 @@ import {
 } from './webhooks.js';
 import { validateWebhookURL, validateWebhookURLWithDNS, generateId } from '../../utils/index.js';
 import { WebhookLogEntry, webhookLog } from './alerts.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:webhook-crud');
 
 /**
  * Log webhook delivery details for debugging and monitoring
@@ -180,7 +183,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       });
     }
 
-    console.log(`[WEBHOOK] Testing URL "${url}" by ${user.email}`);
+    logger.info(`[WEBHOOK] Testing URL "${url}" by ${user.email}`);
 
     const startTime = Date.now();
     const deliveryId = generateId('test-url', 7); // Feature #357: Use shared ID generator
@@ -475,7 +478,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     // Feature #329: Create subscription in both memory and database
     await createWebhookSubscriptionInDb(subscription);
 
-    console.log(`[WEBHOOK] Created subscription "${name}" (${id}) by ${user.email}`);
+    logger.info(`[WEBHOOK] Created subscription "${name}" (${id}) by ${user.email}`);
 
     return {
       id: subscription.id,
@@ -713,7 +716,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     // Feature #329: Update subscription in both memory and database
     await updateWebhookSubscriptionInDb(subscriptionId, subscription);
 
-    console.log(`[WEBHOOK] Updated subscription "${subscription.name}" (${subscriptionId}) by ${user.email}`);
+    logger.info(`[WEBHOOK] Updated subscription "${subscription.name}" (${subscriptionId}) by ${user.email}`);
 
     return {
       id: subscription.id,
@@ -753,7 +756,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     // Feature #329: Delete subscription from both memory and database
     await deleteWebhookSubscriptionFromDb(subscriptionId);
 
-    console.log(`[WEBHOOK] Deleted subscription "${subscription.name}" (${subscriptionId}) by ${user.email}`);
+    logger.info(`[WEBHOOK] Deleted subscription "${subscription.name}" (${subscriptionId}) by ${user.email}`);
 
     return {
       message: 'Webhook subscription deleted successfully',

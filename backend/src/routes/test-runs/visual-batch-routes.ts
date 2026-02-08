@@ -27,6 +27,9 @@ import { testRuns, TestRun } from './execution.js';
 import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg, ListTestRunsByOrgOptions } from '../../services/repositories/test-runs.js';
 // Feature #88: Redis caching for pending count
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:visual-batch');
 
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
@@ -483,10 +486,10 @@ export async function visualBatchRoutes(app: FastifyInstance) {
         targetRun.status = 'visual_approved';
         testRuns.set(runId, targetRun);
 
-        console.log(`[Visual] Batch: Visual changes approved for test ${testId} by ${user?.email || 'unknown'} from run ${runId}`);
+        logger.info({ testId, userEmail: user?.email || 'unknown', runId }, 'Batch: Visual changes approved');
         results.push({ runId, testId, success: true });
       } catch (error) {
-        console.error(`[Visual] Batch approve error for test ${testId}:`, error);
+        logger.error({ testId, error }, 'Batch approve error');
         results.push({ runId, testId, success: false, error: 'Internal error' });
       }
     }
@@ -562,10 +565,10 @@ export async function visualBatchRoutes(app: FastifyInstance) {
         targetRun.status = 'visual_rejected';
         testRuns.set(runId, targetRun);
 
-        console.log(`[Visual] Batch: Visual changes rejected for test ${testId} by ${user?.email || 'unknown'} from run ${runId}${reason ? ` with reason: ${reason}` : ''}`);
+        logger.info({ testId, userEmail: user?.email || 'unknown', runId, reason: reason || undefined }, 'Batch: Visual changes rejected');
         results.push({ runId, testId, success: true });
       } catch (error) {
-        console.error(`[Visual] Batch reject error for test ${testId}:`, error);
+        logger.error({ testId, error }, 'Batch reject error');
         results.push({ runId, testId, success: false, error: 'Internal error' });
       }
     }

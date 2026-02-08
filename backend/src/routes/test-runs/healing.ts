@@ -8,6 +8,9 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { getTest, updateTest } from '../test-suites.js';
 import { getProjectHealingSettings } from '../projects.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:healing');
 
 // Socket.IO reference (set from test-runs.ts)
 let io: SocketIOServer | null = null;
@@ -19,7 +22,7 @@ export function setHealingSocketIO(socketIO: SocketIOServer) {
 // Feature #1055: Auto-healing configuration
 // Feature #1062: Project-level thresholds take precedence, this is the global fallback
 const DEFAULT_AUTO_HEAL_CONFIDENCE_THRESHOLD = parseFloat(process.env.AUTO_HEAL_THRESHOLD || '0.85');
-console.log(`[Healing] Default auto-heal confidence threshold: ${DEFAULT_AUTO_HEAL_CONFIDENCE_THRESHOLD}`);
+logger.info(`[Healing] Default auto-heal confidence threshold: ${DEFAULT_AUTO_HEAL_CONFIDENCE_THRESHOLD}`);
 
 // Feature #1062: Helper to get auto-heal threshold for a project
 export async function getAutoHealThreshold(projectId: string | null): Promise<number> {
@@ -101,7 +104,7 @@ export async function waitForHealingApproval(
   if (io) {
     io.to(`run:${approval.runId}`).emit('healing_approval_required', approval);
     io.to(`org:${orgId}`).emit('healing_approval_required', approval);
-    console.log(`[HEALING] Approval required - emitted to run:${approval.runId} and org:${orgId}`);
+    logger.info(`[HEALING] Approval required - emitted to run:${approval.runId} and org:${orgId}`);
   }
 
   // Create promise that resolves when approved/rejected or times out
@@ -110,7 +113,7 @@ export async function waitForHealingApproval(
       // Timeout - treat as rejection
       healingApprovalResolvers.delete(approval.id);
       pendingHealingApprovals.delete(approval.id);
-      console.log(`[HEALING] Approval timeout for ${approval.id}`);
+      logger.info(`[HEALING] Approval timeout for ${approval.id}`);
       resolve(false);
     }, timeoutMs);
 
@@ -124,7 +127,7 @@ export function resolveHealingApproval(approvalId: string, approved: boolean, us
   const approval = pendingHealingApprovals.get(approvalId);
 
   if (!resolver || !approval) {
-    console.log(`[HEALING] No pending approval found for ${approvalId}`);
+    logger.info(`[HEALING] No pending approval found for ${approvalId}`);
     return false;
   }
 
@@ -140,7 +143,7 @@ export function resolveHealingApproval(approvalId: string, approved: boolean, us
   healingApprovalResolvers.delete(approvalId);
   pendingHealingApprovals.delete(approvalId);
 
-  console.log(`[HEALING] Approval ${approvalId} ${approved ? 'APPROVED' : 'REJECTED'} by ${userId || 'system'}`);
+  logger.info(`[HEALING] Approval ${approvalId} ${approved ? 'APPROVED' : 'REJECTED'} by ${userId || 'system'}`);
 
   // Resolve the waiting promise
   resolver.resolve(approved);
@@ -256,7 +259,7 @@ export function recordHealingEvent(
   history.push(entry);
   healingEventHistory.set(testId, history);
 
-  console.log(`[HEALING] Event recorded for test ${testId} step ${stepIndex}: ${strategy}${domContext ? ` (${domContext.changeType})` : ''}`);
+  logger.info(`[HEALING] Event recorded for test ${testId} step ${stepIndex}: ${strategy}${domContext ? ` (${domContext.changeType})` : ''}`);
   return entry;
 }
 
@@ -294,7 +297,7 @@ export function recordSuccessfulHeal(
   if (io) {
     io.to(`run:${runId}`).emit('healing_update_available', record);
     io.to(`org:${orgId}`).emit('healing_update_available', record);
-    console.log(`[HEALING] Update available - emitted for test ${testId} step ${stepIndex}`);
+    logger.info(`[HEALING] Update available - emitted for test ${testId} step ${stepIndex}`);
   }
 
   return record;
@@ -354,8 +357,8 @@ export async function applyHealedSelector(
   record.appliedAt = new Date().toISOString();
   pendingHealingUpdates.set(healingId, record);
 
-  console.log(`[HEALING] Applied healed selector to test ${record.testId} step ${record.stepIndex}`);
-  console.log(`[HEALING] Old: ${record.originalSelector} -> New: ${record.healedSelector}`);
+  logger.info(`[HEALING] Applied healed selector to test ${record.testId} step ${record.stepIndex}`);
+  logger.info(`[HEALING] Old: ${record.originalSelector} -> New: ${record.healedSelector}`);
 
   return { success: true };
 }

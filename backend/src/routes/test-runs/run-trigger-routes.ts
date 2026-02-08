@@ -18,6 +18,9 @@ import { testRuns, BrowserType, TestRun, TestType, createTestRun as dbCreateTest
 import { getCache, CacheKeys } from '../../services/cache.js';
 // Feature #155: Execution queue for concurrency limits
 import { enqueueOrExecute } from '../../services/execution-queue.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:run-trigger');
 
 // Type definitions for route params/body
 interface RunParams {
@@ -107,7 +110,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
 
       // Persist to database so the run appears in history and survives server restarts
       dbCreateTestRun(run).catch(err =>
-        console.error('[RunTrigger] Failed to persist test run to database:', err)
+        logger.error('[RunTrigger] Failed to persist test run to database:', err)
       );
 
       // Feature #61: Invalidate runs cache for this suite
@@ -124,7 +127,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       if (queueResult.queued) {
         run.status = 'pending'; // pending = waiting in queue
         testRuns.set(id, run);
-        console.log(`[RunTrigger] Run ${id} queued at position ${queueResult.position || 'unknown'}`);
+        logger.info(`[RunTrigger] Run ${id} queued at position ${queueResult.position || 'unknown'}`);
       }
 
       return reply.status(201).send({
@@ -184,7 +187,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
 
       // Persist to database so the run appears in history and survives server restarts
       dbCreateTestRun(run).catch(err =>
-        console.error('[RunTrigger] Failed to persist test run to database:', err)
+        logger.error('[RunTrigger] Failed to persist test run to database:', err)
       );
 
       // Feature #61: Invalidate runs cache for this test and suite
@@ -203,7 +206,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       if (queueResult.queued) {
         run.status = 'pending';
         testRuns.set(id, run);
-        console.log(`[RunTrigger] Run ${id} queued at position ${queueResult.position || 'unknown'}`);
+        logger.info(`[RunTrigger] Run ${id} queued at position ${queueResult.position || 'unknown'}`);
       }
 
       return reply.status(201).send({
@@ -280,7 +283,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
 
       // Persist to database
       dbCreateTestRun(rerunRun).catch(err =>
-        console.error('[RunTrigger] Failed to persist rerun to database:', err)
+        logger.error('[RunTrigger] Failed to persist rerun to database:', err)
       );
 
       // Feature #61: Invalidate runs cache for the suite and all rerun tests
@@ -296,7 +299,7 @@ export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
       });
 
       if (queueResult.queued) {
-        console.log(`[RunTrigger] Rerun ${id} queued at position ${queueResult.position || 'unknown'}`);
+        logger.info(`[RunTrigger] Rerun ${id} queued at position ${queueResult.position || 'unknown'}`);
       }
 
       return reply.status(201).send({

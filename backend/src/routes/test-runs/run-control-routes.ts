@@ -8,6 +8,9 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { testRuns, runningBrowsers, TestRun } from './execution.js';
 import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg, updateTestRun as dbUpdateTestRun } from '../../services/repositories/test-runs.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('route:test-runs:run-control');
 
 // Helper: get test run from Map first, then fall back to DB
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
@@ -82,7 +85,7 @@ export async function runControlRoutes(app: FastifyInstance) {
 
     // If force mode and already cancelling, force to cancelled immediately
     if (run.status === 'cancelling' && force) {
-      console.log(`[CANCEL] Force cancelling already-cancelling run ${runId}`);
+      logger.info(`[CANCEL] Force cancelling already-cancelling run ${runId}`);
     } else if (run.status === 'cancelling') {
       // Already cancelling, return current state
       return {
@@ -99,7 +102,7 @@ export async function runControlRoutes(app: FastifyInstance) {
     if (run.status !== 'cancelling') {
       run.status = 'cancelling';
       testRuns.set(runId, run);
-      console.log(`[CANCEL] Test run ${runId} status changed to 'cancelling' (force=${force}, reason=${reason || 'none'})`);
+      logger.info(`[CANCEL] Test run ${runId} status changed to 'cancelling' (force=${force}, reason=${reason || 'none'})`);
     }
 
     // Emit cancelling event
@@ -114,7 +117,7 @@ export async function runControlRoutes(app: FastifyInstance) {
     const runState = runningBrowsers.get(runId);
     if (runState) {
       runState.cancelled = true;
-      console.log(`[CANCEL] Test run ${runId} marked for cancellation`);
+      logger.info(`[CANCEL] Test run ${runId} marked for cancellation`);
 
       // Close browser to force stop execution
       try {
@@ -140,7 +143,7 @@ export async function runControlRoutes(app: FastifyInstance) {
       // Feature #885: Optionally clear partial results if save_partial_results is false
       const partialResultsCount = updatedRun.results?.length || 0;
       if (!save_partial_results && updatedRun.results) {
-        console.log(`[CANCEL] Clearing ${partialResultsCount} partial results for run ${runId}`);
+        logger.info(`[CANCEL] Clearing ${partialResultsCount} partial results for run ${runId}`);
         updatedRun.results = [];
       }
 
@@ -153,10 +156,10 @@ export async function runControlRoutes(app: FastifyInstance) {
         duration_ms: updatedRun.duration_ms,
         results: updatedRun.results,
       }).catch(err =>
-        console.error('[Cancel] Failed to persist cancelled run to database:', err)
+        logger.error('[Cancel] Failed to persist cancelled run to database:', err)
       );
 
-      console.log(`[CANCEL] Test run ${runId} status changed to 'cancelled' (saved ${save_partial_results ? partialResultsCount : 0} partial results)`);
+      logger.info(`[CANCEL] Test run ${runId} status changed to 'cancelled' (saved ${save_partial_results ? partialResultsCount : 0} partial results)`);
 
       // Emit cancellation complete event
       emitRunEvent(runId, orgId, 'run-complete', {
@@ -220,7 +223,7 @@ export async function runControlRoutes(app: FastifyInstance) {
     // Mark the run as paused
     run.status = 'paused';
     testRuns.set(runId, run);
-    console.log(`[PAUSE] Test run ${runId} paused`);
+    logger.info(`[PAUSE] Test run ${runId} paused`);
 
     // Mark the browser state as paused
     const runState = runningBrowsers.get(runId);
@@ -274,7 +277,7 @@ export async function runControlRoutes(app: FastifyInstance) {
     // Mark the run as running again
     run.status = 'running';
     testRuns.set(runId, run);
-    console.log(`[RESUME] Test run ${runId} resumed`);
+    logger.info(`[RESUME] Test run ${runId} resumed`);
 
     // Mark the browser state as not paused
     const runState = runningBrowsers.get(runId);
@@ -431,7 +434,7 @@ export async function runControlRoutes(app: FastifyInstance) {
     run.priority = priority;
     testRuns.set(runId, run);
 
-    console.log(`[PRIORITY] Test run ${runId} priority changed from ${oldPriority} to ${priority}`);
+    logger.info(`[PRIORITY] Test run ${runId} priority changed from ${oldPriority} to ${priority}`);
 
     // Get new queue position
     const pendingRuns = Array.from(testRuns.entries())
