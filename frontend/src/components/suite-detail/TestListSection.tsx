@@ -18,6 +18,24 @@ import { EmptyStates } from '../ui/EmptyState';
 type LocalSortField = 'name' | 'status' | 'last_run' | 'last_result' | 'run_count' | 'avg_duration';
 type LocalSortDirection = 'asc' | 'desc';
 
+// Suite run result for test status tracking (minimal interface for what TestListSection needs)
+interface SuiteRunResult {
+  test_id: string;
+  status: 'passed' | 'failed' | 'error' | 'running' | 'skipped';
+  // Optional fields that may come from parent
+  test_name?: string;
+  duration_ms?: number;
+}
+
+// Suite run state passed from parent
+interface SuiteRun {
+  id: string;
+  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
+  started_at?: string;
+  duration_ms?: number;
+  results?: SuiteRunResult[];
+}
+
 interface TestListSectionProps {
  tests: TestType[];
  filteredTests: TestType[];
@@ -25,7 +43,7 @@ interface TestListSectionProps {
  searchQuery: string;
  sortField: LocalSortField | null;
  sortDirection: LocalSortDirection;
- suiteRun: any;
+ suiteRun: SuiteRun | null;
  openActionsDropdown: string | null;
  runningTestId: string | null;
  canCreateTest: boolean;
@@ -185,7 +203,7 @@ interface VirtualizedTestListProps {
  sortedTests: TestType[];
  sortField: LocalSortField | null;
  sortDirection: LocalSortDirection;
- suiteRun: any;
+ suiteRun: SuiteRun | null;
  openActionsDropdown: string | null;
  runningTestId: string | null;
  onSort: (field: LocalSortField) => void;
@@ -300,9 +318,9 @@ function VirtualizedTestList({
  {virtualizer.getVirtualItems().map((virtualRow) => {
  const test = sortedTests[virtualRow.index];
  // Feature #1959: Check run status for this test
- const testResult = suiteRun?.results?.find((r: any) => r.test_id === test.id);
+ const testResult = suiteRun?.results?.find((r: SuiteRunResult) => r.test_id === test.id);
  const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && suiteRun?.results?.length < tests.length;
- const completedTestIds = suiteRun?.results?.map((r: any) => r.test_id) || [];
+ const completedTestIds = suiteRun?.results?.map((r: SuiteRunResult) => r.test_id) || [];
  const currentTestIndex = completedTestIds.length;
  const testsInOrder = tests.map(t => t.id);
  const isThisTestRunning = isCurrentlyRunning && testsInOrder[currentTestIndex] === test.id;
@@ -599,9 +617,9 @@ function VirtualizedTestList({
  <div>
  {sortedTests.map((test) => {
  // Feature #1959: Check run status for this test
- const testResult = suiteRun?.results?.find((r: any) => r.test_id === test.id);
+ const testResult = suiteRun?.results?.find((r: SuiteRunResult) => r.test_id === test.id);
  const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && suiteRun?.results?.length < tests.length;
- const completedTestIds = suiteRun?.results?.map((r: any) => r.test_id) || [];
+ const completedTestIds = suiteRun?.results?.map((r: SuiteRunResult) => r.test_id) || [];
  const currentTestIndex = completedTestIds.length;
  const testsInOrder = tests.map(t => t.id);
  const isThisTestRunning = isCurrentlyRunning && testsInOrder[currentTestIndex] === test.id;

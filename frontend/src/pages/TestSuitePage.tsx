@@ -21,12 +21,32 @@ import {
   useStartRun, useCancelRun, useStartSuiteRun, useDeleteSuite,
 } from '../hooks/api';
 import {
-  TestType, DeleteSuiteModal, DeleteTestModal,
+  TestType, TestStep, DeleteSuiteModal, DeleteTestModal,
   ImportTestsModal, EditSelectorModal, ExpandedScreenshotModal, InsertTemplateModal,
   GeneratedTestPreviewModal, RecordTestModal, ReviewRecordedTestModal,
   ParallelizationPanel, SuiteHeaderActions, HumanReviewPanel, SuiteRunResults,
   TestListSection, useRecordingState, EditSelectorModalState,
 } from '../components/suite-detail';
+
+// Suite run result for test status tracking (compatible with both SuiteRunResults and TestListSection)
+interface SuiteRunResultLocal {
+  test_id: string;
+  test_name: string;
+  test_type?: string;
+  status: 'passed' | 'failed' | 'error' | 'running' | 'skipped';
+  duration_ms: number;
+  error?: string;
+  diff_percentage?: number;
+}
+
+// Suite run state - matches component expectations
+interface SuiteRunLocal {
+  id: string;
+  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
+  started_at?: string;
+  duration_ms?: number;
+  results?: SuiteRunResultLocal[];
+}
 
 function TestSuitePage() {
   const { suiteId } = useParams<{ suiteId: string }>();
@@ -58,10 +78,13 @@ function TestSuitePage() {
   // Extract data from React Query responses
   const suite = suiteData?.suite || null;
   // Feature #59: Map API response to TestType format (API returns test_type, component expects type)
-  const tests: TestType[] = (testsData?.tests || testsData?.data || []).map((t: any) => ({
+  const tests: TestType[] = (testsData?.tests || testsData?.data || []).map((t) => ({
     ...t,
-    type: t.type || t.test_type || 'e2e', // Ensure type field exists
-  }));
+    type: (t.test_type || 'e2e') as TestType['type'], // Ensure type field exists
+    test_type: t.test_type || 'e2e',
+    status: t.status as TestType['status'], // Cast status to compatible type
+    review_status: t.review_status as TestType['review_status'], // Cast review_status
+  })) as TestType[];
   const pagination = testsData?.pagination;
 
   // Project state - loaded separately after suite loads
@@ -131,7 +154,7 @@ function TestSuitePage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isRunningSuite, setIsRunningSuite] = useState(false);
   const [isCancellingSuite, setIsCancellingSuite] = useState(false);
-  const [suiteRun, setSuiteRun] = useState<any>(null);
+  const [suiteRun, setSuiteRun] = useState<SuiteRunLocal | null>(null);
   const [suiteRunPolling, setSuiteRunPolling] = useState(false);
 
   // Feature #1257: Dynamic Test Parallelization state
@@ -173,7 +196,7 @@ function TestSuitePage() {
   // Feature #50: Visual recorder state moved to useRecordingState hook (saves ~55 lines)
   // Feature #31: Step Templates state (kept here as not part of recording hook)
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [stepTemplates, setStepTemplates] = useState<Array<{ id: string; name: string; description?: string; steps: any[]; tags: string[]; created_at: string }>>([]);
+  const [stepTemplates, setStepTemplates] = useState<Array<{ id: string; name: string; description?: string; steps: Array<{ action: string; selector?: string; value?: string; text?: string; url?: string }>; tags: string[]; created_at: string }>>([]);
   const [insertTemplateForTest, setInsertTemplateForTest] = useState<string | null>(null);
 
   // Feature #35: Live screenshot streaming during test execution
@@ -575,7 +598,7 @@ function TestSuitePage() {
 
     try {
       await cancelRunMutation.mutateAsync(suiteRun.id);
-      setSuiteRun((prev: any) => ({ ...prev, status: 'cancelled' }));
+      setSuiteRun((prev) => prev ? { ...prev, status: 'cancelled' as const } : null);
       setSuiteRunPolling(false);
       setIsRunningSuite(false);
       toast.success('Test run cancelled');
@@ -816,7 +839,7 @@ function TestSuitePage() {
   };
 
   // Feature #31: Insert template steps into an existing test
-  const handleInsertTemplate = async (testId: string, template: { steps: any[] }) => {
+  const handleInsertTemplate = async (testId: string, template: { steps: Array<{ action: string; selector?: string; value?: string; text?: string; url?: string }> }) => {
     try {
       const response = await fetch(`/api/v1/tests/${testId}/append-steps`, {
         method: 'POST',

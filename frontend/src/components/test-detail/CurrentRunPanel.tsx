@@ -102,8 +102,19 @@ export function CurrentRunPanel({
  });
  };
 
+ /** Accessibility violation shape for filtering */
+ interface AccessibilityViolationItem {
+  id?: string;
+  impact?: string;
+  description?: string;
+  help?: string;
+  tags?: string[];
+  helpUrl?: string;
+  nodes?: Array<{ html: string; target: string[] }>;
+ }
+
  // Filter violations based on impact and category
- const filterViolations = (violations: any[]) => {
+ const filterViolations = (violations: AccessibilityViolationItem[]) => {
  return violations.filter(v => {
  const matchesImpact = violationImpactFilter === 'all' || v.impact === violationImpactFilter;
  const matchesCategory = violationCategoryFilter === 'all' ||
@@ -117,7 +128,7 @@ export function CurrentRunPanel({
  };
 
  // Get unique categories from violations
- const getViolationCategories = (violations: any[]) => {
+ const getViolationCategories = (violations: AccessibilityViolationItem[]) => {
  const categories = new Set<string>();
  violations.forEach(v => {
  if (v.tags) {
@@ -501,12 +512,52 @@ function K6LiveMetrics({ k6Metrics, virtualUsers }: K6LiveMetricsProps) {
 // Placeholder for TestResultItem - This component handles individual test results
 // Due to its complexity (Lighthouse, Accessibility, E2E, K6 results), it will be
 // implemented in a separate file: TestResultItem.tsx
+
+/** Lighthouse history entry for trend charts */
+interface LighthouseHistoryEntry {
+ run_id: string;
+ started_at: string;
+ performance: number;
+ accessibility: number;
+ bestPractices: number;
+ seo: number;
+ lcp?: number;
+ fcp?: number;
+ cls?: number;
+ inp?: number;
+ tbt?: number;
+ ttfb?: number;
+ speedIndex?: number;
+}
+
+/** Accessibility violation for filtering */
+interface ViolationItem {
+ id?: string;
+ impact?: string;
+ description?: string;
+ help?: string;
+ tags?: string[];
+ helpUrl?: string;
+ nodes?: Array<{ html: string; target: string[] }>;
+}
+
+/** Test result for a single test within a run */
+interface TestResultData {
+ test_id: string;
+ test_name?: string;
+ status: 'passed' | 'failed' | 'running' | 'pending' | 'error' | 'warning' | 'skipped';
+ duration_ms?: number;
+ error?: string;
+ steps?: StepResult[];
+ screenshot_base64?: string;
+}
+
 interface TestResultItemProps {
- result: any;
+ result: TestResultData;
  test: TestType | null;
  currentRun: TestRunType;
  formatDateTime: (date: string | Date) => string;
- lighthouseHistory: any[];
+ lighthouseHistory: LighthouseHistoryEntry[];
  expandedViolations: Set<string>;
  violationImpactFilter: string;
  violationCategoryFilter: string;
@@ -515,8 +566,8 @@ interface TestResultItemProps {
  onSetViolationImpactFilter: (filter: string) => void;
  onSetViolationCategoryFilter: (filter: string) => void;
  onSetViolationSearchQuery: (query: string) => void;
- filterViolations: (violations: any[]) => any[];
- getViolationCategories: (violations: any[]) => string[];
+ filterViolations: (violations: ViolationItem[]) => ViolationItem[];
+ getViolationCategories: (violations: ViolationItem[]) => string[];
  getImpactColor: (impact: string) => string;
  getLighthouseScoreColor: (score: number) => string;
  onApproveBaseline: (runId: string, testId: string, viewport?: string) => void;

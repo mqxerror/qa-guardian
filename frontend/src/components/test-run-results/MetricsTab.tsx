@@ -8,8 +8,45 @@
  */
 
 import React from 'react';
-import { TestResult, K6ActiveTab, K6ActiveChart, LighthouseActiveTab, K6ExportFormat } from './types';
+import { TestResult, K6ActiveTab, K6ActiveChart, LighthouseActiveTab, K6ExportFormat, LighthouseResult, LoadTestResult } from './types';
 import { LighthouseResultCard, K6ResultCard } from './metrics';
+
+// Typed interfaces for opportunities, diagnostics, and passed audits after transformation
+interface TransformedOpportunity {
+  id: string;
+  title: string;
+  savings: string;
+  details: string;
+}
+
+interface TransformedDiagnostic {
+  id: string;
+  title: string;
+  details: string;
+}
+
+interface TransformedPassedAudit {
+  id: string;
+  title: string;
+  details: string;
+  category: string;
+}
+
+// K6 time series data point
+interface K6TimeSeriesPoint {
+  time: string;
+  vus: number;
+  rps: number;
+  avg_response_time: number;
+  p95_response_time: number;
+}
+
+// Response time histogram bucket
+interface ResponseTimeHistogramBucket {
+  range: string;
+  count: number;
+  percentage: number;
+}
 
 // Props interface for MetricsTab
 export interface MetricsTabProps {
@@ -63,12 +100,12 @@ export interface MetricsTabProps {
   perfAIAnalysisOpen: string | null;
 
   // Handler functions
-  analyzePerformanceResults: (testName: string, lighthouse: any, loadTest?: any) => void;
-  exportK6Results: (loadTestData: any, testName: string, format: K6ExportFormat) => void;
-  exportK6ResultsPDF: (loadTestData: any, testName: string) => void;
-  exportLighthousePDF: (lighthouse: any, testName: string, url?: string) => void;
-  generateK6TimeSeries: (loadTestData: any) => Array<{ time: string; vus: number; rps: number; avg_response_time: number; p95_response_time: number }>;
-  generateResponseTimeHistogram: (loadTestData: any) => Array<{ range: string; count: number; percentage: number }>;
+  analyzePerformanceResults: (testName: string, lighthouse: LighthouseResult | null, loadTest?: LoadTestResult | null) => void;
+  exportK6Results: (loadTestData: LoadTestResult, testName: string, format: K6ExportFormat) => void;
+  exportK6ResultsPDF: (loadTestData: LoadTestResult, testName: string) => void;
+  exportLighthousePDF: (lighthouse: LighthouseResult, testName: string, url?: string) => void;
+  generateK6TimeSeries: (loadTestData: LoadTestResult) => K6TimeSeriesPoint[];
+  generateResponseTimeHistogram: (loadTestData: LoadTestResult) => ResponseTimeHistogramBucket[];
 
   // Comparison state
   showPreviousComparison: boolean;
@@ -153,29 +190,34 @@ const MetricsTab: React.FC<MetricsTabProps> = ({
             if (!lighthouse) return null;
 
             // Feature #1887: Use real opportunities and diagnostics from backend
-            const opportunities = (lighthouse.opportunities || [])
-              .map((opp: any) => ({
+            // Types from LighthouseResult.opportunities
+            type RawOpportunity = NonNullable<LighthouseResult['opportunities']>[number];
+            type RawDiagnostic = NonNullable<LighthouseResult['diagnostics']>[number];
+            type RawPassedAudit = NonNullable<LighthouseResult['passedAudits']>[number];
+
+            const opportunities: TransformedOpportunity[] = (lighthouse.opportunities || [])
+              .map((opp: RawOpportunity) => ({
                 id: opp.id,
                 title: opp.title,
                 savings: opp.savings >= 1000 ? `${(opp.savings / 1000).toFixed(1)}s` : `${opp.savings}ms`,
                 details: opp.description,
               }))
-              .sort((a: any, b: any) => {
+              .sort((a: TransformedOpportunity, b: TransformedOpportunity) => {
                 const savingsA = parseFloat(a.savings) * (a.savings.includes('s') ? 1000 : 1);
                 const savingsB = parseFloat(b.savings) * (b.savings.includes('s') ? 1000 : 1);
                 return savingsB - savingsA;
               });
 
-            const diagnostics = (lighthouse.diagnostics || [])
-              .map((diag: any) => ({
+            const diagnostics: TransformedDiagnostic[] = (lighthouse.diagnostics || [])
+              .map((diag: RawDiagnostic) => ({
                 id: diag.id,
                 title: diag.title,
                 details: diag.description,
               }));
 
             // Feature #1889: Extract passed audits from lighthouse results
-            const passedAudits = (lighthouse.passedAudits || [])
-              .map((audit: any) => ({
+            const passedAudits: TransformedPassedAudit[] = (lighthouse.passedAudits || [])
+              .map((audit: RawPassedAudit) => ({
                 id: audit.id,
                 title: audit.title,
                 details: audit.description,
@@ -183,7 +225,7 @@ const MetricsTab: React.FC<MetricsTabProps> = ({
               }));
 
             // Group passed audits by category
-            const passedAuditsByCategory = passedAudits.reduce((acc: Record<string, any[]>, audit: any) => {
+            const passedAuditsByCategory = passedAudits.reduce<Record<string, TransformedPassedAudit[]>>((acc, audit) => {
               const cat = audit.category;
               if (!acc[cat]) acc[cat] = [];
               acc[cat].push(audit);

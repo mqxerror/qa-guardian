@@ -6,6 +6,8 @@
 import { useCallback } from 'react';
 import { toast } from '../../stores/toastStore';
 import { generatePlaywrightCode } from './codeGenUtils';
+import { TestType } from './types';
+import { TestExplanation } from './modals/AIExplainModal';
 
 export interface AddStepData {
   action: string;
@@ -22,8 +24,8 @@ export interface AddStepData {
 export interface UseStepHandlersProps {
   testId: string | undefined;
   token: string | null;
-  test: any;
-  setTest: (test: any) => void;
+  test: TestType | null;
+  setTest: (test: TestType) => void;
   draggedStepIndex: number | null;
   setDraggedStepIndex: (index: number | null) => void;
   setDragOverIndex: (index: number | null) => void;
@@ -37,7 +39,7 @@ export interface UseStepHandlersProps {
   setIsEditingCode: (value: boolean) => void;
   setIsExplainingTest: (value: boolean) => void;
   setShowExplainModal: (value: boolean) => void;
-  setTestExplanation: (explanation: any) => void;
+  setTestExplanation: (explanation: TestExplanation | null) => void;
   // Add step handlers
   setIsAddingStep?: (value: boolean) => void;
   setAddStepError?: (error: string) => void;

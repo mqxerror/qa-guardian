@@ -9,9 +9,37 @@
  * - SecurityInsightsSection
  */
 import React from 'react';
+import { LighthouseResult } from '../types';
+
+// Opportunity item from Lighthouse audit
+interface LighthouseOpportunity {
+  id: string;
+  title: string;
+  savings: string | number;
+  details?: string;
+}
+
+// Diagnostic item from Lighthouse audit
+interface LighthouseDiagnostic {
+  id: string;
+  title: string;
+  details?: string;
+}
+
+// Filmstrip frame type
+interface FilmstripFrame {
+  timestamp_ms: number;
+  screenshot_base64: string;
+  label?: string;
+}
+
+// Lighthouse data for filmstrip section (compatible with both LighthouseData and LighthouseResult)
+interface LighthouseWithFilmstrip {
+  filmstrip?: FilmstripFrame[];
+}
 
 // Filmstrip Section
-export const FilmstripSection: React.FC<{ lighthouse: any }> = ({ lighthouse }) => (
+export const FilmstripSection: React.FC<{ lighthouse: LighthouseWithFilmstrip }> = ({ lighthouse }) => (
  <div className="border border-border rounded-xl p-5 mb-6 shadow-sm bg-card">
  <h4 className="font-semibold text-foreground flex items-center gap-2 mb-4">
  <span className="text-lg">🎬</span> Page Load Filmstrip
@@ -65,7 +93,7 @@ export const FilmstripSection: React.FC<{ lighthouse: any }> = ({ lighthouse }) 
 
 // Opportunities Section
 export interface OpportunitiesSectionProps {
- opportunities: any[];
+ opportunities: LighthouseOpportunity[];
  expandedOpportunities: Set<string>;
  toggleOpportunity: (id: string) => void;
 }
@@ -119,7 +147,7 @@ export const OpportunitiesSection: React.FC<OpportunitiesSectionProps> = ({
 
 // Diagnostics Section
 export interface DiagnosticsSectionProps {
- diagnostics: any[];
+ diagnostics: LighthouseDiagnostic[];
  expandedDiagnostics: Set<string>;
  toggleDiagnostic: (id: string) => void;
 }
@@ -168,7 +196,7 @@ export const DiagnosticsSection: React.FC<DiagnosticsSectionProps> = ({
 
 // Security Insights Section
 export interface SecurityInsightsSectionProps {
- lighthouse: any;
+ lighthouse: LighthouseResult;
  securityInsightsCollapsed: boolean;
  setSecurityInsightsCollapsed: (collapsed: boolean) => void;
  expandedMixedContentResources: boolean;

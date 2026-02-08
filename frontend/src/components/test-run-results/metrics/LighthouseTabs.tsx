@@ -14,11 +14,162 @@ import CircularGauge from '../CircularGauge';
 import { CoreWebVitalsSection } from './CoreWebVitalsSection';
 import { FilmstripSection, OpportunitiesSection, DiagnosticsSection } from './LighthouseSharedSections';
 
+// =============================================================================
+// Lighthouse Type Definitions
+// =============================================================================
+
+/** Core Web Vitals and performance metrics */
+export interface LighthouseMetrics {
+  lcp?: number;
+  fcp?: number;
+  cls?: number;
+  tbt?: number;
+  fid?: number;
+  ttfb?: number;
+  si?: number;
+  tti?: number;
+}
+
+/** Device-specific metrics for mobile/desktop comparison */
+export interface DeviceLighthouseMetrics {
+  device: 'mobile' | 'desktop';
+  performance_score: number;
+  accessibility_score: number;
+  best_practices_score: number;
+  seo_score: number;
+  metrics: {
+    first_contentful_paint: number;
+    largest_contentful_paint: number;
+    cumulative_layout_shift: number;
+    total_blocking_time: number;
+    speed_index: number;
+    time_to_interactive?: number;
+    time_to_first_byte?: number;
+  };
+}
+
+/** Filmstrip frame for page load visualization */
+export interface FilmstripFrame {
+  timestamp_ms: number;
+  screenshot_base64: string;
+  label?: string;
+}
+
+/** Content Security Policy detection results */
+export interface CSPDetection {
+  detected: boolean;
+  header?: string;
+  blocksLighthouse: boolean;
+  warning?: string;
+  partialResults?: boolean;
+  bypassEnabled?: boolean;
+  suggestion?: string;
+}
+
+/** Authentication detection results */
+export interface AuthenticationDetection {
+  required: boolean;
+  warning?: string;
+  suggestion?: string;
+  redirectedToLogin?: boolean;
+  originalUrl?: string;
+  actualUrl?: string;
+  loginIndicators?: string[];
+  resultsReflectLoginPage?: boolean;
+}
+
+/** Mixed content detection results */
+export interface MixedContentDetection {
+  detected: boolean;
+  warning?: string;
+  count: number;
+  activeCount?: number;
+  passiveCount?: number;
+  resources?: Array<{
+    url: string;
+    resourceType: string;
+    severity: 'passive' | 'active';
+  }>;
+  hasMore?: boolean;
+  remediation?: string[];
+  securityImpact: 'high' | 'medium';
+  scorePenalty?: number;
+}
+
+/** Complete Lighthouse result data structure */
+export interface LighthouseData {
+  // Category scores (0-100)
+  performance?: number;
+  accessibility?: number;
+  best_practices?: number;
+  bestPractices?: number;
+  seo?: number;
+  pwa?: number;
+
+  // Core Web Vitals
+  lcp?: number;
+  cls?: number;
+  fcp?: number;
+  tbt?: number;
+
+  // Nested metrics object
+  metrics?: LighthouseMetrics;
+
+  // Device-specific results (Feature #67)
+  mobileResults?: DeviceLighthouseMetrics;
+  desktopResults?: DeviceLighthouseMetrics;
+
+  // Filmstrip visualization
+  filmstrip?: FilmstripFrame[];
+
+  // Security detection
+  csp?: CSPDetection;
+  authentication?: AuthenticationDetection;
+  mixedContent?: MixedContentDetection;
+
+  // URL and device info
+  url?: string;
+  device?: string;
+}
+
+/** Opportunity for performance improvement */
+export interface LighthouseOpportunity {
+  id: string;
+  title: string;
+  savings: string | number;
+  details?: string;
+  description?: string;
+  numericValue?: number;
+  displayValue?: string;
+}
+
+/** Diagnostic information */
+export interface LighthouseDiagnostic {
+  id: string;
+  title: string;
+  details?: string;
+  description?: string;
+  displayValue?: string;
+}
+
+/** Passed audit with category information */
+export interface LighthousePassedAudit {
+  id: string;
+  title: string;
+  description?: string;
+  category?: 'Accessibility' | 'Best Practices' | 'SEO' | 'Performance' | string;
+  score?: number;
+}
+
+// =============================================================================
+// Component Props
+// =============================================================================
+
 // Overview Tab
 export interface LighthouseOverviewTabProps {
- lighthouse: any;
- opportunities: any[];
- diagnostics: any[];
+ lighthouse: LighthouseData;
+ opportunities: LighthouseOpportunity[];
+ diagnostics: LighthouseDiagnostic[];
  expandedOpportunities: Set<string>;
  toggleOpportunity: (id: string) => void;
  expandedDiagnostics: Set<string>;
@@ -112,9 +263,9 @@ export const LighthouseOverviewTab: React.FC<LighthouseOverviewTabProps> = ({
 
 // Performance Tab
 export interface LighthousePerformanceTabProps {
- lighthouse: any;
- opportunities: any[];
- diagnostics: any[];
+ lighthouse: LighthouseData;
+ opportunities: LighthouseOpportunity[];
+ diagnostics: LighthouseDiagnostic[];
  expandedOpportunities: Set<string>;
  toggleOpportunity: (id: string) => void;
  expandedDiagnostics: Set<string>;
@@ -185,8 +336,8 @@ export const LighthousePerformanceTab: React.FC<LighthousePerformanceTabProps> =
 
 // Accessibility Tab
 export interface LighthouseAccessibilityTabProps {
- lighthouse: any;
- passedAudits: any[];
+ lighthouse: LighthouseData;
+ passedAudits: LighthousePassedAudit[];
 }
 
 export const LighthouseAccessibilityTab: React.FC<LighthouseAccessibilityTabProps> = ({
@@ -204,26 +355,26 @@ export const LighthouseAccessibilityTab: React.FC<LighthouseAccessibilityTabProp
  </div>
 
  {/* Accessibility-specific passed audits */}
- {passedAudits.filter((a: any) => a.category === 'Accessibility').length > 0 && (
+ {passedAudits.filter((a) => a.category === 'Accessibility').length > 0 && (
  <div className="border border-border rounded-xl overflow-hidden mb-6 shadow-sm">
  <div className="p-4 bg-gradient-to-r from-success/5 to-emerald-50 border-b border-border">
  <h4 className="font-semibold text-success flex items-center gap-2">
  <span className="text-lg">✅</span> Passed Accessibility Audits
  <span className="text-xs bg-success/10 px-2 py-0.5 rounded-full ml-2">
- {passedAudits.filter((a: any) => a.category === 'Accessibility').length} passed
+ {passedAudits.filter((a) => a.category === 'Accessibility').length} passed
  </span>
  </h4>
  </div>
  <div className="divide-y divide-border max-h-64 overflow-y-auto">
- {passedAudits.filter((a: any) => a.category === 'Accessibility').slice(0, 10).map((audit: any) => (
+ {passedAudits.filter((a) => a.category === 'Accessibility').slice(0, 10).map((audit) => (
  <div key={audit.id} className="p-3 flex items-center gap-2">
  <span className="text-success">✓</span>
  <span className="text-sm text-foreground">{audit.title}</span>
  </div>
  ))}
- {passedAudits.filter((a: any) => a.category === 'Accessibility').length > 10 && (
+ {passedAudits.filter((a) => a.category === 'Accessibility').length > 10 && (
  <div className="p-3 text-center text-sm text-muted-foreground">
- +{passedAudits.filter((a: any) => a.category === 'Accessibility').length - 10} more passed
+ +{passedAudits.filter((a) => a.category === 'Accessibility').length - 10} more passed
  </div>
  )}
  </div>
@@ -239,8 +390,8 @@ export const LighthouseAccessibilityTab: React.FC<LighthouseAccessibilityTabProp
 
 // Best Practices Tab
 export interface LighthouseBestPracticesTabProps {
- lighthouse: any;
- passedAudits: any[];
+ lighthouse: LighthouseData;
+ passedAudits: LighthousePassedAudit[];
 }
 
 export const LighthouseBestPracticesTab: React.FC<LighthouseBestPracticesTabProps> = ({
@@ -258,26 +409,26 @@ export const LighthouseBestPracticesTab: React.FC<LighthouseBestPracticesTabProp
  </div>
 
  {/* Best Practices passed audits */}
- {passedAudits.filter((a: any) => a.category === 'Best Practices').length > 0 && (
+ {passedAudits.filter((a) => a.category === 'Best Practices').length > 0 && (
  <div className="border border-border rounded-xl overflow-hidden mb-6 shadow-sm">
  <div className="p-4 bg-gradient-to-r from-purple-50 to-violet-50 border-b border-border">
  <h4 className="font-semibold text-purple-700 flex items-center gap-2">
  <span className="text-lg">✓</span> Passed Best Practice Audits
  <span className="text-xs bg-purple-100 px-2 py-0.5 rounded-full ml-2">
- {passedAudits.filter((a: any) => a.category === 'Best Practices').length} passed
+ {passedAudits.filter((a) => a.category === 'Best Practices').length} passed
  </span>
  </h4>
  </div>
  <div className="divide-y divide-border max-h-64 overflow-y-auto">
- {passedAudits.filter((a: any) => a.category === 'Best Practices').slice(0, 10).map((audit: any) => (
+ {passedAudits.filter((a) => a.category === 'Best Practices').slice(0, 10).map((audit) => (
  <div key={audit.id} className="p-3 flex items-center gap-2">
  <span className="text-purple-500">✓</span>
  <span className="text-sm text-foreground">{audit.title}</span>
  </div>
  ))}
- {passedAudits.filter((a: any) => a.category === 'Best Practices').length > 10 && (
+ {passedAudits.filter((a) => a.category === 'Best Practices').length > 10 && (
  <div className="p-3 text-center text-sm text-muted-foreground">
- +{passedAudits.filter((a: any) => a.category === 'Best Practices').length - 10} more passed
+ +{passedAudits.filter((a) => a.category === 'Best Practices').length - 10} more passed
  </div>
  )}
  </div>
@@ -288,8 +439,8 @@ export const LighthouseBestPracticesTab: React.FC<LighthouseBestPracticesTabProp
 
 // SEO Tab
 export interface LighthouseSEOTabProps {
- lighthouse: any;
- passedAudits: any[];
+ lighthouse: LighthouseData;
+ passedAudits: LighthousePassedAudit[];
 }
 
 export const LighthouseSEOTab: React.FC<LighthouseSEOTabProps> = ({
@@ -307,26 +458,26 @@ export const LighthouseSEOTab: React.FC<LighthouseSEOTabProps> = ({
  </div>
 
  {/* SEO passed audits */}
- {passedAudits.filter((a: any) => a.category === 'SEO').length > 0 && (
+ {passedAudits.filter((a) => a.category === 'SEO').length > 0 && (
  <div className="border border-border rounded-xl overflow-hidden mb-6 shadow-sm">
  <div className="p-4 bg-gradient-to-r from-primary/5 to-indigo-50 border-b border-border">
  <h4 className="font-semibold text-primary flex items-center gap-2">
  <span className="text-lg">🔍</span> Passed SEO Audits
  <span className="text-xs bg-primary/10 px-2 py-0.5 rounded-full ml-2">
- {passedAudits.filter((a: any) => a.category === 'SEO').length} passed
+ {passedAudits.filter((a) => a.category === 'SEO').length} passed
  </span>
  </h4>
  </div>
  <div className="divide-y divide-border max-h-64 overflow-y-auto">
- {passedAudits.filter((a: any) => a.category === 'SEO').slice(0, 10).map((audit: any) => (
+ {passedAudits.filter((a) => a.category === 'SEO').slice(0, 10).map((audit) => (
  <div key={audit.id} className="p-3 flex items-center gap-2">
  <span className="text-primary">✓</span>
  <span className="text-sm text-foreground">{audit.title}</span>
  </div>
  ))}
- {passedAudits.filter((a: any) => a.category === 'SEO').length > 10 && (
+ {passedAudits.filter((a) => a.category === 'SEO').length > 10 && (
  <div className="p-3 text-center text-sm text-muted-foreground">
- +{passedAudits.filter((a: any) => a.category === 'SEO').length - 10} more passed
+ +{passedAudits.filter((a) => a.category === 'SEO').length - 10} more passed
  </div>
  )}
  </div>

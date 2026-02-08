@@ -57,6 +57,39 @@ interface GeneratedReleaseNotes {
  jsonContent?: object;
 }
 
+// API response types for release data
+interface APIRelease {
+  id: string;
+  version: string;
+  name: string;
+  date: string;
+  testsAdded: number;
+  testsModified: number;
+  testsRemoved: number;
+}
+
+interface APINewFeature {
+  title: string;
+  description: string;
+  category?: string;
+  relatedTests?: string[];
+  related_tests?: string[];
+  impact?: 'high' | 'medium' | 'low';
+}
+
+interface APIBugFix {
+  title: string;
+  description: string;
+  severity: 'critical' | 'major' | 'minor';
+  relatedTests?: string[];
+  related_tests?: string[];
+}
+
+interface APIImprovement {
+  title: string;
+  description: string;
+}
+
 export function ReleaseNotesPage() {
  const { token } = useAuthStore();
  const [releases, setReleases] = useState<Release[]>([]);
@@ -92,7 +125,7 @@ export function ReleaseNotesPage() {
  const data = await response.json();
 
  if (data.releases && data.releases.length > 0) {
- setReleases(data.releases.map((r: any) => ({
+ setReleases(data.releases.map((r: APIRelease) => ({
  id: r.id,
  version: r.version,
  name: r.name,
@@ -194,20 +227,20 @@ export function ReleaseNotesPage() {
  version: data.release_notes.version,
  releaseDate: data.release_notes.release_date,
  summary: data.release_notes.summary,
- newFeatures: data.release_notes.new_features.map((f: any) => ({
+ newFeatures: data.release_notes.new_features.map((f: APINewFeature) => ({
  title: f.title,
  description: f.description,
  category: f.category,
  relatedTests: f.relatedTests || f.related_tests || [],
  impact: f.impact,
  })),
- bugFixes: data.release_notes.bug_fixes.map((b: any) => ({
+ bugFixes: data.release_notes.bug_fixes.map((b: APIBugFix) => ({
  title: b.title,
  description: b.description,
  severity: b.severity,
  relatedTests: b.relatedTests || b.related_tests || [],
  })),
- improvements: data.release_notes.improvements.map((i: any) => ({
+ improvements: data.release_notes.improvements.map((i: APIImprovement) => ({
  title: i.title,
  description: i.description,
  })),

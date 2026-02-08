@@ -38,7 +38,7 @@ interface SuiteRunResult {
  test_id: string;
  test_name: string;
  test_type?: string;
- status: 'passed' | 'failed' | 'skipped';
+ status: 'passed' | 'failed' | 'skipped' | 'error' | 'running';
  duration_ms: number;
  error?: string;
  diff_percentage?: number;

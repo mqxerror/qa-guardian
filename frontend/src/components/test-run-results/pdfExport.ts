@@ -8,6 +8,79 @@
 // Type for jsPDF since we're loading it dynamically
 type jsPDF = import('jspdf').jsPDF;
 
+// K6 Load Test Data Structure - compatible with LoadTestResult
+interface K6LoadTestData {
+  summary?: {
+    success_rate?: string | number;
+    total_requests?: number;
+    requests_per_second?: string | number;
+    data_transferred_formatted?: string;
+    max_vus?: number;
+    duration_formatted?: string;
+  };
+  thresholds?: Record<string, boolean>;
+  virtual_users?: {
+    configured?: number;
+    peak?: number;
+    max_concurrent?: number;
+  };
+  configuration?: {
+    target_vus?: number;
+    duration?: string;
+    ramp_up?: string;
+    script_name?: string;
+  };
+  response_times?: {
+    min?: number;
+    avg?: number;
+    median?: number;
+    p50?: number;
+    p90?: number;
+    p95?: number;
+    p99?: number;
+    max?: number;
+  };
+  http_codes?: Record<string, number>;
+  // Optional fields from LoadTestResult
+  duration?: {
+    configured?: number;
+    actual?: number;
+    ramp_up?: number;
+  };
+  checks?: Array<{ name: string; passes: number; fails: number; pass_rate?: number }>;
+}
+
+// Lighthouse Data Structure for PDF export
+interface LighthousePDFData {
+  performance?: number;
+  accessibility?: number;
+  best_practices?: number;
+  bestPractices?: number;
+  seo?: number;
+  timestamp?: number | string;
+  url?: string;
+  metrics?: {
+    lcp?: number;
+    fid?: number;
+    cls?: number;
+    fcp?: number;
+    tbt?: number;
+    ttfb?: number;
+    si?: number;
+  };
+  opportunities?: Array<{
+    id?: string;
+    title: string;
+    savings: number;
+    description?: string;
+  }>;
+  diagnostics?: Array<{
+    id?: string;
+    title: string;
+    description?: string;
+  }>;
+}
+
 interface PdfHelpers {
   pdf: jsPDF;
   pageWidth: number;
@@ -95,7 +168,7 @@ const drawScoreGauge = (helpers: PdfHelpers, score: number, label: string, x: nu
  * Feature #1910
  * Feature #105: Lazy loads jsPDF (387KB) only when export is triggered
  */
-export const exportK6ResultsPDF = async (loadTestData: any, testName: string) => {
+export const exportK6ResultsPDF = async (loadTestData: K6LoadTestData, testName: string) => {
   if (!loadTestData) return;
 
   // Lazy load jsPDF only when needed
@@ -295,7 +368,7 @@ export const exportK6ResultsPDF = async (loadTestData: any, testName: string) =>
  * Feature #1911
  * Feature #105: Lazy loads jsPDF (387KB) only when export is triggered
  */
-export const exportLighthousePDF = async (lighthouseData: any, testName: string, url?: string) => {
+export const exportLighthousePDF = async (lighthouseData: LighthousePDFData, testName: string, url?: string) => {
   if (!lighthouseData) return;
 
   // Lazy load jsPDF only when needed
@@ -426,7 +499,7 @@ export const exportLighthousePDF = async (lighthouseData: any, testName: string,
     pdf.line(margin, helpers.yPos - 2, pageWidth - margin, helpers.yPos - 2);
     helpers.yPos += 4;
 
-    lighthouseData.opportunities.slice(0, 5).forEach((opp: any) => {
+    lighthouseData.opportunities.slice(0, 5).forEach((opp) => {
       const savings = opp.savings >= 1000 ? `${(opp.savings / 1000).toFixed(1)}s` : `${opp.savings}ms`;
       addMetricRow(helpers, opp.title, `Save ${savings}`, opp.savings > 1000 ? 'bad' : opp.savings > 500 ? 'warning' : undefined);
     });
@@ -441,7 +514,7 @@ export const exportLighthousePDF = async (lighthouseData: any, testName: string,
     pdf.line(margin, helpers.yPos - 2, pageWidth - margin, helpers.yPos - 2);
     helpers.yPos += 4;
 
-    lighthouseData.diagnostics.slice(0, 5).forEach((diag: any) => {
+    lighthouseData.diagnostics.slice(0, 5).forEach((diag) => {
       addText(helpers, `• ${diag.title}`, 10, [60, 60, 60]);
     });
 

@@ -7,6 +7,15 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '../../stores/toastStore';
 import { getErrorMessage, isNetworkError, isOffline } from '../../utils/errorHandling';
+import { TestType, TestRunType } from './types';
+
+/** Notification type for test detail actions */
+export interface TestDetailNotification {
+  id: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  message: string;
+  timestamp?: number;
+}
 
 export interface UseTestDetailActionsProps {
   testId: string | undefined;
@@ -16,20 +25,20 @@ export interface UseTestDetailActionsProps {
   setIsEditing: (value: boolean) => void;
   setEditError: (value: string) => void;
   setShowEditModal: (value: boolean) => void;
-  setTest: (test: any) => void;
+  setTest: (test: TestType) => void;
   setIsDuplicating: (value: boolean) => void;
   setDuplicateError: (value: string) => void;
   setIsRunning: (value: boolean) => void;
   setRunError: (value: string) => void;
-  setCurrentRun: (run: any) => void;
+  setCurrentRun: (run: TestRunType | null) => void;
   setIsCancellingRun: (value: boolean) => void;
   setIsDownloadingArtifacts: (value: boolean) => void;
   suite: { id: string } | null;
-  test: any;
+  test: TestType | null;
   selectedBranch: string;
-  runs: any[];
-  setRuns: (runs: any[]) => void;
-  addNotification: (notification: any) => void;
+  runs: TestRunType[];
+  setRuns: (runs: TestRunType[]) => void;
+  addNotification: (notification: TestDetailNotification) => void;
 }
 
 export function useTestDetailActions({

@@ -3,7 +3,7 @@
  * Feature #103: Extracted from MetricsTab.tsx
  */
 import React from 'react';
-import { TestResult, LighthouseActiveTab } from '../types';
+import { TestResult, LighthouseActiveTab, LighthouseResult } from '../types';
 import {
  LighthouseOverviewTab,
  LighthousePerformanceTab,
@@ -13,13 +13,36 @@ import {
 } from './LighthouseTabs';
 import { SecurityInsightsSection } from './LighthouseSharedSections';
 
+// Opportunity item from Lighthouse audit
+export interface LighthouseOpportunity {
+  id: string;
+  title: string;
+  savings: string | number;
+  details?: string;
+}
+
+// Diagnostic item from Lighthouse audit
+export interface LighthouseDiagnostic {
+  id: string;
+  title: string;
+  details?: string;
+}
+
+// Passed audit item from Lighthouse
+export interface LighthousePassedAudit {
+  id: string;
+  title: string;
+  description?: string;
+  category?: string;
+}
+
 export interface LighthouseResultCardProps {
  result: TestResult;
- lighthouse: any;
- opportunities: any[];
- diagnostics: any[];
- passedAudits: any[];
- passedAuditsByCategory: Record<string, any[]>;
+ lighthouse: LighthouseResult;
+ opportunities: LighthouseOpportunity[];
+ diagnostics: LighthouseDiagnostic[];
+ passedAudits: LighthousePassedAudit[];
+ passedAuditsByCategory: Record<string, LighthousePassedAudit[]>;
  lighthouseActiveTab: LighthouseActiveTab;
  setLighthouseActiveTab: (tab: LighthouseActiveTab) => void;
  expandedOpportunities: Set<string>;
@@ -39,8 +62,8 @@ export interface LighthouseResultCardProps {
  setPerfAIResult: React.Dispatch<React.SetStateAction<Record<string, string>>>;
  perfAIError: string | null;
  perfAIAnalysisOpen: string | null;
- analyzePerformanceResults: (testName: string, lighthouse: any, loadTest?: any) => void;
- exportLighthousePDF: (lighthouse: any, testName: string, url?: string) => void;
+ analyzePerformanceResults: (testName: string, lighthouse: LighthouseResult, loadTest?: unknown) => void;
+ exportLighthousePDF: (lighthouse: LighthouseResult, testName: string, url?: string) => void;
 }
 
 export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
@@ -119,7 +142,7 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
  <span>🔍</span> Lighthouse
  </span>
  <span className="text-xs text-muted-foreground">
- {new Date(lighthouse.timestamp || Date.now()).toLocaleString()}
+ {new Date((lighthouse as LighthouseResult & { timestamp?: number }).timestamp || Date.now()).toLocaleString()}
  </span>
  </div>
  <div className="flex items-center gap-2">
@@ -214,7 +237,7 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
  <div key={opp.id} className="flex items-center justify-between py-1">
  <span className="text-sm text-foreground truncate flex-1">{opp.title}</span>
  <span className={`text-xs font-semibold ml-2 ${
- parseFloat(opp.savings) > 1 ? 'text-orange-600' :
+ parseFloat(String(opp.savings)) > 1 ? 'text-orange-600' :
  'text-warning'
  }`}>
  Save {opp.savings}

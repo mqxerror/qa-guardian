@@ -1,6 +1,8 @@
 // Feature #48: TestResultCard Types - Extracted from TestResultCard.tsx
 // Contains all interface definitions and helper functions for test result display
 
+import { AccessibilityExportData } from '../exportUtils';
+
 // Result types
 export interface StepResult {
  step_id: string;
@@ -48,6 +50,35 @@ export interface K6Results {
  response_codes?: Record<string, number>;
 }
 
+/** Lighthouse opportunity suggestion */
+export interface LighthouseOpportunityItem {
+ id: string;
+ title: string;
+ description?: string;
+ score?: number;
+ savings?: number;
+ numericValue?: number;
+ displayValue?: string;
+}
+
+/** Lighthouse diagnostic info */
+export interface LighthouseDiagnosticItem {
+ id: string;
+ title: string;
+ description?: string;
+ score?: number;
+ displayValue?: string;
+ details?: Record<string, unknown>;
+}
+
+/** Lighthouse passed audit */
+export interface LighthousePassedAuditItem {
+ id: string;
+ title: string;
+ description?: string;
+ score?: number;
+}
+
 // Feature #67: Device-specific Lighthouse results
 export interface DeviceLighthouseMetrics {
  device: 'mobile' | 'desktop';
@@ -64,9 +95,9 @@ export interface DeviceLighthouseMetrics {
  time_to_interactive?: number;
  time_to_first_byte?: number;
  };
- opportunities?: any[];
- diagnostics?: any[];
- passed_audits?: any[];
+ opportunities?: LighthouseOpportunityItem[];
+ diagnostics?: LighthouseDiagnosticItem[];
+ passed_audits?: LighthousePassedAuditItem[];
 }
 
 export interface LighthouseResults {
@@ -200,8 +231,8 @@ export interface TestResultCardProps {
  seo: number;
  }>;
  // PDF/CSV export functions
- onExportAccessibilityPDF?: (a11yData: any, testName: string, runDate: string) => void;
- onExportAccessibilityCSV?: (a11yData: any, testName: string, runDate: string) => void;
+ onExportAccessibilityPDF?: (a11yData: AccessibilityExportData, testName: string, runDate: string) => void;
+ onExportAccessibilityCSV?: (a11yData: AccessibilityExportData, testName: string, runDate: string) => void;
  formatDateTime: (date: string | Date) => string;
 }
 

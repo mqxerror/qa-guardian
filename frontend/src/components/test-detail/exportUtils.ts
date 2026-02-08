@@ -6,11 +6,54 @@
 
 import { toast } from '../../stores/toastStore';
 
+/** Accessibility violation node for export */
+export interface A11yViolationNode {
+  html?: string;
+  target?: string[];
+  failureSummary?: string;
+}
+
+/** Accessibility violation item for export */
+export interface A11yViolationItem {
+  id?: string;
+  impact?: string;
+  description?: string;
+  help?: string;
+  helpUrl?: string;
+  wcagTags?: string[];
+  nodes?: A11yViolationNode[];
+}
+
+/** Accessibility data structure for PDF/CSV export */
+export interface AccessibilityExportData {
+  url?: string;
+  wcag_level?: string;
+  score?: number;
+  violations?: {
+    count?: number;
+    critical?: number;
+    serious?: number;
+    moderate?: number;
+    minor?: number;
+    items?: A11yViolationItem[];
+  };
+  passes?: {
+    count?: number;
+    categories?: string[];
+  };
+  incomplete?: {
+    count?: number;
+  };
+  inapplicable?: {
+    count?: number;
+  };
+}
+
 /**
  * Export accessibility report as PDF
  * Feature #105: Lazy loads jsPDF (387KB) only when export is triggered
  */
-export async function exportAccessibilityPDF(a11yData: any, testName: string, runDate: string) {
+export async function exportAccessibilityPDF(a11yData: AccessibilityExportData, testName: string, runDate: string) {
   // Lazy load jsPDF only when needed
   const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF();
@@ -134,7 +177,7 @@ export async function exportAccessibilityPDF(a11yData: any, testName: string, ru
     doc.text('Violation Details', margin, y);
     y += 10;
 
-    a11yData.violations.items.forEach((violation: any) => {
+    a11yData.violations.items.forEach((violation: A11yViolationItem) => {
       checkPageBreak(50);
 
       // Violation header with impact badge
@@ -261,7 +304,7 @@ export async function exportAccessibilityPDF(a11yData: any, testName: string, ru
 /**
  * Export accessibility report as CSV
  */
-export function exportAccessibilityCSV(a11yData: any, testName: string, runDate: string) {
+export function exportAccessibilityCSV(a11yData: AccessibilityExportData, testName: string, runDate: string) {
   const rows: string[][] = [];
 
   // Helper to escape CSV values
@@ -289,7 +332,7 @@ export function exportAccessibilityCSV(a11yData: any, testName: string, runDate:
 
   // Add violation rows
   if (a11yData.violations?.items?.length > 0) {
-    a11yData.violations.items.forEach((violation: any) => {
+    a11yData.violations.items.forEach((violation: A11yViolationItem) => {
       const firstSelector = violation.nodes?.[0]?.target?.join(' > ') || '';
       rows.push([
         escapeCSV(violation.impact || 'unknown'),

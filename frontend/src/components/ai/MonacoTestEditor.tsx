@@ -45,15 +45,15 @@ declare const test: {
 };
 
 declare const expect: {
-  (actual: any): {
-    toBe(expected: any): void;
-    toEqual(expected: any): void;
+  (actual: unknown): {
+    toBe(expected: unknown): void;
+    toEqual(expected: unknown): void;
     toBeTruthy(): void;
     toBeFalsy(): void;
     toBeNull(): void;
     toBeUndefined(): void;
     toBeDefined(): void;
-    toContain(expected: any): void;
+    toContain(expected: unknown): void;
     toHaveLength(expected: number): void;
     toHaveText(expected: string | RegExp): Promise<void>;
     toHaveValue(expected: string): Promise<void>;
@@ -67,7 +67,7 @@ declare const expect: {
     toHaveTitle(title: string | RegExp): Promise<void>;
     toHaveCount(count: number): Promise<void>;
     toHaveScreenshot(name?: string): Promise<void>;
-    not: any;
+    not: ReturnType<typeof expect>;
   };
 };
 
@@ -228,7 +228,7 @@ interface Response {
   headers(): Record<string, string>;
   body(): Promise<Buffer>;
   text(): Promise<string>;
-  json(): Promise<any>;
+  json(): Promise<unknown>;
 }
 `;
 

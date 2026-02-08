@@ -4,6 +4,16 @@
  */
 import { DASTConfig, DASTScanResult, OpenAPISpec } from '../types';
 
+// DAST Schedule type
+interface DastSchedule {
+  id: string;
+  name?: string;
+  cron?: string;
+  enabled?: boolean;
+  lastRun?: string;
+  nextRun?: string;
+}
+
 export interface DastConfigPanelProps {
  projectId: string;
  token: string | null;
@@ -17,7 +27,7 @@ export interface DastConfigPanelProps {
  openApiSpec: OpenAPISpec | null;
  isUploadingSpec: boolean;
  specUploadError: string | null;
- dastSchedules: any[];
+ dastSchedules: DastSchedule[];
  handleUpdateDastConfig: (updates: Partial<DASTConfig>) => Promise<void>;
  handleTriggerDastScan: () => Promise<void>;
  setDastTargetUrl: (url: string) => void;
@@ -25,7 +35,7 @@ export interface DastConfigPanelProps {
  handleUploadOpenApiSpec: (content: string) => Promise<void>;
  handleDeleteOpenApiSpec: () => Promise<void>;
  setDastScans: (scans: DASTScanResult[]) => void;
- setDastSchedules: (schedules: any[]) => void;
+ setDastSchedules: (schedules: DastSchedule[]) => void;
 }
 
 export function DastConfigPanel(props: DastConfigPanelProps) {
@@ -149,13 +159,13 @@ interface DASTConfigSectionProps {
  isRunningDastScan: boolean;
  isUploadingSpec: boolean;
  specUploadError: string | null;
- dastSchedules: any[];
+ dastSchedules: DastSchedule[];
  handleUpdateDastConfig: (updates: Partial<DASTConfig>) => Promise<void>;
  handleTriggerDastScan: () => Promise<void>;
  setDastTargetUrl: (url: string) => void;
  handleUploadOpenApiSpec: (content: string) => Promise<void>;
  handleDeleteOpenApiSpec: () => Promise<void>;
- setDastSchedules: (schedules: any[]) => void;
+ setDastSchedules: (schedules: DastSchedule[]) => void;
 }
 
 function DASTConfigSection(props: DASTConfigSectionProps) {
