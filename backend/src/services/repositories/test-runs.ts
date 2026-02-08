@@ -89,6 +89,81 @@ const HEALED_SELECTOR_COLUMNS = [
 ].join(', ');
 
 // ============================================================================
+// Feature #458: Row interfaces to eliminate : any types
+// ============================================================================
+
+/** Database row type for test_runs table */
+interface TestRunRow {
+  id: string;
+  suite_id: string;
+  suite_name?: string;
+  project_id?: string;
+  project_name?: string;
+  test_id?: string;
+  schedule_id?: string;
+  organization_id: string;
+  browser: string;
+  branch?: string;
+  test_type?: string;
+  status: string;
+  started_at?: string | Date;
+  completed_at?: string | Date;
+  duration_ms?: number;
+  created_at: string | Date;
+  results?: TestRunResult[];
+  error_message?: string;
+  accessibility_results?: Record<string, unknown>;
+  run_env_vars?: Record<string, string>;
+  priority?: number;
+  triggered_by?: string;
+  user_id?: string;
+  pr_number?: number;
+  results_count?: number;
+  passed_count?: number;
+  failed_count?: number;
+  skipped_count?: number;
+}
+
+/** Database row type for selector_overrides table */
+interface SelectorOverrideRow {
+  test_id: string;
+  step_id: string;
+  original_selector: string;
+  new_selector: string;
+  override_by: string;
+  override_by_email: string;
+  override_at: string;
+  notes?: string;
+}
+
+/** Database row type for healed_selector_history table */
+interface HealedSelectorRow {
+  run_id: string;
+  test_id: string;
+  step_id: string;
+  original_selector: string;
+  healed_selector: string;
+  strategy: string;
+  healing_strategy?: string;
+  confidence: number;
+  healing_confidence?: number;
+  healed_at: string;
+  approved?: boolean;
+  approved_by?: string;
+  approved_at?: string;
+  was_successful?: boolean;
+  was_accepted?: boolean;
+  accepted_by?: string;
+  accepted_at?: string;
+  was_rejected?: boolean;
+  rejection_reason?: string;
+  rejected_by?: string;
+  rejected_at?: string;
+  suggested_alternative?: string;
+  suggested_selector?: string;
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
@@ -97,7 +172,7 @@ const HEALED_SELECTOR_COLUMNS = [
  * Gracefully handles missing heavy columns (results, accessibility_results, run_env_vars)
  * which may be absent when using TEST_RUN_COLUMNS_LIGHT for lightweight queries.
  */
-function rowToTestRun(row: any): TestRun {
+function rowToTestRun(row: TestRunRow): TestRun {
   return {
     id: row.id,
     suite_id: row.suite_id,
@@ -137,7 +212,7 @@ function rowToTestRun(row: any): TestRun {
 /**
  * Convert a database row to a SelectorOverride object
  */
-function rowToSelectorOverride(row: any): SelectorOverride {
+function rowToSelectorOverride(row: SelectorOverrideRow): SelectorOverride {
   return {
     test_id: row.test_id,
     step_id: row.step_id,
@@ -153,7 +228,7 @@ function rowToSelectorOverride(row: any): SelectorOverride {
 /**
  * Convert a database row to a HealedSelectorEntry object
  */
-function rowToHealedSelectorEntry(row: any): HealedSelectorEntry {
+function rowToHealedSelectorEntry(row: HealedSelectorRow): HealedSelectorEntry {
   return {
     run_id: row.run_id,
     test_id: row.test_id,
@@ -268,7 +343,7 @@ export async function updateTestRun(id: string, updates: Partial<TestRun>): Prom
   if (isDatabaseConnected()) {
     try {
       const setClauses: string[] = [];
-      const values: any[] = [];
+      const values: unknown[] = [];
       let paramIndex = 1;
 
       // Build dynamic SET clause
@@ -392,7 +467,7 @@ export async function listTestRunsBySuite(suiteId: string, orgId?: string): Prom
     try {
       // Feature #197: Use lightweight columns -- callers only need metadata and counts
       let queryText = `SELECT ${TEST_RUN_COLUMNS_LIGHT} FROM test_runs WHERE suite_id = $1`;
-      const params: any[] = [suiteId];
+      const params: unknown[] = [suiteId];
 
       if (orgId) {
         queryText += ' AND organization_id = $2';
@@ -429,7 +504,7 @@ export async function listTestRunsByProject(projectId: string, orgId?: string): 
     try {
       // Feature #197: Use lightweight columns -- callers only need metadata and counts
       let queryText = `SELECT ${TEST_RUN_COLUMNS_LIGHT} FROM test_runs WHERE project_id = $1`;
-      const params: any[] = [projectId];
+      const params: unknown[] = [projectId];
 
       if (orgId) {
         queryText += ' AND organization_id = $2';
@@ -490,7 +565,7 @@ export async function listTestRunsByOrg(
       // or use getFlakinessTrendData() for targeted single-test extraction.
       const columns = options.includeResults ? TEST_RUN_COLUMNS : TEST_RUN_COLUMNS_LIGHT;
       let queryText = `SELECT ${columns} FROM test_runs WHERE organization_id = $1`;
-      const params: any[] = [orgId];
+      const params: unknown[] = [orgId];
       let paramIndex = 2;
 
       // Feature #142: Add date filter to prevent loading years of data
@@ -642,7 +717,7 @@ export async function getRecentTestRuns(
     try {
       // Feature #124: Single query with window function instead of separate COUNT + SELECT
       let whereClause = 'organization_id = $1';
-      const params: any[] = [orgId];
+      const params: unknown[] = [orgId];
 
       if (options.status) {
         whereClause += ' AND status = $2';
@@ -725,7 +800,7 @@ export async function listTestRunsPaginated(
     try {
       // Build WHERE clause
       let whereClause = 'WHERE organization_id = $1';
-      const params: any[] = [orgId];
+      const params: unknown[] = [orgId];
       let paramIndex = 2;
 
       if (options.status) {
@@ -1029,6 +1104,16 @@ export interface FlakinessTrendRow {
   result_duration_ms: number | null;
 }
 
+/** Database row type for flakiness trend query (before conversion to FlakinessTrendRow) */
+interface FlakinessTrendDBRow {
+  run_id: string;
+  created_at: string | Date;
+  completed_at: string | Date | null;
+  result_test_id: string;
+  result_status: string;
+  result_duration_ms: number | null;
+}
+
 /**
  * Feature #197: Get flakiness trend data for a specific test without loading
  * the entire results JSONB column. Uses jsonb_array_elements to extract only
@@ -1063,7 +1148,7 @@ export async function getFlakinessTrendData(
         [orgId, since, testId, limit]
       );
       if (result && result.rows) {
-        return result.rows.map((row: any) => ({
+        return result.rows.map((row: FlakinessTrendDBRow) => ({
           run_id: row.run_id,
           created_at: new Date(row.created_at),
           completed_at: row.completed_at ? new Date(row.completed_at) : null,
@@ -1157,7 +1242,7 @@ export async function getTestRunMetadataForSuite(
           FROM test_runs
           WHERE suite_id = $1 AND test_id = ANY($2)
       `;
-      const params: any[] = [suiteId, testIds];
+      const params: unknown[] = [suiteId, testIds];
       let paramIndex = 3;
 
       if (orgId) {
