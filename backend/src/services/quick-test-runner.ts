@@ -17,6 +17,7 @@ import { chromium, Browser, Page } from 'playwright';
 import { getWebSocketIO } from './websocket-events.js';
 import { aiService } from './ai-service.js';
 import { isPrivateIP, validateURLForSSRF } from '../utils/index.js';
+import { createLogger } from './logger.js';
 
 // Feature #433: SSRF protection - check if resolved IPs are private
 function validateResolvedIPs(addresses: string[]): { safe: boolean; error?: string } {
@@ -182,6 +183,34 @@ interface AIAnalysisResult {
 // In-memory storage for quick test results (24h TTL)
 const quickTestResults = new Map<string, QuickTestResult>();
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+// Feature #446: Bound in-memory Map with max size to prevent memory exhaustion
+const MAX_RESULTS = 1000;
+const quickTestLogger = createLogger('quick-test-runner');
+
+/**
+ * Feature #446: Evict oldest entry from the quickTestResults Map
+ * Maps maintain insertion order, so the first entry is the oldest
+ */
+function evictOldestResult(): void {
+  const firstKey = quickTestResults.keys().next().value;
+  if (firstKey !== undefined) {
+    quickTestResults.delete(firstKey);
+    quickTestLogger.info({ evictedRunId: firstKey, mapSize: quickTestResults.size }, 'Evicted oldest quick test result due to max size limit');
+  }
+}
+
+/**
+ * Feature #446: Safe set operation that enforces max size limit
+ * Evicts oldest entries if the Map exceeds MAX_RESULTS
+ */
+function safeSetQuickTestResult(runId: string, result: QuickTestResult): void {
+  // Check if we need to evict before inserting
+  if (quickTestResults.size >= MAX_RESULTS && !quickTestResults.has(runId)) {
+    evictOldestResult();
+  }
+  quickTestResults.set(runId, result);
+}
 
 // ============================================================
 // Wave Emitters
@@ -796,7 +825,8 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
     ],
   };
 
-  quickTestResults.set(runId, testResult);
+  // Feature #446: Use safe setter that enforces max size limit
+  safeSetQuickTestResult(runId, testResult);
 
   // Schedule cleanup after TTL
   setTimeout(() => {
@@ -939,7 +969,8 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
     if (browser) {
       await browser.close().catch(() => {});
     }
-    quickTestResults.set(runId, testResult);
+    // Feature #446: Use safe setter that enforces max size limit
+    safeSetQuickTestResult(runId, testResult);
   }
 }
 
