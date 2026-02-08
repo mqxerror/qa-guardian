@@ -5,7 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { RoleProtectedRoute } from './components/RoleProtectedRoute';
 import { Navigation } from './components/Navigation';
 import { Layout } from './components/Layout';
-import { RouteErrorBoundary, ErrorFallback } from './components/ErrorBoundary';
+import { RouteErrorBoundary, ErrorFallback, PageErrorBoundary } from './components/ErrorBoundary';
 // Feature #412: AIInsightsHub deleted - child pages promoted to /ai/* routes
 import { MCPHub, MCPHubIndex } from './components/MCPHub';
 import { QAChatWidget } from './components/QAChatWidget';
@@ -1146,28 +1146,37 @@ function App() {
         <Route path="/shared/run/:token" element={<SharedTestRunPage />} />
 
         {/* Protected routes - require authentication */}
+        {/* Feature #450: Dashboard routes wrapped with PageErrorBoundary */}
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <DashboardPage />
+              <PageErrorBoundary>
+                <DashboardPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
         {/* Feature #425: Quick Test - instant URL analysis */}
+        {/* Feature #450: Quick Test wrapped with PageErrorBoundary */}
         <Route
           path="/quick-test"
           element={
             <ProtectedRoute>
-              <QuickTestPage />
+              <PageErrorBoundary>
+                <QuickTestPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
+        {/* Feature #450: Project routes wrapped with PageErrorBoundary */}
         <Route
           path="/projects"
           element={
             <ProtectedRoute>
-              <ProjectsPage />
+              <PageErrorBoundary>
+                <ProjectsPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1175,7 +1184,9 @@ function App() {
           path="/projects/:id"
           element={
             <ProtectedRoute>
-              <ProjectDetailPage />
+              <PageErrorBoundary>
+                <ProjectDetailPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1184,7 +1195,9 @@ function App() {
           path="/projects/:projectId/runs"
           element={
             <ProtectedRoute>
-              <ProjectRunHistoryPage />
+              <PageErrorBoundary>
+                <ProjectRunHistoryPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1193,7 +1206,9 @@ function App() {
           path="/run-history"
           element={
             <ProtectedRoute>
-              <RunHistoryPage />
+              <PageErrorBoundary>
+                <RunHistoryPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1201,7 +1216,9 @@ function App() {
           path="/suites/:suiteId"
           element={
             <ProtectedRoute>
-              <TestSuitePage />
+              <PageErrorBoundary>
+                <TestSuitePage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1210,7 +1227,9 @@ function App() {
           path="/suites/:suiteId/runs"
           element={
             <ProtectedRoute>
-              <SuiteRunHistoryPage />
+              <PageErrorBoundary>
+                <SuiteRunHistoryPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1218,7 +1237,9 @@ function App() {
           path="/tests/:testId"
           element={
             <ProtectedRoute>
-              <TestDetailPage />
+              <PageErrorBoundary>
+                <TestDetailPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1227,15 +1248,20 @@ function App() {
           path="/runs/:runId"
           element={
             <ProtectedRoute>
-              <TestRunResultPage />
+              <PageErrorBoundary>
+                <TestRunResultPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
+        {/* Feature #450: Schedules routes wrapped with PageErrorBoundary */}
         <Route
           path="/schedules"
           element={
             <ProtectedRoute>
-              <SchedulesPage />
+              <PageErrorBoundary>
+                <SchedulesPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1243,15 +1269,20 @@ function App() {
           path="/schedules/:scheduleId"
           element={
             <ProtectedRoute>
-              <ScheduleDetailsPage />
+              <PageErrorBoundary>
+                <ScheduleDetailsPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
+        {/* Feature #450: Analytics routes wrapped with PageErrorBoundary */}
         <Route
           path="/analytics"
           element={
             <ProtectedRoute>
-              <AnalyticsPage />
+              <PageErrorBoundary>
+                <AnalyticsPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1259,15 +1290,20 @@ function App() {
           path="/visual-review"
           element={
             <ProtectedRoute>
-              <VisualReviewPage />
+              <PageErrorBoundary>
+                <VisualReviewPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
+        {/* Feature #450: Security routes wrapped with PageErrorBoundary */}
         <Route
           path="/security"
           element={
             <ProtectedRoute>
-              <SecurityDashboardPage />
+              <PageErrorBoundary>
+                <SecurityDashboardPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1275,7 +1311,9 @@ function App() {
           path="/security/dast-compare"
           element={
             <ProtectedRoute>
-              <DASTComparisonPage />
+              <PageErrorBoundary>
+                <DASTComparisonPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1283,7 +1321,9 @@ function App() {
           path="/security/dast-graphql"
           element={
             <ProtectedRoute>
-              <DASTGraphQLPage />
+              <PageErrorBoundary>
+                <DASTGraphQLPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1291,7 +1331,9 @@ function App() {
           path="/security/trivy"
           element={
             <ProtectedRoute>
-              <TrivyDependencyScanPage />
+              <PageErrorBoundary>
+                <TrivyDependencyScanPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1299,7 +1341,9 @@ function App() {
           path="/security/npm-audit"
           element={
             <ProtectedRoute>
-              <NpmAuditPage />
+              <PageErrorBoundary>
+                <NpmAuditPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1307,7 +1351,9 @@ function App() {
           path="/security/cve-database"
           element={
             <ProtectedRoute>
-              <CVEDatabasePage />
+              <PageErrorBoundary>
+                <CVEDatabasePage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1315,7 +1361,9 @@ function App() {
           path="/security/licenses"
           element={
             <ProtectedRoute>
-              <LicenseCompliancePage />
+              <PageErrorBoundary>
+                <LicenseCompliancePage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1324,7 +1372,9 @@ function App() {
           path="/security/sbom"
           element={
             <ProtectedRoute>
-              <SbomPage />
+              <PageErrorBoundary>
+                <SbomPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1332,7 +1382,9 @@ function App() {
           path="/security/containers"
           element={
             <ProtectedRoute>
-              <ContainerScanPage />
+              <PageErrorBoundary>
+                <ContainerScanPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1341,7 +1393,9 @@ function App() {
           path="/security/upgrade-recommendations"
           element={
             <ProtectedRoute>
-              <UpgradeRecommendationsPage />
+              <PageErrorBoundary>
+                <UpgradeRecommendationsPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1350,7 +1404,9 @@ function App() {
           path="/security/dependency-tree"
           element={
             <ProtectedRoute>
-              <DependencyTreePage />
+              <PageErrorBoundary>
+                <DependencyTreePage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1358,7 +1414,9 @@ function App() {
           path="/security/dependency-alerts"
           element={
             <ProtectedRoute>
-              <DependencyAlertsPage />
+              <PageErrorBoundary>
+                <DependencyAlertsPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1366,7 +1424,9 @@ function App() {
           path="/security/dependency-policies"
           element={
             <ProtectedRoute>
-              <DependencyPolicyPage />
+              <PageErrorBoundary>
+                <DependencyPolicyPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1374,7 +1434,9 @@ function App() {
           path="/security/auto-pr"
           element={
             <ProtectedRoute>
-              <AutoPRPage />
+              <PageErrorBoundary>
+                <AutoPRPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1382,7 +1444,9 @@ function App() {
           path="/security/dependency-age"
           element={
             <ProtectedRoute>
-              <DependencyAgePage />
+              <PageErrorBoundary>
+                <DependencyAgePage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1390,7 +1454,9 @@ function App() {
           path="/security/multi-language"
           element={
             <ProtectedRoute>
-              <MultiLanguageDependencyPage />
+              <PageErrorBoundary>
+                <MultiLanguageDependencyPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1398,7 +1464,9 @@ function App() {
           path="/security/vulnerability-history"
           element={
             <ProtectedRoute>
-              <VulnerabilityHistoryPage />
+              <PageErrorBoundary>
+                <VulnerabilityHistoryPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1406,7 +1474,9 @@ function App() {
           path="/security/exploitability"
           element={
             <ProtectedRoute>
-              <ExploitabilityAnalysisPage />
+              <PageErrorBoundary>
+                <ExploitabilityAnalysisPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1414,18 +1484,23 @@ function App() {
           path="/security/scan-cache"
           element={
             <ProtectedRoute>
-              <ScanCachingPage />
+              <PageErrorBoundary>
+                <ScanCachingPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
         {/* Feature #412: AI provider pages removed - content moved to /settings?tab=ai-config */}
         <Route path="/ai/kie-provider" element={<Navigate to="/settings?tab=ai-config" replace />} />
         <Route path="/ai/anthropic-provider" element={<Navigate to="/settings?tab=ai-config" replace />} />
+        {/* Feature #450: AI routes wrapped with PageErrorBoundary */}
         <Route
           path="/ai/router"
           element={
             <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
-              <AIRouterPage />
+              <PageErrorBoundary>
+                <AIRouterPage />
+              </PageErrorBoundary>
             </RoleProtectedRoute>
           }
         />
@@ -1433,7 +1508,9 @@ function App() {
           path="/ai/health"
           element={
             <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
-              <ProviderHealthPage />
+              <PageErrorBoundary>
+                <ProviderHealthPage />
+              </PageErrorBoundary>
             </RoleProtectedRoute>
           }
         />
@@ -1443,7 +1520,9 @@ function App() {
           path="/ai/analytics"
           element={
             <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
-              <AIAnalyticsPage />
+              <PageErrorBoundary>
+                <AIAnalyticsPage />
+              </PageErrorBoundary>
             </RoleProtectedRoute>
           }
         />
@@ -1451,7 +1530,9 @@ function App() {
           path="/ai/test-generator"
           element={
             <ProtectedRoute>
-              <AITestGeneratorPage />
+              <PageErrorBoundary>
+                <AITestGeneratorPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1459,7 +1540,9 @@ function App() {
           path="/ai/test-review"
           element={
             <ProtectedRoute>
-              <AITestReviewPage />
+              <PageErrorBoundary>
+                <AITestReviewPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1468,15 +1551,20 @@ function App() {
           path="/ai/openapi-generator"
           element={
             <ProtectedRoute>
-              <OpenAPITestGeneratorPage />
+              <PageErrorBoundary>
+                <OpenAPITestGeneratorPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
+        {/* Feature #450: Monitoring routes wrapped with PageErrorBoundary */}
         <Route
           path="/monitoring"
           element={
             <ProtectedRoute>
-              <MonitoringPage />
+              <PageErrorBoundary>
+                <MonitoringPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1490,7 +1578,9 @@ function App() {
           path="/ai/flaky-tests"
           element={
             <ProtectedRoute>
-              <FlakyTestsDashboardPage />
+              <PageErrorBoundary>
+                <FlakyTestsDashboardPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1498,7 +1588,9 @@ function App() {
           path="/ai/test-analyzer"
           element={
             <ProtectedRoute>
-              <TestImprovementAnalyzerPage />
+              <PageErrorBoundary>
+                <TestImprovementAnalyzerPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1506,7 +1598,9 @@ function App() {
           path="/ai/test-documentation"
           element={
             <ProtectedRoute>
-              <TestDocumentationPage />
+              <PageErrorBoundary>
+                <TestDocumentationPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1514,17 +1608,22 @@ function App() {
           path="/ai/release-notes"
           element={
             <ProtectedRoute>
-              <ReleaseNotesPage />
+              <PageErrorBoundary>
+                <ReleaseNotesPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
 
         {/* Feature #1832: Unified Settings page with tabbed layout */}
+        {/* Feature #450: Settings routes wrapped with PageErrorBoundary */}
         <Route
           path="/settings"
           element={
             <ProtectedRoute>
-              <SettingsPage />
+              <PageErrorBoundary>
+                <SettingsPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1536,14 +1635,17 @@ function App() {
         <Route path="/organization/api-keys" element={<Navigate to="/settings?tab=api-keys" replace />} />
         <Route path="/organization/webhooks" element={<Navigate to="/settings?tab=webhooks" replace />} />
         {/* Feature #323: Webhook integration guides for n8n/Zapier/Make */}
-        <Route path="/webhooks/integration-guides" element={<ProtectedRoute><WebhookIntegrationGuidesPage /></ProtectedRoute>} />
+        <Route path="/webhooks/integration-guides" element={<ProtectedRoute><PageErrorBoundary><WebhookIntegrationGuidesPage /></PageErrorBoundary></ProtectedRoute>} />
         <Route path="/organization/audit-logs" element={<Navigate to="/settings?tab=audit-logs" replace />} />
         {/* Feature #1365: MCP Hub - consolidated MCP tools under /mcp */}
+        {/* Feature #450: MCP Hub routes wrapped with PageErrorBoundary */}
         <Route
           path="/mcp"
           element={
             <ProtectedRoute>
-              <MCPHub />
+              <PageErrorBoundary>
+                <MCPHub />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         >
@@ -1594,11 +1696,14 @@ function App() {
         {/* Feature #411: AI Action route removed - dead demo page */}
 
         {/* Feature #1732: Comprehensive Report View */}
+        {/* Feature #450: Reports routes wrapped with PageErrorBoundary */}
         <Route
           path="/reports/:reportId"
           element={
             <ProtectedRoute>
-              <ReportPage />
+              <PageErrorBoundary>
+                <ReportPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -1608,7 +1713,9 @@ function App() {
           path="/services"
           element={
             <ProtectedRoute>
-              <ServicesPage />
+              <PageErrorBoundary>
+                <ServicesPage />
+              </PageErrorBoundary>
             </ProtectedRoute>
           }
         />
