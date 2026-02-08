@@ -31,6 +31,113 @@ import { createLogger } from '../logger.js';
 const log = createLogger('repo:dast');
 
 // ============================================
+// Feature #462: Row interfaces to eliminate : any types
+// ============================================
+
+/** Database row type for dast_configs table */
+interface DastConfigRow {
+  project_id: string;
+  enabled: boolean;
+  target_url: string;
+  scan_profile: string;
+  auth_config: Record<string, unknown> | null;
+  context_config: Record<string, unknown> | null;
+  alert_threshold: string;
+  auto_scan: boolean;
+  last_scan_at: Date | null;
+  last_scan_status: string | null;
+  openapi_spec_id: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+/** Database row type for dast_scans table */
+interface DastScanRow {
+  id: string;
+  project_id: string;
+  target_url: string;
+  scan_profile: string;
+  status: string;
+  started_at: Date | string;
+  completed_at: Date | string | null;
+  alerts: unknown[];
+  summary: Record<string, unknown>;
+  statistics: Record<string, unknown> | null;
+  error: string | null;
+  endpoints_tested: unknown[] | null;
+  scope_config: Record<string, unknown> | null;
+  progress: Record<string, unknown> | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+/** Database row type for dast_false_positives table */
+interface DastFalsePositiveRow {
+  id: string;
+  project_id: string;
+  plugin_id: string;
+  url: string;
+  param: string | null;
+  reason: string;
+  marked_by: string;
+  marked_at: Date | string;
+}
+
+/** Database row type for openapi_specs table */
+interface OpenApiSpecRow {
+  id: string;
+  project_id: string;
+  name: string;
+  version: string;
+  content: Record<string, unknown>;
+  endpoints: unknown[];
+  uploaded_at: Date | string;
+  uploaded_by: string;
+}
+
+/** Database row type for dast_schedules table */
+interface DastScheduleRow {
+  id: string;
+  project_id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  frequency: string;
+  cron_expression: string;
+  timezone: string;
+  enabled: boolean;
+  scan_profile: string;
+  target_url: string;
+  notify_on_failure: boolean;
+  notify_on_high_severity: boolean;
+  email_recipients: string[];
+  created_at: Date | string;
+  updated_at: Date | string;
+  created_by: string;
+  next_run_at: Date | string | null;
+  last_run_at: Date | string | null;
+  last_run_id: string | null;
+  run_count: number;
+}
+
+/** Database row type for graphql_scans table */
+interface GraphqlScanRow {
+  id: string;
+  config: Record<string, unknown>;
+  status: string;
+  started_at: Date | string;
+  completed_at: Date | string | null;
+  schema: Record<string, unknown> | null;
+  operations_tested: unknown[] | null;
+  findings: unknown[];
+  summary: Record<string, unknown>;
+  progress: Record<string, unknown> | null;
+  error: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// ============================================
 // Column Constants for SELECT queries
 // ============================================
 
@@ -107,7 +214,7 @@ export function getMemoryGraphqlScans(): Map<string, GraphQLScan> {
 
 export async function getDastConfig(projectId: string): Promise<DASTConfig | null> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DastConfigRow>(
       `SELECT ${DAST_CONFIG_COLUMNS} FROM dast_configs WHERE project_id = $1`,
       [projectId]
     );
@@ -121,7 +228,7 @@ export async function getDastConfig(projectId: string): Promise<DASTConfig | nul
 
 export async function saveDastConfig(projectId: string, config: DASTConfig): Promise<DASTConfig> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DastConfigRow>(
       `INSERT INTO dast_configs (
         project_id, enabled, target_url, scan_profile, auth_config,
         context_config, alert_threshold, auto_scan, last_scan_at,
@@ -172,18 +279,18 @@ export async function deleteDastConfig(projectId: string): Promise<boolean> {
   return false;
 }
 
-function parseDastConfigRow(row: any): DASTConfig {
+function parseDastConfigRow(row: DastConfigRow): DASTConfig {
   return {
     enabled: row.enabled,
     targetUrl: row.target_url,
-    scanProfile: row.scan_profile,
-    authConfig: row.auth_config,
-    contextConfig: row.context_config,
-    alertThreshold: row.alert_threshold,
+    scanProfile: row.scan_profile as DASTConfig['scanProfile'],
+    authConfig: row.auth_config as DASTConfig['authConfig'],
+    contextConfig: row.context_config as DASTConfig['contextConfig'],
+    alertThreshold: row.alert_threshold as DASTConfig['alertThreshold'],
     autoScan: row.auto_scan,
     lastScanAt: row.last_scan_at?.toISOString(),
-    lastScanStatus: row.last_scan_status,
-    openApiSpecId: row.openapi_spec_id,
+    lastScanStatus: row.last_scan_status as DASTConfig['lastScanStatus'],
+    openApiSpecId: row.openapi_spec_id ?? undefined,
   };
 }
 
@@ -193,7 +300,7 @@ function parseDastConfigRow(row: any): DASTConfig {
 
 export async function createDastScan(scan: DASTScanResult): Promise<DASTScanResult> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DastScanRow>(
       `INSERT INTO dast_scans (
         id, project_id, target_url, scan_profile, status,
         started_at, completed_at, alerts, summary, statistics,
@@ -226,7 +333,7 @@ export async function createDastScan(scan: DASTScanResult): Promise<DASTScanResu
 
 export async function getDastScan(scanId: string): Promise<DASTScanResult | null> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DastScanRow>(
       `SELECT ${DAST_SCAN_COLUMNS} FROM dast_scans WHERE id = $1`,
       [scanId]
     );
@@ -241,7 +348,7 @@ export async function getDastScan(scanId: string): Promise<DASTScanResult | null
 export async function updateDastScan(scanId: string, updates: Partial<DASTScanResult>): Promise<DASTScanResult | null> {
   if (isDatabaseConnected()) {
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: unknown[] = [];
     let paramIndex = 1;
 
     if (updates.status !== undefined) {
@@ -286,7 +393,7 @@ export async function updateDastScan(scanId: string, updates: Partial<DASTScanRe
     }
 
     values.push(scanId);
-    const result = await query<any>(
+    const result = await query<DastScanRow>(
       `UPDATE dast_scans SET ${setClauses.join(', ')}, updated_at = NOW() WHERE id = $${paramIndex} RETURNING *`,
       values
     );
@@ -300,7 +407,7 @@ export async function updateDastScan(scanId: string, updates: Partial<DASTScanRe
 
 export async function getDastScansByProject(projectId: string): Promise<DASTScanResult[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DastScanRow>(
       `SELECT ${DAST_SCAN_COLUMNS} FROM dast_scans WHERE project_id = $1 ORDER BY started_at DESC`,
       [projectId]
     );
@@ -322,7 +429,7 @@ export async function getDastScansByOrg(
 ): Promise<DASTScanResult[]> {
   if (isDatabaseConnected()) {
     const conditions = ['p.organization_id = $1'];
-    const params: any[] = [orgId];
+    const params: unknown[] = [orgId];
     let paramIndex = 2;
 
     if (options?.since) {
@@ -332,7 +439,7 @@ export async function getDastScansByOrg(
 
     const limitClause = options?.limit ? `LIMIT ${options.limit}` : '';
 
-    const result = await query<any>(
+    const result = await query<DastScanRow>(
       `SELECT s.* FROM dast_scans s
        INNER JOIN projects p ON s.project_id = p.id
        WHERE ${conditions.join(' AND ')}
@@ -358,22 +465,24 @@ export async function deleteDastScan(scanId: string): Promise<boolean> {
   return false;
 }
 
-function parseDastScanRow(row: any): DASTScanResult {
+function parseDastScanRow(row: DastScanRow): DASTScanResult {
+  const startedAt = row.started_at instanceof Date ? row.started_at.toISOString() : row.started_at;
+  const completedAt = row.completed_at instanceof Date ? row.completed_at.toISOString() : (row.completed_at ?? undefined);
   return {
     id: row.id,
     projectId: row.project_id,
     targetUrl: row.target_url,
-    scanProfile: row.scan_profile,
-    status: row.status,
-    startedAt: row.started_at?.toISOString() || row.started_at,
-    completedAt: row.completed_at?.toISOString() || row.completed_at,
-    alerts: row.alerts || [],
-    summary: row.summary || { total: 0, byRisk: { high: 0, medium: 0, low: 0, informational: 0 }, byConfidence: { high: 0, medium: 0, low: 0 } },
-    statistics: row.statistics,
-    error: row.error,
-    endpointsTested: row.endpoints_tested,
-    scopeConfig: row.scope_config,
-    progress: row.progress,
+    scanProfile: row.scan_profile as DASTScanResult['scanProfile'],
+    status: row.status as DASTScanResult['status'],
+    startedAt,
+    completedAt,
+    alerts: (row.alerts || []) as DASTScanResult['alerts'],
+    summary: (row.summary || { total: 0, byRisk: { high: 0, medium: 0, low: 0, informational: 0 }, byConfidence: { high: 0, medium: 0, low: 0 } }) as DASTScanResult['summary'],
+    statistics: row.statistics as DASTScanResult['statistics'],
+    error: row.error ?? undefined,
+    endpointsTested: (row.endpoints_tested ?? undefined) as unknown as DASTScanResult['endpointsTested'],
+    scopeConfig: row.scope_config as DASTScanResult['scopeConfig'],
+    progress: row.progress as DASTScanResult['progress'],
   };
 }
 
@@ -383,7 +492,7 @@ function parseDastScanRow(row: any): DASTScanResult {
 
 export async function addDastFalsePositive(fp: DASTFalsePositive): Promise<DASTFalsePositive> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DastFalsePositiveRow>(
       `INSERT INTO dast_false_positives (
         id, project_id, plugin_id, url, param, reason, marked_by, marked_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -408,7 +517,7 @@ export async function addDastFalsePositive(fp: DASTFalsePositive): Promise<DASTF
 
 export async function getDastFalsePositives(projectId: string): Promise<DASTFalsePositive[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DastFalsePositiveRow>(
       `SELECT ${DAST_FALSE_POSITIVE_COLUMNS} FROM dast_false_positives WHERE project_id = $1 ORDER BY marked_at DESC`,
       [projectId]
     );
@@ -433,7 +542,7 @@ export async function deleteDastFalsePositive(id: string): Promise<boolean> {
 
 export async function checkFalsePositive(projectId: string, pluginId: string, url: string, param?: string): Promise<DASTFalsePositive | null> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DastFalsePositiveRow>(
       `SELECT ${DAST_FALSE_POSITIVE_COLUMNS} FROM dast_false_positives
        WHERE project_id = $1 AND plugin_id = $2 AND url = $3
        AND (param = $4 OR (param IS NULL AND $4 IS NULL))`,
@@ -447,16 +556,17 @@ export async function checkFalsePositive(projectId: string, pluginId: string, ur
   return null;
 }
 
-function parseFalsePositiveRow(row: any): DASTFalsePositive {
+function parseFalsePositiveRow(row: DastFalsePositiveRow): DASTFalsePositive {
+  const markedAt = row.marked_at instanceof Date ? row.marked_at.toISOString() : row.marked_at;
   return {
     id: row.id,
     projectId: row.project_id,
     pluginId: row.plugin_id,
     url: row.url,
-    param: row.param,
+    param: row.param ?? undefined,
     reason: row.reason,
     markedBy: row.marked_by,
-    markedAt: row.marked_at?.toISOString() || row.marked_at,
+    markedAt,
   };
 }
 
@@ -466,7 +576,7 @@ function parseFalsePositiveRow(row: any): DASTFalsePositive {
 
 export async function saveOpenApiSpec(spec: OpenAPISpec): Promise<OpenAPISpec> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<OpenApiSpecRow>(
       `INSERT INTO openapi_specs (
         id, project_id, name, version, content, endpoints, uploaded_at, uploaded_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -498,7 +608,7 @@ export async function saveOpenApiSpec(spec: OpenAPISpec): Promise<OpenAPISpec> {
 
 export async function getOpenApiSpec(specId: string): Promise<OpenAPISpec | null> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<OpenApiSpecRow>(
       `SELECT ${OPENAPI_SPEC_COLUMNS} FROM openapi_specs WHERE id = $1`,
       [specId]
     );
@@ -512,7 +622,7 @@ export async function getOpenApiSpec(specId: string): Promise<OpenAPISpec | null
 
 export async function getOpenApiSpecsByProject(projectId: string): Promise<OpenAPISpec[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<OpenApiSpecRow>(
       `SELECT ${OPENAPI_SPEC_COLUMNS} FROM openapi_specs WHERE project_id = $1 ORDER BY uploaded_at DESC`,
       [projectId]
     );
@@ -535,15 +645,16 @@ export async function deleteOpenApiSpec(specId: string): Promise<boolean> {
   return false;
 }
 
-function parseOpenApiSpecRow(row: any): OpenAPISpec {
+function parseOpenApiSpecRow(row: OpenApiSpecRow): OpenAPISpec {
+  const uploadedAt = row.uploaded_at instanceof Date ? row.uploaded_at.toISOString() : row.uploaded_at;
   return {
     id: row.id,
     projectId: row.project_id,
     name: row.name,
     version: row.version,
-    content: row.content,
-    endpoints: row.endpoints || [],
-    uploadedAt: row.uploaded_at?.toISOString() || row.uploaded_at,
+    content: row.content as unknown as string,
+    endpoints: (row.endpoints || []) as OpenAPISpec['endpoints'],
+    uploadedAt,
     uploadedBy: row.uploaded_by,
   };
 }
@@ -554,7 +665,7 @@ function parseOpenApiSpecRow(row: any): OpenAPISpec {
 
 export async function createDastSchedule(schedule: DASTSchedule): Promise<DASTSchedule> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DastScheduleRow>(
       `INSERT INTO dast_schedules (
         id, project_id, organization_id, name, description, frequency,
         cron_expression, timezone, enabled, scan_profile, target_url,
@@ -596,7 +707,7 @@ export async function createDastSchedule(schedule: DASTSchedule): Promise<DASTSc
 
 export async function getDastSchedule(scheduleId: string): Promise<DASTSchedule | null> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DastScheduleRow>(
       `SELECT ${DAST_SCHEDULE_COLUMNS} FROM dast_schedules WHERE id = $1`,
       [scheduleId]
     );
@@ -610,7 +721,7 @@ export async function getDastSchedule(scheduleId: string): Promise<DASTSchedule 
 
 export async function getDastSchedulesByProject(projectId: string): Promise<DASTSchedule[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DastScheduleRow>(
       `SELECT ${DAST_SCHEDULE_COLUMNS} FROM dast_schedules WHERE project_id = $1 ORDER BY created_at DESC`,
       [projectId]
     );
@@ -625,7 +736,7 @@ export async function getDastSchedulesByProject(projectId: string): Promise<DAST
 export async function updateDastSchedule(scheduleId: string, updates: Partial<DASTSchedule>): Promise<DASTSchedule | null> {
   if (isDatabaseConnected()) {
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: unknown[] = [];
     let paramIndex = 1;
 
     if (updates.name !== undefined) {
@@ -694,7 +805,7 @@ export async function updateDastSchedule(scheduleId: string, updates: Partial<DA
     }
 
     values.push(scheduleId);
-    const result = await query<any>(
+    const result = await query<DastScheduleRow>(
       `UPDATE dast_schedules SET ${setClauses.join(', ')}, updated_at = NOW() WHERE id = $${paramIndex} RETURNING *`,
       values
     );
@@ -719,7 +830,7 @@ export async function deleteDastSchedule(scheduleId: string): Promise<boolean> {
 
 export async function getEnabledDastSchedules(): Promise<DASTSchedule[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DastScheduleRow>(
       `SELECT ${DAST_SCHEDULE_COLUMNS} FROM dast_schedules WHERE enabled = true ORDER BY next_run_at ASC`,
       []
     );
@@ -731,28 +842,32 @@ export async function getEnabledDastSchedules(): Promise<DASTSchedule[]> {
   return [];
 }
 
-function parseDastScheduleRow(row: any): DASTSchedule {
+function parseDastScheduleRow(row: DastScheduleRow): DASTSchedule {
+  const createdAt = row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at;
+  const updatedAt = row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at;
+  const nextRunAt = row.next_run_at instanceof Date ? row.next_run_at.toISOString() : (row.next_run_at ?? undefined);
+  const lastRunAt = row.last_run_at instanceof Date ? row.last_run_at.toISOString() : (row.last_run_at ?? undefined);
   return {
     id: row.id,
     projectId: row.project_id,
     organizationId: row.organization_id,
     name: row.name,
-    description: row.description,
-    frequency: row.frequency,
+    description: row.description ?? undefined,
+    frequency: row.frequency as DASTSchedule['frequency'],
     cronExpression: row.cron_expression,
     timezone: row.timezone,
     enabled: row.enabled,
-    scanProfile: row.scan_profile,
+    scanProfile: row.scan_profile as DASTSchedule['scanProfile'],
     targetUrl: row.target_url,
     notifyOnFailure: row.notify_on_failure,
     notifyOnHighSeverity: row.notify_on_high_severity,
     emailRecipients: row.email_recipients || [],
-    createdAt: row.created_at?.toISOString() || row.created_at,
-    updatedAt: row.updated_at?.toISOString() || row.updated_at,
+    createdAt,
+    updatedAt,
     createdBy: row.created_by,
-    nextRunAt: row.next_run_at?.toISOString() || row.next_run_at,
-    lastRunAt: row.last_run_at?.toISOString() || row.last_run_at,
-    lastRunId: row.last_run_id,
+    nextRunAt,
+    lastRunAt,
+    lastRunId: row.last_run_id ?? undefined,
     runCount: row.run_count,
   };
 }
@@ -763,7 +878,7 @@ function parseDastScheduleRow(row: any): DASTSchedule {
 
 export async function createGraphqlScan(scan: GraphQLScan): Promise<GraphQLScan> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<GraphqlScanRow>(
       `INSERT INTO graphql_scans (
         id, config, status, started_at, completed_at, schema,
         operations_tested, findings, summary, progress, error
@@ -792,7 +907,7 @@ export async function createGraphqlScan(scan: GraphQLScan): Promise<GraphQLScan>
 
 export async function getGraphqlScan(scanId: string): Promise<GraphQLScan | null> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<GraphqlScanRow>(
       `SELECT ${GRAPHQL_SCAN_COLUMNS} FROM graphql_scans WHERE id = $1`,
       [scanId]
     );
@@ -807,7 +922,7 @@ export async function getGraphqlScan(scanId: string): Promise<GraphQLScan | null
 export async function updateGraphqlScan(scanId: string, updates: Partial<GraphQLScan>): Promise<GraphQLScan | null> {
   if (isDatabaseConnected()) {
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: unknown[] = [];
     let paramIndex = 1;
 
     if (updates.status !== undefined) {
@@ -848,7 +963,7 @@ export async function updateGraphqlScan(scanId: string, updates: Partial<GraphQL
     }
 
     values.push(scanId);
-    const result = await query<any>(
+    const result = await query<GraphqlScanRow>(
       `UPDATE graphql_scans SET ${setClauses.join(', ')}, updated_at = NOW() WHERE id = $${paramIndex} RETURNING *`,
       values
     );
@@ -873,7 +988,7 @@ export async function deleteGraphqlScan(scanId: string): Promise<boolean> {
 
 export async function listGraphqlScans(): Promise<GraphQLScan[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<GraphqlScanRow>(
       `SELECT ${GRAPHQL_SCAN_COLUMNS} FROM graphql_scans ORDER BY started_at DESC`,
       []
     );
@@ -885,18 +1000,20 @@ export async function listGraphqlScans(): Promise<GraphQLScan[]> {
   return [];
 }
 
-function parseGraphqlScanRow(row: any): GraphQLScan {
+function parseGraphqlScanRow(row: GraphqlScanRow): GraphQLScan {
+  const startedAt = row.started_at instanceof Date ? row.started_at.toISOString() : row.started_at;
+  const completedAt = row.completed_at instanceof Date ? row.completed_at.toISOString() : (row.completed_at ?? undefined);
   return {
     id: row.id,
-    config: row.config,
-    status: row.status,
-    startedAt: row.started_at?.toISOString() || row.started_at,
-    completedAt: row.completed_at?.toISOString() || row.completed_at,
-    schema: row.schema,
-    operationsTested: row.operations_tested || [],
-    findings: row.findings || [],
-    summary: row.summary || { totalOperations: 0, queriesTested: 0, mutationsTested: 0, totalFindings: 0, bySeverity: { high: 0, medium: 0, low: 0, informational: 0 } },
-    progress: row.progress,
-    error: row.error,
+    config: row.config as unknown as GraphQLScan['config'],
+    status: row.status as GraphQLScan['status'],
+    startedAt,
+    completedAt,
+    schema: (row.schema ?? undefined) as unknown as GraphQLScan['schema'],
+    operationsTested: (row.operations_tested || []) as GraphQLScan['operationsTested'],
+    findings: (row.findings || []) as GraphQLScan['findings'],
+    summary: (row.summary || { totalOperations: 0, queriesTested: 0, mutationsTested: 0, totalFindings: 0, bySeverity: { high: 0, medium: 0, low: 0, informational: 0 } }) as GraphQLScan['summary'],
+    progress: row.progress as GraphQLScan['progress'],
+    error: row.error ?? undefined,
   };
 }

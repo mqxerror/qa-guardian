@@ -18,6 +18,72 @@ import { createLogger } from '../logger.js';
 const log = createLogger('repo:webhooks');
 
 // ============================================
+// Feature #462: Row interfaces to eliminate : any types
+// ============================================
+
+/** Database row type for webhook_subscriptions table */
+interface WebhookSubscriptionRow {
+  id: string;
+  organization_id: string;
+  project_id: string | null;
+  project_ids: string[] | null;
+  result_statuses: string[] | null;
+  name: string;
+  url: string;
+  events: string[];
+  headers: Record<string, string> | null;
+  secret: string | null;
+  payload_template: string | null;
+  retry_enabled: boolean;
+  max_retries: number;
+  batch_enabled: boolean;
+  batch_size: number;
+  batch_interval_seconds: number;
+  enabled: boolean;
+  created_at: Date | string;
+  updated_at: Date | string;
+  last_triggered_at: Date | string | null;
+  failure_count: number;
+  success_count: number;
+  consecutive_failures: number;
+  disabled_at: Date | string | null;
+  disable_reason: string | null;
+}
+
+/** Database row type for webhook_delivery_logs table */
+interface WebhookDeliveryLogRow {
+  id: string;
+  subscription_id: string;
+  subscription_name: string;
+  event_type: string;
+  url: string;
+  request_method: string;
+  request_headers: Record<string, string>;
+  request_body: string;
+  request_size_bytes: number;
+  response_status: number | null;
+  response_headers: Record<string, string> | null;
+  response_body: string | null;
+  response_size_bytes: number | null;
+  duration_ms: number | null;
+  error_message: string | null;
+  error_code: string | null;
+  attempt_number: number;
+  max_attempts: number;
+  status: string;
+  timestamp: Date | string;
+  completed_at: Date | string | null;
+  run_id: string | null;
+  project_id: string | null;
+  test_id: string | null;
+}
+
+/** Database row type for count queries */
+interface CountRow {
+  count: string;
+}
+
+// ============================================
 // Column Constants (Feature #100: Replace SELECT * with explicit columns)
 // ============================================
 
@@ -47,7 +113,7 @@ const DELIVERY_LOG_COLUMNS = [
 // Helper Functions
 // ============================================
 
-function parseSubscriptionRow(row: any): WebhookSubscription {
+function parseSubscriptionRow(row: WebhookSubscriptionRow): WebhookSubscription {
   // Feature #391: Decrypt the webhook secret after SELECT
   let decryptedSecret: string | undefined;
   if (row.secret) {
@@ -65,7 +131,7 @@ function parseSubscriptionRow(row: any): WebhookSubscription {
     organization_id: row.organization_id,
     project_id: row.project_id || undefined,
     project_ids: row.project_ids || undefined,
-    result_statuses: row.result_statuses || undefined,
+    result_statuses: (row.result_statuses || undefined) as WebhookSubscription['result_statuses'],
     name: row.name,
     url: row.url,
     events: row.events as WebhookEventType[],
@@ -89,7 +155,7 @@ function parseSubscriptionRow(row: any): WebhookSubscription {
   };
 }
 
-function parseDeliveryLogRow(row: any): WebhookDeliveryLog {
+function parseDeliveryLogRow(row: WebhookDeliveryLogRow): WebhookDeliveryLog {
   return {
     id: row.id,
     subscription_id: row.subscription_id,
@@ -142,7 +208,7 @@ export async function createSubscription(subscription: WebhookSubscription): Pro
   // Feature #391: Encrypt the webhook secret before storing
   const encryptedSecret = subscription.secret ? encryptIfNeeded(subscription.secret) : null;
 
-  const result = await query<any>(
+  const result = await query<WebhookSubscriptionRow>(
     `INSERT INTO webhook_subscriptions (
       id, organization_id, project_id, project_ids, result_statuses,
       name, url, events, headers, secret, payload_template,
@@ -194,7 +260,7 @@ export async function getSubscription(subscriptionId: string): Promise<WebhookSu
     return undefined;
   }
 
-  const result = await query<any>(
+  const result = await query<WebhookSubscriptionRow>(
     `SELECT ${SUBSCRIPTION_COLUMNS} FROM webhook_subscriptions WHERE id = $1`,
     [subscriptionId]
   );
@@ -217,7 +283,7 @@ export async function updateSubscription(
   }
 
   const setClauses: string[] = [];
-  const values: any[] = [];
+  const values: unknown[] = [];
   let paramIndex = 1;
 
   if (updates.name !== undefined) {
@@ -315,7 +381,7 @@ export async function updateSubscription(
   values.push(new Date());
 
   values.push(subscriptionId);
-  const result = await query<any>(
+  const result = await query<WebhookSubscriptionRow>(
     `UPDATE webhook_subscriptions SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING ${SUBSCRIPTION_COLUMNS}`,
     values
   );
@@ -349,7 +415,7 @@ export async function listSubscriptions(organizationId: string): Promise<Webhook
     return [];
   }
 
-  const result = await query<any>(
+  const result = await query<WebhookSubscriptionRow>(
     `SELECT ${SUBSCRIPTION_COLUMNS} FROM webhook_subscriptions WHERE organization_id = $1 ORDER BY created_at DESC`,
     [organizationId]
   );
@@ -374,7 +440,7 @@ export async function getSubscriptionsForEvent(
 
   let sql = `SELECT ${SUBSCRIPTION_COLUMNS} FROM webhook_subscriptions
              WHERE organization_id = $1 AND enabled = true AND $2 = ANY(events)`;
-  const params: any[] = [organizationId, eventType];
+  const params: unknown[] = [organizationId, eventType];
 
   if (projectId) {
     // Match if project_id equals, or project_ids contains, or both are null/empty (org-wide)
@@ -384,7 +450,7 @@ export async function getSubscriptionsForEvent(
 
   sql += ' ORDER BY created_at ASC';
 
-  const result = await query<any>(sql, params);
+  const result = await query<WebhookSubscriptionRow>(sql, params);
   if (result) {
     return result.rows.map(parseSubscriptionRow);
   }
@@ -401,7 +467,7 @@ export async function loadAllSubscriptions(): Promise<Map<string, WebhookSubscri
     return map;
   }
 
-  const result = await query<any>(
+  const result = await query<WebhookSubscriptionRow>(
     `SELECT ${SUBSCRIPTION_COLUMNS} FROM webhook_subscriptions ORDER BY created_at DESC`,
     []
   );
@@ -429,7 +495,7 @@ export async function createDeliveryLog(log: WebhookDeliveryLog): Promise<Webhoo
     return log;
   }
 
-  const result = await query<any>(
+  const result = await query<WebhookDeliveryLogRow>(
     `INSERT INTO webhook_delivery_logs (
       id, subscription_id, subscription_name, event_type, url,
       request_method, request_headers, request_body, request_size_bytes,
@@ -488,7 +554,7 @@ export async function getDeliveryLogs(
 
   let countSql = 'SELECT COUNT(*) as count FROM webhook_delivery_logs WHERE subscription_id = $1';
   let dataSql = `SELECT ${DELIVERY_LOG_COLUMNS} FROM webhook_delivery_logs WHERE subscription_id = $1`;
-  const params: any[] = [subscriptionId];
+  const params: unknown[] = [subscriptionId];
 
   if (options?.status) {
     countSql += ' AND status = $2';
@@ -499,8 +565,8 @@ export async function getDeliveryLogs(
   dataSql += ` ORDER BY timestamp DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
 
   const [countResult, dataResult] = await Promise.all([
-    query<any>(countSql, params),
-    query<any>(dataSql, [...params, limit, offset]),
+    query<CountRow>(countSql, params),
+    query<WebhookDeliveryLogRow>(dataSql, [...params, limit, offset]),
   ]);
 
   const total = countResult?.rows[0]?.count ? parseInt(countResult.rows[0].count, 10) : 0;
@@ -531,7 +597,7 @@ export async function getRecentDeliveryLogs(
                  FROM webhook_delivery_logs dl
                  JOIN webhook_subscriptions ws ON dl.subscription_id = ws.id
                  WHERE ws.organization_id = $1`;
-  const params: any[] = [organizationId];
+  const params: unknown[] = [organizationId];
   let paramIndex = 2;
 
   if (options?.eventType) {
@@ -552,8 +618,8 @@ export async function getRecentDeliveryLogs(
   dataSql += ` ORDER BY dl.timestamp DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
 
   const [countResult, dataResult] = await Promise.all([
-    query<any>(countSql, params),
-    query<any>(dataSql, [...params, limit, offset]),
+    query<CountRow>(countSql, params),
+    query<WebhookDeliveryLogRow>(dataSql, [...params, limit, offset]),
   ]);
 
   const total = countResult?.rows[0]?.count ? parseInt(countResult.rows[0].count, 10) : 0;
@@ -594,14 +660,14 @@ export async function getSubscriptionCount(organizationId?: string): Promise<num
   }
 
   let sql = 'SELECT COUNT(*) as count FROM webhook_subscriptions';
-  const params: any[] = [];
+  const params: unknown[] = [];
 
   if (organizationId) {
     sql += ' WHERE organization_id = $1';
     params.push(organizationId);
   }
 
-  const result = await query<any>(sql, params);
+  const result = await query<CountRow>(sql, params);
   if (result && result.rows[0]) {
     return parseInt(result.rows[0].count, 10);
   }
