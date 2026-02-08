@@ -170,9 +170,21 @@ export async function validateMcpScope(
 
     return { valid: true, scopes: data.scopes || [] };
   } catch (error) {
-    // If we can't reach the API, allow access (graceful degradation)
-    log(`MCP scope validation failed: ${error}`);
-    return { valid: true, scopes: ['admin'] };
+    // Feature #434: SECURITY FIX - fail CLOSED, not open
+    // If auth service is unavailable, DENY access rather than grant admin access
+    console.error(`[MCP Auth] SECURITY: Auth service unavailable, denying access: ${error}`);
+    log(`MCP scope validation failed (access DENIED): ${error}`);
+    return {
+      valid: false,
+      scopes: [],
+      error: {
+        jsonrpc: '2.0',
+        error: {
+          code: -32001,  // Unauthorized
+          message: 'Auth service unavailable - access denied for security',
+        },
+      },
+    };
   }
 }
 
