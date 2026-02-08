@@ -8,7 +8,7 @@
  * 1. Always visible: Dashboard, Projects
  * 2. Testing (expanded by default): Schedules, Visual Review, Analytics
  * 3. Security & Quality (collapsed): Security Scans, Monitoring
- * 4. AI Features (collapsed): AI Insights Hub, AI Chat
+ * 4. AI Features (collapsed): AI Insights, Test Generator, AI Chat
  * 5. Settings (collapsed): Team, Settings, Billing, API Keys
  * 6. Developer Tools (collapsed, dev+ role): MCP Hub, Audit Logs
  *
@@ -309,7 +309,7 @@ export function AppSidebar() {
 
   // Group 4: AI Features (collapsed by default)
   const aiMenuItems: MenuItemConfig[] = [
-    { path: '/ai-insights', icon: <AIInsightsIcon />, label: 'AI Insights Hub', visibility: 'all' },
+    { path: '/ai-insights', icon: <AIInsightsIcon />, label: 'AI Insights', visibility: 'all' },
     { path: '/ai/test-generator', icon: <AITestGeneratorIcon />, label: 'Test Generator', visibility: 'qa' },
     { path: '/mcp/chat', icon: <MCPToolsIcon />, label: 'AI Chat', visibility: 'all' },
   ];
