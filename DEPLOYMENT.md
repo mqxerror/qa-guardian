@@ -32,10 +32,11 @@ Traefik routes requests by path prefix. The `dokploy-network` external network c
 
 ## 2. Docker Compose Services
 
-Two compose files exist:
+Three compose files exist:
 
-- `docker-compose.yml` -- local development stack
-- `dokploy/docker-compose.yml` -- production stack with Traefik labels and resource limits
+- `docker-compose.yml` -- local development stack (base services)
+- `docker-compose.deploy.yml` -- production overlay that adds Traefik labels and `dokploy-network` to backend/frontend
+- `dokploy/docker-compose.yml` -- full production stack (standalone alternative, used by Dokploy's native git deploy)
 
 ### Production Services (`dokploy/docker-compose.yml`)
 
@@ -78,11 +79,15 @@ The deployment pipeline is defined in `.github/workflows/deploy.yml` and trigger
 - SSH into 38.111.111.206
 - cd /opt/qa-guardian
 - git pull origin main
-- docker compose build backend frontend
-- docker compose up -d
+- docker compose -f docker-compose.yml -f docker-compose.deploy.yml build backend frontend
+- docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate backend frontend
+- Wait for backend to be healthy (retry loop, up to 120s)
 - Run database migrations
-- Verify health check: curl -f http://localhost:3001/health
+- Verify health: docker exec qa-guardian-backend curl -f http://localhost:3001/health
 ```
+
+> **Note:** The deploy overlay (`docker-compose.deploy.yml`) adds Traefik labels and connects
+> containers to `dokploy-network`. Without it, Traefik cannot route traffic to the backend.
 
 ### GitHub Secrets Required
 
@@ -102,8 +107,8 @@ The deployment pipeline is defined in `.github/workflows/deploy.yml` and trigger
 ssh root@38.111.111.206
 cd /opt/qa-guardian
 git pull origin main
-docker compose build backend frontend
-docker compose up -d --force-recreate backend frontend
+docker compose -f docker-compose.yml -f docker-compose.deploy.yml build backend frontend
+docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate backend frontend
 ```
 
 ### Full Rebuild (All Services)
@@ -112,14 +117,14 @@ docker compose up -d --force-recreate backend frontend
 ssh root@38.111.111.206
 cd /opt/qa-guardian
 git pull origin main
-docker compose down
-docker compose up -d --build
+docker compose -f docker-compose.yml -f docker-compose.deploy.yml down
+docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --build
 ```
 
 ### Run Database Migrations
 
 ```bash
-docker exec qa-guardian-backend npx prisma migrate deploy
+docker exec qa-guardian-backend npm run migrate
 ```
 
 ### Verify Deployment
@@ -128,10 +133,13 @@ docker exec qa-guardian-backend npx prisma migrate deploy
 # Container health
 docker compose ps
 
-# API health
+# Backend health (inside container -- authoritative check)
+docker exec qa-guardian-backend curl -f http://localhost:3001/health
+
+# API routable through Traefik (any non-502 = routing works)
 curl -f https://qa.pixelcraftedmedia.com/api/v1/health
 
-# Frontend
+# Frontend accessible
 curl -I https://qa.pixelcraftedmedia.com
 ```
 
@@ -255,6 +263,18 @@ dig qa.pixelcraftedmedia.com
 
 # Ensure port 80 is open (required for HTTP-01 challenge)
 curl -I http://qa.pixelcraftedmedia.com
+```
+
+### Backend returns 502 Bad Gateway via Traefik
+
+The backend container must be on `dokploy-network` with Traefik labels. If you deployed without the overlay, Traefik cannot reach the backend.
+
+```bash
+# Check if backend is on dokploy-network
+docker inspect qa-guardian-backend --format='{{json .NetworkSettings.Networks}}' | grep dokploy
+
+# Fix: redeploy with the overlay
+docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate backend frontend
 ```
 
 ### WebSocket connections fail
