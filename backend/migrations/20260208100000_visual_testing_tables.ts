@@ -52,7 +52,7 @@ function ensureForeignKey(
     DO $$ BEGIN
       ALTER TABLE "${table}" ADD CONSTRAINT "${constraintName}"
         FOREIGN KEY ("${column}") REFERENCES "${refTable}"("${refColumn}") ON DELETE ${onDelete};
-    EXCEPTION WHEN duplicate_object THEN NULL;
+    EXCEPTION WHEN OTHERS THEN NULL;
     END $$;
   `);
 }
@@ -126,7 +126,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     DO $$ BEGIN
       ALTER TABLE "visual_baselines" ADD CONSTRAINT "visual_baselines_test_viewport_browser_unique"
         UNIQUE ("test_id", "viewport", "browser");
-    EXCEPTION WHEN duplicate_object THEN NULL;
+    EXCEPTION WHEN OTHERS THEN NULL;
     END $$;
   `);
 

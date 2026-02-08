@@ -46,7 +46,7 @@ function ensureForeignKey(
     DO $$ BEGIN
       ALTER TABLE "${table}" ADD CONSTRAINT "${constraintName}"
         FOREIGN KEY ("${column}") REFERENCES "${refTable}"("${refColumn}") ON DELETE ${onDelete};
-    EXCEPTION WHEN duplicate_object THEN NULL;
+    EXCEPTION WHEN OTHERS THEN NULL;
     END $$;
   `);
 }

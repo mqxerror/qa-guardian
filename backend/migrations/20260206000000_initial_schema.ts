@@ -74,7 +74,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   pgm.sql(`
     DO $$ BEGIN
       ALTER TABLE "projects" ADD CONSTRAINT "projects_org_slug_unique" UNIQUE ("organization_id", "slug");
-    EXCEPTION WHEN duplicate_object THEN NULL;
+    EXCEPTION WHEN OTHERS THEN NULL;
     END $$;
   `);
 

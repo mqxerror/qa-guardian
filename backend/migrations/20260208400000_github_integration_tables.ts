@@ -48,7 +48,7 @@ function ensureForeignKey(
     DO $$ BEGIN
       ALTER TABLE "${table}" ADD CONSTRAINT "${constraintName}"
         FOREIGN KEY ("${column}") REFERENCES "${refTable}"("${refColumn}") ON DELETE ${onDelete};
-    EXCEPTION WHEN duplicate_object THEN NULL;
+    EXCEPTION WHEN OTHERS THEN NULL;
     END $$;
   `);
 }
@@ -107,7 +107,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     DO $$ BEGIN
       ALTER TABLE "github_connections" ADD CONSTRAINT "github_connections_org_owner_repo_unique"
         UNIQUE ("organization_id", "owner", "repo");
-    EXCEPTION WHEN duplicate_object THEN NULL;
+    EXCEPTION WHEN OTHERS THEN NULL;
     END $$;
   `);
 
@@ -312,7 +312,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     DO $$ BEGIN
       ALTER TABLE "user_github_tokens" ADD CONSTRAINT "user_github_tokens_user_org_unique"
         UNIQUE ("user_id", "organization_id");
-    EXCEPTION WHEN duplicate_object THEN NULL;
+    EXCEPTION WHEN OTHERS THEN NULL;
     END $$;
   `);
 

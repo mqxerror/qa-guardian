@@ -50,7 +50,7 @@ function ensureForeignKey(
     DO $$ BEGIN
       ALTER TABLE "${table}" ADD CONSTRAINT "${constraintName}"
         FOREIGN KEY ("${column}") REFERENCES "${refTable}"("${refColumn}") ON DELETE ${onDelete};
-    EXCEPTION WHEN duplicate_object THEN NULL;
+    EXCEPTION WHEN OTHERS THEN NULL;
     END $$;
   `);
 }
@@ -74,7 +74,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     DO $$ BEGIN
       ALTER TABLE "project_env_vars" ADD CONSTRAINT "project_env_vars_project_key_unique"
         UNIQUE ("project_id", "key");
-    EXCEPTION WHEN duplicate_object THEN NULL;
+    EXCEPTION WHEN OTHERS THEN NULL;
     END $$;
   `);
 
