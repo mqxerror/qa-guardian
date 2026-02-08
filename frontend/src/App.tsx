@@ -37,7 +37,7 @@ const CreateOrganizationPage = lazy(() => import('./pages/CreateOrganizationPage
 const AcceptInvitationPage = lazy(() => import('./pages/AcceptInvitationPage').then(m => ({ default: m.AcceptInvitationPage })));
 const SchedulesPage = lazy(() => import('./pages/SchedulesPage').then(m => ({ default: m.SchedulesPage })));
 const ScheduleDetailsPage = lazy(() => import('./pages/ScheduleDetailsPage').then(m => ({ default: m.ScheduleDetailsPage })));
-const AIActionPage = lazy(() => import('./pages/AIActionPage').then(m => ({ default: m.AIActionPage })));
+// Feature #411: AIActionPage removed - dead demo page with mock data
 const BillingPage = lazy(() => import('./pages/BillingPage').then(m => ({ default: m.BillingPage })));
 const ApiKeysPage = lazy(() => import('./pages/ApiKeysPage').then(m => ({ default: m.ApiKeysPage })));
 const MCPToolsPage = lazy(() => import('./pages/MCPToolsPage').then(m => ({ default: m.MCPToolsPage })));
@@ -71,24 +71,24 @@ const KieAIProviderPage = lazy(() => import('./pages/KieAIProviderPage').then(m 
 const AnthropicProviderPage = lazy(() => import('./pages/AnthropicProviderPage').then(m => ({ default: m.AnthropicProviderPage })));
 const DependencyAlertsPage = lazy(() => import('./pages/DependencyAlertsPage').then(m => ({ default: m.DependencyAlertsPage })));
 const MCPChatPage = lazy(() => import('./pages/MCPChatPage').then(m => ({ default: m.MCPChatPage })));
-const AIRunComparisonPage = lazy(() => import('./pages/AIRunComparisonPage').then(m => ({ default: m.AIRunComparisonPage })));
+// Feature #411: AIRunComparisonPage removed - dead demo page with mock data
 const MCPAnalyticsPage = lazy(() => import('./pages/MCPAnalyticsPage').then(m => ({ default: m.MCPAnalyticsPage })));
 const MCPPlaygroundPage = lazy(() => import('./pages/MCPPlaygroundPage').then(m => ({ default: m.MCPPlaygroundPage })));
 const SecurityDashboardPage = lazy(() => import('./pages/SecurityDashboardPage').then(m => ({ default: m.SecurityDashboardPage })));
-const OrganizationInsightsPage = lazy(() => import('./pages/OrganizationInsightsPage').then(m => ({ default: m.OrganizationInsightsPage })));
-const BestPracticesPage = lazy(() => import('./pages/BestPracticesPage').then(m => ({ default: m.BestPracticesPage })));
+// Feature #411: OrganizationInsightsPage removed - dead demo page with mock data
+// Feature #411: BestPracticesPage removed - dead demo page with mock data
 const TestImprovementAnalyzerPage = lazy(() => import('./pages/TestImprovementAnalyzerPage').then(m => ({ default: m.TestImprovementAnalyzerPage })));
-const IndustryBenchmarkPage = lazy(() => import('./pages/IndustryBenchmarkPage').then(m => ({ default: m.IndustryBenchmarkPage })));
+// Feature #411: IndustryBenchmarkPage removed - dead demo page with mock data
 const ReleaseNotesPage = lazy(() => import('./pages/ReleaseNotesPage').then(m => ({ default: m.ReleaseNotesPage })));
-const PersonalizedInsightsPage = lazy(() => import('./pages/PersonalizedInsightsPage').then(m => ({ default: m.PersonalizedInsightsPage })));
-const TeamSkillGapsPage = lazy(() => import('./pages/TeamSkillGapsPage').then(m => ({ default: m.TeamSkillGapsPage })));
-const AILearningPage = lazy(() => import('./pages/AILearningPage').then(m => ({ default: m.AILearningPage })));
+// Feature #411: PersonalizedInsightsPage removed - dead demo page with mock data
+// Feature #411: TeamSkillGapsPage removed - dead demo page with mock data
+// Feature #411: AILearningPage removed - dead demo page with mock data
 const TestDocumentationPage = lazy(() => import('./pages/TestDocumentationPage').then(m => ({ default: m.TestDocumentationPage })));
 const ProviderHealthPage = lazy(() => import('./pages/ProviderHealthPage').then(m => ({ default: m.ProviderHealthPage })));
 const AICostTrackingPage = lazy(() => import('./pages/AICostTrackingPage').then(m => ({ default: m.AICostTrackingPage })));
 const AIUsageAnalyticsDashboard = lazy(() => import('./pages/AIUsageAnalyticsDashboard').then(m => ({ default: m.AIUsageAnalyticsDashboard })));
-const AIThinkingDemoPage = lazy(() => import('./pages/AIThinkingDemoPage').then(m => ({ default: m.AIThinkingDemoPage })));
-const AIConfidenceDemoPage = lazy(() => import('./pages/AIConfidenceDemoPage').then(m => ({ default: m.AIConfidenceDemoPage })));
+// Feature #411: AIThinkingDemoPage removed - dead demo page with mock data
+// Feature #411: AIConfidenceDemoPage removed - dead demo page with mock data
 const FlakyTestsDashboardPage = lazy(() => import('./pages/FlakyTestsDashboardPage').then(m => ({ default: m.FlakyTestsDashboardPage })));
 const VisualReviewPage = lazy(() => import('./pages/VisualReviewPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
@@ -1503,22 +1503,15 @@ function App() {
         >
           <Route index element={<AIInsightsIndex />} />
           <Route path="flaky-tests" element={<FlakyTestsDashboardPage />} />
-          <Route path="organization" element={<OrganizationInsightsPage />} />
-          <Route path="best-practices" element={<BestPracticesPage />} />
+          {/* Feature #411: organization route removed - dead demo page */}
+          {/* Feature #411: best-practices route removed - dead demo page */}
           <Route path="test-analyzer" element={<TestImprovementAnalyzerPage />} />
-          <Route path="industry-benchmark" element={<IndustryBenchmarkPage />} />
+          {/* Feature #411: industry-benchmark route removed - dead demo page */}
           <Route path="test-documentation" element={<TestDocumentationPage />} />
           <Route path="release-notes" element={<ReleaseNotesPage />} />
-          <Route path="personalized" element={<PersonalizedInsightsPage />} />
-          <Route
-            path="team-skills"
-            element={
-              <RoleProtectedRoute allowedRoles={['owner', 'admin']}>
-                <TeamSkillGapsPage />
-              </RoleProtectedRoute>
-            }
-          />
-          <Route path="learning" element={<AILearningPage />} />
+          {/* Feature #411: personalized route removed - dead demo page */}
+          {/* Feature #411: team-skills route removed - dead demo page */}
+          {/* Feature #411: learning route removed - dead demo page */}
         </Route>
 
         {/* Feature #1832: Unified Settings page with tabbed layout */}
@@ -1587,42 +1580,10 @@ function App() {
         <Route path="/organization/mcp-schedule-optimizer" element={<Navigate to="/mcp/tools" replace />} />
         {/* Feature #1408: team-insights redirect updated to tools */}
         <Route path="/organization/mcp-team-insights" element={<Navigate to="/mcp/tools" replace />} />
-        {/* Feature #1277: AI Run Comparison */}
-        <Route
-          path="/ai-compare/:runId"
-          element={
-            <ProtectedRoute>
-              <AIRunComparisonPage />
-            </ProtectedRoute>
-          }
-        />
-        {/* Feature #1279: AI Confidence Indicators Demo */}
-        <Route
-          path="/ai-confidence"
-          element={
-            <ProtectedRoute>
-              <AIConfidenceDemoPage />
-            </ProtectedRoute>
-          }
-        />
-        {/* Feature #1280: AI Thinking Indicator Demo */}
-        <Route
-          path="/ai-thinking"
-          element={
-            <ProtectedRoute>
-              <AIThinkingDemoPage />
-            </ProtectedRoute>
-          }
-        />
-        {/* Feature #1282: AI Action with Pre-filled Parameters */}
-        <Route
-          path="/ai-action"
-          element={
-            <ProtectedRoute>
-              <AIActionPage />
-            </ProtectedRoute>
-          }
-        />
+        {/* Feature #411: AI Run Comparison route removed - dead demo page */}
+        {/* Feature #411: AI Confidence Demo route removed - dead demo page */}
+        {/* Feature #411: AI Thinking Demo route removed - dead demo page */}
+        {/* Feature #411: AI Action route removed - dead demo page */}
 
         {/* Feature #1732: Comprehensive Report View */}
         <Route

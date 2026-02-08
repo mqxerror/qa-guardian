@@ -7,7 +7,7 @@
  * - AITestReviewPage: review queue, approval stats
  * - AIUsageAnalyticsDashboard: usage analytics
  * - AICostTrackingPage: cost tracking
- * - AILearningPage: learning stats
+ * Feature #411: AILearningPage removed - hooks kept for potential future use
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';

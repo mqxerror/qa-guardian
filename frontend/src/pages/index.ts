@@ -13,7 +13,7 @@ export { CreateOrganizationPage } from './CreateOrganizationPage';
 export { AcceptInvitationPage } from './AcceptInvitationPage';
 export { SchedulesPage } from './SchedulesPage';
 export { ScheduleDetailsPage } from './ScheduleDetailsPage';
-export { AIActionPage } from './AIActionPage';
+// Feature #411: AIActionPage removed - dead demo page
 export { BillingPage } from './BillingPage';
 export { ApiKeysPage } from './ApiKeysPage';
 export { MCPToolsPage } from './MCPToolsPage';
@@ -42,24 +42,24 @@ export { KieAIProviderPage } from './KieAIProviderPage';
 export { AnthropicProviderPage } from './AnthropicProviderPage';
 export { DependencyAlertsPage } from './DependencyAlertsPage';
 export { MCPChatPage } from './MCPChatPage';
-export { AIRunComparisonPage } from './AIRunComparisonPage';
+// Feature #411: AIRunComparisonPage removed - dead demo page
 export { MCPAnalyticsPage } from './MCPAnalyticsPage';
 export { MCPPlaygroundPage } from './MCPPlaygroundPage';
 export { SecurityDashboardPage } from './SecurityDashboardPage';
-export { OrganizationInsightsPage } from './OrganizationInsightsPage';
-export { BestPracticesPage } from './BestPracticesPage';
+// Feature #411: OrganizationInsightsPage removed - dead demo page
+// Feature #411: BestPracticesPage removed - dead demo page
 export { TestImprovementAnalyzerPage } from './TestImprovementAnalyzerPage';
-export { IndustryBenchmarkPage } from './IndustryBenchmarkPage';
+// Feature #411: IndustryBenchmarkPage removed - dead demo page
 export { ReleaseNotesPage } from './ReleaseNotesPage';
-export { PersonalizedInsightsPage } from './PersonalizedInsightsPage';
-export { TeamSkillGapsPage } from './TeamSkillGapsPage';
-export { AILearningPage } from './AILearningPage';
+// Feature #411: PersonalizedInsightsPage removed - dead demo page
+// Feature #411: TeamSkillGapsPage removed - dead demo page
+// Feature #411: AILearningPage removed - dead demo page
 export { TestDocumentationPage } from './TestDocumentationPage';
 export { ProviderHealthPage } from './ProviderHealthPage';
 export { AICostTrackingPage } from './AICostTrackingPage';
 export { AIUsageAnalyticsDashboard } from './AIUsageAnalyticsDashboard';
-export { AIThinkingDemoPage, AIThinkingIndicator, AIThinkingSpinner } from './AIThinkingDemoPage';
-export { AIConfidenceDemoPage, AIConfidenceIndicator, AIConfidenceBadge, AIConfidenceCard } from './AIConfidenceDemoPage';
+// Feature #411: AIThinkingDemoPage removed - dead demo page
+// Feature #411: AIConfidenceDemoPage removed - dead demo page
 export { FlakyTestsDashboardPage } from './FlakyTestsDashboardPage';
 export { default as VisualReviewPage } from './VisualReviewPage';
 export { AnalyticsPage } from './AnalyticsPage';
