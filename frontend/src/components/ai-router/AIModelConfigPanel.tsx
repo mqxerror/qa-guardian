@@ -129,7 +129,7 @@ export function AIModelConfigPanel({
       </div>
 
       {/* Organization Default Model */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-primary/5 to-indigo-50 rounded-lg border border-primary/20">
+      <div className="mb-6 p-4 bg-gradient-to-r from-primary/5 to-indigo-500/10 rounded-lg border border-primary/20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🏢</span>
@@ -171,7 +171,7 @@ export function AIModelConfigPanel({
                 key={config.feature}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   config.override_org_default
-                    ? 'border-purple-300 bg-purple-50'
+                    ? 'border-purple-500/30 bg-purple-500/10'
                     : 'border-border bg-muted/50'
                 }`}
               >
@@ -184,7 +184,7 @@ export function AIModelConfigPanel({
                     </div>
                   </div>
                   {config.override_org_default && (
-                    <span className="text-xs bg-purple-200 text-purple-700 px-2 py-0.5 rounded-full">Custom</span>
+                    <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">Custom</span>
                   )}
                 </div>
 
@@ -220,7 +220,7 @@ export function AIModelConfigPanel({
                   {config.override_org_default && (
                     <button
                       onClick={() => resetFeatureToOrgDefault(config.feature)}
-                      className="w-full text-xs text-purple-600 hover:text-purple-800 py-1"
+                      className="w-full text-xs text-purple-400 hover:text-purple-300 py-1"
                     >
                       ↩️ Reset to org default ({getModelInfo(orgDefaultModel).name})
                     </button>
@@ -250,7 +250,7 @@ export function AIModelConfigPanel({
               <div className="text-xs text-muted-foreground">Total Tokens</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-purple-400">
                 ${(getTotalEstimatedMonthlyCost() / 100).toFixed(2)}
               </div>
               <div className="text-xs text-muted-foreground">Total Cost</div>
@@ -296,7 +296,7 @@ export function AIModelConfigPanel({
       </div>
 
       {/* Cost Optimization Suggestions */}
-      <div className="p-4 bg-gradient-to-r from-success/5 to-emerald-50 rounded-lg border border-success/20">
+      <div className="p-4 bg-gradient-to-r from-success/5 to-emerald-500/10 rounded-lg border border-success/20">
         <h3 className="font-medium text-success mb-2">💡 Cost Optimization Suggestions</h3>
         <ul className="text-sm text-success space-y-1">
           <li>• Consider using Haiku 3.5 for simple chat responses (~90% cost reduction)</li>

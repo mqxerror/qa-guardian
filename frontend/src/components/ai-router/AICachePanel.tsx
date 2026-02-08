@@ -95,7 +95,7 @@ export function AICachePanel({
       store: 'bg-primary/5 border-primary/20 text-primary',
       invalidate: 'bg-warning/5 border-warning/20 text-warning',
       expire: 'bg-muted/50 border-border text-muted-foreground',
-      evict: 'bg-orange-50 border-orange-200 text-orange-800',
+      evict: 'bg-orange-500/10 border-orange-500/20 text-orange-400',
     };
     return colors[type];
   };
@@ -296,13 +296,13 @@ export function AICachePanel({
             <div className="text-2xl font-bold text-success">{cacheStats.total_hits.toLocaleString()}</div>
             <div className="text-xs text-success">Total Hits</div>
           </div>
-          <div className="bg-purple-50 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-purple-700">${(cacheStats.estimated_cost_savings_cents / 100).toFixed(2)}</div>
-            <div className="text-xs text-purple-600">Cost Saved</div>
+          <div className="bg-purple-500/10 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-purple-400">${(cacheStats.estimated_cost_savings_cents / 100).toFixed(2)}</div>
+            <div className="text-xs text-purple-400">Cost Saved</div>
           </div>
-          <div className="bg-orange-50 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-orange-700">{(cacheStats.estimated_latency_savings_ms / 1000).toFixed(1)}s</div>
-            <div className="text-xs text-orange-600">Latency Saved</div>
+          <div className="bg-orange-500/10 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-orange-400">{(cacheStats.estimated_latency_savings_ms / 1000).toFixed(1)}s</div>
+            <div className="text-xs text-orange-400">Latency Saved</div>
           </div>
         </div>
 
@@ -321,7 +321,7 @@ export function AICachePanel({
                   <select
                     value={cacheConfig.default_ttl_seconds}
                     onChange={(e) => setCacheConfig(prev => ({ ...prev, default_ttl_seconds: parseInt(e.target.value) }))}
-                    className="px-2 py-1 text-sm border rounded"
+                    className="px-2 py-1 text-sm border rounded bg-input text-foreground"
                   >
                     <option value={900}>15 minutes</option>
                     <option value={1800}>30 minutes</option>
@@ -341,7 +341,7 @@ export function AICachePanel({
                   <select
                     value={cacheConfig.max_cache_size_mb}
                     onChange={(e) => setCacheConfig(prev => ({ ...prev, max_cache_size_mb: parseInt(e.target.value) }))}
-                    className="px-2 py-1 text-sm border rounded"
+                    className="px-2 py-1 text-sm border rounded bg-input text-foreground"
                   >
                     <option value={128}>128 MB</option>
                     <option value={256}>256 MB</option>
@@ -359,7 +359,7 @@ export function AICachePanel({
                 <select
                   value={cacheConfig.hash_algorithm}
                   onChange={(e) => setCacheConfig(prev => ({ ...prev, hash_algorithm: e.target.value as 'sha256' | 'md5' | 'xxhash' }))}
-                  className="px-2 py-1 text-sm border rounded"
+                  className="px-2 py-1 text-sm border rounded bg-input text-foreground"
                 >
                   <option value="sha256">SHA-256 (Secure)</option>
                   <option value="md5">MD5 (Fast)</option>
@@ -407,7 +407,7 @@ export function AICachePanel({
               <input
                 type="text"
                 placeholder="Enter a sample prompt to preview cache key..."
-                className="w-full px-3 py-2 text-sm border rounded mb-2"
+                className="w-full px-3 py-2 text-sm border rounded mb-2 bg-input text-foreground"
                 onChange={(e) => previewCacheKey(e.target.value)}
               />
               {cacheKeyPreview && (
@@ -440,7 +440,7 @@ export function AICachePanel({
                       value={config.ttl_seconds}
                       onChange={(e) => updateFeatureCacheConfig(feature, { ttl_seconds: parseInt(e.target.value) })}
                       disabled={!config.enabled}
-                      className="px-2 py-1 text-xs border rounded disabled:opacity-50"
+                      className="px-2 py-1 text-xs border rounded disabled:opacity-50 bg-input text-foreground"
                     >
                       <option value={900}>15m</option>
                       <option value={1800}>30m</option>
@@ -532,7 +532,7 @@ export function AICachePanel({
                   <div className="text-right">
                     <div className="text-xs">
                       {event.latency_saved_ms && <span className="text-success">-{event.latency_saved_ms}ms</span>}
-                      {event.cost_saved_cents && <span className="ml-2 text-purple-700">-${(event.cost_saved_cents / 100).toFixed(2)}</span>}
+                      {event.cost_saved_cents && <span className="ml-2 text-purple-400">-${(event.cost_saved_cents / 100).toFixed(2)}</span>}
                     </div>
                     <div className="text-xs text-muted-foreground">{formatNotificationTime(event.timestamp)}</div>
                     {event.reason && <div className="text-xs text-muted-foreground italic">{event.reason}</div>}

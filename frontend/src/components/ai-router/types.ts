@@ -557,7 +557,7 @@ export function getModelInfo(model: AIModelType): {
 
 export function getQualityTierColor(tier: 'premium' | 'standard' | 'economy'): string {
   const colors: Record<typeof tier, string> = {
-    premium: 'bg-purple-100 text-purple-700 border-purple-200',
+    premium: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
     standard: 'bg-primary/10 text-primary border-primary/20',
     economy: 'bg-success/10 text-success border-success/20',
   };

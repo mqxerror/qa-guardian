@@ -92,7 +92,7 @@ export function AITimeoutPanel({
                   onChange={(e) => updateFeatureTimeout(ft.feature, { enabled: e.target.checked })}
                   className="sr-only peer"
                 />
-                <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
 
@@ -158,8 +158,8 @@ export function AITimeoutPanel({
             <div className="text-2xl font-bold text-success">{timeoutStats.fallback_success_rate.toFixed(1)}%</div>
             <div className="text-xs text-success">Fallback Success</div>
           </div>
-          <div className="text-center p-3 bg-purple-50 rounded-lg col-span-2">
-            <div className="text-lg font-bold text-purple-600 flex items-center justify-center gap-2">
+          <div className="text-center p-3 bg-purple-500/10 rounded-lg col-span-2">
+            <div className="text-lg font-bold text-purple-400 flex items-center justify-center gap-2">
               {timeoutStats.most_timeout_prone_feature && (
                 <>
                   {getFeatureIcon(timeoutStats.most_timeout_prone_feature)}
@@ -167,7 +167,7 @@ export function AITimeoutPanel({
                 </>
               )}
             </div>
-            <div className="text-xs text-purple-800">Most Timeout-Prone</div>
+            <div className="text-xs text-purple-400">Most Timeout-Prone</div>
           </div>
         </div>
       </div>

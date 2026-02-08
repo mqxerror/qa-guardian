@@ -177,9 +177,9 @@ export function AIFallbackRulesPanel({
             <div className="text-2xl font-bold text-destructive">{fallbackStats.failed_fallbacks_24h}</div>
             <div className="text-xs text-destructive">Failed</div>
           </div>
-          <div className="p-3 bg-purple-50 rounded-lg text-center">
-            <div className="text-2xl font-bold text-purple-600">{fallbackStats.avg_fallback_latency_ms}ms</div>
-            <div className="text-xs text-purple-700">Avg Latency</div>
+          <div className="p-3 bg-purple-500/10 rounded-lg text-center">
+            <div className="text-2xl font-bold text-purple-400">{fallbackStats.avg_fallback_latency_ms}ms</div>
+            <div className="text-xs text-purple-400">Avg Latency</div>
           </div>
         </div>
 
@@ -239,7 +239,7 @@ export function AIFallbackRulesPanel({
                           onChange={(e) => updateFallbackRule(rule.id, { enabled: e.target.checked })}
                           className="sr-only peer"
                         />
-                        <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                        <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                       </label>
                       <button
                         onClick={() => {
@@ -307,7 +307,7 @@ export function AIFallbackRulesPanel({
                         <span className="text-primary">🔔 Notifications on</span>
                       )}
                       {rule.preserve_context && (
-                        <span className="text-purple-500">📋 Preserves context</span>
+                        <span className="text-purple-400">📋 Preserves context</span>
                       )}
                     </div>
                   )}
@@ -318,7 +318,7 @@ export function AIFallbackRulesPanel({
         </div>
 
         {/* Test Fallback Manually */}
-        <div className="mb-6 p-4 bg-gradient-to-r from-warning/5 to-orange-50 rounded-lg border border-warning/20">
+        <div className="mb-6 p-4 bg-gradient-to-r from-warning/5 to-orange-500/10 rounded-lg border border-warning/20">
           <h3 className="text-sm font-medium mb-3">🧪 Test Fallback Manually</h3>
           <p className="text-xs text-foreground mb-3">Simulate different failure scenarios to test your fallback rules</p>
           <div className="flex flex-wrap gap-2">
@@ -409,7 +409,7 @@ export function AIFallbackRulesPanel({
                     setEditingFallbackRule(updated);
                     updateFallbackRule(editingFallbackRule.id, { name: e.target.value });
                   }}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded bg-input text-foreground"
                 />
               </div>
 
@@ -458,7 +458,7 @@ export function AIFallbackRulesPanel({
                       setEditingFallbackRule(updated);
                       updateFallbackRule(editingFallbackRule.id, { source_provider: value });
                     }}
-                    className="w-full px-3 py-2 border rounded"
+                    className="w-full px-3 py-2 border rounded bg-input text-foreground"
                   >
                     <option value="any">Any Provider</option>
                     <option value="kie">Kie.ai</option>
@@ -475,7 +475,7 @@ export function AIFallbackRulesPanel({
                       setEditingFallbackRule(updated);
                       updateFallbackRule(editingFallbackRule.id, { target_provider: value });
                     }}
-                    className="w-full px-3 py-2 border rounded"
+                    className="w-full px-3 py-2 border rounded bg-input text-foreground"
                   >
                     <option value="anthropic">Anthropic</option>
                     <option value="kie">Kie.ai</option>
@@ -499,7 +499,7 @@ export function AIFallbackRulesPanel({
                       setEditingFallbackRule(updated);
                       updateFallbackRule(editingFallbackRule.id, { retry_before_fallback: val });
                     }}
-                    className="w-full px-3 py-2 border rounded"
+                    className="w-full px-3 py-2 border rounded bg-input text-foreground"
                   />
                   <div className="text-xs text-muted-foreground mt-1">Number of retries before triggering fallback</div>
                 </div>
@@ -517,7 +517,7 @@ export function AIFallbackRulesPanel({
                       setEditingFallbackRule(updated);
                       updateFallbackRule(editingFallbackRule.id, { retry_delay_ms: val });
                     }}
-                    className="w-full px-3 py-2 border rounded"
+                    className="w-full px-3 py-2 border rounded bg-input text-foreground"
                   />
                   <div className="text-xs text-muted-foreground mt-1">Delay between retries</div>
                 </div>
@@ -539,7 +539,7 @@ export function AIFallbackRulesPanel({
                       setEditingFallbackRule(updated);
                       updateFallbackRule(editingFallbackRule.id, { timeout_threshold_ms: val });
                     }}
-                    className="w-full px-3 py-2 border rounded"
+                    className="w-full px-3 py-2 border rounded bg-input text-foreground"
                   />
                   <div className="text-xs text-muted-foreground mt-1">Timeout for fallback requests</div>
                 </div>
@@ -556,7 +556,7 @@ export function AIFallbackRulesPanel({
                       setEditingFallbackRule(updated);
                       updateFallbackRule(editingFallbackRule.id, { max_fallback_attempts: val });
                     }}
-                    className="w-full px-3 py-2 border rounded"
+                    className="w-full px-3 py-2 border rounded bg-input text-foreground"
                   />
                   <div className="text-xs text-muted-foreground mt-1">Max attempts at fallback provider</div>
                 </div>
@@ -577,7 +577,7 @@ export function AIFallbackRulesPanel({
                     setEditingFallbackRule(updated);
                     updateFallbackRule(editingFallbackRule.id, { cooldown_after_fallback_ms: val });
                   }}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded bg-input text-foreground"
                 />
                 <div className="text-xs text-muted-foreground mt-1">Wait time after fallback before returning to primary</div>
               </div>

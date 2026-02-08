@@ -229,7 +229,7 @@ function AIRouterPage() {
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <span className="text-3xl">🤖</span>
-                  <span className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${activeProvider?.available_providers?.find(p => p.id === 'kie')?.configured ? 'bg-success' : 'bg-warning'}`}></span>
+                  <span className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-card ${activeProvider?.available_providers?.find(p => p.id === 'kie')?.configured ? 'bg-success' : 'bg-warning'}`}></span>
                 </div>
                 <div><div className="font-semibold text-lg">Kie.ai</div><div className="text-sm text-success font-medium">70% cost savings</div></div>
               </div>
@@ -248,7 +248,7 @@ function AIRouterPage() {
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <span className="text-3xl">🔵</span>
-                  <span className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${activeProvider?.available_providers?.find(p => p.id === 'anthropic')?.configured ? 'bg-success' : 'bg-warning'}`}></span>
+                  <span className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-card ${activeProvider?.available_providers?.find(p => p.id === 'anthropic')?.configured ? 'bg-success' : 'bg-warning'}`}></span>
                 </div>
                 <div><div className="font-semibold text-lg">Anthropic Direct</div><div className="text-sm text-primary font-medium">Direct API access</div></div>
               </div>
@@ -286,7 +286,7 @@ function AIRouterPage() {
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-foreground mb-1">Reason for switch</label>
-              <input type="text" value={switchReason} onChange={(e) => setSwitchReason(e.target.value)} placeholder="e.g., Cost optimization, performance testing..." className="w-full border rounded-lg p-2 text-sm" />
+              <input type="text" value={switchReason} onChange={(e) => setSwitchReason(e.target.value)} placeholder="e.g., Cost optimization, performance testing..." className="w-full border rounded-lg p-2 text-sm bg-input text-foreground" />
             </div>
             <div className="mb-4">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -317,8 +317,8 @@ function AIRouterPage() {
           <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-primary">{formatNumber(stats.total_requests)}</div><div className="text-xs text-foreground">Total Requests</div></div>
           <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-success">{stats.primary_success_rate}%</div><div className="text-xs text-foreground">Primary Success</div></div>
           <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-warning">{formatNumber(stats.fallback_requests)}</div><div className="text-xs text-foreground">Fallbacks</div></div>
-          <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-purple-600">{stats.fallback_success_rate}%</div><div className="text-xs text-foreground">Fallback Success</div></div>
-          <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-cyan-600">{stats.avg_latency_ms}ms</div><div className="text-xs text-foreground">Avg Latency</div></div>
+          <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-purple-400">{stats.fallback_success_rate}%</div><div className="text-xs text-foreground">Fallback Success</div></div>
+          <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-cyan-400">{stats.avg_latency_ms}ms</div><div className="text-xs text-foreground">Avg Latency</div></div>
           <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-destructive">{stats.errors}</div><div className="text-xs text-foreground">Errors</div></div>
         </div>
       )}
@@ -338,19 +338,19 @@ function AIRouterPage() {
               </div>
               <div>
                 <label className="text-sm text-foreground">Primary Provider</label>
-                <select value={config.primary_provider} onChange={(e) => updateConfig({ primary_provider: e.target.value as 'kie' | 'anthropic' })} disabled={isSaving} className="mt-1 w-full border rounded p-2">
+                <select value={config.primary_provider} onChange={(e) => updateConfig({ primary_provider: e.target.value as 'kie' | 'anthropic' })} disabled={isSaving} className="mt-1 w-full border rounded p-2 bg-input text-foreground">
                   <option value="kie">Kie.ai (70% savings)</option><option value="anthropic">Anthropic Direct</option>
                 </select>
               </div>
               <div>
                 <label className="text-sm text-foreground">Fallback Provider</label>
-                <select value={config.fallback_provider} onChange={(e) => updateConfig({ fallback_provider: e.target.value as 'anthropic' | 'kie' | 'none' })} disabled={isSaving} className="mt-1 w-full border rounded p-2">
+                <select value={config.fallback_provider} onChange={(e) => updateConfig({ fallback_provider: e.target.value as 'anthropic' | 'kie' | 'none' })} disabled={isSaving} className="mt-1 w-full border rounded p-2 bg-input text-foreground">
                   <option value="anthropic">Anthropic Direct</option><option value="kie">Kie.ai</option><option value="none">None (fail on error)</option>
                 </select>
               </div>
               <div>
                 <label className="text-sm text-foreground">Timeout (ms)</label>
-                <input type="number" value={config.timeout_ms} onChange={(e) => updateConfig({ timeout_ms: parseInt(e.target.value) })} disabled={isSaving} className="mt-1 w-full border rounded p-2" />
+                <input type="number" value={config.timeout_ms} onChange={(e) => updateConfig({ timeout_ms: parseInt(e.target.value) })} disabled={isSaving} className="mt-1 w-full border rounded p-2 bg-input text-foreground" />
               </div>
               <div className="border-t pt-3">
                 <div className="text-sm font-medium mb-2">Fallback Triggers</div>
@@ -399,7 +399,7 @@ function AIRouterPage() {
           <h2 className="text-lg font-semibold mb-4">Test Failover</h2>
           <div className="space-y-2 mb-4">
             <button onClick={() => testFailover('timeout')} disabled={isTesting} className="w-full px-4 py-2 bg-warning/10 text-warning rounded hover:bg-warning/20 disabled:opacity-50">Test Timeout Failover</button>
-            <button onClick={() => testFailover('rate_limit')} disabled={isTesting} className="w-full px-4 py-2 bg-purple-100 text-purple-800 rounded hover:bg-purple-200 disabled:opacity-50">Test Rate Limit Failover</button>
+            <button onClick={() => testFailover('rate_limit')} disabled={isTesting} className="w-full px-4 py-2 bg-purple-500/10 text-purple-400 rounded hover:bg-purple-500/20 disabled:opacity-50">Test Rate Limit Failover</button>
             <button onClick={() => testFailover('error')} disabled={isTesting} className="w-full px-4 py-2 bg-destructive/10 text-destructive rounded hover:bg-destructive/20 disabled:opacity-50">Test Error Failover</button>
           </div>
           {testResult && (
