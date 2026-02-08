@@ -421,7 +421,7 @@ export function ProviderHealthPage() {
                 <div
                   key={alert.id}
                   className={`p-4 rounded-lg border ${
-                    alert.severity === 'critical' ? 'border-red-500/30 bg-red-500/10' :
+                    alert.severity === 'critical' ? 'border-destructive/30 bg-destructive/10' :
                     alert.severity === 'warning' ? 'border-warning/30 bg-warning/10' :
                     'border-primary/30 bg-primary/10'
                   }`}

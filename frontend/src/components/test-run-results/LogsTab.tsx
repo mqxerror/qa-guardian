@@ -667,7 +667,7 @@ function LogEntry({
  ? 'text-warning'
  : log.level === 'info'
  ? 'text-primary'
- : 'text-gray-200'
+ : 'text-foreground'
  }`}>
  {log.type === 'network' ? log.url : log.message}
  </span>

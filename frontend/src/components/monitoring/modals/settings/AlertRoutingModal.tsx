@@ -498,7 +498,7 @@ function PagerDutyConfig({ dest, index, onUpdate }: ConfigProps) {
  {(['critical', 'high', 'medium', 'low'] as const).map(severity => (
  <div key={severity} className="flex items-center gap-2">
  <span className={`w-16 font-medium ${
- severity === 'critical' ? 'text-red-500' :
+ severity === 'critical' ? 'text-destructive' :
  severity === 'high' ? 'text-orange-500' :
  severity === 'medium' ? 'text-warning' : 'text-primary'
  }`}>{severity}:</span>

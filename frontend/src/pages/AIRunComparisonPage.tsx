@@ -360,7 +360,7 @@ export function AIRunComparisonPage() {
  <div className="space-y-3">
  {comparison.aiAnalysis.whatChanged.map((change, idx) => (
  <div key={idx} className={`p-4 rounded-lg border ${
- change.severity === 'high' ? 'border-red-200 bg-red-50' :
+ change.severity === 'high' ? 'border-destructive/30 bg-destructive/10' :
  change.severity === 'medium' ? 'border-warning/20 bg-warning/5' :
  'border-border bg-muted'
  }`}>
@@ -376,7 +376,7 @@ export function AIRunComparisonPage() {
  {change.category.toUpperCase()}
  </span>
  <span className={`px-2 py-0.5 text-xs rounded ${
- change.severity === 'high' ? 'bg-red-100 text-red-700' :
+ change.severity === 'high' ? 'bg-destructive/10 text-destructive' :
  change.severity === 'medium' ? 'bg-warning/10 text-warning' :
  'bg-muted text-foreground'
  }`}>

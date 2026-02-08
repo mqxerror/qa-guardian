@@ -113,7 +113,7 @@ export function AIExplainModal({
  {idx + 1}
  </span>
  <div className="flex-1 min-w-0">
- <code className="block text-xs bg-card text-gray-200 p-2 rounded mb-2 overflow-x-auto">{step.code}</code>
+ <code className="block text-xs bg-card text-foreground p-2 rounded mb-2 overflow-x-auto">{step.code}</code>
  <p className="text-sm text-foreground">{step.explanation}</p>
  <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded ${
  step.type === 'navigation' ? 'bg-primary/10 text-primary' :
@@ -143,7 +143,7 @@ export function AIExplainModal({
  <div className="space-y-2">
  {explanation.assertions.map((assertion, idx) => (
  <div key={idx} className="rounded-md border border-border p-3 bg-muted/30">
- <code className="block text-xs bg-card text-gray-200 p-2 rounded mb-2 overflow-x-auto">{assertion.code}</code>
+ <code className="block text-xs bg-card text-foreground p-2 rounded mb-2 overflow-x-auto">{assertion.code}</code>
  <p className="text-sm text-foreground">{assertion.what_it_checks}</p>
  <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded ${
  assertion.importance === 'critical' ? 'bg-destructive/10 text-destructive' :

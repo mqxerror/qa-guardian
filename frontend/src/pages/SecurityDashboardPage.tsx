@@ -335,7 +335,7 @@ export function SecurityDashboardPage() {
                 </div>
                 <div className="rounded-lg border border-border bg-card p-6">
                   <h3 className="text-sm font-medium text-muted-foreground">Critical</h3>
-                  <p className="mt-2 text-3xl font-bold text-red-600">{secretsData.summary.bySeverity.critical}</p>
+                  <p className="mt-2 text-3xl font-bold text-destructive">{secretsData.summary.bySeverity.critical}</p>
                 </div>
                 <div className="rounded-lg border border-border bg-card p-6">
                   <h3 className="text-sm font-medium text-muted-foreground">High</h3>
@@ -848,7 +848,7 @@ export function SecurityDashboardPage() {
               </div>
               <div className="rounded-lg border border-border bg-card p-6">
                 <h3 className="text-sm font-medium text-muted-foreground">Critical</h3>
-                <p className="mt-2 text-3xl font-bold text-red-600">{data.summary.bySeverity.critical}</p>
+                <p className="mt-2 text-3xl font-bold text-destructive">{data.summary.bySeverity.critical}</p>
               </div>
               <div className="rounded-lg border border-border bg-card p-6">
                 <h3 className="text-sm font-medium text-muted-foreground">High</h3>

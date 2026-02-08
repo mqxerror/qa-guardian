@@ -295,7 +295,7 @@ export function K6ScriptTab({
             <textarea
               value={k6Script}
               onChange={(e) => onSetK6Script(e.target.value)}
-              className="flex-1 bg-transparent p-4 text-sm text-gray-100 font-mono resize-none focus:outline-none leading-6"
+              className="flex-1 bg-transparent p-4 text-sm text-foreground font-mono resize-none focus:outline-none leading-6"
               placeholder="Enter your K6 load test script here..."
               spellCheck={false}
             />
@@ -314,7 +314,7 @@ export function K6ScriptTab({
                     {foldable && (
                       <button
                         onClick={() => toggleSection(i)}
-                        className="text-muted-foreground hover:text-gray-200 text-xs"
+                        className="text-muted-foreground hover:text-foreground text-xs"
                         title={isCollapsed ? 'Expand' : 'Collapse'}
                       >
                         {isCollapsed ? '▶' : '▼'}
@@ -327,7 +327,7 @@ export function K6ScriptTab({
             </div>
             {/* Code content with folding */}
             <pre className="flex-1 p-4 overflow-x-auto">
-              <code className="text-gray-100 font-mono text-sm whitespace-pre leading-6">
+              <code className="text-foreground font-mono text-sm whitespace-pre leading-6">
                 {displayScript.split('\n').map((line, i) => {
                   const collapsedSection = Array.from(collapsedSections).find(start => {
                     const section = foldableSections.find(s => s.start === start);
@@ -367,7 +367,7 @@ export function K6ScriptTab({
         <div className="p-3 rounded-lg bg-muted/50 border border-border">
           <p className="text-sm font-medium text-foreground mb-2">🚀 Run this script with K6:</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 px-3 py-2 rounded bg-background text-gray-100 text-sm font-mono">
+            <code className="flex-1 px-3 py-2 rounded bg-background text-foreground text-sm font-mono">
               k6 run {test?.name?.replace(/\s+/g, '-').toLowerCase() || 'load-test'}.js
             </code>
             <button

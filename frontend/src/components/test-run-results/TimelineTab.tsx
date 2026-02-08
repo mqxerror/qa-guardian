@@ -658,7 +658,7 @@ export default function TimelineTab({
  log.level === 'warn' ? 'text-warning' :
  log.level === 'info' ? 'text-primary' :
  log.level === 'debug' ? 'text-muted-foreground' :
- 'text-gray-200'
+ 'text-foreground'
  }`}
  >
  <span className="text-muted-foreground">[{new Date(log.timestamp).toISOString().split('T')[1].slice(0, 12)}]</span>

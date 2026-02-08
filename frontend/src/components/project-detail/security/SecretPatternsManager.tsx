@@ -119,7 +119,7 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  <div className="flex items-center gap-2">
  <p className="font-medium text-foreground">{pattern.name}</p>
  <span className={`text-xs px-2 py-0.5 rounded-full ${
- pattern.severity === 'CRITICAL' ? 'bg-red-100 text-red-700' :
+ pattern.severity === 'CRITICAL' ? 'bg-destructive/10 text-destructive' :
  pattern.severity === 'HIGH' ? 'bg-orange-100 text-orange-700' :
  pattern.severity === 'MEDIUM' ? 'bg-warning/10 text-warning' :
  'bg-primary/10 text-primary'

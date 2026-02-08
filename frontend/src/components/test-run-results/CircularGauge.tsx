@@ -20,7 +20,7 @@ export default function CircularGauge({ score, label, size = 120 }: CircularGaug
   const getColor = (value: number) => {
     if (value >= 90) return { stroke: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)', text: 'text-green-600' };
     if (value >= 50) return { stroke: '#eab308', bg: 'rgba(234, 179, 8, 0.1)', text: 'text-yellow-600' };
-    return { stroke: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)', text: 'text-red-600' };
+    return { stroke: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)', text: 'text-destructive' };
   };
 
   const colors = getColor(score);

@@ -389,7 +389,7 @@ export function DependencyAlertsPage() {
  <p className="text-xs text-purple-600/80">Critical</p>
  </div>
  <div className="rounded-lg bg-destructive/10 p-3 text-center">
- <p className="text-xl font-bold text-red-600">{summary.by_severity.high}</p>
+ <p className="text-xl font-bold text-destructive">{summary.by_severity.high}</p>
  <p className="text-xs text-destructive/80">High</p>
  </div>
  <div className="rounded-lg bg-warning/10 p-3 text-center">

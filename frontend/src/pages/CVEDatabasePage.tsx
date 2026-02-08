@@ -423,7 +423,7 @@ export function CVEDatabasePage() {
  </div>
  <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-center">
  <p className="text-sm text-muted-foreground">High</p>
- <p className="text-2xl font-bold text-red-600">{scanResult.summary.bySeverity.high}</p>
+ <p className="text-2xl font-bold text-destructive">{scanResult.summary.bySeverity.high}</p>
  </div>
  <div className="rounded-lg border border-warning/20 bg-warning/5 p-4 text-center">
  <p className="text-sm text-muted-foreground">Medium</p>

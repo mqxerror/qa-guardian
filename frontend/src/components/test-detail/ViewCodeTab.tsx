@@ -168,7 +168,7 @@ export function ViewCodeTab({
           <textarea
             value={editedCode}
             onChange={(e) => onSetEditedCode(e.target.value)}
-            className="w-full h-96 rounded-lg bg-background p-4 text-sm text-gray-100 font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full h-96 rounded-lg bg-background p-4 text-sm text-foreground font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/50"
             placeholder="Enter your Playwright test code here..."
             spellCheck={false}
           />
@@ -178,7 +178,7 @@ export function ViewCodeTab({
         </div>
       ) : (
         <pre className="rounded-lg bg-background p-4 overflow-x-auto text-sm max-h-96 overflow-y-auto">
-          <code className="text-gray-100 font-mono whitespace-pre">
+          <code className="text-foreground font-mono whitespace-pre">
             {test?.use_custom_code && test?.playwright_code
               ? test.playwright_code
               : generatePlaywrightCode(test?.steps || [])}

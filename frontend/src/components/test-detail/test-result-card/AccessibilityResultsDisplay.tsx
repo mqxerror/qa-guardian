@@ -104,7 +104,7 @@ export function AccessibilityResultsDisplay({
  <button
  onClick={() => onSetSeverityFilter('critical')}
  className={`px-2 py-1 text-xs rounded-full ${
- currentSeverityFilter === 'critical' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700'
+ currentSeverityFilter === 'critical' ? 'bg-destructive text-white' : 'bg-destructive/10 text-destructive'
  }`}
  >
  Critical: {a11y.violations.critical}
