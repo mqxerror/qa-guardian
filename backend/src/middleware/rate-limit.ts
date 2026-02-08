@@ -22,12 +22,15 @@ const RATE_LIMIT_WINDOW_MS = RATE_LIMIT_WINDOW_SECONDS * 1000;
 // Different limits for different endpoint categories
 const RATE_LIMITS = {
   AUTH: 20,       // Auth endpoints: 20 requests per minute (stricter)
+  ERROR_REPORT: 10, // Feature #389: Error reporting: 10 requests per minute (tighter limit)
   DEFAULT: 200,   // Default limit: 200 requests per minute
   READ_ONLY: 500, // Read-only endpoints: 500 requests per minute (higher)
 };
 
 // Patterns for endpoint classification
 const AUTH_ENDPOINT_PATTERNS = ['/api/v1/auth'];
+// Feature #389: Tighter rate limit for unauthenticated error reporting endpoint
+const ERROR_REPORT_PATTERNS = ['/api/v1/errors'];
 const READ_ONLY_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 
 // In-memory rate limit store as fallback when Redis is unavailable
@@ -40,6 +43,10 @@ export function getRateLimitForRequest(url: string, method: string): number {
   // Auth endpoints get stricter limits
   if (AUTH_ENDPOINT_PATTERNS.some(pattern => url.startsWith(pattern))) {
     return RATE_LIMITS.AUTH;
+  }
+  // Feature #389: Error reporting endpoints get tighter limits (POST only)
+  if (method === 'POST' && ERROR_REPORT_PATTERNS.some(pattern => url === pattern)) {
+    return RATE_LIMITS.ERROR_REPORT;
   }
   // Read-only requests get higher limits
   if (READ_ONLY_METHODS.includes(method)) {

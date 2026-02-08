@@ -47,7 +47,10 @@ import {
 // DAST Routes
 export async function dastRoutes(app: FastifyInstance) {
   // Get DAST scan profiles
-  app.get('/api/v1/dast/profiles', async (request, reply) => {
+  // Feature #389: Add authentication to protect endpoint
+  app.get('/api/v1/dast/profiles', {
+    preHandler: [authenticate, requireScopes(['read'])],
+  }, async (request, reply) => {
     return reply.send({
       profiles: Object.entries(ZAP_SCAN_PROFILES).map(([id, profile]) => ({
         id,
@@ -361,7 +364,10 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Get available report formats
-  app.get('/api/v1/dast/report-formats', async (request, reply) => {
+  // Feature #389: Add authentication to protect endpoint
+  app.get('/api/v1/dast/report-formats', {
+    preHandler: [authenticate, requireScopes(['read'])],
+  }, async (request, reply) => {
     return reply.send({
       formats: [
         {

@@ -12,6 +12,7 @@
 
 import { FastifyInstance } from 'fastify';
 import crypto from 'crypto';
+import { authenticate, requireScopes } from '../../middleware/auth.js'; // Feature #389: Add authentication
 import {
   prStatusChecks,
   prComments,
@@ -1054,7 +1055,10 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // List all webhook-triggered scans
-  app.get('/api/v1/github/webhooks/scans', async () => {
+  // Feature #389: Add authentication to protect endpoint
+  app.get('/api/v1/github/webhooks/scans', {
+    preHandler: [authenticate, requireScopes(['read'])],
+  }, async () => {
     const scans: PRWebhookScanResult[] = [];
     webhookScans.forEach((scan) => {
       scans.push(scan);
@@ -1117,7 +1121,10 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // List push secret scan results
-  app.get('/api/v1/github/webhooks/gitleaks/scans', async () => {
+  // Feature #389: Add authentication to protect endpoint
+  app.get('/api/v1/github/webhooks/gitleaks/scans', {
+    preHandler: [authenticate, requireScopes(['read'])],
+  }, async () => {
     const scans: PushSecretScanResult[] = [];
     pushSecretScans.forEach((scan) => {
       scans.push(scan);
