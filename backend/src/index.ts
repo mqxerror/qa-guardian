@@ -63,6 +63,10 @@ import { setWebSocketIO } from './services/websocket-events.js'; // Feature #108
 import { initializeEventSubscriber, closeSubscriber } from './services/redis-events.js'; // Feature #200: Redis Pub/Sub for worker events
 import { generateRequestId } from './utils/index.js';
 import { getTestRun } from './services/repositories/test-runs.js'; // Feature #388: Organization check for Socket.IO join-run
+import { createLogger } from './services/logger.js'; // Feature #447: Structured logging
+
+// Feature #447: Server logger for startup and lifecycle logging
+const log = createLogger('server');
 
 // Socket.IO server instance (will be initialized after server starts)
 let io: SocketIOServer | null = null;
@@ -194,9 +198,9 @@ async function registerPlugins() {
   ];
 
   // Log allowed origins for debugging (helpful for CORS troubleshooting)
-  console.log('[CORS] Allowed origins:', allowedOrigins);
+  log.info({ allowedOrigins }, 'CORS allowed origins configured');
   if (process.env.NODE_ENV !== 'production') {
-    console.log('[CORS] Development mode: allowing all origins');
+    log.info('CORS development mode: allowing all origins');
   }
 
   await app.register(cors, {
@@ -301,9 +305,9 @@ async function registerPlugins() {
         deepLinking: false,
       },
     });
-    console.log('[Swagger] API documentation available at /api/docs');
+    log.info('Swagger API documentation available at /api/docs');
   } else {
-    console.log('[Swagger] Disabled in production mode');
+    log.info('Swagger disabled in production mode');
   }
 
   // Register routes
@@ -383,64 +387,64 @@ async function start() {
     // Initialize database connection (optional - will fall back to in-memory if not available)
     const dbConnected = await initializeDatabase();
     if (dbConnected) {
-      console.log('[Startup] PostgreSQL database connected - data will persist');
+      log.info('PostgreSQL database connected - data will persist');
 
       // Feature #162: Run pending database migrations
       const migrationsRan = await runMigrations();
       if (migrationsRan) {
-        console.log('[Startup] Database migrations applied successfully');
+        log.info('Database migrations applied successfully');
       } else {
-        console.log('[Startup] Some migrations may have failed - check logs above');
+        log.warn('Some migrations may have failed - check logs above');
       }
     } else {
-      console.log('[Startup] Using in-memory storage - data will NOT persist across restarts');
+      log.warn('Using in-memory storage - data will NOT persist across restarts');
     }
 
     // Feature #60: Initialize Redis cache service (optional - will fall back to in-memory if not available)
     const cache = await initializeCache();
     if (cache.isRedisConnected()) {
-      console.log('[Startup] Redis cache connected - caching enabled');
+      log.info('Redis cache connected - caching enabled');
     } else {
-      console.log('[Startup] Redis not available - using in-memory cache fallback');
+      log.info('Redis not available - using in-memory cache fallback');
     }
 
     // Feature #155: Initialize BullMQ execution queue (requires Redis)
     const queueInitialized = await initializeExecutionQueue();
     if (queueInitialized) {
-      console.log('[Startup] Execution queue initialized - test runs will be queued with concurrency limits');
+      log.info('Execution queue initialized - test runs will be queued with concurrency limits');
     } else {
-      console.log('[Startup] Execution queue not available - test runs will execute directly');
+      log.info('Execution queue not available - test runs will execute directly');
     }
 
     // Feature #329: Initialize webhook subscriptions from database
     try {
       await initializeWebhookSubscriptionsFromDb();
-      console.log('[Startup] Webhook subscriptions loaded from database');
+      log.info('Webhook subscriptions loaded from database');
     } catch (err: unknown) {
-      console.error('[Startup] Failed to load webhook subscriptions from database (non-fatal):', err instanceof Error ? err.message : String(err));
+      log.error({ error: err instanceof Error ? err.message : String(err) }, 'Failed to load webhook subscriptions from database (non-fatal)');
     }
 
     // Feature #320: Initialize BullMQ webhook queue (requires Redis)
     const webhookQueueInitialized = await initializeWebhookQueue();
     if (webhookQueueInitialized) {
-      console.log('[Startup] Webhook queue initialized - webhook deliveries will be queued reliably');
+      log.info('Webhook queue initialized - webhook deliveries will be queued reliably');
 
       // Feature #321: Register callback for auto-disable on sustained failure
       registerSubscriptionStatsCallback(updateSubscriptionDeliveryStats);
     } else {
-      console.log('[Startup] Webhook queue not available - webhooks will use in-memory delivery');
+      log.info('Webhook queue not available - webhooks will use in-memory delivery');
     }
 
     // Feature #362: Initialize Redis Pub/Sub for webhook cache invalidation (Feature #381)
     try {
       const webhookPubSubInitialized = await initializeWebhookPubSub();
       if (webhookPubSubInitialized) {
-        console.log('[Startup] Webhook Pub/Sub initialized - cache invalidation across instances enabled');
+        log.info('Webhook Pub/Sub initialized - cache invalidation across instances enabled');
       } else {
-        console.log('[Startup] Webhook Pub/Sub already initialized');
+        log.info('Webhook Pub/Sub already initialized');
       }
     } catch (err: unknown) {
-      console.warn('[Startup] Webhook Pub/Sub not available (non-fatal):', err instanceof Error ? err.message : String(err));
+      log.warn({ error: err instanceof Error ? err.message : String(err) }, 'Webhook Pub/Sub not available (non-fatal)');
     }
 
     // Seed test users AFTER database is connected
@@ -448,7 +452,7 @@ async function start() {
     try {
       await initTestUsers();
     } catch (err: unknown) {
-      console.error('[Startup] Failed to seed test users (non-fatal):', err instanceof Error ? err.message : String(err));
+      log.error({ error: err instanceof Error ? err.message : String(err) }, 'Failed to seed test users (non-fatal)');
     }
 
     await registerPlugins();
@@ -463,7 +467,7 @@ async function start() {
 
     // Initialize Socket.IO server attached to Fastify's underlying HTTP server
     // Feature #358: Use shared CORS_ALLOWED_ORIGINS constant
-    console.log('Socket.IO allowed origins:', CORS_ALLOWED_ORIGINS);
+    log.info({ allowedOrigins: CORS_ALLOWED_ORIGINS }, 'Socket.IO allowed origins');
 
     io = new SocketIOServer(app.server, {
       cors: {
@@ -520,9 +524,9 @@ async function start() {
 
       // Configure the Redis adapter
       io.adapter(createAdapter(socketPubClient, socketSubClient));
-      console.log('[Socket.IO] Redis adapter configured - horizontal scaling enabled');
+      log.info('Socket.IO Redis adapter configured - horizontal scaling enabled');
     } catch (err) {
-      console.warn('[Socket.IO] Redis adapter not available, running in single-instance mode:', err instanceof Error ? err.message : err);
+      log.warn({ error: err instanceof Error ? err.message : String(err) }, 'Socket.IO Redis adapter not available, running in single-instance mode');
       // Continue without Redis adapter - Socket.IO will work on single instance
     }
 
@@ -550,7 +554,7 @@ async function start() {
 
         if (!token) {
           // Feature #219: Require authentication - no more unauthenticated bypass
-          console.warn(`[Socket.IO] Client ${socket.id} rejected - no token provided`);
+          log.warn({ socketId: socket.id }, 'Socket.IO client rejected - no token provided');
           return next(new Error('Authentication required: No token provided'));
         }
 
@@ -571,11 +575,11 @@ async function start() {
         socket.data.organizationId = decoded.organization_id;
         socket.data.authenticated = true;
 
-        console.log(`[Socket.IO] Client ${socket.id} authenticated as ${decoded.email} (org: ${decoded.organization_id})`);
+        log.info({ socketId: socket.id, email: decoded.email, orgId: decoded.organization_id }, 'Socket.IO client authenticated');
         next();
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        console.warn(`[Socket.IO] Authentication failed for ${socket.id}: ${errorMessage}`);
+        log.warn({ socketId: socket.id, error: errorMessage }, 'Socket.IO authentication failed');
         // Reject connection with invalid token
         next(new Error('Authentication failed: Invalid or expired token'));
       }
@@ -584,19 +588,19 @@ async function start() {
     // Socket.IO connection handling
     io.on('connection', (socket: AuthenticatedSocket) => {
       const authStatus = socket.data.authenticated ? 'authenticated' : 'unauthenticated';
-      console.log(`[Socket.IO] Client connected: ${socket.id} (${authStatus})`);
+      log.info({ socketId: socket.id, authStatus }, 'Socket.IO client connected');
 
       // Feature #201: Join organization room with authorization check
       socket.on('join-org', (orgId: string) => {
         // If authenticated, verify the user belongs to this organization
         if (socket.data.authenticated && socket.data.organizationId !== orgId) {
-          console.warn(`[Socket.IO] Client ${socket.id} tried to join unauthorized org: ${orgId} (belongs to: ${socket.data.organizationId})`);
+          log.warn({ socketId: socket.id, requestedOrgId: orgId, userOrgId: socket.data.organizationId }, 'Socket.IO client tried to join unauthorized org');
           socket.emit('error', { message: 'Unauthorized: You do not belong to this organization' });
           return;
         }
 
         socket.join(`org:${orgId}`);
-        console.log(`[Socket.IO] Client ${socket.id} joined org:${orgId}`);
+        log.debug({ socketId: socket.id, orgId }, 'Socket.IO client joined org room');
       });
 
       // Feature #219: Join specific test run room with auth check
@@ -616,36 +620,36 @@ async function start() {
           }
 
           if (run.organization_id !== socket.data.organizationId) {
-            console.log(`[Socket.IO] Client ${socket.id} denied access to run:${runId} - org mismatch (user org: ${socket.data.organizationId}, run org: ${run.organization_id})`);
+            log.info({ socketId: socket.id, runId, userOrgId: socket.data.organizationId, runOrgId: run.organization_id }, 'Socket.IO client denied access to run - org mismatch');
             socket.emit('error', { message: 'Access denied - test run belongs to a different organization' });
             return;
           }
         } catch (error) {
-          console.error(`[Socket.IO] Error checking run ownership for ${runId}:`, error);
+          log.error({ socketId: socket.id, runId, error }, 'Socket.IO error checking run ownership');
           socket.emit('error', { message: 'Failed to verify run ownership' });
           return;
         }
 
         socket.join(`run:${runId}`);
-        console.log(`[Socket.IO] Client ${socket.id} joined run:${runId}`);
+        log.debug({ socketId: socket.id, runId }, 'Socket.IO client joined run room');
       });
 
       // Feature #219: Leave test run room (auth implicitly required since only authenticated clients can connect)
       socket.on('leave-run', (runId: string) => {
         socket.leave(`run:${runId}`);
-        console.log(`[Socket.IO] Client ${socket.id} left run:${runId}`);
+        log.debug({ socketId: socket.id, runId }, 'Socket.IO client left run room');
       });
 
       // Feature #426: Join quick test room for real-time wave updates
       socket.on('join-quick-test', (runId: string) => {
         socket.join(`quick-test:${runId}`);
-        console.log(`[Socket.IO] Client ${socket.id} joined quick-test:${runId}`);
+        log.debug({ socketId: socket.id, runId }, 'Socket.IO client joined quick-test room');
       });
 
       // Feature #426: Leave quick test room
       socket.on('leave-quick-test', (runId: string) => {
         socket.leave(`quick-test:${runId}`);
-        console.log(`[Socket.IO] Client ${socket.id} left quick-test:${runId}`);
+        log.debug({ socketId: socket.id, runId }, 'Socket.IO client left quick-test room');
       });
 
       // Feature #167: Heartbeat ping/pong for connection health monitoring
@@ -654,7 +658,7 @@ async function start() {
       });
 
       socket.on('disconnect', () => {
-        console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
+        log.debug({ socketId: socket.id }, 'Socket.IO client disconnected');
       });
     });
 
@@ -670,9 +674,9 @@ async function start() {
     // and have them forwarded to Socket.IO clients
     const redisEventsInitialized = await initializeEventSubscriber(io);
     if (redisEventsInitialized) {
-      console.log('[Startup] Redis event subscriber initialized - worker events will be forwarded to Socket.IO');
+      log.info('Redis event subscriber initialized - worker events will be forwarded to Socket.IO');
     } else {
-      console.log('[Startup] Redis event subscriber not available - worker events will not be forwarded');
+      log.info('Redis event subscriber not available - worker events will not be forwarded');
     }
 
     // Feature #154: Initialize data retention cleanup job
@@ -693,27 +697,14 @@ async function start() {
       ? 'Connected (PostgreSQL)'
       : 'In-memory (data will not persist!)';
 
-    console.log(`
-====================================
-  QA Guardian API Server
-====================================
-
-  Server running at: http://localhost:${port}
-  API Documentation: http://localhost:${port}/api/docs
-  Health Check:      http://localhost:${port}/health
-  WebSocket:         ws://localhost:${port} (Socket.IO)
-
-  MCP Tools:         /api/v1/mcp/tools (170+ tools)
-  MCP Execute:       /api/v1/mcp/execute
-  MCP Chat:          /api/v1/mcp/chat
-  MCP Status:        /api/v1/mcp/status
-
-  Database:          ${dbStatus}
-  AI Provider:       ${mcpStatus}
-  Environment:       ${process.env.NODE_ENV || 'development'}
-  CORS Origins:      ${process.env.FRONTEND_URL || 'localhost:5173'}, qa.pixelcraftedmedia.com
-====================================
-    `);
+    log.info({
+      port,
+      docsUrl: `http://localhost:${port}/api/docs`,
+      healthUrl: `http://localhost:${port}/health`,
+      database: dbStatus,
+      aiProvider: mcpStatus,
+      environment: process.env.NODE_ENV || 'development',
+    }, `QA Guardian API Server started at http://localhost:${port}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);
@@ -722,7 +713,7 @@ async function start() {
 
 // Feature #164: Graceful shutdown function used by error handlers
 async function gracefulShutdown(): Promise<void> {
-  console.log('[Shutdown] Closing connections gracefully...');
+  log.info('Closing connections gracefully...');
   stopCleanupJob(); // Feature #154: Stop cleanup job
   await shutdownExecutionQueue(); // Feature #155: Stop execution queue
   await shutdownWebhookQueue(); // Feature #320: Stop webhook queue
@@ -740,7 +731,7 @@ async function gracefulShutdown(): Promise<void> {
   await closeCache(); // Feature #60: Close cache connection
   await closeDatabase();
   await app.close();
-  console.log('[Shutdown] All connections closed');
+  log.info('All connections closed');
 }
 
 // Feature #164: Initialize global error handlers BEFORE starting server
@@ -750,13 +741,13 @@ start();
 
 // Graceful shutdown on signals
 process.on('SIGTERM', async () => {
-  console.log('[Shutdown] SIGTERM received...');
+  log.info('SIGTERM received, initiating shutdown...');
   await gracefulShutdown();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  console.log('[Shutdown] SIGINT received...');
+  log.info('SIGINT received, initiating shutdown...');
   await gracefulShutdown();
   process.exit(0);
 });

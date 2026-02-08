@@ -27,6 +27,10 @@ import { Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
 import { createServer } from 'http';
 import { initializeEventPublisher, closePublisher, isPublisherAvailable } from './services/redis-events.js'; // Feature #200: Redis Pub/Sub for real-time events
+import { createLogger } from './services/logger.js'; // Feature #447: Structured logging
+
+// Feature #447: Worker logger for execution and lifecycle logging
+const log = createLogger('worker');
 
 // ============================================================================
 // Configuration
@@ -36,9 +40,7 @@ const QUEUE_NAME = 'test-execution';
 const MAX_CONCURRENCY = parseInt(process.env.EXECUTION_MAX_CONCURRENCY || '2', 10);
 const JOB_TIMEOUT = parseInt(process.env.EXECUTION_JOB_TIMEOUT || '600000', 10); // 10 minutes
 
-console.log('[Worker] Starting QA Guardian Test Execution Worker');
-console.log(`[Worker] Max Concurrency: ${MAX_CONCURRENCY}`);
-console.log(`[Worker] Job Timeout: ${JOB_TIMEOUT}ms`);
+log.info({ maxConcurrency: MAX_CONCURRENCY, jobTimeoutMs: JOB_TIMEOUT }, 'Starting QA Guardian Test Execution Worker');
 
 // ============================================================================
 // Redis Connection
@@ -62,7 +64,7 @@ try {
     redisOptions.password = url.password;
   }
 } catch (err) {
-  console.error('[Worker] ERROR: Invalid REDIS_URL:', err);
+  log.error({ error: err }, 'Invalid REDIS_URL');
   process.exit(1);
 }
 
@@ -91,9 +93,9 @@ async function loadExecutionModule(): Promise<void> {
     // Dynamic import of the test-runs module
     const testRunsModule = await import('./routes/test-runs.js');
     runTestsForRun = testRunsModule.runTestsForRun;
-    console.log('[Worker] Test execution module loaded successfully');
+    log.info('Test execution module loaded successfully');
   } catch (err) {
-    console.error('[Worker] ERROR: Failed to load test execution module:', err);
+    log.error({ error: err }, 'Failed to load test execution module');
     process.exit(1);
   }
 }
@@ -110,21 +112,21 @@ async function startWorker(): Promise<void> {
   // This allows emitRunEvent() to publish events via Redis Pub/Sub
   const publisherInitialized = await initializeEventPublisher();
   if (publisherInitialized) {
-    console.log('[Worker] Redis event publisher initialized - real-time events will be forwarded to API server');
+    log.info('Redis event publisher initialized - real-time events will be forwarded to API server');
   } else {
-    console.warn('[Worker] Redis event publisher not available - real-time events will be silently dropped');
+    log.warn('Redis event publisher not available - real-time events will be silently dropped');
   }
 
   // Load execution module after event publisher is ready
   await loadExecutionModule();
 
-  console.log('[Worker] Creating BullMQ worker...');
+  log.info('Creating BullMQ worker...');
 
   worker = new Worker<ExecutionJobData>(
     QUEUE_NAME,
     async (job: Job<ExecutionJobData>) => {
       const { runId, testType } = job.data;
-      console.log(`[Worker] Processing job ${job.id} - Run: ${runId}, Type: ${testType}`);
+      log.info({ jobId: job.id, runId, testType }, 'Processing job');
 
       const startTime = Date.now();
 
@@ -132,11 +134,11 @@ async function startWorker(): Promise<void> {
         // Execute the test run
         await runTestsForRun(runId);
 
-        const duration = Math.round((Date.now() - startTime) / 1000);
-        console.log(`[Worker] Completed job ${job.id} - Run: ${runId} (${duration}s)`);
+        const durationSec = Math.round((Date.now() - startTime) / 1000);
+        log.info({ jobId: job.id, runId, durationSec }, 'Job completed successfully');
       } catch (err: unknown) {
-        const duration = Math.round((Date.now() - startTime) / 1000);
-        console.error(`[Worker] Failed job ${job.id} - Run: ${runId} (${duration}s):`, err instanceof Error ? err.message : String(err));
+        const durationSec = Math.round((Date.now() - startTime) / 1000);
+        log.error({ jobId: job.id, runId, durationSec, error: err instanceof Error ? err.message : String(err) }, 'Job failed');
         throw err; // Re-throw for BullMQ retry handling
       }
     },
@@ -151,31 +153,31 @@ async function startWorker(): Promise<void> {
 
   // Event handlers
   worker.on('completed', (job) => {
-    console.log(`[Worker] Job ${job.id} completed successfully`);
+    log.debug({ jobId: job.id }, 'Job completed');
   });
 
   worker.on('failed', (job, err) => {
-    console.error(`[Worker] Job ${job?.id} failed:`, err.message);
+    log.error({ jobId: job?.id, error: err.message }, 'Job failed');
   });
 
   worker.on('error', (err) => {
-    console.error('[Worker] Worker error:', err);
+    log.error({ error: err }, 'Worker error');
   });
 
   worker.on('stalled', (jobId) => {
-    console.warn(`[Worker] Job ${jobId} stalled - may need investigation`);
+    log.warn({ jobId }, 'Job stalled - may need investigation');
   });
 
   worker.on('ready', () => {
-    console.log(`[Worker] Worker ready and listening for jobs on queue "${QUEUE_NAME}"`);
+    log.info({ queueName: QUEUE_NAME }, 'Worker ready and listening for jobs');
   });
 
   worker.on('closing', () => {
-    console.log('[Worker] Worker closing...');
+    log.info('Worker closing...');
   });
 
   worker.on('closed', () => {
-    console.log('[Worker] Worker closed');
+    log.info('Worker closed');
   });
 }
 
@@ -185,28 +187,28 @@ async function startWorker(): Promise<void> {
 
 async function shutdown(signal: string): Promise<void> {
   if (isShuttingDown) {
-    console.log('[Worker] Already shutting down...');
+    log.info('Already shutting down...');
     return;
   }
 
   isShuttingDown = true;
-  console.log(`[Worker] Received ${signal}, initiating graceful shutdown...`);
+  log.info({ signal }, 'Received shutdown signal, initiating graceful shutdown...');
 
   // Close worker (waits for current jobs to finish)
   if (worker) {
-    console.log('[Worker] Closing worker (waiting for active jobs)...');
+    log.info('Closing worker (waiting for active jobs)...');
     try {
       await worker.close();
-      console.log('[Worker] Worker closed successfully');
+      log.info('Worker closed successfully');
     } catch (err) {
-      console.error('[Worker] Error closing worker:', err);
+      log.error({ error: err }, 'Error closing worker');
     }
   }
 
   // Feature #200: Close Redis event publisher
   await closePublisher();
 
-  console.log('[Worker] Shutdown complete');
+  log.info('Shutdown complete');
   process.exit(0);
 }
 
@@ -216,12 +218,12 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 
 // Handle uncaught errors
 process.on('uncaughtException', (err) => {
-  console.error('[Worker] Uncaught exception:', err);
+  log.error({ error: err }, 'Uncaught exception');
   shutdown('uncaughtException');
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('[Worker] Unhandled rejection at:', promise, 'reason:', reason);
+  log.error({ promise, reason }, 'Unhandled rejection');
   // Don't shutdown for unhandled rejections, just log
 });
 
@@ -254,27 +256,20 @@ const healthServer = createServer((req, res) => {
 // ============================================================================
 
 async function main(): Promise<void> {
-  console.log('[Worker] ====================================');
-  console.log('[Worker] QA Guardian Test Execution Worker');
-  console.log('[Worker] ====================================');
-  console.log(`[Worker] Node.js ${process.version}`);
-  console.log(`[Worker] PID: ${process.pid}`);
+  log.info({ nodeVersion: process.version, pid: process.pid }, 'QA Guardian Test Execution Worker starting');
 
   // Start the worker
   await startWorker();
 
   // Start health check server
   healthServer.listen(HEALTH_PORT, () => {
-    console.log(`[Worker] Health endpoint: http://localhost:${HEALTH_PORT}/health`);
+    log.info({ healthEndpoint: `http://localhost:${HEALTH_PORT}/health` }, 'Health check server started');
   });
 
-  console.log('[Worker] ====================================');
-  console.log('[Worker] Worker is running and waiting for jobs');
-  console.log('[Worker] Press Ctrl+C to stop');
-  console.log('[Worker] ====================================');
+  log.info('Worker is running and waiting for jobs');
 }
 
 main().catch((err) => {
-  console.error('[Worker] Fatal error during startup:', err);
+  log.fatal({ error: err }, 'Fatal error during startup');
   process.exit(1);
 });
