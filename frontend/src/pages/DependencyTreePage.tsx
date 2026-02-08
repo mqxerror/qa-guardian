@@ -329,8 +329,8 @@ export function DependencyTreePage() {
           {/* Package info */}
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontWeight: 600, color: '#111827' }}>{node.name}</span>
-              <span style={{ fontSize: '12px', color: '#6b7280', fontFamily: 'monospace' }}>
+              <span style={{ fontWeight: 600, color: 'hsl(var(--foreground))' }}>{node.name}</span>
+              <span style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))', fontFamily: 'monospace' }}>
                 v{node.version}
               </span>
               {node.isDev && (
@@ -347,7 +347,7 @@ export function DependencyTreePage() {
               )}
             </div>
             {node.license && (
-              <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>
+              <div style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))', marginTop: '2px' }}>
                 {node.license}
               </div>
             )}
@@ -378,7 +378,7 @@ export function DependencyTreePage() {
           {hasChildren && (
             <span style={{
               fontSize: '11px',
-              color: '#9ca3af',
+              color: 'hsl(var(--muted-foreground))',
               marginLeft: '8px',
             }}>
               {node.children.length} dep{node.children.length !== 1 ? 's' : ''}
@@ -388,7 +388,7 @@ export function DependencyTreePage() {
 
         {/* Render children if expanded */}
         {isExpanded && hasChildren && (
-          <div style={{ borderLeft: '2px solid #e5e7eb', marginLeft: '16px', paddingLeft: '8px' }}>
+          <div style={{ borderLeft: '2px solid hsl(var(--border))', marginLeft: '16px', paddingLeft: '8px' }}>
             {node.children.map(child => renderTreeNode(child, level + 1))}
           </div>
         )}
@@ -406,7 +406,7 @@ export function DependencyTreePage() {
           alignItems: 'center',
           justifyContent: 'center',
           height: '100%',
-          color: '#9ca3af',
+          color: 'hsl(var(--muted-foreground))',
         }}>
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ marginBottom: '16px' }}>
             <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -438,10 +438,10 @@ export function DependencyTreePage() {
               {languageConfig[selectedNode.language]?.icon || '?'}
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#111827' }}>
+              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: 'hsl(var(--foreground))' }}>
                 {selectedNode.name}
               </h3>
-              <p style={{ margin: 0, fontSize: '14px', color: '#6b7280', fontFamily: 'monospace' }}>
+              <p style={{ margin: 0, fontSize: '14px', color: 'hsl(var(--muted-foreground))', fontFamily: 'monospace' }}>
                 v{selectedNode.version}
               </p>
             </div>
@@ -455,7 +455,7 @@ export function DependencyTreePage() {
               backgroundColor: '#f3f4f6',
               borderRadius: '6px',
               fontSize: '13px',
-              color: '#4b5563',
+              color: 'hsl(var(--muted-foreground))',
             }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -496,11 +496,11 @@ export function DependencyTreePage() {
                     }}>
                       {vuln.severity}
                     </span>
-                    <span style={{ fontFamily: 'monospace', fontSize: '12px', color: '#4b5563' }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'hsl(var(--muted-foreground))' }}>
                       {vuln.id}
                     </span>
                   </div>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#374151' }}>
+                  <p style={{ margin: 0, fontSize: '13px', color: 'hsl(var(--foreground))' }}>
                     {vuln.title}
                   </p>
                   {vuln.fixed_version && (
@@ -517,7 +517,7 @@ export function DependencyTreePage() {
         {/* Children dependencies */}
         {selectedNode.children.length > 0 && (
           <div>
-            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600, color: '#374151' }}>
+            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600, color: 'hsl(var(--foreground))' }}>
               Transitive Dependencies ({selectedNode.children.length})
             </h4>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -566,37 +566,27 @@ export function DependencyTreePage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div style={{ backgroundColor: 'white', borderBottom: '1px solid #e5e7eb', padding: '20px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+      <div className="bg-card border-b border-border px-6 py-5">
+        <div className="flex items-center gap-4 mb-4">
           <button
             onClick={() => navigate(-1)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '36px',
-              height: '36px',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              backgroundColor: 'white',
-              cursor: 'pointer',
-            }}
+            className="flex items-center justify-center w-9 h-9 border border-border rounded-lg bg-card hover:bg-muted cursor-pointer"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M15 19l-7-7 7-7" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M15 19l-7-7 7-7" stroke="currentColor" className="text-muted-foreground" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
           <div>
-            <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h1 className="m-0 text-2xl font-bold text-foreground flex items-center gap-2.5">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
                 <path d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" stroke="#6366f1" strokeWidth="2" />
                 <path d="M7 10v4M17 10v4M10 7h4M10 17h4" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" />
               </svg>
               Dependency Tree
             </h1>
-            <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>
+            <p className="mt-1 text-sm text-muted-foreground">
               Interactive visualization of project dependencies with vulnerability highlighting
             </p>
           </div>
@@ -606,7 +596,7 @@ export function DependencyTreePage() {
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Project selector */}
           <div style={{ minWidth: '200px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#6b7280', marginBottom: '4px' }}>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: '4px' }}>
               Project
             </label>
             <select
@@ -618,7 +608,7 @@ export function DependencyTreePage() {
                 borderRadius: '8px',
                 border: '1px solid #d1d5db',
                 fontSize: '14px',
-                backgroundColor: 'white',
+                backgroundColor: 'hsl(var(--card))',
               }}
             >
               <option value="">Select a project...</option>
@@ -634,7 +624,7 @@ export function DependencyTreePage() {
               {Object.keys(data.dependencies_by_language).map(lang => {
                 const langData = data.summary[lang];
                 const isActive = selectedLanguage === lang;
-                const config = languageConfig[lang] || { color: '#6b7280', icon: '?' };
+                const config = languageConfig[lang] || { color: 'hsl(var(--muted-foreground))', icon: '?' };
 
                 return (
                   <button
@@ -691,7 +681,7 @@ export function DependencyTreePage() {
       {/* Main content */}
       <div style={{ display: 'flex', height: 'calc(100vh - 180px)' }}>
         {/* Tree panel */}
-        <div style={{ flex: 1, overflow: 'auto', padding: '20px', borderRight: '1px solid #e5e7eb' }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: '20px', borderRight: '1px solid hsl(var(--border))' }}>
           {/* Toolbar */}
           <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
             {/* Search */}
@@ -728,7 +718,7 @@ export function DependencyTreePage() {
                 onChange={(e) => setShowVulnerableOnly(e.target.checked)}
                 style={{ width: '16px', height: '16px', accentColor: '#dc2626' }}
               />
-              <span style={{ fontSize: '13px', color: '#374151' }}>Vulnerable only</span>
+              <span style={{ fontSize: '13px', color: 'hsl(var(--foreground))' }}>Vulnerable only</span>
             </label>
 
             {/* Expand/Collapse buttons */}
@@ -739,7 +729,7 @@ export function DependencyTreePage() {
                   padding: '6px 12px',
                   borderRadius: '6px',
                   border: '1px solid #d1d5db',
-                  backgroundColor: 'white',
+                  backgroundColor: 'hsl(var(--card))',
                   fontSize: '12px',
                   cursor: 'pointer',
                 }}
@@ -752,7 +742,7 @@ export function DependencyTreePage() {
                   padding: '6px 12px',
                   borderRadius: '6px',
                   border: '1px solid #d1d5db',
-                  backgroundColor: 'white',
+                  backgroundColor: 'hsl(var(--card))',
                   fontSize: '12px',
                   cursor: 'pointer',
                 }}
@@ -764,7 +754,7 @@ export function DependencyTreePage() {
 
           {/* Loading state */}
           {loading && (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'hsl(var(--muted-foreground))' }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }}>
                 <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m0-12.14l2.83 2.83m8.48 8.48l-2.83 2.83" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
@@ -781,7 +771,7 @@ export function DependencyTreePage() {
 
           {/* Empty state */}
           {!loading && !error && filteredTree.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'hsl(var(--muted-foreground))' }}>
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ margin: '0 auto 12px' }}>
                 <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -799,7 +789,7 @@ export function DependencyTreePage() {
         </div>
 
         {/* Detail panel */}
-        <div style={{ width: '380px', backgroundColor: 'white', overflow: 'auto' }}>
+        <div style={{ width: '380px', backgroundColor: 'hsl(var(--card))', overflow: 'auto' }}>
           {renderDetailPanel()}
         </div>
       </div>
@@ -811,7 +801,7 @@ export function DependencyTreePage() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: 'white',
+          backgroundColor: 'hsl(var(--card))',
           borderTop: '1px solid #e5e7eb',
           padding: '12px 24px',
           display: 'flex',
@@ -819,24 +809,24 @@ export function DependencyTreePage() {
           justifyContent: 'center',
         }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: '#111827' }}>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: 'hsl(var(--foreground))' }}>
               {data.totals.total_dependencies}
             </div>
-            <div style={{ fontSize: '12px', color: '#6b7280' }}>Total Dependencies</div>
+            <div style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))' }}>Total Dependencies</div>
           </div>
-          <div style={{ width: '1px', backgroundColor: '#e5e7eb' }} />
+          <div style={{ width: '1px', backgroundColor: 'hsl(var(--border))' }} />
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '20px', fontWeight: 700, color: '#dc2626' }}>
               {data.totals.total_vulnerabilities}
             </div>
-            <div style={{ fontSize: '12px', color: '#6b7280' }}>Vulnerabilities</div>
+            <div style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))' }}>Vulnerabilities</div>
           </div>
-          <div style={{ width: '1px', backgroundColor: '#e5e7eb' }} />
+          <div style={{ width: '1px', backgroundColor: 'hsl(var(--border))' }} />
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '20px', fontWeight: 700, color: '#6366f1' }}>
               {data.totals.languages_scanned}
             </div>
-            <div style={{ fontSize: '12px', color: '#6b7280' }}>Languages</div>
+            <div style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))' }}>Languages</div>
           </div>
         </div>
       )}
