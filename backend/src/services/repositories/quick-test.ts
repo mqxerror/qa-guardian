@@ -30,6 +30,7 @@ export interface QuickTestSummary {
   performanceScore: number;
   securityScore: number;
   accessibilityScore: number; // Feature #471
+  apiScore: number; // Feature #472
   overallScore: number;
 }
 

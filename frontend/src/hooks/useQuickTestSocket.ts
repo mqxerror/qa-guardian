@@ -39,6 +39,8 @@ export interface QuickTestSummary {
   healthScore: number;
   performanceScore: number;
   securityScore: number;
+  accessibilityScore?: number; // Feature #471
+  apiScore?: number; // Feature #472
   overallScore: number;
 }
 
@@ -96,6 +98,30 @@ const INITIAL_WAVES: WaveState[] = [
       { name: 'UX Issues', status: 'pending' },
       { name: 'Accessibility', status: 'pending' },
       { name: 'Summary', status: 'pending' },
+    ],
+  },
+  // Feature #471: Wave 5 - Accessibility Scan
+  {
+    wave: 5,
+    name: 'Accessibility',
+    status: 'waiting',
+    steps: [
+      { name: 'WCAG 2.1 AA Scan', status: 'pending' },
+      { name: 'Critical Violations', status: 'pending' },
+      { name: 'Serious Violations', status: 'pending' },
+      { name: 'Minor Violations', status: 'pending' },
+    ],
+  },
+  // Feature #472: Wave 6 - API Discovery
+  {
+    wave: 6,
+    name: 'API Discovery',
+    status: 'waiting',
+    steps: [
+      { name: 'OpenAPI Spec Detection', status: 'pending' },
+      { name: 'Common API Paths', status: 'pending' },
+      { name: 'Endpoint Health', status: 'pending' },
+      { name: 'Auth Protection', status: 'pending' },
     ],
   },
 ];

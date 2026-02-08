@@ -45,6 +45,10 @@ import {
   Lightbulb,
   AlertTriangle,
   Accessibility,
+  Network,
+  FileJson,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 
 // ============================================================
@@ -151,6 +155,18 @@ const WAVE_DEFINITIONS = [
       { name: 'Critical Violations', status: 'pending' as const },
       { name: 'Serious Violations', status: 'pending' as const },
       { name: 'Minor Violations', status: 'pending' as const },
+    ],
+  },
+  // Feature #472: Wave 6 - API Discovery
+  {
+    wave: 6,
+    name: 'API Discovery',
+    icon: Network,
+    steps: [
+      { name: 'OpenAPI Spec Detection', status: 'pending' as const },
+      { name: 'Common API Paths', status: 'pending' as const },
+      { name: 'Endpoint Health', status: 'pending' as const },
+      { name: 'Auth Protection', status: 'pending' as const },
     ],
   },
 ];
@@ -364,6 +380,11 @@ function WaveCard({ wave, onToggleExpand, onScreenshotClick }: WaveCardProps) {
           {/* Feature #471: Accessibility details for Wave 5 */}
           {wave.wave === 5 && wave.status === 'completed' && wave.data && (
             <AccessibilityDetails data={wave.data as unknown as AccessibilityData} />
+          )}
+
+          {/* Feature #472: API Discovery details for Wave 6 */}
+          {wave.wave === 6 && wave.status === 'completed' && wave.data && (
+            <APIDiscoveryDetails data={wave.data as unknown as APIDiscoveryData} />
           )}
 
           {wave.error && (
@@ -697,6 +718,204 @@ function AccessibilityDetails({ data }: { data: AccessibilityData }) {
 }
 
 // ============================================================
+// Feature #472: API Discovery Details Component
+// ============================================================
+
+interface APIDiscoveryData {
+  score: number;
+  discoveredPaths: string[];
+  openAPISpec?: {
+    found: boolean;
+    url?: string;
+    title?: string;
+    version?: string;
+    endpointCount?: number;
+  };
+  endpoints: Array<{
+    path: string;
+    method: string;
+    status: number;
+    statusText: string;
+    responseTimeMs: number;
+    authRequired: boolean;
+    isHealthy: boolean;
+    contentType?: string;
+    errorMessage?: string;
+  }>;
+  summary: {
+    total: number;
+    healthy: number;
+    unhealthy: number;
+    protected: number;
+    unprotected: number;
+    byMethod: Record<string, number>;
+  };
+  securityConcerns: Array<{
+    type: string;
+    path: string;
+    description: string;
+    severity: 'high' | 'medium' | 'low';
+  }>;
+}
+
+function APIDiscoveryDetails({ data }: { data: APIDiscoveryData }) {
+  const hasEndpoints = data.endpoints && data.endpoints.length > 0;
+  const hasConcerns = data.securityConcerns && data.securityConcerns.length > 0;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border space-y-4">
+      {/* Score and Summary */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`text-2xl font-bold ${
+            data.score >= 80 ? 'text-success' :
+            data.score >= 60 ? 'text-warning' :
+            'text-destructive'
+          }`}>
+            {data.score}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            <div>API Discovery Score</div>
+            <div>{data.discoveredPaths.length} paths discovered</div>
+          </div>
+        </div>
+        <div className="text-right text-xs text-muted-foreground">
+          <div>{data.summary.healthy} healthy / {data.summary.total} total</div>
+          <div>{data.summary.protected} protected endpoints</div>
+        </div>
+      </div>
+
+      {/* OpenAPI Spec Info */}
+      {data.openAPISpec?.found && (
+        <div className="flex items-center gap-2 text-xs text-success bg-success/10 px-2 py-1.5 rounded">
+          <FileJson className="w-3.5 h-3.5" />
+          <span>
+            OpenAPI Spec Found: {data.openAPISpec.title} v{data.openAPISpec.version}
+            ({data.openAPISpec.endpointCount} endpoints)
+          </span>
+        </div>
+      )}
+
+      {/* Endpoint Summary */}
+      {data.summary.total > 0 && (
+        <div className="grid grid-cols-4 gap-2">
+          <div className="text-center p-2 rounded bg-success/10">
+            <div className="text-lg font-bold text-success">{data.summary.healthy}</div>
+            <div className="text-xs text-muted-foreground">Healthy</div>
+          </div>
+          <div className="text-center p-2 rounded bg-destructive/10">
+            <div className="text-lg font-bold text-destructive">{data.summary.unhealthy}</div>
+            <div className="text-xs text-muted-foreground">Unhealthy</div>
+          </div>
+          <div className="text-center p-2 rounded bg-blue-500/10">
+            <div className="text-lg font-bold text-blue-400">{data.summary.protected}</div>
+            <div className="text-xs text-muted-foreground">Protected</div>
+          </div>
+          <div className="text-center p-2 rounded bg-warning/10">
+            <div className="text-lg font-bold text-warning">{data.summary.unprotected}</div>
+            <div className="text-xs text-muted-foreground">Unprotected</div>
+          </div>
+        </div>
+      )}
+
+      {/* Security Concerns */}
+      {hasConcerns && (
+        <div>
+          <div className="flex items-center gap-2 text-xs font-medium text-destructive mb-2">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Security Concerns ({data.securityConcerns.length})
+          </div>
+          <div className="space-y-2">
+            {data.securityConcerns.slice(0, 3).map((concern, idx) => (
+              <div key={idx} className="p-2 rounded bg-destructive/10 text-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-foreground">{concern.path}</span>
+                  <span className={`px-1.5 py-0.5 rounded text-xs ${
+                    concern.severity === 'high' ? 'bg-red-500/20 text-red-400' :
+                    concern.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                    'bg-blue-500/20 text-blue-400'
+                  }`}>
+                    {concern.severity}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground">{concern.description}</div>
+              </div>
+            ))}
+            {data.securityConcerns.length > 3 && (
+              <div className="text-xs text-muted-foreground text-center">
+                +{data.securityConcerns.length - 3} more concerns
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Endpoints List */}
+      {hasEndpoints && (
+        <div>
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+            <Network className="w-3.5 h-3.5" />
+            Discovered Endpoints
+          </div>
+          <div className="space-y-1.5">
+            {data.endpoints.slice(0, 6).map((endpoint, idx) => (
+              <div key={idx} className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-mono ${
+                    endpoint.method === 'GET' ? 'bg-blue-500/20 text-blue-400' :
+                    endpoint.method === 'POST' ? 'bg-green-500/20 text-green-400' :
+                    endpoint.method === 'PUT' ? 'bg-yellow-500/20 text-yellow-400' :
+                    endpoint.method === 'DELETE' ? 'bg-red-500/20 text-red-400' :
+                    'bg-muted text-muted-foreground'
+                  }`}>
+                    {endpoint.method}
+                  </span>
+                  <span className="font-mono text-foreground truncate max-w-[150px]" title={endpoint.path}>
+                    {endpoint.path}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {endpoint.authRequired ? (
+                    <span title="Auth Required">
+                      <Lock className="w-3.5 h-3.5 text-blue-400" />
+                    </span>
+                  ) : (
+                    <span title="No Auth">
+                      <Unlock className="w-3.5 h-3.5 text-warning" />
+                    </span>
+                  )}
+                  <span className={`text-xs ${
+                    endpoint.isHealthy ? 'text-success' : 'text-destructive'
+                  }`}>
+                    {endpoint.status || '—'}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {endpoint.responseTimeMs}ms
+                  </span>
+                </div>
+              </div>
+            ))}
+            {data.endpoints.length > 6 && (
+              <div className="text-xs text-muted-foreground text-center">
+                +{data.endpoints.length - 6} more endpoints
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* No endpoints message */}
+      {!hasEndpoints && (
+        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <Network className="w-4 h-4" />
+          No API endpoints discovered
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
 // Screenshot Modal Component
 // ============================================================
 
@@ -952,7 +1171,7 @@ export function QuickTestPage() {
         {/* Header */}
         <PageHeader
           title="Quick Test"
-          description="Instant URL analysis with 5 parallel test waves"
+          description="Instant URL analysis with 6 parallel test waves"
           breadcrumbs={[{ label: 'Home', href: '/dashboard' }, { label: 'Quick Test' }]}
         />
 

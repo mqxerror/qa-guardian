@@ -1,12 +1,13 @@
 /**
  * Quick Test Runner Service
- * Feature #424: Orchestrates 5 parallel test waves for instant URL analysis
+ * Feature #424: Orchestrates 6 parallel test waves for instant URL analysis
  *
  * Wave 1 - Health Check (1-2s): DNS, HTTP, SSL, response time, redirects
  * Wave 2 - Visual + Performance (10-15s): Lighthouse, screenshots, Core Web Vitals
  * Wave 3 - Security Scan (15-30s): OWASP headers, mixed content, cookies, exposed paths
  * Wave 4 - AI Analysis (5-10s): Test suggestions, UX issues, accessibility recommendations
  * Wave 5 - Accessibility (5-15s): axe-core WCAG 2.1 AA scan with violation breakdown
+ * Wave 6 - API Discovery (3-10s): OpenAPI spec detection, endpoint health, auth checks
  */
 
 import dns from 'dns';
@@ -31,6 +32,8 @@ import {
 } from './repositories/quick-test.js';
 // Feature #466: Persist screenshots to filesystem
 import { saveScreenshot, type ScreenshotType } from './quick-test-screenshots.js';
+// Feature #472: OpenAPI spec parsing for API discovery
+import { parseOpenAPISpec, type OpenAPISpec } from './openapi-parser.js';
 
 // Feature #449: Use structured logger instead of console.*
 const log = createLogger('quick-test-runner');
@@ -95,6 +98,7 @@ export interface QuickTestResult {
     performanceScore: number;
     securityScore: number;
     accessibilityScore: number; // Feature #471
+    apiScore: number; // Feature #472
     overallScore: number;
   };
 }
@@ -235,6 +239,46 @@ interface AccessibilityScanResult {
   passesCount: number;
   wcagLevel: string;
   axeVersion: string;
+}
+
+// Feature #472: API Discovery scan result types
+interface APIEndpoint {
+  path: string;
+  method: string;
+  status: number;
+  statusText: string;
+  responseTimeMs: number;
+  authRequired: boolean; // true if returns 401/403, false if returns 200 without auth
+  isHealthy: boolean;
+  contentType?: string;
+  errorMessage?: string;
+}
+
+interface APIDiscoveryResult {
+  score: number;
+  discoveredPaths: string[];
+  openAPISpec?: {
+    found: boolean;
+    url?: string;
+    title?: string;
+    version?: string;
+    endpointCount?: number;
+  };
+  endpoints: APIEndpoint[];
+  summary: {
+    total: number;
+    healthy: number;
+    unhealthy: number;
+    protected: number; // endpoints requiring auth
+    unprotected: number; // endpoints returning 200 without auth
+    byMethod: Record<string, number>;
+  };
+  securityConcerns: Array<{
+    type: 'unprotected_sensitive' | 'no_auth_check' | 'exposed_docs';
+    path: string;
+    description: string;
+    severity: 'high' | 'medium' | 'low';
+  }>;
 }
 
 // In-memory storage for quick test results (24h TTL)
@@ -952,6 +996,333 @@ ${outputFormat}`;
 }
 
 // ============================================================
+// Wave 6: API Discovery
+// ============================================================
+
+/**
+ * Feature #472: API endpoint discovery and basic health testing
+ * Probes common API paths, looks for OpenAPI specs, and tests endpoint health
+ */
+async function runAPIDiscovery(url: string): Promise<APIDiscoveryResult> {
+  const result: APIDiscoveryResult = {
+    score: 0,
+    discoveredPaths: [],
+    endpoints: [],
+    summary: {
+      total: 0,
+      healthy: 0,
+      unhealthy: 0,
+      protected: 0,
+      unprotected: 0,
+      byMethod: {},
+    },
+    securityConcerns: [],
+  };
+
+  const parsedUrl = new URL(url);
+  const baseUrl = parsedUrl.origin;
+
+  // Common API paths to probe
+  const commonApiPaths = [
+    '/api',
+    '/api/v1',
+    '/api/v2',
+    '/v1',
+    '/v2',
+    '/graphql',
+    '/rest',
+  ];
+
+  // OpenAPI/Swagger spec paths
+  const openApiPaths = [
+    '/swagger.json',
+    '/openapi.json',
+    '/api-docs',
+    '/api/docs',
+    '/swagger',
+    '/docs/api',
+    '/.well-known/openapi.yaml',
+    '/openapi.yaml',
+    '/swagger.yaml',
+  ];
+
+  // Sensitive/admin paths that should require auth
+  const sensitivePaths = [
+    '/api/admin',
+    '/api/users',
+    '/api/config',
+    '/api/settings',
+    '/api/internal',
+    '/admin/api',
+    '/management',
+    '/actuator',
+    '/metrics',
+    '/health',
+    '/api/health',
+  ];
+
+  // Helper: Make HTTP request and return response info
+  async function probeEndpoint(endpointUrl: string, method: 'GET' | 'HEAD' = 'HEAD'): Promise<{
+    status: number;
+    statusText: string;
+    responseTimeMs: number;
+    contentType?: string;
+    error?: string;
+    body?: string;
+  }> {
+    const start = Date.now();
+    try {
+      const probeUrl = new URL(endpointUrl);
+      const isHttps = probeUrl.protocol === 'https:';
+      const client = isHttps ? https : http;
+
+      return await new Promise((resolve) => {
+        const req = client.request(endpointUrl, {
+          method,
+          timeout: 5000,
+          headers: {
+            'User-Agent': 'QA-Guardian-API-Discovery/1.0',
+            'Accept': 'application/json, application/yaml, */*',
+          },
+        }, (res) => {
+          let body = '';
+          res.on('data', (chunk) => { body += chunk; });
+          res.on('end', () => {
+            resolve({
+              status: res.statusCode || 0,
+              statusText: res.statusMessage || '',
+              responseTimeMs: Date.now() - start,
+              contentType: res.headers['content-type'],
+              body: method === 'GET' ? body.slice(0, 50000) : undefined, // Limit body size
+            });
+          });
+        });
+
+        req.on('error', (err) => {
+          resolve({
+            status: 0,
+            statusText: '',
+            responseTimeMs: Date.now() - start,
+            error: err.message,
+          });
+        });
+
+        req.on('timeout', () => {
+          req.destroy();
+          resolve({
+            status: 0,
+            statusText: '',
+            responseTimeMs: Date.now() - start,
+            error: 'Request timeout',
+          });
+        });
+
+        req.end();
+      });
+    } catch (err) {
+      return {
+        status: 0,
+        statusText: '',
+        responseTimeMs: Date.now() - start,
+        error: err instanceof Error ? err.message : 'Unknown error',
+      };
+    }
+  }
+
+  // Step 1: Probe for OpenAPI/Swagger specs
+  log.info({ url }, 'Probing for OpenAPI specs...');
+  for (const specPath of openApiPaths) {
+    const specUrl = `${baseUrl}${specPath}`;
+    const probe = await probeEndpoint(specUrl, 'GET');
+
+    if (probe.status === 200 && probe.body) {
+      // Try to parse as OpenAPI spec
+      const parseResult = parseOpenAPISpec(probe.body);
+      if (parseResult.success && parseResult.spec) {
+        result.openAPISpec = {
+          found: true,
+          url: specUrl,
+          title: parseResult.title,
+          version: parseResult.version,
+          endpointCount: parseResult.endpoints,
+        };
+        result.discoveredPaths.push(specPath);
+        log.info({ specUrl, title: parseResult.title, endpoints: parseResult.endpoints }, 'Found OpenAPI spec');
+
+        // Extract endpoints from spec
+        for (const [path, pathItem] of Object.entries(parseResult.spec.paths)) {
+          const methods = ['get', 'post', 'put', 'patch', 'delete'] as const;
+          for (const method of methods) {
+            if (pathItem[method]) {
+              result.endpoints.push({
+                path,
+                method: method.toUpperCase(),
+                status: 0, // Will be tested below
+                statusText: 'Pending',
+                responseTimeMs: 0,
+                authRequired: false,
+                isHealthy: false,
+              });
+            }
+          }
+        }
+        break; // Stop after finding first valid spec
+      }
+    }
+  }
+
+  // Step 2: Probe common API paths
+  log.info({ url }, 'Probing common API paths...');
+  for (const apiPath of commonApiPaths) {
+    const apiUrl = `${baseUrl}${apiPath}`;
+    const probe = await probeEndpoint(apiUrl);
+
+    if (probe.status > 0 && probe.status !== 404) {
+      result.discoveredPaths.push(apiPath);
+
+      const endpoint: APIEndpoint = {
+        path: apiPath,
+        method: 'HEAD',
+        status: probe.status,
+        statusText: probe.statusText,
+        responseTimeMs: probe.responseTimeMs,
+        authRequired: probe.status === 401 || probe.status === 403,
+        isHealthy: probe.status >= 200 && probe.status < 400,
+        contentType: probe.contentType,
+        errorMessage: probe.error,
+      };
+
+      // Check if this is in our endpoints list from OpenAPI
+      const existingIdx = result.endpoints.findIndex(e => e.path === apiPath);
+      if (existingIdx >= 0) {
+        result.endpoints[existingIdx] = { ...result.endpoints[existingIdx], ...endpoint };
+      } else {
+        result.endpoints.push(endpoint);
+      }
+    }
+  }
+
+  // Step 3: Check sensitive paths for auth
+  log.info({ url }, 'Checking sensitive paths for auth protection...');
+  for (const sensitivePath of sensitivePaths) {
+    const sensitiveUrl = `${baseUrl}${sensitivePath}`;
+    const probe = await probeEndpoint(sensitiveUrl);
+
+    if (probe.status > 0 && probe.status !== 404) {
+      result.discoveredPaths.push(sensitivePath);
+
+      const authRequired = probe.status === 401 || probe.status === 403;
+      const isHealthy = probe.status >= 200 && probe.status < 400;
+
+      const endpoint: APIEndpoint = {
+        path: sensitivePath,
+        method: 'HEAD',
+        status: probe.status,
+        statusText: probe.statusText,
+        responseTimeMs: probe.responseTimeMs,
+        authRequired,
+        isHealthy,
+        contentType: probe.contentType,
+        errorMessage: probe.error,
+      };
+
+      result.endpoints.push(endpoint);
+
+      // Flag security concern if sensitive endpoint returns 200 without auth
+      if (isHealthy && !authRequired) {
+        result.securityConcerns.push({
+          type: 'unprotected_sensitive',
+          path: sensitivePath,
+          description: `Sensitive endpoint ${sensitivePath} returns ${probe.status} without authentication`,
+          severity: sensitivePath.includes('admin') || sensitivePath.includes('config') ? 'high' : 'medium',
+        });
+      }
+    }
+  }
+
+  // Step 4: Test a sample of discovered endpoints for health
+  if (result.endpoints.length > 0) {
+    log.info({ count: result.endpoints.length }, 'Testing endpoint health...');
+    const endpointsToTest = result.endpoints.slice(0, 20); // Limit to 20 endpoints
+
+    for (const endpoint of endpointsToTest) {
+      if (endpoint.status === 0 || endpoint.statusText === 'Pending') {
+        const testUrl = `${baseUrl}${endpoint.path}`;
+        const probe = await probeEndpoint(testUrl);
+
+        endpoint.status = probe.status;
+        endpoint.statusText = probe.statusText;
+        endpoint.responseTimeMs = probe.responseTimeMs;
+        endpoint.authRequired = probe.status === 401 || probe.status === 403;
+        endpoint.isHealthy = probe.status >= 200 && probe.status < 400;
+        endpoint.contentType = probe.contentType;
+        endpoint.errorMessage = probe.error;
+      }
+    }
+  }
+
+  // Calculate summary
+  result.summary.total = result.endpoints.length;
+  result.summary.healthy = result.endpoints.filter(e => e.isHealthy).length;
+  result.summary.unhealthy = result.endpoints.filter(e => !e.isHealthy && e.status > 0).length;
+  result.summary.protected = result.endpoints.filter(e => e.authRequired).length;
+  result.summary.unprotected = result.endpoints.filter(e => e.isHealthy && !e.authRequired).length;
+
+  // Count by method
+  for (const endpoint of result.endpoints) {
+    result.summary.byMethod[endpoint.method] = (result.summary.byMethod[endpoint.method] || 0) + 1;
+  }
+
+  // Calculate API Discovery score
+  // Base score: 50 (neutral)
+  // +20 if OpenAPI spec found
+  // +15 if all sensitive endpoints are protected
+  // +15 if endpoints respond healthy
+  // -10 for each high severity security concern
+  // -5 for each medium severity security concern
+  let score = 50;
+
+  if (result.openAPISpec?.found) {
+    score += 20; // Good API documentation
+  }
+
+  const sensitiveEndpoints = result.endpoints.filter(e =>
+    sensitivePaths.some(sp => e.path.includes(sp.replace('/api', '')))
+  );
+  const protectedSensitive = sensitiveEndpoints.filter(e => e.authRequired);
+  if (sensitiveEndpoints.length > 0 && protectedSensitive.length === sensitiveEndpoints.length) {
+    score += 15; // All sensitive endpoints protected
+  } else if (sensitiveEndpoints.length > 0) {
+    const protectionRatio = protectedSensitive.length / sensitiveEndpoints.length;
+    score += Math.round(15 * protectionRatio);
+  }
+
+  if (result.summary.total > 0) {
+    const healthRatio = result.summary.healthy / result.summary.total;
+    score += Math.round(15 * healthRatio);
+  }
+
+  // Deduct for security concerns
+  for (const concern of result.securityConcerns) {
+    if (concern.severity === 'high') score -= 10;
+    else if (concern.severity === 'medium') score -= 5;
+    else score -= 2;
+  }
+
+  result.score = Math.max(0, Math.min(100, score));
+
+  log.info({
+    score: result.score,
+    discoveredPaths: result.discoveredPaths.length,
+    endpoints: result.summary.total,
+    openAPIFound: result.openAPISpec?.found || false,
+    securityConcerns: result.securityConcerns.length,
+  }, 'API Discovery complete');
+
+  return result;
+}
+
+// ============================================================
 // Main Runner
 // ============================================================
 
@@ -970,6 +1341,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       { wave: 3, name: 'Security Scan', status: 'pending' },
       { wave: 4, name: 'AI Analysis', status: 'pending' },
       { wave: 5, name: 'Accessibility', status: 'pending' }, // Feature #471
+      { wave: 6, name: 'API Discovery', status: 'pending' }, // Feature #472
     ],
   };
 
@@ -1207,6 +1579,31 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       emitWaveError(orgId, runId, 5, testResult.waves[4].error);
     }
 
+    // Feature #472: Wave 6 - API Discovery (runs without browser)
+    let apiDiscoveryResult: APIDiscoveryResult | undefined;
+    emitWaveStart(orgId, runId, 6, 'API Discovery');
+    testResult.waves[5].status = 'running';
+    testResult.waves[5].startedAt = new Date();
+
+    try {
+      const wave6Start = Date.now();
+      emitWaveProgress(orgId, runId, 6, 10, 'Probing for OpenAPI specs...');
+
+      apiDiscoveryResult = await runAPIDiscovery(url);
+
+      emitWaveProgress(orgId, runId, 6, 90, 'Finalizing API discovery results...');
+
+      testResult.waves[5].status = 'completed';
+      testResult.waves[5].completedAt = new Date();
+      testResult.waves[5].duration = Date.now() - wave6Start;
+      testResult.waves[5].data = apiDiscoveryResult as unknown as Record<string, unknown>;
+      emitWaveComplete(orgId, runId, 6, apiDiscoveryResult as unknown as Record<string, unknown>);
+    } catch (err) {
+      testResult.waves[5].status = 'failed';
+      testResult.waves[5].error = err instanceof Error ? err.message : 'API Discovery failed';
+      emitWaveError(orgId, runId, 6, testResult.waves[5].error);
+    }
+
     // Close any remaining browser from earlier waves
     if (browser) {
       await browser.close();
@@ -1218,14 +1615,24 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
     const performanceScore = visualResult?.lighthouse?.performance || 50;
     const securityScore = securityResult?.overallScore || 50;
     const accessibilityScore = accessibilityResult?.score ?? 50;
+    const apiScore = apiDiscoveryResult?.score ?? 50;
 
-    // Feature #471: Updated overall score to include accessibility (weights: 20% health, 25% perf, 25% security, 15% a11y, 15% AI implicit)
+    // Feature #472: Updated overall score to include API Discovery
+    // Weights: 15% health, 20% perf, 20% security, 25% a11y, 10% API, 10% AI implicit
     testResult.summary = {
       healthScore,
       performanceScore,
       securityScore,
       accessibilityScore,
-      overallScore: Math.round((healthScore * 0.2) + (performanceScore * 0.25) + (securityScore * 0.25) + (accessibilityScore * 0.3)),
+      apiScore,
+      overallScore: Math.round(
+        (healthScore * 0.15) +
+        (performanceScore * 0.20) +
+        (securityScore * 0.20) +
+        (accessibilityScore * 0.25) +
+        (apiScore * 0.10) +
+        (50 * 0.10) // AI implicit score placeholder
+      ),
     };
 
     testResult.status = 'completed';
