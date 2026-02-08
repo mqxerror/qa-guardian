@@ -413,8 +413,8 @@ async function start() {
     try {
       await initializeWebhookSubscriptionsFromDb();
       console.log('[Startup] Webhook subscriptions loaded from database');
-    } catch (err: any) {
-      console.error('[Startup] Failed to load webhook subscriptions from database (non-fatal):', err.message);
+    } catch (err: unknown) {
+      console.error('[Startup] Failed to load webhook subscriptions from database (non-fatal):', err instanceof Error ? err.message : String(err));
     }
 
     // Feature #320: Initialize BullMQ webhook queue (requires Redis)
@@ -436,16 +436,16 @@ async function start() {
       } else {
         console.log('[Startup] Webhook Pub/Sub already initialized');
       }
-    } catch (err: any) {
-      console.warn('[Startup] Webhook Pub/Sub not available (non-fatal):', err.message);
+    } catch (err: unknown) {
+      console.warn('[Startup] Webhook Pub/Sub not available (non-fatal):', err instanceof Error ? err.message : String(err));
     }
 
     // Seed test users AFTER database is connected
     // This ensures organization_members are persisted to the database
     try {
       await initTestUsers();
-    } catch (err: any) {
-      console.error('[Startup] Failed to seed test users (non-fatal):', err.message);
+    } catch (err: unknown) {
+      console.error('[Startup] Failed to seed test users (non-fatal):', err instanceof Error ? err.message : String(err));
     }
 
     await registerPlugins();

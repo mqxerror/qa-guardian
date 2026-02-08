@@ -301,8 +301,8 @@ export async function findElementByVisualMatch(
       mismatchPixels: bestMatch.mismatchPixels,
       totalPixels,
     };
-  } catch (err: any) {
-    console.error('[HEALING] Visual matching error:', err.message);
+  } catch (err: unknown) {
+    console.error('[HEALING] Visual matching error:', err instanceof Error ? err.message : String(err));
     return { found: false, confidence: 0, matchMethod: 'none' };
   }
 }

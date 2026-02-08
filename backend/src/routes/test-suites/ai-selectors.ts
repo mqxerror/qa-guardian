@@ -51,8 +51,8 @@ async function fetchAndAnalyzeElements(url?: string, html?: string): Promise<Ana
         return [];
       }
       htmlContent = await response.text();
-    } catch (err: any) {
-      console.warn(`[AI SELECTOR] Error fetching ${url}: ${err.message}`);
+    } catch (err: unknown) {
+      console.warn(`[AI SELECTOR] Error fetching ${url}: ${err instanceof Error ? err.message : String(err)}`);
       return [];
     }
   }

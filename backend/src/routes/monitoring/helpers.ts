@@ -186,14 +186,15 @@ export async function runCheck(check: UptimeCheck, location: MonitoringLocation)
       result.error = `Slow response: ${result.response_time}ms`;
     }
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     result.response_time = check.timeout || 30000;
     result.status = 'down';
     result.status_code = 0;
-    if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+    const errObj = err as { name?: string; message?: string };
+    if (errObj.name === 'TimeoutError' || errObj.name === 'AbortError') {
       result.error = `Connection timeout after ${check.timeout || 30000}ms`;
     } else {
-      result.error = `Connection failed: ${err.message || 'Unknown error'}`;
+      result.error = `Connection failed: ${err instanceof Error ? err.message : 'Unknown error'}`;
     }
   }
 

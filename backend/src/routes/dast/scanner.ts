@@ -194,10 +194,10 @@ export async function runZAPScan(
   // Verify ZAP connectivity before creating the scan record
   try {
     await zapGet('/JSON/core/view/version/');
-  } catch (err: any) {
+  } catch (err: unknown) {
     throw new Error(
       `ZAP is not reachable at ${ZAP_BASE_URL}. ` +
-      `Cannot start DAST scan. ${err.message}`
+      `Cannot start DAST scan. ${err instanceof Error ? err.message : String(err)}`
     );
   }
 

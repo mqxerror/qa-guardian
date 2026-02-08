@@ -89,17 +89,18 @@ const defaultSemgrepScan: RunSemgrepScanFn = async (_projectId, repoPath, _confi
     ], { timeout: 120000, maxBuffer: 50 * 1024 * 1024 });
 
     return parseOutput(stdout);
-  } catch (err: any) {
-    if (err.code === 'ENOENT') {
+  } catch (err: unknown) {
+    const execErr = err as { code?: string; stdout?: string; message?: string };
+    if (execErr.code === 'ENOENT') {
       throw new Error('Semgrep is not installed. Install with: pip install semgrep');
     }
     // Semgrep exits with code 1 when findings exist -- parse stdout anyway
-    if (err.stdout) {
+    if (execErr.stdout) {
       try {
-        return parseOutput(err.stdout);
+        return parseOutput(execErr.stdout);
       } catch { /* fall through */ }
     }
-    throw new Error(`Semgrep scan failed: ${err.message}`);
+    throw new Error(`Semgrep scan failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 };
 

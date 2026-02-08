@@ -134,9 +134,9 @@ async function startWorker(): Promise<void> {
 
         const duration = Math.round((Date.now() - startTime) / 1000);
         console.log(`[Worker] Completed job ${job.id} - Run: ${runId} (${duration}s)`);
-      } catch (err: any) {
+      } catch (err: unknown) {
         const duration = Math.round((Date.now() - startTime) / 1000);
-        console.error(`[Worker] Failed job ${job.id} - Run: ${runId} (${duration}s):`, err.message);
+        console.error(`[Worker] Failed job ${job.id} - Run: ${runId} (${duration}s):`, err instanceof Error ? err.message : String(err));
         throw err; // Re-throw for BullMQ retry handling
       }
     },

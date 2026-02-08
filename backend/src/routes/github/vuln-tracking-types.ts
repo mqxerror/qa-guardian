@@ -258,10 +258,11 @@ export async function runNpmAudit(targetDir: string): Promise<{
       maxBuffer: 10 * 1024 * 1024,
     });
     lsData = JSON.parse(stdout);
-  } catch (err: any) {
+  } catch (err: unknown) {
     // npm ls exits with non-zero when there are peer dep issues; parse stdout anyway
-    if (err.stdout) {
-      try { lsData = JSON.parse(err.stdout); } catch { /* ignore */ }
+    const execErr = err as { stdout?: string };
+    if (execErr.stdout) {
+      try { lsData = JSON.parse(execErr.stdout); } catch { /* ignore */ }
     }
   }
 
@@ -274,10 +275,11 @@ export async function runNpmAudit(targetDir: string): Promise<{
       maxBuffer: 10 * 1024 * 1024,
     });
     auditData = JSON.parse(stdout);
-  } catch (err: any) {
+  } catch (err: unknown) {
     // npm audit exits non-zero when vulns found; parse stdout anyway
-    if (err.stdout) {
-      try { auditData = JSON.parse(err.stdout); } catch { /* ignore */ }
+    const execErr = err as { stdout?: string };
+    if (execErr.stdout) {
+      try { auditData = JSON.parse(execErr.stdout); } catch { /* ignore */ }
     }
   }
 

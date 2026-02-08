@@ -419,8 +419,8 @@ export async function callKieAI(
       outputTokens: data.usage?.completion_tokens || 0,
       thinkingTokens: data.usage?.thinking_tokens || 0,
     };
-  } catch (err: any) {
-    return { error: `Kie.ai API call failed: ${err.message || 'Unknown error'}` };
+  } catch (err: unknown) {
+    return { error: `Kie.ai API call failed: ${err instanceof Error ? err.message : 'Unknown error'}` };
   }
 }
 
@@ -473,7 +473,7 @@ export async function callAnthropicDirect(
       inputTokens: data.usage?.input_tokens || 0,
       outputTokens: data.usage?.output_tokens || 0,
     };
-  } catch (err: any) {
-    return { error: `Anthropic API call failed: ${err.message || 'Unknown error'}` };
+  } catch (err: unknown) {
+    return { error: `Anthropic API call failed: ${err instanceof Error ? err.message : 'Unknown error'}` };
   }
 }

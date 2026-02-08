@@ -136,17 +136,18 @@ async function runSemgrepScan(
       );
       return { ...finding, isFalsePositive: isFP };
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const execErr = err as { code?: string; stdout?: string; message?: string };
     // If semgrep binary is not installed, fall back to built-in JS scanner
-    if (err.code === 'ENOENT') {
+    if (execErr.code === 'ENOENT') {
       console.log('[SAST] Semgrep not installed, falling back to built-in JS SAST scanner');
       return runBuiltinSASTScan(projectId, repoPath, config);
     }
 
     // Semgrep exits with code 1 when findings exist -- parse stdout anyway
-    if (err.stdout) {
+    if (execErr.stdout) {
       try {
-        const findings = parseSemgrepOutput(err.stdout);
+        const findings = parseSemgrepOutput(execErr.stdout);
 
         const severityOrder: Record<SASTSeverity, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
         const threshold = severityOrder[config.severityThreshold];
@@ -166,7 +167,7 @@ async function runSemgrepScan(
       }
     }
 
-    throw new Error(`Semgrep scan failed: ${err.message}`);
+    throw new Error(`Semgrep scan failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 

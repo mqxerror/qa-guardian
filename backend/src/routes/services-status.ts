@@ -91,7 +91,7 @@ async function checkPostgres(): Promise<ServiceInfo> {
       ],
       config_hints: ['DATABASE_URL'],
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       name: 'PostgreSQL',
       category: 'Infrastructure',
@@ -99,7 +99,7 @@ async function checkPostgres(): Promise<ServiceInfo> {
       latency_ms: null,
       version: null,
       last_checked,
-      error: err.message,
+      error: err instanceof Error ? err.message : String(err),
       capabilities: [
         { name: 'Data Persistence', status: 'not_available' },
         { name: 'Query Execution', status: 'not_available' },
@@ -159,7 +159,7 @@ async function checkRedis(): Promise<ServiceInfo> {
       ],
       config_hints: ['REDIS_URL'],
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       name: 'Redis',
       category: 'Infrastructure',
@@ -167,7 +167,7 @@ async function checkRedis(): Promise<ServiceInfo> {
       latency_ms: null,
       version: null,
       last_checked,
-      error: err.message,
+      error: err instanceof Error ? err.message : String(err),
       capabilities: [
         { name: 'Caching', status: 'planned' },
         { name: 'Queue Management', status: 'planned' },
@@ -225,7 +225,7 @@ async function checkMinIO(): Promise<ServiceInfo> {
       ],
       config_hints: ['STORAGE_ENDPOINT', 'STORAGE_PORT', 'STORAGE_ACCESS_KEY', 'STORAGE_SECRET_KEY'],
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       name: 'MinIO / S3',
       category: 'Infrastructure',
@@ -233,7 +233,7 @@ async function checkMinIO(): Promise<ServiceInfo> {
       latency_ms: null,
       version: null,
       last_checked,
-      error: err.message,
+      error: err instanceof Error ? err.message : String(err),
       capabilities: [
         { name: 'Artifact Storage', status: 'implemented' },
         { name: 'Screenshot Storage', status: 'implemented' },

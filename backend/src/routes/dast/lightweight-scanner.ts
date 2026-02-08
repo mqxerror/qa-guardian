@@ -744,8 +744,8 @@ async function executeLightweightScan(
   try {
     mainResponse = await fetchUrl(targetUrl);
     requestCount++;
-  } catch (err: any) {
-    throw new Error(`Cannot reach target URL ${targetUrl}: ${err.message}`);
+  } catch (err: unknown) {
+    throw new Error(`Cannot reach target URL ${targetUrl}: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   scannedUrls.push(targetUrl);
