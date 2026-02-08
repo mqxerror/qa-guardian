@@ -1,11 +1,12 @@
 /**
  * Quick Test Runner Service
- * Feature #424: Orchestrates 4 parallel test waves for instant URL analysis
+ * Feature #424: Orchestrates 5 parallel test waves for instant URL analysis
  *
  * Wave 1 - Health Check (1-2s): DNS, HTTP, SSL, response time, redirects
  * Wave 2 - Visual + Performance (10-15s): Lighthouse, screenshots, Core Web Vitals
  * Wave 3 - Security Scan (15-30s): OWASP headers, mixed content, cookies, exposed paths
  * Wave 4 - AI Analysis (5-10s): Test suggestions, UX issues, accessibility recommendations
+ * Wave 5 - Accessibility (5-15s): axe-core WCAG 2.1 AA scan with violation breakdown
  */
 
 import dns from 'dns';
@@ -14,6 +15,7 @@ import https from 'https';
 import http from 'http';
 import { URL } from 'url';
 import { chromium, Browser, Page } from 'playwright';
+import { AxeBuilder } from '@axe-core/playwright';
 import { getWebSocketIO } from './websocket-events.js';
 import { aiService } from './ai-service.js';
 import { isPrivateIP, validateURLForSSRF } from '../utils/index.js';
@@ -92,6 +94,7 @@ export interface QuickTestResult {
     healthScore: number;
     performanceScore: number;
     securityScore: number;
+    accessibilityScore: number; // Feature #471
     overallScore: number;
   };
 }
@@ -204,6 +207,34 @@ interface AIAnalysisResult {
   }> | string[]; // Support both formats for backward compatibility
   summary: string;
   visionAnalysisIncluded?: boolean; // Feature #467: Indicate if vision was used
+}
+
+// Feature #471: Accessibility scan result types
+interface AccessibilityScanResult {
+  score: number;
+  violations: Array<{
+    id: string;
+    impact: 'critical' | 'serious' | 'moderate' | 'minor';
+    description: string;
+    help: string;
+    helpUrl: string;
+    wcagTags: string[];
+    nodes: Array<{
+      html: string;
+      target: string[];
+      failureSummary?: string;
+    }>;
+  }>;
+  violationCounts: {
+    critical: number;
+    serious: number;
+    moderate: number;
+    minor: number;
+    total: number;
+  };
+  passesCount: number;
+  wcagLevel: string;
+  axeVersion: string;
 }
 
 // In-memory storage for quick test results (24h TTL)
@@ -938,6 +969,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       { wave: 2, name: 'Visual + Performance', status: 'pending' },
       { wave: 3, name: 'Security Scan', status: 'pending' },
       { wave: 4, name: 'AI Analysis', status: 'pending' },
+      { wave: 5, name: 'Accessibility', status: 'pending' }, // Feature #471
     ],
   };
 
@@ -1052,11 +1084,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       emitWaveError(orgId, runId, 3, testResult.waves[2].error);
     }
 
-    // Close browser before AI analysis (not needed)
-    await browser.close();
-    browser = null;
-
-    // Wave 4: AI Analysis
+    // Wave 4: AI Analysis (runs without browser)
     emitWaveStart(orgId, runId, 4, 'AI Analysis');
     testResult.waves[3].status = 'running';
     testResult.waves[3].startedAt = new Date();
@@ -1080,16 +1108,124 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       emitWaveError(orgId, runId, 4, testResult.waves[3].error);
     }
 
+    // Feature #471: Wave 5 - Accessibility Scan using axe-core
+    let accessibilityResult: AccessibilityScanResult | undefined;
+    emitWaveStart(orgId, runId, 5, 'Accessibility');
+    testResult.waves[4].status = 'running';
+    testResult.waves[4].startedAt = new Date();
+
+    try {
+      const wave5Start = Date.now();
+
+      // Reuse existing browser/page if still open, otherwise launch new one
+      let a11yBrowser: Browser | null = browser;
+      let a11yPage: Page | null = null;
+      let ownsBrowser = false;
+
+      if (!a11yBrowser) {
+        a11yBrowser = await chromium.launch({ headless: true });
+        ownsBrowser = true;
+      }
+
+      try {
+        a11yPage = await a11yBrowser.newPage();
+        emitWaveProgress(orgId, runId, 5, 10, 'Loading page for accessibility scan...');
+
+        await a11yPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await a11yPage.waitForTimeout(1000); // Allow content to settle
+
+        emitWaveProgress(orgId, runId, 5, 30, 'Running axe-core WCAG 2.1 AA scan...');
+
+        // Run axe-core with WCAG 2.1 AA rules
+        const axeResults = await new AxeBuilder({ page: a11yPage })
+          .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'])
+          .analyze();
+
+        emitWaveProgress(orgId, runId, 5, 80, 'Processing accessibility results...');
+
+        // Map violations
+        const violations = axeResults.violations.map(v => ({
+          id: v.id,
+          impact: (v.impact || 'minor') as 'critical' | 'serious' | 'moderate' | 'minor',
+          description: v.description,
+          help: v.help,
+          helpUrl: v.helpUrl,
+          wcagTags: v.tags,
+          nodes: v.nodes.map(n => ({
+            html: n.html,
+            target: n.target as string[],
+            failureSummary: n.failureSummary,
+          })),
+        }));
+
+        // Count by impact
+        const violationCounts = {
+          critical: violations.filter(v => v.impact === 'critical').length,
+          serious: violations.filter(v => v.impact === 'serious').length,
+          moderate: violations.filter(v => v.impact === 'moderate').length,
+          minor: violations.filter(v => v.impact === 'minor').length,
+          total: violations.length,
+        };
+
+        // Calculate accessibility score: 100 - (critical * 15 + serious * 8 + moderate * 3 + minor * 1), min 0
+        const penalty =
+          (violationCounts.critical * 15) +
+          (violationCounts.serious * 8) +
+          (violationCounts.moderate * 3) +
+          (violationCounts.minor * 1);
+        const a11yScore = Math.max(0, 100 - penalty);
+
+        accessibilityResult = {
+          score: a11yScore,
+          violations,
+          violationCounts,
+          passesCount: axeResults.passes.length,
+          wcagLevel: 'AA',
+          axeVersion: axeResults.testEngine.version,
+        };
+
+        testResult.waves[4].status = 'completed';
+        testResult.waves[4].completedAt = new Date();
+        testResult.waves[4].duration = Date.now() - wave5Start;
+        testResult.waves[4].data = accessibilityResult as unknown as Record<string, unknown>;
+        emitWaveComplete(orgId, runId, 5, accessibilityResult as unknown as Record<string, unknown>);
+
+      } finally {
+        // Close the page
+        if (a11yPage) {
+          await a11yPage.close().catch(() => {});
+        }
+        // Only close browser if we created it
+        if (ownsBrowser && a11yBrowser) {
+          await a11yBrowser.close().catch(() => {});
+        }
+      }
+
+    } catch (err) {
+      testResult.waves[4].status = 'failed';
+      testResult.waves[4].error = err instanceof Error ? err.message : 'Accessibility scan failed';
+      emitWaveError(orgId, runId, 5, testResult.waves[4].error);
+    }
+
+    // Close any remaining browser from earlier waves
+    if (browser) {
+      await browser.close();
+      browser = null;
+    }
+
     // Calculate summary scores
     const healthScore = healthResult?.dns.resolved && healthResult?.http.status >= 200 && healthResult?.http.status < 400 ? 100 : 50;
     const performanceScore = visualResult?.lighthouse?.performance || 50;
     const securityScore = securityResult?.overallScore || 50;
+    const accessibilityScore = accessibilityResult?.score ?? 50;
 
+    // Feature #471: Updated overall score to include accessibility (weights: 20% health, 25% perf, 25% security, 15% a11y, 15% AI implicit)
     testResult.summary = {
       healthScore,
       performanceScore,
       securityScore,
-      overallScore: Math.round((healthScore + performanceScore + securityScore) / 3),
+      accessibilityScore,
+      overallScore: Math.round((healthScore * 0.2) + (performanceScore * 0.25) + (securityScore * 0.25) + (accessibilityScore * 0.3)),
     };
 
     testResult.status = 'completed';

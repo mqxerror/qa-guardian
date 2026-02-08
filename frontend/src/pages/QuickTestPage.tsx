@@ -1,6 +1,6 @@
 /**
  * Quick Test Page
- * Feature #425: Flagship instant QA feature - paste a URL and watch 4 waves of tests run live
+ * Feature #425: Flagship instant QA feature - paste a URL and watch 5 waves of tests run live
  *
  * Features:
  * - URL input with validation
@@ -139,6 +139,18 @@ const WAVE_DEFINITIONS = [
       { name: 'UX Issues', status: 'pending' as const },
       { name: 'Accessibility', status: 'pending' as const },
       { name: 'Summary', status: 'pending' as const },
+    ],
+  },
+  // Feature #471: Wave 5 - Accessibility Scan
+  {
+    wave: 5,
+    name: 'Accessibility',
+    icon: Accessibility,
+    steps: [
+      { name: 'WCAG 2.1 AA Scan', status: 'pending' as const },
+      { name: 'Critical Violations', status: 'pending' as const },
+      { name: 'Serious Violations', status: 'pending' as const },
+      { name: 'Minor Violations', status: 'pending' as const },
     ],
   },
 ];
@@ -349,6 +361,11 @@ function WaveCard({ wave, onToggleExpand, onScreenshotClick }: WaveCardProps) {
             <AIAnalysisDetails data={wave.data as AIAnalysisData} />
           )}
 
+          {/* Feature #471: Accessibility details for Wave 5 */}
+          {wave.wave === 5 && wave.status === 'completed' && wave.data && (
+            <AccessibilityDetails data={wave.data as unknown as AccessibilityData} />
+          )}
+
           {wave.error && (
             <div className="mt-2 p-2 rounded bg-destructive/10 text-destructive text-sm">
               {wave.error}
@@ -534,6 +551,145 @@ function AIAnalysisDetails({ data }: { data: AIAnalysisData }) {
               </div>
             )}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Feature #471: Accessibility Details Component
+// ============================================================
+
+interface AccessibilityData {
+  score: number;
+  violations: Array<{
+    id: string;
+    impact: 'critical' | 'serious' | 'moderate' | 'minor';
+    description: string;
+    help: string;
+    helpUrl: string;
+    wcagTags: string[];
+    nodes: Array<{
+      html: string;
+      target: string[];
+      failureSummary?: string;
+    }>;
+  }>;
+  violationCounts: {
+    critical: number;
+    serious: number;
+    moderate: number;
+    minor: number;
+    total: number;
+  };
+  passesCount: number;
+  wcagLevel: string;
+  axeVersion: string;
+}
+
+function ImpactBadge({ impact }: { impact: string }) {
+  const colors: Record<string, string> = {
+    critical: 'bg-red-500/20 text-red-400',
+    serious: 'bg-orange-500/20 text-orange-400',
+    moderate: 'bg-yellow-500/20 text-yellow-400',
+    minor: 'bg-blue-500/20 text-blue-400',
+  };
+  return (
+    <span className={`px-1.5 py-0.5 rounded text-xs ${colors[impact] || 'bg-muted text-muted-foreground'}`}>
+      {impact}
+    </span>
+  );
+}
+
+function AccessibilityDetails({ data }: { data: AccessibilityData }) {
+  const hasViolations = data.violations && data.violations.length > 0;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border space-y-4">
+      {/* Score and Summary */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`text-2xl font-bold ${
+            data.score >= 90 ? 'text-success' :
+            data.score >= 70 ? 'text-warning' :
+            'text-destructive'
+          }`}>
+            {data.score}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            <div>WCAG {data.wcagLevel} Score</div>
+            <div>axe-core v{data.axeVersion}</div>
+          </div>
+        </div>
+        <div className="text-right text-xs text-muted-foreground">
+          <div>{data.passesCount} rules passed</div>
+          <div>{data.violationCounts.total} violations found</div>
+        </div>
+      </div>
+
+      {/* Violation Counts */}
+      <div className="grid grid-cols-4 gap-2">
+        <div className="text-center p-2 rounded bg-red-500/10">
+          <div className="text-lg font-bold text-red-400">{data.violationCounts.critical}</div>
+          <div className="text-xs text-muted-foreground">Critical</div>
+        </div>
+        <div className="text-center p-2 rounded bg-orange-500/10">
+          <div className="text-lg font-bold text-orange-400">{data.violationCounts.serious}</div>
+          <div className="text-xs text-muted-foreground">Serious</div>
+        </div>
+        <div className="text-center p-2 rounded bg-yellow-500/10">
+          <div className="text-lg font-bold text-yellow-400">{data.violationCounts.moderate}</div>
+          <div className="text-xs text-muted-foreground">Moderate</div>
+        </div>
+        <div className="text-center p-2 rounded bg-blue-500/10">
+          <div className="text-lg font-bold text-blue-400">{data.violationCounts.minor}</div>
+          <div className="text-xs text-muted-foreground">Minor</div>
+        </div>
+      </div>
+
+      {/* Violations List */}
+      {hasViolations && (
+        <div>
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Violations
+          </div>
+          <div className="space-y-2">
+            {data.violations.slice(0, 5).map((violation, idx) => (
+              <div key={idx} className="p-2 rounded bg-background/50 text-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-foreground">{violation.id}</span>
+                  <ImpactBadge impact={violation.impact} />
+                  <a
+                    href={violation.helpUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary text-xs hover:underline ml-auto"
+                  >
+                    Learn more
+                  </a>
+                </div>
+                <div className="text-xs text-muted-foreground mb-1">{violation.help}</div>
+                <div className="text-xs text-muted-foreground/80 italic">
+                  {violation.nodes.length} element{violation.nodes.length !== 1 ? 's' : ''} affected
+                </div>
+              </div>
+            ))}
+            {data.violations.length > 5 && (
+              <div className="text-xs text-muted-foreground text-center">
+                +{data.violations.length - 5} more violations
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* No violations message */}
+      {!hasViolations && (
+        <div className="flex items-center gap-2 text-success text-sm">
+          <CheckCircle2 className="w-4 h-4" />
+          No accessibility violations detected
         </div>
       )}
     </div>
@@ -796,7 +952,7 @@ export function QuickTestPage() {
         {/* Header */}
         <PageHeader
           title="Quick Test"
-          description="Instant URL analysis with 4 parallel test waves"
+          description="Instant URL analysis with 5 parallel test waves"
           breadcrumbs={[{ label: 'Home', href: '/dashboard' }, { label: 'Quick Test' }]}
         />
 
