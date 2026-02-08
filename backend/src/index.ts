@@ -55,7 +55,7 @@ import { registerRateLimiting } from './middleware/rate-limit.js'; // Feature #3
 import { initializeCleanupJob, stopCleanupJob } from './jobs/cleanup.js'; // Feature #154: Data retention cleanup
 import { initializeExecutionQueue, shutdownExecutionQueue } from './services/execution-queue.js'; // Feature #155: BullMQ execution queue
 import { initializeWebhookQueue, shutdownWebhookQueue, registerSubscriptionStatsCallback } from './services/webhook-queue.js'; // Feature #320: BullMQ webhook queue
-import { updateSubscriptionDeliveryStats, initializeWebhookSubscriptionsFromDb } from './routes/test-runs/webhooks.js'; // Feature #321: Webhook auto-disable, Feature #329: DB persistence
+import { updateSubscriptionDeliveryStats, initializeWebhookSubscriptionsFromDb, closeWebhookPubSub } from './routes/test-runs/webhooks.js'; // Feature #321: Webhook auto-disable, Feature #329: DB persistence, Feature #372: Pub/Sub cleanup
 import { initializeErrorHandlers } from './services/error-tracking.js'; // Feature #164: Error tracking
 import { registerMetricsHooks } from './services/metrics.js'; // Feature #165: API response time tracking
 import { setWebSocketIO } from './services/websocket-events.js'; // Feature #108: WebSocket CRUD events
@@ -676,6 +676,7 @@ async function gracefulShutdown(): Promise<void> {
   await shutdownExecutionQueue(); // Feature #155: Stop execution queue
   await shutdownWebhookQueue(); // Feature #320: Stop webhook queue
   await closeSubscriber(); // Feature #200: Close Redis event subscriber
+  await closeWebhookPubSub(); // Feature #372: Close webhook Pub/Sub connections
   // Feature #237: Close Socket.IO adapter Redis clients
   if (socketPubClient) {
     await socketPubClient.quit();
