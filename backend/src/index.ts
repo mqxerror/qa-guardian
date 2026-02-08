@@ -64,6 +64,7 @@ import { setWebSocketIO } from './services/websocket-events.js'; // Feature #108
 import { initializeEventSubscriber, closeSubscriber } from './services/redis-events.js'; // Feature #200: Redis Pub/Sub for worker events
 import { generateRequestId } from './utils/index.js';
 import { getTestRun } from './services/repositories/test-runs.js'; // Feature #388: Organization check for Socket.IO join-run
+import { getQuickTestResultAsync } from './services/quick-test-runner.js'; // Feature #461: Organization check for Socket.IO join-quick-test
 import { createLogger } from './services/logger.js'; // Feature #447: Structured logging
 
 // Feature #447: Server logger for startup and lifecycle logging
@@ -643,7 +644,35 @@ async function start() {
       });
 
       // Feature #426: Join quick test room for real-time wave updates
-      socket.on('join-quick-test', (runId: string) => {
+      // Feature #461: Organization membership check to prevent cross-org data leakage
+      socket.on('join-quick-test', async (runId: string) => {
+        if (!socket.data.authenticated) {
+          socket.emit('error', { message: 'Authentication required to join quick-test rooms' });
+          return;
+        }
+
+        // Feature #461: Verify the quick test belongs to the user's organization
+        try {
+          const result = await getQuickTestResultAsync(runId);
+          if (!result) {
+            // If result is not found, allow join anyway (the test might be starting)
+            // The room will just receive no events if the test doesn't exist
+            socket.join(`quick-test:${runId}`);
+            log.debug({ socketId: socket.id, runId }, 'Socket.IO client joined quick-test room (result not found)');
+            return;
+          }
+
+          if (result.orgId && result.orgId !== socket.data.organizationId) {
+            log.info({ socketId: socket.id, runId, userOrgId: socket.data.organizationId, runOrgId: result.orgId }, 'Socket.IO client denied access to quick-test - org mismatch');
+            socket.emit('error', { message: 'Access denied - quick test belongs to a different organization' });
+            return;
+          }
+        } catch (error) {
+          log.error({ socketId: socket.id, runId, error }, 'Socket.IO error checking quick-test ownership');
+          socket.emit('error', { message: 'Failed to verify quick-test ownership' });
+          return;
+        }
+
         socket.join(`quick-test:${runId}`);
         log.debug({ socketId: socket.id, runId }, 'Socket.IO client joined quick-test room');
       });

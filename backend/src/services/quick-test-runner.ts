@@ -88,6 +88,7 @@ export interface WaveResult {
 
 export interface QuickTestResult {
   runId: string;
+  orgId: string; // Feature #461: Add orgId for IDOR protection
   url: string;
   status: 'running' | 'completed' | 'failed';
   startedAt: Date;
@@ -1330,8 +1331,10 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
   const { url, runId, orgId, userId } = request;
 
   // Initialize result
+  // Feature #461: Include orgId for IDOR protection
   const testResult: QuickTestResult = {
     runId,
+    orgId,
     url,
     status: 'running',
     startedAt: new Date(),
@@ -1707,8 +1710,10 @@ export async function getQuickTestResultAsync(runId: string): Promise<QuickTestR
   const dbResult = await getQuickTestResultById(runId);
   if (dbResult) {
     // Convert DB format back to QuickTestResult format
+    // Feature #461: Include orgId for IDOR protection
     return {
       runId: dbResult.id,
+      orgId: dbResult.organizationId,
       url: dbResult.url,
       status: dbResult.status,
       startedAt: dbResult.startedAt,

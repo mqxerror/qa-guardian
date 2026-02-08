@@ -366,12 +366,23 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const { compareId } = request.params;
+      const orgId = getOrganizationId(request);
 
       // Get both results
       const resultA = await getQuickTestResultAsync(`${compareId}-a`);
       const resultB = await getQuickTestResultAsync(`${compareId}-b`);
 
       if (!resultA && !resultB) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Comparison not found',
+        });
+      }
+
+      // Feature #461: IDOR protection - verify org-scoping for both results
+      // Return 404 (not 403) to avoid information disclosure
+      if ((resultA?.orgId && resultA.orgId !== orgId) ||
+          (resultB?.orgId && resultB.orgId !== orgId)) {
         return reply.status(404).send({
           error: 'Not Found',
           message: 'Comparison not found',
@@ -697,10 +708,20 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const { runId } = request.params;
+      const orgId = getOrganizationId(request);
 
       // Feature #465: Use async lookup that checks DB if not in memory
       const result = await getQuickTestResultAsync(runId);
       if (!result) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Quick test run not found',
+        });
+      }
+
+      // Feature #461: IDOR protection - verify org-scoping
+      // Return 404 (not 403) to avoid information disclosure about other orgs' test runs
+      if (result.orgId && result.orgId !== orgId) {
         return reply.status(404).send({
           error: 'Not Found',
           message: 'Quick test run not found',
