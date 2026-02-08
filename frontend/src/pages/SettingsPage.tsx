@@ -8,6 +8,7 @@ import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 import { useThemeStore, Theme } from '../stores/themeStore';
+import { usePaletteStore, PALETTE_OPTIONS, type ThemePalette } from '../stores/paletteStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { useTestDefaultsStore } from '../stores/testDefaultsStore';
 import { useArtifactRetentionStore } from '../stores/artifactRetentionStore';
@@ -495,6 +496,7 @@ function TeamTabContent() {
 function GeneralTabContent() {
   const { user } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
+  const { palette, setPalette } = usePaletteStore();
   const { formatDate } = useTimezoneStore();
   const { defaults, setAllDefaults } = useTestDefaultsStore();
   const { settings, setRetentionDays } = useArtifactRetentionStore();
@@ -610,26 +612,67 @@ function GeneralTabContent() {
           <h3 className="text-lg font-semibold text-foreground">Appearance</h3>
           <p className="text-sm text-muted-foreground">Customize how QA Guardian looks.</p>
         </div>
-        <div className="bg-card rounded-lg border border-border p-6">
-          <div className="flex gap-4">
-            {(['light', 'dark', 'system'] as Theme[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTheme(t)}
-                className={`flex-1 p-4 rounded-lg border-2 transition-colors ${
-                  theme === t
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border hover:border-muted-foreground'
-                }`}
-              >
-                <div className="text-center">
-                  <div className="text-2xl mb-2">
-                    {t === 'light' ? '☀️' : t === 'dark' ? '🌙' : '💻'}
+        <div className="bg-card rounded-lg border border-border p-6 space-y-6">
+          {/* Light/Dark Mode Toggle */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-3">Color Mode</label>
+            <div className="flex gap-4">
+              {(['light', 'dark', 'system'] as Theme[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTheme(t)}
+                  className={`flex-1 p-4 rounded-lg border-2 transition-colors ${
+                    theme === t
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:border-muted-foreground'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-2xl mb-2">
+                      {t === 'light' ? '☀️' : t === 'dark' ? '🌙' : '💻'}
+                    </div>
+                    <div className="text-sm font-medium capitalize text-foreground">{t}</div>
                   </div>
-                  <div className="text-sm font-medium capitalize text-foreground">{t}</div>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Feature #396: Color Palette Picker */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-3">Accent Color</label>
+            <p className="text-xs text-muted-foreground mb-3">Choose a color palette for buttons, links, and highlights.</p>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+              {PALETTE_OPTIONS.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setPalette(p.id)}
+                  title={p.description}
+                  className={`group relative p-3 rounded-lg border-2 transition-all ${
+                    palette === p.id
+                      ? 'border-primary ring-2 ring-primary/20'
+                      : 'border-border hover:border-muted-foreground'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <div
+                      className="w-8 h-8 rounded-full border-2 border-background shadow-sm"
+                      style={{ backgroundColor: p.color }}
+                    />
+                    <span className="text-xs font-medium text-foreground truncate max-w-full">
+                      {p.name.split(' ')[0]}
+                    </span>
+                  </div>
+                  {palette === p.id && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                      <svg className="w-2.5 h-2.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
