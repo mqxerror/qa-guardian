@@ -37,6 +37,9 @@ export const analyticsKeys = {
   // Feature #470: Duration trends key
   durationTrends: (days: number, browser?: string, testType?: string) =>
     [...analyticsKeys.all, 'durationTrends', days, browser || 'all', testType || 'all'] as const,
+  // Feature #476: Branch comparison key
+  branchComparison: (branchA?: string, branchB?: string) =>
+    [...analyticsKeys.all, 'branchComparison', branchA || 'none', branchB || 'none'] as const,
 };
 
 /**
@@ -170,6 +173,27 @@ export function useDurationTrends(
   return useQuery({
     queryKey: analyticsKeys.durationTrends(days, browser, testType),
     queryFn: () => fetchWithAuth(`/api/v1/analytics/duration-trends?${params.toString()}`, token),
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+}
+
+/**
+ * Feature #476: Hook to fetch branch comparison statistics
+ * Compare test metrics between two branches: pass rate, duration, failures, flaky count
+ */
+export function useBranchComparison(branchA?: string, branchB?: string) {
+  const token = useAuthStore(state => state.token);
+
+  // Build query string with branch parameters
+  const params = new URLSearchParams();
+  if (branchA) params.append('branchA', branchA);
+  if (branchB) params.append('branchB', branchB);
+
+  return useQuery({
+    queryKey: analyticsKeys.branchComparison(branchA, branchB),
+    queryFn: () => fetchWithAuth(`/api/v1/analytics/branch-comparison?${params.toString()}`, token),
     enabled: !!token,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
