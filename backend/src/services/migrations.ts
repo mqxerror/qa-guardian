@@ -1,6 +1,7 @@
 /**
  * Database Migration Service
  * Feature #162: Database migration system using node-pg-migrate
+ * Feature #429: Structured logging with request correlation
  *
  * Provides:
  * - Run pending migrations on startup
@@ -11,6 +12,10 @@
 import { Pool } from 'pg';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { createLogger } from './logger.js';
+
+// Create a child logger for migrations
+const log = createLogger('migrations');
 
 /**
  * Detect if running from compiled JavaScript (dist/) or TypeScript source (src/)
@@ -62,14 +67,14 @@ export async function runMigrations(): Promise<boolean> {
   const databaseUrl = process.env.DATABASE_URL;
 
   if (!databaseUrl) {
-    console.log('[Migrations] No DATABASE_URL configured, skipping migrations');
+    log.info('No DATABASE_URL configured, skipping migrations');
     lastMigrationStatus.enabled = false;
     return true;
   }
 
   // Check if migrations should be skipped
   if (process.env.SKIP_MIGRATIONS === 'true') {
-    console.log('[Migrations] SKIP_MIGRATIONS=true, skipping migrations');
+    log.info('SKIP_MIGRATIONS=true, skipping migrations');
     lastMigrationStatus.enabled = false;
     return true;
   }
@@ -78,7 +83,7 @@ export async function runMigrations(): Promise<boolean> {
     // Dynamically import node-pg-migrate to avoid requiring it when not needed
     const { runner } = await import('node-pg-migrate');
 
-    console.log('[Migrations] Running pending migrations...');
+    log.info('Running pending migrations...');
 
     // Resolve migrations directory relative to the project root
     // This works both when running from src/ (tsx) and dist/ (compiled)
@@ -92,7 +97,11 @@ export async function runMigrations(): Promise<boolean> {
     // Uses RUNTIME_MODE env var if set, otherwise falls back to path detection
     const isCompiled = detectCompiledMode(__dirname);
     const detectionMethod = process.env.RUNTIME_MODE ? 'env var' : 'path detection';
-    console.log(`[Migrations] Running from ${isCompiled ? 'compiled (dist/)' : 'source (src/)'}, using ${isCompiled ? '.cjs' : '.ts'} migrations (detected via ${detectionMethod})`);
+    log.info({
+      mode: isCompiled ? 'compiled' : 'source',
+      fileType: isCompiled ? '.cjs' : '.ts',
+      detectionMethod,
+    }, `Running from ${isCompiled ? 'compiled (dist/)' : 'source (src/)'} mode`);
 
     const result = await runner({
       databaseUrl,
@@ -100,7 +109,7 @@ export async function runMigrations(): Promise<boolean> {
       migrationsTable: 'pgmigrations',
       direction: 'up',
       count: Infinity, // Run all pending migrations
-      log: (msg) => console.log('[Migrations]', msg),
+      log: (msg) => log.debug(msg),
       verbose: process.env.NODE_ENV !== 'production',
       // Only use appropriate file types based on runtime mode
       // Ignore .ts when compiled (use .cjs), ignore .cjs/.js when using tsx (use .ts)
@@ -114,11 +123,11 @@ export async function runMigrations(): Promise<boolean> {
     const status = await getMigrationStatusFromDb(databaseUrl);
     lastMigrationStatus = status;
 
-    console.log(`[Migrations] Applied ${result} migration(s) successfully`);
+    log.info({ migrationsApplied: result }, `Applied ${result} migration(s) successfully`);
     return true;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('[Migrations] Failed to run migrations:', errorMessage);
+    log.error({ error: errorMessage }, 'Failed to run migrations');
 
     lastMigrationStatus.error = errorMessage;
 

@@ -50,6 +50,7 @@
     "minio": "^8.0.6",
     "node-pg-migrate": "^7.3.0",
     "pg": "^8.11.3",
+    "pino": "^10.3.0",
     "pixelmatch": "^7.1.0",
     "playwright": "^1.41.2",
     "pngjs": "^7.0.0",
