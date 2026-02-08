@@ -74,14 +74,14 @@ interface ScanResult {
 
 const severityColors = {
   critical: 'bg-destructive text-white',
-  high: 'bg-orange-500 text-white',
+  high: 'bg-warning text-white',
   medium: 'bg-warning text-black',
   low: 'bg-primary text-white',
 };
 
 const severityBorderColors = {
   critical: 'border-destructive',
-  high: 'border-orange-500',
+  high: 'border-warning',
   medium: 'border-warning',
   low: 'border-primary',
 };
@@ -306,8 +306,8 @@ export function ContainerScanPage() {
                   onClick={() => setSeverityFilter('high')}
                   className={`px-4 py-2 rounded-lg border transition-colors ${
                     severityFilter === 'high'
-                      ? 'bg-orange-500 text-white border-orange-500'
-                      : 'border-orange-500 text-orange-500 hover:bg-orange-500/10'
+                      ? 'bg-warning text-white border-warning'
+                      : 'border-warning text-warning hover:bg-warning/10'
                   }`}
                 >
                   High ({scanResult.summary.by_severity.high})

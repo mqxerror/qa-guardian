@@ -433,7 +433,7 @@ export function DASTGraphQLPage() {
  </div>
  <div className="rounded-lg border border-border bg-card p-4">
  <p className="text-sm text-muted-foreground">Mutations Tested</p>
- <p className="text-2xl font-bold text-purple-600">{scanResult.summary.mutationsTested}</p>
+ <p className="text-2xl font-bold text-accent">{scanResult.summary.mutationsTested}</p>
  </div>
  <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
  <p className="text-sm text-muted-foreground">Security Findings</p>
@@ -495,9 +495,9 @@ export function DASTGraphQLPage() {
  <p className="text-xs text-muted-foreground">Query Type</p>
  <p className="font-mono text-sm text-primary">{scanResult.schema.queryType || 'None'}</p>
  </div>
- <div className="p-3 bg-purple-50 rounded-lg">
+ <div className="p-3 bg-accent/5 rounded-lg">
  <p className="text-xs text-muted-foreground">Mutation Type</p>
- <p className="font-mono text-sm text-purple-600">{scanResult.schema.mutationType || 'None'}</p>
+ <p className="font-mono text-sm text-accent">{scanResult.schema.mutationType || 'None'}</p>
  </div>
  <div className="p-3 bg-success/5 rounded-lg">
  <p className="text-xs text-muted-foreground">Subscription Type</p>
@@ -523,7 +523,7 @@ export function DASTGraphQLPage() {
  {scanResult.schema.operations.map((op) => (
  <div key={op.name} className={`p-3 border rounded-lg ${op.deprecated ? 'border-warning/20 bg-warning/5/50' : 'border-border'}`}>
  <div className="flex items-center gap-2 mb-1">
- <span className={`px-2 py-0.5 rounded text-xs font-medium ${op.type === 'query' ? 'bg-primary/10 text-primary' : 'bg-purple-100 text-purple-700'}`}>
+ <span className={`px-2 py-0.5 rounded text-xs font-medium ${op.type === 'query' ? 'bg-primary/10 text-primary' : 'bg-accent/10 text-accent'}`}>
  {op.type.toUpperCase()}
  </span>
  <span className="font-mono font-medium text-foreground">{op.name}</span>
@@ -559,7 +559,7 @@ export function DASTGraphQLPage() {
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getSeverityColor(finding.severity)}`}>
  {finding.severity}
  </span>
- <span className={`px-2 py-0.5 rounded text-xs font-medium ${finding.operationType === 'query' ? 'bg-primary/10 text-primary' : 'bg-purple-100 text-purple-700'}`}>
+ <span className={`px-2 py-0.5 rounded text-xs font-medium ${finding.operationType === 'query' ? 'bg-primary/10 text-primary' : 'bg-accent/10 text-accent'}`}>
  {finding.operationType}
  </span>
  <span className="font-mono text-sm text-foreground">{finding.operationName}</span>

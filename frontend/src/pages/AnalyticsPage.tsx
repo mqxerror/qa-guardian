@@ -1212,7 +1212,7 @@ export function AnalyticsPage() {
                       <td className="px-4 py-3 text-center">
                         <span className={`text-sm font-medium ${
                           test.failure_percentage >= 80 ? 'text-destructive' :
-                          test.failure_percentage >= 50 ? 'text-orange-500' :
+                          test.failure_percentage >= 50 ? 'text-warning' :
                           'text-warning'
                         }`}>
                           {test.failure_percentage}%
@@ -1271,7 +1271,7 @@ export function AnalyticsPage() {
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-muted-foreground">Pass Rate</span>
                       <span className={`font-medium ${
-                        stat.pass_rate >= 80 ? 'text-emerald-600' :
+                        stat.pass_rate >= 80 ? 'text-success' :
                         stat.pass_rate >= 50 ? 'text-warning' :
                         'text-destructive'
                       }`}>
@@ -1281,7 +1281,7 @@ export function AnalyticsPage() {
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className={`h-full transition-all ${
-                          stat.pass_rate >= 80 ? 'bg-emerald-500' :
+                          stat.pass_rate >= 80 ? 'bg-success' :
                           stat.pass_rate >= 50 ? 'bg-warning' :
                           'bg-destructive'
                         }`}
@@ -1364,7 +1364,7 @@ export function AnalyticsPage() {
                           <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
                             <div
                               className={`h-full ${
-                                project.pass_rate >= 80 ? 'bg-emerald-500' :
+                                project.pass_rate >= 80 ? 'bg-success' :
                                 project.pass_rate >= 50 ? 'bg-warning' :
                                 project.total_runs === 0 ? 'bg-muted' :
                                 'bg-destructive'
@@ -1373,7 +1373,7 @@ export function AnalyticsPage() {
                             />
                           </div>
                           <span className={`text-sm font-medium ${
-                            project.pass_rate >= 80 ? 'text-emerald-600' :
+                            project.pass_rate >= 80 ? 'text-success' :
                             project.pass_rate >= 50 ? 'text-warning' :
                             project.total_runs === 0 ? 'text-muted-foreground' :
                             'text-destructive'
@@ -1458,13 +1458,13 @@ export function AnalyticsPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Pass Rate:</span>
                       <span className={`text-sm font-medium ${
-                        test.pass_rate >= 70 ? 'text-emerald-600' :
+                        test.pass_rate >= 70 ? 'text-success' :
                         test.pass_rate >= 40 ? 'text-warning' :
                         'text-destructive'
                       }`}>{test.pass_rate}%</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-emerald-600">{test.pass_count} passed</span>
+                      <span className="text-sm text-success">{test.pass_count} passed</span>
                       <span className="text-sm text-destructive">{test.fail_count} failed</span>
                     </div>
                   </div>

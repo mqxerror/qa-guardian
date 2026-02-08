@@ -336,7 +336,7 @@ export function DependencyAgePage() {
                       <td className="px-6 py-4">
                         <span className="font-mono text-sm text-foreground">{dep.latest_version}</span>
                         {dep.versions_behind > 0 && (
-                          <span className="ml-2 text-xs text-orange-400">
+                          <span className="ml-2 text-xs text-warning">
                             ({dep.versions_behind} behind)
                           </span>
                         )}

@@ -222,7 +222,7 @@ export function AutoPRPage() {
   const getSeverityColor = (severity?: string) => {
     switch (severity) {
       case 'CRITICAL': return 'text-destructive bg-destructive/10';
-      case 'HIGH': return 'text-orange-400 bg-orange-500/10';
+      case 'HIGH': return 'text-warning bg-warning/10';
       case 'MEDIUM': return 'text-warning bg-warning/10';
       case 'LOW': return 'text-primary bg-primary/10';
       default: return 'text-muted-foreground bg-muted/50';

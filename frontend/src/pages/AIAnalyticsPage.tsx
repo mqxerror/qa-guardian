@@ -430,7 +430,7 @@ export function AIAnalyticsPage() {
                                 title={`Kie.ai: ${day.kie_requests} requests`}
                               ></div>
                               <div
-                                className="w-full bg-purple-500 rounded-b"
+                                className="w-full bg-accent rounded-b"
                                 style={{ height: `${totalRequests > 0 ? (day.anthropic_requests / totalRequests) * 100 : 50}%` }}
                                 title={`Anthropic: ${day.anthropic_requests} requests`}
                               ></div>
@@ -448,7 +448,7 @@ export function AIAnalyticsPage() {
                         <span className="text-sm text-foreground">Kie.ai</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-purple-500 rounded"></div>
+                        <div className="w-3 h-3 bg-accent rounded"></div>
                         <span className="text-sm text-foreground">Anthropic</span>
                       </div>
                     </div>
@@ -509,7 +509,7 @@ export function AIAnalyticsPage() {
                   <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
                     <h2 className="text-xl font-bold mb-4 text-foreground">🔥 Peak Usage</h2>
                     <div className="grid grid-cols-2 gap-6">
-                      <div className="text-center p-4 bg-orange-500/10 rounded-lg">
+                      <div className="text-center p-4 bg-warning/10 rounded-lg">
                         <div className="text-4xl mb-2">⏰</div>
                         <div className="text-2xl font-bold text-foreground">{analytics.peak_usage.hour}:00</div>
                         <div className="text-sm text-muted-foreground">Peak Hour</div>
@@ -605,7 +605,7 @@ export function AIAnalyticsPage() {
                         <Zap className="h-4 w-4" />
                         Avg Cost/Request
                       </div>
-                      <div className="text-3xl font-bold text-purple-400">
+                      <div className="text-3xl font-bold text-accent">
                         {formatCurrency(analytics.total_requests > 0 ? analytics.savings.actual_cost / analytics.total_requests : 0)}
                       </div>
                     </div>
@@ -621,7 +621,7 @@ export function AIAnalyticsPage() {
                         <FileOutput className="h-4 w-4" />
                         Output Tokens
                       </div>
-                      <div className="text-3xl font-bold text-orange-400">{formatNumber(analytics.total_tokens * 0.6)}</div>
+                      <div className="text-3xl font-bold text-warning">{formatNumber(analytics.total_tokens * 0.6)}</div>
                     </div>
                   </div>
                 )}
@@ -639,7 +639,7 @@ export function AIAnalyticsPage() {
                           <div key={provider} className="p-4 bg-muted/50 rounded-lg">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <span className={`w-8 h-8 rounded-full flex items-center justify-center ${provider === 'kie' ? 'bg-primary/20 text-primary' : 'bg-purple-500/20 text-purple-400'}`}>
+                                <span className={`w-8 h-8 rounded-full flex items-center justify-center ${provider === 'kie' ? 'bg-primary/20 text-primary' : 'bg-accent/20 text-accent'}`}>
                                   {provider === 'kie' ? 'K' : 'A'}
                                 </span>
                                 <span className="font-medium text-foreground capitalize">{provider === 'kie' ? 'Kie.ai' : 'Anthropic'}</span>
@@ -653,7 +653,7 @@ export function AIAnalyticsPage() {
                             </div>
                             <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
                               <div
-                                className={`h-full ${provider === 'kie' ? 'bg-primary' : 'bg-purple-500'}`}
+                                className={`h-full ${provider === 'kie' ? 'bg-primary' : 'bg-accent'}`}
                                 style={{ width: `${(data.cost / analytics.savings.actual_cost) * 100}%` }}
                               ></div>
                             </div>
@@ -673,7 +673,7 @@ export function AIAnalyticsPage() {
                       {pricing.map((model) => (
                         <div key={model.model} className="p-3 bg-muted/50 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${model.provider === 'kie' ? 'bg-primary/20 text-primary' : 'bg-purple-500/20 text-purple-400'}`}>
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${model.provider === 'kie' ? 'bg-primary/20 text-primary' : 'bg-accent/20 text-accent'}`}>
                               {model.provider === 'kie' ? 'K' : 'A'}
                             </span>
                             <span className="font-medium text-foreground">{model.model}</span>
@@ -738,7 +738,7 @@ export function AIAnalyticsPage() {
                     </div>
                   </div>
                   {/* Anthropic */}
-                  <div className="p-6 bg-purple-500/10 rounded-xl">
+                  <div className="p-6 bg-accent/10 rounded-xl">
                     <div className="flex items-center gap-3 mb-4">
                       <span className="text-3xl">🔵</span>
                       <div>
@@ -753,7 +753,7 @@ export function AIAnalyticsPage() {
                       </div>
                       <div>
                         <div className="text-sm text-muted-foreground">Total Cost</div>
-                        <div className="text-xl font-bold text-purple-400">{formatCurrency(comparison.comparison.anthropic.total_cost)}</div>
+                        <div className="text-xl font-bold text-accent">{formatCurrency(comparison.comparison.anthropic.total_cost)}</div>
                       </div>
                       <div>
                         <div className="text-sm text-muted-foreground">Avg Cost/Req</div>

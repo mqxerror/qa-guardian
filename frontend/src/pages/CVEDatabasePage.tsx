@@ -338,7 +338,7 @@ export function CVEDatabasePage() {
 
  const getSeverityColor = (severity: string) => {
  switch (severity.toUpperCase()) {
- case 'CRITICAL': return 'text-purple-700 bg-purple-100';
+ case 'CRITICAL': return 'text-accent bg-accent/10';
  case 'HIGH': return 'text-destructive bg-destructive/10';
  case 'MEDIUM': return 'text-warning bg-warning/10';
  case 'LOW': return 'text-primary bg-primary/10';
@@ -347,7 +347,7 @@ export function CVEDatabasePage() {
  };
 
  const getCVSSColor = (score: number) => {
- if (score >= 9) return 'bg-purple-600 text-white';
+ if (score >= 9) return 'bg-accent text-white';
  if (score >= 7) return 'bg-destructive text-white';
  if (score >= 4) return 'bg-warning text-white';
  return 'bg-primary text-white';
@@ -417,9 +417,9 @@ export function CVEDatabasePage() {
  <>
  {/* Summary Cards */}
  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
- <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 text-center">
+ <div className="rounded-lg border border-accent/20 bg-accent/5 p-4 text-center">
  <p className="text-sm text-muted-foreground">Critical</p>
- <p className="text-2xl font-bold text-purple-600">{scanResult.summary.bySeverity.critical}</p>
+ <p className="text-2xl font-bold text-accent">{scanResult.summary.bySeverity.critical}</p>
  </div>
  <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-center">
  <p className="text-sm text-muted-foreground">High</p>

@@ -402,7 +402,7 @@ function TaskCard({ task, onRetry }: { task: AgentTask; onRetry?: () => void }) 
  {/* AI Metadata */}
  {task.aiMetadata?.provider && (
  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
- <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">
+ <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent">
  {task.aiMetadata.provider}
  </span>
  {task.aiMetadata.execution_time_ms && (

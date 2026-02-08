@@ -327,7 +327,7 @@ export function DependencyPolicyPage() {
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'CRITICAL': return 'text-destructive bg-destructive/20';
-      case 'HIGH': return 'text-orange-400 bg-orange-500/20';
+      case 'HIGH': return 'text-warning bg-warning/20';
       case 'MEDIUM': return 'text-warning bg-warning/20';
       case 'LOW': return 'text-primary bg-primary/20';
       default: return 'text-muted-foreground bg-muted';
@@ -338,7 +338,7 @@ export function DependencyPolicyPage() {
     switch (status) {
       case 'blocked': return 'text-destructive bg-destructive/20';
       case 'warned': return 'text-warning bg-warning/20';
-      case 'overridden': return 'text-purple-400 bg-purple-500/20';
+      case 'overridden': return 'text-accent bg-accent/20';
       case 'resolved': return 'text-success bg-success/20';
       default: return 'text-muted-foreground bg-muted';
     }
@@ -397,9 +397,9 @@ export function DependencyPolicyPage() {
             <div className="text-sm text-warning">Warnings</div>
             <div className="text-2xl font-bold text-warning">{violationSummary.warned}</div>
           </div>
-          <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 p-4">
-            <div className="text-sm text-purple-400">Overridden</div>
-            <div className="text-2xl font-bold text-purple-400">{violationSummary.overridden}</div>
+          <div className="rounded-lg border border-accent/30 bg-accent/10 p-4">
+            <div className="text-sm text-accent">Overridden</div>
+            <div className="text-2xl font-bold text-accent">{violationSummary.overridden}</div>
           </div>
         </div>
 
@@ -521,7 +521,7 @@ export function DependencyPolicyPage() {
                           <div className="text-right">
                             <div className="text-sm">
                               <span className="text-destructive">{violation.summary.critical}C</span>
-                              <span className="text-orange-400 ml-2">{violation.summary.high}H</span>
+                              <span className="text-warning ml-2">{violation.summary.high}H</span>
                               <span className="text-warning ml-2">{violation.summary.medium}M</span>
                             </div>
                             <div className="text-xs text-muted-foreground">
@@ -562,14 +562,14 @@ export function DependencyPolicyPage() {
                                 const reason = prompt('Enter override reason:');
                                 if (reason) overrideViolation(violation.id, reason);
                               }}
-                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                              className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent transition-colors"
                             >
                               Override &amp; Allow Build
                             </button>
                           </div>
                         )}
                         {violation.overridden_by && (
-                          <div className="mt-3 text-sm text-purple-400">
+                          <div className="mt-3 text-sm text-accent">
                             Overridden by {violation.overridden_by}: {violation.override_reason}
                           </div>
                         )}

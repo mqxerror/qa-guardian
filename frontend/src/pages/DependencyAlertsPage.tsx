@@ -216,7 +216,7 @@ export function DependencyAlertsPage() {
 
  const getSeverityColor = (severity: string) => {
  switch (severity) {
- case 'CRITICAL': return 'text-purple-600 bg-purple-100';
+ case 'CRITICAL': return 'text-accent bg-accent/10';
  case 'HIGH': return 'text-destructive bg-destructive/10';
  case 'MEDIUM': return 'text-warning bg-warning/10';
  case 'LOW': return 'text-primary bg-primary/10';
@@ -384,9 +384,9 @@ export function DependencyAlertsPage() {
 
  {/* Severity Summary */}
  <div className="grid grid-cols-4 gap-2">
- <div className="rounded-lg bg-purple-100 p-3 text-center">
- <p className="text-xl font-bold text-purple-600">{summary.by_severity.critical}</p>
- <p className="text-xs text-purple-600/80">Critical</p>
+ <div className="rounded-lg bg-accent/10 p-3 text-center">
+ <p className="text-xl font-bold text-accent">{summary.by_severity.critical}</p>
+ <p className="text-xs text-accent/80">Critical</p>
  </div>
  <div className="rounded-lg bg-destructive/10 p-3 text-center">
  <p className="text-xl font-bold text-destructive">{summary.by_severity.high}</p>

@@ -188,7 +188,7 @@ function AIRouterPage() {
       </div>
 
       {/* Provider Flow Diagram */}
-      <div className="mb-6 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-lg p-6 text-white">
+      <div className="mb-6 bg-gradient-to-r from-indigo-500 via-accent to-pink-500 rounded-lg p-6 text-white">
         <h2 className="text-lg font-bold mb-4">Request Flow</h2>
         <div className="flex items-center justify-center gap-4">
           <div className="bg-white/20 rounded-lg p-4 text-center"><div className="text-2xl mb-1">📨</div><div className="font-medium">Request</div></div>
@@ -317,8 +317,8 @@ function AIRouterPage() {
           <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-primary">{formatNumber(stats.total_requests)}</div><div className="text-xs text-foreground">Total Requests</div></div>
           <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-success">{stats.primary_success_rate}%</div><div className="text-xs text-foreground">Primary Success</div></div>
           <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-warning">{formatNumber(stats.fallback_requests)}</div><div className="text-xs text-foreground">Fallbacks</div></div>
-          <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-purple-400">{stats.fallback_success_rate}%</div><div className="text-xs text-foreground">Fallback Success</div></div>
-          <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-cyan-400">{stats.avg_latency_ms}ms</div><div className="text-xs text-foreground">Avg Latency</div></div>
+          <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-accent">{stats.fallback_success_rate}%</div><div className="text-xs text-foreground">Fallback Success</div></div>
+          <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-info">{stats.avg_latency_ms}ms</div><div className="text-xs text-foreground">Avg Latency</div></div>
           <div className="bg-card rounded-lg shadow p-3 text-center"><div className="text-2xl font-bold text-destructive">{stats.errors}</div><div className="text-xs text-foreground">Errors</div></div>
         </div>
       )}
@@ -399,7 +399,7 @@ function AIRouterPage() {
           <h2 className="text-lg font-semibold mb-4">Test Failover</h2>
           <div className="space-y-2 mb-4">
             <button onClick={() => testFailover('timeout')} disabled={isTesting} className="w-full px-4 py-2 bg-warning/10 text-warning rounded hover:bg-warning/20 disabled:opacity-50">Test Timeout Failover</button>
-            <button onClick={() => testFailover('rate_limit')} disabled={isTesting} className="w-full px-4 py-2 bg-purple-500/10 text-purple-400 rounded hover:bg-purple-500/20 disabled:opacity-50">Test Rate Limit Failover</button>
+            <button onClick={() => testFailover('rate_limit')} disabled={isTesting} className="w-full px-4 py-2 bg-accent/10 text-accent rounded hover:bg-accent/20 disabled:opacity-50">Test Rate Limit Failover</button>
             <button onClick={() => testFailover('error')} disabled={isTesting} className="w-full px-4 py-2 bg-destructive/10 text-destructive rounded hover:bg-destructive/20 disabled:opacity-50">Test Error Failover</button>
           </div>
           {testResult && (

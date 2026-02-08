@@ -162,21 +162,21 @@ export function DashboardPage() {
             {/* AI Insights Hub Card */}
             <Link
               to="/ai-insights"
-              className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-purple-500/10 via-card to-card p-6 transition-all hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10"
+              className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-accent/10 via-card to-card p-6 transition-all hover:border-accent/50 hover:shadow-lg hover:shadow-accent/10"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+              <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
               <div className="relative">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/20 text-purple-500">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/20 text-accent">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                     </svg>
                   </div>
                   <div>
-                    <h4 className="text-lg font-semibold text-foreground group-hover:text-purple-500 transition-colors">
+                    <h4 className="text-lg font-semibold text-foreground group-hover:text-accent transition-colors">
                       AI Insights Hub
                     </h4>
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-accent bg-accent/10 px-2 py-0.5 rounded-full">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
                       </svg>
@@ -207,7 +207,7 @@ export function DashboardPage() {
                     Best Practices
                   </span>
                 </div>
-                <div className="mt-4 flex items-center text-sm font-medium text-purple-500 group-hover:translate-x-1 transition-transform">
+                <div className="mt-4 flex items-center text-sm font-medium text-accent group-hover:translate-x-1 transition-transform">
                   Explore Insights
                   <svg xmlns="http://www.w3.org/2000/svg" className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
