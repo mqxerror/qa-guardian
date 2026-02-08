@@ -8,6 +8,10 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('anthropic-provider');
 
 import type {
   IAIProvider,
@@ -170,7 +174,7 @@ export class AnthropicProvider implements IAIProvider {
     const key = apiKey || this.config.apiKey;
 
     if (!key) {
-      console.warn('[AnthropicProvider] No API key provided - AI features will be disabled');
+      log.warn('No API key provided - AI features will be disabled');
       this.client = null;
       this.initialized = false;
       return;
@@ -182,9 +186,9 @@ export class AnthropicProvider implements IAIProvider {
       });
       this.config.apiKey = key;
       this.initialized = true;
-      console.log('[AnthropicProvider] Initialized successfully');
+      log.info('Initialized successfully');
     } catch (error) {
-      console.error('[AnthropicProvider] Failed to initialize:', error);
+      log.error({ error }, 'Failed to initialize');
       this.client = null;
       this.initialized = false;
     }
@@ -325,7 +329,7 @@ export class AnthropicProvider implements IAIProvider {
         // Check if error is retryable
         if (this.isRetryableError(error)) {
           const delay = this.config.retryDelayMs * Math.pow(2, attempt);
-          console.warn(`[AnthropicProvider] Retrying in ${delay}ms (attempt ${attempt + 1}/${this.config.maxRetries}):`, lastError.message);
+          log.warn({ delay, attempt: attempt + 1, maxRetries: this.config.maxRetries, error: lastError.message }, 'Retrying after error');
           await new Promise(resolve => setTimeout(resolve, delay));
         } else {
           this.usageStats.failedRequests++;

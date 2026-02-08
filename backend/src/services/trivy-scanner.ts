@@ -13,6 +13,10 @@ import * as path from 'path';
 import * as os from 'os';
 import { getCache } from './cache.js';
 import { generateId } from '../utils/index.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from './logger.js';
+
+const log = createLogger('trivy-scanner');
 
 // ============================================================
 // Trivy Types
@@ -165,7 +169,7 @@ export function checkTrivyAvailability(): TrivyVersionInfo {
           path: trivyPath,
         };
 
-        console.log(`[Trivy] Found at ${trivyPath}, version ${version}`);
+        log.info({ path: trivyPath, version }, 'Trivy found');
         return trivyVersionCache;
       } catch {
         // Try next path
@@ -173,7 +177,7 @@ export function checkTrivyAvailability(): TrivyVersionInfo {
     }
 
     trivyVersionCache = { available: false };
-    console.log('[Trivy] CLI not found on system');
+    log.info('CLI not found on system');
     return trivyVersionCache;
   } catch (error) {
     trivyVersionCache = { available: false };
@@ -228,7 +232,7 @@ export async function scanContainerImage(
     const cache = getCache();
     const cached = await cache.get<TrivyScanResult>(cacheKey);
     if (cached) {
-      console.log(`[Trivy] Using cached scan result for ${imageRef}`);
+      log.debug({ imageRef }, 'Using cached scan result');
       return {
         ...cached,
         scan_id: scanId, // Generate new scan ID
@@ -280,7 +284,7 @@ export async function scanContainerImage(
     // Add the image reference
     args.push(imageRef);
 
-    console.log(`[Trivy] Running: ${trivyPath} ${args.join(' ')}`);
+    log.debug({ command: trivyPath, args }, 'Running Trivy scan');
 
     // Run Trivy with timeout
     await new Promise<void>((resolve, reject) => {
@@ -301,9 +305,9 @@ export async function scanContainerImage(
       });
 
       trivyProcess.on('close', (code) => {
-        console.log(`[Trivy] Process exited with code ${code}`);
+        log.debug({ exitCode: code }, 'Process exited');
         if (code !== 0 && stderr) {
-          console.log(`[Trivy] stderr: ${stderr.substring(0, 500)}`);
+          log.debug({ stderr: stderr.substring(0, 500) }, 'Process stderr');
         }
         // Trivy returns exit code 0 even when vulnerabilities are found
         // Exit code 1 means error (e.g., image not found)
@@ -330,13 +334,13 @@ export async function scanContainerImage(
 
     if (fs.existsSync(tempOutputFile)) {
       const rawOutput = fs.readFileSync(tempOutputFile, 'utf-8');
-      console.log(`[Trivy] Output file size: ${rawOutput.length} bytes`);
+      log.debug({ size: rawOutput.length }, 'Output file read');
 
       // Clean up temp file
       fs.unlinkSync(tempOutputFile);
 
       if (!rawOutput.trim()) {
-        console.log('[Trivy] Output file is empty - no findings');
+        log.debug('Output file is empty - no findings');
         return createSuccessResult(scanId, parsedImage, scannedAt, trivyInfo.version!, duration, []);
       }
 
@@ -356,7 +360,7 @@ export async function scanContainerImage(
     }
 
     // No output file - shouldn't happen but handle gracefully
-    console.log('[Trivy] No output file found');
+    log.debug('No output file found');
     return createSuccessResult(scanId, parsedImage, scannedAt, trivyInfo.version!, duration, []);
 
   } catch (error: unknown) {

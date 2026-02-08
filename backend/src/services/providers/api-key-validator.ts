@@ -7,6 +7,11 @@
  * Feature #1473: Add API key validation for both providers
  */
 
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('api-key-validator');
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -191,7 +196,7 @@ export async function validateApiKey(provider: ValidatableProvider): Promise<Key
 
   // Check if key is configured
   if (!apiKey) {
-    console.log(`[APIKeyValidator] ${provider.toUpperCase()}: No API key configured (${API_KEY_ENV_VARS[provider]})`);
+    log.info({ provider: provider.toUpperCase(), envVar: API_KEY_ENV_VARS[provider] }, 'No API key configured');
     return {
       provider,
       valid: false,
@@ -204,7 +209,7 @@ export async function validateApiKey(provider: ValidatableProvider): Promise<Key
 
   // Check key format (basic validation)
   if (!validateKeyFormat(provider, apiKey)) {
-    console.log(`[APIKeyValidator] ${provider.toUpperCase()}: Invalid key format`);
+    log.info({ provider: provider.toUpperCase() }, 'Invalid key format');
     return {
       provider,
       valid: false,
@@ -216,11 +221,11 @@ export async function validateApiKey(provider: ValidatableProvider): Promise<Key
   }
 
   // Test the key with an actual API call
-  console.log(`[APIKeyValidator] ${provider.toUpperCase()}: Testing API key...`);
+  log.info({ provider: provider.toUpperCase() }, 'Testing API key');
   const testResult = await testApiKey(provider, apiKey);
 
   if (testResult.valid) {
-    console.log(`[APIKeyValidator] ${provider.toUpperCase()}: API key is valid (${testResult.latencyMs}ms)`);
+    log.info({ provider: provider.toUpperCase(), latencyMs: testResult.latencyMs }, 'API key is valid');
     return {
       provider,
       valid: true,
@@ -229,7 +234,7 @@ export async function validateApiKey(provider: ValidatableProvider): Promise<Key
       checkedAt: now,
     };
   } else {
-    console.error(`[APIKeyValidator] ${provider.toUpperCase()}: ${testResult.error}`);
+    log.error({ provider: provider.toUpperCase(), error: testResult.error }, 'API key validation failed');
     return {
       provider,
       valid: false,
@@ -246,7 +251,7 @@ export async function validateApiKey(provider: ValidatableProvider): Promise<Key
  * Validate API keys for all providers
  */
 export async function validateAllApiKeys(): Promise<AllKeysValidationResult> {
-  console.log('[APIKeyValidator] Validating all API keys...');
+  log.info('Validating all API keys');
 
   const [kieResult, anthropicResult] = await Promise.all([
     validateApiKey('kie'),
@@ -267,7 +272,7 @@ export async function validateAllApiKeys(): Promise<AllKeysValidationResult> {
     summary = 'No valid API keys found. AI features will be unavailable.';
   }
 
-  console.log(`[APIKeyValidator] Result: ${summary}`);
+  log.info({ summary }, 'Validation complete');
 
   return {
     timestamp: new Date().toISOString(),

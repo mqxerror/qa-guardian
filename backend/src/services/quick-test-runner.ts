@@ -19,6 +19,9 @@ import { aiService } from './ai-service.js';
 import { isPrivateIP, validateURLForSSRF } from '../utils/index.js';
 import { createLogger } from './logger.js';
 
+// Feature #449: Use structured logger instead of console.*
+const log = createLogger('quick-test-runner');
+
 // Feature #433: SSRF protection - check if resolved IPs are private
 function validateResolvedIPs(addresses: string[]): { safe: boolean; error?: string } {
   for (const ip of addresses) {
@@ -519,7 +522,7 @@ async function runVisualPerformance(url: string, browser: Browser): Promise<Visu
     };
 
   } catch (err) {
-    console.error('[Quick Test] Visual/Performance wave error:', err);
+    log.error({ error: err }, 'Visual/Performance wave error');
     if (page) {
       await page.close().catch(() => {});
     }
@@ -708,7 +711,7 @@ async function runSecurityScan(url: string, browser: Browser): Promise<SecurityS
     result.overallScore = Math.max(0, Math.min(100, securityScore));
 
   } catch (err) {
-    console.error('[Quick Test] Security scan wave error:', err);
+    log.error({ error: err }, 'Security scan wave error');
     if (page) {
       await page.close().catch(() => {});
     }
@@ -797,7 +800,7 @@ Respond ONLY with valid JSON, no markdown or explanation.`;
     }
 
   } catch (err) {
-    console.error('[Quick Test] AI analysis wave error:', err);
+    log.error({ error: err }, 'AI analysis wave error');
     result.summary = 'AI analysis failed - see logs for details';
   }
 
@@ -957,7 +960,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
     });
 
   } catch (err) {
-    console.error('[Quick Test] Fatal error:', err);
+    log.error({ error: err }, 'Fatal error');
     testResult.status = 'failed';
     testResult.completedAt = new Date();
 

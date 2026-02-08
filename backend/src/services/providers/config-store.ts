@@ -10,6 +10,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('ai-config-store');
 
 // =============================================================================
 // TYPES
@@ -137,12 +141,12 @@ class AIConfigStore {
           this.migrate();
         }
 
-        console.log(`[AIConfigStore] Loaded ${Object.keys(this.data.configs).length} organization configs`);
+        log.info({ count: Object.keys(this.data.configs).length }, 'Loaded organization configs');
       } else {
-        console.log('[AIConfigStore] No config file found, using defaults');
+        log.info('No config file found, using defaults');
       }
     } catch (error) {
-      console.error('[AIConfigStore] Error loading config:', error);
+      log.error({ error }, 'Error loading config');
       // Continue with empty/default config
     }
 
@@ -157,9 +161,9 @@ class AIConfigStore {
 
     try {
       fs.writeFileSync(CONFIG_FILE, JSON.stringify(this.data, null, 2), 'utf-8');
-      console.log('[AIConfigStore] Configuration saved');
+      log.info('Configuration saved');
     } catch (error) {
-      console.error('[AIConfigStore] Error saving config:', error);
+      log.error({ error }, 'Error saving config');
     }
   }
 
@@ -168,7 +172,7 @@ class AIConfigStore {
    */
   private migrate(): void {
     // Handle migrations based on version number
-    console.log(`[AIConfigStore] Migrating from version ${this.data.version} to ${CURRENT_VERSION}`);
+    log.info({ from: this.data.version, to: CURRENT_VERSION }, 'Migrating config version');
     this.data.version = CURRENT_VERSION;
     this.save();
   }

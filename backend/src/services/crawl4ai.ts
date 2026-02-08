@@ -6,6 +6,10 @@
  */
 
 import { chromium, Browser, Page } from 'playwright';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from './logger.js';
+
+const log = createLogger('crawl4ai');
 
 const CRAWL4AI_BASE_URL = process.env.CRAWL4AI_URL || 'http://38.97.60.181:11235';
 const CRAWL4AI_TOKEN = process.env.CRAWL4AI_TOKEN || 'crawl4ai_secret_token';
@@ -14,8 +18,8 @@ const PLAYWRIGHT_TIMEOUT = 45000;
 
 // Feature #1719: Warn if using default credentials
 if (!process.env.CRAWL4AI_URL || !process.env.CRAWL4AI_TOKEN) {
-  console.warn('[Crawl4AI] Warning: CRAWL4AI_URL or CRAWL4AI_TOKEN not set in environment. Using default values.');
-  console.warn('[Crawl4AI] Set these in .env for production: CRAWL4AI_URL, CRAWL4AI_TOKEN');
+  log.warn('CRAWL4AI_URL or CRAWL4AI_TOKEN not set in environment, using default values');
+  log.warn('Set CRAWL4AI_URL and CRAWL4AI_TOKEN in .env for production');
 }
 
 export interface CrawlResponse {
@@ -73,7 +77,7 @@ export async function crawlWithPlaywright(url: string): Promise<CrawlResponse> {
   let browser: Browser | null = null;
 
   try {
-    console.log(`[Crawl4AI] Using Playwright to crawl: ${url}`);
+    log.debug({ url }, 'Using Playwright to crawl');
 
     // Launch browser in headless mode
     browser = await chromium.launch({
@@ -120,7 +124,7 @@ export async function crawlWithPlaywright(url: string): Promise<CrawlResponse> {
     await browser.close();
     browser = null;
 
-    console.log(`[Crawl4AI] Playwright crawl successful: ${links.length} links, ${images.length} images`);
+    log.debug({ linksCount: links.length, imagesCount: images.length }, 'Playwright crawl successful');
 
     return {
       success: true,
@@ -130,7 +134,7 @@ export async function crawlWithPlaywright(url: string): Promise<CrawlResponse> {
       images,
     };
   } catch (error) {
-    console.error(`[Crawl4AI] Playwright crawl failed:`, error);
+    log.error({ error }, 'Playwright crawl failed');
     if (browser) {
       await browser.close().catch(() => {});
     }
@@ -175,7 +179,7 @@ async function handleCookieConsent(page: Page): Promise<void> {
       const element = page.locator(selector).first();
       if (await element.isVisible({ timeout: 500 })) {
         await element.click({ timeout: 2000 });
-        console.log(`[Crawl4AI] Dismissed cookie consent with selector: ${selector}`);
+        log.debug({ selector }, 'Dismissed cookie consent');
         await page.waitForTimeout(500); // Wait for dialog to close
         break;
       }
@@ -227,7 +231,7 @@ export async function analyzeSite(url: string, usePlaywright: boolean = true): P
 
     // Fall back to Crawl4AI if Playwright fails
     if (!crawlResult.success || !crawlResult.html) {
-      console.log(`[Crawl4AI] Playwright failed, falling back to Crawl4AI API`);
+      log.debug('Playwright failed, falling back to Crawl4AI API');
       crawlResult = await crawlUrl(url);
     }
   } else {
@@ -539,7 +543,7 @@ export async function crawlSite(
   const pages: PageInfo[] = [];
   const queue: Array<{ url: string; depth: number }> = [{ url, depth: 0 }];
 
-  console.log(`[Crawl4AI] Starting multi-page crawl of ${url} (depth: ${maxDepth}, maxPages: ${maxPages})`);
+  log.info({ url, maxDepth, maxPages }, 'Starting multi-page crawl');
 
   while (queue.length > 0 && pages.length < maxPages) {
     const current = queue.shift();
@@ -555,7 +559,7 @@ export async function crawlSite(
     // Skip URLs that should be ignored
     if (shouldSkipUrl(normalizedUrl, baseHost)) continue;
 
-    console.log(`[Crawl4AI] Crawling page ${pages.length + 1}/${maxPages}: ${normalizedUrl} (depth ${currentDepth})`);
+    log.debug({ page: pages.length + 1, maxPages, url: normalizedUrl, depth: currentDepth }, 'Crawling page');
 
     try {
       // Analyze the current page
@@ -599,11 +603,11 @@ export async function crawlSite(
         }
       }
     } catch (error) {
-      console.error(`[Crawl4AI] Failed to crawl ${normalizedUrl}:`, error);
+      log.error({ url: normalizedUrl, error }, 'Failed to crawl page');
     }
   }
 
-  console.log(`[Crawl4AI] Multi-page crawl complete: ${pages.length} pages crawled`);
+  log.info({ pagesCount: pages.length }, 'Multi-page crawl complete');
 
   return {
     baseUrl: url,

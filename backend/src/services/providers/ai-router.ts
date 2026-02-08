@@ -30,6 +30,10 @@ import type {
 import { KieAIProvider } from './kie-ai-provider.js';
 import { AnthropicProvider } from './anthropic-provider.js';
 import { CircuitBreaker } from './circuit-breaker.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('ai-router');
 
 // =============================================================================
 // TYPES
@@ -282,7 +286,7 @@ export class AIRouter implements IAIProvider {
       this.stats.failoverEvents = this.stats.failoverEvents.slice(-100);
     }
 
-    console.log(`[AIRouter] Failover: ${this.config.primary} -> ${this.config.fallback} (${reason})`);
+    log.info({ from: this.config.primary, to: this.config.fallback, reason }, 'Failover triggered');
 
     // Invoke callback if set
     this.onFailover?.(event);
@@ -361,7 +365,7 @@ export class AIRouter implements IAIProvider {
 
     // Primary not available, try fallback directly
     if (fallback?.isInitialized()) {
-      console.log(`[AIRouter] Primary provider ${this.config.primary} not initialized, using fallback`);
+      log.info({ primary: this.config.primary }, 'Primary provider not initialized, using fallback');
       try {
         const result = await operation(fallback);
         this.stats.fallbackSuccesses++;
@@ -403,7 +407,7 @@ export class AIRouter implements IAIProvider {
     const kieKey = process.env.KIE_API_KEY;
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
-    console.log(`[AIRouter] Reinitializing from env - KIE: ${kieKey ? 'present' : 'missing'}, Anthropic: ${anthropicKey ? 'present' : 'missing'}`);
+    log.info({ kiePresent: !!kieKey, anthropicPresent: !!anthropicKey }, 'Reinitializing from env');
 
     let anyInitialized = false;
 
@@ -412,7 +416,7 @@ export class AIRouter implements IAIProvider {
     if (kieProvider && kieKey) {
       kieProvider.initialize(kieKey);
       if (kieProvider.isInitialized()) {
-        console.log('[AIRouter] Kie.ai provider initialized successfully');
+        log.info('Kie.ai provider initialized successfully');
         anyInitialized = true;
       }
     }
@@ -422,7 +426,7 @@ export class AIRouter implements IAIProvider {
     if (anthropicProvider && anthropicKey) {
       anthropicProvider.initialize(anthropicKey);
       if (anthropicProvider.isInitialized()) {
-        console.log('[AIRouter] Anthropic provider initialized successfully');
+        log.info('Anthropic provider initialized successfully');
         anyInitialized = true;
       }
     }
@@ -853,10 +857,12 @@ export class AIRouter implements IAIProvider {
     };
 
     // Log the switch
-    console.log(
-      `[AIRouter] Hot-swap: ${event.previousPrimary} -> ${event.newPrimary} ` +
-      `(${event.inFlightRequests} in-flight requests, reason: ${reason})`
-    );
+    log.info({
+      from: event.previousPrimary,
+      to: event.newPrimary,
+      inFlightRequests: event.inFlightRequests,
+      reason,
+    }, 'Hot-swap provider switch');
 
     // Store the event
     this.providerSwitchEvents.push(event);
@@ -875,7 +881,7 @@ export class AIRouter implements IAIProvider {
       const cb = this.circuitBreakers.get(newPrimary);
       if (cb) {
         cb.reset();
-        console.log(`[AIRouter] Reset circuit breaker for ${newPrimary}`);
+        log.info({ provider: newPrimary }, 'Reset circuit breaker');
       }
     }
 
@@ -929,7 +935,7 @@ export class AIRouter implements IAIProvider {
     for (const cb of this.circuitBreakers.values()) {
       cb.reset();
     }
-    console.log('[AIRouter] Reset all circuit breakers');
+    log.info('Reset all circuit breakers');
   }
 
   /**

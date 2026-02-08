@@ -10,6 +10,10 @@
  */
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from './logger.js';
+
+const log = createLogger('metrics');
 
 // Threshold configuration (in milliseconds)
 const SLOW_REQUEST_WARNING_MS = 1000; // 1 second
@@ -138,13 +142,9 @@ export function logSlowRequest(
   statusCode: number
 ): void {
   if (duration > SLOW_REQUEST_ERROR_MS) {
-    console.error(
-      `[SLOW REQUEST] ${method} ${path} took ${duration}ms (status: ${statusCode})`
-    );
+    log.error({ method, path, duration, statusCode }, 'SLOW REQUEST (critical)');
   } else if (duration > SLOW_REQUEST_WARNING_MS) {
-    console.warn(
-      `[SLOW REQUEST] ${method} ${path} took ${duration}ms (status: ${statusCode})`
-    );
+    log.warn({ method, path, duration, statusCode }, 'SLOW REQUEST');
   }
 }
 
@@ -245,5 +245,5 @@ export function registerMetricsHooks(app: FastifyInstance): void {
     logSlowRequest(request.method, request.url, duration, reply.statusCode);
   });
 
-  console.log('[Metrics] Response time tracking hooks registered');
+  log.info('Response time tracking hooks registered');
 }

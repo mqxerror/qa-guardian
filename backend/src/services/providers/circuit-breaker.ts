@@ -10,6 +10,11 @@
  * Feature #1463: Add circuit breaker pattern in service layer
  */
 
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('circuit-breaker');
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -115,7 +120,7 @@ export class CircuitBreaker {
       newState,
       reason,
     };
-    console.log(`[CircuitBreaker:${this.providerName}] ${previousState} -> ${newState}: ${reason}`);
+    log.info({ provider: this.providerName, from: previousState, to: newState, reason }, 'Circuit state changed');
     this.onStateChange?.(event);
   }
 

@@ -12,6 +12,9 @@ import { TOOL_SCOPE_MAP } from './tool-permissions.js';
 import { TOOLS } from './tool-definitions.js';
 import { findSimilarStrings } from './string-utils.js';
 import { RateLimiter } from './mcp-rate-limiter.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../services/logger.js';
+const logger = createLogger('mcp:auth');
 
 // ============================================================================
 // Types
@@ -172,7 +175,7 @@ export async function validateMcpScope(
   } catch (error) {
     // Feature #434: SECURITY FIX - fail CLOSED, not open
     // If auth service is unavailable, DENY access rather than grant admin access
-    console.error(`[MCP Auth] SECURITY: Auth service unavailable, denying access: ${error}`);
+    logger.error({ error }, 'SECURITY: Auth service unavailable, denying access');
     log(`MCP scope validation failed (access DENIED): ${error}`);
     return {
       valid: false,

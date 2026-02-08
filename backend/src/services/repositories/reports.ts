@@ -12,6 +12,10 @@
 import { query, isDatabaseConnected } from '../database.js';
 import { ComprehensiveReport, ReportSummary } from '../../routes/reports/types.js';
 import { generateId } from '../../utils/index.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('repo:reports');
 
 // ============================================
 // Column Constants (Feature #210: Replace SELECT *)
@@ -47,7 +51,7 @@ const REPORT_SUMMARY_COLUMNS = `
 
 /** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryReports(): Map<string, ComprehensiveReport> {
-  console.warn('[DEPRECATED] getMemoryReports() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  log.warn('DEPRECATED: getMemoryReports() - memory stores removed, use DB queries');
   return new Map();
 }
 

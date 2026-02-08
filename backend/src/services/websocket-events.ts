@@ -8,6 +8,10 @@
  */
 
 import { Server as SocketIOServer } from 'socket.io';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from './logger.js';
+
+const log = createLogger('websocket-events');
 
 // Socket.IO server instance (set by index.ts after server starts)
 let io: SocketIOServer | null = null;
@@ -33,7 +37,7 @@ export function getWebSocketIO(): SocketIOServer | null {
 function emitToOrg(orgId: string, event: string, payload: Record<string, unknown>) {
   if (io) {
     io.to(`org:${orgId}`).emit(event, { orgId, ...payload });
-    console.log(`[Socket.IO] Emitted ${event} to org:${orgId}`);
+    log.debug({ event, orgId }, 'Socket.IO event emitted');
   }
 }
 

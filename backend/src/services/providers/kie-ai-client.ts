@@ -15,6 +15,11 @@
  * Feature #1456: Create Kie.ai API client class with authentication
  */
 
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('kie-ai-client');
+
 // Configuration interface
 export interface KieAIClientConfig {
   apiKey?: string;
@@ -176,9 +181,9 @@ export class KieAIClient {
     // Auto-initialize if API key is available
     if (this.config.apiKey) {
       this.initialized = true;
-      console.log('[KieAIClient] Initialized with API key');
+      log.info('Initialized with API key');
     } else {
-      console.warn('[KieAIClient] No API key provided - Kie.ai features will be disabled');
+      log.warn('No API key provided - Kie.ai features will be disabled');
     }
   }
 
@@ -189,14 +194,14 @@ export class KieAIClient {
     const key = apiKey || this.config.apiKey;
 
     if (!key) {
-      console.warn('[KieAIClient] No API key provided - Kie.ai features will be disabled');
+      log.warn('No API key provided - Kie.ai features will be disabled');
       this.initialized = false;
       return;
     }
 
     this.config.apiKey = key;
     this.initialized = true;
-    console.log('[KieAIClient] Initialized successfully');
+    log.info('Initialized successfully');
   }
 
   /**
@@ -336,7 +341,7 @@ export class KieAIClient {
         // Check if error is retryable
         if (this.isRetryableError(error)) {
           const delay = this.config.retryDelayMs * Math.pow(2, attempt);
-          console.warn(`[KieAIClient] Retrying in ${delay}ms (attempt ${attempt + 1}/${this.config.maxRetries}):`, lastError.message);
+          log.warn({ delay, attempt: attempt + 1, maxRetries: this.config.maxRetries, error: lastError.message }, 'Retrying after error');
           await new Promise(resolve => setTimeout(resolve, delay));
         } else {
           // Track failed request

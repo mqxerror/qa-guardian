@@ -12,6 +12,11 @@
  * Feature #1468: Implement monthly budget limits with alerts
  */
 
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('budget-manager');
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -141,7 +146,7 @@ export class BudgetManager {
   private checkMonthReset(): void {
     const currentMonth = this.getCurrentMonth();
     if (this.monthlySpend.month !== currentMonth) {
-      console.log(`[BudgetManager] New month detected: ${currentMonth}. Resetting budget tracking.`);
+      log.info({ currentMonth }, 'New month detected, resetting budget tracking');
       this.monthlySpend = this.createEmptyMonthlySpend();
       this.thresholdAlertTriggered = false;
       this.budgetExceededAlertTriggered = false;
@@ -171,11 +176,11 @@ export class BudgetManager {
 
     // Log the alert
     if (type === 'request_blocked') {
-      console.error(`[BudgetManager] ${message}`);
+      log.error({ type, percentUsed: alert.percentUsed }, message);
     } else if (type === 'budget_exceeded') {
-      console.warn(`[BudgetManager] ${message}`);
+      log.warn({ type, percentUsed: alert.percentUsed }, message);
     } else {
-      console.log(`[BudgetManager] ${message}`);
+      log.info({ type, percentUsed: alert.percentUsed }, message);
     }
 
     // Invoke callback if set

@@ -12,6 +12,10 @@ import { AIRouter, FailoverEvent, RouterStats, CostSavings } from './ai-router.j
 import { BudgetManager, BudgetStatus, BudgetAlert } from './budget-manager.js';
 import { CircuitBreaker, CircuitState, CircuitBreakerConfig } from './circuit-breaker.js';
 import type { ProviderName, AIRouterConfig, HealthMetrics } from './types.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('ai-router-service');
 
 // =============================================================================
 // TYPES
@@ -105,7 +109,7 @@ class AIRouterService {
 
     // Set up failover callback to track events
     this.router.setFailoverCallback((event) => {
-      console.log(`[AIRouterService] Failover: ${event.primaryProvider} -> ${event.fallbackProvider} (${event.reason})`);
+      log.info({ from: event.primaryProvider, to: event.fallbackProvider, reason: event.reason }, 'Failover occurred');
 
       // Update circuit breaker history
       const history = this.cbHistory.get(event.primaryProvider as ProviderName);

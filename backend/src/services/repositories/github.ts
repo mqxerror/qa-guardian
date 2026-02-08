@@ -22,6 +22,10 @@ import {
   PRComment,
   PRDependencyScanResult,
 } from '../../routes/github/types.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('repo:github');
 
 // ============================================
 // Column Constants for SELECT queries
@@ -490,26 +494,26 @@ export async function deleteUserGithubToken(userId: string): Promise<boolean> {
 // =============================
 
 export function getMemoryGithubConnections(): Map<string, GitHubConnection> {
-  console.warn('[GitHub Repo] DEPRECATED: getMemoryGithubConnections() - memory maps removed.');
+  log.warn('DEPRECATED: getMemoryGithubConnections() - memory maps removed');
   return new Map<string, GitHubConnection>();
 }
 
 export function getMemoryPRStatusChecks(): Map<string, PRStatusCheck[]> {
-  console.warn('[GitHub Repo] DEPRECATED: getMemoryPRStatusChecks() - memory maps removed.');
+  log.warn('DEPRECATED: getMemoryPRStatusChecks() - memory maps removed');
   return new Map<string, PRStatusCheck[]>();
 }
 
 export function getMemoryPRComments(): Map<string, PRComment[]> {
-  console.warn('[GitHub Repo] DEPRECATED: getMemoryPRComments() - memory maps removed.');
+  log.warn('DEPRECATED: getMemoryPRComments() - memory maps removed');
   return new Map<string, PRComment[]>();
 }
 
 export function getMemoryPRDependencyScans(): Map<string, PRDependencyScanResult[]> {
-  console.warn('[GitHub Repo] DEPRECATED: getMemoryPRDependencyScans() - memory maps removed.');
+  log.warn('DEPRECATED: getMemoryPRDependencyScans() - memory maps removed');
   return new Map<string, PRDependencyScanResult[]>();
 }
 
 export function getMemoryUserGithubTokens(): Map<string, string> {
-  console.warn('[GitHub Repo] DEPRECATED: getMemoryUserGithubTokens() - memory maps removed.');
+  log.warn('DEPRECATED: getMemoryUserGithubTokens() - memory maps removed');
   return new Map<string, string>();
 }

@@ -13,6 +13,10 @@
 import { query, isDatabaseConnected, transaction } from '../database.js';
 import { encrypt, decrypt } from '../encryption.js'; // Feature #217: Encrypt sensitive data
 import { Project, ProjectMember, EnvironmentVariable, ProjectVisualSettings, ProjectHealingSettings } from '../../routes/projects/types.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('repo:projects');
 
 // Feature #2097: UUID validation helper for defensive programming
 // Allows both standard UUIDs (versions 1-5) and zero/nil UUIDs used for seeded test data
@@ -80,13 +84,13 @@ const PROJECT_ENV_VAR_COLUMNS = [
 export async function createProject(project: Project): Promise<Project> {
   // Feature #2097: Defensive UUID validation
   if (!isValidUUID(project.organization_id)) {
-    console.error('[Projects] Invalid organization_id format in createProject:', project.organization_id);
+    log.error({ organizationId: project.organization_id }, 'Invalid organization_id format in createProject');
     throw new Error('Invalid organization_id format');
   }
 
   if (!isDatabaseConnected()) {
     // In-memory fallback for development without PostgreSQL
-    console.log('[Projects] Using in-memory storage for createProject');
+    log.debug('Using in-memory storage for createProject');
     memProjects.set(project.id, project);
     return project;
   }
@@ -175,7 +179,7 @@ export async function deleteProject(id: string): Promise<boolean> {
 export async function listProjects(organizationId: string): Promise<Project[]> {
   // Feature #2097: Defensive UUID validation to prevent cryptic database errors
   if (!isValidUUID(organizationId)) {
-    console.error('[Projects] Invalid organization_id format:', organizationId);
+    log.error({ organizationId }, 'Invalid organization_id format in getProjectsByOrganization');
     return [];
   }
 
@@ -201,7 +205,7 @@ export async function listProjects(organizationId: string): Promise<Project[]> {
 export async function getProjectBySlug(organizationId: string, slug: string): Promise<Project | undefined> {
   // Feature #2097: Defensive UUID validation
   if (!isValidUUID(organizationId)) {
-    console.error('[Projects] Invalid organization_id format in getProjectBySlug:', organizationId);
+    log.error({ organizationId }, 'Invalid organization_id format in getProjectBySlug');
     return undefined;
   }
 
@@ -227,7 +231,7 @@ export async function getProjectBySlug(organizationId: string, slug: string): Pr
 export async function getProjectByName(organizationId: string, name: string): Promise<Project | undefined> {
   // Feature #2097: Defensive UUID validation
   if (!isValidUUID(organizationId)) {
-    console.error('[Projects] Invalid organization_id format in getProjectByName:', organizationId);
+    log.error({ organizationId }, 'Invalid organization_id format in getProjectByName');
     return undefined;
   }
 

@@ -25,6 +25,10 @@ import {
   SASTPRComment,
   SecretPattern,
 } from '../../routes/sast/types.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('repo:sast');
 
 // ============================================
 // Column Constants for SELECT queries
@@ -168,32 +172,32 @@ const DEFAULT_SAST_CONFIG: SASTConfig = {
 // ============================================
 
 export function getMemorySastConfigs(): Map<string, SASTConfig> {
-  console.warn('[SAST Repo] DEPRECATED: getMemorySastConfigs() - memory maps removed.');
+  log.warn('DEPRECATED: getMemorySastConfigs() - memory maps removed');
   return new Map<string, SASTConfig>();
 }
 
 export function getMemorySastScans(): Map<string, SASTScanResult[]> {
-  console.warn('[SAST Repo] DEPRECATED: getMemorySastScans() - memory maps removed.');
+  log.warn('DEPRECATED: getMemorySastScans() - memory maps removed');
   return new Map<string, SASTScanResult[]>();
 }
 
 export function getMemoryFalsePositives(): Map<string, FalsePositive[]> {
-  console.warn('[SAST Repo] DEPRECATED: getMemoryFalsePositives() - memory maps removed.');
+  log.warn('DEPRECATED: getMemoryFalsePositives() - memory maps removed');
   return new Map<string, FalsePositive[]>();
 }
 
 export function getMemorySastPRChecks(): Map<string, SASTPRCheck[]> {
-  console.warn('[SAST Repo] DEPRECATED: getMemorySastPRChecks() - memory maps removed.');
+  log.warn('DEPRECATED: getMemorySastPRChecks() - memory maps removed');
   return new Map<string, SASTPRCheck[]>();
 }
 
 export function getMemorySastPRComments(): Map<string, SASTPRComment[]> {
-  console.warn('[SAST Repo] DEPRECATED: getMemorySastPRComments() - memory maps removed.');
+  log.warn('DEPRECATED: getMemorySastPRComments() - memory maps removed');
   return new Map<string, SASTPRComment[]>();
 }
 
 export function getMemorySecretPatterns(): Map<string, SecretPattern[]> {
-  console.warn('[SAST Repo] DEPRECATED: getMemorySecretPatterns() - memory maps removed.');
+  log.warn('DEPRECATED: getMemorySecretPatterns() - memory maps removed');
   return new Map<string, SecretPattern[]>();
 }
 

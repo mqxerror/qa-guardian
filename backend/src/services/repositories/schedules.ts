@@ -9,6 +9,10 @@
  */
 
 import { query, isDatabaseConnected } from '../database.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('repo:schedules');
 
 // Schedule interface matching the original
 export interface Schedule {
@@ -37,7 +41,7 @@ export interface Schedule {
 
 /** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemorySchedules(): Map<string, Schedule> {
-  console.warn('[DEPRECATED] getMemorySchedules() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  log.warn('DEPRECATED: getMemorySchedules() - memory stores removed, use DB queries');
   return new Map();
 }
 

@@ -12,6 +12,10 @@ import { query, isDatabaseConnected } from '../database.js';
 import type { WebhookSubscription, WebhookEventType, WebhookDeliveryLog } from '../../routes/test-runs/webhooks.js';
 import { MAX_WEBHOOK_RETRIES } from '../../routes/test-runs/webhooks.js';
 import { encrypt, decrypt, encryptIfNeeded } from '../encryption.js'; // Feature #391: Encrypt webhook secrets at rest
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('repo:webhooks');
 
 // ============================================
 // Column Constants (Feature #100: Replace SELECT * with explicit columns)
@@ -51,7 +55,7 @@ function parseSubscriptionRow(row: any): WebhookSubscription {
       decryptedSecret = decrypt(row.secret);
     } catch (error) {
       // If decryption fails (e.g., key changed), log warning but don't break
-      console.warn(`[WEBHOOK-REPO] Failed to decrypt secret for subscription ${row.id}:`, error);
+      log.warn({ subscriptionId: row.id, error }, 'Failed to decrypt secret for subscription');
       decryptedSecret = undefined;
     }
   }
@@ -131,7 +135,7 @@ function parseDeliveryLogRow(row: any): WebhookDeliveryLog {
  */
 export async function createSubscription(subscription: WebhookSubscription): Promise<WebhookSubscription> {
   if (!isDatabaseConnected()) {
-    console.warn('[WEBHOOK-REPO] Database not connected, subscription not persisted');
+    log.warn('Database not connected, subscription not persisted');
     return subscription;
   }
 
@@ -409,7 +413,7 @@ export async function loadAllSubscriptions(): Promise<Map<string, WebhookSubscri
     }
   }
 
-  console.log(`[WEBHOOK-REPO] Loaded ${map.size} subscriptions from database`);
+  log.info({ count: map.size }, 'Loaded subscriptions from database');
   return map;
 }
 
@@ -576,7 +580,7 @@ export async function deleteOldDeliveryLogs(olderThanDays: number = 30): Promise
 
   const deleted = result?.rowCount ?? 0;
   if (deleted > 0) {
-    console.log(`[WEBHOOK-REPO] Deleted ${deleted} delivery logs older than ${olderThanDays} days`);
+    log.info({ deletedCount: deleted, olderThanDays }, 'Deleted old delivery logs');
   }
   return deleted;
 }

@@ -25,6 +25,10 @@ import {
   DASTSchedule,
   GraphQLScan,
 } from '../../routes/dast/types.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('repo:dast');
 
 // ============================================
 // Column Constants for SELECT queries
@@ -68,32 +72,32 @@ const GRAPHQL_SCAN_COLUMNS = `
 // ============================================
 
 export function getMemoryDastConfigs(): Map<string, DASTConfig> {
-  console.warn('[DAST Repo] DEPRECATED: getMemoryDastConfigs() - memory maps removed.');
+  log.warn('DEPRECATED: getMemoryDastConfigs() - memory maps removed');
   return new Map<string, DASTConfig>();
 }
 
 export function getMemoryDastScans(): Map<string, DASTScanResult[]> {
-  console.warn('[DAST Repo] DEPRECATED: getMemoryDastScans() - memory maps removed.');
+  log.warn('DEPRECATED: getMemoryDastScans() - memory maps removed');
   return new Map<string, DASTScanResult[]>();
 }
 
 export function getMemoryDastFalsePositives(): Map<string, DASTFalsePositive[]> {
-  console.warn('[DAST Repo] DEPRECATED: getMemoryDastFalsePositives() - memory maps removed.');
+  log.warn('DEPRECATED: getMemoryDastFalsePositives() - memory maps removed');
   return new Map<string, DASTFalsePositive[]>();
 }
 
 export function getMemoryOpenApiSpecs(): Map<string, OpenAPISpec> {
-  console.warn('[DAST Repo] DEPRECATED: getMemoryOpenApiSpecs() - memory maps removed.');
+  log.warn('DEPRECATED: getMemoryOpenApiSpecs() - memory maps removed');
   return new Map<string, OpenAPISpec>();
 }
 
 export function getMemoryDastSchedules(): Map<string, DASTSchedule> {
-  console.warn('[DAST Repo] DEPRECATED: getMemoryDastSchedules() - memory maps removed.');
+  log.warn('DEPRECATED: getMemoryDastSchedules() - memory maps removed');
   return new Map<string, DASTSchedule>();
 }
 
 export function getMemoryGraphqlScans(): Map<string, GraphQLScan> {
-  console.warn('[DAST Repo] DEPRECATED: getMemoryGraphqlScans() - memory maps removed.');
+  log.warn('DEPRECATED: getMemoryGraphqlScans() - memory maps removed');
   return new Map<string, GraphQLScan>();
 }
 

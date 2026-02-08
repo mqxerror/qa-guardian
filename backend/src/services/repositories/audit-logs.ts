@@ -9,6 +9,10 @@
  */
 
 import { query, isDatabaseConnected } from '../database.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('repo:audit-logs');
 
 // ============================================
 // Column Constants for SELECT queries
@@ -42,7 +46,7 @@ export interface AuditLogEntry {
 
 /** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryAuditLogs(): Map<string, AuditLogEntry> {
-  console.warn('[DEPRECATED] getMemoryAuditLogs() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  log.warn('DEPRECATED: getMemoryAuditLogs() - memory stores removed, use DB queries');
   return new Map();
 }
 

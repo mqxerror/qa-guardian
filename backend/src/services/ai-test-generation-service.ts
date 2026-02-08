@@ -15,6 +15,10 @@
 import { handlers as aiGenerationHandlers } from '../mcp/handlers/ai-generation.js';
 import { handlers as aiAnalysisHandlers } from '../mcp/handlers/ai-analysis.js';
 import { HandlerContext } from '../mcp/handlers/types.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from './logger.js';
+
+const log = createLogger('ai-test-generation-service');
 
 // =============================================================================
 // Types
@@ -180,15 +184,15 @@ function createHandlerContext(apiKey?: string): HandlerContext {
     callApi: async (endpoint: string, options?: { method?: string; body?: Record<string, unknown> }) => {
       // For REST API usage, we don't need to call the API again
       // The handlers work directly with AI providers
-      console.log(`[AI Service] API call to ${endpoint} (not needed for direct handler invocation)`);
+      log.debug({ endpoint }, 'API call (not needed for direct handler invocation)');
       return {};
     },
     callApiPublic: async (endpoint: string) => {
-      console.log(`[AI Service] Public API call to ${endpoint}`);
+      log.debug({ endpoint }, 'Public API call');
       return {};
     },
     log: (message: string) => {
-      console.log(`[AI Service] ${message}`);
+      log.debug(message);
     },
     apiKey,
     apiUrl: process.env.API_URL || 'http://localhost:3001',

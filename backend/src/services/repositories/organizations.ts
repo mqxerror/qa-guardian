@@ -791,7 +791,7 @@ export async function seedDefaultOrganizations(): Promise<void> {
     for (const member of defaultMembersToAdd) {
       if (!defaultMemberIds.has(member.user_id)) {
         await addOrganizationMember(member);
-        console.log(`[Org Repo] Added missing member ${member.user_id} to Default Organization`);
+        logger.info({ userId: member.user_id }, 'Added missing member to Default Organization');
       }
     }
 
@@ -807,7 +807,7 @@ export async function seedDefaultOrganizations(): Promise<void> {
     for (const member of otherMembersToAdd) {
       if (!otherMemberIds.has(member.user_id)) {
         await addOrganizationMember(member);
-        console.log(`[Org Repo] Added missing member ${member.user_id} to Other Organization`);
+        logger.info({ userId: member.user_id }, 'Added missing member to Other Organization');
       }
     }
   } catch (error) {

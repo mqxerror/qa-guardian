@@ -10,6 +10,10 @@
  */
 
 import { ToolHandler, HandlerContext, HandlerRegistry } from './types.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../../services/logger.js';
+const log = createLogger('mcp:handlers');
+
 import { projectHandlers } from './projects.js';
 import { testSuiteHandlers } from './test-suites.js';
 import { testExecutionHandlers } from './test-execution.js';
@@ -113,7 +117,7 @@ function buildHandlerRegistry(): HandlerRegistry {
   for (const module of modules) {
     for (const [name, handler] of Object.entries(module.handlers)) {
       if (registry.has(name)) {
-        console.warn(`[Handlers] Duplicate handler for tool '${name}', overwriting`);
+        log.warn({ toolName: name }, 'Duplicate handler for tool, overwriting');
       }
       registry.set(name, handler);
     }
@@ -199,4 +203,4 @@ export const HANDLER_STATS = {
   },
 };
 
-console.log(`[Handlers] Loaded ${HANDLER_REGISTRY.size} tool handlers`);
+log.info({ count: HANDLER_REGISTRY.size }, 'Loaded tool handlers');

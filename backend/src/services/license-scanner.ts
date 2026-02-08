@@ -12,6 +12,10 @@
 
 import licenseChecker from 'license-checker';
 import { promisify } from 'util';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from './logger.js';
+
+const log = createLogger('license-scanner');
 
 // ============================================================================
 // Types
@@ -315,7 +319,7 @@ export async function scanLicenses(projectPath: string): Promise<LicenseInfo[]> 
 
     return licenses;
   } catch (error) {
-    console.error('[LicenseScanner] Error scanning licenses:', error);
+    log.error({ error }, 'Error scanning licenses');
     throw error;
   }
 }

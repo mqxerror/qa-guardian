@@ -7,6 +7,10 @@
 
 import { randomUUID, randomBytes } from 'node:crypto';
 import dns from 'node:dns/promises'; // Feature #391: DNS resolution for SSRF protection
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../services/logger.js';
+
+const log = createLogger('utils');
 
 // ============================================
 // ID Generation Utilities
@@ -584,7 +588,7 @@ export function createAPIError(
  */
 export function logError(context: string, message: string, error?: unknown): void {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  console.error(`[${context}] ${message}${error ? `: ${errorMessage}` : ''}`);
+  log.error({ context, error: errorMessage }, message);
 }
 
 // ============================================
@@ -958,7 +962,7 @@ export async function validateWebhookURLWithDNS(
       };
     }
     // In development, allow DNS resolution failures (hostname might be external but DNS unavailable)
-    console.warn(`[SSRF] DNS resolution failed for ${hostname}, allowing in non-production mode`);
+    log.warn({ hostname }, 'SSRF: DNS resolution failed, allowing in non-production mode');
     return urlValidation;
   }
 }

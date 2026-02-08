@@ -19,6 +19,10 @@
 import { query, isDatabaseConnected } from '../database.js';
 import { AIGeneratedTest, ApprovalStatus, ApprovalInfo } from '../../routes/ai-test-generator/types.js';
 import { generateId } from '../../utils/index.js';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from '../logger.js';
+
+const log = createLogger('repo:ai-test-generator');
 
 // ============================================
 // Column Constants for SELECT queries
@@ -39,37 +43,37 @@ const AI_GENERATED_TEST_COLUMNS = `
 
 /** @deprecated Feature #2109 - memory stores removed. Returns empty Map. Use async DB functions instead. */
 export function getMemoryAiGeneratedTests(): Map<string, AIGeneratedTest> {
-  console.warn('DEPRECATED: getMemoryAiGeneratedTests() - in-memory stores removed in Feature #2109. Use async DB functions.');
+  log.warn('DEPRECATED: getMemoryAiGeneratedTests() - in-memory stores removed, use async DB functions');
   return new Map();
 }
 
 /** @deprecated Feature #2109 - memory stores removed. Returns empty Map. Use async DB functions instead. */
 export function getMemoryTestsByUser(): Map<string, Set<string>> {
-  console.warn('DEPRECATED: getMemoryTestsByUser() - in-memory stores removed in Feature #2109. Use async DB functions.');
+  log.warn('DEPRECATED: getMemoryTestsByUser() - in-memory stores removed, use async DB functions');
   return new Map();
 }
 
 /** @deprecated Feature #2109 - memory stores removed. Returns empty Map. Use async DB functions instead. */
 export function getMemoryTestsByOrganization(): Map<string, Set<string>> {
-  console.warn('DEPRECATED: getMemoryTestsByOrganization() - in-memory stores removed in Feature #2109. Use async DB functions.');
+  log.warn('DEPRECATED: getMemoryTestsByOrganization() - in-memory stores removed, use async DB functions');
   return new Map();
 }
 
 /** @deprecated Feature #2109 - memory stores removed. Returns empty Map. Use async DB functions instead. */
 export function getMemoryTestsByProject(): Map<string, Set<string>> {
-  console.warn('DEPRECATED: getMemoryTestsByProject() - in-memory stores removed in Feature #2109. Use async DB functions.');
+  log.warn('DEPRECATED: getMemoryTestsByProject() - in-memory stores removed, use async DB functions');
   return new Map();
 }
 
 /** @deprecated Feature #2109 - memory stores removed. Returns empty Map. Use async DB functions instead. */
 export function getMemoryVersionChains(): Map<string, string[]> {
-  console.warn('DEPRECATED: getMemoryVersionChains() - in-memory stores removed in Feature #2109. Use async DB functions.');
+  log.warn('DEPRECATED: getMemoryVersionChains() - in-memory stores removed, use async DB functions');
   return new Map();
 }
 
 /** @deprecated Feature #2109 - memory stores removed. Returns empty Map. Use async DB functions instead. */
 export function getMemoryTestsByApprovalStatus(): Map<ApprovalStatus, Set<string>> {
-  console.warn('DEPRECATED: getMemoryTestsByApprovalStatus() - in-memory stores removed in Feature #2109. Use async DB functions.');
+  log.warn('DEPRECATED: getMemoryTestsByApprovalStatus() - in-memory stores removed, use async DB functions');
   return new Map();
 }
 

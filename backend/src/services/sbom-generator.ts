@@ -14,6 +14,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { Client as MinioClient } from 'minio';
+// Feature #449: Use structured logger instead of console.*
+import { createLogger } from './logger.js';
+
+const log = createLogger('sbom-generator');
 
 // Feature #373: Use execFile instead of exec to prevent command injection
 const execFileAsync = promisify(execFile);
@@ -172,7 +176,7 @@ function getMinioClient(): MinioClient | null {
   const secretKey = process.env.STORAGE_SECRET_KEY;
 
   if (!endpoint || !accessKey || !secretKey) {
-    console.log('[SBOM] MinIO not configured - using local storage fallback');
+    log.info('MinIO not configured - using local storage fallback');
     return null;
   }
 
@@ -184,10 +188,10 @@ function getMinioClient(): MinioClient | null {
       accessKey,
       secretKey,
     });
-    console.log('[SBOM] MinIO client initialized');
+    log.info('MinIO client initialized');
     return minioClient;
   } catch (error) {
-    console.error('[SBOM] Failed to initialize MinIO client:', error);
+    log.error({ error }, 'Failed to initialize MinIO client');
     return null;
   }
 }
@@ -200,11 +204,11 @@ async function ensureBucketExists(): Promise<boolean> {
     const exists = await client.bucketExists(SBOM_BUCKET);
     if (!exists) {
       await client.makeBucket(SBOM_BUCKET, 'us-east-1');
-      console.log(`[SBOM] Created bucket: ${SBOM_BUCKET}`);
+      log.info({ bucket: SBOM_BUCKET }, 'Created bucket');
     }
     return true;
   } catch (error) {
-    console.error('[SBOM] Failed to ensure bucket exists:', error);
+    log.error({ error }, 'Failed to ensure bucket exists');
     return false;
   }
 }
@@ -289,7 +293,7 @@ async function generateCycloneDxFromNpm(projectPath: string, includeDevDeps: boo
     }
 
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[SBOM] CycloneDX generation failed:', errorMessage);
+    log.error({ error: errorMessage }, 'CycloneDX generation failed');
 
     // Fall back to reading package.json directly
     return await generateCycloneDxFromPackageJson(projectPath, includeDevDeps);
@@ -469,10 +473,10 @@ async function storeSbomInMinio(sbomId: string, content: string, filename: strin
     await client.putObject(SBOM_BUCKET, key, buffer, buffer.length, {
       'Content-Type': 'application/json',
     });
-    console.log(`[SBOM] Stored in MinIO: ${SBOM_BUCKET}/${key}`);
+    log.debug({ bucket: SBOM_BUCKET, key }, 'Stored in MinIO');
     return { bucket: SBOM_BUCKET, key };
   } catch (error) {
-    console.error('[SBOM] Failed to store in MinIO:', error);
+    log.error({ error }, 'Failed to store in MinIO');
     return null;
   }
 }
@@ -486,17 +490,17 @@ function storeSbomLocally(sbomId: string, content: string, filename: string): st
     }
     const filePath = path.join(sbomDir, filename);
     fs.writeFileSync(filePath, content, 'utf-8');
-    console.log(`[SBOM] Stored locally: ${filePath}`);
+    log.debug({ filePath }, 'Stored locally');
     return filePath;
   } catch (error) {
-    console.error('[SBOM] Failed to store locally:', error);
+    log.error({ error }, 'Failed to store locally');
     return null;
   }
 }
 
 function storeSbomInMemory(sbomId: string, content: string, metadata: StoredSbom): void {
   inMemorySbomStore.set(sbomId, { content, metadata });
-  console.log(`[SBOM] Stored in memory: ${sbomId}`);
+  log.debug({ sbomId }, 'Stored in memory');
 }
 
 // ============================================================================
@@ -532,7 +536,7 @@ export async function retrieveSbom(sbomId: string): Promise<{ content: string; m
         const content = Buffer.concat(chunks).toString('utf-8');
         return { content, metadata };
       } catch (error) {
-        console.error('[SBOM] Failed to retrieve from MinIO:', error);
+        log.error({ error }, 'Failed to retrieve from MinIO');
       }
     }
   }
@@ -563,7 +567,7 @@ export async function generateSbom(options: GenerateSbomOptions): Promise<SbomGe
   const generatedAt = new Date().toISOString();
 
   // Generate CycloneDX SBOM
-  console.log(`[SBOM] Generating CycloneDX for project: ${projectName}`);
+  log.info({ projectName }, 'Generating CycloneDX');
   const cycloneDxSbom = await generateCycloneDxFromNpm(projectPath, includeDevDeps);
 
   // Convert to SPDX if requested
