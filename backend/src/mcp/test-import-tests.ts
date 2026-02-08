@@ -3,7 +3,16 @@
  * Tests that the AI agent can import tests from JSON into a test suite
  */
 
-const API_KEY = 'qg_WkD3tC5PnE7bcJ_j_Jl__M9W1cqxQJ9pTh1_qQIXZ44';
+// Use environment variable for API key - never hardcode secrets
+function getApiKey(): string {
+  const key = process.env.QA_GUARDIAN_API_KEY || process.env.MCP_API_KEY;
+  if (!key) {
+    console.error('Error: API key not set. Please set QA_GUARDIAN_API_KEY or MCP_API_KEY environment variable.');
+    process.exit(1);
+  }
+  return key;
+}
+const API_KEY = getApiKey();
 const SUITE_ID = '1768524229496';
 const MCP_URL = 'http://localhost:3458';
 

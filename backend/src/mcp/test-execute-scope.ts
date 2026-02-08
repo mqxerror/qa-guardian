@@ -8,7 +8,16 @@
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 
-const MCP_EXECUTE_API_KEY = process.argv[2] || 'qg_pGpPuulQ79BtRD0gb99-BBiO-DwcvoDfb4P-xEo33rs';
+// Accept API key via command line or environment variable - never hardcode secrets
+function getApiKey(): string {
+  const key = process.argv[2] || process.env.MCP_EXECUTE_API_KEY || process.env.QA_GUARDIAN_API_KEY;
+  if (!key) {
+    console.error('Error: API key not set. Provide via argument or set MCP_EXECUTE_API_KEY/QA_GUARDIAN_API_KEY environment variable.');
+    process.exit(1);
+  }
+  return key;
+}
+const MCP_EXECUTE_API_KEY = getApiKey();
 const serverPath = path.join(__dirname, 'index.ts');
 
 interface MCPResponse {

@@ -1,4 +1,13 @@
-const API_KEY = 'qg_8yMJN_odoNAvwNUtJXyHMs9vcSLtfSG-ADdvSTKwP1w';
+// Use environment variable for API key - never hardcode secrets
+function getApiKey(): string {
+  const key = process.env.QA_GUARDIAN_API_KEY || process.env.MCP_API_KEY;
+  if (!key) {
+    console.error('Error: API key not set. Please set QA_GUARDIAN_API_KEY or MCP_API_KEY environment variable.');
+    process.exit(1);
+  }
+  return key;
+}
+const API_KEY = getApiKey();
 const SUITE_ID = '1768526840773';
 const MCP_URL = 'http://localhost:3458';
 

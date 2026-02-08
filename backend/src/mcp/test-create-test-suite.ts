@@ -6,7 +6,16 @@
 
 import * as http from 'http';
 
-const API_KEY = 'qg_iSdVmM4fDC5n5G9Wgbq6PaWaTMUuoq8WE0jPJL8RIzs';
+// Use environment variable for API key - never hardcode secrets
+function getApiKey(): string {
+  const key = process.env.QA_GUARDIAN_API_KEY || process.env.MCP_API_KEY;
+  if (!key) {
+    console.error('Error: API key not set. Please set QA_GUARDIAN_API_KEY or MCP_API_KEY environment variable.');
+    process.exit(1);
+  }
+  return key;
+}
+const API_KEY = getApiKey();
 const PROJECT_ID = '1768523199997';
 const MCP_PORT = 3002;
 
