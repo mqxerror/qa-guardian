@@ -16,6 +16,33 @@ import { URL } from 'url';
 import { chromium, Browser, Page } from 'playwright';
 import { getWebSocketIO } from './websocket-events.js';
 import { aiService } from './ai-service.js';
+import { isPrivateIP, validateURLForSSRF } from '../utils/index.js';
+
+// Feature #433: SSRF protection - check if resolved IPs are private
+function validateResolvedIPs(addresses: string[]): { safe: boolean; error?: string } {
+  for (const ip of addresses) {
+    const result = isPrivateIP(ip);
+    if (result.isPrivate) {
+      return {
+        safe: false,
+        error: `DNS resolved to private IP address (${ip}${result.details ? ': ' + result.details : ''})`
+      };
+    }
+  }
+  return { safe: true };
+}
+
+// Feature #433: SSRF protection - validate redirect URLs
+function validateRedirectURL(redirectUrl: string, isProduction: boolean): { safe: boolean; error?: string } {
+  const validation = validateURLForSSRF(redirectUrl, {
+    requireHttps: false,
+    allowLocalhost: !isProduction,
+  });
+  if (!validation.safe) {
+    return { safe: false, error: `Redirect to blocked URL: ${validation.error}` };
+  }
+  return { safe: true };
+}
 
 // ============================================================
 // Types
@@ -204,10 +231,25 @@ async function runHealthCheck(url: string): Promise<HealthCheckResult> {
 
   const totalStart = Date.now();
 
-  // DNS Resolution
+  // DNS Resolution with SSRF protection (Feature #433)
   const dnsStart = Date.now();
+  const isProduction = process.env.NODE_ENV === 'production';
   try {
     const addresses = await dns.promises.resolve4(hostname);
+
+    // Feature #433: Validate resolved IPs are not private/internal
+    const ipValidation = validateResolvedIPs(addresses);
+    if (!ipValidation.safe) {
+      result.dns = {
+        resolved: false,
+        error: ipValidation.error || 'DNS resolved to private IP address',
+        durationMs: Date.now() - dnsStart,
+      };
+      // Stop further processing - this is an SSRF attempt
+      result.totalDurationMs = Date.now() - totalStart;
+      throw new Error(ipValidation.error || 'SSRF protection: DNS resolved to private IP');
+    }
+
     result.dns = {
       resolved: true,
       addresses,
@@ -219,6 +261,10 @@ async function runHealthCheck(url: string): Promise<HealthCheckResult> {
       error: err instanceof Error ? err.message : 'DNS resolution failed',
       durationMs: Date.now() - dnsStart,
     };
+    // If DNS validation failed due to private IP, re-throw to stop processing
+    if (err instanceof Error && err.message.includes('SSRF protection')) {
+      throw err;
+    }
   }
 
   // SSL Certificate Check (if HTTPS)
@@ -284,6 +330,14 @@ async function runHealthCheck(url: string): Promise<HealthCheckResult> {
 
           if (statusCode >= 300 && statusCode < 400 && res.headers.location) {
             const newUrl = new URL(res.headers.location, requestUrl).toString();
+
+            // Feature #433: SSRF protection - validate redirect URLs
+            const redirectValidation = validateRedirectURL(newUrl, isProduction);
+            if (!redirectValidation.safe) {
+              reject(new Error(redirectValidation.error || 'Redirect to blocked URL'));
+              return;
+            }
+
             redirects.push({
               from: currentUrl,
               to: newUrl,

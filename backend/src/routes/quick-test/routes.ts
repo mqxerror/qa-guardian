@@ -16,6 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { authenticate, requireScopes, getOrganizationId, type JwtPayload } from '../../middleware/auth.js';
 import { runQuickTest, getQuickTestResult } from '../../services/quick-test-runner.js';
 import { logAuditEntry } from '../audit-logs.js';
+import { validateURLForSSRF } from '../../utils/index.js';
 
 // Request body type
 interface QuickTestBody {
@@ -89,19 +90,18 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
         });
       }
 
-      // Validate URL format
-      try {
-        const parsedUrl = new URL(url);
-        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: 'URL must use http or https protocol',
-          });
-        }
-      } catch {
+      // Feature #433: SSRF protection - validate URL before any HTTP request
+      // This prevents scanning of internal infrastructure via private IPs
+      const isProduction = process.env.NODE_ENV === 'production';
+      const ssrfValidation = validateURLForSSRF(url, {
+        requireHttps: false,  // Allow HTTP for testing purposes
+        allowLocalhost: !isProduction,  // Block localhost in production
+      });
+
+      if (!ssrfValidation.safe) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: 'Invalid URL format',
+          message: ssrfValidation.error || 'URL is not allowed for security reasons',
         });
       }
 
