@@ -122,8 +122,33 @@ const ACCESS_TOKEN_EXPIRY_SECONDS = 60 * 60; // 1 hour in seconds
 const REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
 const REFRESH_TOKEN_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 days in seconds
 
-// Get refresh token secret (fallback to JWT_SECRET in dev)
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'dev-refresh-secret';
+// Feature #438: SECURITY FIX - No hardcoded secret fallback
+// Refresh token secret MUST be set via environment variable
+function getRefreshSecret(): string {
+  const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    // Fail at startup, not at request time - this is a fatal configuration error
+    throw new Error(
+      'SECURITY ERROR: JWT_REFRESH_SECRET or JWT_SECRET environment variable is required. ' +
+      'Never use hardcoded secrets in production. Set these in your .env file.'
+    );
+  }
+  return secret;
+}
+const REFRESH_SECRET = getRefreshSecret();
+
+/**
+ * Feature #438: Typed refresh token payload interface
+ * Replaces unsafe 'any' type for better type safety
+ */
+interface RefreshTokenPayload {
+  id: string;           // User ID
+  email: string;        // User email
+  organization_id: string;  // Organization ID
+  type: 'refresh';      // Token type discriminator
+  iat?: number;         // Issued at (added by fast-jwt)
+  exp?: number;         // Expiration (added by fast-jwt)
+}
 
 // Create signer and verifier for refresh tokens
 const signRefreshToken = createSigner({ key: REFRESH_SECRET, expiresIn: REFRESH_TOKEN_EXPIRY });
@@ -529,9 +554,10 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     // Step 1: Verify and decode the JWT signature first (fast, no DB)
-    let payload: any;
+    // Feature #438: Use typed payload instead of 'any' for type safety
+    let payload: RefreshTokenPayload;
     try {
-      payload = verifyRefreshToken(refresh_token);
+      payload = verifyRefreshToken(refresh_token) as RefreshTokenPayload;
     } catch (err) {
       return reply.status(401).send({
         error: 'Unauthorized',
