@@ -8,14 +8,15 @@
  * Storage: MinIO when available, local filesystem fallback.
  */
 
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { Client as MinioClient } from 'minio';
 
-const execAsync = promisify(exec);
+// Feature #373: Use execFile instead of exec to prevent command injection
+const execFileAsync = promisify(execFile);
 
 // ============================================================================
 // Types
@@ -254,12 +255,19 @@ async function generateCycloneDxFromNpm(projectPath: string, includeDevDeps: boo
   const outputPath = path.join('/tmp', `sbom-${Date.now()}.json`);
 
   try {
-    // Build the cyclonedx-npm command
-    const devFlag = includeDevDeps ? '' : '--omit dev';
-    const command = `npx @cyclonedx/cyclonedx-npm --output-file "${outputPath}" --spec-version 1.5 ${devFlag}`.trim();
+    // Feature #373: Use execFile with argument array to prevent command injection
+    // Build the cyclonedx-npm arguments
+    const args = [
+      '@cyclonedx/cyclonedx-npm',
+      '--output-file', outputPath,
+      '--spec-version', '1.5',
+    ];
+    if (!includeDevDeps) {
+      args.push('--omit', 'dev');
+    }
 
-    // Execute in the project directory
-    await execAsync(command, {
+    // Execute in the project directory using execFile (not exec) for security
+    await execFileAsync('npx', args, {
       cwd: projectPath,
       timeout: 60000, // 60 second timeout
       maxBuffer: 50 * 1024 * 1024, // 50MB buffer for large projects
