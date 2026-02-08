@@ -44,17 +44,14 @@ export {
   MCPTeamInsightsIcon,
   TechnicalDebtIcon,
   OrgInsightsIcon,
-  BestPracticesIcon,
-  IndustryBenchmarkIcon,
+  // Feature #453: BestPracticesIcon, IndustryBenchmarkIcon removed (orphaned)
   TestDocumentationIcon,
   TestingGroupIcon,
   TestSuitesIcon,
   TestResultsIcon,
   RunHistoryIcon,
   ReleaseNotesIcon,
-  PersonalizedInsightsIcon,
-  TeamSkillsIcon,
-  AILearningIcon,
+  // Feature #453: PersonalizedInsightsIcon, TeamSkillsIcon, AILearningIcon removed (orphaned)
 } from './SidebarIcons';
 
 // Components

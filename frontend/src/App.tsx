@@ -873,33 +873,14 @@ function App() {
 // ./pages/SecurityDashboardPage.tsx (~1120 lines)
 
 
-// Feature #1244: OrganizationInsightsPage EXTRACTED to ./pages/OrganizationInsightsPage.tsx (~390 lines)
-// Types moved: CrossProjectPattern, CrossProjectSolution, ProjectFailureInsight
+// Feature #453: Removed stale EXTRACTED comments for pages deleted in Feature #411:
+// - OrganizationInsightsPage, BestPracticesPage, IndustryBenchmarkPage
+// - PersonalizedInsightsPage, TeamSkillGapsPage, AILearningPage
 
-
-// Feature #1245: BestPracticesPage EXTRACTED to ./pages/BestPracticesPage.tsx (~415 lines)
-// Types moved: ProjectMetrics, BestPractice, PracticeRecommendation
-
-// Feature #1350: TestImprovementAnalyzerPage EXTRACTED to ./pages/TestImprovementAnalyzerPage.tsx (~400 lines)
-// Types moved: TestImprovementAnalysis
-
-// Feature #1246: IndustryBenchmarkPage EXTRACTED to ./pages/IndustryBenchmarkPage.tsx (~580 lines)
-// Types moved: IndustryBenchmark, IndustryPercentile, GapAnalysis
-
-// Feature #1255: ReleaseNotesPage EXTRACTED to ./pages/ReleaseNotesPage.tsx (~620 lines)
-// Types moved: Release, TestDelta, GeneratedReleaseNotes
-
-// Feature #1259: PersonalizedInsightsPage EXTRACTED to ./pages/PersonalizedInsightsPage.tsx (~410 lines)
-// Types moved: PersonalizedInsight
-
-
-// TestDocumentationPage extracted to ./pages/TestDocumentationPage.tsx (Feature #1253, #1254)
-// Types moved: TestSuiteForDocs, GeneratedDocumentation, DocumentVersion, TestModification
-
-// TeamSkillGapsPage extracted to ./pages/TeamSkillGapsPage.tsx (Feature #1260, #1261)
-
-
-// AILearningPage extracted to ./pages/AILearningPage.tsx (Feature #1262, #1264)
+// Active extracted pages:
+// - TestImprovementAnalyzerPage extracted to ./pages/TestImprovementAnalyzerPage.tsx
+// - ReleaseNotesPage extracted to ./pages/ReleaseNotesPage.tsx
+// - TestDocumentationPage extracted to ./pages/TestDocumentationPage.tsx
 
 // Feature #1100: FlakyTestsDashboardPage extracted to ./pages/FlakyTestsDashboardPage.tsx (~1575 lines)
 // Feature #1441: Split App.tsx into logical modules
@@ -947,11 +928,9 @@ function App() {
 
 // Feature #1233: MCPPlaygroundPage extracted to ./pages/MCPPlaygroundPage.tsx (~430 lines)
 
-// Feature #1265: MCPChatPage extracted to ./pages/MCPChatPage.tsx (~306 lines)
-
-// Feature #1268: AIRunComparisonPage extracted to ./pages/AIRunComparisonPage.tsx (~445 lines)
-
-// Feature #1234: MCPAnalyticsPage extracted to ./pages/MCPAnalyticsPage.tsx (~390 lines)
+// Feature #1265: MCPChatPage extracted to ./pages/MCPChatPage.tsx
+// Feature #453: AIRunComparisonPage comment removed (page deleted in Feature #411)
+// Feature #1234: MCPAnalyticsPage extracted to ./pages/MCPAnalyticsPage.tsx
 
 // OrganizationMembersPage extracted to ./pages/OrganizationMembersPage.tsx (Feature #1357)
 

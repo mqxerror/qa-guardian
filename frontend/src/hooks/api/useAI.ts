@@ -7,7 +7,6 @@
  * - AITestReviewPage: review queue, approval stats
  * - AIUsageAnalyticsDashboard: usage analytics
  * - AICostTrackingPage: cost tracking
- * Feature #411: AILearningPage removed - hooks kept for potential future use
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -62,13 +61,6 @@ export interface CostSummary {
   cost_by_provider: Record<string, number>;
 }
 
-// Types for AI Learning
-export interface LearningStats {
-  patterns_learned: number;
-  accuracy: number;
-  recent_improvements: string[];
-}
-
 // API helper
 const fetchWithAuth = async (url: string, token: string | null, options?: RequestInit) => {
   if (!token) throw new Error('Not authenticated');
@@ -110,8 +102,6 @@ export const aiKeys = {
   pricing: () => [...aiKeys.all, 'pricing'] as const,
   costByUser: (period: string) => [...aiKeys.all, 'costByUser', period] as const,
   costByProject: (period: string) => [...aiKeys.all, 'costByProject', period] as const,
-  // Learning
-  learningStats: () => [...aiKeys.all, 'learningStats'] as const,
 };
 
 // ============== AI Test Generator Hooks ==============
@@ -362,23 +352,6 @@ export function useUpdateBudget() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: aiKeys.budget() });
     },
-  });
-}
-
-// ============== AI Learning Hooks ==============
-
-/**
- * Hook to fetch learning stats
- */
-export function useLearningStats() {
-  const token = useAuthStore(state => state.token);
-
-  return useQuery({
-    queryKey: aiKeys.learningStats(),
-    queryFn: () => fetchWithAuth('/api/v1/ai-insights/learning-stats', token) as Promise<LearningStats>,
-    enabled: !!token,
-    staleTime: 5 * 60 * 1000, // 5 minutes - learning stats don't change often
-    gcTime: 2 * 5 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
 }
 
