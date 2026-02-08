@@ -636,6 +636,18 @@ async function start() {
         console.log(`[Socket.IO] Client ${socket.id} left run:${runId}`);
       });
 
+      // Feature #426: Join quick test room for real-time wave updates
+      socket.on('join-quick-test', (runId: string) => {
+        socket.join(`quick-test:${runId}`);
+        console.log(`[Socket.IO] Client ${socket.id} joined quick-test:${runId}`);
+      });
+
+      // Feature #426: Leave quick test room
+      socket.on('leave-quick-test', (runId: string) => {
+        socket.leave(`quick-test:${runId}`);
+        console.log(`[Socket.IO] Client ${socket.id} left quick-test:${runId}`);
+      });
+
       // Feature #167: Heartbeat ping/pong for connection health monitoring
       socket.on('ping', () => {
         socket.emit('pong');

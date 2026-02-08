@@ -25,3 +25,11 @@ export {
   type UseVisualTestStateParams,
   type UseVisualTestStateReturn,
 } from './useVisualTestState';
+
+export {
+  useQuickTestSocket,
+  type WaveStep,
+  type WaveState,
+  type QuickTestSummary,
+  type QuickTestState,
+} from './useQuickTestSocket';
