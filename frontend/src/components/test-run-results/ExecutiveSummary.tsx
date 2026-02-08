@@ -34,7 +34,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Health Score */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+        <div className="bg-card rounded-lg p-4 shadow-sm">
           <div className="text-sm text-muted-foreground mb-2">Health Score</div>
           <div className="flex items-center gap-3">
             <div className={`text-4xl font-bold ${
@@ -46,10 +46,10 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
               <div className="text-lg text-muted-foreground">/100</div>
             )}
           </div>
-          <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
-                resultSummary.total === 0 ? 'bg-gray-400' : getHealthScoreBarClass(healthScore)
+                resultSummary.total === 0 ? 'bg-muted-foreground/50' : getHealthScoreBarClass(healthScore)
               }`}
               style={{ width: resultSummary.total === 0 ? '0%' : `${healthScore}%` }}
             />
@@ -57,7 +57,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
         </div>
 
         {/* Pass Rate */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+        <div className="bg-card rounded-lg p-4 shadow-sm">
           <div className="text-sm text-muted-foreground mb-2">Pass Rate</div>
           <div className="flex items-baseline gap-2">
             <span className={`text-4xl font-bold ${
@@ -91,7 +91,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
         </div>
 
         {/* Critical Issues */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+        <div className="bg-card rounded-lg p-4 shadow-sm">
           <div className="text-sm text-muted-foreground mb-2">Critical Issues</div>
           <div className="flex items-baseline gap-2">
             <span className={`text-4xl font-bold ${
