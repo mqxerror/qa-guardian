@@ -375,10 +375,10 @@ export default function SharedTestRunPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent" />
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading shared results...</p>
+          <p className="mt-4 text-muted-foreground">Loading shared results...</p>
         </div>
       </div>
     );
@@ -387,8 +387,8 @@ export default function SharedTestRunPage() {
   // Feature #2004: Password prompt
   if (requiresPassword) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 max-w-md w-full mx-4">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card rounded-xl shadow-lg border border-border p-8 max-w-md w-full mx-4">
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -409,7 +409,7 @@ export default function SharedTestRunPage() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 placeholder="Enter password"
                 required
                 autoFocus
@@ -465,8 +465,8 @@ export default function SharedTestRunPage() {
     });
 
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 max-w-lg w-full text-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card rounded-xl shadow-lg border border-border p-8 max-w-lg w-full text-center">
           {/* Expired Icon */}
           <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
             <svg className="w-10 h-10 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -485,7 +485,7 @@ export default function SharedTestRunPage() {
           </p>
 
           {/* Expiration Details Card */}
-          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
+          <div className="bg-muted rounded-lg p-4 mb-6">
             <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -536,7 +536,7 @@ export default function SharedTestRunPage() {
             </div>
 
             {/* Option 2: Sign In */}
-            <div className="flex items-start gap-3 text-left p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-start gap-3 text-left p-3 bg-muted rounded-lg">
               <div className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                 <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
@@ -580,10 +580,10 @@ export default function SharedTestRunPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="text-6xl mb-4">🔗</div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Link Not Found</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Link Not Found</h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
           <Link
             to="/"
@@ -597,9 +597,9 @@ export default function SharedTestRunPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <header className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -621,7 +621,7 @@ export default function SharedTestRunPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Summary Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Test Run Results</h2>
@@ -640,7 +640,7 @@ export default function SharedTestRunPage() {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 text-center">
+            <div className="bg-muted rounded-lg p-4 text-center">
               <div className="text-3xl font-bold text-gray-900 dark:text-white">{stats.total}</div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Total Tests</div>
             </div>
@@ -692,7 +692,7 @@ export default function SharedTestRunPage() {
           {run?.results?.map((result) => (
             <div
               key={result.test_id}
-              className={`bg-white dark:bg-gray-800 rounded-lg border p-4 ${
+              className={`bg-card rounded-lg border p-4 ${
                 result.status === 'passed'
                   ? 'border-green-200 dark:border-green-800'
                   : 'border-red-200 dark:border-red-800'
@@ -773,7 +773,7 @@ export default function SharedTestRunPage() {
 
         {/* Feature #2006: Screenshots Gallery */}
         {galleryScreenshots.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mt-8">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6 mt-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

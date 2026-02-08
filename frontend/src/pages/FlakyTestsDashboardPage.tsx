@@ -555,7 +555,7 @@ Please provide:
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               {/* Enable/Disable Toggle */}
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-amber-200 dark:border-amber-700">
                 <label className="flex items-center gap-2 cursor-pointer flex-1">
                   <input
                     type="checkbox"
@@ -575,7 +575,7 @@ Please provide:
               </div>
 
               {/* Threshold Setting */}
-              <div className="p-3 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700">
+              <div className="p-3 rounded-lg bg-card border border-amber-200 dark:border-amber-700">
                 <label className="text-xs font-medium text-muted-foreground block mb-1">
                   Flakiness Threshold
                 </label>
@@ -596,7 +596,7 @@ Please provide:
               </div>
 
               {/* Minimum Runs Setting */}
-              <div className="p-3 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700">
+              <div className="p-3 rounded-lg bg-card border border-amber-200 dark:border-amber-700">
                 <label className="text-xs font-medium text-muted-foreground block mb-1">
                   Min Runs Required
                 </label>
@@ -612,7 +612,7 @@ Please provide:
               </div>
 
               {/* Notifications Toggle */}
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-amber-200 dark:border-amber-700">
                 <label className="flex items-center gap-2 cursor-pointer flex-1">
                   <input
                     type="checkbox"
@@ -694,7 +694,7 @@ Please provide:
             </p>
 
             {/* Enable/Disable Toggle */}
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 mb-4 w-fit">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-blue-200 dark:border-blue-700 mb-4 w-fit">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -770,7 +770,7 @@ Please provide:
 
             {/* Additional Settings */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="p-3 rounded-lg bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700">
+              <div className="p-3 rounded-lg bg-card border border-blue-200 dark:border-blue-700">
                 <label className="text-xs font-medium text-muted-foreground block mb-1">
                   Default Retries (for tests without flakiness data)
                 </label>
@@ -786,7 +786,7 @@ Please provide:
                 </select>
               </div>
 
-              <div className="p-3 rounded-lg bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700">
+              <div className="p-3 rounded-lg bg-card border border-blue-200 dark:border-blue-700">
                 <label className="text-xs font-medium text-muted-foreground block mb-1">
                   Maximum Retries Allowed
                 </label>
@@ -811,7 +811,7 @@ Please provide:
                 </h3>
                 <div className="grid grid-cols-3 gap-2 text-center">
                   {retryStrategyPreview.by_rule.map((rule, idx) => (
-                    <div key={idx} className="p-2 rounded bg-white dark:bg-gray-800">
+                    <div key={idx} className="p-2 rounded bg-card">
                       <div className="text-lg font-bold text-blue-600">{rule.test_count}</div>
                       <div className="text-xs text-muted-foreground">{rule.range}</div>
                       <div className="text-xs text-blue-500">{rule.retries} {rule.retries === 1 ? 'retry' : 'retries'}</div>
