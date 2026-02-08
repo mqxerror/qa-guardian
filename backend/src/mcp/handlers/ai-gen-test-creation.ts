@@ -102,6 +102,7 @@ export const generateTestFromDescription: ToolHandler = async (args, context) =>
     let inputTokens = 0;
     let outputTokens = 0;
     let confidenceScore = 0.85;
+    // eslint-disable-next-line prefer-const
     let suggestedVariations: string[] = [];
     let usedRealAi = false;
 
@@ -389,6 +390,7 @@ export const generateTest: ToolHandler = async (args, context) => {
     let testCode = '';
     let testSteps: string[] = [];
     let confidenceScore = 0.85;
+    // eslint-disable-next-line prefer-const
     let suggestedVariations: string[] = [];
     let aiProvider = 'template';
     let aiModel = 'rule-based';
