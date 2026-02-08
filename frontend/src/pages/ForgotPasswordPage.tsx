@@ -59,9 +59,9 @@ export function ForgotPasswordPage() {
                 initial={prefersReducedMotion ? {} : { scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20"
+                className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-success/20"
               >
-                <CheckCircle className="h-8 w-8 text-green-400" />
+                <CheckCircle className="h-8 w-8 text-success" />
               </motion.div>
               <motion.h2
                 initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
@@ -83,7 +83,7 @@ export function ForgotPasswordPage() {
                 initial={prefersReducedMotion ? {} : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-400"
+                className="mt-4 rounded-lg border border-warning/20 bg-warning/10 p-3 text-sm text-warning"
               >
                 <strong>Development Mode:</strong> Check the backend console for the reset link.
               </motion.p>
@@ -94,7 +94,7 @@ export function ForgotPasswordPage() {
               >
                 <Link
                   to="/login"
-                  className="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3 font-medium text-white transition-all hover:from-blue-500 hover:to-blue-400"
+                  className="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary px-6 py-3 font-medium text-white transition-all hover:from-primary hover:to-primary/80"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Back to Login
@@ -126,9 +126,9 @@ export function ForgotPasswordPage() {
               initial={prefersReducedMotion ? {} : { scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
-              className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/20"
+              className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/20"
             >
-              <Mail className="h-6 w-6 text-blue-400" />
+              <Mail className="h-6 w-6 text-primary" />
             </motion.div>
             <motion.h2
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
@@ -155,7 +155,7 @@ export function ForgotPasswordPage() {
                 initial={prefersReducedMotion ? {} : { opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 role="alert"
-                className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
+                className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
               >
                 {error}
               </motion.div>
@@ -188,7 +188,7 @@ export function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 font-medium text-white transition-all hover:from-blue-500 hover:to-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:cursor-not-allowed disabled:opacity-50"
+                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary px-4 py-3 font-medium text-white transition-all hover:from-primary hover:to-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isLoading ? (
@@ -215,7 +215,7 @@ export function ForgotPasswordPage() {
             className="mt-6 text-center text-sm text-muted-foreground"
           >
             Remember your password?{' '}
-            <Link to="/login" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
+            <Link to="/login" className="text-primary hover:text-primary/70 transition-colors font-medium">
               Sign in
             </Link>
           </motion.div>

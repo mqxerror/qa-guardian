@@ -105,12 +105,12 @@ export function LighthouseResultsDisplay({
 }: LighthouseResultsDisplayProps) {
  if (lighthouse.unreachable) {
  return (
- <div className="mt-4 p-4 border border-amber-300 rounded-lg bg-amber-50">
+ <div className="mt-4 p-4 border border-warning/30 rounded-lg bg-warning/5">
  <div className="flex items-center gap-2">
- <span className="text-amber-600">🚫</span>
- <h4 className="text-sm font-semibold text-amber-700">URL Unreachable</h4>
+ <span className="text-warning">🚫</span>
+ <h4 className="text-sm font-semibold text-warning">URL Unreachable</h4>
  </div>
- <p className="mt-2 text-sm text-amber-600">
+ <p className="mt-2 text-sm text-warning">
  The target URL could not be reached for Lighthouse auditing.
  </p>
  </div>
@@ -119,10 +119,10 @@ export function LighthouseResultsDisplay({
 
  if (lighthouse.timedOut) {
  return (
- <div className="mt-4 p-4 border border-amber-300 rounded-lg bg-amber-50">
+ <div className="mt-4 p-4 border border-warning/30 rounded-lg bg-warning/5">
  <div className="flex items-center gap-2">
- <span className="text-amber-600">⏱️</span>
- <h4 className="text-sm font-semibold text-amber-700">Lighthouse Audit Timed Out</h4>
+ <span className="text-warning">⏱️</span>
+ <h4 className="text-sm font-semibold text-warning">Lighthouse Audit Timed Out</h4>
  </div>
  </div>
  );
@@ -130,10 +130,10 @@ export function LighthouseResultsDisplay({
 
  if (lighthouse.browserCrash) {
  return (
- <div className="mt-4 p-4 border border-red-300 rounded-lg bg-red-50">
+ <div className="mt-4 p-4 border border-destructive/30 rounded-lg bg-destructive/5">
  <div className="flex items-center gap-2">
- <span className="text-red-600">💥</span>
- <h4 className="text-sm font-semibold text-red-700">Browser Crashed During Audit</h4>
+ <span className="text-destructive">💥</span>
+ <h4 className="text-sm font-semibold text-destructive">Browser Crashed During Audit</h4>
  </div>
  </div>
  );
@@ -148,7 +148,7 @@ export function LighthouseResultsDisplay({
  <span className="text-lg">⚡</span>
  <h4 className="text-sm font-semibold text-foreground">Lighthouse Performance Audit</h4>
  {hasBothDevices && (
- <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+ <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
  📱 + 🖥️ Both Devices
  </span>
  )}
@@ -236,8 +236,8 @@ export function LighthouseResultsDisplay({
 
  {/* CSP Warning */}
  {lighthouse.csp?.blocksLighthouse && (
- <div className="mt-3 p-2 rounded bg-amber-50 border border-amber-200">
- <div className="flex items-center gap-2 text-sm text-amber-700">
+ <div className="mt-3 p-2 rounded bg-warning/5 border border-warning/20">
+ <div className="flex items-center gap-2 text-sm text-warning">
  <span>⚠️</span>
  <span>Content Security Policy may affect audit results</span>
  </div>
@@ -246,8 +246,8 @@ export function LighthouseResultsDisplay({
 
  {/* Authentication Warning */}
  {lighthouse.authenticationRequired && (
- <div className="mt-3 p-2 rounded bg-amber-50 border border-amber-200">
- <div className="flex items-center gap-2 text-sm text-amber-700">
+ <div className="mt-3 p-2 rounded bg-warning/5 border border-warning/20">
+ <div className="flex items-center gap-2 text-sm text-warning">
  <span>🔐</span>
  <span>Page requires authentication - some metrics may be affected</span>
  </div>

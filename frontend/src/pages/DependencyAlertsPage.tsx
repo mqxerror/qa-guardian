@@ -217,19 +217,19 @@ export function DependencyAlertsPage() {
  const getSeverityColor = (severity: string) => {
  switch (severity) {
  case 'CRITICAL': return 'text-purple-600 bg-purple-100';
- case 'HIGH': return 'text-red-600 bg-red-100';
- case 'MEDIUM': return 'text-amber-600 bg-amber-100';
- case 'LOW': return 'text-blue-600 bg-blue-100';
+ case 'HIGH': return 'text-destructive bg-destructive/10';
+ case 'MEDIUM': return 'text-warning bg-warning/10';
+ case 'LOW': return 'text-primary bg-primary/10';
  default: return 'text-muted-foreground bg-muted';
  }
  };
 
  const getStatusColor = (status: string) => {
  switch (status) {
- case 'new': return 'text-red-400 bg-red-500/20';
- case 'acknowledged': return 'text-amber-400 bg-amber-500/20';
+ case 'new': return 'text-destructive bg-destructive/20';
+ case 'acknowledged': return 'text-warning bg-warning/20';
  case 'dismissed': return 'text-muted-foreground bg-muted';
- case 'fixed': return 'text-green-400 bg-green-500/20';
+ case 'fixed': return 'text-success bg-success/20';
  default: return 'text-muted-foreground bg-muted';
  }
  };
@@ -364,21 +364,21 @@ export function DependencyAlertsPage() {
  <p className="text-3xl font-bold text-foreground">{summary.total}</p>
  <p className="text-sm text-muted-foreground">Total Alerts</p>
  </div>
- <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center">
- <p className="text-3xl font-bold text-red-600">{summary.new}</p>
- <p className="text-sm text-red-600/80">New</p>
+ <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-center">
+ <p className="text-3xl font-bold text-destructive">{summary.new}</p>
+ <p className="text-sm text-destructive/80">New</p>
  </div>
- <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-center">
- <p className="text-3xl font-bold text-amber-600">{summary.acknowledged}</p>
- <p className="text-sm text-amber-600/80">Acknowledged</p>
+ <div className="rounded-lg border border-warning/20 bg-warning/5 p-4 text-center">
+ <p className="text-3xl font-bold text-warning">{summary.acknowledged}</p>
+ <p className="text-sm text-warning/80">Acknowledged</p>
  </div>
  <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
  <p className="text-3xl font-bold text-muted-foreground">{summary.dismissed}</p>
  <p className="text-sm text-muted-foreground/80">Dismissed</p>
  </div>
- <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
- <p className="text-3xl font-bold text-green-600">{summary.fixed}</p>
- <p className="text-sm text-green-600/80">Fixed</p>
+ <div className="rounded-lg border border-success/20 bg-success/5 p-4 text-center">
+ <p className="text-3xl font-bold text-success">{summary.fixed}</p>
+ <p className="text-sm text-success/80">Fixed</p>
  </div>
  </div>
 
@@ -388,17 +388,17 @@ export function DependencyAlertsPage() {
  <p className="text-xl font-bold text-purple-600">{summary.by_severity.critical}</p>
  <p className="text-xs text-purple-600/80">Critical</p>
  </div>
- <div className="rounded-lg bg-red-100 p-3 text-center">
+ <div className="rounded-lg bg-destructive/10 p-3 text-center">
  <p className="text-xl font-bold text-red-600">{summary.by_severity.high}</p>
- <p className="text-xs text-red-600/80">High</p>
+ <p className="text-xs text-destructive/80">High</p>
  </div>
- <div className="rounded-lg bg-amber-100 p-3 text-center">
- <p className="text-xl font-bold text-amber-600">{summary.by_severity.medium}</p>
- <p className="text-xs text-amber-600/80">Medium</p>
+ <div className="rounded-lg bg-warning/10 p-3 text-center">
+ <p className="text-xl font-bold text-warning">{summary.by_severity.medium}</p>
+ <p className="text-xs text-warning/80">Medium</p>
  </div>
- <div className="rounded-lg bg-blue-100 p-3 text-center">
- <p className="text-xl font-bold text-blue-600">{summary.by_severity.low}</p>
- <p className="text-xs text-blue-600/80">Low</p>
+ <div className="rounded-lg bg-primary/10 p-3 text-center">
+ <p className="text-xl font-bold text-primary">{summary.by_severity.low}</p>
+ <p className="text-xs text-primary/80">Low</p>
  </div>
  </div>
 
@@ -460,7 +460,7 @@ export function DependencyAlertsPage() {
  </p>
  <p className="text-sm text-muted-foreground">
  {alert.affected_package} {alert.affected_versions}
- {alert.fixed_version && <span className="ml-2 text-green-600">{'\u2022'} Fix: {alert.fixed_version}</span>}
+ {alert.fixed_version && <span className="ml-2 text-success">{'\u2022'} Fix: {alert.fixed_version}</span>}
  </p>
  </div>
  <div className="text-right text-sm text-muted-foreground">
@@ -486,7 +486,7 @@ export function DependencyAlertsPage() {
  <span className="font-medium text-foreground">{proj.project_name}</span>
  <span className="text-sm text-muted-foreground ml-2">v{proj.installed_version}</span>
  </div>
- <span className={`text-xs px-2 py-1 rounded ${proj.is_direct_dependency ? 'bg-blue-500/20 text-blue-400' : 'bg-muted text-muted-foreground'}`}>
+ <span className={`text-xs px-2 py-1 rounded ${proj.is_direct_dependency ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
  {proj.is_direct_dependency ? 'Direct' : 'Transitive'}
  </span>
  </div>
@@ -514,7 +514,7 @@ export function DependencyAlertsPage() {
  <div className="flex gap-2 pt-2 border-t border-border">
  <button
  onClick={(e) => { e.stopPropagation(); updateAlertStatus(alert.id, 'acknowledged'); }}
- className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded hover:bg-amber-500/30 text-sm"
+ className="px-3 py-1 bg-warning/20 text-warning rounded hover:bg-warning/30 text-sm"
  >
  Acknowledge
  </button>
@@ -526,7 +526,7 @@ export function DependencyAlertsPage() {
  </button>
  <button
  onClick={(e) => { e.stopPropagation(); updateAlertStatus(alert.id, 'fixed'); }}
- className="px-3 py-1 bg-green-500/20 text-green-400 rounded hover:bg-green-500/30 text-sm"
+ className="px-3 py-1 bg-success/20 text-success rounded hover:bg-success/30 text-sm"
  >
  Mark Fixed
  </button>

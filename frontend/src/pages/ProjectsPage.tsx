@@ -347,12 +347,12 @@ export function ProjectsPage() {
                     placeholder="My Test Project"
                     maxLength={100}
                     className={`w-full rounded-md border bg-background px-3 py-2 text-foreground ${
-                      nameError ? 'border-red-500' : 'border-input'
+                      nameError ? 'border-destructive' : 'border-input'
                     }`}
                   />
                   <div className="mt-1 flex justify-between">
                     {nameError ? (
-                      <p className="text-sm text-red-500" role="alert" aria-live="polite">{nameError}</p>
+                      <p className="text-sm text-destructive" role="alert" aria-live="polite">{nameError}</p>
                     ) : (
                       <span />
                     )}

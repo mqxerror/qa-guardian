@@ -183,10 +183,10 @@ export function DependencyAgePage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'up_to_date': return 'text-green-400 bg-green-500/20';
-      case 'current': return 'text-blue-400 bg-blue-500/20';
-      case 'outdated': return 'text-yellow-400 bg-yellow-500/20';
-      case 'critical': return 'text-red-400 bg-red-500/20';
+      case 'up_to_date': return 'text-success bg-success/20';
+      case 'current': return 'text-primary bg-primary/20';
+      case 'outdated': return 'text-warning bg-warning/20';
+      case 'critical': return 'text-destructive bg-destructive/20';
       default: return 'text-muted-foreground bg-muted';
     }
   };
@@ -239,17 +239,17 @@ export function DependencyAgePage() {
             <div className="text-sm text-muted-foreground">Total Dependencies</div>
             <div className="text-2xl font-bold text-foreground">{summary.total}</div>
           </div>
-          <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4">
-            <div className="text-sm text-green-400">Up to Date</div>
-            <div className="text-2xl font-bold text-green-400">{summary.up_to_date + summary.current}</div>
+          <div className="rounded-lg border border-success/30 bg-success/10 p-4">
+            <div className="text-sm text-success">Up to Date</div>
+            <div className="text-2xl font-bold text-success">{summary.up_to_date + summary.current}</div>
           </div>
-          <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
-            <div className="text-sm text-yellow-400">Outdated</div>
-            <div className="text-2xl font-bold text-yellow-400">{summary.outdated}</div>
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
+            <div className="text-sm text-warning">Outdated</div>
+            <div className="text-2xl font-bold text-warning">{summary.outdated}</div>
           </div>
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
-            <div className="text-sm text-red-400">Critical</div>
-            <div className="text-2xl font-bold text-red-400">{summary.critical}</div>
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+            <div className="text-sm text-destructive">Critical</div>
+            <div className="text-2xl font-bold text-destructive">{summary.critical}</div>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="text-sm text-muted-foreground">Avg Age</div>
@@ -258,18 +258,18 @@ export function DependencyAgePage() {
         </div>
 
         {/* Configuration Summary */}
-        <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
+        <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-medium text-blue-400">Current Thresholds</div>
-              <div className="text-sm text-blue-400/80">
+              <div className="font-medium text-primary">Current Thresholds</div>
+              <div className="text-sm text-primary/80">
                 Outdated: &gt; {config.outdated_threshold_days} days ({Math.round(config.outdated_threshold_days / 30)} months) &bull;
                 Critical: &gt; {config.critical_age_days} days ({Math.round(config.critical_age_days / 30)} months / {(config.critical_age_days / 365).toFixed(1)} years)
               </div>
             </div>
             <button
               onClick={() => setShowConfigModal(true)}
-              className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
+              className="text-primary hover:text-primary/70 text-sm transition-colors"
             >
               Edit
             </button>
@@ -342,7 +342,7 @@ export function DependencyAgePage() {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <div className={`font-medium ${dep.age_days >= config.critical_age_days ? 'text-red-400' : dep.age_days >= config.outdated_threshold_days ? 'text-yellow-400' : 'text-foreground'}`}>
+                        <div className={`font-medium ${dep.age_days >= config.critical_age_days ? 'text-destructive' : dep.age_days >= config.outdated_threshold_days ? 'text-warning' : 'text-foreground'}`}>
                           {formatAge(dep.age_days)}
                         </div>
                         <div className="text-xs text-muted-foreground">
@@ -361,11 +361,11 @@ export function DependencyAgePage() {
                       </td>
                       <td className="px-6 py-4">
                         {dep.has_vulnerability ? (
-                          <span className="text-red-400 font-medium flex items-center gap-1">
+                          <span className="text-destructive font-medium flex items-center gap-1">
                             <AlertTriangle className="h-4 w-4" /> {dep.vulnerability_count}
                           </span>
                         ) : (
-                          <span className="text-green-400 flex items-center gap-1">
+                          <span className="text-success flex items-center gap-1">
                             <Check className="h-4 w-4" /> None
                           </span>
                         )}

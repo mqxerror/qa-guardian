@@ -436,15 +436,15 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  {/* Section 1: Quick Test */}
  <section aria-labelledby="quick-test-heading">
  <div className="flex items-center gap-2 mb-4">
- <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100">
- <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
+ <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
  </svg>
  </div>
  <h3 id="quick-test-heading" className="text-lg font-medium text-foreground">
  Quick Test
  </h3>
- <span className="px-2 py-0.5 text-xs font-medium text-blue-600 bg-blue-100 rounded-full">
+ <span className="px-2 py-0.5 text-xs font-medium text-primary bg-primary/10 rounded-full">
  Recommended
  </span>
  </div>
@@ -478,8 +478,8 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  onClick={() => applyBundlePreset(key)}
  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all ${
  activeBundle === key
- ? 'border-blue-500 bg-blue-50 text-blue-700'
- : 'border-border text-foreground hover:border-blue-300 hover:bg-muted'
+ ? 'border-primary bg-primary/5 text-primary'
+ : 'border-border text-foreground hover:border-primary/30 hover:bg-muted'
  } ${animatingBundle === key ? 'scale-110' : ''}`}
  style={{ transition: 'all 0.15s ease-out' }}
  type="button"
@@ -561,19 +561,19 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  <div className="flex items-center gap-2">
  {runStatus === 'started' ? (
  <>
- <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
- <span className="text-sm font-medium text-green-700">
+ <span className="text-sm font-medium text-success">
  Tests running! Closing...
  </span>
  </>
  ) : (
  <>
- <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
- <span className="text-sm font-medium text-green-700">
+ <span className="text-sm font-medium text-success">
  {createdCount} test{createdCount !== 1 ? 's' : ''} created!
  </span>
  </>
@@ -584,7 +584,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  type="button"
  onClick={handleRunNow}
  disabled={isRunningTests || runStatus === 'started'}
- className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+ className="flex items-center gap-1.5 px-3 py-1.5 bg-success hover:bg-success disabled:bg-success/80 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
  >
  {isRunningTests ? (
  <>
@@ -630,11 +630,11 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  <span
  className={`px-2 py-0.5 rounded text-xs font-medium ${
  test.status === 'created'
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : test.status === 'creating'
- ? 'bg-blue-100 text-blue-700'
+ ? 'bg-primary/10 text-primary'
  : test.status === 'failed'
- ? 'bg-red-100 text-red-700'
+ ? 'bg-destructive/10 text-destructive'
  : 'bg-muted text-foreground'
  }`}
  >
@@ -652,7 +652,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
 
  {/* Feature #1806: Error message if run failed */}
  {runStatus === 'error' && (
- <div className="mt-3 p-2 bg-red-50 rounded text-sm text-red-600">
+ <div className="mt-3 p-2 bg-destructive/5 rounded text-sm text-destructive">
  Failed to start test run. Please try again.
  </div>
  )}
@@ -663,7 +663,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  <button
  onClick={handleGenerateTests}
  disabled={isGenerating || selectedCount === 0 || !quickUrl.trim()}
- className="w-full mt-4 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
+ className="w-full mt-4 px-4 py-2.5 bg-primary hover:bg-primary disabled:bg-gray-300 text-white font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
  type="button"
  >
  {isGenerating ? (

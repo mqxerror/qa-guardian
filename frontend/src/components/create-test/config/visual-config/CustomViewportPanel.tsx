@@ -138,7 +138,7 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
  <button
  type="button"
  onClick={() => onRemoveViewport(index)}
- className="p-1 text-muted-foreground hover:text-red-500 transition-colors"
+ className="p-1 text-muted-foreground hover:text-destructive transition-colors"
  title="Remove custom viewport"
  >
  ✕

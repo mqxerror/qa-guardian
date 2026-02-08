@@ -180,9 +180,9 @@ export function MCPAnalyticsPage() {
  const errorRate = totalCalls > 0 ? ((totalErrors / totalCalls) * 100).toFixed(1) : '0.0';
 
  const getErrorRateColor = (rate: number) => {
- if (rate < 2) return 'text-green-600';
- if (rate < 5) return 'text-yellow-600';
- return 'text-red-600';
+ if (rate < 2) return 'text-success';
+ if (rate < 5) return 'text-warning';
+ return 'text-destructive';
  };
 
  return (
@@ -216,8 +216,8 @@ export function MCPAnalyticsPage() {
  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
  <div className="rounded-lg border border-border bg-card p-6">
  <div className="flex items-center gap-3">
- <div className="p-2 rounded-lg bg-blue-100">
- <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="p-2 rounded-lg bg-primary/10">
+ <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
  </svg>
  </div>
@@ -230,22 +230,22 @@ export function MCPAnalyticsPage() {
 
  <div className="rounded-lg border border-border bg-card p-6">
  <div className="flex items-center gap-3">
- <div className="p-2 rounded-lg bg-green-100">
- <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="p-2 rounded-lg bg-success/10">
+ <svg className="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
  </div>
  <div>
  <p className="text-sm text-muted-foreground">Success Rate</p>
- <p className="text-2xl font-bold text-green-600">{(100 - parseFloat(errorRate)).toFixed(1)}%</p>
+ <p className="text-2xl font-bold text-success">{(100 - parseFloat(errorRate)).toFixed(1)}%</p>
  </div>
  </div>
  </div>
 
  <div className="rounded-lg border border-border bg-card p-6">
  <div className="flex items-center gap-3">
- <div className="p-2 rounded-lg bg-red-100">
- <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="p-2 rounded-lg bg-destructive/10">
+ <svg className="h-6 w-6 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
  </svg>
  </div>
@@ -290,7 +290,7 @@ export function MCPAnalyticsPage() {
  />
  {data.errors > 0 && (
  <div
- className="absolute bottom-0 w-full bg-red-500/80 rounded-t"
+ className="absolute bottom-0 w-full bg-destructive/80 rounded-t"
  style={{ height: `${maxCalls > 0 ? (data.errors / maxCalls) * 100 : 0}%` }}
  title={`${data.errors} errors`}
  />
@@ -310,7 +310,7 @@ export function MCPAnalyticsPage() {
  <span className="text-sm text-muted-foreground">Calls</span>
  </div>
  <div className="flex items-center gap-2">
- <div className="w-3 h-3 rounded bg-red-500/80"></div>
+ <div className="w-3 h-3 rounded bg-destructive/80"></div>
  <span className="text-sm text-muted-foreground">Errors</span>
  </div>
  </div>
@@ -372,8 +372,8 @@ export function MCPAnalyticsPage() {
  <code className="text-sm font-mono text-foreground">{stat.tool_name}</code>
  </td>
  <td className="px-4 py-3 text-right text-sm text-foreground">{stat.call_count}</td>
- <td className="px-4 py-3 text-right text-sm text-green-600">{stat.success_count}</td>
- <td className="px-4 py-3 text-right text-sm text-red-600">{stat.error_count}</td>
+ <td className="px-4 py-3 text-right text-sm text-success">{stat.success_count}</td>
+ <td className="px-4 py-3 text-right text-sm text-destructive">{stat.error_count}</td>
  <td className="px-4 py-3 text-right">
  <span className={`text-sm font-medium ${getErrorRateColor(errRate)}`}>
  {errRate.toFixed(1)}%

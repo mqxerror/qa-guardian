@@ -151,7 +151,7 @@ const TestListItem: React.FC<TestListItemProps> = React.memo(({
  onDelete(test.id);
  setShowDropdown(false);
  }}
- className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+ className="w-full px-4 py-2 text-left text-sm text-destructive hover:bg-destructive/5 flex items-center gap-2"
  >
  <span>🗑️</span>
  Delete

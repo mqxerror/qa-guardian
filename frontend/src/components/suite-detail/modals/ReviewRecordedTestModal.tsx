@@ -88,7 +88,7 @@ export function ReviewRecordedTestModal({
  >
  {/* Header */}
  <div className="flex items-center gap-3 mb-4">
- <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
+ <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
  <span className="text-xl">✅</span>
  </div>
  <div>
@@ -128,7 +128,7 @@ export function ReviewRecordedTestModal({
  value={recordedTestName}
  onChange={(e) => onRecordedTestNameChange(e.target.value)}
  placeholder="Enter test name"
- className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+ className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
  required
  />
  </div>
@@ -143,7 +143,7 @@ export function ReviewRecordedTestModal({
  onChange={(e) => onRecordedTestDescriptionChange(e.target.value)}
  placeholder="Optional description"
  rows={2}
- className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+ className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
  />
  </div>
 
@@ -159,7 +159,7 @@ export function ReviewRecordedTestModal({
  {idx + 1}
  </span>
  <div className="flex-1 min-w-0">
- <span className="text-xs font-semibold uppercase tracking-wider text-blue-600">{step.action}</span>
+ <span className="text-xs font-semibold uppercase tracking-wider text-primary">{step.action}</span>
  {step.url && (
  <p className="text-xs text-muted-foreground mt-0.5">
  URL: <input
@@ -170,7 +170,7 @@ export function ReviewRecordedTestModal({
  newSteps[idx] = { ...newSteps[idx], url: e.target.value };
  onRecordedStepsChange(newSteps);
  }}
- className="bg-muted px-1 rounded text-xs w-full border border-transparent hover:border-border focus:border-blue-400 focus:outline-none"
+ className="bg-muted px-1 rounded text-xs w-full border border-transparent hover:border-border focus:border-primary/40 focus:outline-none"
  />
  </p>
  )}
@@ -184,12 +184,12 @@ export function ReviewRecordedTestModal({
  newSteps[idx] = { ...newSteps[idx], selector: e.target.value };
  onRecordedStepsChange(newSteps);
  }}
- className="bg-muted px-1 rounded text-xs font-mono w-full border border-transparent hover:border-border focus:border-blue-400 focus:outline-none"
+ className="bg-muted px-1 rounded text-xs font-mono w-full border border-transparent hover:border-border focus:border-primary/40 focus:outline-none"
  />
  </p>
  )}
  {step.value && (
- <p className="text-xs text-green-600 mt-0.5">
+ <p className="text-xs text-success mt-0.5">
  Value: <input
  type="text"
  defaultValue={step.value}
@@ -198,12 +198,12 @@ export function ReviewRecordedTestModal({
  newSteps[idx] = { ...newSteps[idx], value: e.target.value };
  onRecordedStepsChange(newSteps);
  }}
- className="bg-muted px-1 rounded text-xs w-full border border-transparent hover:border-border focus:border-blue-400 focus:outline-none text-green-700"
+ className="bg-muted px-1 rounded text-xs w-full border border-transparent hover:border-border focus:border-primary/40 focus:outline-none text-success"
  />
  </p>
  )}
  {step.text && (
- <p className="text-xs text-green-600 mt-0.5">
+ <p className="text-xs text-success mt-0.5">
  Assert: <input
  type="text"
  defaultValue={step.text}
@@ -212,7 +212,7 @@ export function ReviewRecordedTestModal({
  newSteps[idx] = { ...newSteps[idx], text: e.target.value };
  onRecordedStepsChange(newSteps);
  }}
- className="bg-muted px-1 rounded text-xs w-full border border-transparent hover:border-border focus:border-blue-400 focus:outline-none text-green-700"
+ className="bg-muted px-1 rounded text-xs w-full border border-transparent hover:border-border focus:border-primary/40 focus:outline-none text-success"
  />
  </p>
  )}
@@ -230,12 +230,12 @@ export function ReviewRecordedTestModal({
  };
  onRecordedStepsChange(newSteps);
  }}
- className="rounded border-border text-blue-600 focus:ring-blue-500 h-3 w-3"
+ className="rounded border-border text-primary focus:ring-primary h-3 w-3"
  />
  <span className="text-xs text-muted-foreground" title="Enable for elements that may not always appear (popups, consent dialogs)">
  Optional
  {step.optional && step.optionalReason && step.optionalReason !== 'user_marked' && (
- <span className="ml-1 px-1 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px]">
+ <span className="ml-1 px-1 py-0.5 rounded bg-warning/10 text-warning text-[10px]">
  ⚡ {step.optionalReason.replace('_', ' ')}
  </span>
  )}
@@ -271,7 +271,7 @@ export function ReviewRecordedTestModal({
  )}
  <button
  onClick={() => onRecordedStepsChange(prev => prev.filter((_, i) => i !== idx))}
- className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+ className="text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity text-xs"
  title="Remove step"
  >
  ✕
@@ -313,7 +313,7 @@ export function ReviewRecordedTestModal({
  <button
  onClick={onSaveRecordedTest}
  disabled={isSavingRecordedTest || recordedSteps.length === 0 || !recordedTestName.trim()}
- className="rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-5 py-2 font-semibold text-white hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none"
+ className="rounded-lg bg-gradient-to-r from-primary to-primary px-5 py-2 font-semibold text-white hover:from-primary hover:to-primary transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none"
  >
  {isSavingRecordedTest ? 'Saving...' : '💾 Save Test'}
  </button>

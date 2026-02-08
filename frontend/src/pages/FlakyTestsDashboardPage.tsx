@@ -470,7 +470,7 @@ Please provide:
  <div
  key={idx}
  className={`flex-1 rounded-sm ${
- run.result === 'passed' ? 'bg-emerald-500' : 'bg-red-500'
+ run.result === 'passed' ? 'bg-emerald-500' : 'bg-destructive'
  }`}
  title={`${run.result === 'passed' ? '✓ Passed' : '✗ Failed'}`}
  />
@@ -481,9 +481,9 @@ Please provide:
 
  // Get severity badge
  const getSeverityBadge = (score: number) => {
- if (score >= 0.7) return { label: 'High', class: 'bg-red-100 text-red-700' };
+ if (score >= 0.7) return { label: 'High', class: 'bg-destructive/10 text-destructive' };
  if (score >= 0.4) return { label: 'Medium', class: 'bg-orange-100 text-orange-700' };
- return { label: 'Low', class: 'bg-yellow-100 text-yellow-700' };
+ return { label: 'Low', class: 'bg-warning/10 text-warning' };
  };
 
  return (
@@ -540,14 +540,14 @@ Please provide:
 
  {/* Feature #1104: Auto-Quarantine Settings Panel */}
  {showAutoQuarantineSettings && autoQuarantineSettings && (
- <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 mb-6">
+ <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 mb-6">
  <div className="flex items-center justify-between mb-4">
- <h2 className="text-lg font-semibold text-amber-700 flex items-center gap-2">
+ <h2 className="text-lg font-semibold text-warning flex items-center gap-2">
  <span>🤖</span> Auto-Quarantine Settings
  </h2>
  <button
  onClick={() => setShowAutoQuarantineSettings(false)}
- className="text-amber-600 hover:text-amber-800"
+ className="text-warning hover:text-warning"
  >
  ×
  </button>
@@ -555,19 +555,19 @@ Please provide:
 
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
  {/* Enable/Disable Toggle */}
- <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-amber-200">
+ <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-warning/20">
  <label className="flex items-center gap-2 cursor-pointer flex-1">
  <input
  type="checkbox"
  checked={autoQuarantineSettings.enabled}
  onChange={(e) => handleUpdateAutoQuarantineSettings({ enabled: e.target.checked })}
- className="w-5 h-5 rounded border-border text-amber-600 focus:ring-amber-500"
+ className="w-5 h-5 rounded border-border text-warning focus:ring-warning"
  />
  <span className="text-sm font-medium text-foreground">Enabled</span>
  </label>
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
  autoQuarantineSettings.enabled
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : 'bg-muted text-muted-foreground'
  }`}>
  {autoQuarantineSettings.enabled ? 'Active' : 'Disabled'}
@@ -575,7 +575,7 @@ Please provide:
  </div>
 
  {/* Threshold Setting */}
- <div className="p-3 rounded-lg bg-card border border-amber-200">
+ <div className="p-3 rounded-lg bg-card border border-warning/20">
  <label className="text-xs font-medium text-muted-foreground block mb-1">
  Flakiness Threshold
  </label>
@@ -589,14 +589,14 @@ Please provide:
  onChange={(e) => handleUpdateAutoQuarantineSettings({ threshold: parseFloat(e.target.value) })}
  className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-amber-600"
  />
- <span className="text-sm font-bold text-amber-600 min-w-[3rem] text-right">
+ <span className="text-sm font-bold text-warning min-w-[3rem] text-right">
  {(autoQuarantineSettings.threshold * 100).toFixed(0)}%
  </span>
  </div>
  </div>
 
  {/* Minimum Runs Setting */}
- <div className="p-3 rounded-lg bg-card border border-amber-200">
+ <div className="p-3 rounded-lg bg-card border border-warning/20">
  <label className="text-xs font-medium text-muted-foreground block mb-1">
  Min Runs Required
  </label>
@@ -612,13 +612,13 @@ Please provide:
  </div>
 
  {/* Notifications Toggle */}
- <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-amber-200">
+ <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-warning/20">
  <label className="flex items-center gap-2 cursor-pointer flex-1">
  <input
  type="checkbox"
  checked={autoQuarantineSettings.notify_on_quarantine}
  onChange={(e) => handleUpdateAutoQuarantineSettings({ notify_on_quarantine: e.target.checked })}
- className="w-5 h-5 rounded border-border text-amber-600 focus:ring-amber-500"
+ className="w-5 h-5 rounded border-border text-warning focus:ring-warning"
  />
  <span className="text-sm font-medium text-foreground">🔔 Notify on Quarantine</span>
  </label>
@@ -632,7 +632,7 @@ Please provide:
  disabled={!autoQuarantineSettings.enabled || isLoadingAutoQuarantine}
  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
  autoQuarantineSettings.enabled && !isLoadingAutoQuarantine
- ? 'bg-amber-600 text-white hover:bg-amber-700'
+ ? 'bg-warning text-white hover:bg-warning'
  : 'bg-gray-300 text-muted-foreground cursor-not-allowed'
  }`}
  >
@@ -655,15 +655,15 @@ Please provide:
 
  {/* Auto-Quarantine Result */}
  {autoQuarantineResult && autoQuarantineResult.tests_quarantined > 0 && (
- <div className="mt-4 p-3 rounded-lg bg-green-50 border border-green-300">
- <h3 className="text-sm font-semibold text-green-700 mb-2">
+ <div className="mt-4 p-3 rounded-lg bg-success/5 border border-success/30">
+ <h3 className="text-sm font-semibold text-success mb-2">
  ✅ Auto-Quarantined {autoQuarantineResult.tests_quarantined} Test(s)
  </h3>
- <ul className="text-sm text-green-600 space-y-1">
+ <ul className="text-sm text-success space-y-1">
  {autoQuarantineResult.quarantined_tests.map((t) => (
  <li key={t.test_id} className="flex items-center gap-2">
  <span className="font-medium">{t.test_name}</span>
- <span className="text-xs px-1.5 py-0.5 rounded bg-green-100">
+ <span className="text-xs px-1.5 py-0.5 rounded bg-success/10">
  {(t.flakiness_score * 100).toFixed(0)}% flaky
  </span>
  </li>
@@ -676,37 +676,37 @@ Please provide:
 
  {/* Feature #1105: Retry Strategy Settings Panel */}
  {showRetryStrategySettings && retryStrategySettings && (
- <div className="rounded-lg border border-blue-300 bg-blue-50 p-4 mb-6">
+ <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 mb-6">
  <div className="flex items-center justify-between mb-4">
- <h2 className="text-lg font-semibold text-blue-700 flex items-center gap-2">
+ <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
  <span>🔄</span> Retry Strategy Settings
  </h2>
  <button
  onClick={() => setShowRetryStrategySettings(false)}
- className="text-blue-600 hover:text-blue-800"
+ className="text-primary hover:text-primary"
  >
  ×
  </button>
  </div>
 
- <p className="text-sm text-blue-600 mb-4">
+ <p className="text-sm text-primary mb-4">
  Configure how many retries to apply to tests based on their flakiness score. Tests with higher flakiness get more retries automatically.
  </p>
 
  {/* Enable/Disable Toggle */}
- <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-blue-200 mb-4 w-fit">
+ <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-primary/20 mb-4 w-fit">
  <label className="flex items-center gap-2 cursor-pointer">
  <input
  type="checkbox"
  checked={retryStrategySettings.enabled}
  onChange={(e) => handleUpdateRetryStrategySettings({ enabled: e.target.checked })}
- className="w-5 h-5 rounded border-border text-blue-600 focus:ring-blue-500"
+ className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
  />
  <span className="text-sm font-medium text-foreground">Enable Dynamic Retry Strategy</span>
  </label>
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
  retryStrategySettings.enabled
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : 'bg-muted text-muted-foreground'
  }`}>
  {retryStrategySettings.enabled ? 'Active' : 'Disabled'}
@@ -718,15 +718,15 @@ Please provide:
  {retryStrategySettings.rules.map((rule, index) => {
  const severityLabel = rule.max_score <= 0.3 ? 'Low' : rule.max_score <= 0.6 ? 'Medium' : 'High';
  const severityColor = severityLabel === 'Low'
- ? 'border-green-300 bg-green-50'
+ ? 'border-success/30 bg-success/5'
  : severityLabel === 'Medium'
- ? 'border-yellow-300 bg-yellow-50'
- : 'border-red-300 bg-red-50';
+ ? 'border-warning/30 bg-warning/5'
+ : 'border-destructive/30 bg-destructive/5';
  const textColor = severityLabel === 'Low'
- ? 'text-green-700'
+ ? 'text-success'
  : severityLabel === 'Medium'
- ? 'text-yellow-700'
- : 'text-red-700';
+ ? 'text-warning'
+ : 'text-destructive';
 
  return (
  <div
@@ -738,9 +738,9 @@ Please provide:
  {severityLabel} Flakiness
  </span>
  <span className={`text-xs px-2 py-0.5 rounded ${
- severityLabel === 'Low' ? 'bg-green-100 text-green-700' :
- severityLabel === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-red-100 text-red-700'
+ severityLabel === 'Low' ? 'bg-success/10 text-success' :
+ severityLabel === 'Medium' ? 'bg-warning/10 text-warning' :
+ 'bg-destructive/10 text-destructive'
  }`}>
  {(rule.min_score * 100).toFixed(0)}% - {rule.max_score >= 1 ? '100' : (rule.max_score * 100).toFixed(0)}%
  </span>
@@ -770,7 +770,7 @@ Please provide:
 
  {/* Additional Settings */}
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
- <div className="p-3 rounded-lg bg-card border border-blue-200">
+ <div className="p-3 rounded-lg bg-card border border-primary/20">
  <label className="text-xs font-medium text-muted-foreground block mb-1">
  Default Retries (for tests without flakiness data)
  </label>
@@ -786,7 +786,7 @@ Please provide:
  </select>
  </div>
 
- <div className="p-3 rounded-lg bg-card border border-blue-200">
+ <div className="p-3 rounded-lg bg-card border border-primary/20">
  <label className="text-xs font-medium text-muted-foreground block mb-1">
  Maximum Retries Allowed
  </label>
@@ -805,20 +805,20 @@ Please provide:
 
  {/* Preview Summary */}
  {retryStrategyPreview && retryStrategyPreview.total_flaky_tests > 0 && (
- <div className="p-3 rounded-lg bg-blue-100 border border-blue-200">
- <h3 className="text-sm font-semibold text-blue-700 mb-2">
+ <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+ <h3 className="text-sm font-semibold text-primary mb-2">
  📊 Current Retry Distribution
  </h3>
  <div className="grid grid-cols-3 gap-2 text-center">
  {retryStrategyPreview.by_rule.map((rule, idx) => (
  <div key={idx} className="p-2 rounded bg-card">
- <div className="text-lg font-bold text-blue-600">{rule.test_count}</div>
+ <div className="text-lg font-bold text-primary">{rule.test_count}</div>
  <div className="text-xs text-muted-foreground">{rule.range}</div>
- <div className="text-xs text-blue-500">{rule.retries} {rule.retries === 1 ? 'retry' : 'retries'}</div>
+ <div className="text-xs text-primary">{rule.retries} {rule.retries === 1 ? 'retry' : 'retries'}</div>
  </div>
  ))}
  </div>
- <p className="text-xs text-blue-600 mt-2 text-center">
+ <p className="text-xs text-primary mt-2 text-center">
  Total: {retryStrategyPreview.total_flaky_tests} flaky tests configured for dynamic retries
  </p>
  </div>
@@ -963,7 +963,7 @@ Please provide:
  )}
  {/* Feature #1103: Quarantine badge */}
  {test.quarantined && (
- <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-300">
+ <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning border border-warning/30">
  🏥 Quarantined
  </span>
  )}
@@ -974,18 +974,18 @@ Please provide:
  <div className="col-span-2 text-center">
  <div className="inline-flex flex-col items-center">
  <span className={`text-lg font-bold ${
- score >= 0.7 ? 'text-red-600' :
+ score >= 0.7 ? 'text-destructive' :
  score >= 0.4 ? 'text-orange-600' :
- 'text-yellow-600'
+ 'text-warning'
  }`}>
  {score.toFixed(2)}
  </span>
  <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden mt-1">
  <div
  className={`h-full ${
- score >= 0.7 ? 'bg-red-500' :
+ score >= 0.7 ? 'bg-destructive' :
  score >= 0.4 ? 'bg-orange-500' :
- 'bg-yellow-500'
+ 'bg-warning'
  }`}
  style={{ width: `${score * 100}%` }}
  />
@@ -1012,7 +1012,7 @@ Please provide:
  {test.quarantined ? (
  <button
  onClick={() => handleReleaseFromQuarantine(test.test_id, test.test_name)}
- className="px-2 py-1 text-xs font-medium rounded border border-green-300 bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+ className="px-2 py-1 text-xs font-medium rounded border border-success/30 bg-success/5 text-success hover:bg-success/10 transition-colors"
  title="Release from quarantine - test will run normally but be monitored"
  >
  🔓 Release
@@ -1020,7 +1020,7 @@ Please provide:
  ) : (
  <button
  onClick={() => handleQuarantine(test.test_id)}
- className="px-2 py-1 text-xs font-medium rounded border border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 transition-colors"
+ className="px-2 py-1 text-xs font-medium rounded border border-warning/30 bg-warning/5 text-warning hover:bg-warning/10 transition-colors"
  title="Quarantine this test - exclude from CI failures"
  >
  🏥 Quarantine
@@ -1043,7 +1043,7 @@ Please provide:
  </button>
  <button
  onClick={() => handleInvestigate(test.test_id)}
- className="px-2 py-1 text-xs font-medium rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+ className="px-2 py-1 text-xs font-medium rounded border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
  title="Investigate test details"
  >
  🔍 Investigate
@@ -1066,7 +1066,7 @@ Please provide:
  {!isLoading && flakyTests.length > 0 && (
  <div className="grid grid-cols-5 gap-4 mt-6">
  <div className="rounded-lg border border-border bg-card p-4">
- <div className="text-3xl font-bold text-red-600">
+ <div className="text-3xl font-bold text-destructive">
  {flakyTests.filter(t => (t.flakiness_score || t.flakiness_percentage / 100) >= 0.7).length}
  </div>
  <div className="text-sm text-muted-foreground">High Severity</div>
@@ -1081,7 +1081,7 @@ Please provide:
  <div className="text-sm text-muted-foreground">Medium Severity</div>
  </div>
  <div className="rounded-lg border border-border bg-card p-4">
- <div className="text-3xl font-bold text-yellow-600">
+ <div className="text-3xl font-bold text-warning">
  {flakyTests.filter(t => (t.flakiness_score || t.flakiness_percentage / 100) < 0.4).length}
  </div>
  <div className="text-sm text-muted-foreground">Low Severity</div>
@@ -1093,11 +1093,11 @@ Please provide:
  <div className="text-sm text-muted-foreground">Retry Flaky</div>
  </div>
  {/* Feature #1103: Quarantined count */}
- <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
- <div className="text-3xl font-bold text-amber-600">
+ <div className="rounded-lg border border-warning/30 bg-warning/5 p-4">
+ <div className="text-3xl font-bold text-warning">
  {flakyTests.filter(t => t.quarantined).length}
  </div>
- <div className="text-sm text-amber-700">Quarantined</div>
+ <div className="text-sm text-warning">Quarantined</div>
  </div>
  </div>
  )}
@@ -1137,69 +1137,69 @@ Please provide:
  {/* Impact Summary Cards */}
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
  {/* CI Time Wasted */}
- <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+ <div className="rounded-lg border border-warning/20 bg-warning/5 p-4">
  <div className="flex items-center gap-2 mb-2">
  <span className="text-lg">⏱️</span>
- <span className="text-sm font-medium text-amber-800">CI Time Wasted</span>
+ <span className="text-sm font-medium text-warning">CI Time Wasted</span>
  </div>
- <div className="text-2xl font-bold text-amber-900">
+ <div className="text-2xl font-bold text-warning">
  {impactReport.impact.ci_time_wasted.hours}h
  </div>
- <div className="text-sm text-amber-700">
+ <div className="text-sm text-warning">
  ({impactReport.impact.ci_time_wasted.minutes} minutes)
  </div>
- <div className="text-sm font-medium text-amber-800 mt-1">
+ <div className="text-sm font-medium text-warning mt-1">
  ${impactReport.impact.ci_time_wasted.cost_usd.toFixed(2)} cost
  </div>
  </div>
 
  {/* Developer Time */}
- <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+ <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
  <div className="flex items-center gap-2 mb-2">
  <span className="text-lg">👩‍💻</span>
- <span className="text-sm font-medium text-blue-800">Developer Time</span>
+ <span className="text-sm font-medium text-primary">Developer Time</span>
  </div>
- <div className="text-2xl font-bold text-blue-900">
+ <div className="text-2xl font-bold text-primary">
  {impactReport.impact.developer_time_investigating.hours}h
  </div>
- <div className="text-sm text-blue-700">
+ <div className="text-sm text-primary">
  investigating issues
  </div>
- <div className="text-sm font-medium text-blue-800 mt-1">
+ <div className="text-sm font-medium text-primary mt-1">
  ${impactReport.impact.developer_time_investigating.cost_usd.toFixed(2)} cost
  </div>
  </div>
 
  {/* False Alerts */}
- <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+ <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
  <div className="flex items-center gap-2 mb-2">
  <span className="text-lg">🚨</span>
- <span className="text-sm font-medium text-red-800">False Alerts</span>
+ <span className="text-sm font-medium text-destructive">False Alerts</span>
  </div>
- <div className="text-2xl font-bold text-red-900">
+ <div className="text-2xl font-bold text-destructive">
  {impactReport.impact.false_failure_alerts.count}
  </div>
- <div className="text-sm text-red-700">
+ <div className="text-sm text-destructive">
  false positives
  </div>
- <div className="text-sm font-medium text-red-800 mt-1">
+ <div className="text-sm font-medium text-destructive mt-1">
  {impactReport.impact.false_failure_alerts.estimated_noise_percentage}% noise
  </div>
  </div>
 
  {/* Total Cost */}
- <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+ <div className="rounded-lg border border-success/20 bg-success/5 p-4">
  <div className="flex items-center gap-2 mb-2">
  <span className="text-lg">💵</span>
- <span className="text-sm font-medium text-green-800">Total Cost Impact</span>
+ <span className="text-sm font-medium text-success">Total Cost Impact</span>
  </div>
- <div className="text-2xl font-bold text-green-900">
+ <div className="text-2xl font-bold text-success">
  ${impactReport.impact.total_cost_impact.usd.toFixed(2)}
  </div>
- <div className="text-sm text-green-700">
+ <div className="text-sm text-success">
  this month
  </div>
- <div className="text-sm font-medium text-green-800 mt-1">
+ <div className="text-sm font-medium text-success mt-1">
  ${impactReport.impact.total_cost_impact.annual_projection_usd.toFixed(2)}/year projected
  </div>
  </div>
@@ -1234,9 +1234,9 @@ Please provide:
  </td>
  <td className="text-center px-4 py-2">
  <span className={`px-2 py-1 rounded text-xs font-medium ${
- test.flakiness_score >= 0.7 ? 'bg-red-100 text-red-800' :
+ test.flakiness_score >= 0.7 ? 'bg-destructive/10 text-destructive' :
  test.flakiness_score >= 0.4 ? 'bg-orange-100 text-orange-800' :
- 'bg-yellow-100 text-yellow-800'
+ 'bg-warning/10 text-warning'
  }`}>
  {(test.flakiness_score * 100).toFixed(0)}%
  </span>
@@ -1244,7 +1244,7 @@ Please provide:
  <td className="text-center px-4 py-2">{test.retries}</td>
  <td className="text-center px-4 py-2">{test.ci_time_wasted_minutes}m</td>
  <td className="text-center px-4 py-2">{test.estimated_dev_time_minutes}m</td>
- <td className="text-right px-4 py-2 font-medium text-red-600">
+ <td className="text-right px-4 py-2 font-medium text-destructive">
  ${test.estimated_cost.toFixed(2)}
  </td>
  </tr>
@@ -1264,7 +1264,7 @@ Please provide:
  <div
  key={idx}
  className={`rounded-lg border p-3 ${
- rec.priority === 'high' ? 'border-red-200 bg-red-50' :
+ rec.priority === 'high' ? 'border-destructive/20 bg-destructive/5' :
  rec.priority === 'medium' ? 'border-orange-200 bg-orange-50' :
  'border-border bg-muted'
  }`}
@@ -1272,7 +1272,7 @@ Please provide:
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">
  <span className={`px-2 py-0.5 rounded text-xs font-medium uppercase ${
- rec.priority === 'high' ? 'bg-red-200 text-red-800' :
+ rec.priority === 'high' ? 'bg-destructive/20 text-destructive' :
  rec.priority === 'medium' ? 'bg-orange-200 text-orange-800' :
  'bg-secondary text-foreground'
  }`}>
@@ -1280,7 +1280,7 @@ Please provide:
  </span>
  <span className="font-medium">{rec.action}</span>
  </div>
- <span className="text-sm text-green-600 font-medium">
+ <span className="text-sm text-success font-medium">
  Save ~${rec.estimated_savings_usd.toFixed(2)}
  </span>
  </div>
@@ -1328,15 +1328,15 @@ Please provide:
  <div className="text-xs text-muted-foreground">Total Runs</div>
  </div>
  <div>
- <div className="text-2xl font-bold text-red-600">{suggestions.analysis.flakiness_percentage}%</div>
+ <div className="text-2xl font-bold text-destructive">{suggestions.analysis.flakiness_percentage}%</div>
  <div className="text-xs text-muted-foreground">Flakiness Score</div>
  </div>
  <div>
- <div className="text-2xl font-bold text-green-600">{suggestions.analysis.pass_count}</div>
+ <div className="text-2xl font-bold text-success">{suggestions.analysis.pass_count}</div>
  <div className="text-xs text-muted-foreground">Passes</div>
  </div>
  <div>
- <div className="text-2xl font-bold text-red-500">{suggestions.analysis.fail_count}</div>
+ <div className="text-2xl font-bold text-destructive">{suggestions.analysis.fail_count}</div>
  <div className="text-xs text-muted-foreground">Failures</div>
  </div>
  </div>
@@ -1356,7 +1356,7 @@ Please provide:
  <div>
  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
  🔧 Remediation Suggestions ({suggestions.suggestions_count})
- <span className="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">
+ <span className="px-2 py-0.5 rounded text-xs bg-destructive/10 text-destructive">
  {suggestions.high_priority_count} high priority
  </span>
  </h3>
@@ -1365,7 +1365,7 @@ Please provide:
  <div
  key={s.id}
  className={`rounded-lg border p-4 ${
- s.priority === 'high' ? 'border-red-200 bg-red-50/50' :
+ s.priority === 'high' ? 'border-destructive/20 bg-destructive/5/50' :
  s.priority === 'medium' ? 'border-orange-200 bg-orange-50/50' :
  'border-border bg-muted/50'
  }`}
@@ -1373,13 +1373,13 @@ Please provide:
  <div className="flex items-start justify-between mb-2">
  <div className="flex items-center gap-2">
  <span className={`px-2 py-0.5 rounded text-xs font-medium uppercase ${
- s.priority === 'high' ? 'bg-red-200 text-red-800' :
+ s.priority === 'high' ? 'bg-destructive/20 text-destructive' :
  s.priority === 'medium' ? 'bg-orange-200 text-orange-800' :
  'bg-secondary text-foreground'
  }`}>
  {s.priority}
  </span>
- <span className="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">
+ <span className="px-2 py-0.5 rounded text-xs bg-primary/10 text-primary">
  {s.category.replace(/_/g, ' ')}
  </span>
  <span className="text-xs text-muted-foreground">
@@ -1399,12 +1399,12 @@ Please provide:
  <div className="mb-3 rounded-lg bg-background p-4 overflow-x-auto">
  <div className="flex gap-4 mb-3">
  <div className="flex-1">
- <div className="text-xs text-red-400 mb-2 font-semibold">❌ Before</div>
+ <div className="text-xs text-destructive mb-2 font-semibold">❌ Before</div>
  <pre className="text-xs text-muted-foreground font-mono whitespace-pre-wrap">{s.code_example.before}</pre>
  </div>
  <div className="w-px bg-card" />
  <div className="flex-1">
- <div className="text-xs text-green-400 mb-2 font-semibold">✅ After</div>
+ <div className="text-xs text-success mb-2 font-semibold">✅ After</div>
  <pre className="text-xs text-muted-foreground font-mono whitespace-pre-wrap">{s.code_example.after}</pre>
  </div>
  </div>
@@ -1416,11 +1416,11 @@ Please provide:
 
  <div className="grid grid-cols-2 gap-4 text-sm">
  <div>
- <div className="text-xs font-medium text-green-600 mb-1">Impact</div>
+ <div className="text-xs font-medium text-success mb-1">Impact</div>
  <p className="text-muted-foreground">{s.impact}</p>
  </div>
  <div>
- <div className="text-xs font-medium text-blue-600 mb-1">Implementation Steps</div>
+ <div className="text-xs font-medium text-primary mb-1">Implementation Steps</div>
  <ol className="text-muted-foreground list-decimal list-inside text-xs space-y-0.5">
  {s.implementation_steps.map((step, i) => (
  <li key={i}>{step}</li>
@@ -1470,37 +1470,37 @@ Please provide:
  </div>
 
  <div className="p-6 space-y-4">
- <div className="p-4 rounded-lg bg-green-50 border border-green-200">
- <div className="font-semibold text-green-700 mb-1">
+ <div className="p-4 rounded-lg bg-success/5 border border-success/20">
+ <div className="font-semibold text-success mb-1">
  {testToRelease.test_name}
  </div>
- <p className="text-sm text-green-600">
+ <p className="text-sm text-success">
  This test will be released from quarantine and will:
  </p>
  </div>
 
  <ul className="space-y-2 text-sm text-muted-foreground">
  <li className="flex items-start gap-2">
- <span className="text-green-500 mt-0.5">✓</span>
+ <span className="text-success mt-0.5">✓</span>
  <span>Return to <strong className="text-foreground">normal execution</strong> in CI/CD pipelines</span>
  </li>
  <li className="flex items-start gap-2">
- <span className="text-green-500 mt-0.5">✓</span>
+ <span className="text-success mt-0.5">✓</span>
  <span>Test failures will <strong className="text-foreground">block builds</strong> again</span>
  </li>
  <li className="flex items-start gap-2">
- <span className="text-blue-500 mt-0.5">🔍</span>
+ <span className="text-primary mt-0.5">🔍</span>
  <span><strong className="text-foreground">Monitoring continues</strong> - if flakiness returns above threshold, the test may be auto-quarantined again</span>
  </li>
  </ul>
 
  {autoQuarantineSettings?.enabled && (
- <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm">
- <div className="flex items-center gap-2 text-blue-700">
+ <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
+ <div className="flex items-center gap-2 text-primary">
  <span>🤖</span>
  <span className="font-medium">Auto-Quarantine Active</span>
  </div>
- <p className="text-blue-600 mt-1">
+ <p className="text-primary mt-1">
  If this test exceeds {(autoQuarantineSettings.threshold * 100).toFixed(0)}% flakiness
  after {autoQuarantineSettings.min_runs} runs, it will be automatically re-quarantined.
  </p>
@@ -1521,7 +1521,7 @@ Please provide:
  <button
  onClick={confirmReleaseFromQuarantine}
  disabled={isReleasingFromQuarantine}
- className="flex-1 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+ className="flex-1 px-4 py-2 rounded-lg bg-success text-white hover:bg-success transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
  >
  {isReleasingFromQuarantine ? (
  <>
@@ -1576,11 +1576,11 @@ Please provide:
  <div className="text-xs text-muted-foreground">Total Runs</div>
  </div>
  <div className="bg-muted/50 rounded-lg p-2 text-center">
- <div className="text-lg font-bold text-red-600">{(selectedTestForAnalysis.flakiness_score * 100).toFixed(0)}%</div>
+ <div className="text-lg font-bold text-destructive">{(selectedTestForAnalysis.flakiness_score * 100).toFixed(0)}%</div>
  <div className="text-xs text-muted-foreground">Flaky</div>
  </div>
  <div className="bg-muted/50 rounded-lg p-2 text-center">
- <div className="text-lg font-bold text-green-600">{selectedTestForAnalysis.pass_rate}%</div>
+ <div className="text-lg font-bold text-success">{selectedTestForAnalysis.pass_rate}%</div>
  <div className="text-xs text-muted-foreground">Pass Rate</div>
  </div>
  <div className="bg-muted/50 rounded-lg p-2 text-center">

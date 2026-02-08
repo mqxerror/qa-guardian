@@ -97,25 +97,25 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
 
  return (
  <div className={`bg-card border rounded-xl overflow-hidden shadow-lg shadow-black/5 ${
- lighthouseStatus === 'excellent' ? 'border-green-300' :
- lighthouseStatus === 'needs-improvement' ? 'border-yellow-300' :
- 'border-red-300'
+ lighthouseStatus === 'excellent' ? 'border-success/30' :
+ lighthouseStatus === 'needs-improvement' ? 'border-warning/30' :
+ 'border-destructive/30'
  }`}>
  {/* Status Banner */}
  <div className={`border-b-4 ${
- lighthouseStatus === 'excellent' ? 'border-green-500' :
- lighthouseStatus === 'needs-improvement' ? 'border-yellow-500' :
- 'border-red-500'
+ lighthouseStatus === 'excellent' ? 'border-success' :
+ lighthouseStatus === 'needs-improvement' ? 'border-warning' :
+ 'border-destructive'
  }`}>
  <div className={`p-5 bg-gradient-to-r ${
- lighthouseStatus === 'excellent' ? 'from-green-50 to-emerald-50/50' :
- lighthouseStatus === 'needs-improvement' ? 'from-yellow-50 to-amber-50/50' :
- 'from-red-50 to-rose-50/50'
+ lighthouseStatus === 'excellent' ? 'from-success/5 to-emerald-50/50' :
+ lighthouseStatus === 'needs-improvement' ? 'from-warning/5 to-warning/5/50' :
+ 'from-destructive/5 to-rose-50/50'
  }`}>
  {/* Header row with test name and actions */}
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
- <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full flex items-center gap-1.5">
+ <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full flex items-center gap-1.5">
  <span>🔍</span> Lighthouse
  </span>
  <span className="text-xs text-muted-foreground">
@@ -125,7 +125,7 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
  <div className="flex items-center gap-2">
  <button
  onClick={() => exportLighthousePDF(lighthouse, result.test_name, lighthouse.url)}
- className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1.5"
+ className="px-3 py-1.5 text-sm bg-destructive text-white rounded-lg hover:bg-destructive transition-colors flex items-center gap-1.5"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -165,9 +165,9 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
  {/* Quick Summary Pills */}
  <div className="flex flex-wrap items-center gap-2 mb-4">
  <div className={`px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2 ${
- lighthouseStatus === 'excellent' ? 'bg-green-100 text-green-700' :
- lighthouseStatus === 'needs-improvement' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-red-100 text-red-700'
+ lighthouseStatus === 'excellent' ? 'bg-success/10 text-success' :
+ lighthouseStatus === 'needs-improvement' ? 'bg-warning/10 text-warning' :
+ 'bg-destructive/10 text-destructive'
  }`}>
  {lighthouseStatus === 'excellent' ? '✅' : lighthouseStatus === 'needs-improvement' ? '⚠️' : '❌'}
  {lighthouseStatus === 'excellent' ? 'EXCELLENT' : lighthouseStatus === 'needs-improvement' ? 'NEEDS WORK' : 'POOR'}
@@ -215,7 +215,7 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
  <span className="text-sm text-foreground truncate flex-1">{opp.title}</span>
  <span className={`text-xs font-semibold ml-2 ${
  parseFloat(opp.savings) > 1 ? 'text-orange-600' :
- 'text-yellow-600'
+ 'text-warning'
  }`}>
  Save {opp.savings}
  </span>

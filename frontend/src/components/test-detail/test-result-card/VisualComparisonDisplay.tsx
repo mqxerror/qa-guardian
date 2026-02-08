@@ -57,21 +57,21 @@ export function VisualComparisonDisplay({
  <span className="text-lg">🔍</span>
  <h4 className="text-sm font-semibold text-foreground">Visual Comparison</h4>
  {vc.baselineCorrupted && (
- <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800">
+ <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">
  ⚠️ Baseline Corrupted
  </span>
  )}
  {result.diff_percentage !== undefined && !vc.baselineCorrupted && (
  <span className={`text-xs px-2 py-0.5 rounded-full ${
  result.diff_percentage === 0
- ? 'bg-green-100 text-green-800'
- : 'bg-yellow-100 text-yellow-800'
+ ? 'bg-success/10 text-success'
+ : 'bg-warning/10 text-warning'
  }`}>
  {result.diff_percentage === 0 ? '✓ Match' : `${result.diff_percentage.toFixed(2)}% different`}
  </span>
  )}
  {!vc.hasBaseline && (
- <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+ <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
  📸 Baseline Created
  </span>
  )}
@@ -79,12 +79,12 @@ export function VisualComparisonDisplay({
 
  {/* Corrupted baseline handling */}
  {vc.baselineCorrupted && (
- <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200">
+ <div className="mb-4 p-3 rounded-lg bg-destructive/5 border border-destructive/20">
  <div className="flex items-start gap-3">
- <span className="text-red-600 text-lg">⚠️</span>
+ <span className="text-destructive text-lg">⚠️</span>
  <div className="flex-1">
- <h5 className="font-medium text-red-800">Baseline Image Corrupted or Unreadable</h5>
- <p className="text-sm text-red-700 mt-1">
+ <h5 className="font-medium text-destructive">Baseline Image Corrupted or Unreadable</h5>
+ <p className="text-sm text-destructive mt-1">
  {vc.corruptionError || 'The baseline image file is corrupted and cannot be used for comparison.'}
  </p>
  </div>
@@ -162,13 +162,13 @@ export function VisualComparisonDisplay({
  <div className="flex gap-2 mt-3">
  <button
  onClick={() => onApproveBaseline(result.test_id)}
- className="px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded hover:bg-green-700"
+ className="px-3 py-1.5 text-xs font-medium bg-success text-white rounded hover:bg-success"
  >
  ✓ Approve as New Baseline
  </button>
  <button
  onClick={() => onRejectChanges(result.test_id)}
- className="px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded hover:bg-red-700"
+ className="px-3 py-1.5 text-xs font-medium bg-destructive text-white rounded hover:bg-destructive"
  >
  ✗ Reject Changes
  </button>
@@ -185,7 +185,7 @@ export function VisualComparisonDisplay({
 
  {/* Perfect match */}
  {vc.hasBaseline && result.diff_percentage === 0 && (
- <p className="text-sm text-green-600">
+ <p className="text-sm text-success">
  ✓ Screenshot matches baseline perfectly
  </p>
  )}

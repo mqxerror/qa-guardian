@@ -107,11 +107,11 @@ const FormField: React.FC<{
  <div className="space-y-1">
  <label className="block text-sm font-medium text-foreground">
  {label}
- {required && <span className="text-red-500 ml-1">*</span>}
+ {required && <span className="text-destructive ml-1">*</span>}
  </label>
  {children}
  {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
- {error && <p className="text-xs text-red-500">{error}</p>}
+ {error && <p className="text-xs text-destructive">{error}</p>}
  </div>
 );
 
@@ -126,9 +126,9 @@ const ThresholdIndicator: React.FC<{
 }> = ({ value, goodMax, poorMin, unit = '' }) => {
  const level = value <= goodMax ? 'good' : value >= poorMin ? 'poor' : 'needs-improvement';
  const colors = {
- good: 'bg-green-500',
- 'needs-improvement': 'bg-yellow-500',
- poor: 'bg-red-500',
+ good: 'bg-success',
+ 'needs-improvement': 'bg-warning',
+ poor: 'bg-destructive',
  };
  const labels = {
  good: 'Good',
@@ -140,9 +140,9 @@ const ThresholdIndicator: React.FC<{
  <div className="flex items-center gap-2 mt-1">
  <div className={`w-2 h-2 rounded-full ${colors[level]}`} />
  <span className={`text-xs ${
- level === 'good' ? 'text-green-600' :
- level === 'poor' ? 'text-red-600' :
- 'text-yellow-600'
+ level === 'good' ? 'text-success' :
+ level === 'poor' ? 'text-destructive' :
+ 'text-warning'
  }`}>
  {labels[level]} ({value}{unit})
  </span>
@@ -223,8 +223,8 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  placeholder="Performance Audit - Homepage"
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.name
- ? 'border-red-500 focus:ring-red-500'
- : 'border-border focus:ring-blue-500'
+ ? 'border-destructive focus:ring-destructive'
+ : 'border-border focus:ring-primary'
  }`}
  />
  </FormField>
@@ -238,8 +238,8 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  placeholder={projectBaseUrl || 'https://your-site.com'}
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.targetUrl
- ? 'border-red-500 focus:ring-red-500'
- : 'border-border focus:ring-blue-500'
+ ? 'border-destructive focus:ring-destructive'
+ : 'border-border focus:ring-primary'
  }`}
  />
  </FormField>
@@ -265,7 +265,7 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  onClick={() => updateField('devicePreset', preset.value)}
  className={`flex items-center gap-3 p-4 rounded-lg border text-left transition-colors ${
  config.devicePreset === preset.value
- ? 'border-amber-500 bg-amber-50'
+ ? 'border-warning bg-warning/5'
  : 'border-border hover:border-border'
  }`}
  >
@@ -304,9 +304,9 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  </div>
  <div className="flex justify-between text-xs text-muted-foreground mt-1">
  <span>0 (Any)</span>
- <span className="text-red-500">49</span>
- <span className="text-yellow-500">89</span>
- <span className="text-green-500">100</span>
+ <span className="text-destructive">49</span>
+ <span className="text-warning">89</span>
+ <span className="text-success">100</span>
  </div>
  </FormField>
 
@@ -387,7 +387,7 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  key={key}
  className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
  config.categories[key as keyof typeof config.categories]
- ? 'border-amber-500 bg-amber-50'
+ ? 'border-warning bg-warning/5'
  : 'border-border'
  }`}
  >
@@ -395,7 +395,7 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  type="checkbox"
  checked={config.categories[key as keyof typeof config.categories]}
  onChange={() => toggleCategory(key as keyof typeof config.categories)}
- className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
+ className="w-4 h-4 text-warning rounded focus:ring-warning"
  />
  <span className="text-lg">{icon}</span>
  <span className="text-sm font-medium text-foreground">
@@ -408,8 +408,8 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
 
  {/* Validation Summary */}
  {Object.keys(errors).length > 0 && (
- <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
- <p className="text-sm text-red-600">
+ <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
+ <p className="text-sm text-destructive">
  Please fix the errors above to continue.
  </p>
  </div>

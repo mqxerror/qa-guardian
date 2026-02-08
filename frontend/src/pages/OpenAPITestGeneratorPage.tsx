@@ -259,11 +259,11 @@ export function OpenAPITestGeneratorPage() {
  }) || [];
 
  const methodColors: Record<string, string> = {
- GET: 'bg-green-100 text-green-700',
- POST: 'bg-blue-100 text-blue-700',
- PUT: 'bg-amber-100 text-amber-700',
+ GET: 'bg-success/10 text-success',
+ POST: 'bg-primary/10 text-primary',
+ PUT: 'bg-warning/10 text-warning',
  PATCH: 'bg-purple-100 text-purple-700',
- DELETE: 'bg-red-100 text-red-700',
+ DELETE: 'bg-destructive/10 text-destructive',
  };
 
  return (

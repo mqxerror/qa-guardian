@@ -18,7 +18,7 @@ export function K6ResultsDisplay({ results }: K6ResultsDisplayProps) {
         <span className="text-lg">📊</span>
         <h4 className="text-sm font-semibold text-foreground">Load Test Results</h4>
         <span className={`text-xs px-2 py-0.5 rounded-full ${
-          results.status === 'passed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          results.status === 'passed' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
         }`}>
           {results.status}
         </span>
@@ -39,7 +39,7 @@ export function K6ResultsDisplay({ results }: K6ResultsDisplayProps) {
         </div>
         <div className="p-2 rounded bg-background">
           <div className="text-xs text-muted-foreground">Error Rate</div>
-          <div className={`text-sm font-semibold ${(results.http_req_failed || 0) > 5 ? 'text-red-600' : 'text-green-600'}`}>
+          <div className={`text-sm font-semibold ${(results.http_req_failed || 0) > 5 ? 'text-destructive' : 'text-success'}`}>
             {results.http_req_failed !== undefined ? `${results.http_req_failed.toFixed(2)}%` : '-'}
           </div>
         </div>
@@ -73,7 +73,7 @@ export function K6ResultsDisplay({ results }: K6ResultsDisplayProps) {
             {Object.entries(results.thresholds).map(([name, threshold]) => (
               <div key={name} className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">{name}</span>
-                <span className={threshold.passed ? 'text-green-600' : 'text-red-600'}>
+                <span className={threshold.passed ? 'text-success' : 'text-destructive'}>
                   {threshold.passed ? '✓' : '✗'} {threshold.value}
                 </span>
               </div>
@@ -90,7 +90,7 @@ export function K6ResultsDisplay({ results }: K6ResultsDisplayProps) {
             {results.checks.map((check, idx) => (
               <div key={idx} className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">{check.name}</span>
-                <span className={check.fails === 0 ? 'text-green-600' : 'text-red-600'}>
+                <span className={check.fails === 0 ? 'text-success' : 'text-destructive'}>
                   {check.passes}/{check.passes + check.fails} passed
                 </span>
               </div>

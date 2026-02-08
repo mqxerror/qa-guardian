@@ -95,10 +95,10 @@ export function WebhooksTab({
                   </td>
                   <td className="px-4 py-3">
                     {check.last_payload_valid === true && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">✅ Valid</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-xs font-medium text-success">✅ Valid</span>
                     )}
                     {check.last_payload_valid === false && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">❌ Invalid</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive">❌ Invalid</span>
                     )}
                     {check.last_payload_valid === null && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs font-medium text-foreground">⚪ Waiting</span>
@@ -126,7 +126,7 @@ export function WebhooksTab({
                       <button
                         onClick={() => deleteWebhookCheck(check.id)}
                         title="Delete"
-                        className="rounded p-1.5 text-muted-foreground hover:bg-red-100 hover:text-red-600"
+                        className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                       >
                         🗑️
                       </button>
@@ -186,13 +186,13 @@ export function WebhooksTab({
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-muted-foreground">{new Date(event.received_at).toLocaleString()}</span>
                         {event.payload_valid ? (
-                          <span className="text-green-600">✅</span>
+                          <span className="text-success">✅</span>
                         ) : (
-                          <span className="text-red-600">❌</span>
+                          <span className="text-destructive">❌</span>
                         )}
                       </div>
                       {event.validation_errors && (
-                        <div className="text-red-500 text-xs">{event.validation_errors.join(', ')}</div>
+                        <div className="text-destructive text-xs">{event.validation_errors.join(', ')}</div>
                       )}
                       <div className="text-muted-foreground">From: {event.source_ip}</div>
                     </div>

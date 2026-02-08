@@ -90,41 +90,41 @@ export function IndustryBenchmarkPage() {
 
  const getComparisonColor = (yourValue: number, industryAvg: number, industryTop10: number, higherIsBetter: boolean) => {
  if (higherIsBetter) {
- if (yourValue >= industryTop10) return 'text-green-600';
- if (yourValue >= industryAvg) return 'text-blue-600';
- return 'text-amber-600';
+ if (yourValue >= industryTop10) return 'text-success';
+ if (yourValue >= industryAvg) return 'text-primary';
+ return 'text-warning';
  } else {
- if (yourValue <= industryTop10) return 'text-green-600';
- if (yourValue <= industryAvg) return 'text-blue-600';
- return 'text-amber-600';
+ if (yourValue <= industryTop10) return 'text-success';
+ if (yourValue <= industryAvg) return 'text-primary';
+ return 'text-warning';
  }
  };
 
  const getComparisonBadge = (yourValue: number, industryAvg: number, industryTop10: number, higherIsBetter: boolean) => {
  if (higherIsBetter) {
- if (yourValue >= industryTop10) return { text: 'Top 10%', color: 'bg-green-500/20 text-green-400' };
- if (yourValue >= industryAvg) return { text: 'Above Avg', color: 'bg-blue-500/20 text-blue-400' };
- return { text: 'Below Avg', color: 'bg-amber-500/20 text-amber-400' };
+ if (yourValue >= industryTop10) return { text: 'Top 10%', color: 'bg-success/20 text-success' };
+ if (yourValue >= industryAvg) return { text: 'Above Avg', color: 'bg-primary/20 text-primary' };
+ return { text: 'Below Avg', color: 'bg-warning/20 text-warning' };
  } else {
- if (yourValue <= industryTop10) return { text: 'Top 10%', color: 'bg-green-500/20 text-green-400' };
- if (yourValue <= industryAvg) return { text: 'Above Avg', color: 'bg-blue-500/20 text-blue-400' };
- return { text: 'Below Avg', color: 'bg-amber-500/20 text-amber-400' };
+ if (yourValue <= industryTop10) return { text: 'Top 10%', color: 'bg-success/20 text-success' };
+ if (yourValue <= industryAvg) return { text: 'Above Avg', color: 'bg-primary/20 text-primary' };
+ return { text: 'Below Avg', color: 'bg-warning/20 text-warning' };
  }
  };
 
  const getPercentileColor = (percentile: number) => {
- if (percentile >= 90) return 'bg-green-500';
- if (percentile >= 75) return 'bg-blue-500';
- if (percentile >= 50) return 'bg-amber-500';
- return 'bg-red-500';
+ if (percentile >= 90) return 'bg-success';
+ if (percentile >= 75) return 'bg-primary';
+ if (percentile >= 50) return 'bg-warning';
+ return 'bg-destructive';
  };
 
  const getRankBadge = (rank: string) => {
  switch (rank) {
- case 'top_10': return 'bg-green-500/20 text-green-400';
- case 'top_25': return 'bg-blue-500/20 text-blue-400';
- case 'top_50': return 'bg-amber-500/20 text-amber-400';
- default: return 'bg-red-500/20 text-red-400';
+ case 'top_10': return 'bg-success/20 text-success';
+ case 'top_25': return 'bg-primary/20 text-primary';
+ case 'top_50': return 'bg-warning/20 text-warning';
+ default: return 'bg-destructive/20 text-destructive';
  }
  };
 
@@ -141,17 +141,17 @@ export function IndustryBenchmarkPage() {
 
  const getSeverityBadge = (severity: string) => {
  switch (severity) {
- case 'critical': return 'bg-red-500/20 text-red-400';
+ case 'critical': return 'bg-destructive/20 text-destructive';
  case 'high': return 'bg-orange-500/20 text-orange-400';
- case 'medium': return 'bg-amber-500/20 text-amber-400';
- default: return 'bg-green-500/20 text-green-400';
+ case 'medium': return 'bg-warning/20 text-warning';
+ default: return 'bg-success/20 text-success';
  }
  };
 
  const getEffortBadge = (effort: string) => {
  switch (effort) {
  case 'high': return 'bg-purple-500/20 text-purple-400';
- case 'medium': return 'bg-blue-500/20 text-blue-400';
+ case 'medium': return 'bg-primary/20 text-primary';
  default: return 'bg-cyan-500/20 text-cyan-400';
  }
  };
@@ -168,11 +168,11 @@ export function IndustryBenchmarkPage() {
  };
 
  const getMaturityLevel = (score: number) => {
- if (score >= 90) return { level: 'Elite', color: 'text-green-400', bg: 'bg-green-500/20' };
- if (score >= 75) return { level: 'Advanced', color: 'text-blue-400', bg: 'bg-blue-500/20' };
- if (score >= 60) return { level: 'Intermediate', color: 'text-amber-400', bg: 'bg-amber-500/20' };
+ if (score >= 90) return { level: 'Elite', color: 'text-success', bg: 'bg-success/20' };
+ if (score >= 75) return { level: 'Advanced', color: 'text-primary', bg: 'bg-primary/20' };
+ if (score >= 60) return { level: 'Intermediate', color: 'text-warning', bg: 'bg-warning/20' };
  if (score >= 40) return { level: 'Developing', color: 'text-orange-400', bg: 'bg-orange-500/20' };
- return { level: 'Initial', color: 'text-red-400', bg: 'bg-red-500/20' };
+ return { level: 'Initial', color: 'text-destructive', bg: 'bg-destructive/20' };
  };
 
  const maturityLevel = getMaturityLevel(overallMaturityScore);
@@ -263,7 +263,7 @@ export function IndustryBenchmarkPage() {
  {/* Step 2: Your Metrics vs Industry */}
  <div className="rounded-lg border bg-card p-6">
  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
- <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm">2</span>
+ <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-sm">2</span>
  <span>📈</span> Your Metrics vs Industry
  </h2>
  <p className="text-sm text-muted-foreground mb-4">Compare your testing metrics against industry averages and top performers</p>
@@ -301,7 +301,7 @@ export function IndustryBenchmarkPage() {
  <td className="text-center py-3 px-2 text-muted-foreground">
  {benchmark.industry_avg}{benchmark.unit}
  </td>
- <td className="text-center py-3 px-2 text-green-600 font-medium">
+ <td className="text-center py-3 px-2 text-success font-medium">
  {benchmark.industry_top10}{benchmark.unit}
  </td>
  <td className="text-center py-3 px-2">
@@ -311,11 +311,11 @@ export function IndustryBenchmarkPage() {
  </td>
  <td className="text-center py-3 px-2">
  {gapToTop > 0 ? (
- <span className="text-amber-600">
+ <span className="text-warning">
  {benchmark.higher_is_better ? '+' : '-'}{Math.abs(gapToTop).toFixed(1)}{benchmark.unit}
  </span>
  ) : (
- <span className="text-green-600">✓ Achieved</span>
+ <span className="text-success">✓ Achieved</span>
  )}
  </td>
  </tr>
@@ -327,7 +327,7 @@ export function IndustryBenchmarkPage() {
  </div>
 
  {/* Step 3: Percentile Ranking */}
- <div className="rounded-lg border bg-gradient-to-r from-cyan-500/10 to-blue-500/10 p-6">
+ <div className="rounded-lg border bg-gradient-to-r from-cyan-500/10 to-primary/10 p-6">
  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500/20 text-cyan-400 text-sm">3</span>
  <span>🏅</span> Percentile Ranking
@@ -385,7 +385,7 @@ export function IndustryBenchmarkPage() {
 
  <div className="space-y-4">
  {gapAnalysis.map((gap, index) => (
- <div key={index} className={`rounded-lg border p-4 ${gap.priority <= 2 ? 'bg-amber-50/50 border-amber-200' : 'bg-card'}`}>
+ <div key={index} className={`rounded-lg border p-4 ${gap.priority <= 2 ? 'bg-warning/5/50 border-warning/20' : 'bg-card'}`}>
  <div className="flex items-start justify-between mb-3">
  <div className="flex items-center gap-3">
  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
@@ -404,18 +404,18 @@ export function IndustryBenchmarkPage() {
  </div>
  </div>
  <div className="text-right">
- <p className="text-sm font-medium text-green-600">{gap.expected_impact}</p>
+ <p className="text-sm font-medium text-success">{gap.expected_impact}</p>
  </div>
  </div>
 
  <div className="grid gap-4 md:grid-cols-2 mb-3">
- <div className="rounded-lg bg-red-50 p-3">
- <p className="text-xs font-medium text-red-600 mb-1">Current State</p>
- <p className="text-sm text-red-800">{gap.current_state}</p>
+ <div className="rounded-lg bg-destructive/5 p-3">
+ <p className="text-xs font-medium text-destructive mb-1">Current State</p>
+ <p className="text-sm text-destructive">{gap.current_state}</p>
  </div>
- <div className="rounded-lg bg-green-50 p-3">
- <p className="text-xs font-medium text-green-600 mb-1">Target State</p>
- <p className="text-sm text-green-800">{gap.target_state}</p>
+ <div className="rounded-lg bg-success/5 p-3">
+ <p className="text-xs font-medium text-success mb-1">Target State</p>
+ <p className="text-sm text-success">{gap.target_state}</p>
  </div>
  </div>
 
@@ -444,7 +444,7 @@ export function IndustryBenchmarkPage() {
  <span className="text-sm text-muted-foreground">Above Average</span>
  <span className="text-2xl">📈</span>
  </div>
- <p className="text-3xl font-bold text-green-600 mt-2">
+ <p className="text-3xl font-bold text-success mt-2">
  {benchmarks.filter(b => {
  if (b.higher_is_better) return b.your_value >= b.industry_avg;
  return b.your_value <= b.industry_avg;
@@ -457,7 +457,7 @@ export function IndustryBenchmarkPage() {
  <span className="text-sm text-muted-foreground">Top 10% Metrics</span>
  <span className="text-2xl">🏆</span>
  </div>
- <p className="text-3xl font-bold text-blue-600 mt-2">
+ <p className="text-3xl font-bold text-primary mt-2">
  {benchmarks.filter(b => {
  if (b.higher_is_better) return b.your_value >= b.industry_top10;
  return b.your_value <= b.industry_top10;

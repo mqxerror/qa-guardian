@@ -56,13 +56,13 @@ export function AIProviderHotSwap({
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <span>⚡</span> Hot-Swap Provider
-              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">No Restart Required</span>
+              <span className="text-xs bg-success/10 text-success px-2 py-0.5 rounded">No Restart Required</span>
             </h2>
             <p className="text-sm text-foreground">Switch between AI providers instantly without service interruption</p>
           </div>
           {activeProvider?.switching && (
-            <div className="flex items-center gap-2 text-amber-600 animate-pulse">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-amber-600 border-t-transparent"></div>
+            <div className="flex items-center gap-2 text-warning animate-pulse">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-warning border-t-transparent"></div>
               <span>Switching...</span>
             </div>
           )}
@@ -134,11 +134,11 @@ export function AIProviderHotSwap({
               <span>⚡</span> Switch Provider
             </h3>
 
-            <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-              <div className="text-sm text-blue-800">
+            <div className="mb-4 p-3 bg-primary/5 rounded-lg">
+              <div className="text-sm text-primary">
                 <strong>Current:</strong> {activeProvider?.current_provider === 'kie' ? 'Kie.ai' : 'Anthropic Direct'}
               </div>
-              <div className="text-sm text-blue-800">
+              <div className="text-sm text-primary">
                 <strong>Target:</strong> {targetProvider === 'kie' ? 'Kie.ai' : 'Anthropic Direct'}
               </div>
             </div>
@@ -171,7 +171,7 @@ export function AIProviderHotSwap({
 
             {switchResult && (
               <div className={`mb-4 p-3 rounded-lg ${
-                switchResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                switchResult.success ? 'bg-success/5 border border-success/20' : 'bg-destructive/5 border border-destructive/20'
               }`}>
                 <div className="font-medium text-sm">
                   {switchResult.success ? '✅ Switch successful!' : '❌ Switch failed'}
@@ -198,7 +198,7 @@ export function AIProviderHotSwap({
               <button
                 onClick={handleSwitch}
                 disabled={isSwitching}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary disabled:opacity-50 flex items-center gap-2"
               >
                 {isSwitching && <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>}
                 {isSwitching ? 'Switching...' : 'Switch Provider'}
@@ -243,25 +243,25 @@ function ProviderCard({
   return (
     <div className={`border-2 rounded-lg p-4 transition-all ${
       isActive
-        ? 'border-green-500 bg-green-50'
-        : 'border-border hover:border-blue-300'
+        ? 'border-success bg-success/5'
+        : 'border-border hover:border-primary/30'
     }`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="relative">
             <span className="text-3xl">{icon}</span>
             <span className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
-              isConfigured ? 'bg-green-500' : 'bg-yellow-500'
+              isConfigured ? 'bg-success' : 'bg-warning'
             }`} title={isConfigured ? 'Connected' : 'Not Configured'}></span>
           </div>
           <div>
             <div className="font-semibold text-lg">{name}</div>
-            <div className={`text-sm font-medium ${tagColor === 'green' ? 'text-green-600' : 'text-blue-600'}`}>{tagline}</div>
+            <div className={`text-sm font-medium ${tagColor === 'green' ? 'text-success' : 'text-primary'}`}>{tagline}</div>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
           {isActive ? (
-            <span className="px-3 py-1 bg-green-500 text-white text-xs rounded-full font-medium flex items-center gap-1">
+            <span className="px-3 py-1 bg-success text-white text-xs rounded-full font-medium flex items-center gap-1">
               <span className="w-2 h-2 bg-card rounded-full animate-pulse"></span>
               ACTIVE
             </span>
@@ -269,14 +269,14 @@ function ProviderCard({
             <button
               onClick={onSwitch}
               disabled={isSwitching}
-              className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:opacity-50 transition-colors"
+              className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary disabled:opacity-50 transition-colors"
             >
               Switch to {name}
             </button>
           )}
           <span className={`text-xs px-2 py-0.5 rounded ${
             isEnabled
-              ? 'bg-green-100 text-green-700'
+              ? 'bg-success/10 text-success'
               : 'bg-muted text-muted-foreground'
           }`}>
             {isEnabled ? '✓ Enabled' : '○ Disabled'}
@@ -286,7 +286,7 @@ function ProviderCard({
       <div className="text-sm text-foreground space-y-1 border-t pt-3">
         {features.map((feature, index) => (
           <div key={index} className="flex items-center gap-2">
-            <span className={tagColor === 'green' ? 'text-green-500' : 'text-blue-500'}>✓</span> {feature}
+            <span className={tagColor === 'green' ? 'text-success' : 'text-primary'}>✓</span> {feature}
           </div>
         ))}
       </div>

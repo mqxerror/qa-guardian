@@ -197,10 +197,10 @@ function ProjectRunHistoryPage() {
 
  const getStatusColor = (status: string) => {
  switch (status) {
- case 'passed': return 'bg-green-100 text-green-800';
- case 'failed': return 'bg-red-100 text-red-800';
- case 'running': return 'bg-blue-100 text-blue-800';
- case 'pending': return 'bg-yellow-100 text-yellow-800';
+ case 'passed': return 'bg-success/10 text-success';
+ case 'failed': return 'bg-destructive/10 text-destructive';
+ case 'running': return 'bg-primary/10 text-primary';
+ case 'pending': return 'bg-warning/10 text-warning';
  case 'cancelled': return 'bg-muted text-foreground';
  default: return 'bg-muted text-foreground';
  }
@@ -258,15 +258,15 @@ function ProjectRunHistoryPage() {
  <div className="text-sm text-muted-foreground">Total Runs</div>
  </div>
  <div className="p-4 bg-card border border-border rounded-lg">
- <div className="text-2xl font-bold text-green-600">{stats.passed}</div>
+ <div className="text-2xl font-bold text-success">{stats.passed}</div>
  <div className="text-sm text-muted-foreground">Passed</div>
  </div>
  <div className="p-4 bg-card border border-border rounded-lg">
- <div className="text-2xl font-bold text-red-600">{stats.failed}</div>
+ <div className="text-2xl font-bold text-destructive">{stats.failed}</div>
  <div className="text-sm text-muted-foreground">Failed</div>
  </div>
  <div className="p-4 bg-card border border-border rounded-lg">
- <div className="text-2xl font-bold text-blue-600">{stats.running}</div>
+ <div className="text-2xl font-bold text-primary">{stats.running}</div>
  <div className="text-sm text-muted-foreground">Running</div>
  </div>
  <div className="p-4 bg-card border border-border rounded-lg">
@@ -420,9 +420,9 @@ function ProjectRunHistoryPage() {
  </td>
  <td className="px-4 py-3">
  <div className="flex items-center gap-2 text-sm">
- <span className="text-green-600">{run.passed_count}</span>
+ <span className="text-success">{run.passed_count}</span>
  <span className="text-muted-foreground">/</span>
- <span className="text-red-600">{run.failed_count}</span>
+ <span className="text-destructive">{run.failed_count}</span>
  </div>
  <div className="text-xs text-muted-foreground">
  {run.results_count} test{run.results_count !== 1 ? 's' : ''}

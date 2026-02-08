@@ -268,11 +268,11 @@ export default function VisualTab({
  <span className="text-xs font-medium text-muted-foreground">Visual Timeline</span>
  <div className="flex items-center gap-3 text-xs text-muted-foreground">
  <span className="flex items-center gap-1">
- <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+ <span className="w-2 h-2 rounded-full bg-primary"></span>
  Screenshot
  </span>
  <span className="flex items-center gap-1">
- <span className="w-2 h-2 rounded-full bg-red-500"></span>
+ <span className="w-2 h-2 rounded-full bg-destructive"></span>
  Diff Detected
  </span>
  </div>
@@ -301,8 +301,8 @@ export default function VisualTab({
  const position = Math.min((marker.timestampMs / runDurationMs) * 100, 100);
  const isScreenshot = marker.type === 'screenshot';
  const markerColor = isScreenshot
- ? marker.hasDiff ? 'bg-yellow-500 hover:bg-yellow-400' : 'bg-blue-500 hover:bg-blue-400'
- : 'bg-red-500 hover:bg-red-400';
+ ? marker.hasDiff ? 'bg-warning hover:bg-warning/80' : 'bg-primary hover:bg-primary/80'
+ : 'bg-destructive hover:bg-destructive/80';
 
  return (
  <button
@@ -336,11 +336,11 @@ export default function VisualTab({
  onClick={() => seekVisualVideoToMarker(marker.timestampMs)}
  className={`px-2 py-1 text-xs rounded-md transition-colors flex items-center gap-1.5 ${
  marker.hasDiff
- ? 'bg-red-100 text-red-700 hover:bg-red-200'
- : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+ ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+ : 'bg-primary/10 text-primary hover:bg-primary/20'
  }`}
  >
- <span className={`w-2 h-2 rounded-full ${marker.hasDiff ? 'bg-red-500' : 'bg-blue-500'}`}></span>
+ <span className={`w-2 h-2 rounded-full ${marker.hasDiff ? 'bg-destructive' : 'bg-primary'}`}></span>
  <span className="truncate max-w-32">{marker.testName}</span>
  {marker.hasDiff && (
  <span className="font-medium">({marker.diffPercent.toFixed(2)}%)</span>
@@ -387,9 +387,9 @@ export default function VisualTab({
  <div className={`p-4 border-b ${
  hasBaseline
  ? hasDiff
- ? 'bg-red-50 border-red-200'
- : 'bg-green-50 border-green-200'
- : 'bg-yellow-50 border-yellow-200'
+ ? 'bg-destructive/5 border-destructive/20'
+ : 'bg-success/5 border-success/20'
+ : 'bg-warning/5 border-warning/20'
  }`}>
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
@@ -409,7 +409,7 @@ export default function VisualTab({
  <div>
  <h3 className="font-medium text-foreground">{result.test_name}</h3>
  {result.visual_comparison?.baselineCorrupted && (
- <p className="text-sm text-red-600 mt-1">
+ <p className="text-sm text-destructive mt-1">
  ⚠️ Baseline corrupted: {result.visual_comparison.corruptionError}
  </p>
  )}
@@ -419,12 +419,12 @@ export default function VisualTab({
  {/* Diff badge */}
  {hasBaseline ? (
  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
- hasDiff ? 'bg-red-600 text-white' : 'bg-green-600 text-white'
+ hasDiff ? 'bg-destructive text-white' : 'bg-success text-white'
  }`}>
  {diffPercent.toFixed(2)}% diff
  </span>
  ) : (
- <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-600 text-white">
+ <span className="px-3 py-1 rounded-full text-sm font-medium bg-warning text-white">
  No baseline
  </span>
  )}
@@ -435,7 +435,7 @@ export default function VisualTab({
  <button
  onClick={() => handleApproveBaseline(result.test_id, idx)}
  disabled={isApprovalLoading}
- className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+ className="px-3 py-1.5 text-sm bg-success text-white rounded-lg hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
  >
  {isApprovalLoading ? (
  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -452,7 +452,7 @@ export default function VisualTab({
  <button
  onClick={() => handleRejectBaseline(result.test_id, idx)}
  disabled={isApprovalLoading}
- className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+ className="px-3 py-1.5 text-sm bg-destructive text-white rounded-lg hover:bg-destructive disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -493,7 +493,7 @@ export default function VisualTab({
  {result.visual_comparison && (
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
  <div className="p-3 bg-muted/30 rounded-lg text-center">
- <div className={`text-2xl font-bold ${hasDiff ? 'text-red-600' : 'text-green-600'}`}>
+ <div className={`text-2xl font-bold ${hasDiff ? 'text-destructive' : 'text-success'}`}>
  {diffPercent.toFixed(4)}%
  </div>
  <div className="text-xs text-muted-foreground">Diff Percentage</div>
@@ -510,8 +510,8 @@ export default function VisualTab({
  </div>
  <div className="text-xs text-muted-foreground">Total Pixels</div>
  </div>
- <div className={`p-3 rounded-lg text-center ${hasBaseline ? 'bg-green-50' : 'bg-yellow-50'}`}>
- <div className={`text-2xl font-bold ${hasBaseline ? 'text-green-600' : 'text-yellow-600'}`}>
+ <div className={`p-3 rounded-lg text-center ${hasBaseline ? 'bg-success/5' : 'bg-warning/5'}`}>
+ <div className={`text-2xl font-bold ${hasBaseline ? 'text-success' : 'text-warning'}`}>
  {hasBaseline ? '✓' : '?'}
  </div>
  <div className="text-xs text-muted-foreground">{hasBaseline ? 'Baseline Set' : 'No Baseline'}</div>
@@ -538,18 +538,18 @@ export default function VisualTab({
  className={`rounded-lg border ${
  vpHasBaseline
  ? vpHasDiff
- ? 'border-red-200'
- : 'border-green-200'
- : 'border-yellow-200'
+ ? 'border-destructive/20'
+ : 'border-success/20'
+ : 'border-warning/20'
  }`}
  >
  {/* Viewport header */}
  <div className={`p-3 border-b ${
  vpHasBaseline
  ? vpHasDiff
- ? 'bg-red-50 border-red-200'
- : 'bg-green-50 border-green-200'
- : 'bg-yellow-50 border-yellow-200'
+ ? 'bg-destructive/5 border-destructive/20'
+ : 'bg-success/5 border-success/20'
+ : 'bg-warning/5 border-warning/20'
  }`}>
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
@@ -562,9 +562,9 @@ export default function VisualTab({
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
  vpHasBaseline
  ? vpHasDiff
- ? 'bg-red-600 text-white'
- : 'bg-green-600 text-white'
- : 'bg-yellow-600 text-white'
+ ? 'bg-destructive text-white'
+ : 'bg-success text-white'
+ : 'bg-warning text-white'
  }`}>
  {vpHasBaseline
  ? `${(vp.diffPercentage || 0).toFixed(2)}% diff`
@@ -577,14 +577,14 @@ export default function VisualTab({
  <div className="flex items-center gap-2">
  <button
  onClick={() => handleApproveBaseline(result.test_id, idx, vp.viewportId)}
- className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+ className="px-2 py-1 text-xs bg-success text-white rounded hover:bg-success transition-colors"
  title={`Approve ${vp.viewportLabel} baseline`}
  >
  ✓ Approve
  </button>
  <button
  onClick={() => handleRejectBaseline(result.test_id, idx, vp.viewportId)}
- className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+ className="px-2 py-1 text-xs bg-destructive text-white rounded hover:bg-destructive transition-colors"
  title={`Reject ${vp.viewportLabel} baseline`}
  >
  ✗ Reject
@@ -635,7 +635,7 @@ export default function VisualTab({
  {vp.diffImageBase64 && (
  <div className="space-y-2">
  <div className="text-xs font-medium text-muted-foreground text-center">Difference</div>
- <div className="rounded border border-red-300 overflow-hidden">
+ <div className="rounded border border-destructive/30 overflow-hidden">
  <img
  src={`data:image/png;base64,${vp.diffImageBase64}`}
  alt={`${vp.viewportLabel} diff`}
@@ -715,7 +715,7 @@ export default function VisualTab({
  {result.baseline_screenshot_base64 && (
  <div>
  <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
- <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+ <span className="w-3 h-3 rounded-full bg-primary"></span>
  Baseline
  </p>
  <div
@@ -743,7 +743,7 @@ export default function VisualTab({
  {result.screenshot_base64 && (
  <div>
  <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
- <span className="w-3 h-3 rounded-full bg-green-500"></span>
+ <span className="w-3 h-3 rounded-full bg-success"></span>
  Current
  </p>
  <div
@@ -771,11 +771,11 @@ export default function VisualTab({
  {(result.diff_image_base64 || result.visual_comparison?.diffImage) && (
  <div>
  <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
- <span className="w-3 h-3 rounded-full bg-red-500"></span>
+ <span className="w-3 h-3 rounded-full bg-destructive"></span>
  Difference (red = changed)
  </p>
  <div
- className="relative border border-red-300 rounded-lg overflow-hidden"
+ className="relative border border-destructive/30 rounded-lg overflow-hidden"
  style={{ cursor: currentZoom > 1 ? 'grab' : 'zoom-in' }}
  onMouseDown={(e) => handlePanStart(e, resultKey)}
  onMouseMove={(e) => handlePanMove(e, resultKey)}
@@ -892,10 +892,10 @@ export default function VisualTab({
  {(visualViewMode === 'slider' || visualViewMode === 'onion') && (result.diff_image_base64 || result.visual_comparison?.diffImage) && (
  <div className="mt-6 pt-6 border-t border-border">
  <p className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
- <span className="w-3 h-3 rounded-full bg-red-500"></span>
+ <span className="w-3 h-3 rounded-full bg-destructive"></span>
  Difference Highlight (changed pixels in red)
  </p>
- <div className="border border-red-300 rounded-lg overflow-hidden max-w-2xl">
+ <div className="border border-destructive/30 rounded-lg overflow-hidden max-w-2xl">
  <img
  src={`data:image/png;base64,${result.diff_image_base64 || result.visual_comparison?.diffImage}`}
  alt="Diff image"

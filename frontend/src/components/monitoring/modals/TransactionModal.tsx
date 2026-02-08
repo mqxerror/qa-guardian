@@ -240,7 +240,7 @@ export default function TransactionModal({
                       <button
                         type="button"
                         onClick={() => removeStep(stepIndex)}
-                        className="text-xs text-red-600 hover:text-red-700"
+                        className="text-xs text-destructive hover:text-destructive"
                       >
                         Remove
                       </button>
@@ -372,7 +372,7 @@ export default function TransactionModal({
                             <button
                               type="button"
                               onClick={() => removeAssertion(stepIndex, assertionIndex)}
-                              className="text-red-600 hover:text-red-700 text-xs"
+                              className="text-destructive hover:text-destructive text-xs"
                             >
                               ✕
                             </button>

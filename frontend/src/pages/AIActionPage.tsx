@@ -93,7 +93,7 @@ export function AIActionPage() {
                       defaultValue={value}
                       className="flex-1 px-3 py-2 rounded-md border border-border bg-background text-foreground"
                     />
-                    <span className="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded">
+                    <span className="text-xs px-2 py-1 bg-success/20 text-success rounded">
                       AI Pre-filled
                     </span>
                   </div>
@@ -115,12 +115,12 @@ export function AIActionPage() {
 
           {/* Action Status */}
           {actionComplete ? (
-            <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30 mb-6">
+            <div className="p-4 rounded-lg bg-success/10 border border-success/30 mb-6">
               <div className="flex items-center gap-2">
-                <span className="text-green-400 text-xl">✓</span>
+                <span className="text-success text-xl">✓</span>
                 <div>
-                  <p className="font-medium text-green-400">Action Completed Successfully</p>
-                  <p className="text-sm text-green-400/80">The AI-suggested action has been executed.</p>
+                  <p className="font-medium text-success">Action Completed Successfully</p>
+                  <p className="text-sm text-success/80">The AI-suggested action has been executed.</p>
                 </div>
               </div>
             </div>

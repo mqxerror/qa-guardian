@@ -113,7 +113,7 @@ const OpenAPITestGeneratorPage = lazy(() => import('./pages/OpenAPITestGenerator
 // Loading fallback for lazy-loaded pages
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
   </div>
 );
 
@@ -1080,10 +1080,10 @@ function ToastContainer() {
         <div
           key={t.id}
           className={`animate-in slide-in-from-bottom-5 duration-300 rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg flex items-center gap-2 ${
-            t.type === 'success' ? 'bg-green-600' :
-            t.type === 'error' ? 'bg-red-600' :
-            t.type === 'warning' ? 'bg-yellow-600' :
-            'bg-blue-600'
+            t.type === 'success' ? 'bg-success' :
+            t.type === 'error' ? 'bg-destructive' :
+            t.type === 'warning' ? 'bg-warning' :
+            'bg-primary'
           }`}
         >
           {/* Icon based on type - decorative, hidden from screen readers */}

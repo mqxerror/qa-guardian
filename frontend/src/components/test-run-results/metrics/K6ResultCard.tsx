@@ -57,14 +57,14 @@ export const K6ResultCard: React.FC<K6ResultCardProps> = ({
  // If no essential metrics, show failure state
  if (!hasEssentialMetrics) {
  return (
- <div className="bg-card border border-red-300 rounded-xl overflow-hidden shadow-lg">
- <div className="border-b-4 border-red-500">
- <div className="p-5 bg-gradient-to-r from-red-50 to-red-100/50">
+ <div className="bg-card border border-destructive/30 rounded-xl overflow-hidden shadow-lg">
+ <div className="border-b-4 border-destructive">
+ <div className="p-5 bg-gradient-to-r from-destructive/5 to-destructive/10/50">
  <div className="flex items-center justify-between mb-3">
- <span className="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full flex items-center gap-1.5">
+ <span className="px-3 py-1 bg-destructive/10 text-destructive text-xs font-medium rounded-full flex items-center gap-1.5">
  <span>⚡</span> K6 Load Test
  </span>
- <div className="px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2 bg-red-100 text-red-700">
+ <div className="px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2 bg-destructive/10 text-destructive">
  ❌ TEST FAILED
  </div>
  </div>
@@ -72,13 +72,13 @@ export const K6ResultCard: React.FC<K6ResultCardProps> = ({
  </div>
  </div>
  <div className="p-6">
- <div className="flex items-start gap-4 p-4 bg-red-50 border border-red-200 rounded-lg">
- <svg className="w-8 h-8 text-red-500 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="flex items-start gap-4 p-4 bg-destructive/5 border border-destructive/20 rounded-lg">
+ <svg className="w-8 h-8 text-destructive flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
  </svg>
  <div>
- <h5 className="font-semibold text-red-700 mb-2">Load Test Could Not Complete</h5>
- <p className="text-sm text-red-600">
+ <h5 className="font-semibold text-destructive mb-2">Load Test Could Not Complete</h5>
+ <p className="text-sm text-destructive">
  The load test failed to collect metrics. This typically happens when the target server could not handle the load.
  </p>
  </div>
@@ -108,9 +108,9 @@ export const K6ResultCard: React.FC<K6ResultCardProps> = ({
  <div className="bg-card border border-border rounded-xl overflow-hidden shadow-lg shadow-black/5">
  {/* Header */}
  <div className={`border-b-4 ${
- overallStatus === 'passed' ? 'border-green-500' :
- overallStatus === 'warning' ? 'border-yellow-500' :
- 'border-red-500'
+ overallStatus === 'passed' ? 'border-success' :
+ overallStatus === 'warning' ? 'border-warning' :
+ 'border-destructive'
  }`}>
  <div className="p-5 bg-gradient-to-r from-muted/50 to-muted/20">
  <div className="flex items-center justify-between mb-3">
@@ -123,9 +123,9 @@ export const K6ResultCard: React.FC<K6ResultCardProps> = ({
  </span>
  </div>
  <div className={`px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2 ${
- overallStatus === 'passed' ? 'bg-green-100 text-green-700' :
- overallStatus === 'warning' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-red-100 text-red-700'
+ overallStatus === 'passed' ? 'bg-success/10 text-success' :
+ overallStatus === 'warning' ? 'bg-warning/10 text-warning' :
+ 'bg-destructive/10 text-destructive'
  }`}>
  {overallStatus === 'passed' ? '✅' : overallStatus === 'warning' ? '⚠️' : '❌'}
  {overallStatus === 'passed' ? 'PASSED' : overallStatus === 'warning' ? 'WARNING' : 'FAILED'}
@@ -153,7 +153,7 @@ export const K6ResultCard: React.FC<K6ResultCardProps> = ({
 
  <button
  onClick={() => exportK6ResultsPDF(loadTest, result.test_name)}
- className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1.5"
+ className="px-3 py-1.5 text-sm bg-destructive text-white rounded-lg hover:bg-destructive transition-colors flex items-center gap-1.5"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -225,23 +225,23 @@ export const K6ResultCard: React.FC<K6ResultCardProps> = ({
  </div>
  <div className="p-4 bg-muted/50 rounded-lg text-center">
  <div className={`text-2xl font-bold ${
- (loadTest.response_times?.p95 || 0) < 200 ? 'text-green-600' :
+ (loadTest.response_times?.p95 || 0) < 200 ? 'text-success' :
  (loadTest.response_times?.p95 || 0) < 500 ? 'text-foreground' :
- 'text-yellow-600'
+ 'text-warning'
  }`}>
  {loadTest.response_times?.p95 || 0}ms
  </div>
  <div className="text-sm text-muted-foreground">P95 Response</div>
  </div>
  <div className={`p-4 rounded-lg text-center ${
- errorRate < 1 ? 'bg-green-50' :
- errorRate < 5 ? 'bg-yellow-50' :
- 'bg-red-50'
+ errorRate < 1 ? 'bg-success/5' :
+ errorRate < 5 ? 'bg-warning/5' :
+ 'bg-destructive/5'
  }`}>
  <div className={`text-2xl font-bold ${
- errorRate < 1 ? 'text-green-600' :
- errorRate < 5 ? 'text-yellow-600' :
- 'text-red-600'
+ errorRate < 1 ? 'text-success' :
+ errorRate < 5 ? 'text-warning' :
+ 'text-destructive'
  }`}>
  {errorRate.toFixed(2)}%
  </div>

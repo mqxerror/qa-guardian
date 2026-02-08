@@ -123,11 +123,11 @@ const FormField: React.FC<{
  <div className="space-y-1">
  <label className="block text-sm font-medium text-foreground">
  {label}
- {required && <span className="text-red-500 ml-1">*</span>}
+ {required && <span className="text-destructive ml-1">*</span>}
  </label>
  {children}
  {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
- {error && <p className="text-xs text-red-500">{error}</p>}
+ {error && <p className="text-xs text-destructive">{error}</p>}
  </div>
 );
 
@@ -410,8 +410,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  placeholder="Enter test name"
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  touched.name && errors.name
- ? 'border-red-500 focus:ring-red-500'
- : 'border-border focus:ring-blue-500'
+ ? 'border-destructive focus:ring-destructive'
+ : 'border-border focus:ring-primary'
  }`}
  />
  </FormField>
@@ -425,8 +425,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  placeholder={projectBaseUrl || 'https://your-site.com'}
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  touched.targetUrl && errors.targetUrl
- ? 'border-red-500 focus:ring-red-500'
- : 'border-border focus:ring-blue-500'
+ ? 'border-destructive focus:ring-destructive'
+ : 'border-border focus:ring-primary'
  }`}
  />
  </FormField>
@@ -490,14 +490,14 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
 
  {/* Validation Summary */}
  {formState.testType && !isFormValid && Object.keys(validationErrors).length > 0 && (
- <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
- <p className="text-sm text-red-600">
+ <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
+ <p className="text-sm text-destructive">
  Please fix the errors above to continue.
  </p>
  </div>
  )}
  {formState.testType === null && (
- <p className="text-sm text-amber-600">
+ <p className="text-sm text-warning">
  Please select a test type to continue.
  </p>
  )}

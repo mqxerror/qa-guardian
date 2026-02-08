@@ -244,9 +244,9 @@ export function DASTGraphQLPage() {
 
  const getSeverityColor = (severity: string) => {
  switch (severity) {
- case 'High': return 'text-red-600 bg-red-100';
- case 'Medium': return 'text-amber-600 bg-amber-100';
- case 'Low': return 'text-blue-600 bg-blue-100';
+ case 'High': return 'text-destructive bg-destructive/10';
+ case 'Medium': return 'text-warning bg-warning/10';
+ case 'Low': return 'text-primary bg-primary/10';
  default: return 'text-foreground bg-muted';
  }
  };
@@ -255,17 +255,17 @@ export function DASTGraphQLPage() {
  <Layout>
  <div className="p-6 max-w-6xl mx-auto">
  {/* Feature #1986: Demo Mode Banner */}
- <div className="rounded-lg border-2 border-amber-400 bg-amber-50 p-4 mb-6">
+ <div className="rounded-lg border-2 border-warning/80 bg-warning/5 p-4 mb-6">
  <div className="flex items-center gap-3">
  <span className="text-2xl">🚧</span>
  <div>
  <div className="flex items-center gap-2">
- <h3 className="font-semibold text-amber-800">Demo Mode - Mock Data</h3>
- <span className="px-2 py-0.5 bg-amber-200 text-amber-800 text-xs font-medium rounded-full">
+ <h3 className="font-semibold text-warning">Demo Mode - Mock Data</h3>
+ <span className="px-2 py-0.5 bg-warning/20 text-warning text-xs font-medium rounded-full">
  Coming Soon
  </span>
  </div>
- <p className="text-sm text-amber-700 mt-1">
+ <p className="text-sm text-warning mt-1">
  This feature demonstrates GraphQL security scanning with simulated findings.
  Real GraphQL DAST integration will be available in a future release.
  </p>
@@ -394,10 +394,10 @@ export function DASTGraphQLPage() {
 
  {/* Scan Progress */}
  {scanResult && scanResult.status !== 'completed' && (
- <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 mb-6">
+ <div className="rounded-lg border border-warning/20 bg-warning/5 p-6 mb-6">
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-3">
- <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center animate-pulse">
+ <div className="w-8 h-8 rounded-full bg-warning flex items-center justify-center animate-pulse">
  <span className="text-white">&#128302;</span>
  </div>
  <div>
@@ -407,11 +407,11 @@ export function DASTGraphQLPage() {
  </p>
  </div>
  </div>
- <span className="text-lg font-bold text-amber-600">{scanResult.progress?.percentage}%</span>
+ <span className="text-lg font-bold text-warning">{scanResult.progress?.percentage}%</span>
  </div>
- <div className="h-2 bg-amber-200 rounded-full overflow-hidden">
+ <div className="h-2 bg-warning/20 rounded-full overflow-hidden">
  <div
- className="h-full bg-amber-500 transition-all duration-300"
+ className="h-full bg-warning transition-all duration-300"
  style={{ width: `${scanResult.progress?.percentage || 0}%` }}
  />
  </div>
@@ -429,15 +429,15 @@ export function DASTGraphQLPage() {
  </div>
  <div className="rounded-lg border border-border bg-card p-4">
  <p className="text-sm text-muted-foreground">Queries Tested</p>
- <p className="text-2xl font-bold text-blue-600">{scanResult.summary.queriesTested}</p>
+ <p className="text-2xl font-bold text-primary">{scanResult.summary.queriesTested}</p>
  </div>
  <div className="rounded-lg border border-border bg-card p-4">
  <p className="text-sm text-muted-foreground">Mutations Tested</p>
  <p className="text-2xl font-bold text-purple-600">{scanResult.summary.mutationsTested}</p>
  </div>
- <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+ <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
  <p className="text-sm text-muted-foreground">Security Findings</p>
- <p className="text-2xl font-bold text-red-600">{scanResult.summary.totalFindings}</p>
+ <p className="text-2xl font-bold text-destructive">{scanResult.summary.totalFindings}</p>
  </div>
  </div>
 
@@ -445,15 +445,15 @@ export function DASTGraphQLPage() {
  <div className="rounded-lg border border-border bg-card p-4 mb-6">
  <div className="flex flex-wrap gap-4">
  <div className="flex items-center gap-2">
- <span className="w-3 h-3 rounded-full bg-red-500"></span>
+ <span className="w-3 h-3 rounded-full bg-destructive"></span>
  <span className="text-sm text-foreground">High: {scanResult.summary.bySeverity.high}</span>
  </div>
  <div className="flex items-center gap-2">
- <span className="w-3 h-3 rounded-full bg-amber-500"></span>
+ <span className="w-3 h-3 rounded-full bg-warning"></span>
  <span className="text-sm text-foreground">Medium: {scanResult.summary.bySeverity.medium}</span>
  </div>
  <div className="flex items-center gap-2">
- <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+ <span className="w-3 h-3 rounded-full bg-primary"></span>
  <span className="text-sm text-foreground">Low: {scanResult.summary.bySeverity.low}</span>
  </div>
  <div className="flex items-center gap-2">
@@ -480,7 +480,7 @@ export function DASTGraphQLPage() {
  </button>
  <button
  onClick={() => setActiveTab('findings')}
- className={`flex-1 px-4 py-3 text-sm font-medium ${activeTab === 'findings' ? 'text-red-600 border-b-2 border-red-500' : 'text-muted-foreground hover:text-foreground'}`}
+ className={`flex-1 px-4 py-3 text-sm font-medium ${activeTab === 'findings' ? 'text-destructive border-b-2 border-destructive' : 'text-muted-foreground hover:text-foreground'}`}
  >
  Findings ({scanResult.findings.length})
  </button>
@@ -491,17 +491,17 @@ export function DASTGraphQLPage() {
  {activeTab === 'schema' && scanResult.schema && (
  <div className="space-y-4">
  <div className="grid grid-cols-3 gap-4 mb-4">
- <div className="p-3 bg-blue-50 rounded-lg">
+ <div className="p-3 bg-primary/5 rounded-lg">
  <p className="text-xs text-muted-foreground">Query Type</p>
- <p className="font-mono text-sm text-blue-600">{scanResult.schema.queryType || 'None'}</p>
+ <p className="font-mono text-sm text-primary">{scanResult.schema.queryType || 'None'}</p>
  </div>
  <div className="p-3 bg-purple-50 rounded-lg">
  <p className="text-xs text-muted-foreground">Mutation Type</p>
  <p className="font-mono text-sm text-purple-600">{scanResult.schema.mutationType || 'None'}</p>
  </div>
- <div className="p-3 bg-green-50 rounded-lg">
+ <div className="p-3 bg-success/5 rounded-lg">
  <p className="text-xs text-muted-foreground">Subscription Type</p>
- <p className="font-mono text-sm text-green-600">{scanResult.schema.subscriptionType || 'None'}</p>
+ <p className="font-mono text-sm text-success">{scanResult.schema.subscriptionType || 'None'}</p>
  </div>
  </div>
 
@@ -521,17 +521,17 @@ export function DASTGraphQLPage() {
  {activeTab === 'operations' && scanResult.schema && (
  <div className="space-y-3">
  {scanResult.schema.operations.map((op) => (
- <div key={op.name} className={`p-3 border rounded-lg ${op.deprecated ? 'border-amber-200 bg-amber-50/50' : 'border-border'}`}>
+ <div key={op.name} className={`p-3 border rounded-lg ${op.deprecated ? 'border-warning/20 bg-warning/5/50' : 'border-border'}`}>
  <div className="flex items-center gap-2 mb-1">
- <span className={`px-2 py-0.5 rounded text-xs font-medium ${op.type === 'query' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+ <span className={`px-2 py-0.5 rounded text-xs font-medium ${op.type === 'query' ? 'bg-primary/10 text-primary' : 'bg-purple-100 text-purple-700'}`}>
  {op.type.toUpperCase()}
  </span>
  <span className="font-mono font-medium text-foreground">{op.name}</span>
  {op.deprecated && (
- <span className="px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-700">DEPRECATED</span>
+ <span className="px-2 py-0.5 rounded text-xs bg-warning/10 text-warning">DEPRECATED</span>
  )}
  {scanResult.operationsTested.find(t => t.name === op.name)?.status === 'tested' && (
- <span className="text-green-500">&#10003;</span>
+ <span className="text-success">&#10003;</span>
  )}
  </div>
  <p className="text-sm text-muted-foreground mb-2">{op.description}</p>
@@ -559,7 +559,7 @@ export function DASTGraphQLPage() {
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getSeverityColor(finding.severity)}`}>
  {finding.severity}
  </span>
- <span className={`px-2 py-0.5 rounded text-xs font-medium ${finding.operationType === 'query' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+ <span className={`px-2 py-0.5 rounded text-xs font-medium ${finding.operationType === 'query' ? 'bg-primary/10 text-primary' : 'bg-purple-100 text-purple-700'}`}>
  {finding.operationType}
  </span>
  <span className="font-mono text-sm text-foreground">{finding.operationName}</span>
@@ -572,9 +572,9 @@ export function DASTGraphQLPage() {
  <p className="text-sm text-muted-foreground mb-3">{finding.description}</p>
 
  {finding.evidence && (
- <div className="mb-3 p-2 bg-red-50 rounded text-sm">
- <span className="font-medium text-red-700">Evidence: </span>
- <span className="text-red-600">{finding.evidence}</span>
+ <div className="mb-3 p-2 bg-destructive/5 rounded text-sm">
+ <span className="font-medium text-destructive">Evidence: </span>
+ <span className="text-destructive">{finding.evidence}</span>
  </div>
  )}
 

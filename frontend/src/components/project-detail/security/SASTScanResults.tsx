@@ -84,16 +84,16 @@ export function SASTScanResults(props: SASTScanResultsProps) {
 // Helper component for scan status icon
 function ScanStatusIcon({ scan }: { scan: SASTScanResult }) {
  const colorClasses = scan.status === 'completed' && scan.summary.bySeverity.critical > 0
- ? 'bg-red-100 text-red-600'
+ ? 'bg-destructive/10 text-destructive'
  : scan.status === 'completed' && scan.summary.bySeverity.high > 0
  ? 'bg-orange-100 text-orange-600'
  : scan.status === 'completed' && scan.summary.bySeverity.medium > 0
- ? 'bg-amber-100 text-amber-600'
+ ? 'bg-warning/10 text-warning'
  : scan.status === 'completed'
- ? 'bg-green-100 text-green-600'
+ ? 'bg-success/10 text-success'
  : scan.status === 'failed'
- ? 'bg-red-100 text-red-600'
- : 'bg-blue-100 text-blue-600';
+ ? 'bg-destructive/10 text-destructive'
+ : 'bg-primary/10 text-primary';
 
  return (
  <div className={`flex h-10 w-10 items-center justify-center rounded-full ${colorClasses}`}>
@@ -120,7 +120,7 @@ function SeveritySummary({ summary }: { summary: SASTScanResult['summary'] }) {
  return (
  <div className="flex items-center gap-4 text-sm">
  {summary.bySeverity.critical > 0 && (
- <span className="flex items-center gap-1 text-red-600">
+ <span className="flex items-center gap-1 text-destructive">
  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
  </svg>
@@ -136,12 +136,12 @@ function SeveritySummary({ summary }: { summary: SASTScanResult['summary'] }) {
  </span>
  )}
  {summary.bySeverity.medium > 0 && (
- <span className="flex items-center gap-1 text-amber-600">
+ <span className="flex items-center gap-1 text-warning">
  {summary.bySeverity.medium} medium
  </span>
  )}
  {summary.bySeverity.low > 0 && (
- <span className="flex items-center gap-1 text-blue-600">
+ <span className="flex items-center gap-1 text-primary">
  {summary.bySeverity.low} low
  </span>
  )}
@@ -168,22 +168,22 @@ function FindingCard({
  const borderColorClass = finding.isFalsePositive
  ? 'border-border bg-muted/50 opacity-60'
  : finding.severity === 'CRITICAL'
- ? 'border-red-200 bg-red-50/50'
+ ? 'border-destructive/20 bg-destructive/5/50'
  : finding.severity === 'HIGH'
  ? 'border-orange-200 bg-orange-50/50'
  : finding.severity === 'MEDIUM'
- ? 'border-amber-200 bg-amber-50/50'
- : 'border-blue-200 bg-blue-50/50';
+ ? 'border-warning/20 bg-warning/5/50'
+ : 'border-primary/20 bg-primary/5/50';
 
  const severityColorClass = finding.isFalsePositive
  ? 'bg-muted text-foreground'
  : finding.severity === 'CRITICAL'
- ? 'bg-red-100 text-red-800'
+ ? 'bg-destructive/10 text-destructive'
  : finding.severity === 'HIGH'
  ? 'bg-orange-100 text-orange-800'
  : finding.severity === 'MEDIUM'
- ? 'bg-amber-100 text-amber-800'
- : 'bg-blue-100 text-blue-800';
+ ? 'bg-warning/10 text-warning'
+ : 'bg-primary/10 text-primary';
 
  return (
  <div className={`rounded-md border p-3 ${borderColorClass}`}>
@@ -241,8 +241,8 @@ function FindingCard({
  )}
  </div>
  {finding.suggestion && !finding.isFalsePositive && (
- <div className="mt-2 p-2 rounded bg-green-50 border border-green-200">
- <p className="text-xs text-green-800">
+ <div className="mt-2 p-2 rounded bg-success/5 border border-success/20">
+ <p className="text-xs text-success">
  <strong>Suggestion:</strong> {finding.suggestion}
  </p>
  </div>
@@ -273,13 +273,13 @@ function RemediationGuidance({ finding, expanded, onToggle }: RemediationGuidanc
  if (!finding.remediation) return null;
 
  return (
- <div className="mt-3 border border-blue-200 rounded-lg overflow-hidden">
+ <div className="mt-3 border border-primary/20 rounded-lg overflow-hidden">
  <button
  onClick={(e) => {
  e.stopPropagation();
  onToggle();
  }}
- className="w-full flex items-center justify-between px-3 py-2 bg-blue-50 text-blue-800 hover:bg-blue-100 transition-colors"
+ className="w-full flex items-center justify-between px-3 py-2 bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
  >
  <span className="flex items-center gap-2 text-sm font-medium">
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -315,14 +315,14 @@ function RemediationGuidance({ finding, expanded, onToggle }: RemediationGuidanc
  <h5 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-2">Secure Code Pattern</h5>
  <div className="grid md:grid-cols-2 gap-3">
  <div>
- <p className="text-xs text-red-600 font-medium mb-1">❌ Before (Vulnerable)</p>
- <pre className="p-2 bg-red-50 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap border border-red-200">
+ <p className="text-xs text-destructive font-medium mb-1">❌ Before (Vulnerable)</p>
+ <pre className="p-2 bg-destructive/5 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap border border-destructive/20">
  {finding.remediation.secureCodeExample.before}
  </pre>
  </div>
  <div>
- <p className="text-xs text-green-600 font-medium mb-1">✅ After (Secure)</p>
- <pre className="p-2 bg-green-50 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap border border-green-200">
+ <p className="text-xs text-success font-medium mb-1">✅ After (Secure)</p>
+ <pre className="p-2 bg-success/5 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap border border-success/20">
  {finding.remediation.secureCodeExample.after}
  </pre>
  </div>
@@ -340,7 +340,7 @@ function RemediationGuidance({ finding, expanded, onToggle }: RemediationGuidanc
  href={ref.url}
  target="_blank"
  rel="noopener noreferrer"
- className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+ className="text-sm text-primary hover:underline flex items-center gap-1"
  >
  {ref.title}
  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

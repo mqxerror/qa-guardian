@@ -400,7 +400,7 @@ export function AppSidebar() {
           </Link>
         </SidebarMenuButton>
         {options?.showBadge && options.badgeCount && options.badgeCount > 0 && (
-          <SidebarMenuBadge className="bg-amber-500 text-white">
+          <SidebarMenuBadge className="bg-warning text-white">
             {options.badgeCount > 99 ? '99+' : options.badgeCount}
           </SidebarMenuBadge>
         )}
@@ -444,7 +444,7 @@ export function AppSidebar() {
                   </span>
                 )}
                 {!showShortcutHints && options?.badge && options.badge > 0 && (
-                  <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full ${options.badgeColor === 'red' ? 'bg-red-500' : 'bg-amber-500'} text-xs text-white font-bold px-1`}>
+                  <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full ${options.badgeColor === 'red' ? 'bg-destructive' : 'bg-warning'} text-xs text-white font-bold px-1`}>
                     {options.badge > 99 ? '99+' : options.badge}
                   </span>
                 )}

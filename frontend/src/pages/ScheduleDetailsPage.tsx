@@ -136,15 +136,15 @@ export function ScheduleDetailsPage() {
  const getStatusColor = (status: string) => {
  switch (status) {
  case 'passed':
- return 'bg-green-100 text-green-800';
+ return 'bg-success/10 text-success';
  case 'failed':
  case 'error':
- return 'bg-red-100 text-red-800';
+ return 'bg-destructive/10 text-destructive';
  case 'running':
  case 'pending':
- return 'bg-blue-100 text-blue-800';
+ return 'bg-primary/10 text-primary';
  case 'cancelled':
- return 'bg-yellow-100 text-yellow-800';
+ return 'bg-warning/10 text-warning';
  default:
  return 'bg-muted text-foreground';
  }
@@ -197,7 +197,7 @@ export function ScheduleDetailsPage() {
  )}
  <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
- schedule.enabled ? 'bg-green-100 text-green-800' : 'bg-muted text-foreground'
+ schedule.enabled ? 'bg-success/10 text-success' : 'bg-muted text-foreground'
  }`}>
  {schedule.enabled ? 'Active' : 'Disabled'}
  </span>
@@ -281,9 +281,9 @@ export function ScheduleDetailsPage() {
  <td className="px-4 py-3 text-sm">
  {run.total > 0 ? (
  <span>
- <span className="text-green-600">{run.passed} passed</span>
+ <span className="text-success">{run.passed} passed</span>
  {run.failed > 0 && (
- <span className="text-red-600 ml-2">{run.failed} failed</span>
+ <span className="text-destructive ml-2">{run.failed} failed</span>
  )}
  </span>
  ) : (

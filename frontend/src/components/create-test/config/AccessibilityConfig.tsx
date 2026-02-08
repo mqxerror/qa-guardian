@@ -140,11 +140,11 @@ const FormField: React.FC<{
  <div className="space-y-1">
  <label className="block text-sm font-medium text-foreground">
  {label}
- {required && <span className="text-red-500 ml-1">*</span>}
+ {required && <span className="text-destructive ml-1">*</span>}
  </label>
  {children}
  {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
- {error && <p className="text-xs text-red-500">{error}</p>}
+ {error && <p className="text-xs text-destructive">{error}</p>}
  </div>
 );
 
@@ -221,8 +221,8 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  placeholder="Accessibility Audit - Homepage"
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.name
- ? 'border-red-500 focus:ring-red-500'
- : 'border-border focus:ring-blue-500'
+ ? 'border-destructive focus:ring-destructive'
+ : 'border-border focus:ring-primary'
  }`}
  />
  </FormField>
@@ -236,8 +236,8 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  placeholder={projectBaseUrl || 'https://your-site.com'}
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.targetUrl
- ? 'border-red-500 focus:ring-red-500'
- : 'border-border focus:ring-blue-500'
+ ? 'border-destructive focus:ring-destructive'
+ : 'border-border focus:ring-primary'
  }`}
  />
  </FormField>
@@ -263,13 +263,13 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  onClick={() => updateField('wcagLevel', level.value)}
  className={`flex flex-col items-center p-3 rounded-lg border text-center transition-colors ${
  config.wcagLevel === level.value
- ? 'border-green-500 bg-green-50'
+ ? 'border-success bg-success/5'
  : 'border-border hover:border-border'
  }`}
  >
  <span className={`text-2xl font-bold ${
  config.wcagLevel === level.value
- ? 'text-green-600'
+ ? 'text-success'
  : 'text-muted-foreground'
  }`}>
  {level.value}
@@ -301,10 +301,10 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  className="flex items-center gap-4"
  >
  <div className={`w-3 h-3 rounded-full ${
- severity.color === 'red' ? 'bg-red-500' :
+ severity.color === 'red' ? 'bg-destructive' :
  severity.color === 'orange' ? 'bg-orange-500' :
- severity.color === 'yellow' ? 'bg-yellow-500' :
- 'bg-blue-500'
+ severity.color === 'yellow' ? 'bg-warning' :
+ 'bg-primary'
  }`} />
  <div className="flex-1">
  <span className="text-sm font-medium text-foreground">
@@ -400,7 +400,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  type="checkbox"
  checked={config.includeIframes}
  onChange={(e) => updateField('includeIframes', e.target.checked)}
- className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+ className="w-4 h-4 text-success rounded focus:ring-success"
  />
  <span className="text-sm text-foreground">
  Include iframes in audit
@@ -426,8 +426,8 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
 
  {/* Validation Summary */}
  {Object.keys(errors).length > 0 && (
- <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
- <p className="text-sm text-red-600">
+ <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
+ <p className="text-sm text-destructive">
  Please fix the errors above to continue.
  </p>
  </div>

@@ -377,7 +377,7 @@ export default function SharedTestRunPage() {
  return (
  <div className="min-h-screen bg-background flex items-center justify-center">
  <div className="text-center">
- <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent" />
+ <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
  <p className="mt-4 text-muted-foreground">Loading shared results...</p>
  </div>
  </div>
@@ -390,8 +390,8 @@ export default function SharedTestRunPage() {
  <div className="min-h-screen bg-background flex items-center justify-center">
  <div className="bg-card rounded-xl shadow-lg border border-border p-8 max-w-md w-full mx-4">
  <div className="text-center mb-6">
- <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
- <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+ <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
  </svg>
  </div>
@@ -409,7 +409,7 @@ export default function SharedTestRunPage() {
  id="password"
  value={password}
  onChange={(e) => setPassword(e.target.value)}
- className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+ className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none"
  placeholder="Enter password"
  required
  autoFocus
@@ -417,15 +417,15 @@ export default function SharedTestRunPage() {
  </div>
 
  {passwordError && (
- <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
- <p className="text-sm text-red-600">{passwordError}</p>
+ <div className="mb-4 p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
+ <p className="text-sm text-destructive">{passwordError}</p>
  </div>
  )}
 
  <button
  type="submit"
  disabled={authenticating || !password}
- className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+ className="w-full py-2.5 px-4 bg-primary hover:bg-primary disabled:bg-primary/80 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
  >
  {authenticating ? (
  <>
@@ -468,8 +468,8 @@ export default function SharedTestRunPage() {
  <div className="min-h-screen bg-background flex items-center justify-center p-4">
  <div className="bg-card rounded-xl shadow-lg border border-border p-8 max-w-lg w-full text-center">
  {/* Expired Icon */}
- <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
- <svg className="w-10 h-10 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="w-20 h-20 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-6">
+ <svg className="w-10 h-10 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
  </div>
@@ -507,9 +507,9 @@ export default function SharedTestRunPage() {
  </div>
 
  {/* Option 1: Contact Owner */}
- <div className="flex items-start gap-3 text-left p-3 bg-blue-50 border border-blue-200 rounded-lg">
- <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
- <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="flex items-start gap-3 text-left p-3 bg-primary/5 border border-primary/20 rounded-lg">
+ <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+ <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
  </svg>
  </div>
@@ -524,7 +524,7 @@ export default function SharedTestRunPage() {
  {expiredInfo.ownerEmail && (
  <a
  href={`mailto:${expiredInfo.ownerEmail}?subject=Request for new test results link&body=Hi,%0A%0AThe shareable link to the test results has expired. Could you please generate a new one?%0A%0AExpired token: ${token}%0A%0AThank you!`}
- className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm mt-2 font-medium"
+ className="inline-flex items-center gap-1 text-primary hover:text-primary text-sm mt-2 font-medium"
  >
  <span>Send Email Request</span>
  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -555,7 +555,7 @@ export default function SharedTestRunPage() {
  <div className="flex flex-col sm:flex-row gap-3 mt-8">
  <Link
  to="/login"
- className="flex-1 inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+ className="flex-1 inline-flex items-center justify-center px-4 py-2.5 bg-primary hover:bg-primary text-white font-medium rounded-lg transition-colors"
  >
  Sign In
  </Link>
@@ -587,7 +587,7 @@ export default function SharedTestRunPage() {
  <p className="text-foreground mb-6">{error}</p>
  <Link
  to="/"
- className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+ className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors"
  >
  Go to Home
  </Link>
@@ -603,7 +603,7 @@ export default function SharedTestRunPage() {
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+ <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
  <span className="text-white text-xl">🛡️</span>
  </div>
  <div>
@@ -631,8 +631,8 @@ export default function SharedTestRunPage() {
  </div>
  <div className={`px-4 py-2 rounded-lg text-lg font-semibold ${
  run?.status === 'passed'
- ? 'bg-green-100 text-green-800'
- : 'bg-red-100 text-red-800'
+ ? 'bg-success/10 text-success'
+ : 'bg-destructive/10 text-destructive'
  }`}>
  {run?.status === 'passed' ? '✓ Passed' : '✗ Failed'}
  </div>
@@ -644,16 +644,16 @@ export default function SharedTestRunPage() {
  <div className="text-3xl font-bold text-foreground">{stats.total}</div>
  <div className="text-sm text-muted-foreground">Total Tests</div>
  </div>
- <div className="bg-green-50 rounded-lg p-4 text-center">
- <div className="text-3xl font-bold text-green-600">{stats.passed}</div>
+ <div className="bg-success/5 rounded-lg p-4 text-center">
+ <div className="text-3xl font-bold text-success">{stats.passed}</div>
  <div className="text-sm text-muted-foreground">Passed</div>
  </div>
- <div className="bg-red-50 rounded-lg p-4 text-center">
- <div className="text-3xl font-bold text-red-600">{stats.failed}</div>
+ <div className="bg-destructive/5 rounded-lg p-4 text-center">
+ <div className="text-3xl font-bold text-destructive">{stats.failed}</div>
  <div className="text-sm text-muted-foreground">Failed</div>
  </div>
- <div className="bg-blue-50 rounded-lg p-4 text-center">
- <div className="text-3xl font-bold text-blue-600">{stats.passRate}%</div>
+ <div className="bg-primary/5 rounded-lg p-4 text-center">
+ <div className="text-3xl font-bold text-primary">{stats.passRate}%</div>
  <div className="text-sm text-muted-foreground">Pass Rate</div>
  </div>
  </div>
@@ -694,14 +694,14 @@ export default function SharedTestRunPage() {
  key={result.test_id}
  className={`bg-card rounded-lg border p-4 ${
  result.status === 'passed'
- ? 'border-green-200'
- : 'border-red-200'
+ ? 'border-success/20'
+ : 'border-destructive/20'
  }`}
  >
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-sm ${
- result.status === 'passed' ? 'bg-green-500' : 'bg-red-500'
+ result.status === 'passed' ? 'bg-success' : 'bg-destructive'
  }`}>
  {result.status === 'passed' ? '✓' : '✗'}
  </span>
@@ -725,8 +725,8 @@ export default function SharedTestRunPage() {
  className="flex items-center gap-2 text-sm text-foreground"
  >
  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${
- step.status === 'passed' ? 'bg-green-100 text-green-600' :
- step.status === 'failed' ? 'bg-red-100 text-red-600' :
+ step.status === 'passed' ? 'bg-success/10 text-success' :
+ step.status === 'failed' ? 'bg-destructive/10 text-destructive' :
  'bg-muted text-foreground'
  }`}>
  {idx + 1}
@@ -738,7 +738,7 @@ export default function SharedTestRunPage() {
  </div>
 
  {result.error && (
- <div className="mt-3 p-3 bg-red-50 rounded text-sm text-red-600">
+ <div className="mt-3 p-3 bg-destructive/5 rounded text-sm text-destructive">
  {result.error}
  </div>
  )}
@@ -795,7 +795,7 @@ export default function SharedTestRunPage() {
  setLightboxIndex(index);
  setLightboxOpen(true);
  }}
- className="group relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer border border-border hover:border-blue-500 transition-all hover:shadow-lg"
+ className="group relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer border border-border hover:border-primary transition-all hover:shadow-lg"
  >
  <img
  src={screenshot.url}
@@ -808,14 +808,14 @@ export default function SharedTestRunPage() {
  <div className="text-white text-xs font-medium truncate">{screenshot.title}</div>
  <div className="flex items-center gap-1 mt-1">
  <span className={`px-1.5 py-0.5 text-xs rounded ${
- screenshot.testType === 'E2E' ? 'bg-blue-500/80' :
+ screenshot.testType === 'E2E' ? 'bg-primary/80' :
  screenshot.testType === 'Visual' ? 'bg-purple-500/80' :
- 'bg-green-500/80'
+ 'bg-success/80'
  }`}>
  {screenshot.testType}
  </span>
  <span className={`px-1.5 py-0.5 text-xs rounded ${
- screenshot.status === 'passed' ? 'bg-green-500/80' : 'bg-red-500/80'
+ screenshot.status === 'passed' ? 'bg-success/80' : 'bg-destructive/80'
  }`}>
  {screenshot.status === 'passed' ? '✓' : '✗'}
  </span>
@@ -824,8 +824,8 @@ export default function SharedTestRunPage() {
  </div>
  {/* Type badge */}
  <div className={`absolute top-2 right-2 px-1.5 py-0.5 text-xs rounded font-medium ${
- screenshot.type === 'diff' ? 'bg-amber-500 text-white' :
- screenshot.type === 'baseline' ? 'bg-blue-500 text-white' :
+ screenshot.type === 'diff' ? 'bg-warning text-white' :
+ screenshot.type === 'baseline' ? 'bg-primary text-white' :
  'bg-card/60 text-white'
  }`}>
  {screenshot.type}
@@ -908,14 +908,14 @@ export default function SharedTestRunPage() {
  </h4>
  <div className="flex items-center justify-center gap-3 mt-2">
  <span className={`px-2 py-0.5 text-sm rounded ${
- galleryScreenshots[lightboxIndex].testType === 'E2E' ? 'bg-blue-500' :
+ galleryScreenshots[lightboxIndex].testType === 'E2E' ? 'bg-primary' :
  galleryScreenshots[lightboxIndex].testType === 'Visual' ? 'bg-purple-500' :
- 'bg-green-500'
+ 'bg-success'
  } text-white`}>
  {galleryScreenshots[lightboxIndex].testType}
  </span>
  <span className={`px-2 py-0.5 text-sm rounded ${
- galleryScreenshots[lightboxIndex].status === 'passed' ? 'bg-green-500' : 'bg-red-500'
+ galleryScreenshots[lightboxIndex].status === 'passed' ? 'bg-success' : 'bg-destructive'
  } text-white`}>
  {galleryScreenshots[lightboxIndex].status === 'passed' ? '✓ Passed' : '✗ Failed'}
  </span>
@@ -937,12 +937,12 @@ export default function SharedTestRunPage() {
  )}
 
  {/* Feature #2003: Read-only notice */}
- <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+ <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mt-6">
  <div className="flex items-center gap-3">
- <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
- <p className="text-sm text-blue-800">
+ <p className="text-sm text-primary">
  This is a read-only view. Sign in to access full test management features.
  </p>
  </div>
@@ -952,7 +952,7 @@ export default function SharedTestRunPage() {
  <div className="mt-8 text-center text-sm text-muted-foreground">
  <p>This is a publicly shared test run result from QA Guardian.</p>
  <p className="mt-1">
- <Link to="/" className="text-blue-600 hover:text-blue-700">
+ <Link to="/" className="text-primary hover:text-primary">
  Learn more about QA Guardian →
  </Link>
  </p>

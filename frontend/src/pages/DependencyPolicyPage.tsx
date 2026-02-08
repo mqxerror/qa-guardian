@@ -326,20 +326,20 @@ export function DependencyPolicyPage() {
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'CRITICAL': return 'text-red-400 bg-red-500/20';
+      case 'CRITICAL': return 'text-destructive bg-destructive/20';
       case 'HIGH': return 'text-orange-400 bg-orange-500/20';
-      case 'MEDIUM': return 'text-yellow-400 bg-yellow-500/20';
-      case 'LOW': return 'text-blue-400 bg-blue-500/20';
+      case 'MEDIUM': return 'text-warning bg-warning/20';
+      case 'LOW': return 'text-primary bg-primary/20';
       default: return 'text-muted-foreground bg-muted';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'blocked': return 'text-red-400 bg-red-500/20';
-      case 'warned': return 'text-yellow-400 bg-yellow-500/20';
+      case 'blocked': return 'text-destructive bg-destructive/20';
+      case 'warned': return 'text-warning bg-warning/20';
       case 'overridden': return 'text-purple-400 bg-purple-500/20';
-      case 'resolved': return 'text-green-400 bg-green-500/20';
+      case 'resolved': return 'text-success bg-success/20';
       default: return 'text-muted-foreground bg-muted';
     }
   };
@@ -385,17 +385,17 @@ export function DependencyPolicyPage() {
             <div className="text-sm text-muted-foreground">Total Policies</div>
             <div className="text-2xl font-bold text-foreground">{policies.length}</div>
           </div>
-          <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4">
-            <div className="text-sm text-green-400">Active Policies</div>
-            <div className="text-2xl font-bold text-green-400">{policies.filter(p => p.enabled).length}</div>
+          <div className="rounded-lg border border-success/30 bg-success/10 p-4">
+            <div className="text-sm text-success">Active Policies</div>
+            <div className="text-2xl font-bold text-success">{policies.filter(p => p.enabled).length}</div>
           </div>
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
-            <div className="text-sm text-red-400">Blocked Builds</div>
-            <div className="text-2xl font-bold text-red-400">{violationSummary.blocked}</div>
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+            <div className="text-sm text-destructive">Blocked Builds</div>
+            <div className="text-2xl font-bold text-destructive">{violationSummary.blocked}</div>
           </div>
-          <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
-            <div className="text-sm text-yellow-400">Warnings</div>
-            <div className="text-2xl font-bold text-yellow-400">{violationSummary.warned}</div>
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
+            <div className="text-sm text-warning">Warnings</div>
+            <div className="text-2xl font-bold text-warning">{violationSummary.warned}</div>
           </div>
           <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 p-4">
             <div className="text-sm text-purple-400">Overridden</div>
@@ -452,7 +452,7 @@ export function DependencyPolicyPage() {
                         </div>
                         <button
                           onClick={() => deletePolicy(policy.id)}
-                          className="text-red-400 hover:text-red-300 transition-colors"
+                          className="text-destructive hover:text-destructive/70 transition-colors"
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -520,9 +520,9 @@ export function DependencyPolicyPage() {
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <div className="text-sm">
-                              <span className="text-red-400">{violation.summary.critical}C</span>
+                              <span className="text-destructive">{violation.summary.critical}C</span>
                               <span className="text-orange-400 ml-2">{violation.summary.high}H</span>
-                              <span className="text-yellow-400 ml-2">{violation.summary.medium}M</span>
+                              <span className="text-warning ml-2">{violation.summary.medium}M</span>
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {new Date(violation.created_at).toLocaleString()}
@@ -759,12 +759,12 @@ export function DependencyPolicyPage() {
                 to test your policy enforcement.
               </p>
               {simulationResult && (
-                <div className={`p-4 rounded-lg ${simulationResult.allowed ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
-                  <div className={`font-semibold flex items-center gap-2 ${simulationResult.allowed ? 'text-green-400' : 'text-red-400'}`}>
+                <div className={`p-4 rounded-lg ${simulationResult.allowed ? 'bg-success/10 border border-success/30' : 'bg-destructive/10 border border-destructive/30'}`}>
+                  <div className={`font-semibold flex items-center gap-2 ${simulationResult.allowed ? 'text-success' : 'text-destructive'}`}>
                     {simulationResult.allowed ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
                     {simulationResult.allowed ? 'Build Allowed' : 'Build Blocked'}
                   </div>
-                  <div className={`text-sm mt-1 ${simulationResult.allowed ? 'text-green-400/80' : 'text-red-400/80'}`}>
+                  <div className={`text-sm mt-1 ${simulationResult.allowed ? 'text-success/80' : 'text-destructive/80'}`}>
                     {simulationResult.message}
                   </div>
                 </div>

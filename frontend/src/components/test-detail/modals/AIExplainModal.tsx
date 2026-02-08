@@ -84,9 +84,9 @@ export function AIExplainModal({
  {/* Complexity Badge */}
  <div className="flex items-center gap-4">
  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
- explanation.complexity.level === 'simple' ? 'bg-green-100 text-green-800' :
- explanation.complexity.level === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
- 'bg-red-100 text-red-800'
+ explanation.complexity.level === 'simple' ? 'bg-success/10 text-success' :
+ explanation.complexity.level === 'moderate' ? 'bg-warning/10 text-warning' :
+ 'bg-destructive/10 text-destructive'
  }`}>
  {explanation.complexity.level.charAt(0).toUpperCase() + explanation.complexity.level.slice(1)} Complexity
  </span>
@@ -116,10 +116,10 @@ export function AIExplainModal({
  <code className="block text-xs bg-card text-gray-200 p-2 rounded mb-2 overflow-x-auto">{step.code}</code>
  <p className="text-sm text-foreground">{step.explanation}</p>
  <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded ${
- step.type === 'navigation' ? 'bg-blue-100 text-blue-700' :
- step.type === 'interaction' ? 'bg-green-100 text-green-700' :
+ step.type === 'navigation' ? 'bg-primary/10 text-primary' :
+ step.type === 'interaction' ? 'bg-success/10 text-success' :
  step.type === 'assertion' ? 'bg-purple-100 text-purple-700' :
- step.type === 'wait' ? 'bg-yellow-100 text-yellow-700' :
+ step.type === 'wait' ? 'bg-warning/10 text-warning' :
  'bg-muted text-foreground'
  }`}>{step.type}</span>
  </div>
@@ -146,9 +146,9 @@ export function AIExplainModal({
  <code className="block text-xs bg-card text-gray-200 p-2 rounded mb-2 overflow-x-auto">{assertion.code}</code>
  <p className="text-sm text-foreground">{assertion.what_it_checks}</p>
  <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded ${
- assertion.importance === 'critical' ? 'bg-red-100 text-red-700' :
+ assertion.importance === 'critical' ? 'bg-destructive/10 text-destructive' :
  assertion.importance === 'high' ? 'bg-orange-100 text-orange-700' :
- 'bg-blue-100 text-blue-700'
+ 'bg-primary/10 text-primary'
  }`}>{assertion.importance} importance</span>
  </div>
  ))}
@@ -182,9 +182,9 @@ export function AIExplainModal({
  <td className="py-2 px-3 text-foreground">{sel.strategy}</td>
  <td className="py-2 px-3">
  <span className={`inline-block text-xs px-2 py-0.5 rounded ${
- sel.reliability === 'high' ? 'bg-green-100 text-green-700' :
- sel.reliability === 'medium' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-red-100 text-red-700'
+ sel.reliability === 'high' ? 'bg-success/10 text-success' :
+ sel.reliability === 'medium' ? 'bg-warning/10 text-warning' :
+ 'bg-destructive/10 text-destructive'
  }`}>{sel.reliability}</span>
  </td>
  <td className="py-2 px-3 text-muted-foreground text-xs">{sel.suggestion || '-'}</td>
@@ -209,9 +209,9 @@ export function AIExplainModal({
  {explanation.improvements.map((imp, idx) => (
  <div key={idx} className="flex items-start gap-3 rounded-md border border-border p-3 bg-muted/30">
  <span className={`flex-shrink-0 inline-block text-xs px-2 py-0.5 rounded ${
- imp.priority === 'high' ? 'bg-red-100 text-red-700' :
- imp.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-blue-100 text-blue-700'
+ imp.priority === 'high' ? 'bg-destructive/10 text-destructive' :
+ imp.priority === 'medium' ? 'bg-warning/10 text-warning' :
+ 'bg-primary/10 text-primary'
  }`}>{imp.priority}</span>
  <div>
  <span className="text-xs text-muted-foreground uppercase tracking-wide">{imp.category}</span>

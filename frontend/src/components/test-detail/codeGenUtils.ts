@@ -352,19 +352,19 @@ export function highlightJavaScriptLine(line: string): string {
   const keywords = ['import', 'export', 'from', 'const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'default', 'async', 'await', 'new', 'true', 'false', 'null', 'undefined'];
   keywords.forEach(keyword => {
     const regex = new RegExp(`\\b(${keyword})\\b`, 'g');
-    beforeComment = beforeComment.replace(regex, `<span class="text-blue-400">$1</span>`);
+    beforeComment = beforeComment.replace(regex, `<span class="text-primary">$1</span>`);
   });
 
   // Strings (green) - single and double quotes
-  beforeComment = beforeComment.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '<span class="text-green-400">\'$1\'</span>');
-  beforeComment = beforeComment.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, '<span class="text-green-400">"$1"</span>');
-  beforeComment = beforeComment.replace(/`([^`\\]*(\\.[^`\\]*)*)`/g, '<span class="text-green-400">`$1`</span>');
+  beforeComment = beforeComment.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '<span class="text-success">\'$1\'</span>');
+  beforeComment = beforeComment.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, '<span class="text-success">"$1"</span>');
+  beforeComment = beforeComment.replace(/`([^`\\]*(\\.[^`\\]*)*)`/g, '<span class="text-success">`$1`</span>');
 
   // Numbers (orange)
   beforeComment = beforeComment.replace(/\b(\d+\.?\d*)\b/g, '<span class="text-orange-400">$1</span>');
 
   // Function names (yellow)
-  beforeComment = beforeComment.replace(/(\w+)\s*\(/g, '<span class="text-yellow-300">$1</span>(');
+  beforeComment = beforeComment.replace(/(\w+)\s*\(/g, '<span class="text-warning/70">$1</span>(');
 
   // Properties after dot (cyan)
   beforeComment = beforeComment.replace(/\.(\w+)/g, '.<span class="text-cyan-300">$1</span>');

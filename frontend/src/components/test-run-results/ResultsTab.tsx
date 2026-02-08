@@ -160,9 +160,9 @@ const ResultsTab = ({
  data-test-id={result.test_id} /* Feature #2000: For scroll-to-test navigation */
  className={`border rounded-lg overflow-hidden transition-all ${
  result.status === 'failed' || result.status === 'error'
- ? 'border-red-300'
+ ? 'border-destructive/30'
  : result.status === 'passed'
- ? 'border-green-300'
+ ? 'border-success/30'
  : 'border-border'
  }`}
  >
@@ -171,9 +171,9 @@ const ResultsTab = ({
  onClick={() => toggleResultCard(result.test_id)}
  className={`p-4 cursor-pointer transition-colors ${
  result.status === 'failed' || result.status === 'error'
- ? 'bg-red-50 hover:bg-red-100'
+ ? 'bg-destructive/5 hover:bg-destructive/10'
  : result.status === 'passed'
- ? 'bg-green-50 hover:bg-green-100'
+ ? 'bg-success/5 hover:bg-success/10'
  : 'bg-muted/30 hover:bg-muted/50'
  }`}
  >
@@ -189,18 +189,18 @@ const ResultsTab = ({
  {/* Status icon */}
  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
  result.status === 'passed'
- ? 'bg-green-100'
+ ? 'bg-success/10'
  : result.status === 'failed' || result.status === 'error'
- ? 'bg-red-100'
+ ? 'bg-destructive/10'
  : 'bg-muted'
  }`}>
  {result.status === 'passed' && (
- <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
  </svg>
  )}
  {(result.status === 'failed' || result.status === 'error') && (
- <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="w-5 h-5 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
  </svg>
  )}
@@ -218,7 +218,7 @@ const ResultsTab = ({
  {/* Type badge based on metrics */}
  <span className={`px-2 py-0.5 text-xs rounded-full ${
  keyMetric.type === 'performance' ? 'bg-purple-100 text-purple-700' :
- keyMetric.type === 'accessibility' ? 'bg-blue-100 text-blue-700' :
+ keyMetric.type === 'accessibility' ? 'bg-primary/10 text-primary' :
  keyMetric.type === 'load' ? 'bg-orange-100 text-orange-700' :
  keyMetric.type === 'visual' ? 'bg-pink-100 text-pink-700' :
  'bg-muted text-foreground'
@@ -228,7 +228,7 @@ const ResultsTab = ({
  </div>
  {/* Error preview if failed */}
  {result.error && (
- <p className="text-sm text-red-600 truncate">{result.error}</p>
+ <p className="text-sm text-destructive truncate">{result.error}</p>
  )}
  </div>
 
@@ -263,9 +263,9 @@ const ResultsTab = ({
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* Error details */}
  {result.error && (
- <div className="md:col-span-2 p-3 bg-red-50 border border-red-200 rounded-lg">
- <h4 className="text-sm font-medium text-red-700 mb-2">Error Message</h4>
- <pre className="text-sm text-red-600 whitespace-pre-wrap font-mono overflow-auto max-h-32">
+ <div className="md:col-span-2 p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
+ <h4 className="text-sm font-medium text-destructive mb-2">Error Message</h4>
+ <pre className="text-sm text-destructive whitespace-pre-wrap font-mono overflow-auto max-h-32">
  {result.error}
  </pre>
  </div>
@@ -275,11 +275,11 @@ const ResultsTab = ({
  <div className="p-3 bg-muted/30 rounded-lg">
  <h4 className="text-sm font-medium text-foreground mb-2">Steps</h4>
  <div className="flex items-center gap-4 text-sm">
- <span className="text-green-600">
+ <span className="text-success">
  {result.steps.filter(s => s.status === 'passed').length} passed
  </span>
  {failedSteps.length > 0 && (
- <span className="text-red-600">
+ <span className="text-destructive">
  {failedSteps.length} failed
  </span>
  )}
@@ -291,7 +291,7 @@ const ResultsTab = ({
  {failedSteps.length > 0 && (
  <div className="mt-2 space-y-1">
  {failedSteps.slice(0, 3).map((step, sIdx) => (
- <div key={sIdx} className="text-xs text-red-600">
+ <div key={sIdx} className="text-xs text-destructive">
  - {step.action}: {step.error || 'Failed'}
  </div>
  ))}

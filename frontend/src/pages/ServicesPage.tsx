@@ -48,17 +48,17 @@ interface ServicesResponse {
 type HealthStatus = 'healthy' | 'degraded' | 'unavailable' | 'not_configured';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; icon: string; dotColor: string }> = {
-  healthy: { color: 'text-green-400', bg: 'bg-green-500/20', label: 'Healthy', icon: '\u2713', dotColor: 'bg-green-500' },
-  degraded: { color: 'text-yellow-400', bg: 'bg-yellow-500/20', label: 'Degraded', icon: '!', dotColor: 'bg-yellow-500' },
-  unavailable: { color: 'text-red-400', bg: 'bg-red-500/20', label: 'Unavailable', icon: '\u2715', dotColor: 'bg-red-500' },
+  healthy: { color: 'text-success', bg: 'bg-success/20', label: 'Healthy', icon: '\u2713', dotColor: 'bg-success' },
+  degraded: { color: 'text-warning', bg: 'bg-warning/20', label: 'Degraded', icon: '!', dotColor: 'bg-warning' },
+  unavailable: { color: 'text-destructive', bg: 'bg-destructive/20', label: 'Unavailable', icon: '\u2715', dotColor: 'bg-destructive' },
   not_configured: { color: 'text-muted-foreground', bg: 'bg-muted', label: 'Not Configured', icon: '\u2014', dotColor: 'bg-gray-400' },
 };
 
 const CAPABILITY_STATUS_CONFIG: Record<string, { color: string; icon: string }> = {
-  implemented: { color: 'text-green-400', icon: '\u25cf' },
-  simulated: { color: 'text-yellow-400', icon: '\u25d0' },
+  implemented: { color: 'text-success', icon: '\u25cf' },
+  simulated: { color: 'text-warning', icon: '\u25d0' },
   planned: { color: 'text-muted-foreground', icon: '\u25cb' },
-  not_available: { color: 'text-red-400', icon: '\u2715' },
+  not_available: { color: 'text-destructive', icon: '\u2715' },
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -119,7 +119,7 @@ function ServiceCard({ service, history }: { service: ServiceInfo; history: Heal
       )}
 
       {service.error && (
-        <p className="text-xs text-red-400 mb-2 truncate" title={service.error}>
+        <p className="text-xs text-destructive mb-2 truncate" title={service.error}>
           {service.error}
         </p>
       )}
@@ -130,8 +130,8 @@ function ServiceCard({ service, history }: { service: ServiceInfo; history: Heal
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-xs">🐳</span>
             <span className={`inline-block w-1.5 h-1.5 rounded-full ${
-              service.container.container_status === 'running' ? 'bg-green-500' :
-              service.container.container_status === 'restarting' ? 'bg-yellow-500' : 'bg-red-500'
+              service.container.container_status === 'running' ? 'bg-success' :
+              service.container.container_status === 'restarting' ? 'bg-warning' : 'bg-destructive'
             }`} />
             <span className="text-xs font-medium text-foreground capitalize">
               {service.container.container_status}
@@ -157,7 +157,7 @@ function ServiceCard({ service, history }: { service: ServiceInfo; history: Heal
 
       <button
         onClick={() => setExpanded(!expanded)}
-        className="text-xs text-blue-400 hover:underline flex items-center gap-1 mt-1"
+        className="text-xs text-primary hover:underline flex items-center gap-1 mt-1"
       >
         <svg className={`w-3 h-3 transition-transform ${expanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -355,9 +355,9 @@ export function ServicesPage() {
                 {data.healthy_count} of {data.total_services} services healthy
                 {' \u2014 '}
                 <span className={
-                  data.overall_status === 'operational' ? 'text-green-400' :
-                  data.overall_status === 'degraded' ? 'text-yellow-400' :
-                  'text-red-400'
+                  data.overall_status === 'operational' ? 'text-success' :
+                  data.overall_status === 'degraded' ? 'text-warning' :
+                  'text-destructive'
                 }>
                   {data.overall_status === 'operational' ? 'All Systems Operational' :
                    data.overall_status === 'degraded' ? 'Some Systems Degraded' : 'System Issues Detected'}
@@ -375,7 +375,7 @@ export function ServicesPage() {
                   setAutoRefresh(e.target.checked);
                   if (e.target.checked) setNextRefreshIn(AUTO_REFRESH_INTERVAL / 1000);
                 }}
-                className="rounded border-border text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
+                className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
               />
               Auto-refresh
               {autoRefresh && <span className="text-muted-foreground">({nextRefreshIn}s)</span>}
@@ -396,17 +396,17 @@ export function ServicesPage() {
         {/* Summary cards */}
         {data && !loading && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-green-400">{data.healthy_count}</p>
-              <p className="text-xs text-green-400">Healthy</p>
+            <div className="bg-success/10 border border-success/30 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-success">{data.healthy_count}</p>
+              <p className="text-xs text-success">Healthy</p>
             </div>
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-yellow-400">{data.degraded_count}</p>
-              <p className="text-xs text-yellow-400">Degraded</p>
+            <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-warning">{data.degraded_count}</p>
+              <p className="text-xs text-warning">Degraded</p>
             </div>
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-red-400">{data.unavailable_count}</p>
-              <p className="text-xs text-red-400">Unavailable</p>
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-destructive">{data.unavailable_count}</p>
+              <p className="text-xs text-destructive">Unavailable</p>
             </div>
             <div className="bg-muted/50 border border-border rounded-lg p-3 text-center">
               <p className="text-2xl font-bold text-muted-foreground">{data.not_configured_count}</p>
@@ -419,14 +419,14 @@ export function ServicesPage() {
         {loading && !data && <LoadingSkeleton />}
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
             <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-sm text-red-400">{error}</p>
+              <p className="text-sm text-destructive">{error}</p>
             </div>
-            <button onClick={() => fetchServices()} className="mt-2 text-sm text-red-400 hover:underline">
+            <button onClick={() => fetchServices()} className="mt-2 text-sm text-destructive hover:underline">
               Try Again
             </button>
           </div>

@@ -191,14 +191,14 @@ export function GeneratedTestPreviewModal({
  <div className="flex flex-wrap gap-2 mb-4">
  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-sm rounded-full font-medium ${
  preview.syntax_valid
- ? 'bg-green-500/10 text-green-600 border border-green-500/30'
- : 'bg-red-500/10 text-red-600 border border-red-500/30'
+ ? 'bg-success/10 text-success border border-success/30'
+ : 'bg-destructive/10 text-destructive border border-destructive/30'
  }`}>
  {preview.syntax_valid ? '✓' : '✗'} Syntax {preview.syntax_valid ? 'Valid' : 'Invalid'}
  </span>
  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-sm rounded-full font-medium ${
- preview.complexity === 'simple' ? 'bg-green-500/10 text-green-600 border border-green-500/30' :
- preview.complexity === 'medium' ? 'bg-yellow-500/10 text-yellow-600 border border-yellow-500/30' :
+ preview.complexity === 'simple' ? 'bg-success/10 text-success border border-success/30' :
+ preview.complexity === 'medium' ? 'bg-warning/10 text-warning border border-warning/30' :
  'bg-orange-500/10 text-orange-600 border border-orange-500/30'
  }`}>
  {preview.complexity === 'simple' ? '📗' : preview.complexity === 'medium' ? '📙' : '📕'} {preview.complexity.charAt(0).toUpperCase() + preview.complexity.slice(1)} Complexity
@@ -206,7 +206,7 @@ export function GeneratedTestPreviewModal({
  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-sm rounded-full font-medium bg-purple-500/10 text-purple-600 border border-purple-500/30">
  🎯 {preview.selectors.length} Selectors
  </span>
- <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-sm rounded-full font-medium bg-blue-500/10 text-blue-600 border border-blue-500/30">
+ <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-sm rounded-full font-medium bg-primary/10 text-primary border border-primary/30">
  ✓ {preview.assertions.length} Assertions
  </span>
  </div>
@@ -214,15 +214,15 @@ export function GeneratedTestPreviewModal({
  {/* Feature #1153: Confidence Score Display */}
  {preview.confidence_score !== undefined && (
  <div className={`mb-4 p-4 rounded-lg border ${
- preview.confidence_score >= 80 ? 'bg-green-500/5 border-green-500/30' :
- preview.confidence_score >= 60 ? 'bg-yellow-500/5 border-yellow-500/30' :
+ preview.confidence_score >= 80 ? 'bg-success/5 border-success/30' :
+ preview.confidence_score >= 60 ? 'bg-warning/5 border-warning/30' :
  'bg-orange-500/5 border-orange-500/30'
  }`}>
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
  <div className={`flex items-center justify-center w-14 h-14 rounded-full border-4 ${
- preview.confidence_score >= 80 ? 'border-green-500 text-green-600' :
- preview.confidence_score >= 60 ? 'border-yellow-500 text-yellow-600' :
+ preview.confidence_score >= 80 ? 'border-success text-success' :
+ preview.confidence_score >= 60 ? 'border-warning text-warning' :
  'border-orange-500 text-orange-600'
  }`}>
  <span className="text-lg font-bold">{preview.confidence_score}%</span>
@@ -253,9 +253,9 @@ export function GeneratedTestPreviewModal({
  <div className="flex items-center justify-between mb-1">
  <span className="text-muted-foreground">{factor.factor}</span>
  <span className={`font-medium ${
- factor.score < 0 ? 'text-red-600' :
- factor.max_score > 0 && factor.score >= factor.max_score * 0.7 ? 'text-green-600' :
- factor.max_score > 0 && factor.score >= factor.max_score * 0.4 ? 'text-yellow-600' :
+ factor.score < 0 ? 'text-destructive' :
+ factor.max_score > 0 && factor.score >= factor.max_score * 0.7 ? 'text-success' :
+ factor.max_score > 0 && factor.score >= factor.max_score * 0.4 ? 'text-warning' :
  'text-orange-600'
  }`}>
  {factor.score < 0 ? factor.score : `${factor.score}/${factor.max_score}`}
@@ -265,8 +265,8 @@ export function GeneratedTestPreviewModal({
  <div className="w-full bg-muted rounded-full h-1.5">
  <div
  className={`h-1.5 rounded-full ${
- factor.score >= factor.max_score * 0.7 ? 'bg-green-500' :
- factor.score >= factor.max_score * 0.4 ? 'bg-yellow-500' :
+ factor.score >= factor.max_score * 0.7 ? 'bg-success' :
+ factor.score >= factor.max_score * 0.4 ? 'bg-warning' :
  'bg-orange-500'
  }`}
  style={{ width: `${Math.min(100, (factor.score / factor.max_score) * 100)}%` }}
@@ -284,12 +284,12 @@ export function GeneratedTestPreviewModal({
 
  {/* Warnings */}
  {preview.warnings && preview.warnings.length > 0 && (
- <div className="mb-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+ <div className="mb-4 p-3 rounded-lg bg-warning/10 border border-warning/30">
  <div className="flex items-center gap-2 mb-2">
  <span>⚠️</span>
- <span className="font-medium text-yellow-700">Warnings</span>
+ <span className="font-medium text-warning">Warnings</span>
  </div>
- <ul className="text-sm text-yellow-700 space-y-1 list-disc list-inside">
+ <ul className="text-sm text-warning space-y-1 list-disc list-inside">
  {preview.warnings.map((warning, idx) => (
  <li key={idx}>{warning}</li>
  ))}
@@ -299,12 +299,12 @@ export function GeneratedTestPreviewModal({
 
  {/* Syntax Errors */}
  {preview.syntax_errors && preview.syntax_errors.length > 0 && (
- <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+ <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
  <div className="flex items-center gap-2 mb-2">
  <span>❌</span>
- <span className="font-medium text-red-700">Syntax Errors</span>
+ <span className="font-medium text-destructive">Syntax Errors</span>
  </div>
- <ul className="text-sm text-red-700 space-y-1 list-disc list-inside">
+ <ul className="text-sm text-destructive space-y-1 list-disc list-inside">
  {preview.syntax_errors.map((error, idx) => (
  <li key={idx}>{error}</li>
  ))}
@@ -405,7 +405,7 @@ export function GeneratedTestPreviewModal({
  />
  ) : (
  <div className="rounded-lg bg-[#1e1e1e] p-4 overflow-x-auto max-h-80 overflow-y-auto">
- <pre className="text-sm text-green-400 font-mono whitespace-pre-wrap break-words">
+ <pre className="text-sm text-success font-mono whitespace-pre-wrap break-words">
  {generatedCode}
  </pre>
  </div>
@@ -452,7 +452,7 @@ export function GeneratedTestPreviewModal({
  </button>
  </div>
  {previousCode && (
- <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+ <p className="text-xs text-success mt-2 flex items-center gap-1">
  <span>✓</span>
  Regenerated - click "Show Diff" to review changes with accept/reject controls
  </p>

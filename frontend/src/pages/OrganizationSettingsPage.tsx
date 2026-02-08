@@ -463,7 +463,7 @@ function ArtifactRetentionSection() {
  <button
  onClick={handleRunCleanup}
  disabled={isRunningCleanup}
- className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+ className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning disabled:opacity-50"
  >
  {isRunningCleanup ? 'Running Cleanup...' : 'Run Cleanup Now'}
  </button>
@@ -494,9 +494,9 @@ function ArtifactRetentionSection() {
  )}
 
  {lastCleanupResult && (
- <div className="mt-4 rounded-md bg-green-50 border border-green-200 p-4">
- <h5 className="text-sm font-medium text-green-800 mb-2">Last Cleanup Result</h5>
- <div className="text-sm text-green-700">
+ <div className="mt-4 rounded-md bg-success/5 border border-success/20 p-4">
+ <h5 className="text-sm font-medium text-success mb-2">Last Cleanup Result</h5>
+ <div className="text-sm text-success">
  Deleted {lastCleanupResult.runs_deleted} test runs and {lastCleanupResult.trace_files_deleted} trace files,
  freeing {lastCleanupResult.mb_freed} MB of storage.
  </div>
@@ -570,9 +570,9 @@ function StorageUsageSection() {
  }
 
  const getProgressBarColor = (percent: number) => {
- if (percent >= 90) return 'bg-red-500';
- if (percent >= 80) return 'bg-amber-500';
- if (percent >= 60) return 'bg-yellow-500';
+ if (percent >= 90) return 'bg-destructive';
+ if (percent >= 80) return 'bg-warning';
+ if (percent >= 60) return 'bg-warning';
  return 'bg-emerald-500';
  };
 
@@ -603,14 +603,14 @@ function StorageUsageSection() {
  </div>
 
  {storageData.is_warning && (
- <div className="rounded-md bg-amber-50 border border-amber-200 p-4">
+ <div className="rounded-md bg-warning/5 border border-warning/20 p-4">
  <div className="flex items-start gap-3">
- <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+ <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
  </svg>
  <div>
- <h4 className="text-sm font-medium text-amber-800">Storage Warning</h4>
- <p className="text-sm text-amber-700 mt-1">
+ <h4 className="text-sm font-medium text-warning">Storage Warning</h4>
+ <p className="text-sm text-warning mt-1">
  You've used {storageData.usage_percent}% of your storage limit. Consider running artifact cleanup to free up space.
  </p>
  </div>
@@ -721,7 +721,7 @@ function MCPConnectionsSection() {
  <div key={conn.id} className="p-3 rounded-lg border border-border bg-muted/30">
  <div className="flex items-start justify-between">
  <div className="flex items-center gap-2">
- <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+ <div className="h-2 w-2 rounded-full bg-success animate-pulse"></div>
  <span className="font-medium text-foreground">{conn.api_key_name}</span>
  {conn.client_info?.transport && (
  <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
@@ -854,7 +854,7 @@ function MCPAuditLogSection() {
  <span className="text-lg">{getMethodIcon(log.method)}</span>
  <span className="font-medium text-foreground">{log.method}</span>
  {log.tool_name && <span className="text-sm text-muted-foreground">→ {log.tool_name}</span>}
- <span className={`text-xs px-1.5 py-0.5 rounded ${log.response_type === 'success' ? 'bg-green-500/20 text-green-600' : 'bg-red-500/20 text-red-600'}`}>{log.response_type}</span>
+ <span className={`text-xs px-1.5 py-0.5 rounded ${log.response_type === 'success' ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'}`}>{log.response_type}</span>
  </div>
  <span className="text-xs text-muted-foreground">{formatDateTime(log.timestamp)}</span>
  </div>
@@ -872,8 +872,8 @@ function MCPAuditLogSection() {
  )}
  {log.response_type === 'error' && (
  <div>
- <span className="text-xs font-medium text-red-600">Error:</span>
- <div className="mt-1 p-2 text-xs bg-red-500/10 text-red-600 rounded">{log.response_error_code && <span className="font-mono">[{log.response_error_code}] </span>}{log.response_error_message}</div>
+ <span className="text-xs font-medium text-destructive">Error:</span>
+ <div className="mt-1 p-2 text-xs bg-destructive/10 text-destructive rounded">{log.response_error_code && <span className="font-mono">[{log.response_error_code}] </span>}{log.response_error_message}</div>
  </div>
  )}
  </div>
@@ -1002,9 +1002,9 @@ function MCPAnalyticsDashboard() {
 
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
  <div className="p-4 rounded-lg border border-border bg-muted/30"><div className="text-2xl font-bold text-foreground">{analytics?.total_calls || 0}</div><div className="text-sm text-muted-foreground">Total Requests</div></div>
- <div className="p-4 rounded-lg border border-border bg-green-500/10"><div className="text-2xl font-bold text-green-600">{analytics?.successful_calls || 0}</div><div className="text-sm text-muted-foreground">Successful</div></div>
- <div className="p-4 rounded-lg border border-border bg-red-500/10"><div className="text-2xl font-bold text-red-600">{analytics?.failed_calls || 0}</div><div className="text-sm text-muted-foreground">Failed</div></div>
- <div className="p-4 rounded-lg border border-border bg-blue-500/10"><div className="text-2xl font-bold text-blue-600">{analytics?.avg_response_time_ms || 0}ms</div><div className="text-sm text-muted-foreground">Avg Response</div></div>
+ <div className="p-4 rounded-lg border border-border bg-success/10"><div className="text-2xl font-bold text-success">{analytics?.successful_calls || 0}</div><div className="text-sm text-muted-foreground">Successful</div></div>
+ <div className="p-4 rounded-lg border border-border bg-destructive/10"><div className="text-2xl font-bold text-destructive">{analytics?.failed_calls || 0}</div><div className="text-sm text-muted-foreground">Failed</div></div>
+ <div className="p-4 rounded-lg border border-border bg-primary/10"><div className="text-2xl font-bold text-primary">{analytics?.avg_response_time_ms || 0}ms</div><div className="text-sm text-muted-foreground">Avg Response</div></div>
  </div>
 
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1033,7 +1033,7 @@ function MCPAnalyticsDashboard() {
  {sortedApiKeys.slice(0, 8).map((key) => (
  <div key={key.id} className="flex items-center gap-2">
  <div className="w-24 text-xs text-foreground truncate" title={key.name}>{key.name}</div>
- <div className="flex-1 h-4 bg-muted rounded overflow-hidden"><div className="h-full bg-blue-500/80 rounded" style={{ width: `${(key.count / maxApiKeyCount) * 100}%` }} /></div>
+ <div className="flex-1 h-4 bg-muted rounded overflow-hidden"><div className="h-full bg-primary/80 rounded" style={{ width: `${(key.count / maxApiKeyCount) * 100}%` }} /></div>
  <div className="w-12 text-xs text-muted-foreground text-right">{key.count}</div>
  </div>
  ))}
@@ -1120,10 +1120,10 @@ function MCPToolsCatalogSection() {
 
  const toolsByCategory = filteredTools.reduce((acc, tool) => { if (!acc[tool.category]) acc[tool.category] = []; acc[tool.category].push(tool); return acc; }, {} as Record<string, MCPToolInfo[]>);
  const permissionColors: Record<string, string> = {
- read: 'bg-green-100 text-green-800',
- write: 'bg-blue-100 text-blue-800',
+ read: 'bg-success/10 text-success',
+ write: 'bg-primary/10 text-primary',
  execute: 'bg-orange-100 text-orange-800',
- admin: 'bg-red-100 text-red-800',
+ admin: 'bg-destructive/10 text-destructive',
  };
 
  if (isLoading) {
@@ -1138,7 +1138,7 @@ function MCPToolsCatalogSection() {
  <span className="ml-auto px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{tools.length} tools</span>
  </div>
  <p className="text-sm text-muted-foreground mb-4">Browse and search all available Model Context Protocol (MCP) tools for AI agent integration.</p>
- {error && <div className="mb-4 p-2 text-xs rounded bg-yellow-100 text-yellow-800">{error}</div>}
+ {error && <div className="mb-4 p-2 text-xs rounded bg-warning/10 text-warning">{error}</div>}
 
  <div className="flex flex-col sm:flex-row gap-3 mb-4">
  <div className="relative flex-1">
@@ -1258,9 +1258,9 @@ function SlackIntegrationSection() {
 
  {slackData.connected ? (
  <div className="space-y-4">
- <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
- <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
- <span className="text-green-700 font-medium">Connected to Slack</span>
+ <div className="flex items-center gap-2 p-3 bg-success/5 rounded-lg border border-success/20">
+ <svg className="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+ <span className="text-success font-medium">Connected to Slack</span>
  </div>
  <div className="grid grid-cols-2 gap-4 text-sm">
  <div><label className="text-muted-foreground">Workspace</label><p className="font-medium text-foreground">{slackData.workspace_name}</p></div>
@@ -1286,8 +1286,8 @@ function SlackIntegrationSection() {
  <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" /></svg>
  <span className="text-muted-foreground">Not connected</span>
  </div>
- <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
- <p className="text-sm text-yellow-700 mb-3"><strong>Development Mode:</strong> This simulates a Slack OAuth connection.</p>
+ <div className="bg-warning/5 rounded-lg p-4 border border-warning/20">
+ <p className="text-sm text-warning mb-3"><strong>Development Mode:</strong> This simulates a Slack OAuth connection.</p>
  <div className="space-y-3">
  <div>
  <label htmlFor="workspace-name" className="block text-sm font-medium text-foreground mb-1">Workspace Name</label>
@@ -1551,7 +1551,7 @@ function OrganizationSettingsPage() {
  <p className="mt-2 text-sm text-muted-foreground">These actions are irreversible. Please be careful.</p>
  <div className="mt-4 flex flex-wrap gap-3">
  {adminMembers.length > 0 && (
- <button onClick={() => { setShowTransferModal(true); setTransferPassword(''); setTransferError(''); setSelectedNewOwner(adminMembers[0]?.user_id || ''); }} className="rounded-md border border-yellow-600 px-4 py-2 font-medium text-yellow-600 hover:bg-yellow-50">Transfer Ownership</button>
+ <button onClick={() => { setShowTransferModal(true); setTransferPassword(''); setTransferError(''); setSelectedNewOwner(adminMembers[0]?.user_id || ''); }} className="rounded-md border border-warning px-4 py-2 font-medium text-warning hover:bg-warning/5">Transfer Ownership</button>
  )}
  <button onClick={() => setShowDeleteModal(true)} className="rounded-md border border-destructive px-4 py-2 font-medium text-destructive hover:bg-destructive/10">Delete Organization</button>
  </div>
@@ -1563,7 +1563,7 @@ function OrganizationSettingsPage() {
  <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg">
  {transferSuccess ? (
  <div className="text-center">
- <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100"><svg aria-hidden="true" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg></div>
+ <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success/10"><svg aria-hidden="true" className="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg></div>
  <h3 className="text-lg font-semibold text-foreground">Ownership Transferred</h3>
  <p className="mt-2 text-muted-foreground">Redirecting to login...</p>
  </div>
@@ -1586,7 +1586,7 @@ function OrganizationSettingsPage() {
  </div>
  <div className="flex justify-end gap-3 pt-4">
  <button type="button" onClick={() => setShowTransferModal(false)} className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted">Cancel</button>
- <button type="submit" disabled={isTransferring || !selectedNewOwner || !transferPassword} className="rounded-md bg-yellow-600 px-4 py-2 font-medium text-white hover:bg-yellow-700 disabled:opacity-50">{isTransferring ? 'Transferring...' : 'Transfer Ownership'}</button>
+ <button type="submit" disabled={isTransferring || !selectedNewOwner || !transferPassword} className="rounded-md bg-warning px-4 py-2 font-medium text-white hover:bg-warning disabled:opacity-50">{isTransferring ? 'Transferring...' : 'Transfer Ownership'}</button>
  </div>
  </form>
  )}
@@ -1599,7 +1599,7 @@ function OrganizationSettingsPage() {
  <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg">
  {deleteSuccess ? (
  <div className="text-center">
- <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100"><svg aria-hidden="true" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg></div>
+ <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success/10"><svg aria-hidden="true" className="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg></div>
  <h3 className="text-lg font-semibold text-foreground">Organization Deleted</h3>
  <p className="mt-2 text-muted-foreground">Redirecting to login...</p>
  </div>

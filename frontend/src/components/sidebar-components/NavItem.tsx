@@ -109,7 +109,7 @@ export function NavItemWithBadge({ to, icon, label, collapsed, isActive, badgeCo
         {icon}
         {!collapsed && <span className="flex-1">{label}</span>}
         {badgeCount > 0 && (
-          <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 text-xs text-white font-bold px-1 ${
+          <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full bg-warning text-xs text-white font-bold px-1 ${
             collapsed ? 'absolute top-1 right-1' : ''
           }`}>
             {badgeCount > 99 ? '99+' : badgeCount}

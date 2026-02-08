@@ -20,16 +20,16 @@ export const CoreWebVitalsSection: React.FC<CoreWebVitalsSectionProps> = ({ ligh
  <div
  key={`${prefix}${metric.label}`}
  className={`p-3 rounded-lg ${
- status === 'good' ? 'bg-green-50 border border-green-200' :
- status === 'needs-improvement' ? 'bg-yellow-50 border border-yellow-200' :
- 'bg-red-50 border border-red-200'
+ status === 'good' ? 'bg-success/5 border border-success/20' :
+ status === 'needs-improvement' ? 'bg-warning/5 border border-warning/20' :
+ 'bg-destructive/5 border border-destructive/20'
  }`}
  >
  <div className="text-xs font-medium text-muted-foreground mb-1">{metric.label}</div>
  <div className={`text-xl font-bold ${
- status === 'good' ? 'text-green-600' :
- status === 'needs-improvement' ? 'text-yellow-600' :
- 'text-red-600'
+ status === 'good' ? 'text-success' :
+ status === 'needs-improvement' ? 'text-warning' :
+ 'text-destructive'
  }`}>
  {metric.format(value)}
  </div>
@@ -50,14 +50,14 @@ export const CoreWebVitalsSection: React.FC<CoreWebVitalsSectionProps> = ({ ligh
  )}
  </h4>
  <div className="flex gap-4">
- <span className="flex items-center gap-1 text-xs text-green-600">
- <span className="w-2 h-2 rounded-full bg-green-500"></span> Good
+ <span className="flex items-center gap-1 text-xs text-success">
+ <span className="w-2 h-2 rounded-full bg-success"></span> Good
  </span>
- <span className="flex items-center gap-1 text-xs text-yellow-600">
- <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Needs Improvement
+ <span className="flex items-center gap-1 text-xs text-warning">
+ <span className="w-2 h-2 rounded-full bg-warning"></span> Needs Improvement
  </span>
- <span className="flex items-center gap-1 text-xs text-red-600">
- <span className="w-2 h-2 rounded-full bg-red-500"></span> Poor
+ <span className="flex items-center gap-1 text-xs text-destructive">
+ <span className="w-2 h-2 rounded-full bg-destructive"></span> Poor
  </span>
  </div>
  </div>
@@ -184,16 +184,16 @@ const SingleDeviceMetrics: React.FC<{ lighthouse: any }> = ({ lighthouse }) => (
  <div
  key={metric.label}
  className={`p-4 rounded-lg ${
- status === 'good' ? 'bg-green-50 border border-green-200' :
- status === 'needs-improvement' ? 'bg-yellow-50 border border-yellow-200' :
- 'bg-red-50 border border-red-200'
+ status === 'good' ? 'bg-success/5 border border-success/20' :
+ status === 'needs-improvement' ? 'bg-warning/5 border border-warning/20' :
+ 'bg-destructive/5 border border-destructive/20'
  }`}
  >
  <div className="text-xs font-medium text-muted-foreground mb-1">{metric.label}</div>
  <div className={`text-2xl font-bold ${
- status === 'good' ? 'text-green-600' :
- status === 'needs-improvement' ? 'text-yellow-600' :
- 'text-red-600'
+ status === 'good' ? 'text-success' :
+ status === 'needs-improvement' ? 'text-warning' :
+ 'text-destructive'
  }`}>
  {metric.format(value)}
  </div>

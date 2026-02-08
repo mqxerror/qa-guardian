@@ -236,9 +236,9 @@ export function AICostTrackingPage() {
   // Get budget status color - dark-first
   const getBudgetStatusColor = () => {
     if (!budget) return 'bg-muted';
-    if (budget.percentage_used >= budget.critical_threshold_percent) return 'bg-red-500';
-    if (budget.percentage_used >= budget.warning_threshold_percent) return 'bg-yellow-500';
-    return 'bg-green-500';
+    if (budget.percentage_used >= budget.critical_threshold_percent) return 'bg-destructive';
+    if (budget.percentage_used >= budget.warning_threshold_percent) return 'bg-warning';
+    return 'bg-success';
   };
 
   return (
@@ -316,13 +316,13 @@ export function AICostTrackingPage() {
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Remaining</div>
-                <div className={`text-2xl font-bold ${budget.budget_remaining < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                <div className={`text-2xl font-bold ${budget.budget_remaining < 0 ? 'text-destructive' : 'text-success'}`}>
                   {formatCurrency(budget.budget_remaining)}
                 </div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Projected End of Month</div>
-                <div className={`text-2xl font-bold ${budget.projected_month_end > budget.monthly_budget ? 'text-red-400' : 'text-foreground'}`}>
+                <div className={`text-2xl font-bold ${budget.projected_month_end > budget.monthly_budget ? 'text-destructive' : 'text-foreground'}`}>
                   {formatCurrency(budget.projected_month_end)}
                 </div>
               </div>
@@ -354,7 +354,7 @@ export function AICostTrackingPage() {
                 <DollarSign className="h-4 w-4" />
                 Total Cost
               </div>
-              <div className="text-3xl font-bold text-blue-400">{formatCurrency(summary.total_cost)}</div>
+              <div className="text-3xl font-bold text-primary">{formatCurrency(summary.total_cost)}</div>
               <div className="text-xs text-muted-foreground mt-1">{summary.total_requests} requests</div>
             </div>
             <div className="rounded-xl border border-border bg-card p-6">
@@ -369,7 +369,7 @@ export function AICostTrackingPage() {
                 <FileInput className="h-4 w-4" />
                 Input Tokens
               </div>
-              <div className="text-3xl font-bold text-green-400">{formatNumber(summary.total_input_tokens)}</div>
+              <div className="text-3xl font-bold text-success">{formatNumber(summary.total_input_tokens)}</div>
             </div>
             <div className="rounded-xl border border-border bg-card p-6">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
@@ -395,7 +395,7 @@ export function AICostTrackingPage() {
                   <div key={provider} className="p-4 bg-muted/50 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className={`w-8 h-8 rounded-full flex items-center justify-center ${provider === 'kie' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}`}>
+                        <span className={`w-8 h-8 rounded-full flex items-center justify-center ${provider === 'kie' ? 'bg-primary/20 text-primary' : 'bg-purple-500/20 text-purple-400'}`}>
                           {provider === 'kie' ? 'K' : 'A'}
                         </span>
                         <span className="font-medium text-foreground capitalize">{provider === 'kie' ? 'Kie.ai' : 'Anthropic'}</span>
@@ -409,7 +409,7 @@ export function AICostTrackingPage() {
                     </div>
                     <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
                       <div
-                        className={`h-full ${provider === 'kie' ? 'bg-blue-500' : 'bg-purple-500'}`}
+                        className={`h-full ${provider === 'kie' ? 'bg-primary' : 'bg-purple-500'}`}
                         style={{ width: `${(data.cost / summary.total_cost) * 100}%` }}
                       ></div>
                     </div>
@@ -467,7 +467,7 @@ export function AICostTrackingPage() {
                       <div className="w-32 text-sm text-muted-foreground capitalize">{type.replace('_', ' ')}</div>
                       <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                          className="h-full bg-gradient-to-r from-primary to-purple-500"
                           style={{ width: `${(data.cost / summary.total_cost) * 100}%` }}
                         ></div>
                       </div>
@@ -525,7 +525,7 @@ export function AICostTrackingPage() {
                   <div key={user.user_id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                        idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-orange-400' : 'bg-muted-foreground'
+                        idx === 0 ? 'bg-warning' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-orange-400' : 'bg-muted-foreground'
                       }`}>
                         {idx + 1}
                       </div>
@@ -555,7 +555,7 @@ export function AICostTrackingPage() {
                   <div key={project.project_id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                        idx === 0 ? 'bg-blue-500' : idx === 1 ? 'bg-blue-400' : idx === 2 ? 'bg-blue-300' : 'bg-muted-foreground'
+                        idx === 0 ? 'bg-primary' : idx === 1 ? 'bg-primary/80' : idx === 2 ? 'bg-primary/30' : 'bg-muted-foreground'
                       }`}>
                         {idx + 1}
                       </div>
@@ -600,7 +600,7 @@ export function AICostTrackingPage() {
                     </td>
                     <td className="py-3 px-2 text-foreground">
                       <span className="inline-flex items-center gap-1">
-                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${record.provider === 'kie' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}`}>
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${record.provider === 'kie' ? 'bg-primary/20 text-primary' : 'bg-purple-500/20 text-purple-400'}`}>
                           {record.provider === 'kie' ? 'K' : 'A'}
                         </span>
                         {record.provider === 'kie' ? 'Kie.ai' : 'Anthropic'}
@@ -629,7 +629,7 @@ export function AICostTrackingPage() {
             {pricing.map((model) => (
               <div key={model.model} className="p-4 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${model.provider === 'kie' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}`}>
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${model.provider === 'kie' ? 'bg-primary/20 text-primary' : 'bg-purple-500/20 text-purple-400'}`}>
                     {model.provider === 'kie' ? 'K' : 'A'}
                   </span>
                   <span className="font-medium text-foreground">{model.model}</span>

@@ -149,10 +149,10 @@ export function MCPToolsPage() {
  }, {} as Record<string, MCPToolInfo[]>);
 
  const permissionColors: Record<string, string> = {
- read: 'bg-green-100 text-green-800',
- write: 'bg-blue-100 text-blue-800',
+ read: 'bg-success/10 text-success',
+ write: 'bg-primary/10 text-primary',
  execute: 'bg-orange-100 text-orange-800',
- admin: 'bg-red-100 text-red-800',
+ admin: 'bg-destructive/10 text-destructive',
  };
 
  return (
@@ -171,7 +171,7 @@ export function MCPToolsPage() {
  </div>
 
  {error && (
- <div className="mb-4 p-3 text-sm rounded bg-yellow-100 text-yellow-800">
+ <div className="mb-4 p-3 text-sm rounded bg-warning/10 text-warning">
  {error}
  </div>
  )}

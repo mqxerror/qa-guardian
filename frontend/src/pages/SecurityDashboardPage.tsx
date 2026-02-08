@@ -196,10 +196,10 @@ export function SecurityDashboardPage() {
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'CRITICAL': return 'bg-red-600 text-white';
+      case 'CRITICAL': return 'bg-destructive text-white';
       case 'HIGH': return 'bg-orange-500 text-white';
-      case 'MEDIUM': return 'bg-yellow-500 text-black';
-      case 'LOW': return 'bg-blue-500 text-white';
+      case 'MEDIUM': return 'bg-warning text-black';
+      case 'LOW': return 'bg-primary text-white';
       default: return 'bg-muted text-muted-foreground';
     }
   };
@@ -281,7 +281,7 @@ export function SecurityDashboardPage() {
             >
               Secrets
               {secretsData && secretsData.summary.active > 0 && (
-                <span className="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-red-600 text-white">
+                <span className="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-destructive text-white">
                   {secretsData.summary.active}
                 </span>
               )}
@@ -343,11 +343,11 @@ export function SecurityDashboardPage() {
                 </div>
                 <div className="rounded-lg border border-border bg-card p-6">
                   <h3 className="text-sm font-medium text-muted-foreground">Medium</h3>
-                  <p className="mt-2 text-3xl font-bold text-yellow-500">{secretsData.summary.bySeverity.medium}</p>
+                  <p className="mt-2 text-3xl font-bold text-warning">{secretsData.summary.bySeverity.medium}</p>
                 </div>
                 <div className="rounded-lg border border-border bg-card p-6">
                   <h3 className="text-sm font-medium text-muted-foreground">Low</h3>
-                  <p className="mt-2 text-3xl font-bold text-blue-500">{secretsData.summary.bySeverity.low}</p>
+                  <p className="mt-2 text-3xl font-bold text-primary">{secretsData.summary.bySeverity.low}</p>
                 </div>
               </div>
 
@@ -387,7 +387,7 @@ export function SecurityDashboardPage() {
                     <button
                       onClick={() => scanForSecrets(true, false)}
                       disabled={isScanning}
-                      className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isScanning ? 'Scanning...' : 'Scan .env Files'}
                     </button>
@@ -401,7 +401,7 @@ export function SecurityDashboardPage() {
                     <button
                       onClick={() => scanForSecrets(true, true)}
                       disabled={isScanning}
-                      className="px-4 py-2 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 text-sm font-medium rounded-lg bg-success text-white hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isScanning ? 'Scanning...' : 'Scan All'}
                     </button>
@@ -662,10 +662,10 @@ export function SecurityDashboardPage() {
                 </div>
                 <div className="rounded-lg border border-border bg-card p-6">
                   <h3 className="text-sm font-medium text-muted-foreground">Critical Findings</h3>
-                  <p className="mt-2 text-3xl font-bold text-red-600">{trendsData.summary.latestFindings.critical}</p>
+                  <p className="mt-2 text-3xl font-bold text-destructive">{trendsData.summary.latestFindings.critical}</p>
                   <p className={`mt-1 text-xs font-medium ${
-                    trendsData.summary.changes.critical > 0 ? 'text-red-500' :
-                    trendsData.summary.changes.critical < 0 ? 'text-green-500' :
+                    trendsData.summary.changes.critical > 0 ? 'text-destructive' :
+                    trendsData.summary.changes.critical < 0 ? 'text-success' :
                     'text-muted-foreground'
                   }`}>
                     {trendsData.summary.changes.critical > 0 ? '↑' : trendsData.summary.changes.critical < 0 ? '↓' : '→'} {Math.abs(trendsData.summary.changes.critical)}% change
@@ -675,8 +675,8 @@ export function SecurityDashboardPage() {
                   <h3 className="text-sm font-medium text-muted-foreground">High Findings</h3>
                   <p className="mt-2 text-3xl font-bold text-orange-500">{trendsData.summary.latestFindings.high}</p>
                   <p className={`mt-1 text-xs font-medium ${
-                    trendsData.summary.changes.high > 0 ? 'text-red-500' :
-                    trendsData.summary.changes.high < 0 ? 'text-green-500' :
+                    trendsData.summary.changes.high > 0 ? 'text-destructive' :
+                    trendsData.summary.changes.high < 0 ? 'text-success' :
                     'text-muted-foreground'
                   }`}>
                     {trendsData.summary.changes.high > 0 ? '↑' : trendsData.summary.changes.high < 0 ? '↓' : '→'} {Math.abs(trendsData.summary.changes.high)}% change
@@ -686,8 +686,8 @@ export function SecurityDashboardPage() {
                   <h3 className="text-sm font-medium text-muted-foreground">Total Findings</h3>
                   <p className="mt-2 text-3xl font-bold text-foreground">{trendsData.summary.latestFindings.total}</p>
                   <p className={`mt-1 text-xs font-medium ${
-                    trendsData.summary.changes.total > 0 ? 'text-red-500' :
-                    trendsData.summary.changes.total < 0 ? 'text-green-500' :
+                    trendsData.summary.changes.total > 0 ? 'text-destructive' :
+                    trendsData.summary.changes.total < 0 ? 'text-success' :
                     'text-muted-foreground'
                   }`}>
                     {trendsData.summary.changes.total > 0 ? '↑' : trendsData.summary.changes.total < 0 ? '↓' : '→'} {Math.abs(trendsData.summary.changes.total)}% change
@@ -771,10 +771,10 @@ export function SecurityDashboardPage() {
                     const total = trendsData.summary.latestFindings.total || 1;
                     const percentage = Math.round((latest / total) * 100);
                     const colors = {
-                      critical: { bar: 'bg-red-600', text: 'text-red-600' },
+                      critical: { bar: 'bg-destructive', text: 'text-destructive' },
                       high: { bar: 'bg-orange-500', text: 'text-orange-500' },
-                      medium: { bar: 'bg-yellow-500', text: 'text-yellow-500' },
-                      low: { bar: 'bg-blue-500', text: 'text-blue-500' },
+                      medium: { bar: 'bg-warning', text: 'text-warning' },
+                      low: { bar: 'bg-primary', text: 'text-primary' },
                     };
                     return (
                       <div key={severity} className="space-y-2">
@@ -856,11 +856,11 @@ export function SecurityDashboardPage() {
               </div>
               <div className="rounded-lg border border-border bg-card p-6">
                 <h3 className="text-sm font-medium text-muted-foreground">Medium</h3>
-                <p className="mt-2 text-3xl font-bold text-yellow-500">{data.summary.bySeverity.medium}</p>
+                <p className="mt-2 text-3xl font-bold text-warning">{data.summary.bySeverity.medium}</p>
               </div>
               <div className="rounded-lg border border-border bg-card p-6">
                 <h3 className="text-sm font-medium text-muted-foreground">Low</h3>
-                <p className="mt-2 text-3xl font-bold text-blue-500">{data.summary.bySeverity.low}</p>
+                <p className="mt-2 text-3xl font-bold text-primary">{data.summary.bySeverity.low}</p>
               </div>
             </div>
 

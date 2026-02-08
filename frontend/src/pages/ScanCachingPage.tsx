@@ -227,7 +227,7 @@ export function ScanCachingPage() {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       </Layout>
     );
@@ -240,7 +240,7 @@ export function ScanCachingPage() {
         <div>
           <button
             onClick={() => navigate('/security')}
-            className="text-blue-400 hover:text-blue-300 mb-2 flex items-center gap-1"
+            className="text-primary hover:text-primary/70 mb-2 flex items-center gap-1"
           >
             &#8592; Back to Security
           </button>
@@ -251,7 +251,7 @@ export function ScanCachingPage() {
           <button
             onClick={() => runScan(false)}
             disabled={isScanning}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary disabled:opacity-50"
           >
             {isScanning ? 'Scanning...' : '\u{1F50D} Run Scan'}
           </button>
@@ -267,7 +267,7 @@ export function ScanCachingPage() {
 
       {/* Last Scan Result */}
       {lastScan && (
-        <div className={`mb-6 p-4 rounded-lg border ${lastScan.cache_hit ? 'bg-green-500/10 border-green-500/30' : 'bg-blue-500/10 border-blue-500/30'}`}>
+        <div className={`mb-6 p-4 rounded-lg border ${lastScan.cache_hit ? 'bg-success/10 border-success/30' : 'bg-primary/10 border-primary/30'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-3xl">{lastScan.cache_hit ? '\u26A1' : '\u{1F50D}'}</span>
@@ -297,11 +297,11 @@ export function ScanCachingPage() {
       {stats && (
         <div className="grid grid-cols-5 gap-4 mb-6">
           <div className="bg-card border border-border rounded-lg shadow p-4 text-center">
-            <div className="text-3xl font-bold text-blue-400">{stats.total_entries}</div>
+            <div className="text-3xl font-bold text-primary">{stats.total_entries}</div>
             <div className="text-sm text-muted-foreground">Total Entries</div>
           </div>
           <div className="bg-card border border-border rounded-lg shadow p-4 text-center">
-            <div className="text-3xl font-bold text-green-400">{stats.valid_entries}</div>
+            <div className="text-3xl font-bold text-success">{stats.valid_entries}</div>
             <div className="text-sm text-muted-foreground">Valid</div>
           </div>
           <div className="bg-card border border-border rounded-lg shadow p-4 text-center">
@@ -309,7 +309,7 @@ export function ScanCachingPage() {
             <div className="text-sm text-muted-foreground">Cache Hits</div>
           </div>
           <div className="bg-card border border-border rounded-lg shadow p-4 text-center">
-            <div className="text-3xl font-bold text-amber-400">{stats.cache_hit_rate}%</div>
+            <div className="text-3xl font-bold text-warning">{stats.cache_hit_rate}%</div>
             <div className="text-sm text-muted-foreground">Hit Rate</div>
           </div>
           <div className="bg-card border border-border rounded-lg shadow p-4 text-center">
@@ -331,7 +331,7 @@ export function ScanCachingPage() {
                 <button
                   onClick={() => updateConfig({ enabled: !config.enabled })}
                   disabled={isSavingConfig}
-                  className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-green-500' : 'bg-muted'}`}
+                  className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-success' : 'bg-muted'}`}
                 >
                   <div className={`w-5 h-5 bg-card rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
@@ -370,7 +370,7 @@ export function ScanCachingPage() {
                 <button
                   onClick={() => updateConfig({ compression_enabled: !config.compression_enabled })}
                   disabled={isSavingConfig}
-                  className={`w-12 h-6 rounded-full transition-colors ${config.compression_enabled ? 'bg-green-500' : 'bg-muted'}`}
+                  className={`w-12 h-6 rounded-full transition-colors ${config.compression_enabled ? 'bg-success' : 'bg-muted'}`}
                 >
                   <div className={`w-5 h-5 bg-card rounded-full shadow transform transition-transform ${config.compression_enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
@@ -388,13 +388,13 @@ export function ScanCachingPage() {
               <div className="pt-4 border-t border-border flex gap-2">
                 <button
                   onClick={invalidateCache}
-                  className="flex-1 px-3 py-2 bg-amber-500/20 text-amber-400 rounded hover:bg-amber-500/30 text-sm"
+                  className="flex-1 px-3 py-2 bg-warning/20 text-warning rounded hover:bg-warning/30 text-sm"
                 >
                   Invalidate All
                 </button>
                 <button
                   onClick={clearCache}
-                  className="flex-1 px-3 py-2 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 text-sm"
+                  className="flex-1 px-3 py-2 bg-destructive/20 text-destructive rounded hover:bg-destructive/30 text-sm"
                 >
                   Clear Cache
                 </button>
@@ -431,17 +431,17 @@ export function ScanCachingPage() {
                 <div
                   key={entry.id}
                   className={`border rounded p-3 ${
-                    entry.status === 'valid' ? 'border-green-500/30 bg-green-500/10'
-                    : entry.status === 'stale' ? 'border-amber-500/30 bg-amber-500/10'
-                    : 'border-red-500/30 bg-red-500/10'
+                    entry.status === 'valid' ? 'border-success/30 bg-success/10'
+                    : entry.status === 'stale' ? 'border-warning/30 bg-warning/10'
+                    : 'border-destructive/30 bg-destructive/10'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        entry.status === 'valid' ? 'bg-green-500/20 text-green-400'
-                        : entry.status === 'stale' ? 'bg-amber-500/20 text-amber-400'
-                        : 'bg-red-500/20 text-red-400'
+                        entry.status === 'valid' ? 'bg-success/20 text-success'
+                        : entry.status === 'stale' ? 'bg-warning/20 text-warning'
+                        : 'bg-destructive/20 text-destructive'
                       }`}>
                         {entry.status}
                       </span>

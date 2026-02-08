@@ -144,9 +144,9 @@ export default function ComparisonPanel({
  {/* Duration */}
  <div className={`p-4 rounded-lg border ${
  comparisonMetrics.duration.improved
- ? 'bg-green-50 border-green-200'
+ ? 'bg-success/5 border-success/20'
  : comparisonMetrics.duration.delta.direction !== 'same'
- ? 'bg-red-50 border-red-200'
+ ? 'bg-destructive/5 border-destructive/20'
  : 'bg-muted/50 border-border'
  }`}>
  <div className="text-sm text-muted-foreground mb-1">Duration</div>
@@ -156,7 +156,7 @@ export default function ComparisonPanel({
  </span>
  {comparisonMetrics.duration.delta.direction !== 'same' && (
  <span className={`flex items-center text-sm ${
- comparisonMetrics.duration.improved ? 'text-green-600' : 'text-red-600'
+ comparisonMetrics.duration.improved ? 'text-success' : 'text-destructive'
  }`}>
  {comparisonMetrics.duration.delta.direction === 'down' ? (
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -179,19 +179,19 @@ export default function ComparisonPanel({
  {/* Passed */}
  <div className={`p-4 rounded-lg border ${
  comparisonMetrics.passed.improved
- ? 'bg-green-50 border-green-200'
+ ? 'bg-success/5 border-success/20'
  : comparisonMetrics.passed.delta.direction !== 'same'
- ? 'bg-red-50 border-red-200'
+ ? 'bg-destructive/5 border-destructive/20'
  : 'bg-muted/50 border-border'
  }`}>
  <div className="text-sm text-muted-foreground mb-1">Passed</div>
  <div className="flex items-center gap-2">
- <span className="text-lg font-bold text-green-600">
+ <span className="text-lg font-bold text-success">
  {comparisonMetrics.passed.current}
  </span>
  {comparisonMetrics.passed.delta.direction !== 'same' && (
  <span className={`flex items-center text-sm ${
- comparisonMetrics.passed.improved ? 'text-green-600' : 'text-red-600'
+ comparisonMetrics.passed.improved ? 'text-success' : 'text-destructive'
  }`}>
  {comparisonMetrics.passed.delta.direction === 'up' ? '+' : '-'}
  {comparisonMetrics.passed.delta.value}
@@ -206,19 +206,19 @@ export default function ComparisonPanel({
  {/* Failed */}
  <div className={`p-4 rounded-lg border ${
  comparisonMetrics.failed.improved
- ? 'bg-green-50 border-green-200'
+ ? 'bg-success/5 border-success/20'
  : comparisonMetrics.failed.delta.direction !== 'same'
- ? 'bg-red-50 border-red-200'
+ ? 'bg-destructive/5 border-destructive/20'
  : 'bg-muted/50 border-border'
  }`}>
  <div className="text-sm text-muted-foreground mb-1">Failed</div>
  <div className="flex items-center gap-2">
- <span className="text-lg font-bold text-red-600">
+ <span className="text-lg font-bold text-destructive">
  {comparisonMetrics.failed.current}
  </span>
  {comparisonMetrics.failed.delta.direction !== 'same' && (
  <span className={`flex items-center text-sm ${
- comparisonMetrics.failed.improved ? 'text-green-600' : 'text-red-600'
+ comparisonMetrics.failed.improved ? 'text-success' : 'text-destructive'
  }`}>
  {comparisonMetrics.failed.delta.direction === 'up' ? '+' : '-'}
  {comparisonMetrics.failed.delta.value}

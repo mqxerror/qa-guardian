@@ -9,10 +9,10 @@ import { memo } from 'react';
 import { HealingBadgeProps } from './types';
 
 const healingStyles = {
- pending: 'bg-amber-100 text-amber-700',
- applied: 'bg-green-100 text-green-700',
- rejected: 'bg-red-100 text-red-700',
- default: 'bg-blue-100 text-blue-700',
+ pending: 'bg-warning/10 text-warning',
+ applied: 'bg-success/10 text-success',
+ rejected: 'bg-destructive/10 text-destructive',
+ default: 'bg-primary/10 text-primary',
 };
 
 export const HealingBadge = memo(function HealingBadge({ isActive, status, count }: HealingBadgeProps) {

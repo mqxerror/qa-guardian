@@ -48,7 +48,7 @@ export function ParallelizationPanel({
  onRunSuite,
 }: ParallelizationPanelProps) {
  return (
- <div className="mb-6 rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 p-6">
+ <div className="mb-6 rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-primary/5 p-6">
  <div className="flex items-center justify-between mb-4">
  <div>
  <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -87,18 +87,18 @@ export function ParallelizationPanel({
  <p className="text-sm text-muted-foreground">Total Tests</p>
  </div>
  <div className="p-4 rounded-lg bg-card border border-border text-center">
- <p className="text-2xl font-bold text-green-600">{plan.optimization.speedup}x</p>
+ <p className="text-2xl font-bold text-success">{plan.optimization.speedup}x</p>
  <p className="text-sm text-muted-foreground">Speedup</p>
  </div>
  <div className="p-4 rounded-lg bg-card border border-border text-center">
- <p className="text-2xl font-bold text-blue-600">{plan.optimization.timeSaved}s</p>
+ <p className="text-2xl font-bold text-primary">{plan.optimization.timeSaved}s</p>
  <p className="text-sm text-muted-foreground">Time Saved</p>
  </div>
  <div className="p-4 rounded-lg bg-card border border-border text-center">
  <p className={`text-2xl font-bold ${
- plan.resourceBalance.balanceScore === 'Excellent' ? 'text-green-600' :
- plan.resourceBalance.balanceScore === 'Good' ? 'text-blue-600' :
- 'text-yellow-600'
+ plan.resourceBalance.balanceScore === 'Excellent' ? 'text-success' :
+ plan.resourceBalance.balanceScore === 'Good' ? 'text-primary' :
+ 'text-warning'
  }`}>{plan.resourceBalance.balanceScore}</p>
  <p className="text-sm text-muted-foreground">Balance Score</p>
  </div>
@@ -110,17 +110,17 @@ export function ParallelizationPanel({
  <div className="space-y-2">
  <div className="flex items-center gap-3">
  <span className="text-sm text-muted-foreground w-24">Sequential:</span>
- <div className="flex-1 h-4 bg-red-100 rounded-full overflow-hidden">
- <div className="h-full bg-red-500 rounded-full" style={{ width: '100%' }} />
+ <div className="flex-1 h-4 bg-destructive/10 rounded-full overflow-hidden">
+ <div className="h-full bg-destructive rounded-full" style={{ width: '100%' }} />
  </div>
- <span className="text-sm font-medium text-red-600 w-16">{plan.optimization.sequentialTime}s</span>
+ <span className="text-sm font-medium text-destructive w-16">{plan.optimization.sequentialTime}s</span>
  </div>
  <div className="flex items-center gap-3">
  <span className="text-sm text-muted-foreground w-24">Parallel:</span>
- <div className="flex-1 h-4 bg-green-100 rounded-full overflow-hidden">
- <div className="h-full bg-green-500 rounded-full" style={{ width: `${(plan.optimization.parallelTime / plan.optimization.sequentialTime) * 100}%` }} />
+ <div className="flex-1 h-4 bg-success/10 rounded-full overflow-hidden">
+ <div className="h-full bg-success rounded-full" style={{ width: `${(plan.optimization.parallelTime / plan.optimization.sequentialTime) * 100}%` }} />
  </div>
- <span className="text-sm font-medium text-green-600 w-16">{plan.optimization.parallelTime}s</span>
+ <span className="text-sm font-medium text-success w-16">{plan.optimization.parallelTime}s</span>
  </div>
  </div>
  </div>
@@ -182,7 +182,7 @@ export function ParallelizationPanel({
  <button
  onClick={onRunSuite}
  disabled={isRunningSuite}
- className="px-6 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-50"
+ className="px-6 py-2 rounded bg-success text-white font-medium hover:bg-success disabled:opacity-50"
  >
  {isRunningSuite ? 'Running...' : '▶️ Execute Optimized Run'}
  </button>

@@ -101,21 +101,21 @@ function getScoreColorClasses(score: number): {
 } {
  if (score >= 0.8) {
  return {
- bg: 'bg-green-100',
- text: 'text-green-700',
- bar: 'bg-green-500',
+ bg: 'bg-success/10',
+ text: 'text-success',
+ bar: 'bg-success',
  };
  } else if (score >= 0.6) {
  return {
- bg: 'bg-yellow-100',
- text: 'text-yellow-700',
- bar: 'bg-yellow-500',
+ bg: 'bg-warning/10',
+ text: 'text-warning',
+ bar: 'bg-warning',
  };
  } else {
  return {
- bg: 'bg-red-100',
- text: 'text-red-700',
- bar: 'bg-red-500',
+ bg: 'bg-destructive/10',
+ text: 'text-destructive',
+ bar: 'bg-destructive',
  };
  }
 }
@@ -285,15 +285,15 @@ export function ConfidenceBreakdown({
  {/* Legend */}
  <div className="flex items-center gap-4 pt-2 text-xs text-muted-foreground border-t border-border mt-3">
  <div className="flex items-center gap-1">
- <div className="w-2 h-2 rounded-full bg-green-500" />
+ <div className="w-2 h-2 rounded-full bg-success" />
  <span>High (&gt;80%)</span>
  </div>
  <div className="flex items-center gap-1">
- <div className="w-2 h-2 rounded-full bg-yellow-500" />
+ <div className="w-2 h-2 rounded-full bg-warning" />
  <span>Medium (60-80%)</span>
  </div>
  <div className="flex items-center gap-1">
- <div className="w-2 h-2 rounded-full bg-red-500" />
+ <div className="w-2 h-2 rounded-full bg-destructive" />
  <span>Low (&lt;60%)</span>
  </div>
  </div>

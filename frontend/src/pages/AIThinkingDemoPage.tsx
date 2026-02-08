@@ -124,9 +124,9 @@ export function AIThinkingIndicator({
             <div
               key={step.id}
               className={`flex items-center gap-2 text-sm ${
-                step.status === 'completed' ? 'text-green-400' :
+                step.status === 'completed' ? 'text-success' :
                 step.status === 'active' ? 'text-primary' :
-                step.status === 'error' ? 'text-red-400' :
+                step.status === 'error' ? 'text-destructive' :
                 'text-muted-foreground'
               }`}
             >

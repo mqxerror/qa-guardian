@@ -132,11 +132,11 @@ const FormField: React.FC<{
  <div className="space-y-1">
  <label className="block text-sm font-medium text-foreground">
  {label}
- {required && <span className="text-red-500 ml-1">*</span>}
+ {required && <span className="text-destructive ml-1">*</span>}
  </label>
  {children}
  {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
- {error && <p className="text-xs text-red-500">{error}</p>}
+ {error && <p className="text-xs text-destructive">{error}</p>}
  </div>
 );
 
@@ -240,8 +240,8 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  placeholder="Load Test - API Endpoint"
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.name
- ? 'border-red-500 focus:ring-red-500'
- : 'border-border focus:ring-blue-500'
+ ? 'border-destructive focus:ring-destructive'
+ : 'border-border focus:ring-primary'
  }`}
  />
  </FormField>
@@ -255,8 +255,8 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  placeholder={projectBaseUrl ? `${projectBaseUrl}/api` : 'https://your-site.com/api'}
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.targetUrl
- ? 'border-red-500 focus:ring-red-500'
- : 'border-border focus:ring-blue-500'
+ ? 'border-destructive focus:ring-destructive'
+ : 'border-border focus:ring-primary'
  }`}
  />
  </FormField>
@@ -289,7 +289,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  max={10000}
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.virtualUsers
- ? 'border-red-500'
+ ? 'border-destructive'
  : 'border-border'
  }`}
  />
@@ -310,7 +310,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  max={3600}
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.duration
- ? 'border-red-500'
+ ? 'border-destructive'
  : 'border-border'
  }`}
  />
@@ -330,14 +330,14 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  </div>
 
  {/* Load Estimate */}
- <div className="p-3 bg-red-50 rounded-lg">
+ <div className="p-3 bg-destructive/5 rounded-lg">
  <div className="flex items-center gap-2">
  <span className="text-lg">📊</span>
  <div>
- <p className="text-sm font-medium text-red-700">
+ <p className="text-sm font-medium text-destructive">
  Estimated Load: ~{Math.round(config.virtualUsers * (60 / 1))} requests/minute
  </p>
- <p className="text-xs text-red-600">
+ <p className="text-xs text-destructive">
  Total: ~{Math.round(config.virtualUsers * config.duration)} requests over {config.duration}s
  </p>
  </div>
@@ -354,7 +354,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  onClick={() => updateField('scenario', scenario.value)}
  className={`flex flex-col items-start p-3 rounded-lg border text-left transition-colors ${
  config.scenario === scenario.value
- ? 'border-red-500 bg-red-50'
+ ? 'border-destructive bg-destructive/5'
  : 'border-border hover:border-border'
  }`}
  >
@@ -384,7 +384,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  rows={12}
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground font-mono text-sm resize-none ${
  errors.k6Script
- ? 'border-red-500'
+ ? 'border-destructive'
  : 'border-border'
  }`}
  />
@@ -461,8 +461,8 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
 
  {/* Validation Summary */}
  {Object.keys(errors).length > 0 && (
- <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
- <p className="text-sm text-red-600">
+ <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
+ <p className="text-sm text-destructive">
  Please fix the errors above to continue.
  </p>
  </div>

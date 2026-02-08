@@ -121,8 +121,8 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  <span className={`text-xs px-2 py-0.5 rounded-full ${
  pattern.severity === 'CRITICAL' ? 'bg-red-100 text-red-700' :
  pattern.severity === 'HIGH' ? 'bg-orange-100 text-orange-700' :
- pattern.severity === 'MEDIUM' ? 'bg-amber-100 text-amber-700' :
- 'bg-blue-100 text-blue-700'
+ pattern.severity === 'MEDIUM' ? 'bg-warning/10 text-warning' :
+ 'bg-primary/10 text-primary'
  }`}>
  {pattern.severity}
  </span>
@@ -137,7 +137,7 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  </div>
  <button
  onClick={() => handleDeleteSecretPattern(pattern.id)}
- className="p-2 text-muted-foreground hover:text-red-600 transition-colors"
+ className="p-2 text-muted-foreground hover:text-destructive transition-colors"
  title="Delete pattern"
  >
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -175,7 +175,7 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  </div>
 
  {patternError && (
- <div className="mb-4 p-3 rounded-md bg-red-50 text-red-600 text-sm">
+ <div className="mb-4 p-3 rounded-md bg-destructive/5 text-destructive text-sm">
  {patternError}
  </div>
  )}
@@ -183,7 +183,7 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  <div className="space-y-4">
  <div>
  <label className="block text-sm font-medium text-foreground mb-2">
- Pattern Name <span className="text-red-500">*</span>
+ Pattern Name <span className="text-destructive">*</span>
  </label>
  <input
  type="text"
@@ -209,7 +209,7 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
 
  <div>
  <label className="block text-sm font-medium text-foreground mb-2">
- Regex Pattern <span className="text-red-500">*</span>
+ Regex Pattern <span className="text-destructive">*</span>
  </label>
  <input
  type="text"
@@ -269,11 +269,11 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  {patternTestResult && (
  <div className={`mt-2 p-2 rounded text-sm ${
  patternTestResult.matches
- ? 'bg-green-50 text-green-700'
- : 'bg-amber-50 text-amber-700'
+ ? 'bg-success/5 text-success'
+ : 'bg-warning/5 text-warning'
  }`}>
  {patternTestResult.matches ? (
- <>✓ Pattern matches! Found: <code className="bg-green-100 px-1 rounded">{patternTestResult.matched}</code></>
+ <>✓ Pattern matches! Found: <code className="bg-success/10 px-1 rounded">{patternTestResult.matched}</code></>
  ) : (
  <>✗ Pattern does not match the test string</>
  )}

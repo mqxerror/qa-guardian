@@ -171,19 +171,19 @@ export function AIAgentWorkspacePage() {
  {/* AI Status Indicator */}
  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted">
  <div className={`w-2.5 h-2.5 rounded-full ${
- aiStatus?.ready ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+ aiStatus?.ready ? 'bg-success animate-pulse' : 'bg-destructive'
  }`} />
  <span className="text-sm font-medium">
  {aiStatus?.ready ? (
- <span className="text-green-600">
+ <span className="text-success">
  {aiStatus.providers.primary.available ? aiStatus.providers.primary.name : aiStatus.providers.fallback.name} Ready
  </span>
  ) : (
- <span className="text-red-600">AI Offline</span>
+ <span className="text-destructive">AI Offline</span>
  )}
  </span>
  {aiStatus?.providers.primary.model && (
- <span className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-700">
+ <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary">
  {aiStatus.providers.primary.model.split('-').slice(0, 2).join('-')}
  </span>
  )}
@@ -300,13 +300,13 @@ export function AIAgentWorkspacePage() {
  {/* In Progress Column */}
  <div className="flex-1 flex flex-col min-w-[250px]">
  <div className="flex items-center gap-2 mb-3 px-2">
- <span className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></span>
+ <span className="w-3 h-3 rounded-full bg-primary animate-pulse"></span>
  <h3 className="font-semibold">In Progress</h3>
  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
  {getTasksByStatus('in_progress').length}
  </span>
  </div>
- <div className="flex-1 rounded-lg bg-blue-50 p-2 space-y-2 overflow-y-auto">
+ <div className="flex-1 rounded-lg bg-primary/5 p-2 space-y-2 overflow-y-auto">
  {getTasksByStatus('in_progress').map((task) => (
  <TaskCard key={task.id} task={task} />
  ))}
@@ -321,13 +321,13 @@ export function AIAgentWorkspacePage() {
  {/* Completed Column */}
  <div className="flex-1 flex flex-col min-w-[250px]">
  <div className="flex items-center gap-2 mb-3 px-2">
- <span className="w-3 h-3 rounded-full bg-green-500"></span>
+ <span className="w-3 h-3 rounded-full bg-success"></span>
  <h3 className="font-semibold">Completed</h3>
  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
  {getTasksByStatus('completed').length}
  </span>
  </div>
- <div className="flex-1 rounded-lg bg-green-50 p-2 space-y-2 overflow-y-auto">
+ <div className="flex-1 rounded-lg bg-success/5 p-2 space-y-2 overflow-y-auto">
  {getTasksByStatus('completed').map((task) => (
  <TaskCard key={task.id} task={task} />
  ))}
@@ -342,13 +342,13 @@ export function AIAgentWorkspacePage() {
  {/* Failed Column */}
  <div className="flex-1 flex flex-col min-w-[250px]">
  <div className="flex items-center gap-2 mb-3 px-2">
- <span className="w-3 h-3 rounded-full bg-red-500"></span>
+ <span className="w-3 h-3 rounded-full bg-destructive"></span>
  <h3 className="font-semibold">Failed</h3>
  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
  {getTasksByStatus('failed').length}
  </span>
  </div>
- <div className="flex-1 rounded-lg bg-red-50 p-2 space-y-2 overflow-y-auto">
+ <div className="flex-1 rounded-lg bg-destructive/5 p-2 space-y-2 overflow-y-auto">
  {getTasksByStatus('failed').map((task) => (
  <TaskCard key={task.id} task={task} onRetry={() => retryTask(task)} />
  ))}
@@ -380,7 +380,7 @@ function TaskCard({ task, onRetry }: { task: AgentTask; onRetry?: () => void }) 
  </div>
  {task.status === 'in_progress' && (
  <div className="flex-shrink-0">
- <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+ <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
  </div>
  )}
  </div>
@@ -391,7 +391,7 @@ function TaskCard({ task, onRetry }: { task: AgentTask; onRetry?: () => void }) 
  {task.toolsUsed.map((tool, idx) => (
  <span
  key={idx}
- className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700"
+ className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary"
  >
  {tool}
  </span>
@@ -413,7 +413,7 @@ function TaskCard({ task, onRetry }: { task: AgentTask; onRetry?: () => void }) 
 
  {/* Error */}
  {task.error && (
- <div className="mt-2 p-2 rounded bg-red-100 text-red-700 text-xs">
+ <div className="mt-2 p-2 rounded bg-destructive/10 text-destructive text-xs">
  {task.error}
  </div>
  )}
@@ -439,7 +439,7 @@ function TaskCard({ task, onRetry }: { task: AgentTask; onRetry?: () => void }) 
  {task.status === 'failed' && onRetry && (
  <button
  onClick={onRetry}
- className="mt-2 w-full px-2 py-1 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
+ className="mt-2 w-full px-2 py-1 text-xs rounded bg-destructive/10 text-destructive hover:bg-destructive/20"
  >
  Retry
  </button>

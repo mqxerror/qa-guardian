@@ -252,15 +252,15 @@ export function CodeDiffView({
  </h3>
  <div className="flex items-center gap-3 text-xs">
  <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted">
- <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+ <span className="w-2 h-2 rounded-full bg-warning"></span>
  {stats.pending} pending
  </span>
- <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/10 text-green-600">
- <span className="w-2 h-2 rounded-full bg-green-500"></span>
+ <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-success/10 text-success">
+ <span className="w-2 h-2 rounded-full bg-success"></span>
  {stats.accepted} accepted
  </span>
- <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500/10 text-red-600">
- <span className="w-2 h-2 rounded-full bg-red-500"></span>
+ <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-destructive/10 text-destructive">
+ <span className="w-2 h-2 rounded-full bg-destructive"></span>
  {stats.rejected} rejected
  </span>
  </div>
@@ -270,7 +270,7 @@ export function CodeDiffView({
  <button
  type="button"
  onClick={handleAcceptAll}
- className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors"
+ className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-success text-white hover:bg-success transition-colors"
  >
  <span>✓</span>
  Accept All
@@ -278,7 +278,7 @@ export function CodeDiffView({
  <button
  type="button"
  onClick={handleRejectAll}
- className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
+ className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-destructive text-white hover:bg-destructive transition-colors"
  >
  <span>✗</span>
  Reject All
@@ -303,9 +303,9 @@ export function CodeDiffView({
  key={hunk.id}
  className={`border-b border-border last:border-b-0 ${
  hunk.accepted === true
- ? 'bg-green-500/5'
+ ? 'bg-success/5'
  : hunk.accepted === false
- ? 'bg-red-500/5 opacity-60'
+ ? 'bg-destructive/5 opacity-60'
  : ''
  }`}
  >
@@ -319,12 +319,12 @@ export function CodeDiffView({
  @@ -{hunk.oldStart},{hunk.oldLines} +{hunk.newStart},{hunk.newLines} @@
  </span>
  {hunk.accepted === true && (
- <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-600 font-medium">
+ <span className="text-xs px-2 py-0.5 rounded-full bg-success/20 text-success font-medium">
  ✓ Accepted
  </span>
  )}
  {hunk.accepted === false && (
- <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-600 font-medium">
+ <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive font-medium">
  ✗ Rejected
  </span>
  )}
@@ -336,8 +336,8 @@ export function CodeDiffView({
  onClick={() => handleAcceptHunk(hunk.id)}
  className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md transition-colors ${
  hunk.accepted === true
- ? 'bg-green-600 text-white'
- : 'border border-green-500/50 text-green-600 hover:bg-green-500/10'
+ ? 'bg-success text-white'
+ : 'border border-success/50 text-success hover:bg-success/10'
  }`}
  >
  <span>✓</span>
@@ -348,8 +348,8 @@ export function CodeDiffView({
  onClick={() => handleRejectHunk(hunk.id)}
  className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md transition-colors ${
  hunk.accepted === false
- ? 'bg-red-600 text-white'
- : 'border border-red-500/50 text-red-600 hover:bg-red-500/10'
+ ? 'bg-destructive text-white'
+ : 'border border-destructive/50 text-destructive hover:bg-destructive/10'
  }`}
  >
  <span>✗</span>
@@ -365,9 +365,9 @@ export function CodeDiffView({
  key={lineIndex}
  className={`flex ${
  line.type === 'added'
- ? 'bg-green-500/15 border-l-4 border-green-500'
+ ? 'bg-success/15 border-l-4 border-success'
  : line.type === 'removed'
- ? 'bg-red-500/15 border-l-4 border-red-500'
+ ? 'bg-destructive/15 border-l-4 border-destructive'
  : 'border-l-4 border-transparent'
  }`}
  >
@@ -384,9 +384,9 @@ export function CodeDiffView({
  {/* Diff indicator */}
  <div className={`w-6 flex-shrink-0 text-center py-0.5 font-bold ${
  line.type === 'added'
- ? 'text-green-600 bg-green-500/10'
+ ? 'text-success bg-success/10'
  : line.type === 'removed'
- ? 'text-red-600 bg-red-500/10'
+ ? 'text-destructive bg-destructive/10'
  : 'text-muted-foreground'
  }`}>
  {line.type === 'added' ? '+' : line.type === 'removed' ? '-' : ' '}
@@ -395,9 +395,9 @@ export function CodeDiffView({
  {/* Line content */}
  <pre className={`flex-1 px-3 py-0.5 whitespace-pre-wrap break-all ${
  line.type === 'added'
- ? 'text-green-700'
+ ? 'text-success'
  : line.type === 'removed'
- ? 'text-red-700 line-through opacity-80'
+ ? 'text-destructive line-through opacity-80'
  : 'text-foreground/80'
  }`}>
  {line.content || '\u00A0'}
@@ -413,11 +413,11 @@ export function CodeDiffView({
  <div className="flex items-center justify-between p-4 bg-muted/30 border-t border-border">
  <div className="flex items-center gap-4 text-xs text-muted-foreground">
  <span className="flex items-center gap-1.5">
- <span className="w-3 h-3 rounded bg-green-500/30 border border-green-500"></span>
+ <span className="w-3 h-3 rounded bg-success/30 border border-success"></span>
  Added lines
  </span>
  <span className="flex items-center gap-1.5">
- <span className="w-3 h-3 rounded bg-red-500/30 border border-red-500"></span>
+ <span className="w-3 h-3 rounded bg-destructive/30 border border-destructive"></span>
  Removed lines
  </span>
  <span className="flex items-center gap-1.5">

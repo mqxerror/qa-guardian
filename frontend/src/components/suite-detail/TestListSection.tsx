@@ -79,7 +79,7 @@ export function TestListSection({
  switch (testType) {
  case 'e2e':
  return (
- <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700" title="End-to-End Test">
+ <span className="inline-flex items-center rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary" title="End-to-End Test">
  🌐
  </span>
  );
@@ -97,7 +97,7 @@ export function TestListSection({
  );
  case 'lighthouse':
  return (
- <span className="inline-flex items-center rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700" title="Performance Test (Lighthouse)">
+ <span className="inline-flex items-center rounded bg-warning/10 px-1.5 py-0.5 text-xs font-medium text-warning" title="Performance Test (Lighthouse)">
  ⚡
  </span>
  );
@@ -324,7 +324,7 @@ function VirtualizedTestList({
  <div
  className={`grid grid-cols-[2fr_1fr_1fr_1fr_80px_80px_100px] gap-2 border-b border-border px-4 py-3 items-center hover:bg-muted/20 cursor-pointer transition-colors min-w-[900px] ${
  wasRecentlyRun ? 'bg-primary/5 hover:bg-primary/10' : ''
- } ${isThisTestRunning ? 'bg-blue-50' : ''}`}
+ } ${isThisTestRunning ? 'bg-primary/5' : ''}`}
  onClick={() => navigate(`/tests/${test.id}`)}
  >
  {/* Name Column */}
@@ -337,12 +337,12 @@ function VirtualizedTestList({
  <span
  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium ${
  test.healing_status === 'pending'
- ? 'bg-amber-100 text-amber-700'
+ ? 'bg-warning/10 text-warning'
  : test.healing_status === 'applied'
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : test.healing_status === 'rejected'
- ? 'bg-red-100 text-red-700'
- : 'bg-blue-100 text-blue-700'
+ ? 'bg-destructive/10 text-destructive'
+ : 'bg-primary/10 text-primary'
  }`}
  title={`${test.healing_count || 1} healed selector${(test.healing_count || 1) > 1 ? 's' : ''} (${test.healing_status || 'pending'})`}
  >
@@ -361,8 +361,8 @@ function VirtualizedTestList({
  {/* Status Column */}
  <div className="flex items-center gap-1">
  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
- test.status === 'active' ? 'bg-green-100 text-green-700' :
- test.status === 'draft' ? 'bg-yellow-100 text-yellow-700' :
+ test.status === 'active' ? 'bg-success/10 text-success' :
+ test.status === 'draft' ? 'bg-warning/10 text-warning' :
  'bg-muted text-foreground'
  }`}>
  {test.status}
@@ -386,8 +386,8 @@ function VirtualizedTestList({
  🤖 AI Generated
  {test.ai_confidence_score !== undefined && (
  <span className={`ml-1 font-semibold ${
- test.ai_confidence_score >= 80 ? 'text-green-600' :
- test.ai_confidence_score >= 60 ? 'text-yellow-600' :
+ test.ai_confidence_score >= 80 ? 'text-success' :
+ test.ai_confidence_score >= 60 ? 'text-warning' :
  'text-orange-600'
  }`}>
  {test.ai_confidence_score}%
@@ -402,12 +402,12 @@ function VirtualizedTestList({
  </span>
  )}
  {test.ai_generated && test.review_status === 'approved' && (
- <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700" title="Approved by reviewer">
+ <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary" title="Approved by reviewer">
  ✅ Approved
  </span>
  )}
  {test.ai_generated && test.review_status === 'rejected' && (
- <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700" title="Rejected by reviewer">
+ <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-destructive/10 text-destructive" title="Rejected by reviewer">
  ❌ Rejected
  </span>
  )}
@@ -416,7 +416,7 @@ function VirtualizedTestList({
  {/* Last Run Column */}
  <div className="text-sm text-muted-foreground" title={test.last_run_at ? new Date(test.last_run_at).toLocaleString() : undefined}>
  {isThisTestRunning ? (
- <span className="inline-flex items-center gap-1.5 text-blue-600">
+ <span className="inline-flex items-center gap-1.5 text-primary">
  <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -433,15 +433,15 @@ function VirtualizedTestList({
  {/* Result Column */}
  <div>
  {isThisTestRunning ? (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
  ● Running
  </span>
  ) : testResult ? (
  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
  testResult.status === 'passed'
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : testResult.status === 'failed'
- ? 'bg-red-100 text-red-700'
+ ? 'bg-destructive/10 text-destructive'
  : 'bg-muted text-foreground'
  }`}>
  {testResult.status === 'passed' ? '✓' : testResult.status === 'failed' ? '✗' : '○'}
@@ -450,9 +450,9 @@ function VirtualizedTestList({
  ) : test.last_result ? (
  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
  test.last_result === 'passed'
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : test.last_result === 'failed'
- ? 'bg-red-100 text-red-700'
+ ? 'bg-destructive/10 text-destructive'
  : test.last_result === 'error'
  ? 'bg-orange-100 text-orange-700'
  : 'bg-muted text-foreground'
@@ -577,7 +577,7 @@ function VirtualizedTestList({
  onSetActionsDropdown(null);
  onShowDeleteTestModal(test.id);
  }}
- className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+ className="flex w-full items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-destructive/5"
  >
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -612,7 +612,7 @@ function VirtualizedTestList({
  key={test.id}
  className={`grid grid-cols-[2fr_1fr_1fr_1fr_80px_80px_100px] gap-2 border-b border-border px-4 py-3 last:border-0 items-center hover:bg-muted/20 cursor-pointer transition-colors min-w-[900px] ${
  wasRecentlyRun ? 'bg-primary/5 hover:bg-primary/10' : ''
- } ${isThisTestRunning ? 'bg-blue-50' : ''}`}
+ } ${isThisTestRunning ? 'bg-primary/5' : ''}`}
  onClick={() => navigate(`/tests/${test.id}`)}
  >
  {/* Name Column */}
@@ -624,12 +624,12 @@ function VirtualizedTestList({
  <span
  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium ${
  test.healing_status === 'pending'
- ? 'bg-amber-100 text-amber-700'
+ ? 'bg-warning/10 text-warning'
  : test.healing_status === 'applied'
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : test.healing_status === 'rejected'
- ? 'bg-red-100 text-red-700'
- : 'bg-blue-100 text-blue-700'
+ ? 'bg-destructive/10 text-destructive'
+ : 'bg-primary/10 text-primary'
  }`}
  title={`${test.healing_count || 1} healed selector${(test.healing_count || 1) > 1 ? 's' : ''} (${test.healing_status || 'pending'})`}
  >
@@ -648,8 +648,8 @@ function VirtualizedTestList({
  {/* Status Column */}
  <div className="flex items-center gap-1">
  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
- test.status === 'active' ? 'bg-green-100 text-green-700' :
- test.status === 'draft' ? 'bg-yellow-100 text-yellow-700' :
+ test.status === 'active' ? 'bg-success/10 text-success' :
+ test.status === 'draft' ? 'bg-warning/10 text-warning' :
  'bg-muted text-foreground'
  }`}>
  {test.status}
@@ -671,7 +671,7 @@ function VirtualizedTestList({
  {/* Last Run Column */}
  <div className="text-sm text-muted-foreground">
  {isThisTestRunning ? (
- <span className="inline-flex items-center gap-1.5 text-blue-600">
+ <span className="inline-flex items-center gap-1.5 text-primary">
  <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -690,16 +690,16 @@ function VirtualizedTestList({
  {testResult ? (
  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
  testResult.status === 'passed'
- ? 'bg-green-100 text-green-700'
- : 'bg-red-100 text-red-700'
+ ? 'bg-success/10 text-success'
+ : 'bg-destructive/10 text-destructive'
  }`}>
  {testResult.status === 'passed' ? '✓' : '✗'}
  </span>
  ) : test.last_result ? (
  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
  test.last_result === 'passed'
- ? 'bg-green-100 text-green-700'
- : 'bg-red-100 text-red-700'
+ ? 'bg-success/10 text-success'
+ : 'bg-destructive/10 text-destructive'
  }`}>
  {test.last_result === 'passed' ? '✓' : '✗'}
  </span>
@@ -788,7 +788,7 @@ function VirtualizedTestList({
  onSetActionsDropdown(null);
  onShowDeleteTestModal(test.id);
  }}
- className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+ className="flex w-full items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-destructive/5"
  >
  Delete
  </button>

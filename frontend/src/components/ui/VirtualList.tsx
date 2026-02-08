@@ -106,7 +106,7 @@ export function VirtualList<T>({
           className={`flex items-center justify-center ${className}`}
           style={{ height: containerHeight }}
         >
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       )
     );
@@ -258,7 +258,7 @@ export function VirtualTable<T>({
           className="flex items-center justify-center"
           style={{ height: containerHeight }}
         >
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       </div>
     );

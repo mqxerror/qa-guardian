@@ -513,7 +513,7 @@ Respond in this JSON format:
  <button
  onClick={() => setShowBatchApproveModal(true)}
  disabled={selectedChanges.size === 0}
- className="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+ className="inline-flex items-center gap-2 rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed"
  >
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -523,7 +523,7 @@ Respond in this JSON format:
  <button
  onClick={() => setShowBatchRejectModal(true)}
  disabled={selectedChanges.size === 0}
- className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+ className="inline-flex items-center gap-2 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive disabled:opacity-50 disabled:cursor-not-allowed"
  >
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -544,7 +544,7 @@ Respond in this JSON format:
  </div>
  ) : pendingChanges.length === 0 ? (
  <div className="text-center py-12">
- <svg className="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="mx-auto h-12 w-12 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
  <h3 className="mt-4 text-lg font-medium text-foreground">All caught up!</h3>
@@ -710,7 +710,7 @@ Respond in this JSON format:
  <div className="flex items-center gap-2 mb-2">
  <h3 className="font-medium text-foreground truncate">{change.testName}</h3>
  {change.diffPercentage !== undefined && (
- <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+ <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
  {change.diffPercentage.toFixed(2)}% diff
  </span>
  )}
@@ -769,7 +769,7 @@ Respond in this JSON format:
  <img
  src={`data:image/png;base64,${change.screenshot}`}
  alt="New screenshot"
- className="w-full h-20 object-cover object-top rounded border border-green-300 cursor-pointer hover:opacity-80"
+ className="w-full h-20 object-cover object-top rounded border border-success/30 cursor-pointer hover:opacity-80"
  onClick={() => setLightboxImage(`data:image/png;base64,${change.screenshot}`)}
  />
  </div>
@@ -780,7 +780,7 @@ Respond in this JSON format:
  <img
  src={`data:image/png;base64,${change.diffImage}`}
  alt="Diff"
- className="w-full h-20 object-cover object-top rounded border border-red-300 cursor-pointer hover:opacity-80"
+ className="w-full h-20 object-cover object-top rounded border border-destructive/30 cursor-pointer hover:opacity-80"
  onClick={() => setLightboxImage(`data:image/png;base64,${change.diffImage}`)}
  />
  </div>
@@ -826,10 +826,10 @@ Respond in this JSON format:
  <span className="text-purple-500">🤖</span>
  <h4 className="text-sm font-medium text-foreground">AI Visual Impact Analysis</h4>
  <span className={`ml-auto px-2 py-0.5 text-xs font-bold uppercase rounded ${
- changeAnalyses[key].severity === 'minor' ? 'bg-green-100 text-green-700' :
- changeAnalyses[key].severity === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
+ changeAnalyses[key].severity === 'minor' ? 'bg-success/10 text-success' :
+ changeAnalyses[key].severity === 'moderate' ? 'bg-warning/10 text-warning' :
  changeAnalyses[key].severity === 'major' ? 'bg-orange-100 text-orange-700' :
- 'bg-red-100 text-red-700'
+ 'bg-destructive/10 text-destructive'
  }`}>
  {changeAnalyses[key].severity}
  </span>
@@ -848,14 +848,14 @@ Respond in this JSON format:
 
  {/* User Impact */}
  <div className={`rounded-md p-3 border ${
- changeAnalyses[key].user_impact.severity === 'low' ? 'bg-green-500/10 border-green-500/20' :
- changeAnalyses[key].user_impact.severity === 'medium' ? 'bg-yellow-500/10 border-yellow-500/20' :
- 'bg-red-500/10 border-red-500/20'
+ changeAnalyses[key].user_impact.severity === 'low' ? 'bg-success/10 border-success/20' :
+ changeAnalyses[key].user_impact.severity === 'medium' ? 'bg-warning/10 border-warning/20' :
+ 'bg-destructive/10 border-destructive/20'
  }`}>
  <p className={`text-xs font-medium mb-1 ${
- changeAnalyses[key].user_impact.severity === 'low' ? 'text-green-400' :
- changeAnalyses[key].user_impact.severity === 'medium' ? 'text-yellow-400' :
- 'text-red-400'
+ changeAnalyses[key].user_impact.severity === 'low' ? 'text-success' :
+ changeAnalyses[key].user_impact.severity === 'medium' ? 'text-warning' :
+ 'text-destructive'
  }`}>
  👥 User Experience Impact: {changeAnalyses[key].user_impact.severity.toUpperCase()}
  </p>
@@ -883,17 +883,17 @@ Respond in this JSON format:
 
  {/* Accessibility Impact */}
  {changeAnalyses[key].user_impact.accessibility_impact && (
- <div className="mt-3 rounded-md bg-blue-500/10 border border-blue-500/20 p-3">
- <p className="text-xs font-medium text-blue-400">♿ Accessibility</p>
+ <div className="mt-3 rounded-md bg-primary/10 border border-primary/20 p-3">
+ <p className="text-xs font-medium text-primary">♿ Accessibility</p>
  <p className="text-xs text-foreground">{changeAnalyses[key].user_impact.accessibility_impact}</p>
  </div>
  )}
 
  {/* AI Recommendation */}
  <div className={`mt-3 rounded-md p-3 border ${
- changeAnalyses[key].recommendation.action === 'approve' ? 'bg-green-500/10 border-green-500/20' :
- changeAnalyses[key].recommendation.action === 'investigate' ? 'bg-yellow-500/10 border-yellow-500/20' :
- 'bg-red-500/10 border-red-500/20'
+ changeAnalyses[key].recommendation.action === 'approve' ? 'bg-success/10 border-success/20' :
+ changeAnalyses[key].recommendation.action === 'investigate' ? 'bg-warning/10 border-warning/20' :
+ 'bg-destructive/10 border-destructive/20'
  }`}>
  <div className="flex items-center gap-2 mb-2">
  <span className="text-lg">
@@ -901,9 +901,9 @@ Respond in this JSON format:
  changeAnalyses[key].recommendation.action === 'investigate' ? '🔍' : '❌'}
  </span>
  <p className={`text-sm font-bold uppercase ${
- changeAnalyses[key].recommendation.action === 'approve' ? 'text-green-600' :
- changeAnalyses[key].recommendation.action === 'investigate' ? 'text-yellow-600' :
- 'text-red-600'
+ changeAnalyses[key].recommendation.action === 'approve' ? 'text-success' :
+ changeAnalyses[key].recommendation.action === 'investigate' ? 'text-warning' :
+ 'text-destructive'
  }`}>
  AI Recommends: {changeAnalyses[key].recommendation.action}
  </p>
@@ -939,8 +939,8 @@ Respond in this JSON format:
  >
  <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg">
  <div className="flex items-center gap-3 mb-4">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
- <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
+ <svg className="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
  </svg>
  </div>
@@ -963,7 +963,7 @@ Respond in this JSON format:
  <button
  onClick={handleBatchApprove}
  disabled={batchApproveMutation.isPending}
- className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+ className="rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50"
  >
  {batchApproveMutation.isPending ? (
  <span className="flex items-center gap-2">
@@ -990,8 +990,8 @@ Respond in this JSON format:
  >
  <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg">
  <div className="flex items-center gap-3 mb-4">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
- <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
+ <svg className="h-6 w-6 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
  </svg>
  </div>
@@ -1032,7 +1032,7 @@ Respond in this JSON format:
  <button
  onClick={handleBatchReject}
  disabled={batchRejectMutation.isPending}
- className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+ className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive disabled:opacity-50"
  >
  {batchRejectMutation.isPending ? (
  <span className="flex items-center gap-2">

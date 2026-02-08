@@ -46,9 +46,9 @@ export function ApproveBaselineModal({
  onClick={(e) => e.stopPropagation()}
  >
  <div className="flex items-center gap-3 mb-4">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
  <svg
- className="h-6 w-6 text-green-600"
+ className="h-6 w-6 text-success"
  fill="none"
  viewBox="0 0 24 24"
  stroke="currentColor"
@@ -83,7 +83,7 @@ export function ApproveBaselineModal({
  <p className="text-xs text-center text-muted-foreground">
  Current Baseline
  </p>
- <div className="border border-red-200 rounded-md overflow-hidden bg-red-50">
+ <div className="border border-destructive/20 rounded-md overflow-hidden bg-destructive/5">
  <img
  src={`data:image/png;base64,${runResult!.baseline_screenshot_base64}`}
  alt="Current baseline"
@@ -95,7 +95,7 @@ export function ApproveBaselineModal({
  <p className="text-xs text-center text-muted-foreground">
  New Baseline
  </p>
- <div className="border border-green-200 rounded-md overflow-hidden bg-green-50">
+ <div className="border border-success/20 rounded-md overflow-hidden bg-success/5">
  <img
  src={`data:image/png;base64,${runResult!.screenshot_base64}`}
  alt="New baseline"
@@ -106,8 +106,8 @@ export function ApproveBaselineModal({
  </div>
  </div>
  )}
- <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
- <p className="text-sm text-amber-800">
+ <div className="mt-4 p-3 rounded-lg bg-warning/5 border border-warning/20">
+ <p className="text-sm text-warning">
  <strong>⚠️ This will replace the existing baseline.</strong> All
  future test runs will compare against this new baseline screenshot.
  </p>
@@ -131,7 +131,7 @@ export function ApproveBaselineModal({
  <button
  onClick={() => onApprove(runId || undefined)}
  disabled={approvingBaseline}
- className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+ className="rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50"
  >
  {approvingBaseline ? (
  <span className="flex items-center gap-2">
@@ -201,9 +201,9 @@ export function RestoreBaselineModal({
  onClick={(e) => e.stopPropagation()}
  >
  <div className="flex items-center gap-3 mb-4">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10">
  <svg
- className="h-6 w-6 text-amber-600"
+ className="h-6 w-6 text-warning"
  fill="none"
  viewBox="0 0 24 24"
  stroke="currentColor"
@@ -231,8 +231,8 @@ export function RestoreBaselineModal({
  as the current baseline for{' '}
  <span className="font-medium text-foreground">"{testName}"</span>?
  </p>
- <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
- <p className="text-sm text-amber-800">
+ <div className="mt-4 p-3 rounded-lg bg-warning/5 border border-warning/20">
+ <p className="text-sm text-warning">
  <strong>⚠️ This will replace the current baseline.</strong> All
  future test runs will compare against this restored baseline. A new
  version will be created in the history for audit trail.
@@ -257,7 +257,7 @@ export function RestoreBaselineModal({
  <button
  onClick={() => onRestore(restoreHistoryEntry.id)}
  disabled={restoringBaseline}
- className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+ className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning disabled:opacity-50"
  >
  {restoringBaseline ? (
  <span className="flex items-center gap-2">
@@ -327,9 +327,9 @@ export function MergeBaselineModal({
  onClick={(e) => e.stopPropagation()}
  >
  <div className="flex items-center gap-3 mb-4">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
  <svg
- className="h-6 w-6 text-blue-600"
+ className="h-6 w-6 text-primary"
  fill="none"
  viewBox="0 0 24 24"
  stroke="currentColor"
@@ -348,7 +348,7 @@ export function MergeBaselineModal({
  </div>
  <p className="text-muted-foreground">
  Merge the baseline from branch{' '}
- <span className="font-semibold text-blue-600">
+ <span className="font-semibold text-primary">
  '{selectedMergeBranch}'
  </span>{' '}
  to{' '}
@@ -357,8 +357,8 @@ export function MergeBaselineModal({
  </span>
  ?
  </p>
- <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-200">
- <p className="text-sm text-blue-800">
+ <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+ <p className="text-sm text-primary">
  <strong>ℹ️ This will copy the baseline.</strong> The baseline from '
  {selectedMergeBranch}' will be used as the new baseline for branch '
  {selectedBranch}'. All future test runs on '{selectedBranch}' will
@@ -388,7 +388,7 @@ export function MergeBaselineModal({
  <button
  onClick={() => onMerge(selectedMergeBranch)}
  disabled={isMergingBaseline}
- className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+ className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary disabled:opacity-50"
  >
  {isMergingBaseline ? (
  <span className="flex items-center gap-2">
@@ -460,9 +460,9 @@ export function RejectChangesModal({
  onClick={(e) => e.stopPropagation()}
  >
  <div className="flex items-center gap-3 mb-4">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
  <svg
- className="h-6 w-6 text-red-600"
+ className="h-6 w-6 text-destructive"
  fill="none"
  viewBox="0 0 24 24"
  stroke="currentColor"
@@ -484,7 +484,7 @@ export function RejectChangesModal({
  </div>
  <p className="text-muted-foreground">
  Mark this visual difference as a{' '}
- <span className="font-semibold text-red-600">
+ <span className="font-semibold text-destructive">
  regression
  </span>{' '}
  for{' '}
@@ -528,7 +528,7 @@ export function RejectChangesModal({
  <button
  onClick={() => onReject(runId || undefined)}
  disabled={rejectingChanges}
- className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+ className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive disabled:opacity-50"
  >
  {rejectingChanges ? (
  <span className="flex items-center gap-2">

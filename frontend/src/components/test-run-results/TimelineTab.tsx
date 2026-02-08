@@ -137,7 +137,7 @@ export default function TimelineTab({
  <span className="text-lg">🎬</span>
  <h3 className="font-medium text-foreground">Test Recording</h3>
  {isVideoPlaying && (
- <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">
+ <span className="px-2 py-0.5 text-xs bg-success/10 text-success rounded">
  Playing
  </span>
  )}
@@ -214,15 +214,15 @@ export default function TimelineTab({
  <div
  key={step.uniqueId}
  className={`relative ml-6 mb-3 border rounded-lg overflow-hidden ${
- step.status === 'passed' ? 'border-green-200' :
- step.status === 'failed' ? 'border-red-200' :
+ step.status === 'passed' ? 'border-success/20' :
+ step.status === 'failed' ? 'border-destructive/20' :
  'border-border'
  }`}
  >
  {/* Timeline connector dot */}
  <div className={`absolute -left-[30px] top-5 h-3 w-3 rounded-full border-2 border-card ${
- step.status === 'passed' ? 'bg-green-500' :
- step.status === 'failed' ? 'bg-red-500' :
+ step.status === 'passed' ? 'bg-success' :
+ step.status === 'failed' ? 'bg-destructive' :
  'bg-gray-400'
  }`} />
 
@@ -236,8 +236,8 @@ export default function TimelineTab({
  >
  <div className="flex items-center gap-3">
  <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium ${
- step.status === 'passed' ? 'bg-green-500 text-white' :
- step.status === 'failed' ? 'bg-red-500 text-white' :
+ step.status === 'passed' ? 'bg-success text-white' :
+ step.status === 'failed' ? 'bg-destructive text-white' :
  'bg-gray-400 text-white'
  }`}>
  {step.status === 'passed' ? '✓' : step.status === 'failed' ? '✗' : '-'}
@@ -247,14 +247,14 @@ export default function TimelineTab({
  <span>Step {idx + 1}: {step.action}</span>
  {/* Feature #1833: Network/console indicators */}
  {step.stepNetworkRequests.length > 0 && (
- <span className="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded" title={`${step.stepNetworkRequests.length} network requests`}>
+ <span className="px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded" title={`${step.stepNetworkRequests.length} network requests`}>
  🌐 {step.stepNetworkRequests.length}
  </span>
  )}
  {step.stepConsoleLogs.length > 0 && (
  <span className={`px-1.5 py-0.5 text-xs rounded ${
  step.stepConsoleLogs.some(l => l.level === 'error')
- ? 'bg-red-100 text-red-700'
+ ? 'bg-destructive/10 text-destructive'
  : 'bg-muted text-foreground'
  }`} title={`${step.stepConsoleLogs.length} console logs`}>
  📝 {step.stepConsoleLogs.length}
@@ -371,21 +371,21 @@ export default function TimelineTab({
  )}
  {step.screenshot_timeout && (
  <div className="col-span-2">
- <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs">
+ <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-warning/10 text-warning text-xs">
  ⏱️ Screenshot timed out
  </span>
  </div>
  )}
  {step.navigation_error && step.http_status && (
  <div className="col-span-2">
- <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-red-100 text-red-700 text-xs">
+ <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-destructive/10 text-destructive text-xs">
  🌐 Navigation failed: HTTP {step.http_status}
  </span>
  </div>
  )}
  {step.metadata?.isBrowserCrash && (
  <div className="col-span-2">
- <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-red-100 text-red-700 text-xs">
+ <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-destructive/10 text-destructive text-xs">
  💥 Browser crashed at {step.metadata.crashDetectedAt}
  </span>
  </div>
@@ -406,9 +406,9 @@ export default function TimelineTab({
  ].filter(m => m.value !== undefined).map(metric => (
  <div key={metric.label} className="text-center p-3 bg-muted rounded-lg">
  <div className={`text-2xl font-bold ${
- (metric.value || 0) >= 90 ? 'text-green-600' :
- (metric.value || 0) >= 50 ? 'text-yellow-600' :
- 'text-red-600'
+ (metric.value || 0) >= 90 ? 'text-success' :
+ (metric.value || 0) >= 50 ? 'text-warning' :
+ 'text-destructive'
  }`}>
  {metric.value}
  </div>
@@ -455,14 +455,14 @@ export default function TimelineTab({
  {(step.load_test.requests_per_second === undefined &&
  step.load_test.avg_response_time === undefined &&
  step.load_test.summary?.requests_per_second === undefined) ? (
- <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
- <div className="flex items-center gap-2 text-red-700 mb-2">
+ <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg">
+ <div className="flex items-center gap-2 text-destructive mb-2">
  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
  </svg>
  <span className="font-medium">Load Test Failed</span>
  </div>
- <p className="text-sm text-red-600">
+ <p className="text-sm text-destructive">
  The load test did not complete successfully. This may be because the target server couldn't handle the load,
  connection issues occurred, or the test was interrupted. No metrics are available.
  </p>
@@ -490,14 +490,14 @@ export default function TimelineTab({
  <div className="text-xs text-muted-foreground">p95 Response</div>
  </div>
  <div className={`p-3 rounded-lg text-center ${
- (step.load_test.error_rate ?? 0) > 5 ? 'bg-red-100' :
- (step.load_test.error_rate ?? 0) > 1 ? 'bg-yellow-100' :
- 'bg-green-100'
+ (step.load_test.error_rate ?? 0) > 5 ? 'bg-destructive/10' :
+ (step.load_test.error_rate ?? 0) > 1 ? 'bg-warning/10' :
+ 'bg-success/10'
  }`}>
  <div className={`text-xl font-bold ${
- (step.load_test.error_rate ?? 0) > 5 ? 'text-red-600' :
- (step.load_test.error_rate ?? 0) > 1 ? 'text-yellow-600' :
- 'text-green-600'
+ (step.load_test.error_rate ?? 0) > 5 ? 'text-destructive' :
+ (step.load_test.error_rate ?? 0) > 1 ? 'text-warning' :
+ 'text-success'
  }`}>
  {step.load_test.error_rate?.toFixed?.(1) ?? 'N/A'}
  {step.load_test.error_rate !== undefined && '%'}
@@ -520,18 +520,18 @@ export default function TimelineTab({
  <div
  key={vIdx}
  className={`p-3 rounded-lg border ${
- violation.impact === 'critical' ? 'border-red-500 bg-red-50' :
+ violation.impact === 'critical' ? 'border-destructive bg-destructive/5' :
  violation.impact === 'serious' ? 'border-orange-500 bg-orange-50' :
- violation.impact === 'moderate' ? 'border-yellow-500 bg-yellow-50' :
- 'border-blue-500 bg-blue-50'
+ violation.impact === 'moderate' ? 'border-warning bg-warning/5' :
+ 'border-primary bg-primary/5'
  }`}
  >
  <div className="flex items-center gap-2 mb-1">
  <span className={`px-2 py-0.5 text-xs font-medium rounded ${
- violation.impact === 'critical' ? 'bg-red-600 text-white' :
+ violation.impact === 'critical' ? 'bg-destructive text-white' :
  violation.impact === 'serious' ? 'bg-orange-600 text-white' :
- violation.impact === 'moderate' ? 'bg-yellow-600 text-white' :
- 'bg-blue-600 text-white'
+ violation.impact === 'moderate' ? 'bg-warning text-white' :
+ 'bg-primary text-white'
  }`}>
  {violation.impact}
  </span>
@@ -584,8 +584,8 @@ export default function TimelineTab({
  <div key={rIdx} className="flex items-center gap-2 text-xs">
  <span className={`w-12 text-right font-mono ${
  !req.status ? 'text-muted-foreground' :
- req.status >= 200 && req.status < 300 ? 'text-green-600' :
- req.status >= 400 ? 'text-red-600' : 'text-yellow-600'
+ req.status >= 200 && req.status < 300 ? 'text-success' :
+ req.status >= 400 ? 'text-destructive' : 'text-warning'
  }`}>
  {req.status || '-'}
  </span>
@@ -593,8 +593,8 @@ export default function TimelineTab({
  <div
  className={`h-full rounded ${
  !req.status ? 'bg-gray-400' :
- req.status >= 200 && req.status < 300 ? 'bg-green-500' :
- req.status >= 400 ? 'bg-red-500' : 'bg-yellow-500'
+ req.status >= 200 && req.status < 300 ? 'bg-success' :
+ req.status >= 400 ? 'bg-destructive' : 'bg-warning'
  }`}
  style={{
  width: `${Math.max(widthPercent, 5)}%`,
@@ -617,8 +617,8 @@ export default function TimelineTab({
  <div key={rIdx} className="p-2 bg-muted/30 rounded text-xs flex items-start gap-2">
  <span className={`px-1.5 py-0.5 rounded font-mono ${
  !req.status ? 'bg-muted text-foreground' :
- req.status >= 200 && req.status < 300 ? 'bg-green-100 text-green-700' :
- req.status >= 400 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+ req.status >= 200 && req.status < 300 ? 'bg-success/10 text-success' :
+ req.status >= 400 ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'
  }`}>
  {req.method}
  </span>
@@ -644,7 +644,7 @@ export default function TimelineTab({
  <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
  <span>📝</span> Console Logs ({step.stepConsoleLogs.length})
  {step.stepConsoleLogs.some(l => l.level === 'error') && (
- <span className="px-1.5 py-0.5 text-xs bg-red-100 text-red-700 rounded">
+ <span className="px-1.5 py-0.5 text-xs bg-destructive/10 text-destructive rounded">
  {step.stepConsoleLogs.filter(l => l.level === 'error').length} errors
  </span>
  )}
@@ -654,9 +654,9 @@ export default function TimelineTab({
  <div
  key={lIdx}
  className={`py-0.5 ${
- log.level === 'error' ? 'text-red-400' :
- log.level === 'warn' ? 'text-yellow-400' :
- log.level === 'info' ? 'text-blue-400' :
+ log.level === 'error' ? 'text-destructive' :
+ log.level === 'warn' ? 'text-warning' :
+ log.level === 'info' ? 'text-primary' :
  log.level === 'debug' ? 'text-muted-foreground' :
  'text-gray-200'
  }`}

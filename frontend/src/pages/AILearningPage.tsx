@@ -245,15 +245,15 @@ export function AILearningPage() {
  <div className="text-sm text-muted-foreground">Total Interactions</div>
  </div>
  <div className="rounded-lg border border-border bg-card p-4">
- <div className="text-2xl font-bold text-blue-600">{learningStats.daysTracked}</div>
+ <div className="text-2xl font-bold text-primary">{learningStats.daysTracked}</div>
  <div className="text-sm text-muted-foreground">Days Tracked</div>
  </div>
  <div className="rounded-lg border border-border bg-card p-4">
- <div className="text-2xl font-bold text-green-600">{learningStats.workflowsIdentified}</div>
+ <div className="text-2xl font-bold text-success">{learningStats.workflowsIdentified}</div>
  <div className="text-sm text-muted-foreground">Workflows Identified</div>
  </div>
  <div className="rounded-lg border border-border bg-card p-4">
- <div className="text-2xl font-bold text-yellow-600">{learningStats.suggestionsGenerated}</div>
+ <div className="text-2xl font-bold text-warning">{learningStats.suggestionsGenerated}</div>
  <div className="text-sm text-muted-foreground">Suggestions Generated</div>
  </div>
  <div className="rounded-lg border border-border bg-card p-4">
@@ -290,17 +290,17 @@ export function AILearningPage() {
  <div className="rounded-lg border border-border bg-card p-6">
  <h2 className="text-lg font-semibold text-foreground mb-4">🎯 How AI Learning Works</h2>
  <div className="grid md:grid-cols-4 gap-4">
- <div className="p-4 rounded-lg bg-blue-50">
+ <div className="p-4 rounded-lg bg-primary/5">
  <div className="text-2xl mb-2">1️⃣</div>
  <h3 className="font-medium text-foreground">Track</h3>
  <p className="text-sm text-muted-foreground">AI observes your page visits, feature usage, and workflow patterns</p>
  </div>
- <div className="p-4 rounded-lg bg-green-50">
+ <div className="p-4 rounded-lg bg-success/5">
  <div className="text-2xl mb-2">2️⃣</div>
  <h3 className="font-medium text-foreground">Analyze</h3>
  <p className="text-sm text-muted-foreground">Patterns are identified using ML to understand your habits</p>
  </div>
- <div className="p-4 rounded-lg bg-yellow-50">
+ <div className="p-4 rounded-lg bg-warning/5">
  <div className="text-2xl mb-2">3️⃣</div>
  <h3 className="font-medium text-foreground">Suggest</h3>
  <p className="text-sm text-muted-foreground">AI generates shortcuts and automations based on your patterns</p>
@@ -325,7 +325,7 @@ export function AILearningPage() {
  <p className="font-medium text-foreground">{workflow.name}</p>
  <p className="text-sm text-muted-foreground">{workflow.frequency}x/week • {workflow.avgDuration} min avg</p>
  </div>
- <span className="text-sm text-green-600">✓ Tracked</span>
+ <span className="text-sm text-success">✓ Tracked</span>
  </div>
  ))}
  </div>
@@ -339,9 +339,9 @@ export function AILearningPage() {
  <div key={suggestion.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
  <div>
  <p className="font-medium text-foreground">{suggestion.title}</p>
- <p className="text-sm text-green-600">Save {suggestion.estimatedTimeSaved}</p>
+ <p className="text-sm text-success">Save {suggestion.estimatedTimeSaved}</p>
  </div>
- <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
+ <span className="px-2 py-1 text-xs font-medium rounded-full bg-destructive/10 text-destructive">
  High Priority
  </span>
  </div>
@@ -360,7 +360,7 @@ export function AILearningPage() {
  <span className="font-medium text-foreground">94%</span>
  </div>
  <div className="h-2 rounded-full bg-muted">
- <div className="h-2 rounded-full bg-green-500" style={{ width: '94%' }}></div>
+ <div className="h-2 rounded-full bg-success" style={{ width: '94%' }}></div>
  </div>
  </div>
  <div>
@@ -369,7 +369,7 @@ export function AILearningPage() {
  <span className="font-medium text-foreground">87%</span>
  </div>
  <div className="h-2 rounded-full bg-muted">
- <div className="h-2 rounded-full bg-blue-500" style={{ width: '87%' }}></div>
+ <div className="h-2 rounded-full bg-primary" style={{ width: '87%' }}></div>
  </div>
  </div>
  <div>
@@ -400,7 +400,7 @@ export function AILearningPage() {
  <div className="flex items-center gap-2">
  <h3 className="font-medium text-foreground">{workflow.name}</h3>
  {workflow.isCommon && (
- <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">
+ <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-success/10 text-success">
  Common
  </span>
  )}
@@ -447,10 +447,10 @@ export function AILearningPage() {
  {feature.category}
  </span>
  {feature.trend === 'increasing' && (
- <span className="text-green-600">↗</span>
+ <span className="text-success">↗</span>
  )}
  {feature.trend === 'decreasing' && (
- <span className="text-red-600">↘</span>
+ <span className="text-destructive">↘</span>
  )}
  </div>
  <div className="flex gap-4 mt-1 text-sm text-muted-foreground">
@@ -486,7 +486,7 @@ export function AILearningPage() {
  key={suggestion.id}
  className={`rounded-lg border p-4 ${
  suggestion.implemented
- ? 'border-green-300 bg-green-50'
+ ? 'border-success/30 bg-success/5'
  : 'border-border bg-card'
  }`}
  >
@@ -494,22 +494,22 @@ export function AILearningPage() {
  <div className="flex items-center gap-2">
  <h3 className="font-medium text-foreground">{suggestion.title}</h3>
  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
- suggestion.type === 'shortcut' ? 'bg-blue-100 text-blue-700' :
+ suggestion.type === 'shortcut' ? 'bg-primary/10 text-primary' :
  suggestion.type === 'automation' ? 'bg-purple-100 text-purple-700' :
- suggestion.type === 'batch_action' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-green-100 text-green-700'
+ suggestion.type === 'batch_action' ? 'bg-warning/10 text-warning' :
+ 'bg-success/10 text-success'
  }`}>
  {suggestion.type.replace('_', ' ')}
  </span>
  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
- suggestion.priority === 'high' ? 'bg-red-100 text-red-700' :
- suggestion.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+ suggestion.priority === 'high' ? 'bg-destructive/10 text-destructive' :
+ suggestion.priority === 'medium' ? 'bg-warning/10 text-warning' :
  'bg-muted text-foreground'
  }`}>
  {suggestion.priority}
  </span>
  </div>
- <span className="text-sm font-medium text-green-600">Save {suggestion.estimatedTimeSaved}</span>
+ <span className="text-sm font-medium text-success">Save {suggestion.estimatedTimeSaved}</span>
  </div>
 
  <p className="text-sm text-foreground mb-2">{suggestion.description}</p>
@@ -538,7 +538,7 @@ export function AILearningPage() {
  </button>
  </div>
  ) : (
- <span className="text-sm text-green-600 font-medium">✓ Implemented</span>
+ <span className="text-sm text-success font-medium">✓ Implemented</span>
  )}
  </div>
  ))}
@@ -559,23 +559,23 @@ export function AILearningPage() {
  <div className="flex-1">
  <div className="flex items-center gap-2 mb-1">
  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
- p.category === 'sidebar' ? 'bg-blue-100 text-blue-700' :
- p.category === 'dashboard' ? 'bg-green-100 text-green-700' :
+ p.category === 'sidebar' ? 'bg-primary/10 text-primary' :
+ p.category === 'dashboard' ? 'bg-success/10 text-success' :
  p.category === 'quickactions' ? 'bg-purple-100 text-purple-700' :
- 'bg-yellow-100 text-yellow-700'
+ 'bg-warning/10 text-warning'
  }`}>
  {p.category}
  </span>
  <h3 className="font-medium text-foreground">{p.suggestion}</h3>
  </div>
  <p className="text-sm text-muted-foreground">{p.reason}</p>
- <p className="text-xs text-green-600 mt-1">Impact: {p.impact}</p>
+ <p className="text-xs text-success mt-1">Impact: {p.impact}</p>
  </div>
  <button
  onClick={() => handleApplyPersonalization(p.id)}
  className={`px-4 py-2 text-sm font-medium rounded-md ${
  p.applied
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : 'border border-border hover:bg-muted'
  }`}
  >
@@ -587,9 +587,9 @@ export function AILearningPage() {
  </div>
 
  {/* Applied Summary */}
- <div className="rounded-lg border border-green-200 bg-green-50 p-4">
- <h3 className="font-medium text-green-700 mb-2">✓ Active Personalizations</h3>
- <p className="text-sm text-green-600">
+ <div className="rounded-lg border border-success/20 bg-success/5 p-4">
+ <h3 className="font-medium text-success mb-2">✓ Active Personalizations</h3>
+ <p className="text-sm text-success">
  {personalizations.filter(p => p.applied).length} of {personalizations.length} personalizations are currently applied to your UI
  </p>
  </div>
@@ -609,9 +609,9 @@ export function AILearningPage() {
  </div>
  <div className="flex items-center gap-2">
  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
- orgModel.status === 'active' ? 'bg-green-100 text-green-700' :
- orgModel.status === 'training' ? 'bg-blue-100 text-blue-700' :
- orgModel.status === 'updating' ? 'bg-yellow-100 text-yellow-700' :
+ orgModel.status === 'active' ? 'bg-success/10 text-success' :
+ orgModel.status === 'training' ? 'bg-primary/10 text-primary' :
+ orgModel.status === 'updating' ? 'bg-warning/10 text-warning' :
  'bg-muted text-foreground'
  }`}>
  {orgModel.status === 'active' && '✓ Active'}
@@ -654,25 +654,25 @@ export function AILearningPage() {
  <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
  <div
  className={`h-full rounded-full transition-all ${
- idx === orgModel.accuracyTrend.length - 1 ? 'bg-green-500' : 'bg-primary/70'
+ idx === orgModel.accuracyTrend.length - 1 ? 'bg-success' : 'bg-primary/70'
  }`}
  style={{ width: `${point.accuracy}%` }}
  ></div>
  </div>
  <span className={`w-16 text-sm font-medium ${
- idx === orgModel.accuracyTrend.length - 1 ? 'text-green-600' : 'text-foreground'
+ idx === orgModel.accuracyTrend.length - 1 ? 'text-success' : 'text-foreground'
  }`}>
  {point.accuracy}%
  </span>
  {idx === orgModel.accuracyTrend.length - 1 && (
- <span className="text-xs text-green-600">Current</span>
+ <span className="text-xs text-success">Current</span>
  )}
  </div>
  ))}
  </div>
 
- <div className="mt-4 p-3 rounded-lg bg-green-50 border border-green-200">
- <p className="text-sm text-green-700">
+ <div className="mt-4 p-3 rounded-lg bg-success/5 border border-success/20">
+ <p className="text-sm text-success">
  <span className="font-medium">+15.7% improvement</span> since initial training. Model accuracy improves as it learns from your organization's unique patterns.
  </p>
  </div>
@@ -722,7 +722,7 @@ export function AILearningPage() {
  </div>
  <div className="flex justify-between text-sm">
  <span className="text-muted-foreground">Next scheduled training</span>
- <span className="font-medium text-blue-600">{orgModel.nextTrainingDate.toLocaleDateString()}</span>
+ <span className="font-medium text-primary">{orgModel.nextTrainingDate.toLocaleDateString()}</span>
  </div>
  <div className="flex justify-between text-sm">
  <span className="text-muted-foreground">Training frequency</span>
@@ -794,9 +794,9 @@ export function AILearningPage() {
  </div>
 
  {/* Model Benefits */}
- <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
- <h3 className="font-medium text-blue-700 mb-2">🎓 Organization-Specific Model Benefits</h3>
- <ul className="space-y-1 text-sm text-blue-600">
+ <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+ <h3 className="font-medium text-primary mb-2">🎓 Organization-Specific Model Benefits</h3>
+ <ul className="space-y-1 text-sm text-primary">
  <li>• Predictions tailored to your team's unique testing patterns</li>
  <li>• Learns from your codebase structure and test organization</li>
  <li>• Improves flaky test detection specific to your environment</li>

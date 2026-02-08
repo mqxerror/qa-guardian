@@ -90,7 +90,7 @@ function VisualTestConfig({ test }: { test: TestType }) {
 function LighthouseTestConfig({ test }: { test: TestType }) {
  return (
  <div className="mt-4 space-y-4">
- <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+ <div className="rounded-lg border border-warning/20 bg-warning/5/50 p-4">
  <div className="flex items-center gap-2 mb-3">
  <span className="text-xl">⚡</span>
  <h4 className="font-medium text-foreground">Performance Test Configuration</h4>
@@ -117,7 +117,7 @@ function LighthouseTestConfig({ test }: { test: TestType }) {
 function AccessibilityTestConfig({ test }: { test: TestType }) {
  return (
  <div className="mt-4 space-y-4">
- <div className="rounded-lg border border-green-200 bg-green-50/50 p-4">
+ <div className="rounded-lg border border-success/20 bg-success/5/50 p-4">
  <div className="flex items-center gap-2 mb-3">
  <span className="text-xl">♿</span>
  <h4 className="font-medium text-foreground">Accessibility Test Configuration</h4>
@@ -191,7 +191,7 @@ function StepItem({
  <p className="font-medium text-foreground">
  {step.action === 'visual_checkpoint' ? (
  <span className="flex items-center gap-1">
- <svg className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
  </svg>
@@ -214,10 +214,10 @@ function StepItem({
  )}
  {step.action === 'visual_checkpoint' && (
  <div className="flex gap-2 mt-1">
- <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+ <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
  {step.checkpointName || 'unnamed'}
  </span>
- <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+ <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-warning/10 text-warning">
  Threshold: {step.checkpointThreshold ?? 0.1}%
  </span>
  </div>
@@ -228,7 +228,7 @@ function StepItem({
  WCAG {step.a11y_wcag_level || 'AA'}
  </span>
  {step.a11y_fail_on_any && (
- <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+ <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-destructive/10 text-destructive">
  Fail on any
  </span>
  )}
@@ -237,7 +237,7 @@ function StepItem({
  Critical/Serious only
  </span>
  )}
- <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+ <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-warning/10 text-warning">
  Threshold: {step.a11y_threshold ?? 0}
  </span>
  </div>
@@ -283,12 +283,12 @@ export function TestStepsTab({
  return (
  <>
  {hasReorderedSteps && (
- <div className="mt-4 flex items-center gap-2 rounded-md bg-yellow-500/10 p-3 border border-yellow-500/30">
- <span className="text-yellow-600 text-sm">Steps have been reordered. Save to persist changes.</span>
+ <div className="mt-4 flex items-center gap-2 rounded-md bg-warning/10 p-3 border border-warning/30">
+ <span className="text-warning text-sm">Steps have been reordered. Save to persist changes.</span>
  <button
  onClick={onSaveStepOrder}
  disabled={isSavingStepOrder}
- className="ml-auto rounded-md bg-yellow-600 px-3 py-1 text-sm font-medium text-white hover:bg-yellow-700 disabled:opacity-50"
+ className="ml-auto rounded-md bg-warning px-3 py-1 text-sm font-medium text-white hover:bg-warning disabled:opacity-50"
  >
  {isSavingStepOrder ? 'Saving...' : 'Save Order'}
  </button>

@@ -339,18 +339,18 @@ export function CVEDatabasePage() {
  const getSeverityColor = (severity: string) => {
  switch (severity.toUpperCase()) {
  case 'CRITICAL': return 'text-purple-700 bg-purple-100';
- case 'HIGH': return 'text-red-700 bg-red-100';
- case 'MEDIUM': return 'text-amber-700 bg-amber-100';
- case 'LOW': return 'text-blue-700 bg-blue-100';
+ case 'HIGH': return 'text-destructive bg-destructive/10';
+ case 'MEDIUM': return 'text-warning bg-warning/10';
+ case 'LOW': return 'text-primary bg-primary/10';
  default: return 'text-muted-foreground bg-muted';
  }
  };
 
  const getCVSSColor = (score: number) => {
  if (score >= 9) return 'bg-purple-600 text-white';
- if (score >= 7) return 'bg-red-600 text-white';
- if (score >= 4) return 'bg-amber-500 text-white';
- return 'bg-blue-500 text-white';
+ if (score >= 7) return 'bg-destructive text-white';
+ if (score >= 4) return 'bg-warning text-white';
+ return 'bg-primary text-white';
  };
 
  const toggleExpand = (id: string) => {
@@ -378,7 +378,7 @@ export function CVEDatabasePage() {
  <div>
  <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
  🛡️ CVE Database Scanner
- <span className="text-sm font-normal px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+ <span className="text-sm font-normal px-2 py-0.5 bg-primary/10 text-primary rounded">
  NVD Integration
  </span>
  </h1>
@@ -421,21 +421,21 @@ export function CVEDatabasePage() {
  <p className="text-sm text-muted-foreground">Critical</p>
  <p className="text-2xl font-bold text-purple-600">{scanResult.summary.bySeverity.critical}</p>
  </div>
- <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center">
+ <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-center">
  <p className="text-sm text-muted-foreground">High</p>
  <p className="text-2xl font-bold text-red-600">{scanResult.summary.bySeverity.high}</p>
  </div>
- <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-center">
+ <div className="rounded-lg border border-warning/20 bg-warning/5 p-4 text-center">
  <p className="text-sm text-muted-foreground">Medium</p>
- <p className="text-2xl font-bold text-amber-600">{scanResult.summary.bySeverity.medium}</p>
+ <p className="text-2xl font-bold text-warning">{scanResult.summary.bySeverity.medium}</p>
  </div>
- <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
+ <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-center">
  <p className="text-sm text-muted-foreground">Low</p>
- <p className="text-2xl font-bold text-blue-600">{scanResult.summary.bySeverity.low}</p>
+ <p className="text-2xl font-bold text-primary">{scanResult.summary.bySeverity.low}</p>
  </div>
- <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+ <div className="rounded-lg border border-success/20 bg-success/5 p-4 text-center">
  <p className="text-sm text-muted-foreground">NVD Matched</p>
- <p className="text-2xl font-bold text-green-600">{scanResult.summary.bySource.nvd}</p>
+ <p className="text-2xl font-bold text-success">{scanResult.summary.bySource.nvd}</p>
  </div>
  </div>
 
@@ -477,7 +477,7 @@ export function CVEDatabasePage() {
  <span className="font-mono font-medium text-foreground">{vuln.pkgName}</span>
  <span className="text-xs text-muted-foreground">v{vuln.installedVersion}</span>
  {vuln.fixedVersion && (
- <span className="text-xs text-green-600">→ {vuln.fixedVersion}</span>
+ <span className="text-xs text-success">→ {vuln.fixedVersion}</span>
  )}
  </div>
  <p className="text-sm text-muted-foreground">{vuln.title}</p>
@@ -509,7 +509,7 @@ export function CVEDatabasePage() {
  <p className="text-sm text-foreground mb-4">{vuln.description}</p>
 
  {/* NVD Details Section */}
- <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 mb-4">
+ <div className="rounded-lg border border-primary/20 bg-primary/5/50 p-4 mb-4">
  <div className="flex items-center gap-2 mb-3">
  <span className="text-lg">🏛️</span>
  <h4 className="font-semibold text-foreground">NVD Details</h4>
@@ -598,11 +598,11 @@ export function CVEDatabasePage() {
  </div>
  <div>
  <p className="text-xs text-muted-foreground">Installed</p>
- <p className="font-mono text-sm text-red-600">{vuln.installedVersion}</p>
+ <p className="font-mono text-sm text-destructive">{vuln.installedVersion}</p>
  </div>
  <div>
  <p className="text-xs text-muted-foreground">Fixed In</p>
- <p className="font-mono text-sm text-green-600">{vuln.fixedVersion || 'No fix available'}</p>
+ <p className="font-mono text-sm text-success">{vuln.fixedVersion || 'No fix available'}</p>
  </div>
  <div>
  <p className="text-xs text-muted-foreground">Affected Versions</p>
@@ -653,12 +653,12 @@ export function CVEDatabasePage() {
  href={vuln.nvdUrl}
  target="_blank"
  rel="noopener noreferrer"
- className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+ className="px-3 py-1.5 bg-primary text-white rounded text-sm hover:bg-primary"
  >
  🏛️ View NVD Details
  </a>
  {vuln.fixedVersion && (
- <button className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+ <button className="px-3 py-1.5 bg-success text-white rounded text-sm hover:bg-success">
  Auto-fix to {vuln.fixedVersion}
  </button>
  )}

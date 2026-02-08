@@ -52,8 +52,8 @@ export function QuickScheduleModal({
  >
  <div role="dialog" aria-modal="true" aria-labelledby="quick-schedule-title" className="w-full max-w-lg rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
  <div className="flex items-center gap-3 mb-4">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
- <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+ <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
  </div>
@@ -205,7 +205,7 @@ export function QuickScheduleModal({
  <button
  type="submit"
  disabled={isCreating || (type === 'one-time' && !runAt)}
- className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+ className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary disabled:opacity-50"
  >
  {isCreating ? 'Creating...' : 'Create Schedule'}
  </button>

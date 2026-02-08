@@ -294,7 +294,7 @@ export function AlertRoutingModal({
  <button
  type="button"
  onClick={() => removeCondition(index)}
- className="text-red-500 hover:text-red-700"
+ className="text-destructive hover:text-destructive"
  >
  ✕
  </button>
@@ -407,7 +407,7 @@ function DestinationConfig({
  <button
  type="button"
  onClick={() => onRemove(index)}
- className="text-red-500 hover:text-red-700"
+ className="text-destructive hover:text-destructive"
  >
  ✕
  </button>
@@ -453,7 +453,7 @@ function DestinationConfig({
  type="button"
  onClick={() => onTest(dest, index)}
  disabled={testingIndex === index}
- className="w-full rounded-md bg-amber-500/20 border border-amber-500/50 px-3 py-1.5 text-xs font-medium text-amber-600 hover:bg-amber-500/30 disabled:opacity-50"
+ className="w-full rounded-md bg-warning/20 border border-warning/50 px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning/30 disabled:opacity-50"
  >
  {testingIndex === index ? '🔄 Testing...' : '🧪 Send Test Alert'}
  </button>
@@ -500,7 +500,7 @@ function PagerDutyConfig({ dest, index, onUpdate }: ConfigProps) {
  <span className={`w-16 font-medium ${
  severity === 'critical' ? 'text-red-500' :
  severity === 'high' ? 'text-orange-500' :
- severity === 'medium' ? 'text-yellow-500' : 'text-blue-500'
+ severity === 'medium' ? 'text-warning' : 'text-primary'
  }`}>{severity}:</span>
  <select
  value={dest.config.severity_mapping?.[severity] || (

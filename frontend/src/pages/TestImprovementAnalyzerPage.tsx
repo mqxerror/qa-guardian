@@ -97,34 +97,34 @@ export function TestImprovementAnalyzerPage() {
 
  const getSeverityBadge = (severity: string) => {
  switch (severity) {
- case 'high': return 'bg-red-500/20 text-red-400';
- case 'medium': return 'bg-amber-500/20 text-amber-400';
- case 'low': return 'bg-green-500/20 text-green-400';
+ case 'high': return 'bg-destructive/20 text-destructive';
+ case 'medium': return 'bg-warning/20 text-warning';
+ case 'low': return 'bg-success/20 text-success';
  default: return 'bg-muted text-muted-foreground';
  }
  };
 
  const getPriorityBadge = (priority: string) => {
  switch (priority) {
- case 'high': return 'bg-red-500/20 text-red-400';
- case 'medium': return 'bg-amber-500/20 text-amber-400';
- case 'low': return 'bg-blue-500/20 text-blue-400';
+ case 'high': return 'bg-destructive/20 text-destructive';
+ case 'medium': return 'bg-warning/20 text-warning';
+ case 'low': return 'bg-primary/20 text-primary';
  default: return 'bg-muted text-muted-foreground';
  }
  };
 
  const getScoreColor = (score: number) => {
- if (score >= 90) return 'text-green-600';
- if (score >= 75) return 'text-amber-600';
+ if (score >= 90) return 'text-success';
+ if (score >= 75) return 'text-warning';
  if (score >= 60) return 'text-orange-600';
- return 'text-red-600';
+ return 'text-destructive';
  };
 
  const getScoreGradient = (score: number) => {
- if (score >= 90) return 'from-green-500 to-emerald-500';
- if (score >= 75) return 'from-amber-500 to-yellow-500';
- if (score >= 60) return 'from-orange-500 to-amber-500';
- return 'from-red-500 to-orange-500';
+ if (score >= 90) return 'from-success to-emerald-500';
+ if (score >= 75) return 'from-warning to-warning';
+ if (score >= 60) return 'from-orange-500 to-warning';
+ return 'from-destructive to-orange-500';
  };
 
  return (
@@ -351,14 +351,14 @@ export function TestImprovementAnalyzerPage() {
  </div>
  <div className="grid grid-cols-2 gap-4">
  <div>
- <span className="text-xs text-red-600 font-medium">ORIGINAL</span>
- <code className="block mt-1 p-2 rounded bg-red-50 text-sm font-mono text-red-700">
+ <span className="text-xs text-destructive font-medium">ORIGINAL</span>
+ <code className="block mt-1 p-2 rounded bg-destructive/5 text-sm font-mono text-destructive">
  {selector.original_selector}
  </code>
  </div>
  <div>
- <span className="text-xs text-green-600 font-medium">SUGGESTED</span>
- <code className="block mt-1 p-2 rounded bg-green-50 text-sm font-mono text-green-700">
+ <span className="text-xs text-success font-medium">SUGGESTED</span>
+ <code className="block mt-1 p-2 rounded bg-success/5 text-sm font-mono text-success">
  {selector.suggested_selector}
  </code>
  </div>
@@ -388,7 +388,7 @@ export function TestImprovementAnalyzerPage() {
  <span className="text-sm text-muted-foreground">{assertion.location}</span>
  </div>
  <p className="text-sm text-foreground font-medium">{assertion.reason}</p>
- <code className="block mt-2 p-2 rounded bg-blue-50 text-sm font-mono text-blue-700">
+ <code className="block mt-2 p-2 rounded bg-primary/5 text-sm font-mono text-primary">
  {assertion.suggested_assertion}
  </code>
  </div>

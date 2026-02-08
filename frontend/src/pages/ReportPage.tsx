@@ -161,7 +161,7 @@ interface ComprehensiveReport {
 
 // Score badge component
 function ScoreBadge({ score, size = 'large' }: { score: number; size?: 'small' | 'large' }) {
-  const color = score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500';
+  const color = score >= 80 ? 'bg-success' : score >= 60 ? 'bg-warning' : 'bg-destructive';
   const sizeClass = size === 'large' ? 'w-24 h-24 text-3xl' : 'w-12 h-12 text-lg';
 
   return (
@@ -174,14 +174,14 @@ function ScoreBadge({ score, size = 'large' }: { score: number; size?: 'small' |
 // Status badge component
 function StatusBadge({ status }: { status: 'passing' | 'warning' | 'failing' | 'passed' | 'failed' | 'skipped' | 'match' | 'diff' | 'approved' | 'pending' }) {
   const colors: Record<string, string> = {
-    passing: 'bg-green-500/20 text-green-400',
-    passed: 'bg-green-500/20 text-green-400',
-    match: 'bg-green-500/20 text-green-400',
-    approved: 'bg-green-500/20 text-green-400',
-    warning: 'bg-yellow-500/20 text-yellow-400',
-    pending: 'bg-yellow-500/20 text-yellow-400',
-    failing: 'bg-red-500/20 text-red-400',
-    failed: 'bg-red-500/20 text-red-400',
+    passing: 'bg-success/20 text-success',
+    passed: 'bg-success/20 text-success',
+    match: 'bg-success/20 text-success',
+    approved: 'bg-success/20 text-success',
+    warning: 'bg-warning/20 text-warning',
+    pending: 'bg-warning/20 text-warning',
+    failing: 'bg-destructive/20 text-destructive',
+    failed: 'bg-destructive/20 text-destructive',
     diff: 'bg-orange-500/20 text-orange-400',
     skipped: 'bg-muted text-muted-foreground',
   };
@@ -196,13 +196,13 @@ function StatusBadge({ status }: { status: 'passing' | 'warning' | 'failing' | '
 // Impact badge for severity
 function ImpactBadge({ impact }: { impact: string }) {
   const colors: Record<string, string> = {
-    critical: 'bg-red-600 text-white',
-    high: 'bg-red-500 text-white',
+    critical: 'bg-destructive text-white',
+    high: 'bg-destructive text-white',
     serious: 'bg-orange-500 text-white',
-    medium: 'bg-yellow-500 text-white',
-    moderate: 'bg-yellow-500 text-white',
-    low: 'bg-blue-500 text-white',
-    minor: 'bg-blue-400 text-white',
+    medium: 'bg-warning text-white',
+    moderate: 'bg-warning text-white',
+    low: 'bg-primary text-white',
+    minor: 'bg-primary/80 text-white',
     info: 'bg-gray-500 text-white',
   };
 
@@ -216,9 +216,9 @@ function ImpactBadge({ impact }: { impact: string }) {
 // Core Web Vitals rating badge
 function CWVRatingBadge({ rating }: { rating: 'good' | 'needs-improvement' | 'poor' }) {
   const colors = {
-    good: 'bg-green-500/20 text-green-400',
-    'needs-improvement': 'bg-yellow-500/20 text-yellow-400',
-    poor: 'bg-red-500/20 text-red-400',
+    good: 'bg-success/20 text-success',
+    'needs-improvement': 'bg-warning/20 text-warning',
+    poor: 'bg-destructive/20 text-destructive',
   };
 
   const labels = {
@@ -283,9 +283,9 @@ export function ReportPage() {
   if (error || !report) {
     return (
       <Layout>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <h2 className="text-xl font-semibold text-red-800 mb-2">Report Not Found</h2>
-          <p className="text-red-600">{error || 'The requested report could not be found.'}</p>
+        <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-6 text-center">
+          <h2 className="text-xl font-semibold text-destructive mb-2">Report Not Found</h2>
+          <p className="text-destructive">{error || 'The requested report could not be found.'}</p>
           <Link to="/dashboard" className="mt-4 inline-block text-primary hover:underline">
             Return to Dashboard
           </Link>
@@ -354,49 +354,49 @@ export function ReportPage() {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Highlights */}
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <h3 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
+                  <div className="bg-success/5 rounded-lg p-4">
+                    <h3 className="font-semibold text-success mb-3 flex items-center gap-2">
                       <span>✅</span> Highlights
                     </h3>
                     <ul className="space-y-2">
                       {report.executiveSummary.highlights.length > 0 ? (
                         report.executiveSummary.highlights.map((h, i) => (
-                          <li key={i} className="text-sm text-green-700">{h}</li>
+                          <li key={i} className="text-sm text-success">{h}</li>
                         ))
                       ) : (
-                        <li className="text-sm text-green-600 italic">No highlights</li>
+                        <li className="text-sm text-success italic">No highlights</li>
                       )}
                     </ul>
                   </div>
 
                   {/* Critical Issues */}
-                  <div className="bg-red-50 rounded-lg p-4">
-                    <h3 className="font-semibold text-red-800 mb-3 flex items-center gap-2">
+                  <div className="bg-destructive/5 rounded-lg p-4">
+                    <h3 className="font-semibold text-destructive mb-3 flex items-center gap-2">
                       <span>⚠️</span> Critical Issues
                     </h3>
                     <ul className="space-y-2">
                       {report.executiveSummary.criticalIssues.length > 0 ? (
                         report.executiveSummary.criticalIssues.map((issue, i) => (
-                          <li key={i} className="text-sm text-red-700">{issue}</li>
+                          <li key={i} className="text-sm text-destructive">{issue}</li>
                         ))
                       ) : (
-                        <li className="text-sm text-green-600 italic">No critical issues</li>
+                        <li className="text-sm text-success italic">No critical issues</li>
                       )}
                     </ul>
                   </div>
 
                   {/* Recommendations */}
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <h3 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                  <div className="bg-primary/5 rounded-lg p-4">
+                    <h3 className="font-semibold text-primary mb-3 flex items-center gap-2">
                       <span>💡</span> Recommendations
                     </h3>
                     <ul className="space-y-2">
                       {report.executiveSummary.recommendations.length > 0 ? (
                         report.executiveSummary.recommendations.map((rec, i) => (
-                          <li key={i} className="text-sm text-blue-700">{rec}</li>
+                          <li key={i} className="text-sm text-primary">{rec}</li>
                         ))
                       ) : (
-                        <li className="text-sm text-blue-600 italic">No recommendations</li>
+                        <li className="text-sm text-primary italic">No recommendations</li>
                       )}
                     </ul>
                   </div>
@@ -412,13 +412,13 @@ export function ReportPage() {
                     <div className="text-2xl font-bold text-foreground">{report.sections.e2e.summary.total}</div>
                     <div className="text-sm text-muted-foreground">Total Tests</div>
                   </div>
-                  <div className="bg-green-50 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-green-700">{report.sections.e2e.summary.passed}</div>
-                    <div className="text-sm text-green-600">Passed</div>
+                  <div className="bg-success/5 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-success">{report.sections.e2e.summary.passed}</div>
+                    <div className="text-sm text-success">Passed</div>
                   </div>
-                  <div className="bg-red-50 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-red-700">{report.sections.e2e.summary.failed}</div>
-                    <div className="text-sm text-red-600">Failed</div>
+                  <div className="bg-destructive/5 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-destructive">{report.sections.e2e.summary.failed}</div>
+                    <div className="text-sm text-destructive">Failed</div>
                   </div>
                   <div className="bg-muted rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-foreground">{report.sections.e2e.summary.skipped}</div>
@@ -446,7 +446,7 @@ export function ReportPage() {
                           <td className="p-3">{test.name}</td>
                           <td className="p-3"><StatusBadge status={test.status} /></td>
                           <td className="p-3">{(test.duration / 1000).toFixed(2)}s</td>
-                          <td className="p-3 text-red-600 text-sm">{test.error || '-'}</td>
+                          <td className="p-3 text-destructive text-sm">{test.error || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -463,21 +463,21 @@ export function ReportPage() {
                     <div className="text-2xl font-bold">{report.sections.visual.summary.total}</div>
                     <div className="text-sm text-muted-foreground">Total Comparisons</div>
                   </div>
-                  <div className="bg-green-50 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-green-700">{report.sections.visual.summary.noChange}</div>
-                    <div className="text-sm text-green-600">No Change</div>
+                  <div className="bg-success/5 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-success">{report.sections.visual.summary.noChange}</div>
+                    <div className="text-sm text-success">No Change</div>
                   </div>
                   <div className="bg-orange-50 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-orange-700">{report.sections.visual.summary.diffsDetected}</div>
                     <div className="text-sm text-orange-600">Diffs Detected</div>
                   </div>
-                  <div className="bg-blue-50 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-blue-700">{report.sections.visual.summary.approved}</div>
-                    <div className="text-sm text-blue-600">Approved</div>
+                  <div className="bg-primary/5 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-primary">{report.sections.visual.summary.approved}</div>
+                    <div className="text-sm text-primary">Approved</div>
                   </div>
-                  <div className="bg-yellow-50 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-yellow-700">{report.sections.visual.summary.pending}</div>
-                    <div className="text-sm text-yellow-600">Pending Review</div>
+                  <div className="bg-warning/5 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-warning">{report.sections.visual.summary.pending}</div>
+                    <div className="text-sm text-warning">Pending Review</div>
                   </div>
                 </div>
 
@@ -514,21 +514,21 @@ export function ReportPage() {
                     <div className="text-2xl font-bold">{report.sections.accessibility.summary.total}</div>
                     <div className="text-sm text-muted-foreground">Total Violations</div>
                   </div>
-                  <div className="bg-red-100 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-red-700">{report.sections.accessibility.summary.critical}</div>
-                    <div className="text-sm text-red-600">Critical</div>
+                  <div className="bg-destructive/10 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-destructive">{report.sections.accessibility.summary.critical}</div>
+                    <div className="text-sm text-destructive">Critical</div>
                   </div>
                   <div className="bg-orange-100 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-orange-700">{report.sections.accessibility.summary.serious}</div>
                     <div className="text-sm text-orange-600">Serious</div>
                   </div>
-                  <div className="bg-yellow-100 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-yellow-700">{report.sections.accessibility.summary.moderate}</div>
-                    <div className="text-sm text-yellow-600">Moderate</div>
+                  <div className="bg-warning/10 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-warning">{report.sections.accessibility.summary.moderate}</div>
+                    <div className="text-sm text-warning">Moderate</div>
                   </div>
-                  <div className="bg-blue-100 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-blue-700">{report.sections.accessibility.summary.minor}</div>
-                    <div className="text-sm text-blue-600">Minor</div>
+                  <div className="bg-primary/10 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-primary">{report.sections.accessibility.summary.minor}</div>
+                    <div className="text-sm text-primary">Minor</div>
                   </div>
                   <div className="bg-primary/10 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-primary">{report.sections.accessibility.summary.wcagCompliance}%</div>
@@ -651,9 +651,9 @@ export function ReportPage() {
                     <div className="text-2xl font-bold">{report.sections.load.summary.rps}</div>
                     <div className="text-sm text-muted-foreground">Requests/sec</div>
                   </div>
-                  <div className="bg-red-50 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-red-700">{report.sections.load.summary.requestsFailed}</div>
-                    <div className="text-sm text-red-600">Failed</div>
+                  <div className="bg-destructive/5 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-destructive">{report.sections.load.summary.requestsFailed}</div>
+                    <div className="text-sm text-destructive">Failed</div>
                   </div>
                 </div>
 
@@ -721,31 +721,31 @@ export function ReportPage() {
                     <div className="text-2xl font-bold">{report.sections.security.summary.total}</div>
                     <div className="text-sm text-muted-foreground">Total</div>
                   </div>
-                  <div className="bg-red-200 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-red-800">{report.sections.security.summary.critical}</div>
-                    <div className="text-sm text-red-700">Critical</div>
+                  <div className="bg-destructive/20 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-destructive">{report.sections.security.summary.critical}</div>
+                    <div className="text-sm text-destructive">Critical</div>
                   </div>
-                  <div className="bg-red-100 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-red-700">{report.sections.security.summary.high}</div>
-                    <div className="text-sm text-red-600">High</div>
+                  <div className="bg-destructive/10 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-destructive">{report.sections.security.summary.high}</div>
+                    <div className="text-sm text-destructive">High</div>
                   </div>
-                  <div className="bg-yellow-100 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-yellow-700">{report.sections.security.summary.medium}</div>
-                    <div className="text-sm text-yellow-600">Medium</div>
+                  <div className="bg-warning/10 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-warning">{report.sections.security.summary.medium}</div>
+                    <div className="text-sm text-warning">Medium</div>
                   </div>
-                  <div className="bg-blue-100 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-blue-700">{report.sections.security.summary.low}</div>
-                    <div className="text-sm text-blue-600">Low</div>
+                  <div className="bg-primary/10 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-primary">{report.sections.security.summary.low}</div>
+                    <div className="text-sm text-primary">Low</div>
                   </div>
                   <div className="bg-muted rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-foreground">{report.sections.security.summary.info}</div>
                     <div className="text-sm text-foreground">Info</div>
                   </div>
                   <div className={`rounded-lg p-4 text-center ${
-                    report.sections.security.summary.riskScore > 50 ? 'bg-red-100' : 'bg-green-100'
+                    report.sections.security.summary.riskScore > 50 ? 'bg-destructive/10' : 'bg-success/10'
                   }`}>
                     <div className={`text-2xl font-bold ${
-                      report.sections.security.summary.riskScore > 50 ? 'text-red-700' : 'text-green-700'
+                      report.sections.security.summary.riskScore > 50 ? 'text-destructive' : 'text-success'
                     }`}>
                       {report.sections.security.summary.riskScore}
                     </div>

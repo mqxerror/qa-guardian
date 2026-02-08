@@ -84,10 +84,10 @@ export function AIBudgetDashboard({
           <h2 className="text-lg font-semibold flex items-center gap-2">
             💰 Monthly AI Budget
             {getBudgetStatus() === 'blocked' && (
-              <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full animate-pulse">BLOCKED</span>
+              <span className="text-xs bg-destructive text-white px-2 py-0.5 rounded-full animate-pulse">BLOCKED</span>
             )}
             {getBudgetStatus() === 'critical' && (
-              <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full">Soft Limit</span>
+              <span className="text-xs bg-warning text-white px-2 py-0.5 rounded-full">Soft Limit</span>
             )}
           </h2>
           <p className="text-sm text-muted-foreground">Track and control AI spending with soft and hard limits</p>
@@ -102,10 +102,10 @@ export function AIBudgetDashboard({
 
       {/* Budget Overview */}
       <div className={`mb-6 p-4 rounded-lg border-2 ${
-        getBudgetStatus() === 'blocked' ? 'bg-red-50 border-red-300' :
-        getBudgetStatus() === 'critical' ? 'bg-amber-50 border-amber-300' :
-        getBudgetStatus() === 'warning' ? 'bg-yellow-50 border-yellow-300' :
-        'bg-green-50 border-green-300'
+        getBudgetStatus() === 'blocked' ? 'bg-destructive/5 border-destructive/30' :
+        getBudgetStatus() === 'critical' ? 'bg-warning/5 border-warning/30' :
+        getBudgetStatus() === 'warning' ? 'bg-warning/5 border-warning/30' :
+        'bg-success/5 border-success/30'
       }`}>
         <div className="flex items-center justify-between mb-3">
           <div>
@@ -128,22 +128,22 @@ export function AIBudgetDashboard({
         <div className="relative h-6 bg-secondary rounded-full overflow-hidden">
           <div
             className={`h-full transition-all ${
-              getBudgetStatus() === 'blocked' ? 'bg-red-500' :
-              getBudgetStatus() === 'critical' ? 'bg-amber-500' :
-              getBudgetStatus() === 'warning' ? 'bg-yellow-500' :
-              'bg-green-500'
+              getBudgetStatus() === 'blocked' ? 'bg-destructive' :
+              getBudgetStatus() === 'critical' ? 'bg-warning' :
+              getBudgetStatus() === 'warning' ? 'bg-warning' :
+              'bg-success'
             }`}
             style={{ width: `${Math.min(getBudgetPercentage(), 100)}%` }}
           />
           {/* Soft limit marker */}
           <div
-            className="absolute top-0 bottom-0 w-0.5 bg-amber-600"
+            className="absolute top-0 bottom-0 w-0.5 bg-warning"
             style={{ left: `${budgetConfig.soft_limit_percentage}%` }}
             title={`Soft limit: ${budgetConfig.soft_limit_percentage}%`}
           />
           {/* Hard limit marker */}
           <div
-            className="absolute top-0 bottom-0 w-0.5 bg-red-600"
+            className="absolute top-0 bottom-0 w-0.5 bg-destructive"
             style={{ left: `${Math.min(budgetConfig.hard_limit_percentage, 100)}%` }}
             title={`Hard limit: ${budgetConfig.hard_limit_percentage}%`}
           />
@@ -159,13 +159,13 @@ export function AIBudgetDashboard({
         </div>
         <div className="flex justify-between mt-1 text-xs text-muted-foreground">
           <span>0%</span>
-          <span className="text-amber-600">{budgetConfig.soft_limit_percentage}% soft</span>
-          <span className="text-red-600">{budgetConfig.hard_limit_percentage}% hard</span>
+          <span className="text-warning">{budgetConfig.soft_limit_percentage}% soft</span>
+          <span className="text-destructive">{budgetConfig.hard_limit_percentage}% hard</span>
         </div>
 
         {/* Projected spend warning */}
         {getProjectedSpend() > budgetConfig.monthly_budget_cents && (
-          <div className="mt-3 p-2 bg-amber-100 border border-amber-300 rounded text-sm text-amber-800">
+          <div className="mt-3 p-2 bg-warning/10 border border-warning/30 rounded text-sm text-warning">
             ⚠️ At current rate, projected month-end spend: <strong>{formatCurrency(getProjectedSpend())}</strong>
             (over budget by {formatCurrency(getProjectedSpend() - budgetConfig.monthly_budget_cents)})
           </div>
@@ -189,20 +189,20 @@ export function AIBudgetDashboard({
                 step="100"
                 value={budgetConfig.monthly_budget_cents / 100}
                 onChange={(e) => onConfigChange({ ...budgetConfig, monthly_budget_cents: parseFloat(e.target.value) * 100 || 50000 })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
               />
             </div>
           </div>
 
-          <div className="p-3 bg-amber-50 rounded-lg">
+          <div className="p-3 bg-warning/5 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-amber-800">Soft Limit: {budgetConfig.soft_limit_percentage}%</label>
+              <label className="text-sm font-medium text-warning">Soft Limit: {budgetConfig.soft_limit_percentage}%</label>
               <label className="flex items-center gap-2 text-xs">
                 <input
                   type="checkbox"
                   checked={budgetConfig.alert_on_soft_limit}
                   onChange={(e) => onConfigChange({ ...budgetConfig, alert_on_soft_limit: e.target.checked })}
-                  className="w-4 h-4 text-amber-600 rounded"
+                  className="w-4 h-4 text-warning rounded"
                 />
                 <span>Alert</span>
               </label>
@@ -213,20 +213,20 @@ export function AIBudgetDashboard({
               max="95"
               value={budgetConfig.soft_limit_percentage}
               onChange={(e) => onConfigChange({ ...budgetConfig, soft_limit_percentage: parseInt(e.target.value) })}
-              className="w-full h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer"
+              className="w-full h-2 bg-warning/20 rounded-lg appearance-none cursor-pointer"
             />
-            <div className="text-xs text-amber-600 mt-1">Warn at {formatCurrency(budgetConfig.monthly_budget_cents * budgetConfig.soft_limit_percentage / 100)}</div>
+            <div className="text-xs text-warning mt-1">Warn at {formatCurrency(budgetConfig.monthly_budget_cents * budgetConfig.soft_limit_percentage / 100)}</div>
           </div>
 
-          <div className="p-3 bg-red-50 rounded-lg">
+          <div className="p-3 bg-destructive/5 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-red-800">Hard Limit: {budgetConfig.hard_limit_percentage}%</label>
+              <label className="text-sm font-medium text-destructive">Hard Limit: {budgetConfig.hard_limit_percentage}%</label>
               <label className="flex items-center gap-2 text-xs">
                 <input
                   type="checkbox"
                   checked={budgetConfig.block_on_hard_limit}
                   onChange={(e) => onConfigChange({ ...budgetConfig, block_on_hard_limit: e.target.checked })}
-                  className="w-4 h-4 text-red-600 rounded"
+                  className="w-4 h-4 text-destructive rounded"
                 />
                 <span>Block</span>
               </label>
@@ -237,9 +237,9 @@ export function AIBudgetDashboard({
               max="150"
               value={budgetConfig.hard_limit_percentage}
               onChange={(e) => onConfigChange({ ...budgetConfig, hard_limit_percentage: parseInt(e.target.value) })}
-              className="w-full h-2 bg-red-200 rounded-lg appearance-none cursor-pointer"
+              className="w-full h-2 bg-destructive/20 rounded-lg appearance-none cursor-pointer"
             />
-            <div className="text-xs text-red-600 mt-1">Block at {formatCurrency(budgetConfig.monthly_budget_cents * budgetConfig.hard_limit_percentage / 100)}</div>
+            <div className="text-xs text-destructive mt-1">Block at {formatCurrency(budgetConfig.monthly_budget_cents * budgetConfig.hard_limit_percentage / 100)}</div>
           </div>
         </div>
 
@@ -248,21 +248,21 @@ export function AIBudgetDashboard({
           <h3 className="text-sm font-medium">📊 Spending Breakdown</h3>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <div className="text-xl font-bold text-blue-600">{spendingData.requests_this_month.toLocaleString()}</div>
-              <div className="text-xs text-blue-800">Requests</div>
+            <div className="text-center p-3 bg-primary/5 rounded-lg">
+              <div className="text-xl font-bold text-primary">{spendingData.requests_this_month.toLocaleString()}</div>
+              <div className="text-xs text-primary">Requests</div>
             </div>
-            <div className="text-center p-3 bg-green-50 rounded-lg">
-              <div className="text-xl font-bold text-green-600">{formatCurrency(spendingData.avg_cost_per_request_cents)}</div>
-              <div className="text-xs text-green-800">Avg Cost/Req</div>
+            <div className="text-center p-3 bg-success/5 rounded-lg">
+              <div className="text-xl font-bold text-success">{formatCurrency(spendingData.avg_cost_per_request_cents)}</div>
+              <div className="text-xs text-success">Avg Cost/Req</div>
             </div>
             <div className="text-center p-3 bg-purple-50 rounded-lg">
               <div className="text-xl font-bold text-purple-600">{formatCurrency(spendingData.last_month_spend_cents)}</div>
               <div className="text-xs text-purple-800">Last Month</div>
             </div>
-            <div className="text-center p-3 bg-amber-50 rounded-lg">
-              <div className="text-xl font-bold text-amber-600">{formatCurrency(getProjectedSpend())}</div>
-              <div className="text-xs text-amber-800">Projected</div>
+            <div className="text-center p-3 bg-warning/5 rounded-lg">
+              <div className="text-xl font-bold text-warning">{formatCurrency(getProjectedSpend())}</div>
+              <div className="text-xs text-warning">Projected</div>
             </div>
           </div>
 
@@ -273,7 +273,7 @@ export function AIBudgetDashboard({
                 <span className="w-16 text-sm font-medium capitalize">{provider}</span>
                 <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
                   <div
-                    className={`h-full ${provider === 'kie' ? 'bg-gradient-to-r from-teal-400 to-teal-500' : 'bg-gradient-to-r from-blue-400 to-blue-500'}`}
+                    className={`h-full ${provider === 'kie' ? 'bg-gradient-to-r from-teal-400 to-teal-500' : 'bg-gradient-to-r from-primary/80 to-primary'}`}
                     style={{ width: `${spendingData.current_month_spend_cents > 0 ? (cents / spendingData.current_month_spend_cents) * 100 : 0}%` }}
                   />
                 </div>
@@ -308,9 +308,9 @@ export function AIBudgetDashboard({
               <div
                 key={alert.id}
                 className={`flex items-center justify-between p-3 rounded-lg ${
-                  alert.type === 'hard_limit' ? 'bg-red-50 border border-red-200' :
-                  alert.type === 'soft_limit' ? 'bg-amber-50 border border-amber-200' :
-                  'bg-yellow-50 border border-yellow-200'
+                  alert.type === 'hard_limit' ? 'bg-destructive/5 border border-destructive/20' :
+                  alert.type === 'soft_limit' ? 'bg-warning/5 border border-warning/20' :
+                  'bg-warning/5 border border-warning/20'
                 }`}
               >
                 <div>
@@ -349,7 +349,7 @@ export function AIBudgetDashboard({
                   onResetBudget();
                   setShowBudgetResetModal(false);
                 }}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                className="px-4 py-2 bg-destructive text-white rounded-lg hover:bg-destructive"
               >
                 Reset Budget
               </button>

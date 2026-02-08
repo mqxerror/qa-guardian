@@ -286,7 +286,7 @@ export const StatusPageModal: React.FC<StatusPageModalProps> = ({
                     <span className="text-sm text-foreground">{check.name}</span>
                     <span className="text-xs text-muted-foreground">({check.type})</span>
                     {!check.enabled && (
-                      <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">disabled</span>
+                      <span className="text-xs bg-warning/10 text-warning px-1.5 py-0.5 rounded">disabled</span>
                     )}
                   </label>
                 ))}

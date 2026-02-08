@@ -287,7 +287,7 @@ export const OnCallScheduleModal: React.FC<OnCallScheduleModalProps> = ({
                     <button
                       type="button"
                       onClick={() => removeMember(member.id)}
-                      className="text-red-500 hover:text-red-700 text-sm"
+                      className="text-destructive hover:text-destructive text-sm"
                     >
                       ✕
                     </button>

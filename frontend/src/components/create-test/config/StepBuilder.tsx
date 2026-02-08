@@ -179,7 +179,7 @@ const StepRow: React.FC<{
  className={`step-row flex items-center gap-2 p-2 rounded-lg transition-all ${
  isDragging ? 'opacity-50 scale-95' : ''
  } ${
- isDropTarget ? 'border-2 border-dashed border-blue-400 bg-blue-50' : 'bg-muted'
+ isDropTarget ? 'border-2 border-dashed border-primary/40 bg-primary/5' : 'bg-muted'
  }`}
  >
  {/* Drag Handle */}
@@ -238,7 +238,7 @@ const StepRow: React.FC<{
  <button
  type="button"
  onClick={() => onDelete(step.id)}
- className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-colors"
+ className="p-1.5 text-destructive hover:bg-destructive/10 rounded transition-colors"
  title="Delete step"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -357,7 +357,7 @@ export const StepBuilder: React.FC<StepBuilderProps> = ({
  type="button"
  onClick={addStep}
  disabled={steps.length >= maxSteps}
- className="w-full py-2 border-2 border-dashed border-border rounded-lg text-muted-foreground hover:border-blue-400 hover:text-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+ className="w-full py-2 border-2 border-dashed border-border rounded-lg text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

@@ -73,22 +73,22 @@ interface Project {
 }
 
 const riskColors = {
-  safe: 'bg-green-500 text-white',
-  caution: 'bg-yellow-500 text-black',
-  breaking: 'bg-red-500 text-white',
+  safe: 'bg-success text-white',
+  caution: 'bg-warning text-black',
+  breaking: 'bg-destructive text-white',
 };
 
 const riskBorderColors = {
-  safe: 'border-green-500',
-  caution: 'border-yellow-500',
-  breaking: 'border-red-500',
+  safe: 'border-success',
+  caution: 'border-warning',
+  breaking: 'border-destructive',
 };
 
 const severityColors = {
-  critical: 'text-red-500',
+  critical: 'text-destructive',
   high: 'text-orange-500',
-  medium: 'text-yellow-600',
-  low: 'text-blue-500',
+  medium: 'text-warning',
+  low: 'text-primary',
 };
 
 export function UpgradeRecommendationsPage() {
@@ -278,31 +278,31 @@ export function UpgradeRecommendationsPage() {
                 <p className="text-xs text-muted-foreground">{data.summary.actionable_now} safe to apply now</p>
               </div>
 
-              <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-4">
-                <div className="flex items-center gap-2 text-green-600 mb-2">
+              <div className="rounded-lg border border-success/50 bg-success/10 p-4">
+                <div className="flex items-center gap-2 text-success mb-2">
                   <CheckCircle className="h-4 w-4" />
                   <span className="text-sm">Safe Upgrades</span>
                 </div>
-                <p className="text-3xl font-bold text-green-600">{data.summary.by_risk_level.safe}</p>
-                <p className="text-xs text-green-600/70">patch versions</p>
+                <p className="text-3xl font-bold text-success">{data.summary.by_risk_level.safe}</p>
+                <p className="text-xs text-success/70">patch versions</p>
               </div>
 
-              <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
-                <div className="flex items-center gap-2 text-yellow-600 mb-2">
+              <div className="rounded-lg border border-warning/50 bg-warning/10 p-4">
+                <div className="flex items-center gap-2 text-warning mb-2">
                   <AlertTriangle className="h-4 w-4" />
                   <span className="text-sm">Caution Required</span>
                 </div>
-                <p className="text-3xl font-bold text-yellow-600">{data.summary.by_risk_level.caution}</p>
-                <p className="text-xs text-yellow-600/70">minor versions</p>
+                <p className="text-3xl font-bold text-warning">{data.summary.by_risk_level.caution}</p>
+                <p className="text-xs text-warning/70">minor versions</p>
               </div>
 
-              <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-4">
-                <div className="flex items-center gap-2 text-red-600 mb-2">
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+                <div className="flex items-center gap-2 text-destructive mb-2">
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm">Breaking Changes</span>
                 </div>
-                <p className="text-3xl font-bold text-red-600">{data.summary.by_risk_level.breaking}</p>
-                <p className="text-xs text-red-600/70">major versions</p>
+                <p className="text-3xl font-bold text-destructive">{data.summary.by_risk_level.breaking}</p>
+                <p className="text-xs text-destructive/70">major versions</p>
               </div>
             </div>
 
@@ -324,8 +324,8 @@ export function UpgradeRecommendationsPage() {
                   onClick={() => setRiskFilter('safe')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
                     riskFilter === 'safe'
-                      ? 'bg-green-500 text-white border-green-500'
-                      : 'border-green-500 text-green-500 hover:bg-green-500/10'
+                      ? 'bg-success text-white border-success'
+                      : 'border-success text-success hover:bg-success/10'
                   }`}
                 >
                   <CheckCircle className="h-4 w-4" />
@@ -335,8 +335,8 @@ export function UpgradeRecommendationsPage() {
                   onClick={() => setRiskFilter('caution')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
                     riskFilter === 'caution'
-                      ? 'bg-yellow-500 text-black border-yellow-500'
-                      : 'border-yellow-500 text-yellow-500 hover:bg-yellow-500/10'
+                      ? 'bg-warning text-black border-warning'
+                      : 'border-warning text-warning hover:bg-warning/10'
                   }`}
                 >
                   <AlertTriangle className="h-4 w-4" />
@@ -346,8 +346,8 @@ export function UpgradeRecommendationsPage() {
                   onClick={() => setRiskFilter('breaking')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
                     riskFilter === 'breaking'
-                      ? 'bg-red-500 text-white border-red-500'
-                      : 'border-red-500 text-red-500 hover:bg-red-500/10'
+                      ? 'bg-destructive text-white border-destructive'
+                      : 'border-destructive text-destructive hover:bg-destructive/10'
                   }`}
                 >
                   <AlertCircle className="h-4 w-4" />
@@ -388,7 +388,7 @@ export function UpgradeRecommendationsPage() {
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="text-muted-foreground">{rec.current_version}</span>
                                 <span className="text-muted-foreground">→</span>
-                                <span className="text-green-500 font-medium">{rec.recommended_version}</span>
+                                <span className="text-success font-medium">{rec.recommended_version}</span>
                                 <span className={`text-xs uppercase ${severityColors[rec.severity]}`}>
                                   ({rec.severity})
                                 </span>
@@ -419,7 +419,7 @@ export function UpgradeRecommendationsPage() {
                             <h5 className="text-sm font-medium text-foreground mb-2">Vulnerabilities Fixed</h5>
                             <div className="flex flex-wrap gap-2">
                               {rec.vulnerabilities.map((cve) => (
-                                <span key={cve} className="px-2 py-1 rounded bg-red-500/10 text-red-500 text-xs font-mono">
+                                <span key={cve} className="px-2 py-1 rounded bg-destructive/10 text-destructive text-xs font-mono">
                                   {cve}
                                 </span>
                               ))}
@@ -428,8 +428,8 @@ export function UpgradeRecommendationsPage() {
 
                           {/* Migration Notes */}
                           {rec.migration_notes && rec.migration_notes.length > 0 && (
-                            <div className="mb-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
-                              <h5 className="text-sm font-medium text-yellow-600 mb-2 flex items-center gap-2">
+                            <div className="mb-4 p-3 rounded-lg bg-warning/10 border border-warning/30">
+                              <h5 className="text-sm font-medium text-warning mb-2 flex items-center gap-2">
                                 <AlertTriangle className="h-4 w-4" />
                                 Migration Notes
                               </h5>
@@ -443,13 +443,13 @@ export function UpgradeRecommendationsPage() {
 
                           {/* Alternative Package */}
                           {rec.alternative && (
-                            <div className="mb-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                              <h5 className="text-sm font-medium text-blue-600 mb-1 flex items-center gap-2">
+                            <div className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/30">
+                              <h5 className="text-sm font-medium text-primary mb-1 flex items-center gap-2">
                                 <Info className="h-4 w-4" />
                                 Alternative Package
                               </h5>
                               <p className="text-sm text-muted-foreground">
-                                Consider using <span className="font-mono text-blue-500">{rec.alternative.package}</span>: {rec.alternative.reason}
+                                Consider using <span className="font-mono text-primary">{rec.alternative.package}</span>: {rec.alternative.reason}
                               </p>
                             </div>
                           )}
@@ -485,15 +485,15 @@ export function UpgradeRecommendationsPage() {
             </p>
             <div className="flex flex-wrap gap-4 justify-center text-sm">
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
+                <CheckCircle className="h-4 w-4 text-success" />
                 <span className="text-muted-foreground">Safe (patch)</span>
               </div>
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                <AlertTriangle className="h-4 w-4 text-warning" />
                 <span className="text-muted-foreground">Caution (minor)</span>
               </div>
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-red-500" />
+                <AlertCircle className="h-4 w-4 text-destructive" />
                 <span className="text-muted-foreground">Breaking (major)</span>
               </div>
             </div>

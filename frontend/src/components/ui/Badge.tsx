@@ -57,18 +57,18 @@ const shapeClasses: Record<BadgeShape, string> = {
 
 // Custom color palettes
 const colorClasses: Record<BadgeColor, string> = {
- red: 'bg-red-100 text-red-700',
+ red: 'bg-destructive/10 text-destructive',
  orange: 'bg-orange-100 text-orange-700',
- yellow: 'bg-yellow-100 text-yellow-700',
- green: 'bg-green-100 text-green-700',
- blue: 'bg-blue-100 text-blue-700',
+ yellow: 'bg-warning/10 text-warning',
+ green: 'bg-success/10 text-success',
+ blue: 'bg-primary/10 text-primary',
  indigo: 'bg-indigo-100 text-indigo-700',
  purple: 'bg-purple-100 text-purple-700',
  pink: 'bg-pink-100 text-pink-700',
  gray: 'bg-muted text-foreground',
  teal: 'bg-teal-100 text-teal-700',
  emerald: 'bg-emerald-100 text-emerald-700',
- amber: 'bg-amber-100 text-amber-700',
+ amber: 'bg-warning/10 text-warning',
 };
 
 // Test type configurations
@@ -90,7 +90,7 @@ const aiBadgeConfig: Record<AIBadgeType, { icon?: string; label: string; classNa
  'ai-powered': {
  icon: undefined,
  label: 'AI Powered',
- className: 'bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 text-purple-600',
+ className: 'bg-gradient-to-r from-purple-500/10 to-primary/10 border border-purple-500/30 text-purple-600',
  },
  'mcp-ready': {
  icon: undefined,
@@ -100,12 +100,12 @@ const aiBadgeConfig: Record<AIBadgeType, { icon?: string; label: string; classNa
  'ai-ready': {
  icon: undefined,
  label: 'AI Ready',
- className: 'bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border border-amber-500/30 text-amber-600',
+ className: 'bg-gradient-to-r from-warning/10 via-orange-500/10 to-destructive/10 border border-warning/30 text-warning',
  },
  'healing': {
  icon: '🔧',
  label: 'Healed',
- className: 'bg-blue-100 text-blue-700',
+ className: 'bg-primary/10 text-primary',
  },
 };
 

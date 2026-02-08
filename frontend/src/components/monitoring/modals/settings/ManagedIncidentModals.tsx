@@ -8,22 +8,22 @@ import { ManagedIncident, ManagedIncidentResponder } from '../../types';
 // Helper functions
 export const getIncidentStatusColor = (status: ManagedIncident['status']) => {
   switch (status) {
-    case 'triggered': return 'bg-red-100 text-red-800';
-    case 'acknowledged': return 'bg-yellow-100 text-yellow-800';
-    case 'investigating': return 'bg-blue-100 text-blue-800';
+    case 'triggered': return 'bg-destructive/10 text-destructive';
+    case 'acknowledged': return 'bg-warning/10 text-warning';
+    case 'investigating': return 'bg-primary/10 text-primary';
     case 'identified': return 'bg-purple-100 text-purple-800';
     case 'monitoring': return 'bg-cyan-100 text-cyan-800';
-    case 'resolved': return 'bg-green-100 text-green-800';
+    case 'resolved': return 'bg-success/10 text-success';
     default: return 'bg-muted text-foreground';
   }
 };
 
 export const getIncidentPriorityColor = (priority: ManagedIncident['priority']) => {
   switch (priority) {
-    case 'P1': return 'bg-red-600 text-white';
+    case 'P1': return 'bg-destructive text-white';
     case 'P2': return 'bg-orange-500 text-white';
-    case 'P3': return 'bg-yellow-500 text-white';
-    case 'P4': return 'bg-blue-500 text-white';
+    case 'P3': return 'bg-warning text-white';
+    case 'P4': return 'bg-primary text-white';
     case 'P5': return 'bg-gray-500 text-white';
     default: return 'bg-gray-500 text-white';
   }
@@ -188,7 +188,7 @@ export function CreateManagedIncidentModal({
             <button
               type="submit"
               disabled={isSubmitting || !title.trim()}
-              className="flex-1 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              className="flex-1 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive disabled:opacity-50"
             >
               {isSubmitting ? 'Creating...' : 'Declare Incident'}
             </button>
@@ -281,7 +281,7 @@ export function ManagedIncidentDetailModal({
             ))}
             <button
               onClick={onOpenResolveModal}
-              className="px-3 py-1 text-xs rounded-full bg-green-600 text-white hover:bg-green-700"
+              className="px-3 py-1 text-xs rounded-full bg-success text-white hover:bg-success"
             >
               Resolve
             </button>
@@ -366,15 +366,15 @@ export function ManagedIncidentDetailModal({
 
             {/* Resolution (if resolved) */}
             {incident.status === 'resolved' && incident.resolution_summary && (
-              <div className="p-4 rounded-lg border border-green-300 bg-green-50">
-                <h3 className="font-medium text-green-800 mb-2">Resolution</h3>
-                <p className="text-sm text-green-700">{incident.resolution_summary}</p>
+              <div className="p-4 rounded-lg border border-success/30 bg-success/5">
+                <h3 className="font-medium text-success mb-2">Resolution</h3>
+                <p className="text-sm text-success">{incident.resolution_summary}</p>
                 {incident.postmortem_url && (
                   <a
                     href={incident.postmortem_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block mt-2 text-sm text-green-600 hover:underline"
+                    className="inline-block mt-2 text-sm text-success hover:underline"
                   >
                     📄 View Postmortem
                   </a>
@@ -426,7 +426,7 @@ export function ManagedIncidentDetailModal({
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-medium text-foreground">{note.author_name}</span>
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${note.visibility === 'public' ? 'bg-green-100 text-green-700' : 'bg-muted text-foreground'}`}>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${note.visibility === 'public' ? 'bg-success/10 text-success' : 'bg-muted text-foreground'}`}>
                             {note.visibility}
                           </span>
                           <span className="text-xs text-muted-foreground">{new Date(note.created_at).toLocaleString()}</span>
@@ -650,7 +650,7 @@ export function ResolveIncidentModal({
             <button
               onClick={handleResolve}
               disabled={!resolutionSummary.trim()}
-              className="flex-1 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+              className="flex-1 rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50"
             >
               Resolve Incident
             </button>

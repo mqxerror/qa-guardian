@@ -149,8 +149,8 @@ export function OrganizationMembersPage() {
                   <div>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                       member.role === 'owner' ? 'bg-purple-500/20 text-purple-400' :
-                      member.role === 'admin' ? 'bg-blue-500/20 text-blue-400' :
-                      member.role === 'developer' ? 'bg-green-500/20 text-green-400' :
+                      member.role === 'admin' ? 'bg-primary/20 text-primary' :
+                      member.role === 'developer' ? 'bg-success/20 text-success' :
                       'bg-muted text-muted-foreground'
                     }`}>
                       {member.role}
@@ -200,15 +200,15 @@ export function OrganizationMembersPage() {
                   <div className="text-foreground">{invitation.email}</div>
                   <div>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      invitation.role === 'admin' ? 'bg-blue-500/20 text-blue-400' :
-                      invitation.role === 'developer' ? 'bg-green-500/20 text-green-400' :
+                      invitation.role === 'admin' ? 'bg-primary/20 text-primary' :
+                      invitation.role === 'developer' ? 'bg-success/20 text-success' :
                       'bg-muted text-muted-foreground'
                     }`}>
                       {invitation.role}
                     </span>
                   </div>
                   <div>
-                    <span className="rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs font-medium text-yellow-400">
+                    <span className="rounded-full bg-warning/20 px-2 py-0.5 text-xs font-medium text-warning">
                       {invitation.status}
                     </span>
                   </div>
@@ -236,7 +236,7 @@ export function OrganizationMembersPage() {
                   </div>
                 )}
                 {inviteSuccess && (
-                  <div className="rounded-md bg-green-100 p-3 text-sm text-green-700">
+                  <div className="rounded-md bg-success/10 p-3 text-sm text-success">
                     {inviteSuccess}
                   </div>
                 )}

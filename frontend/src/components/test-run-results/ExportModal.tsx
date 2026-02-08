@@ -219,8 +219,8 @@ export default function ExportModal({
  <div className="p-4 border border-border rounded-lg">
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
- <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
- <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
+ <svg className="h-5 w-5 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
  </svg>
  </div>
@@ -286,7 +286,7 @@ export default function ExportModal({
  <button
  onClick={handleGeneratePdfReport}
  disabled={generatingPdf}
- className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
+ className="w-full px-4 py-2 bg-destructive text-white rounded-md hover:bg-destructive disabled:opacity-50 transition-colors"
  >
  {generatingPdf ? (
  <span className="flex items-center justify-center gap-2">
@@ -333,8 +333,8 @@ export default function ExportModal({
  <div className="p-4 border border-border rounded-lg">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
- <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+ <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
  </svg>
  </div>
@@ -345,7 +345,7 @@ export default function ExportModal({
  </div>
  <button
  onClick={exportFullJson}
- className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+ className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary transition-colors"
  >
  Download
  </button>
@@ -355,8 +355,8 @@ export default function ExportModal({
  {/* Share Link */}
  <div className="p-4 border border-border rounded-lg">
  <div className="flex items-center gap-3 mb-4">
- <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
- <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center">
+ <svg className="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
  </svg>
  </div>
@@ -400,7 +400,7 @@ export default function ExportModal({
  />
  <button
  onClick={copyShareLink}
- className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+ className="px-3 py-2 bg-success text-white rounded-md hover:bg-success transition-colors"
  >
  Copy
  </button>
@@ -409,7 +409,7 @@ export default function ExportModal({
  <button
  onClick={generateShareLink}
  disabled={generatingShare}
- className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
+ className="w-full px-4 py-2 bg-success text-white rounded-md hover:bg-success disabled:opacity-50 transition-colors"
  >
  {generatingShare ? (
  <span className="flex items-center justify-center gap-2">

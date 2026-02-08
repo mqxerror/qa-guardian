@@ -22,7 +22,7 @@ const features = [
   {
     title: "E2E Testing",
     description: "Full browser automation with Playwright. Record, playback, and heal tests automatically with AI assistance.",
-    icon: <Zap className="h-5 w-5 text-blue-400" />,
+    icon: <Zap className="h-5 w-5 text-primary" />,
   },
   {
     title: "Visual Regression",
@@ -32,17 +32,17 @@ const features = [
   {
     title: "AI-Powered Testing",
     description: "170+ MCP tools for AI agent integration. Claude generates, heals, and analyzes tests automatically.",
-    icon: <Bot className="h-5 w-5 text-green-400" />,
+    icon: <Bot className="h-5 w-5 text-success" />,
   },
   {
     title: "Security Scanning",
     description: "DAST scanning with OWASP ZAP, secret detection with Gitleaks, and dependency vulnerability analysis.",
-    icon: <Shield className="h-5 w-5 text-red-400" />,
+    icon: <Shield className="h-5 w-5 text-destructive" />,
   },
   {
     title: "Performance Testing",
     description: "Load testing with K6, performance audits with Lighthouse, and real user monitoring dashboards.",
-    icon: <BarChart3 className="h-5 w-5 text-yellow-400" />,
+    icon: <BarChart3 className="h-5 w-5 text-warning" />,
   },
   {
     title: "Accessibility Audits",
@@ -82,10 +82,10 @@ export function HomePage() {
             transition={{ duration: 0.5 }}
             className="mb-6"
           >
-            <span className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-4 py-1.5 text-sm text-blue-400">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm text-primary">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500"></span>
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/80 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
               </span>
               AI-Native Test Platform
             </span>
@@ -179,7 +179,7 @@ export function HomePage() {
               <motion.div
                 animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                className="h-2 w-2 rounded-full bg-blue-500"
+                className="h-2 w-2 rounded-full bg-primary"
               />
             </div>
           </motion.div>
@@ -194,7 +194,7 @@ export function HomePage() {
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
-              className="text-sm font-medium text-blue-500"
+              className="text-sm font-medium text-primary"
             >
               Comprehensive Testing
             </motion.span>
@@ -232,7 +232,7 @@ export function HomePage() {
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
-                className="text-sm font-medium text-blue-500"
+                className="text-sm font-medium text-primary"
               >
                 Why QA Guardian?
               </motion.span>
@@ -270,7 +270,7 @@ export function HomePage() {
                   "Visual recorder for QA engineers, API for automation",
                 ].map((item, index) => (
                   <li key={index} className="flex items-start gap-3">
-                    <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-500" />
+                    <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-success" />
                     <span className="text-muted-foreground">{item}</span>
                   </li>
                 ))}
@@ -286,22 +286,22 @@ export function HomePage() {
                 className="rounded-2xl border border-border bg-background/80 p-6 backdrop-blur-sm"
               >
                 <div className="mb-4 flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-red-500" />
-                  <div className="h-3 w-3 rounded-full bg-yellow-500" />
-                  <div className="h-3 w-3 rounded-full bg-green-500" />
+                  <div className="h-3 w-3 rounded-full bg-destructive" />
+                  <div className="h-3 w-3 rounded-full bg-warning" />
+                  <div className="h-3 w-3 rounded-full bg-success" />
                   <span className="ml-2 text-sm text-muted-foreground">terminal</span>
                 </div>
                 <pre className="overflow-x-auto text-sm">
                   <code className="text-muted-foreground">
-                    <span className="text-green-400">$</span> qa-guardian test run{'\n'}
+                    <span className="text-success">$</span> qa-guardian test run{'\n'}
                     <span className="text-muted-foreground"># Running test suite...</span>{'\n'}
-                    <span className="text-blue-400">✓</span> Login flow <span className="text-muted-foreground">(1.2s)</span>{'\n'}
-                    <span className="text-blue-400">✓</span> Dashboard loads <span className="text-muted-foreground">(0.8s)</span>{'\n'}
-                    <span className="text-blue-400">✓</span> Visual regression <span className="text-muted-foreground">(2.1s)</span>{'\n'}
-                    <span className="text-blue-400">✓</span> A11y audit passed <span className="text-muted-foreground">(1.5s)</span>{'\n'}
-                    <span className="text-blue-400">✓</span> Security scan clean <span className="text-muted-foreground">(3.2s)</span>{'\n'}
+                    <span className="text-primary">✓</span> Login flow <span className="text-muted-foreground">(1.2s)</span>{'\n'}
+                    <span className="text-primary">✓</span> Dashboard loads <span className="text-muted-foreground">(0.8s)</span>{'\n'}
+                    <span className="text-primary">✓</span> Visual regression <span className="text-muted-foreground">(2.1s)</span>{'\n'}
+                    <span className="text-primary">✓</span> A11y audit passed <span className="text-muted-foreground">(1.5s)</span>{'\n'}
+                    <span className="text-primary">✓</span> Security scan clean <span className="text-muted-foreground">(3.2s)</span>{'\n'}
                     {'\n'}
-                    <span className="text-green-400">All 5 tests passed!</span>{'\n'}
+                    <span className="text-success">All 5 tests passed!</span>{'\n'}
                     <span className="text-muted-foreground">Time: 8.8s</span>
                   </code>
                 </pre>

@@ -114,8 +114,8 @@ export function AcceptInvitationPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <div className="w-full max-w-md rounded-lg border bg-card p-8 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
-            <svg className="h-8 w-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/20">
+            <svg className="h-8 w-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -209,11 +209,11 @@ export function AcceptInvitationPage() {
           </div>
 
           {emailMismatch && (
-            <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
-              <p className="text-sm text-yellow-300">
+            <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
+              <p className="text-sm text-warning/70">
                 <span className="font-semibold">Email mismatch:</span> You're logged in as <span className="font-medium">{user?.email}</span>, but this invitation was sent to <span className="font-medium">{invitation?.email}</span>.
               </p>
-              <p className="mt-2 text-sm text-yellow-400">
+              <p className="mt-2 text-sm text-warning">
                 Please log in with the correct email to accept this invitation.
               </p>
             </div>

@@ -86,27 +86,27 @@ function TestTypeBadge({ testType }: { testType?: string }) {
  }
  if (testType === 'lighthouse') {
  return (
- <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+ <span className="inline-flex items-center gap-1.5 rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning">
  ⚡ Performance
  </span>
  );
  }
  if (testType === 'load') {
  return (
- <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+ <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">
  🔥 Load Test
  </span>
  );
  }
  if (testType === 'accessibility') {
  return (
- <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+ <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
  ♿ Accessibility
  </span>
  );
  }
  return (
- <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+ <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
  🔄 E2E Test
  </span>
  );
@@ -152,7 +152,7 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  {test.viewports.map((vp, idx) => {
  if (typeof vp === 'object' && vp !== null) {
  return (
- <span key={`${vp.name}-${idx}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+ <span key={`${vp.name}-${idx}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
  📐 {vp.name} ({vp.width}×{vp.height})
  </span>
  );
@@ -160,7 +160,7 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  const vpString = vp as string;
  const preset = viewportPresets[vpString];
  return (
- <span key={vpString} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+ <span key={vpString} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
  📐 {preset?.label || vpString} ({preset?.width || '?'}×{preset?.height || '?'})
  </span>
  );
@@ -224,8 +224,8 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
  ((test.diff_threshold_mode ?? 'percentage') === 'percentage' && (test.diff_threshold ?? 0) === 0) ||
  ((test.diff_threshold_mode ?? 'percentage') === 'pixel_count' && (test.diff_pixel_threshold ?? 0) === 0)
- ? 'bg-blue-100 text-blue-800'
- : 'bg-yellow-100 text-yellow-800'
+ ? 'bg-primary/10 text-primary'
+ : 'bg-warning/10 text-warning'
  }`}>
  {(test.diff_threshold_mode ?? 'percentage') === 'pixel_count'
  ? ((test.diff_pixel_threshold ?? 0) === 0 ? 'Exact match' : `${test.diff_pixel_threshold} pixel tolerance`)
@@ -242,11 +242,11 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  <dd className="text-foreground">
  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
  (test.anti_aliasing_tolerance ?? 'off') === 'off'
- ? 'bg-blue-100 text-blue-800'
+ ? 'bg-primary/10 text-primary'
  : (test.anti_aliasing_tolerance === 'low'
- ? 'bg-green-100 text-green-800'
+ ? 'bg-success/10 text-success'
  : (test.anti_aliasing_tolerance === 'medium'
- ? 'bg-yellow-100 text-yellow-800'
+ ? 'bg-warning/10 text-warning'
  : 'bg-orange-100 text-orange-800'))
  }`}>
  {test.color_threshold !== undefined
@@ -310,8 +310,8 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  test.wcag_level === 'AAA'
  ? 'bg-purple-100 text-purple-800'
  : test.wcag_level === 'AA'
- ? 'bg-green-100 text-green-800'
- : 'bg-blue-100 text-blue-800'
+ ? 'bg-success/10 text-success'
+ : 'bg-primary/10 text-primary'
  }`}>
  Level {test.wcag_level}
  </span>
@@ -329,7 +329,7 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  </span>
  )}
  {test.include_experimental === true && (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-warning/10 text-warning">
  🧪 Experimental
  </span>
  )}
@@ -347,13 +347,13 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  <dt className="text-sm font-medium text-muted-foreground mb-1">Pass/Fail Threshold</dt>
  <dd className="text-foreground">
  {test.a11y_fail_on_any ? (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-destructive/10 text-destructive">
  🚫 Fail on ANY violation
  </span>
  ) : (
  <div className="flex flex-wrap gap-2">
  {test.a11y_fail_on_critical !== undefined && (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-destructive/10 text-destructive">
  🔴 Critical: {test.a11y_fail_on_critical === 0 ? 'Fail on any' : `max ${test.a11y_fail_on_critical}`}
  </span>
  )}
@@ -363,12 +363,12 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  </span>
  )}
  {test.a11y_fail_on_moderate !== undefined && (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-warning/10 text-warning">
  🟡 Moderate: {test.a11y_fail_on_moderate === 0 ? 'Fail on any' : `max ${test.a11y_fail_on_moderate}`}
  </span>
  )}
  {test.a11y_fail_on_minor !== undefined && (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
  🔵 Minor: {test.a11y_fail_on_minor === 0 ? 'Fail on any' : `max ${test.a11y_fail_on_minor}`}
  </span>
  )}

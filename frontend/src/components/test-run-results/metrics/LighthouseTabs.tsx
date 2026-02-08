@@ -40,9 +40,9 @@ export const LighthouseOverviewTab: React.FC<LighthouseOverviewTabProps> = ({
  <div className="mb-8">
  {/* Mobile Gauges */}
  <div className="mb-6">
- <div className="flex items-center justify-center gap-2 mb-4 py-2 bg-blue-50 rounded-lg">
+ <div className="flex items-center justify-center gap-2 mb-4 py-2 bg-primary/5 rounded-lg">
  <span className="text-xl">📱</span>
- <span className="font-semibold text-blue-700">Mobile Results</span>
+ <span className="font-semibold text-primary">Mobile Results</span>
  </div>
  <div className="flex justify-center gap-6 flex-wrap">
  {[
@@ -147,8 +147,8 @@ export const LighthousePerformanceTab: React.FC<LighthousePerformanceTabProps> =
  <div key={metric.label} className="p-4 bg-muted/30 rounded-lg">
  <div className={`text-2xl font-bold ${
  metric.label === 'CLS'
- ? (metric.value || 0) <= metric.good ? 'text-green-600' : 'text-red-600'
- : (metric.value || 0) <= metric.good ? 'text-green-600' : 'text-red-600'
+ ? (metric.value || 0) <= metric.good ? 'text-success' : 'text-destructive'
+ : (metric.value || 0) <= metric.good ? 'text-success' : 'text-destructive'
  }`}>
  {metric.label === 'CLS'
  ? (metric.value || 0).toFixed(3)
@@ -206,10 +206,10 @@ export const LighthouseAccessibilityTab: React.FC<LighthouseAccessibilityTabProp
  {/* Accessibility-specific passed audits */}
  {passedAudits.filter((a: any) => a.category === 'Accessibility').length > 0 && (
  <div className="border border-border rounded-xl overflow-hidden mb-6 shadow-sm">
- <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-border">
- <h4 className="font-semibold text-green-700 flex items-center gap-2">
+ <div className="p-4 bg-gradient-to-r from-success/5 to-emerald-50 border-b border-border">
+ <h4 className="font-semibold text-success flex items-center gap-2">
  <span className="text-lg">✅</span> Passed Accessibility Audits
- <span className="text-xs bg-green-100 px-2 py-0.5 rounded-full ml-2">
+ <span className="text-xs bg-success/10 px-2 py-0.5 rounded-full ml-2">
  {passedAudits.filter((a: any) => a.category === 'Accessibility').length} passed
  </span>
  </h4>
@@ -217,7 +217,7 @@ export const LighthouseAccessibilityTab: React.FC<LighthouseAccessibilityTabProp
  <div className="divide-y divide-border max-h-64 overflow-y-auto">
  {passedAudits.filter((a: any) => a.category === 'Accessibility').slice(0, 10).map((audit: any) => (
  <div key={audit.id} className="p-3 flex items-center gap-2">
- <span className="text-green-500">✓</span>
+ <span className="text-success">✓</span>
  <span className="text-sm text-foreground">{audit.title}</span>
  </div>
  ))}
@@ -309,10 +309,10 @@ export const LighthouseSEOTab: React.FC<LighthouseSEOTabProps> = ({
  {/* SEO passed audits */}
  {passedAudits.filter((a: any) => a.category === 'SEO').length > 0 && (
  <div className="border border-border rounded-xl overflow-hidden mb-6 shadow-sm">
- <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-border">
- <h4 className="font-semibold text-blue-700 flex items-center gap-2">
+ <div className="p-4 bg-gradient-to-r from-primary/5 to-indigo-50 border-b border-border">
+ <h4 className="font-semibold text-primary flex items-center gap-2">
  <span className="text-lg">🔍</span> Passed SEO Audits
- <span className="text-xs bg-blue-100 px-2 py-0.5 rounded-full ml-2">
+ <span className="text-xs bg-primary/10 px-2 py-0.5 rounded-full ml-2">
  {passedAudits.filter((a: any) => a.category === 'SEO').length} passed
  </span>
  </h4>
@@ -320,7 +320,7 @@ export const LighthouseSEOTab: React.FC<LighthouseSEOTabProps> = ({
  <div className="divide-y divide-border max-h-64 overflow-y-auto">
  {passedAudits.filter((a: any) => a.category === 'SEO').slice(0, 10).map((audit: any) => (
  <div key={audit.id} className="p-3 flex items-center gap-2">
- <span className="text-blue-500">✓</span>
+ <span className="text-primary">✓</span>
  <span className="text-sm text-foreground">{audit.title}</span>
  </div>
  ))}

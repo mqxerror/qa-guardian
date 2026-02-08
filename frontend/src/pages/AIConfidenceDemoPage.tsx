@@ -32,11 +32,11 @@ export function AIConfidenceIndicator({
 
   // Color coding based on confidence level
   const getColorClasses = () => {
-    if (confidence >= 90) return 'bg-green-500/20 text-green-400 border-green-500/30';
-    if (confidence >= 75) return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-    if (confidence >= 60) return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+    if (confidence >= 90) return 'bg-success/20 text-success border-success/30';
+    if (confidence >= 75) return 'bg-primary/20 text-primary border-primary/30';
+    if (confidence >= 60) return 'bg-warning/20 text-warning border-warning/30';
     if (confidence >= 40) return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-    return 'bg-red-500/20 text-red-400 border-red-500/30';
+    return 'bg-destructive/20 text-destructive border-destructive/30';
   };
 
   const getConfidenceLabel = () => {
@@ -75,11 +75,11 @@ export function AIConfidenceIndicator({
         <div className="w-8 h-1.5 bg-muted rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${
-              confidence >= 90 ? 'bg-green-500' :
-              confidence >= 75 ? 'bg-blue-500' :
-              confidence >= 60 ? 'bg-yellow-500' :
+              confidence >= 90 ? 'bg-success' :
+              confidence >= 75 ? 'bg-primary' :
+              confidence >= 60 ? 'bg-warning' :
               confidence >= 40 ? 'bg-orange-500' :
-              'bg-red-500'
+              'bg-destructive'
             }`}
             style={{ width: `${confidence}%` }}
           />
@@ -118,11 +118,11 @@ export function AIConfidenceBadge({ confidence, type = 'prediction' }: AIConfide
   const [showTooltip, setShowTooltip] = useState(false);
 
   const getColorClasses = () => {
-    if (confidence >= 90) return 'bg-green-500 text-white';
-    if (confidence >= 75) return 'bg-blue-500 text-white';
-    if (confidence >= 60) return 'bg-yellow-500 text-white';
+    if (confidence >= 90) return 'bg-success text-white';
+    if (confidence >= 75) return 'bg-primary text-white';
+    if (confidence >= 60) return 'bg-warning text-white';
     if (confidence >= 40) return 'bg-orange-500 text-white';
-    return 'bg-red-500 text-white';
+    return 'bg-destructive text-white';
   };
 
   const getTypeLabel = () => {
@@ -191,19 +191,19 @@ export function AIConfidenceCard({
   details?: string[];
 }) {
   const getColorClasses = () => {
-    if (confidence >= 90) return 'border-green-500/30 bg-green-500/10';
-    if (confidence >= 75) return 'border-blue-500/30 bg-blue-500/10';
-    if (confidence >= 60) return 'border-yellow-500/30 bg-yellow-500/10';
+    if (confidence >= 90) return 'border-success/30 bg-success/10';
+    if (confidence >= 75) return 'border-primary/30 bg-primary/10';
+    if (confidence >= 60) return 'border-warning/30 bg-warning/10';
     if (confidence >= 40) return 'border-orange-500/30 bg-orange-500/10';
-    return 'border-red-500/30 bg-red-500/10';
+    return 'border-destructive/30 bg-destructive/10';
   };
 
   const getProgressColor = () => {
-    if (confidence >= 90) return 'bg-green-500';
-    if (confidence >= 75) return 'bg-blue-500';
-    if (confidence >= 60) return 'bg-yellow-500';
+    if (confidence >= 90) return 'bg-success';
+    if (confidence >= 75) return 'bg-primary';
+    if (confidence >= 60) return 'bg-warning';
     if (confidence >= 40) return 'bg-orange-500';
-    return 'bg-red-500';
+    return 'bg-destructive';
   };
 
   const getConfidenceLevel = () => {

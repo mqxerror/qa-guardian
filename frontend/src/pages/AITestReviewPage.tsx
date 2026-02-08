@@ -152,22 +152,22 @@ export function AITestReviewPage() {
   const getConfidenceColor = (level: string) => {
     switch (level) {
       case 'high':
-        return 'bg-green-500/20 text-green-400';
+        return 'bg-success/20 text-success';
       case 'medium':
-        return 'bg-yellow-500/20 text-yellow-400';
+        return 'bg-warning/20 text-warning';
       default:
-        return 'bg-red-500/20 text-red-400';
+        return 'bg-destructive/20 text-destructive';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-green-500/20 text-green-400';
+        return 'bg-success/20 text-success';
       case 'rejected':
-        return 'bg-red-500/20 text-red-400';
+        return 'bg-destructive/20 text-destructive';
       default:
-        return 'bg-yellow-500/20 text-yellow-400';
+        return 'bg-warning/20 text-warning';
     }
   };
 
@@ -191,19 +191,19 @@ export function AITestReviewPage() {
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-card rounded-lg border border-border p-4">
-              <div className="text-2xl font-bold text-yellow-400">
+              <div className="text-2xl font-bold text-warning">
                 {stats.pending}
               </div>
               <div className="text-sm text-muted-foreground">Pending Review</div>
             </div>
             <div className="bg-card rounded-lg border border-border p-4">
-              <div className="text-2xl font-bold text-green-400">
+              <div className="text-2xl font-bold text-success">
                 {stats.approved}
               </div>
               <div className="text-sm text-muted-foreground">Approved</div>
             </div>
             <div className="bg-card rounded-lg border border-border p-4">
-              <div className="text-2xl font-bold text-red-400">
+              <div className="text-2xl font-bold text-destructive">
                 {stats.rejected}
               </div>
               <div className="text-sm text-muted-foreground">Rejected</div>
@@ -295,7 +295,7 @@ export function AITestReviewPage() {
                       {test.ai_metadata?.used_real_ai && (
                         <>
                           <span>•</span>
-                          <span className="text-blue-400">AI Generated</span>
+                          <span className="text-primary">AI Generated</span>
                         </>
                       )}
                     </div>
@@ -368,7 +368,7 @@ export function AITestReviewPage() {
                       <button
                         onClick={() => handleApprove(selectedTest.id)}
                         disabled={isSubmitting}
-                        className="flex-1 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 px-4 py-2 rounded-lg bg-success hover:bg-success text-white font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                       >
                         {isSubmitting ? (
                           <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -385,7 +385,7 @@ export function AITestReviewPage() {
                       <button
                         onClick={() => handleReject(selectedTest.id)}
                         disabled={isSubmitting}
-                        className="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 px-4 py-2 rounded-lg bg-destructive hover:bg-destructive text-white font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                       >
                         {isSubmitting ? (
                           <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">

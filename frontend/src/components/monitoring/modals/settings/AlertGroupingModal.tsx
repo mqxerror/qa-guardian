@@ -174,7 +174,7 @@ export const AlertGroupingModal: React.FC<AlertGroupingModalProps> = ({
               ))}
             </div>
             {groupBy.length === 0 && (
-              <p className="text-xs text-red-500 mt-1">Select at least one criterion</p>
+              <p className="text-xs text-destructive mt-1">Select at least one criterion</p>
             )}
           </div>
 

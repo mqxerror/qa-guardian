@@ -257,12 +257,12 @@ export default function LogsTab({
  {logCounts.total} total
  </span>
  {logCounts.errors > 0 && (
- <span className="px-2 py-0.5 rounded bg-red-100 text-red-700">
+ <span className="px-2 py-0.5 rounded bg-destructive/10 text-destructive">
  {logCounts.errors} errors
  </span>
  )}
  {logCounts.warnings > 0 && (
- <span className="px-2 py-0.5 rounded bg-yellow-100 text-yellow-700">
+ <span className="px-2 py-0.5 rounded bg-warning/10 text-warning">
  {logCounts.warnings} warnings
  </span>
  )}
@@ -347,33 +347,33 @@ export default function LogsTab({
  onClick={() => setLogsFilter(f => ({ ...f, errors: !f.errors }))}
  className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full border transition-colors ${
  logsFilter.errors
- ? 'bg-red-100 border-red-300 text-red-700'
+ ? 'bg-destructive/10 border-destructive/30 text-destructive'
  : 'bg-muted border-border text-muted-foreground line-through'
  }`}
  >
- <span className="w-2 h-2 rounded-full bg-red-500"></span>
+ <span className="w-2 h-2 rounded-full bg-destructive"></span>
  Errors ({logCounts.errors})
  </button>
  <button
  onClick={() => setLogsFilter(f => ({ ...f, warnings: !f.warnings }))}
  className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full border transition-colors ${
  logsFilter.warnings
- ? 'bg-yellow-100 border-yellow-300 text-yellow-700'
+ ? 'bg-warning/10 border-warning/30 text-warning'
  : 'bg-muted border-border text-muted-foreground line-through'
  }`}
  >
- <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+ <span className="w-2 h-2 rounded-full bg-warning"></span>
  Warnings ({logCounts.warnings})
  </button>
  <button
  onClick={() => setLogsFilter(f => ({ ...f, info: !f.info }))}
  className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full border transition-colors ${
  logsFilter.info
- ? 'bg-blue-100 border-blue-300 text-blue-700'
+ ? 'bg-primary/10 border-primary/30 text-primary'
  : 'bg-muted border-border text-muted-foreground line-through'
  }`}
  >
- <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+ <span className="w-2 h-2 rounded-full bg-primary"></span>
  Info ({logCounts.info})
  </button>
  <button
@@ -458,23 +458,23 @@ export default function LogsTab({
  <div className="text-sm text-muted-foreground">Console Logs</div>
  <div className="text-2xl font-bold text-foreground">{consoleLogs.length}</div>
  {logCounts.errors > 0 && (
- <div className="text-xs text-red-500 mt-1">{logCounts.errors} errors</div>
+ <div className="text-xs text-destructive mt-1">{logCounts.errors} errors</div>
  )}
  </div>
  <div className="p-4 bg-muted/30 rounded-lg">
  <div className="text-sm text-muted-foreground">Network Requests</div>
  <div className="text-2xl font-bold text-foreground">{networkRequests.length}</div>
  {logCounts.failedRequests > 0 && (
- <div className="text-xs text-red-500 mt-1">{logCounts.failedRequests} failed</div>
+ <div className="text-xs text-destructive mt-1">{logCounts.failedRequests} failed</div>
  )}
  </div>
  <div className="p-4 bg-muted/30 rounded-lg">
  <div className="text-sm text-muted-foreground">Warnings</div>
- <div className="text-2xl font-bold text-yellow-600">{logCounts.warnings}</div>
+ <div className="text-2xl font-bold text-warning">{logCounts.warnings}</div>
  </div>
  <div className="p-4 bg-muted/30 rounded-lg">
  <div className="text-sm text-muted-foreground">Errors</div>
- <div className="text-2xl font-bold text-red-600">{logCounts.errors}</div>
+ <div className="text-2xl font-bold text-destructive">{logCounts.errors}</div>
  </div>
  </div>
  </div>
@@ -611,11 +611,11 @@ function LogEntry({
  log.type === 'network'
  ? 'border-purple-500 hover:bg-purple-500/10'
  : log.level === 'error'
- ? 'border-red-500 hover:bg-red-500/10'
+ ? 'border-destructive hover:bg-destructive/10'
  : log.level === 'warn'
- ? 'border-yellow-500 hover:bg-yellow-500/10'
+ ? 'border-warning hover:bg-warning/10'
  : log.level === 'info'
- ? 'border-blue-500 hover:bg-blue-500/10'
+ ? 'border-primary hover:bg-primary/10'
  : 'border-border hover:bg-gray-500/10'
  } transition-colors cursor-pointer rounded-r`}
  onClick={() => log.type === 'network' && log.originalIndex !== undefined && toggleNetworkItem(log.originalIndex)}
@@ -631,11 +631,11 @@ function LogEntry({
  log.type === 'network'
  ? 'bg-purple-800 text-purple-200'
  : log.level === 'error'
- ? 'bg-red-800 text-red-200'
+ ? 'bg-destructive/80 text-destructive-foreground/80'
  : log.level === 'warn'
- ? 'bg-yellow-800 text-yellow-200'
+ ? 'bg-warning/80 text-warning-foreground/80'
  : log.level === 'info'
- ? 'bg-blue-800 text-blue-200'
+ ? 'bg-primary text-primary-foreground/80'
  : 'bg-card text-muted-foreground'
  }`}>
  {log.type === 'network' ? 'NET' : log.level?.slice(0, 3) || 'LOG'}
@@ -647,10 +647,10 @@ function LogEntry({
  <span className="font-semibold text-purple-400 flex-shrink-0">{log.method}</span>
  <span className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${
  !log.status ? 'bg-card text-muted-foreground' :
- log.status >= 200 && log.status < 300 ? 'bg-green-800 text-green-200' :
- log.status >= 300 && log.status < 400 ? 'bg-blue-800 text-blue-200' :
- log.status >= 400 && log.status < 500 ? 'bg-yellow-800 text-yellow-200' :
- 'bg-red-800 text-red-200'
+ log.status >= 200 && log.status < 300 ? 'bg-success/80 text-success-foreground/80' :
+ log.status >= 300 && log.status < 400 ? 'bg-primary text-primary-foreground/80' :
+ log.status >= 400 && log.status < 500 ? 'bg-warning/80 text-warning-foreground/80' :
+ 'bg-destructive/80 text-destructive-foreground/80'
  }`}>
  {log.status || 'N/A'}
  </span>
@@ -662,11 +662,11 @@ function LogEntry({
  log.type === 'network'
  ? 'text-purple-300'
  : log.level === 'error'
- ? 'text-red-400'
+ ? 'text-destructive'
  : log.level === 'warn'
- ? 'text-yellow-400'
+ ? 'text-warning'
  : log.level === 'info'
- ? 'text-blue-400'
+ ? 'text-primary'
  : 'text-gray-200'
  }`}>
  {log.type === 'network' ? log.url : log.message}
@@ -707,7 +707,7 @@ function LogEntry({
  </div>
  </div>
  {log.failed && (
- <div className="text-red-400">
+ <div className="text-destructive">
  <span className="text-muted-foreground">Error:</span> {log.failureText || 'Request failed'}
  </div>
  )}
@@ -861,7 +861,7 @@ function NetworkRow({
  toggleNetworkItem: (index: number) => void;
 }) {
  return (
- <div className={`border-b border-border ${req.failed ? 'bg-red-50' : ''}`}>
+ <div className={`border-b border-border ${req.failed ? 'bg-destructive/5' : ''}`}>
  <div
  className="grid grid-cols-8 gap-2 p-3 items-center hover:bg-muted/30 cursor-pointer transition-colors"
  onClick={() => toggleNetworkItem(idx)}
@@ -877,18 +877,18 @@ function NetworkRow({
  <div>
  <span className={`px-2 py-0.5 text-xs rounded font-medium ${
  !req.status ? 'bg-muted text-foreground' :
- req.status >= 200 && req.status < 300 ? 'bg-green-100 text-green-700' :
- req.status >= 400 ? 'bg-red-100 text-red-700' :
- 'bg-yellow-100 text-yellow-700'
+ req.status >= 200 && req.status < 300 ? 'bg-success/10 text-success' :
+ req.status >= 400 ? 'bg-destructive/10 text-destructive' :
+ 'bg-warning/10 text-warning'
  }`}>
  {req.status || (req.failed ? 'ERR' : 'N/A')}
  </span>
  </div>
  <div>
  <span className={`font-mono font-medium ${
- req.method === 'GET' ? 'text-green-600' :
- req.method === 'POST' ? 'text-blue-600' :
- req.method === 'DELETE' ? 'text-red-600' :
+ req.method === 'GET' ? 'text-success' :
+ req.method === 'POST' ? 'text-primary' :
+ req.method === 'DELETE' ? 'text-destructive' :
  'text-foreground'
  }`}>
  {req.method}
@@ -934,10 +934,10 @@ function NetworkRow({
  </div>
  </div>
  {req.failed && (
- <div className="mb-4 p-3 bg-red-100 border border-red-200 rounded-lg">
- <span className="text-red-700 font-medium">Request Failed</span>
+ <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+ <span className="text-destructive font-medium">Request Failed</span>
  {req.failureText && (
- <p className="text-sm text-red-600 mt-1">{req.failureText}</p>
+ <p className="text-sm text-destructive mt-1">{req.failureText}</p>
  )}
  </div>
  )}

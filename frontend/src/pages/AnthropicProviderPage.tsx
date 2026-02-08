@@ -187,7 +187,7 @@ export function AnthropicProviderPage() {
   if (isLoading) {
     return (
       <div className="p-8 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -219,11 +219,11 @@ export function AnthropicProviderPage() {
 
       {/* Connection Status */}
       {connectionStatus && (
-        <div className={`mb-6 p-4 rounded-lg border ${connectionStatus.success ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+        <div className={`mb-6 p-4 rounded-lg border ${connectionStatus.success ? 'bg-success/10 border-success/30' : 'bg-destructive/10 border-destructive/30'}`}>
           <div className="flex items-center gap-2">
             <span className="text-2xl">{connectionStatus.success ? '\u2705' : '\u274C'}</span>
             <div>
-              <div className={`font-medium ${connectionStatus.success ? 'text-green-400' : 'text-red-400'}`}>
+              <div className={`font-medium ${connectionStatus.success ? 'text-success' : 'text-destructive'}`}>
                 {connectionStatus.success ? 'Connection Successful' : 'Connection Failed'}
               </div>
               {connectionStatus.latency_ms && (
@@ -238,7 +238,7 @@ export function AnthropicProviderPage() {
       )}
 
       {/* Model Pricing */}
-      <div className="mb-6 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg p-6 text-white">
+      <div className="mb-6 bg-gradient-to-r from-primary to-indigo-600 rounded-lg p-6 text-white">
         <h2 className="text-xl font-bold mb-4">{'\u{1F48E}'} Model Pricing</h2>
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-white/20 rounded p-3 text-center">
@@ -270,20 +270,20 @@ export function AnthropicProviderPage() {
           {stats && (
             <>
               <div className="grid grid-cols-5 gap-3">
-                <div className="text-center p-3 bg-blue-500/10 rounded">
-                  <div className="text-2xl font-bold text-blue-400">{formatNumber(stats.total_requests)}</div>
+                <div className="text-center p-3 bg-primary/10 rounded">
+                  <div className="text-2xl font-bold text-primary">{formatNumber(stats.total_requests)}</div>
                   <div className="text-xs text-muted-foreground">Total Requests</div>
                 </div>
-                <div className="text-center p-3 bg-green-500/10 rounded">
-                  <div className="text-2xl font-bold text-green-400">{formatNumber(stats.successful_requests)}</div>
+                <div className="text-center p-3 bg-success/10 rounded">
+                  <div className="text-2xl font-bold text-success">{formatNumber(stats.successful_requests)}</div>
                   <div className="text-xs text-muted-foreground">Successful</div>
                 </div>
-                <div className="text-center p-3 bg-red-500/10 rounded">
-                  <div className="text-2xl font-bold text-red-400">{stats.failed_requests}</div>
+                <div className="text-center p-3 bg-destructive/10 rounded">
+                  <div className="text-2xl font-bold text-destructive">{stats.failed_requests}</div>
                   <div className="text-xs text-muted-foreground">Failed</div>
                 </div>
-                <div className="text-center p-3 bg-amber-500/10 rounded">
-                  <div className="text-2xl font-bold text-amber-400">{stats.rate_limited_requests}</div>
+                <div className="text-center p-3 bg-warning/10 rounded">
+                  <div className="text-2xl font-bold text-warning">{stats.rate_limited_requests}</div>
                   <div className="text-xs text-muted-foreground">Rate Limited</div>
                 </div>
                 <div className="text-center p-3 bg-purple-500/10 rounded">
@@ -318,7 +318,7 @@ export function AnthropicProviderPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Success Rate:</span>
-                    <span className="font-medium text-green-400">{(100 - stats.error_rate).toFixed(1)}%</span>
+                    <span className="font-medium text-success">{(100 - stats.error_rate).toFixed(1)}%</span>
                   </div>
                 </div>
               </div>
@@ -336,7 +336,7 @@ export function AnthropicProviderPage() {
                 <button
                   onClick={() => updateConfig({ enabled: !config.enabled })}
                   disabled={isSaving}
-                  className={`w-10 h-5 rounded-full transition-colors ${config.enabled ? 'bg-green-500' : 'bg-muted'}`}
+                  className={`w-10 h-5 rounded-full transition-colors ${config.enabled ? 'bg-success' : 'bg-muted'}`}
                 >
                   <div className={`w-4 h-4 bg-card rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
                 </button>
@@ -347,7 +347,7 @@ export function AnthropicProviderPage() {
                 <button
                   onClick={() => updateConfig({ use_as_fallback: !config.use_as_fallback })}
                   disabled={isSaving}
-                  className={`w-10 h-5 rounded-full transition-colors ${config.use_as_fallback ? 'bg-green-500' : 'bg-muted'}`}
+                  className={`w-10 h-5 rounded-full transition-colors ${config.use_as_fallback ? 'bg-success' : 'bg-muted'}`}
                 >
                   <div className={`w-4 h-4 bg-card rounded-full shadow transform transition-transform ${config.use_as_fallback ? 'translate-x-5' : 'translate-x-0.5'}`} />
                 </button>
@@ -407,7 +407,7 @@ export function AnthropicProviderPage() {
               <div className="text-sm text-muted-foreground mb-1">Requests</div>
               <div className="bg-muted rounded-full h-3 overflow-hidden">
                 <div
-                  className="bg-blue-500 h-full"
+                  className="bg-primary h-full"
                   style={{ width: `${(rateLimits.requests_remaining / rateLimits.requests_limit) * 100}%` }}
                 />
               </div>
@@ -419,7 +419,7 @@ export function AnthropicProviderPage() {
               <div className="text-sm text-muted-foreground mb-1">Tokens</div>
               <div className="bg-muted rounded-full h-3 overflow-hidden">
                 <div
-                  className="bg-green-500 h-full"
+                  className="bg-success h-full"
                   style={{ width: `${(rateLimits.tokens_remaining / rateLimits.tokens_limit) * 100}%` }}
                 />
               </div>

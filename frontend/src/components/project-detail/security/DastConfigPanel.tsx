@@ -250,9 +250,9 @@ function DASTConfigSection(props: DASTConfigSectionProps) {
  Last scan: {new Date(dastConfig.lastScanAt).toLocaleString()}
  {dastConfig.lastScanStatus && (
  <span className={`ml-2 ${
- dastConfig.lastScanStatus === 'completed' ? 'text-green-600' :
- dastConfig.lastScanStatus === 'failed' ? 'text-red-600' :
- 'text-amber-600'
+ dastConfig.lastScanStatus === 'completed' ? 'text-success' :
+ dastConfig.lastScanStatus === 'failed' ? 'text-destructive' :
+ 'text-warning'
  }`}>
  ({dastConfig.lastScanStatus})
  </span>
@@ -289,9 +289,9 @@ function DASTScanResults(props: DASTScanResultsProps) {
  >
  <div className="flex items-center gap-4">
  <div className={`h-3 w-3 rounded-full ${
- scan.status === 'completed' ? 'bg-green-500' :
- scan.status === 'failed' ? 'bg-red-500' :
- scan.status === 'running' ? 'bg-amber-500 animate-pulse' :
+ scan.status === 'completed' ? 'bg-success' :
+ scan.status === 'failed' ? 'bg-destructive' :
+ scan.status === 'running' ? 'bg-warning animate-pulse' :
  'bg-gray-400'
  }`} />
  <div className="text-left">
@@ -307,22 +307,22 @@ function DASTScanResults(props: DASTScanResultsProps) {
  {scan.status === 'completed' && (
  <div className="flex items-center gap-2 text-sm">
  {scan.summary.byRisk.high > 0 && (
- <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 font-medium">
+ <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium">
  {scan.summary.byRisk.high} High
  </span>
  )}
  {scan.summary.byRisk.medium > 0 && (
- <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">
+ <span className="px-2 py-0.5 rounded-full bg-warning/10 text-warning font-medium">
  {scan.summary.byRisk.medium} Medium
  </span>
  )}
  {scan.summary.byRisk.low > 0 && (
- <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
+ <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
  {scan.summary.byRisk.low} Low
  </span>
  )}
  {scan.summary.total === 0 && (
- <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium">
+ <span className="px-2 py-0.5 rounded-full bg-success/10 text-success font-medium">
  No issues
  </span>
  )}
@@ -351,11 +351,11 @@ function DASTScanResults(props: DASTScanResultsProps) {
  <div className="flex items-start gap-3">
  <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
  alert.risk === 'High'
- ? 'bg-red-100 text-red-800'
+ ? 'bg-destructive/10 text-destructive'
  : alert.risk === 'Medium'
- ? 'bg-amber-100 text-amber-800'
+ ? 'bg-warning/10 text-warning'
  : alert.risk === 'Low'
- ? 'bg-blue-100 text-blue-800'
+ ? 'bg-primary/10 text-primary'
  : 'bg-muted text-foreground'
  }`}>
  {alert.risk}
@@ -367,8 +367,8 @@ function DASTScanResults(props: DASTScanResultsProps) {
  <span className="font-semibold">{alert.method}</span> {alert.url}
  </p>
  {alert.solution && (
- <div className="mt-2 p-2 rounded bg-green-50 border border-green-200">
- <p className="text-xs text-green-800">
+ <div className="mt-2 p-2 rounded bg-success/5 border border-success/20">
+ <p className="text-xs text-success">
  <strong>Solution:</strong> {alert.solution}
  </p>
  </div>

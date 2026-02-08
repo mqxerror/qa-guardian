@@ -176,7 +176,7 @@ const baseInputClasses = `
   transition-colors
 `.trim().replace(/\s+/g, ' ');
 
-const errorInputClasses = 'border-red-500 focus:ring-red-500/20 focus:border-red-500';
+const errorInputClasses = 'border-destructive focus:ring-destructive/20 focus:border-destructive';
 
 // =============================================================================
 // FORM FIELD COMPONENT
@@ -222,7 +222,7 @@ export const FormField = memo(forwardRef<HTMLInputElement | HTMLTextAreaElement 
         className={`font-medium text-foreground ${sizeClass.label} ${labelPosition === 'left' ? 'min-w-[120px]' : ''}`}
       >
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </label>
     );
 
@@ -230,7 +230,7 @@ export const FormField = memo(forwardRef<HTMLInputElement | HTMLTextAreaElement 
     const messageElement = (
       <>
         {hasError && (
-          <p id={errorId} className="text-sm text-red-500">
+          <p id={errorId} className="text-sm text-destructive">
             {error}
           </p>
         )}
@@ -260,7 +260,7 @@ export const FormField = memo(forwardRef<HTMLInputElement | HTMLTextAreaElement 
           <div className="flex flex-col gap-0.5">
             <label htmlFor={id} className={`font-medium text-foreground ${sizeClass.label} cursor-pointer`}>
               {label}
-              {required && <span className="text-red-500 ml-1">*</span>}
+              {required && <span className="text-destructive ml-1">*</span>}
             </label>
             {messageElement}
           </div>
@@ -419,7 +419,7 @@ export const FormError = memo(function FormError({
   className?: string;
 }) {
   if (!error) return null;
-  return <p className={`text-sm text-red-500 ${className}`}>{error}</p>;
+  return <p className={`text-sm text-destructive ${className}`}>{error}</p>;
 });
 
 /**

@@ -97,21 +97,21 @@ export function K6CompareModal({
  {/* Overall Status */}
  {results.overall && (
  <div className={`p-4 rounded-lg border ${
- results.overall.performance === 'improved' ? 'border-green-500 bg-green-50' :
- results.overall.performance === 'regressed' ? 'border-red-500 bg-red-50' :
+ results.overall.performance === 'improved' ? 'border-success bg-success/5' :
+ results.overall.performance === 'regressed' ? 'border-destructive bg-destructive/5' :
  'border-border bg-muted/30'
  }`}>
  <div className="flex items-center gap-2 mb-2">
  <span className={`text-lg ${
- results.overall.performance === 'improved' ? 'text-green-600' :
- results.overall.performance === 'regressed' ? 'text-red-600' :
+ results.overall.performance === 'improved' ? 'text-success' :
+ results.overall.performance === 'regressed' ? 'text-destructive' :
  'text-foreground'
  }`}>
  {results.overall.performance === 'improved' ? '📈' : results.overall.performance === 'regressed' ? '📉' : '➡️'}
  </span>
  <span className={`font-semibold ${
- results.overall.performance === 'improved' ? 'text-green-700' :
- results.overall.performance === 'regressed' ? 'text-red-700' :
+ results.overall.performance === 'improved' ? 'text-success' :
+ results.overall.performance === 'regressed' ? 'text-destructive' :
  'text-foreground'
  }`}>
  {results.overall.performance === 'improved' ? 'Performance Improved' :
@@ -138,8 +138,8 @@ export function K6CompareModal({
  <div key={key} className="p-3 rounded-lg border border-border bg-muted/20 text-center">
  <div className="text-xs text-muted-foreground mb-1 capitalize">{key.replace(/_/g, ' ')}</div>
  <div className={`text-sm font-bold ${
- value.status === 'improved' ? 'text-green-600' :
- value.status === 'regressed' ? 'text-red-600' :
+ value.status === 'improved' ? 'text-success' :
+ value.status === 'regressed' ? 'text-destructive' :
  'text-foreground'
  }`}>
  {value.delta_percent > 0 ? '+' : ''}{value.delta_percent?.toFixed(1)}%
@@ -160,20 +160,20 @@ export function K6CompareModal({
  <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
  {Object.entries(results.response_times).map(([key, value]) => (
  <div key={key} className={`p-2 rounded-lg border text-center ${
- key === 'median' ? 'border-green-200 bg-green-50/50' :
- key === 'p95' ? 'border-yellow-200 bg-yellow-50/50' :
+ key === 'median' ? 'border-success/20 bg-success/5/50' :
+ key === 'p95' ? 'border-warning/20 bg-warning/5/50' :
  key === 'p99' ? 'border-orange-200 bg-orange-50/50' :
  'border-border bg-muted/20'
  }`}>
  <div className={`text-xs mb-1 ${
- key === 'median' ? 'text-green-600' :
- key === 'p95' ? 'text-yellow-600' :
+ key === 'median' ? 'text-success' :
+ key === 'p95' ? 'text-warning' :
  key === 'p99' ? 'text-orange-600' :
  'text-muted-foreground'
  }`}>{key}</div>
  <div className={`text-sm font-bold ${
- value.status === 'improved' ? 'text-green-600' :
- value.status === 'regressed' ? 'text-red-600' :
+ value.status === 'improved' ? 'text-success' :
+ value.status === 'regressed' ? 'text-destructive' :
  'text-foreground'
  }`}>
  {value.delta_percent > 0 ? '+' : ''}{value.delta_percent?.toFixed(1)}%

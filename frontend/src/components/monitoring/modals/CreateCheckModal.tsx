@@ -486,7 +486,7 @@ export default function CreateCheckModal({
                   ))}
                 </div>
                 {formLocations.length === 0 && (
-                  <p className="text-xs text-red-500 mt-1">At least one location required</p>
+                  <p className="text-xs text-destructive mt-1">At least one location required</p>
                 )}
               </div>
 
@@ -540,7 +540,7 @@ export default function CreateCheckModal({
                       <button
                         type="button"
                         onClick={() => setFormAssertions(formAssertions.filter((_, i) => i !== idx))}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-destructive hover:text-destructive"
                       >
                         ×
                       </button>

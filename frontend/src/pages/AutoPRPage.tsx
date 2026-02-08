@@ -221,10 +221,10 @@ export function AutoPRPage() {
 
   const getSeverityColor = (severity?: string) => {
     switch (severity) {
-      case 'CRITICAL': return 'text-red-400 bg-red-500/10';
+      case 'CRITICAL': return 'text-destructive bg-destructive/10';
       case 'HIGH': return 'text-orange-400 bg-orange-500/10';
-      case 'MEDIUM': return 'text-yellow-400 bg-yellow-500/10';
-      case 'LOW': return 'text-blue-400 bg-blue-500/10';
+      case 'MEDIUM': return 'text-warning bg-warning/10';
+      case 'LOW': return 'text-primary bg-primary/10';
       default: return 'text-muted-foreground bg-muted/50';
     }
   };
@@ -232,10 +232,10 @@ export function AutoPRPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'text-muted-foreground bg-muted';
-      case 'created': return 'text-blue-400 bg-blue-500/20';
-      case 'merged': return 'text-green-400 bg-green-500/20';
+      case 'created': return 'text-primary bg-primary/20';
+      case 'merged': return 'text-success bg-success/20';
       case 'closed': return 'text-muted-foreground bg-muted';
-      case 'failed': return 'text-red-400 bg-red-500/20';
+      case 'failed': return 'text-destructive bg-destructive/20';
       default: return 'text-muted-foreground bg-muted';
     }
   };
@@ -290,11 +290,11 @@ export function AutoPRPage() {
           </div>
           <div className="bg-card rounded-lg p-4 border border-border">
             <div className="text-sm text-muted-foreground">Created</div>
-            <div className="text-2xl font-bold text-blue-400">{prSummary.created}</div>
+            <div className="text-2xl font-bold text-primary">{prSummary.created}</div>
           </div>
           <div className="bg-card rounded-lg p-4 border border-border">
             <div className="text-sm text-muted-foreground">Merged</div>
-            <div className="text-2xl font-bold text-green-400">{prSummary.merged}</div>
+            <div className="text-2xl font-bold text-success">{prSummary.merged}</div>
           </div>
           <div className="bg-card rounded-lg p-4 border border-border">
             <div className="text-sm text-muted-foreground">Closed</div>
@@ -302,7 +302,7 @@ export function AutoPRPage() {
           </div>
           <div className="bg-card rounded-lg p-4 border border-border">
             <div className="text-sm text-muted-foreground">Failed</div>
-            <div className="text-2xl font-bold text-red-400">{prSummary.failed}</div>
+            <div className="text-2xl font-bold text-destructive">{prSummary.failed}</div>
           </div>
         </div>
 
@@ -421,9 +421,9 @@ export function AutoPRPage() {
 
         {/* Scan Result */}
         {scanResult && (
-          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-            <div className="font-semibold text-green-400">Scan Complete</div>
-            <div className="text-sm text-green-400">
+          <div className="bg-success/10 border border-success/30 rounded-lg p-4">
+            <div className="font-semibold text-success">Scan Complete</div>
+            <div className="text-sm text-success">
               Scanned {scanResult.total_scanned} dependencies, created {scanResult.prs_created.length} PR(s)
             </div>
           </div>
@@ -482,7 +482,7 @@ export function AutoPRPage() {
                             </span>
                           )}
                           {pr.tests_status && (
-                            <span className={`text-sm ${pr.tests_status === 'passed' ? 'text-green-400' : pr.tests_status === 'failed' ? 'text-red-400' : 'text-muted-foreground'}`}>
+                            <span className={`text-sm ${pr.tests_status === 'passed' ? 'text-success' : pr.tests_status === 'failed' ? 'text-destructive' : 'text-muted-foreground'}`}>
                               Tests: {getTestStatusIcon(pr.tests_status)} {pr.tests_status}
                             </span>
                           )}
@@ -528,7 +528,7 @@ export function AutoPRPage() {
                             <div className="flex space-x-2 pt-2">
                               <button
                                 onClick={() => updatePRStatus(pr.id, 'merged', 'passed')}
-                                className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                className="px-3 py-1.5 bg-success text-white text-sm rounded hover:bg-success"
                               >
                                 Merge
                               </button>

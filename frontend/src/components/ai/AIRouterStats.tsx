@@ -23,15 +23,15 @@ export function AIRouterStats({ stats }: AIRouterStatsProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
       <div className="bg-card rounded-lg shadow p-3 text-center">
-        <div className="text-2xl font-bold text-blue-600">{formatNumber(stats.total_requests)}</div>
+        <div className="text-2xl font-bold text-primary">{formatNumber(stats.total_requests)}</div>
         <div className="text-xs text-foreground">Total Requests</div>
       </div>
       <div className="bg-card rounded-lg shadow p-3 text-center">
-        <div className="text-2xl font-bold text-green-600">{stats.primary_success_rate}%</div>
+        <div className="text-2xl font-bold text-success">{stats.primary_success_rate}%</div>
         <div className="text-xs text-foreground">Primary Success</div>
       </div>
       <div className="bg-card rounded-lg shadow p-3 text-center">
-        <div className="text-2xl font-bold text-amber-600">{formatNumber(stats.fallback_requests)}</div>
+        <div className="text-2xl font-bold text-warning">{formatNumber(stats.fallback_requests)}</div>
         <div className="text-xs text-foreground">Fallbacks</div>
       </div>
       <div className="bg-card rounded-lg shadow p-3 text-center">
@@ -43,7 +43,7 @@ export function AIRouterStats({ stats }: AIRouterStatsProps) {
         <div className="text-xs text-foreground">Avg Latency</div>
       </div>
       <div className="bg-card rounded-lg shadow p-3 text-center">
-        <div className="text-2xl font-bold text-red-600">{stats.errors}</div>
+        <div className="text-2xl font-bold text-destructive">{stats.errors}</div>
         <div className="text-xs text-foreground">Errors</div>
       </div>
     </div>

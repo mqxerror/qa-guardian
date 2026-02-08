@@ -208,7 +208,7 @@ export function KieAIProviderPage() {
   if (isLoading) {
     return (
       <div className="p-8 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -240,11 +240,11 @@ export function KieAIProviderPage() {
 
       {/* Connection Status */}
       {connectionStatus && (
-        <div className={`mb-6 p-4 rounded-lg border ${connectionStatus.success ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+        <div className={`mb-6 p-4 rounded-lg border ${connectionStatus.success ? 'bg-success/10 border-success/30' : 'bg-destructive/10 border-destructive/30'}`}>
           <div className="flex items-center gap-2">
             <span className="text-2xl">{connectionStatus.success ? '\u2705' : '\u274C'}</span>
             <div>
-              <div className={`font-medium ${connectionStatus.success ? 'text-green-400' : 'text-red-400'}`}>
+              <div className={`font-medium ${connectionStatus.success ? 'text-success' : 'text-destructive'}`}>
                 {connectionStatus.success ? 'Connection Successful' : 'Connection Failed'}
               </div>
               {connectionStatus.latency_ms && (
@@ -258,7 +258,7 @@ export function KieAIProviderPage() {
       )}
 
       {/* Pricing Comparison Banner */}
-      <div className="mb-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg p-6 text-white">
+      <div className="mb-6 bg-gradient-to-r from-success to-emerald-600 rounded-lg p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold mb-1">{'\u{1F4B0}'} 70% Cost Savings</h2>
@@ -292,20 +292,20 @@ export function KieAIProviderPage() {
           <h2 className="text-lg font-semibold text-foreground mb-4">{'\u{1F4CA}'} Usage Statistics</h2>
           {stats && (
             <div className="grid grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-blue-500/10 rounded">
-                <div className="text-2xl font-bold text-blue-400">{formatNumber(stats.total_requests)}</div>
+              <div className="text-center p-3 bg-primary/10 rounded">
+                <div className="text-2xl font-bold text-primary">{formatNumber(stats.total_requests)}</div>
                 <div className="text-sm text-muted-foreground">Total Requests</div>
               </div>
               <div className="text-center p-3 bg-purple-500/10 rounded">
                 <div className="text-2xl font-bold text-purple-400">{formatNumber(stats.total_input_tokens + stats.total_output_tokens)}</div>
                 <div className="text-sm text-muted-foreground">Total Tokens</div>
               </div>
-              <div className="text-center p-3 bg-green-500/10 rounded">
-                <div className="text-2xl font-bold text-green-400">{formatCurrency(stats.total_savings)}</div>
+              <div className="text-center p-3 bg-success/10 rounded">
+                <div className="text-2xl font-bold text-success">{formatCurrency(stats.total_savings)}</div>
                 <div className="text-sm text-muted-foreground">Total Savings</div>
               </div>
-              <div className="text-center p-3 bg-amber-500/10 rounded">
-                <div className="text-2xl font-bold text-amber-400">{stats.avg_response_time_ms}ms</div>
+              <div className="text-center p-3 bg-warning/10 rounded">
+                <div className="text-2xl font-bold text-warning">{stats.avg_response_time_ms}ms</div>
                 <div className="text-sm text-muted-foreground">Avg Response</div>
               </div>
             </div>
@@ -334,7 +334,7 @@ export function KieAIProviderPage() {
                 </div>
                 <div className="flex justify-between mb-2">
                   <span className="text-muted-foreground">Savings:</span>
-                  <span className="font-medium text-green-400">{formatCurrency(stats.total_savings)}</span>
+                  <span className="font-medium text-success">{formatCurrency(stats.total_savings)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Success Rate:</span>
@@ -355,7 +355,7 @@ export function KieAIProviderPage() {
                 <button
                   onClick={() => updateConfig({ enabled: !config.enabled })}
                   disabled={isSaving}
-                  className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-green-500' : 'bg-muted'}`}
+                  className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-success' : 'bg-muted'}`}
                 >
                   <div className={`w-5 h-5 bg-card rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
@@ -405,7 +405,7 @@ export function KieAIProviderPage() {
                 <button
                   onClick={() => updateConfig({ cost_tracking_enabled: !config.cost_tracking_enabled })}
                   disabled={isSaving}
-                  className={`w-12 h-6 rounded-full transition-colors ${config.cost_tracking_enabled ? 'bg-green-500' : 'bg-muted'}`}
+                  className={`w-12 h-6 rounded-full transition-colors ${config.cost_tracking_enabled ? 'bg-success' : 'bg-muted'}`}
                 >
                   <div className={`w-5 h-5 bg-card rounded-full shadow transform transition-transform ${config.cost_tracking_enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
@@ -457,7 +457,7 @@ export function KieAIProviderPage() {
               <div className="text-foreground">
                 <span className="text-muted-foreground">Cost:</span> {formatCurrency(lastResponse.cost.total_cost)}
               </div>
-              <div className="text-green-400">
+              <div className="text-success">
                 <span className="text-muted-foreground">Saved:</span> {formatCurrency(lastResponse.cost.savings.savings)} ({lastResponse.cost.savings.savings_percentage}%)
               </div>
             </div>

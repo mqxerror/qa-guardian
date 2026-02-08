@@ -278,7 +278,7 @@ export function SchedulesPage() {
  <button
  onClick={loadAIRecommendations}
  disabled={isLoadingRecommendations}
- className="rounded-md bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 font-medium text-white hover:from-purple-700 hover:to-blue-700 flex items-center gap-2"
+ className="rounded-md bg-gradient-to-r from-purple-600 to-primary px-4 py-2 font-medium text-white hover:from-purple-700 hover:to-primary flex items-center gap-2"
  >
  {isLoadingRecommendations ? (
  <>
@@ -305,7 +305,7 @@ export function SchedulesPage() {
 
  {/* Feature #1256: AI Schedule Recommendations Panel */}
  {showAIRecommendations && (
- <div className="mb-6 rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 p-6">
+ <div className="mb-6 rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-primary/5 p-6">
  <div className="flex items-center justify-between mb-4">
  <div>
  <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -344,8 +344,8 @@ export function SchedulesPage() {
  <div className="flex items-center gap-2 mb-2">
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
  rec.type === 'heavy' ? 'bg-orange-100 text-orange-700' :
- rec.type === 'quick' ? 'bg-green-100 text-green-700' :
- rec.type === 'balanced' ? 'bg-blue-100 text-blue-700' :
+ rec.type === 'quick' ? 'bg-success/10 text-success' :
+ rec.type === 'balanced' ? 'bg-primary/10 text-primary' :
  'bg-purple-100 text-purple-700'
  }`}>
  {rec.type === 'heavy' ? 'Heavy Tests' :
@@ -375,9 +375,9 @@ export function SchedulesPage() {
  Avg: {rec.metrics.avgDuration} min
  </span>
  <span className={`px-2 py-1 rounded ${
- rec.metrics.resourceUsage === 'high' ? 'bg-red-100 text-red-700' :
- rec.metrics.resourceUsage === 'medium' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-green-100 text-green-700'
+ rec.metrics.resourceUsage === 'high' ? 'bg-destructive/10 text-destructive' :
+ rec.metrics.resourceUsage === 'medium' ? 'bg-warning/10 text-warning' :
+ 'bg-success/10 text-success'
  }`}>
  {rec.metrics.resourceUsage} resources
  </span>
@@ -389,17 +389,17 @@ export function SchedulesPage() {
  {/* Impact */}
  <div className="flex flex-wrap gap-3 text-xs">
  {rec.impact.ciTimeSaved > 0 && (
- <span className="text-green-600">
+ <span className="text-success">
  Save {rec.impact.ciTimeSaved} min/week
  </span>
  )}
  {rec.impact.costReduction > 0 && (
- <span className="text-green-600">
+ <span className="text-success">
  {rec.impact.costReduction}% cost reduction
  </span>
  )}
  {rec.impact.failureReduction > 0 && (
- <span className="text-green-600">
+ <span className="text-success">
  {rec.impact.failureReduction}% fewer flaky failures
  </span>
  )}
@@ -408,7 +408,7 @@ export function SchedulesPage() {
 
  <div className="ml-4">
  {appliedRecommendations.has(rec.id) ? (
- <span className="px-3 py-1.5 rounded bg-green-100 text-green-700 text-sm font-medium">
+ <span className="px-3 py-1.5 rounded bg-success/10 text-success text-sm font-medium">
  Applied
  </span>
  ) : (
@@ -451,7 +451,7 @@ export function SchedulesPage() {
  <h3 className="font-semibold text-foreground">{schedule.name}</h3>
  <div className="flex items-center gap-2">
  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
- schedule.enabled ? 'bg-green-100 text-green-800' : 'bg-muted text-foreground'
+ schedule.enabled ? 'bg-success/10 text-success' : 'bg-muted text-foreground'
  }`}>
  {schedule.enabled ? 'Active' : 'Disabled'}
  </span>

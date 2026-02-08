@@ -18,11 +18,11 @@ export const FormField: React.FC<FormFieldProps> = ({ label, required, children,
  <div className="space-y-1">
  <label className="block text-sm font-medium text-foreground">
  {label}
- {required && <span className="text-red-500 ml-1">*</span>}
+ {required && <span className="text-destructive ml-1">*</span>}
  </label>
  {children}
  {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
- {error && <p className="text-xs text-red-500">{error}</p>}
+ {error && <p className="text-xs text-destructive">{error}</p>}
  </div>
 );
 

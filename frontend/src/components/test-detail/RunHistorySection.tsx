@@ -126,7 +126,7 @@ export function RunHistorySection({
  onClick={() => onSetStatusFilter('passed')}
  className={`px-3 py-1 text-sm font-medium ${
  statusFilter === 'passed'
- ? 'bg-green-600 text-white'
+ ? 'bg-success text-white'
  : 'bg-background text-foreground hover:bg-muted'
  } border-l border-border`}
  >
@@ -136,7 +136,7 @@ export function RunHistorySection({
  onClick={() => onSetStatusFilter('failed')}
  className={`px-3 py-1 text-sm font-medium ${
  statusFilter === 'failed'
- ? 'bg-red-600 text-white'
+ ? 'bg-destructive text-white'
  : 'bg-background text-foreground hover:bg-muted'
  } border-l border-border rounded-r-md`}
  >
@@ -183,7 +183,7 @@ export function RunHistorySection({
  <button
  onClick={onCompareRuns}
  disabled={isComparing}
- className="rounded-md bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+ className="rounded-md bg-primary px-3 py-1 text-sm font-medium text-white hover:bg-primary disabled:opacity-50"
  >
  {isComparing ? 'Comparing...' : '📊 Compare Selected'}
  </button>
@@ -257,7 +257,7 @@ export function RunHistorySection({
  key={run.id}
  className={`flex items-center justify-between rounded-md border p-3 ${
  selectedRunsForCompare.includes(run.id)
- ? 'border-blue-500 bg-blue-50/50'
+ ? 'border-primary bg-primary/5/50'
  : 'border-border'
  }`}
  >
@@ -269,17 +269,17 @@ export function RunHistorySection({
  type="checkbox"
  checked={selectedRunsForCompare.includes(run.id)}
  onChange={() => onToggleRunSelection(run.id)}
- className="h-4 w-4 rounded border-border text-blue-600 focus:ring-blue-500"
+ className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
  />
  </label>
  )}
  {/* Feature #1979: Added 'warning' status styling for accessibility tests */}
  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
- run.status === 'passed' ? 'bg-green-100 text-green-700' :
- run.status === 'failed' ? 'bg-red-100 text-red-700' :
- run.status === 'warning' ? 'bg-amber-100 text-amber-700' :
- run.status === 'running' ? 'bg-blue-100 text-blue-700' :
- run.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+ run.status === 'passed' ? 'bg-success/10 text-success' :
+ run.status === 'failed' ? 'bg-destructive/10 text-destructive' :
+ run.status === 'warning' ? 'bg-warning/10 text-warning' :
+ run.status === 'running' ? 'bg-primary/10 text-primary' :
+ run.status === 'pending' ? 'bg-warning/10 text-warning' :
  'bg-muted text-foreground'
  }`}>
  {run.status}

@@ -45,10 +45,10 @@ const TEST_TYPES: TestTypeConfig[] = [
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
  ),
- colorClass: 'text-blue-600',
- hoverBorderClass: 'hover:border-blue-300',
- selectedBorderClass: 'border-blue-500 ring-2 ring-blue-500/20',
- iconBgClass: 'bg-blue-100',
+ colorClass: 'text-primary',
+ hoverBorderClass: 'hover:border-primary/30',
+ selectedBorderClass: 'border-primary ring-2 ring-primary/20',
+ iconBgClass: 'bg-primary/10',
  },
  {
  id: 'visual',
@@ -74,10 +74,10 @@ const TEST_TYPES: TestTypeConfig[] = [
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
  </svg>
  ),
- colorClass: 'text-amber-600',
- hoverBorderClass: 'hover:border-amber-300',
- selectedBorderClass: 'border-amber-500 ring-2 ring-amber-500/20',
- iconBgClass: 'bg-amber-100',
+ colorClass: 'text-warning',
+ hoverBorderClass: 'hover:border-warning/30',
+ selectedBorderClass: 'border-warning ring-2 ring-warning/20',
+ iconBgClass: 'bg-warning/10',
  },
  {
  id: 'load',
@@ -88,10 +88,10 @@ const TEST_TYPES: TestTypeConfig[] = [
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
  </svg>
  ),
- colorClass: 'text-red-600',
- hoverBorderClass: 'hover:border-red-300',
- selectedBorderClass: 'border-red-500 ring-2 ring-red-500/20',
- iconBgClass: 'bg-red-100',
+ colorClass: 'text-destructive',
+ hoverBorderClass: 'hover:border-destructive/30',
+ selectedBorderClass: 'border-destructive ring-2 ring-destructive/20',
+ iconBgClass: 'bg-destructive/10',
  },
  {
  id: 'accessibility',
@@ -102,10 +102,10 @@ const TEST_TYPES: TestTypeConfig[] = [
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
  </svg>
  ),
- colorClass: 'text-green-600',
- hoverBorderClass: 'hover:border-green-300',
- selectedBorderClass: 'border-green-500 ring-2 ring-green-500/20',
- iconBgClass: 'bg-green-100',
+ colorClass: 'text-success',
+ hoverBorderClass: 'hover:border-success/30',
+ selectedBorderClass: 'border-success ring-2 ring-success/20',
+ iconBgClass: 'bg-success/10',
  },
 ];
 
@@ -228,7 +228,7 @@ export const TestTypeCards: React.FC<TestTypeCardsProps> = ({
  relative flex flex-col items-center p-4 rounded-xl border-2
  bg-card
  transition-all duration-200 ease-out
- cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+ cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary
  disabled:opacity-50 disabled:cursor-not-allowed
  ${
  isSelected

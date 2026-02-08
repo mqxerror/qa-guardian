@@ -119,21 +119,21 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
 
  // Type labels and colors for grouping
  const typeLabels: Record<string, { label: string; icon: string; color: string }> = {
- 'E2E': { label: 'E2E Tests', icon: '🧪', color: 'bg-blue-500' },
+ 'E2E': { label: 'E2E Tests', icon: '🧪', color: 'bg-primary' },
  'Visual': { label: 'Visual Tests', icon: '🎨', color: 'bg-purple-500' },
- 'Performance': { label: 'Performance Tests', icon: '⚡', color: 'bg-amber-500' },
+ 'Performance': { label: 'Performance Tests', icon: '⚡', color: 'bg-warning' },
  'Load': { label: 'Load Tests', icon: '📊', color: 'bg-orange-500' },
- 'Accessibility': { label: 'Accessibility Tests', icon: '♿', color: 'bg-green-500' },
+ 'Accessibility': { label: 'Accessibility Tests', icon: '♿', color: 'bg-success' },
  };
 
  // Filter type colors
  const typeColors: Record<string, string> = {
  'All': 'bg-gray-500',
- 'E2E': 'bg-blue-500',
+ 'E2E': 'bg-primary',
  'Visual': 'bg-purple-500',
- 'Performance': 'bg-amber-500',
+ 'Performance': 'bg-warning',
  'Load': 'bg-orange-500',
- 'Accessibility': 'bg-green-500',
+ 'Accessibility': 'bg-success',
  };
 
  // Type order for rendering groups
@@ -483,8 +483,8 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  </span>
  {/* Screenshot status badge */}
  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
- screenshot.testStatus === 'passed' ? 'bg-green-100 text-green-700' :
- screenshot.testStatus === 'failed' ? 'bg-red-100 text-red-700' :
+ screenshot.testStatus === 'passed' ? 'bg-success/10 text-success' :
+ screenshot.testStatus === 'failed' ? 'bg-destructive/10 text-destructive' :
  'bg-muted text-foreground'
  }`}>
  {screenshot.testStatus}
@@ -525,9 +525,9 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
 
  {/* Status indicator */}
  <div className={`absolute top-2 right-10 w-2 h-2 rounded-full ${
- screenshot.testStatus === 'passed' ? 'bg-green-500' :
- screenshot.testStatus === 'failed' ? 'bg-red-500' :
- screenshot.testStatus === 'error' ? 'bg-red-500' :
+ screenshot.testStatus === 'passed' ? 'bg-success' :
+ screenshot.testStatus === 'failed' ? 'bg-destructive' :
+ screenshot.testStatus === 'error' ? 'bg-destructive' :
  'bg-gray-500'
  }`} title={screenshot.testStatus} />
  </div>
@@ -583,7 +583,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  {allScreenshots[lightboxIndex]?.type.replace('_', ' ')}
  </span>
  <span className={`text-xs px-2 py-0.5 rounded ${
- allScreenshots[lightboxIndex]?.testStatus === 'passed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+ allScreenshots[lightboxIndex]?.testStatus === 'passed' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
  }`}>
  {allScreenshots[lightboxIndex]?.testStatus}
  </span>
@@ -606,7 +606,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  </p>
  )}
  {allScreenshots[lightboxIndex]?.diffPercentage !== undefined && (
- <p className="text-xs text-red-500">
+ <p className="text-xs text-destructive">
  {allScreenshots[lightboxIndex]?.diffPercentage?.toFixed(2)}% difference
  </p>
  )}
@@ -708,17 +708,17 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  {allScreenshots[lightboxIndex].type.replace('_', ' ')}
  </span>
  <span className={`text-xs px-2 py-0.5 rounded text-white ${
- allScreenshots[lightboxIndex].testType === 'E2E' ? 'bg-blue-500' :
+ allScreenshots[lightboxIndex].testType === 'E2E' ? 'bg-primary' :
  allScreenshots[lightboxIndex].testType === 'Visual' ? 'bg-purple-500' :
- allScreenshots[lightboxIndex].testType === 'Accessibility' ? 'bg-green-500' :
- allScreenshots[lightboxIndex].testType === 'Performance' ? 'bg-amber-500' :
+ allScreenshots[lightboxIndex].testType === 'Accessibility' ? 'bg-success' :
+ allScreenshots[lightboxIndex].testType === 'Performance' ? 'bg-warning' :
  allScreenshots[lightboxIndex].testType === 'Load' ? 'bg-orange-500' :
  'bg-gray-500'
  }`}>
  {allScreenshots[lightboxIndex].testType}
  </span>
  <span className={`text-xs px-2 py-0.5 rounded ${
- allScreenshots[lightboxIndex].testStatus === 'passed' ? 'bg-green-500/80' : 'bg-red-500/80'
+ allScreenshots[lightboxIndex].testStatus === 'passed' ? 'bg-success/80' : 'bg-destructive/80'
  }`}>
  {allScreenshots[lightboxIndex].testStatus}
  </span>
@@ -808,7 +808,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  {allScreenshots[lightboxIndex].diffPercentage !== undefined && (
  <div className="flex items-center gap-2">
  <span className="text-white/50">Diff:</span>
- <span className={`${allScreenshots[lightboxIndex].diffPercentage > 0 ? 'text-yellow-400' : 'text-green-400'}`}>
+ <span className={`${allScreenshots[lightboxIndex].diffPercentage > 0 ? 'text-warning' : 'text-success'}`}>
  {allScreenshots[lightboxIndex].diffPercentage?.toFixed(2)}%
  </span>
  </div>

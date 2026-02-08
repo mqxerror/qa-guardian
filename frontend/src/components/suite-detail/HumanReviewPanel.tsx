@@ -124,14 +124,14 @@ export function HumanReviewPanel({
  <button
  onClick={() => onBatchReview('approve')}
  disabled={isApproving}
- className="rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 flex items-center gap-1"
+ className="rounded-md bg-success px-3 py-1 text-xs font-medium text-white hover:bg-success disabled:opacity-50 flex items-center gap-1"
  >
  ✓ Batch Approve ({selectedForReview.size})
  </button>
  <button
  onClick={() => onBatchReview('reject')}
  disabled={isApproving}
- className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 flex items-center gap-1"
+ className="rounded-md bg-destructive px-3 py-1 text-xs font-medium text-white hover:bg-destructive disabled:opacity-50 flex items-center gap-1"
  >
  ✗ Batch Reject ({selectedForReview.size})
  </button>
@@ -161,14 +161,14 @@ export function HumanReviewPanel({
  <button
  onClick={() => onReviewTest(test.id, 'approve')}
  disabled={isApproving}
- className="rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+ className="rounded-md bg-success px-3 py-1 text-xs font-medium text-white hover:bg-success disabled:opacity-50"
  >
  ✓ Approve
  </button>
  <button
  onClick={() => onReviewTest(test.id, 'reject')}
  disabled={isApproving}
- className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+ className="rounded-md bg-destructive px-3 py-1 text-xs font-medium text-white hover:bg-destructive disabled:opacity-50"
  >
  ✗ Reject
  </button>

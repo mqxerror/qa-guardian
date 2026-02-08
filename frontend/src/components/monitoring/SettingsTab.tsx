@@ -291,10 +291,10 @@ export default function SettingsTab({
  {icon} {name}
  </td>
  <td className="px-4 py-3 text-right text-sm">{data.total}</td>
- <td className="px-4 py-3 text-right text-sm text-green-600">{data.last30}</td>
- <td className="px-4 py-3 text-right text-sm text-yellow-600">{data.last90}</td>
+ <td className="px-4 py-3 text-right text-sm text-success">{data.last30}</td>
+ <td className="px-4 py-3 text-right text-sm text-warning">{data.last90}</td>
  <td className="px-4 py-3 text-right text-sm text-orange-600">{data.last365}</td>
- <td className="px-4 py-3 text-right text-sm text-red-600">{data.older}</td>
+ <td className="px-4 py-3 text-right text-sm text-destructive">{data.older}</td>
  </tr>
  ))}
  </tbody>
@@ -360,7 +360,7 @@ export default function SettingsTab({
  href={`/status/${page.slug}`}
  target="_blank"
  rel="noopener noreferrer"
- className="rounded px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200"
+ className="rounded px-3 py-1.5 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20"
  >
  View Page
  </a>
@@ -378,7 +378,7 @@ export default function SettingsTab({
  </button>
  <button
  onClick={() => onDeleteStatusPage?.(page.id)}
- className="rounded px-3 py-1.5 text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200"
+ className="rounded px-3 py-1.5 text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20"
  >
  Delete
  </button>
@@ -430,7 +430,7 @@ export default function SettingsTab({
  <div key={schedule.id} className="rounded-lg border border-border p-4 hover:bg-muted/30">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className={`w-3 h-3 rounded-full ${schedule.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
+ <div className={`w-3 h-3 rounded-full ${schedule.is_active ? 'bg-success' : 'bg-gray-400'}`} />
  <div>
  <h4 className="font-medium text-foreground">{schedule.name}</h4>
  <p className="text-xs text-muted-foreground">
@@ -441,7 +441,7 @@ export default function SettingsTab({
  <div className="flex items-center gap-2">
  <button
  onClick={() => onRotateOnCallSchedule?.(schedule.id)}
- className="rounded px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200"
+ className="rounded px-3 py-1.5 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20"
  title="Manual rotation"
  >
  🔄 Rotate
@@ -454,18 +454,18 @@ export default function SettingsTab({
  </button>
  <button
  onClick={() => onDeleteOnCallSchedule?.(schedule.id)}
- className="rounded px-3 py-1.5 text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200"
+ className="rounded px-3 py-1.5 text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20"
  >
  Delete
  </button>
  </div>
  </div>
  {currentOnCall && (
- <div className="mt-3 p-3 bg-green-50 rounded-lg">
- <p className="text-sm font-medium text-green-800">
+ <div className="mt-3 p-3 bg-success/5 rounded-lg">
+ <p className="text-sm font-medium text-success">
  🟢 Currently On-Call: {currentOnCall.user_name}
  </p>
- <p className="text-xs text-green-600">
+ <p className="text-xs text-success">
  {currentOnCall.user_email} {currentOnCall.phone && `• ${currentOnCall.phone}`}
  </p>
  </div>
@@ -515,11 +515,11 @@ export default function SettingsTab({
  <div key={policy.id} className="rounded-lg border border-border p-4 hover:bg-muted/30">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className={`w-3 h-3 rounded-full ${policy.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
+ <div className={`w-3 h-3 rounded-full ${policy.is_active ? 'bg-success' : 'bg-gray-400'}`} />
  <div>
  <h4 className="font-medium text-foreground">
  {policy.name}
- {policy.is_default && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Default</span>}
+ {policy.is_default && <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Default</span>}
  </h4>
  <p className="text-xs text-muted-foreground">
  {policy.levels.length} levels • {policy.repeat_policy === 'repeat_until_acknowledged' ? 'Repeats' : 'Once'}
@@ -529,7 +529,7 @@ export default function SettingsTab({
  <div className="flex items-center gap-2">
  <button
  onClick={() => onTestEscalationPolicy?.(policy.id)}
- className="rounded px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200"
+ className="rounded px-3 py-1.5 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20"
  >
  🧪 Test
  </button>
@@ -541,7 +541,7 @@ export default function SettingsTab({
  </button>
  <button
  onClick={() => onDeleteEscalationPolicy?.(policy.id)}
- className="rounded px-3 py-1.5 text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200"
+ className="rounded px-3 py-1.5 text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20"
  >
  Delete
  </button>

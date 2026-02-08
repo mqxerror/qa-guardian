@@ -108,9 +108,9 @@ export function CreateOrganizationPage() {
               initial={prefersReducedMotion ? {} : { scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
-              className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/20"
+              className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/20"
             >
-              <Building2 className="h-6 w-6 text-blue-400" />
+              <Building2 className="h-6 w-6 text-primary" />
             </motion.div>
             <motion.h2
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
@@ -137,7 +137,7 @@ export function CreateOrganizationPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 role="alert"
-                className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
+                className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
               >
                 {error}
               </motion.div>
@@ -190,7 +190,7 @@ export function CreateOrganizationPage() {
               <button
                 type="submit"
                 disabled={isLoading || !name.trim() || !slug.trim()}
-                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 font-medium text-white transition-all hover:from-blue-500 hover:to-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:cursor-not-allowed disabled:opacity-50"
+                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary px-4 py-3 font-medium text-white transition-all hover:from-primary hover:to-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isLoading ? (
@@ -220,7 +220,7 @@ export function CreateOrganizationPage() {
             className="mt-6 text-center text-sm text-muted-foreground"
           >
             Already have an organization?{' '}
-            <Link to="/dashboard" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
+            <Link to="/dashboard" className="text-primary hover:text-primary/70 transition-colors font-medium">
               Go to Dashboard
             </Link>
           </motion.div>

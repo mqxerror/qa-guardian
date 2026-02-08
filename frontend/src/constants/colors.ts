@@ -43,11 +43,11 @@ interface ColorScheme {
 
 export const SEVERITY_COLORS: Record<SeverityLevel, ColorScheme> = {
  critical: {
- bg: 'bg-red-100',
- text: 'text-red-700',
- border: 'border-red-200',
- hoverBg: 'hover:bg-red-200',
- badge: 'bg-red-100 text-red-700',
+ bg: 'bg-destructive/10',
+ text: 'text-destructive',
+ border: 'border-destructive/20',
+ hoverBg: 'hover:bg-destructive/20',
+ badge: 'bg-destructive/10 text-destructive',
  cardBorder: 'border-l-4 border-l-red-600',
  hex: '#dc2626', // red-600
  hexDark: '#f87171', // red-400
@@ -63,21 +63,21 @@ export const SEVERITY_COLORS: Record<SeverityLevel, ColorScheme> = {
  hexDark: '#fb923c', // orange-400
  },
  medium: {
- bg: 'bg-yellow-100',
- text: 'text-yellow-700',
- border: 'border-yellow-200',
- hoverBg: 'hover:bg-yellow-200',
- badge: 'bg-yellow-100 text-yellow-700',
+ bg: 'bg-warning/10',
+ text: 'text-warning',
+ border: 'border-warning/20',
+ hoverBg: 'hover:bg-warning/20',
+ badge: 'bg-warning/10 text-warning',
  cardBorder: 'border-l-4 border-l-yellow-500',
  hex: '#eab308', // yellow-500
  hexDark: '#facc15', // yellow-400
  },
  low: {
- bg: 'bg-blue-100',
- text: 'text-blue-700',
- border: 'border-blue-200',
- hoverBg: 'hover:bg-blue-200',
- badge: 'bg-blue-100 text-blue-700',
+ bg: 'bg-primary/10',
+ text: 'text-primary',
+ border: 'border-primary/20',
+ hoverBg: 'hover:bg-primary/20',
+ badge: 'bg-primary/10 text-primary',
  cardBorder: 'border-l-4 border-l-blue-500',
  hex: '#3b82f6', // blue-500
  hexDark: '#60a5fa', // blue-400
@@ -117,41 +117,41 @@ export type StatusType = 'passed' | 'failed' | 'running' | 'pending' | 'cancelle
 
 export const STATUS_COLORS: Record<StatusType, ColorScheme> = {
  passed: {
- bg: 'bg-green-100',
- text: 'text-green-700',
- border: 'border-green-200',
- hoverBg: 'hover:bg-green-200',
- badge: 'bg-green-100 text-green-700',
+ bg: 'bg-success/10',
+ text: 'text-success',
+ border: 'border-success/20',
+ hoverBg: 'hover:bg-success/20',
+ badge: 'bg-success/10 text-success',
  cardBorder: 'border-l-4 border-l-green-500',
  hex: '#22c55e', // green-500
  hexDark: '#4ade80', // green-400
  },
  failed: {
- bg: 'bg-red-100',
- text: 'text-red-700',
- border: 'border-red-200',
- hoverBg: 'hover:bg-red-200',
- badge: 'bg-red-100 text-red-700',
+ bg: 'bg-destructive/10',
+ text: 'text-destructive',
+ border: 'border-destructive/20',
+ hoverBg: 'hover:bg-destructive/20',
+ badge: 'bg-destructive/10 text-destructive',
  cardBorder: 'border-l-4 border-l-red-500',
  hex: '#ef4444', // red-500
  hexDark: '#f87171', // red-400
  },
  running: {
- bg: 'bg-blue-100',
- text: 'text-blue-700',
- border: 'border-blue-200',
- hoverBg: 'hover:bg-blue-200',
- badge: 'bg-blue-100 text-blue-700',
+ bg: 'bg-primary/10',
+ text: 'text-primary',
+ border: 'border-primary/20',
+ hoverBg: 'hover:bg-primary/20',
+ badge: 'bg-primary/10 text-primary',
  cardBorder: 'border-l-4 border-l-blue-500',
  hex: '#3b82f6', // blue-500
  hexDark: '#60a5fa', // blue-400
  },
  pending: {
- bg: 'bg-yellow-100',
- text: 'text-yellow-700',
- border: 'border-yellow-200',
- hoverBg: 'hover:bg-yellow-200',
- badge: 'bg-yellow-100 text-yellow-700',
+ bg: 'bg-warning/10',
+ text: 'text-warning',
+ border: 'border-warning/20',
+ hoverBg: 'hover:bg-warning/20',
+ badge: 'bg-warning/10 text-warning',
  cardBorder: 'border-l-4 border-l-yellow-500',
  hex: '#eab308', // yellow-500
  hexDark: '#facc15', // yellow-400

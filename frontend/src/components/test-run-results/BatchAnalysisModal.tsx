@@ -162,16 +162,16 @@ Please identify:
 
  <div className="p-4 overflow-y-auto max-h-[60vh]">
  {/* Failed Tests Summary */}
- <div className="mb-4 p-3 bg-red-50 rounded-lg border border-red-200">
- <div className="text-sm font-medium text-red-700 mb-2">Failed Tests:</div>
+ <div className="mb-4 p-3 bg-destructive/5 rounded-lg border border-destructive/20">
+ <div className="text-sm font-medium text-destructive mb-2">Failed Tests:</div>
  <div className="flex flex-wrap gap-2">
  {failedTests.slice(0, 8).map(t => (
- <span key={t.test_id} className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded">
+ <span key={t.test_id} className="px-2 py-1 text-xs bg-destructive/10 text-destructive rounded">
  {t.test_name.length > 30 ? t.test_name.slice(0, 27) + '...' : t.test_name}
  </span>
  ))}
  {failedTests.length > 8 && (
- <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded">
+ <span className="px-2 py-1 text-xs bg-destructive/10 text-destructive rounded">
  +{failedTests.length - 8} more
  </span>
  )}

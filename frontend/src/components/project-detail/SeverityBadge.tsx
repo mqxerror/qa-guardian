@@ -91,7 +91,7 @@ interface MemberRoleBadgeProps {
 
 export const MemberRoleBadge: React.FC<MemberRoleBadgeProps> = React.memo(({ role }) => {
  const badgeClass = role === 'developer'
- ? 'bg-blue-100 text-blue-800'
+ ? 'bg-primary/10 text-primary'
  : 'bg-muted text-foreground';
 
  return (

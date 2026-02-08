@@ -73,17 +73,17 @@ interface ScanResult {
 }
 
 const severityColors = {
-  critical: 'bg-red-500 text-white',
+  critical: 'bg-destructive text-white',
   high: 'bg-orange-500 text-white',
-  medium: 'bg-yellow-500 text-black',
-  low: 'bg-blue-500 text-white',
+  medium: 'bg-warning text-black',
+  low: 'bg-primary text-white',
 };
 
 const severityBorderColors = {
-  critical: 'border-red-500',
+  critical: 'border-destructive',
   high: 'border-orange-500',
-  medium: 'border-yellow-500',
-  low: 'border-blue-500',
+  medium: 'border-warning',
+  low: 'border-primary',
 };
 
 export function ContainerScanPage() {
@@ -296,8 +296,8 @@ export function ContainerScanPage() {
                   onClick={() => setSeverityFilter('critical')}
                   className={`px-4 py-2 rounded-lg border transition-colors ${
                     severityFilter === 'critical'
-                      ? 'bg-red-500 text-white border-red-500'
-                      : 'border-red-500 text-red-500 hover:bg-red-500/10'
+                      ? 'bg-destructive text-white border-destructive'
+                      : 'border-destructive text-destructive hover:bg-destructive/10'
                   }`}
                 >
                   Critical ({scanResult.summary.by_severity.critical})
@@ -316,8 +316,8 @@ export function ContainerScanPage() {
                   onClick={() => setSeverityFilter('medium')}
                   className={`px-4 py-2 rounded-lg border transition-colors ${
                     severityFilter === 'medium'
-                      ? 'bg-yellow-500 text-black border-yellow-500'
-                      : 'border-yellow-500 text-yellow-500 hover:bg-yellow-500/10'
+                      ? 'bg-warning text-black border-warning'
+                      : 'border-warning text-warning hover:bg-warning/10'
                   }`}
                 >
                   Medium ({scanResult.summary.by_severity.medium})
@@ -326,8 +326,8 @@ export function ContainerScanPage() {
                   onClick={() => setSeverityFilter('low')}
                   className={`px-4 py-2 rounded-lg border transition-colors ${
                     severityFilter === 'low'
-                      ? 'bg-blue-500 text-white border-blue-500'
-                      : 'border-blue-500 text-blue-500 hover:bg-blue-500/10'
+                      ? 'bg-primary text-white border-primary'
+                      : 'border-primary text-primary hover:bg-primary/10'
                   }`}
                 >
                   Low ({scanResult.summary.by_severity.low})
@@ -339,14 +339,14 @@ export function ContainerScanPage() {
             {scanResult.base_image && (
               <div className={`rounded-lg border p-4 mb-6 ${
                 scanResult.base_image.vulnerabilities > 0
-                  ? 'border-yellow-500 bg-yellow-500/10'
-                  : 'border-green-500 bg-green-500/10'
+                  ? 'border-warning bg-warning/10'
+                  : 'border-success bg-success/10'
               }`}>
                 <div className="flex items-start gap-3">
                   {scanResult.base_image.vulnerabilities > 0 ? (
-                    <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
+                    <AlertTriangle className="h-5 w-5 text-warning mt-0.5" />
                   ) : (
-                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                    <CheckCircle className="h-5 w-5 text-success mt-0.5" />
                   )}
                   <div>
                     <h4 className="font-semibold text-foreground">Base Image: {scanResult.base_image.reference}</h4>
@@ -373,7 +373,7 @@ export function ContainerScanPage() {
                       <div
                         key={layer.id}
                         className={`p-3 rounded-lg border ${
-                          layer.vulnerability_count > 0 ? 'border-yellow-500/50 bg-yellow-500/5' : 'border-border bg-muted/50'
+                          layer.vulnerability_count > 0 ? 'border-warning/50 bg-warning/5' : 'border-border bg-muted/50'
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -381,15 +381,15 @@ export function ContainerScanPage() {
                             <span className="text-xs text-muted-foreground">#{index + 1}</span>
                             <code className="text-sm text-foreground bg-muted px-2 py-1 rounded">{layer.command}</code>
                             {layer.is_base_layer && (
-                              <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-500">Base Layer</span>
+                              <span className="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary">Base Layer</span>
                             )}
                           </div>
                           <div className="flex items-center gap-4 text-sm">
                             <span className="text-muted-foreground">{layer.size_mb} MB</span>
                             {layer.vulnerability_count > 0 ? (
-                              <span className="text-yellow-500 font-medium">{layer.vulnerability_count} vulnerabilities</span>
+                              <span className="text-warning font-medium">{layer.vulnerability_count} vulnerabilities</span>
                             ) : (
-                              <span className="text-green-500">Clean</span>
+                              <span className="text-success">Clean</span>
                             )}
                           </div>
                         </div>
@@ -407,7 +407,7 @@ export function ContainerScanPage() {
               </h3>
               {filteredVulnerabilities.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500" />
+                  <CheckCircle className="h-12 w-12 mx-auto mb-3 text-success" />
                   <p>No vulnerabilities found for the selected severity filter</p>
                 </div>
               ) : (
@@ -434,7 +434,7 @@ export function ContainerScanPage() {
                         <div className="flex items-center gap-4">
                           <span className="text-sm text-muted-foreground">CVSS {vuln.cvss_score}</span>
                           {vuln.in_base_image && (
-                            <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-500">Base Image</span>
+                            <span className="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary">Base Image</span>
                           )}
                           {expandedVulns.has(vuln.id) ? (
                             <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -453,15 +453,15 @@ export function ContainerScanPage() {
                             <div>
                               <span className="text-sm text-muted-foreground">Fixed Version</span>
                               {vuln.fixed_version ? (
-                                <p className="font-mono text-green-500">{vuln.fixed_version}</p>
+                                <p className="font-mono text-success">{vuln.fixed_version}</p>
                               ) : (
                                 <p className="text-muted-foreground italic">No fix available</p>
                               )}
                             </div>
                           </div>
                           {vuln.fixed_version && (
-                            <div className="mt-3 p-3 rounded bg-green-500/10 border border-green-500/30">
-                              <div className="flex items-center gap-2 text-green-500">
+                            <div className="mt-3 p-3 rounded bg-success/10 border border-success/30">
+                              <div className="flex items-center gap-2 text-success">
                                 <CheckCircle className="h-4 w-4" />
                                 <span className="text-sm font-medium">Fix Available</span>
                               </div>

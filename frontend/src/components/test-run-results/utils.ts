@@ -90,16 +90,16 @@ export const getStatusBadgeClass = (status: string): string => {
 
 // Get score color class for Lighthouse scores
 export const getScoreColorClass = (score: number): string => {
- if (score >= 90) return 'text-green-600';
- if (score >= 50) return 'text-amber-600';
- return 'text-red-600';
+ if (score >= 90) return 'text-success';
+ if (score >= 50) return 'text-warning';
+ return 'text-destructive';
 };
 
 // Get score background class for Lighthouse scores
 export const getScoreBgClass = (score: number): string => {
- if (score >= 90) return 'bg-green-500';
- if (score >= 50) return 'bg-amber-500';
- return 'bg-red-500';
+ if (score >= 90) return 'bg-success';
+ if (score >= 50) return 'bg-warning';
+ return 'bg-destructive';
 };
 
 // Get impact badge class for accessibility violations - uses centralized colors (Feature #130)
@@ -123,13 +123,13 @@ export const getImpactBadgeClass = (impact: string): string => {
 export const getScreenshotTypeBadgeColor = (type: string): string => {
  switch (type) {
  case 'E2E':
- return 'bg-blue-100 text-blue-700';
+ return 'bg-primary/10 text-primary';
  case 'Visual':
  return 'bg-purple-100 text-purple-700';
  case 'Performance':
- return 'bg-amber-100 text-amber-700';
+ return 'bg-warning/10 text-warning';
  case 'Load':
- return 'bg-green-100 text-green-700';
+ return 'bg-success/10 text-success';
  case 'Accessibility':
  return 'bg-indigo-100 text-indigo-700';
  default:
@@ -145,18 +145,18 @@ export const calculateHealthScore = (passed: number, total: number): number => {
 
 // Get health score color class
 export const getHealthScoreColorClass = (score: number): string => {
- if (score >= 85) return 'text-green-600';
- if (score >= 70) return 'text-amber-600';
+ if (score >= 85) return 'text-success';
+ if (score >= 70) return 'text-warning';
  if (score >= 50) return 'text-orange-600';
- return 'text-red-600';
+ return 'text-destructive';
 };
 
 // Get health score bar color class
 export const getHealthScoreBarClass = (score: number): string => {
- if (score >= 85) return 'bg-green-500';
- if (score >= 70) return 'bg-amber-500';
+ if (score >= 85) return 'bg-success';
+ if (score >= 70) return 'bg-warning';
  if (score >= 50) return 'bg-orange-500';
- return 'bg-red-500';
+ return 'bg-destructive';
 };
 
 // K6 Time Series data point type

@@ -53,10 +53,10 @@ const ResultBadge = memo(function ResultBadge({ result }: { result: 'passed' | '
  }
 
  const styles = {
- passed: 'bg-green-100 text-green-800',
- failed: 'bg-red-100 text-red-800',
+ passed: 'bg-success/10 text-success',
+ failed: 'bg-destructive/10 text-destructive',
  error: 'bg-orange-100 text-orange-800',
- running: 'bg-blue-100 text-blue-800',
+ running: 'bg-primary/10 text-primary',
  };
 
  const icons = {

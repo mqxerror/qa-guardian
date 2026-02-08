@@ -63,9 +63,9 @@ const StepIndicator: React.FC<{ currentStep: WizardStep; totalSteps: number }> =
  flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors
  ${
  step === currentStep
- ? 'bg-blue-600 text-white'
+ ? 'bg-primary text-white'
  : step < currentStep
- ? 'bg-green-500 text-white'
+ ? 'bg-success text-white'
  : 'bg-secondary text-muted-foreground'
  }
  `}
@@ -82,7 +82,7 @@ const StepIndicator: React.FC<{ currentStep: WizardStep; totalSteps: number }> =
  <div
  className={`w-12 h-1 rounded ${
  step < currentStep
- ? 'bg-green-500'
+ ? 'bg-success'
  : 'bg-secondary'
  }`}
  />
@@ -462,7 +462,7 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  type="button"
  onClick={handleContinue}
  disabled={!canContinue}
- className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
+ className="px-4 py-2 bg-primary hover:bg-primary disabled:bg-gray-300 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
  >
  Continue
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -44,12 +44,12 @@ function getStatusText(status: ConnectionStatus): string {
 function getStatusColor(status: ConnectionStatus): string {
   switch (status) {
     case 'connected':
-      return 'bg-green-500';
+      return 'bg-success';
     case 'connecting':
     case 'reconnecting':
-      return 'bg-yellow-500 animate-pulse';
+      return 'bg-warning animate-pulse';
     case 'disconnected':
-      return 'bg-red-500';
+      return 'bg-destructive';
     default:
       return 'bg-gray-500';
   }
@@ -174,7 +174,7 @@ export function ConnectionStatusIndicator({
           <div className="space-y-1 text-xs text-muted-foreground">
             <div className="flex justify-between">
               <span>Healthy:</span>
-              <span className={health.healthy ? 'text-green-500' : 'text-red-500'}>
+              <span className={health.healthy ? 'text-success' : 'text-destructive'}>
                 {health.healthy ? 'Yes' : 'No'}
               </span>
             </div>
@@ -199,7 +199,7 @@ export function ConnectionStatusIndicator({
               <div className="space-y-1 max-h-24 overflow-y-auto">
                 {reconnectionEvents.slice(0, 3).map((event, index) => (
                   <div key={index} className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <span className={event.success ? 'text-green-500' : 'text-yellow-500'}>
+                    <span className={event.success ? 'text-success' : 'text-warning'}>
                       {event.success ? '✓' : '↻'}
                     </span>
                     <span>{event.reason}</span>

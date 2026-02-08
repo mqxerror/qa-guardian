@@ -170,10 +170,10 @@ function RunHistoryPage() {
  // Status badge component
  const StatusBadge = ({ status }: { status: string }) => {
  const colors: Record<string, string> = {
- passed: 'bg-green-100 text-green-800',
- failed: 'bg-red-100 text-red-800',
- running: 'bg-blue-100 text-blue-800',
- pending: 'bg-yellow-100 text-yellow-800',
+ passed: 'bg-success/10 text-success',
+ failed: 'bg-destructive/10 text-destructive',
+ running: 'bg-primary/10 text-primary',
+ pending: 'bg-warning/10 text-warning',
  cancelled: 'bg-muted text-foreground',
  };
  const icons: Record<string, string> = {
@@ -221,15 +221,15 @@ function RunHistoryPage() {
  <div className="text-sm text-muted-foreground">Total Runs</div>
  </div>
  <div className="bg-card rounded-lg border border-border p-4">
- <div className="text-2xl font-bold text-green-600">{stats.passed}</div>
+ <div className="text-2xl font-bold text-success">{stats.passed}</div>
  <div className="text-sm text-muted-foreground">Passed</div>
  </div>
  <div className="bg-card rounded-lg border border-border p-4">
- <div className="text-2xl font-bold text-red-600">{stats.failed}</div>
+ <div className="text-2xl font-bold text-destructive">{stats.failed}</div>
  <div className="text-sm text-muted-foreground">Failed</div>
  </div>
  <div className="bg-card rounded-lg border border-border p-4">
- <div className="text-2xl font-bold text-blue-600">{stats.running}</div>
+ <div className="text-2xl font-bold text-primary">{stats.running}</div>
  <div className="text-sm text-muted-foreground">Running</div>
  </div>
  <div className="bg-card rounded-lg border border-border p-4">
@@ -306,7 +306,7 @@ function RunHistoryPage() {
 
  {/* Error State */}
  {error && (
- <div className="bg-red-50 text-red-600 rounded-lg p-4 mb-6">
+ <div className="bg-destructive/5 text-destructive rounded-lg p-4 mb-6">
  {error}
  </div>
  )}
@@ -386,9 +386,9 @@ function RunHistoryPage() {
  </td>
  <td className="px-4 py-3">
  <div className="flex items-center gap-1 text-sm">
- <span className="text-green-600 font-medium">{run.passed_count}</span>
+ <span className="text-success font-medium">{run.passed_count}</span>
  <span className="text-muted-foreground">/</span>
- <span className="text-red-600 font-medium">{run.failed_count}</span>
+ <span className="text-destructive font-medium">{run.failed_count}</span>
  </div>
  <div className="text-xs text-muted-foreground">
  {run.results_count} test{run.results_count !== 1 ? 's' : ''}
@@ -466,9 +466,9 @@ function RunHistoryPage() {
  </div>
  <div>
  <div className="flex items-center gap-1 text-sm">
- <span className="text-green-600 font-medium">{run.passed_count}</span>
+ <span className="text-success font-medium">{run.passed_count}</span>
  <span className="text-muted-foreground">/</span>
- <span className="text-red-600 font-medium">{run.failed_count}</span>
+ <span className="text-destructive font-medium">{run.failed_count}</span>
  </div>
  </div>
  <div className="text-sm text-muted-foreground">
@@ -512,9 +512,9 @@ function RunHistoryPage() {
  <span className="text-foreground">{formatDuration(run.duration_ms)}</span>
  </div>
  <div className="flex items-center gap-1">
- <span className="text-green-600 font-medium">{run.passed_count}</span>
+ <span className="text-success font-medium">{run.passed_count}</span>
  <span className="text-muted-foreground">/</span>
- <span className="text-red-600 font-medium">{run.failed_count}</span>
+ <span className="text-destructive font-medium">{run.failed_count}</span>
  </div>
  </div>
  </Link>
@@ -566,9 +566,9 @@ function RunHistoryPage() {
  </td>
  <td className="px-4 py-3">
  <div className="flex items-center gap-1 text-sm">
- <span className="text-green-600 font-medium">{run.passed_count}</span>
+ <span className="text-success font-medium">{run.passed_count}</span>
  <span className="text-muted-foreground">/</span>
- <span className="text-red-600 font-medium">{run.failed_count}</span>
+ <span className="text-destructive font-medium">{run.failed_count}</span>
  </div>
  <div className="text-xs text-muted-foreground">
  {run.results_count} test{run.results_count !== 1 ? 's' : ''}

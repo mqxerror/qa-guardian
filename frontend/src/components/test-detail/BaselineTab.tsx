@@ -137,8 +137,8 @@ function NoBaselineState({
 
  {/* Show merge option if there are mergeable baselines from other branches */}
  {mergeableBranches.length > 0 && (
- <div className="mt-8 p-4 border border-blue-500/30 bg-blue-500/5 rounded-lg max-w-lg mx-auto">
- <div className="flex items-center gap-2 text-blue-600 mb-2">
+ <div className="mt-8 p-4 border border-primary/30 bg-primary/5 rounded-lg max-w-lg mx-auto">
+ <div className="flex items-center gap-2 text-primary mb-2">
  <MergeIcon />
  <span className="font-medium">Baselines Available from Other Branches</span>
  </div>
@@ -239,14 +239,14 @@ function BaselineHistoryTable({
  </thead>
  <tbody className="divide-y divide-border">
  {baselineHistory.map((entry, index) => (
- <tr key={entry.id} className={`hover:bg-muted/30 ${index === 0 ? 'bg-green-500/5' : ''}`}>
+ <tr key={entry.id} className={`hover:bg-muted/30 ${index === 0 ? 'bg-success/5' : ''}`}>
  <td className="px-4 py-3">
- <span className={`inline-flex items-center gap-1.5 ${index === 0 ? 'text-green-600 font-medium' : 'text-foreground'}`}>
+ <span className={`inline-flex items-center gap-1.5 ${index === 0 ? 'text-success font-medium' : 'text-foreground'}`}>
  {index === 0 && (
- <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500 text-white text-xs">✓</span>
+ <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-success text-white text-xs">✓</span>
  )}
  v{entry.version}
- {index === 0 && <span className="text-xs text-green-600">(Current)</span>}
+ {index === 0 && <span className="text-xs text-success">(Current)</span>}
  </span>
  </td>
  <td className="px-4 py-3">
@@ -292,7 +292,7 @@ function BaselineHistoryTable({
  onSetShowRestoreBaselineModal(true);
  onSetRestoreBaselineError('');
  }}
- className="inline-flex items-center gap-1 text-sm text-amber-600 hover:text-amber-700"
+ className="inline-flex items-center gap-1 text-sm text-warning hover:text-warning"
  title="Restore this version as the current baseline"
  >
  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -453,13 +453,13 @@ function CurrentBaselineDisplay({
 
  {/* Merge Baseline from Branch Section - shown when there are newer baselines */}
  {mergeableBranches.some(b => b.isNewer) && (
- <div className="mt-4 p-4 border border-blue-500/30 bg-blue-500/5 rounded-lg">
+ <div className="mt-4 p-4 border border-primary/30 bg-primary/5 rounded-lg">
  <div className="flex items-start gap-3">
- <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
- <MergeIcon className="text-blue-600" />
+ <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+ <MergeIcon className="text-primary" />
  </div>
  <div className="flex-1">
- <h4 className="text-sm font-semibold text-blue-700 mb-1">
+ <h4 className="text-sm font-semibold text-primary mb-1">
  Newer Baselines Available from Feature Branches
  </h4>
  <p className="text-sm text-muted-foreground mb-3">
@@ -482,7 +482,7 @@ function CurrentBaselineDisplay({
  onSetSelectedMergeBranch(branch.branch);
  onSetShowMergeBaselineModal(true);
  }}
- className="px-3 py-1 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+ className="px-3 py-1 text-xs font-medium rounded bg-primary text-white hover:bg-primary transition-colors"
  >
  Adopt Baseline
  </button>

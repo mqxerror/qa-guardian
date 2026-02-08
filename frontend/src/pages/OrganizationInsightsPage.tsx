@@ -98,10 +98,10 @@ export function OrganizationInsightsPage() {
 
  const getSeverityBadge = (severity: string) => {
  switch (severity) {
- case 'critical': return 'bg-red-500/20 text-red-400 border-red-500/30';
+ case 'critical': return 'bg-destructive/20 text-destructive border-destructive/30';
  case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
- case 'medium': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
- case 'low': return 'bg-green-500/20 text-green-400 border-green-500/30';
+ case 'medium': return 'bg-warning/20 text-warning border-warning/30';
+ case 'low': return 'bg-success/20 text-success border-success/30';
  default: return 'bg-muted text-muted-foreground border-border';
  }
  };
@@ -118,17 +118,17 @@ export function OrganizationInsightsPage() {
  };
 
  const getHealthColor = (score: number) => {
- if (score >= 85) return 'text-green-600';
- if (score >= 70) return 'text-amber-600';
+ if (score >= 85) return 'text-success';
+ if (score >= 70) return 'text-warning';
  if (score >= 50) return 'text-orange-600';
- return 'text-red-600';
+ return 'text-destructive';
  };
 
  const getStatusBadge = (status: string) => {
  switch (status) {
- case 'applied': return 'bg-green-100 text-green-700';
- case 'rejected': return 'bg-red-100 text-red-700';
- default: return 'bg-blue-100 text-blue-700';
+ case 'applied': return 'bg-success/10 text-success';
+ case 'rejected': return 'bg-destructive/10 text-destructive';
+ default: return 'bg-primary/10 text-primary';
  }
  };
 
@@ -182,14 +182,14 @@ export function OrganizationInsightsPage() {
  <span className="text-2xl">💡</span>
  </div>
  <p className="text-3xl font-bold text-foreground mt-2">{solutions.length}</p>
- <p className="text-sm text-green-600">{solutions.filter(s => s.status === 'applied').length} already applied</p>
+ <p className="text-sm text-success">{solutions.filter(s => s.status === 'applied').length} already applied</p>
  </div>
  <div className="rounded-lg border bg-card p-4">
  <div className="flex items-center justify-between">
  <span className="text-sm text-muted-foreground">Potential Impact</span>
  <span className="text-2xl">📈</span>
  </div>
- <p className="text-3xl font-bold text-green-600 mt-2">-{Math.round(solutions.reduce((acc, s) => acc + s.estimated_impact, 0) / solutions.length)}%</p>
+ <p className="text-3xl font-bold text-success mt-2">-{Math.round(solutions.reduce((acc, s) => acc + s.estimated_impact, 0) / solutions.length)}%</p>
  <p className="text-sm text-muted-foreground">Avg. failure reduction</p>
  </div>
  <div className="rounded-lg border bg-card p-4">
@@ -205,7 +205,7 @@ export function OrganizationInsightsPage() {
  {/* Step 2: AI shows patterns across projects */}
  <div className="rounded-lg border bg-card p-6">
  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
- <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-sm">2</span>
+ <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-sm">2</span>
  <span>🔗</span> Cross-Project Failure Patterns
  </h2>
  <p className="text-sm text-muted-foreground mb-4">AI identifies recurring failure patterns that affect multiple projects</p>
@@ -251,19 +251,19 @@ export function OrganizationInsightsPage() {
  </div>
 
  {/* Step 3: AI identifies Project A fix applies to Project B */}
- <div className="rounded-lg border bg-gradient-to-r from-green-500/10 to-emerald-500/10 p-6">
+ <div className="rounded-lg border bg-gradient-to-r from-success/10 to-emerald-500/10 p-6">
  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
- <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-green-700 text-sm">3</span>
+ <span className="flex h-6 w-6 items-center justify-center rounded-full bg-success/10 text-success text-sm">3</span>
  <span>🔄</span> Cross-Project Fix Applicability
  </h2>
  <p className="text-sm text-muted-foreground mb-4">AI identifies fixes from one project that can solve similar issues in others</p>
 
- <div className="p-4 rounded-lg bg-green-50 border border-green-200 mb-4">
+ <div className="p-4 rounded-lg bg-success/5 border border-success/20 mb-4">
  <div className="flex items-start gap-3">
  <span className="text-2xl">🧠</span>
  <div>
- <p className="font-semibold text-green-800">AI Learning Insight</p>
- <p className="text-sm text-green-700 mt-1">
+ <p className="font-semibold text-success">AI Learning Insight</p>
+ <p className="text-sm text-success mt-1">
  Based on analysis of {patterns.reduce((acc, p) => acc + p.occurrence_count, 0)} failure occurrences across {new Set(patterns.flatMap(p => p.affected_projects)).size} projects,
  AI has identified <strong>{solutions.length} solutions</strong> that can be cross-pollinated between projects,
  potentially reducing overall test failures by <strong>{Math.round(solutions.reduce((acc, s) => acc + s.estimated_impact, 0) / solutions.length)}%</strong>.
@@ -287,7 +287,7 @@ export function OrganizationInsightsPage() {
  <div className="mb-3">
  <div className="flex items-center gap-2 mb-2">
  <span className="text-sm text-muted-foreground">From:</span>
- <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-700 text-xs font-medium">
+ <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-medium">
  {solution.source_project}
  </span>
  <span className="text-muted-foreground">→</span>
@@ -301,7 +301,7 @@ export function OrganizationInsightsPage() {
  <p className="text-sm text-muted-foreground">{solution.description}</p>
  </div>
  <div className="flex items-center gap-4 text-sm">
- <span className="text-green-600 font-medium">{solution.applicability_score}% match</span>
+ <span className="text-success font-medium">{solution.applicability_score}% match</span>
  <span className="text-foreground">-{solution.estimated_impact}% failures</span>
  <span className="text-muted-foreground">{solution.affected_tests} tests</span>
  </div>
@@ -326,7 +326,7 @@ export function OrganizationInsightsPage() {
  <div className="flex items-start gap-4">
  <div className={`flex h-10 w-10 items-center justify-center rounded-full font-bold text-sm flex-shrink-0 ${
  index === 0 ? 'bg-violet-100 text-violet-700' :
- index === 1 ? 'bg-blue-100 text-blue-700' :
+ index === 1 ? 'bg-primary/10 text-primary' :
  'bg-cyan-100 text-cyan-700'
  }`}>
  #{index + 1}
@@ -337,7 +337,7 @@ export function OrganizationInsightsPage() {
  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(solution.status)}`}>
  {solution.status}
  </span>
- <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+ <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
  {solution.applicability_score}% applicability
  </span>
  </div>
@@ -359,7 +359,7 @@ export function OrganizationInsightsPage() {
  <div className="flex items-center gap-6 text-sm">
  <div className="flex items-center gap-1">
  <span className="text-muted-foreground">Impact:</span>
- <span className="font-bold text-green-600">-{solution.estimated_impact}% failures</span>
+ <span className="font-bold text-success">-{solution.estimated_impact}% failures</span>
  </div>
  <div className="flex items-center gap-1">
  <span className="text-muted-foreground">Tests affected:</span>
@@ -408,12 +408,12 @@ export function OrganizationInsightsPage() {
  <span className={`font-bold ${getHealthColor(project.health_score)}`}>{project.health_score}%</span>
  </td>
  <td className="text-center py-3 px-2">
- <span className="font-mono text-red-600">{project.failure_count}</span>
+ <span className="font-mono text-destructive">{project.failure_count}</span>
  </td>
  <td className="py-3 px-2">
  <div className="flex items-center gap-1 flex-wrap">
  {project.common_patterns.map((pattern, idx) => (
- <span key={idx} className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs">
+ <span key={idx} className="px-2 py-0.5 rounded-full bg-warning/10 text-warning text-xs">
  {pattern}
  </span>
  ))}
@@ -422,7 +422,7 @@ export function OrganizationInsightsPage() {
  <td className="py-3 px-2">
  <div className="flex items-center gap-1 flex-wrap">
  {project.related_projects.map((related, idx) => (
- <span key={idx} className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs">
+ <span key={idx} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
  {related}
  </span>
  ))}

@@ -239,8 +239,8 @@ function TeamTabContent() {
  const getRoleBadgeColor = (role: string) => {
  switch (role) {
  case 'owner': return 'bg-purple-100 text-purple-800';
- case 'admin': return 'bg-blue-100 text-blue-800';
- case 'developer': return 'bg-green-100 text-green-800';
+ case 'admin': return 'bg-primary/10 text-primary';
+ case 'developer': return 'bg-success/10 text-success';
  default: return 'bg-muted text-foreground';
  }
  };
@@ -317,7 +317,7 @@ function TeamTabContent() {
  setMemberToRemove(member);
  setShowRemoveModal(true);
  }}
- className="text-sm text-red-600 hover:underline"
+ className="text-sm text-destructive hover:underline"
  >
  Remove
  </button>
@@ -359,7 +359,7 @@ function TeamTabContent() {
  <td className="px-4 py-3 text-right">
  <button
  onClick={() => handleCancelInvitation(inv.id)}
- className="text-sm text-red-600 hover:underline"
+ className="text-sm text-destructive hover:underline"
  >
  Cancel
  </button>
@@ -401,8 +401,8 @@ function TeamTabContent() {
  <option value="admin">Admin - Can manage team and settings</option>
  </select>
  </div>
- {inviteError && <p className="text-sm text-red-600">{inviteError}</p>}
- {inviteSuccess && <p className="text-sm text-green-600">{inviteSuccess}</p>}
+ {inviteError && <p className="text-sm text-destructive">{inviteError}</p>}
+ {inviteSuccess && <p className="text-sm text-success">{inviteSuccess}</p>}
  <div className="flex justify-end gap-3">
  <button
  type="button"
@@ -443,7 +443,7 @@ function TeamTabContent() {
  <button
  onClick={handleRemoveMember}
  disabled={isRemoving}
- className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+ className="px-4 py-2 bg-destructive text-white rounded-md hover:bg-destructive disabled:opacity-50"
  >
  {isRemoving ? 'Removing...' : 'Remove'}
  </button>
@@ -469,7 +469,7 @@ function TeamTabContent() {
  <option value="developer">Developer</option>
  <option value="admin">Admin</option>
  </select>
- {editRoleError && <p className="text-sm text-red-600 mb-4">{editRoleError}</p>}
+ {editRoleError && <p className="text-sm text-destructive mb-4">{editRoleError}</p>}
  <div className="flex justify-end gap-3">
  <button
  onClick={() => setShowEditRoleModal(false)}
@@ -837,7 +837,7 @@ function BillingTabContent() {
  <p className="text-xs text-muted-foreground">{invoice.amount}</p>
  </div>
  <div className="flex items-center gap-3">
- <span className="text-xs text-green-600">{invoice.status}</span>
+ <span className="text-xs text-success">{invoice.status}</span>
  <button className="text-primary hover:underline text-xs">Download</button>
  </div>
  </div>
@@ -997,7 +997,7 @@ function ApiKeysTabContent() {
  <td className="px-4 py-3 text-right">
  <button
  onClick={() => handleRevokeKey(key.id)}
- className="text-sm text-red-600 hover:underline"
+ className="text-sm text-destructive hover:underline"
  >
  Revoke
  </button>
@@ -1018,8 +1018,8 @@ function ApiKeysTabContent() {
  {createdKey ? (
  <>
  <h3 className="text-lg font-semibold text-foreground mb-4">API Key Created</h3>
- <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
- <p className="text-sm text-yellow-800 mb-2">
+ <div className="bg-warning/5 border border-warning/20 rounded-md p-4 mb-4">
+ <p className="text-sm text-warning mb-2">
  ⚠️ Make sure to copy your API key now. You won't be able to see it again!
  </p>
  <div className="flex items-center gap-2">
@@ -1081,7 +1081,7 @@ function ApiKeysTabContent() {
  ))}
  </div>
  </div>
- {createError && <p className="text-sm text-red-600">{createError}</p>}
+ {createError && <p className="text-sm text-destructive">{createError}</p>}
  <div className="flex justify-end gap-3">
  <button
  type="button"
@@ -1260,7 +1260,7 @@ function WebhooksTabContent() {
  <div className="flex justify-between items-start">
  <div>
  <div className="flex items-center gap-2 mb-2">
- <span className={`w-2 h-2 rounded-full ${webhook.active ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+ <span className={`w-2 h-2 rounded-full ${webhook.active ? 'bg-success' : 'bg-gray-400'}`}></span>
  <code className="text-sm text-foreground font-mono">{webhook.url}</code>
  </div>
  <div className="flex gap-1 flex-wrap">
@@ -1281,7 +1281,7 @@ function WebhooksTabContent() {
  </button>
  <button
  onClick={() => handleDeleteWebhook(webhook.id)}
- className="text-sm text-red-600 hover:underline"
+ className="text-sm text-destructive hover:underline"
  >
  Delete
  </button>
@@ -1331,7 +1331,7 @@ function WebhooksTabContent() {
  ))}
  </div>
  </div>
- {createError && <p className="text-sm text-red-600">{createError}</p>}
+ {createError && <p className="text-sm text-destructive">{createError}</p>}
  <div className="flex justify-end gap-3">
  <button
  type="button"
@@ -1695,15 +1695,15 @@ function AIConfigurationTabContent() {
 
  const getCostBadge = (cost: 'low' | 'medium' | 'high') => {
  switch (cost) {
- case 'low': return 'bg-green-100 text-green-800';
- case 'medium': return 'bg-yellow-100 text-yellow-800';
- case 'high': return 'bg-red-100 text-red-800';
+ case 'low': return 'bg-success/10 text-success';
+ case 'medium': return 'bg-warning/10 text-warning';
+ case 'high': return 'bg-destructive/10 text-destructive';
  }
  };
 
  const getSpeedBadge = (speed: 'fast' | 'medium' | 'slow') => {
  switch (speed) {
- case 'fast': return 'bg-blue-100 text-blue-800';
+ case 'fast': return 'bg-primary/10 text-primary';
  case 'medium': return 'bg-purple-100 text-purple-800';
  case 'slow': return 'bg-muted text-foreground';
  }
@@ -1722,10 +1722,10 @@ function AIConfigurationTabContent() {
  <div className="bg-card rounded-lg border border-border p-4">
  <div className="flex items-center justify-between mb-2">
  <div className="flex items-center gap-2">
- <span className={`w-3 h-3 rounded-full ${aiStatus?.kie.available ? 'bg-green-500' : 'bg-red-500'}`}></span>
+ <span className={`w-3 h-3 rounded-full ${aiStatus?.kie.available ? 'bg-success' : 'bg-destructive'}`}></span>
  <h4 className="font-medium text-foreground">Kie.ai</h4>
  </div>
- <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">
+ <span className="px-2 py-1 rounded text-xs bg-success/10 text-success">
  70% Savings
  </span>
  </div>
@@ -1741,10 +1741,10 @@ function AIConfigurationTabContent() {
  <div className="bg-card rounded-lg border border-border p-4">
  <div className="flex items-center justify-between mb-2">
  <div className="flex items-center gap-2">
- <span className={`w-3 h-3 rounded-full ${aiStatus?.anthropic.available ? 'bg-green-500' : 'bg-red-500'}`}></span>
+ <span className={`w-3 h-3 rounded-full ${aiStatus?.anthropic.available ? 'bg-success' : 'bg-destructive'}`}></span>
  <h4 className="font-medium text-foreground">Anthropic (Direct)</h4>
  </div>
- <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+ <span className="px-2 py-1 rounded text-xs bg-primary/10 text-primary">
  Fallback
  </span>
  </div>

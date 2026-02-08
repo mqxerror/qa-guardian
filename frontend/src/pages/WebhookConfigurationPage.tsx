@@ -85,9 +85,9 @@ export function WebhookConfigurationPage() {
   ];
 
   const availableStatuses = [
-    { value: 'passed', label: 'Passed', color: 'bg-green-100 text-green-700' },
-    { value: 'failed', label: 'Failed', color: 'bg-red-100 text-red-700' },
-    { value: 'skipped', label: 'Skipped', color: 'bg-yellow-100 text-yellow-700' },
+    { value: 'passed', label: 'Passed', color: 'bg-success/10 text-success' },
+    { value: 'failed', label: 'Failed', color: 'bg-destructive/10 text-destructive' },
+    { value: 'skipped', label: 'Skipped', color: 'bg-warning/10 text-warning' },
     { value: 'error', label: 'Error', color: 'bg-orange-100 text-orange-700' },
   ];
 
@@ -300,12 +300,12 @@ export function WebhookConfigurationPage() {
       return { color: 'bg-gray-400', label: 'Disabled' };
     }
     if (webhook.failure_count > webhook.success_count && webhook.failure_count > 0) {
-      return { color: 'bg-red-500', label: 'Failing' };
+      return { color: 'bg-destructive', label: 'Failing' };
     }
     if (webhook.success_count > 0) {
-      return { color: 'bg-green-500', label: 'Healthy' };
+      return { color: 'bg-success', label: 'Healthy' };
     }
-    return { color: 'bg-yellow-500', label: 'Pending' };
+    return { color: 'bg-warning', label: 'Pending' };
   };
 
   return (
@@ -424,7 +424,7 @@ export function WebhookConfigurationPage() {
                     {/* Feature #1304: Show batch delivery status */}
                     {webhook.batch_enabled && (
                       <div className="mt-2 flex items-center gap-2">
-                        <span className="rounded-full bg-blue-100 text-blue-700 px-2 py-0.5 text-xs font-medium">
+                        <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs font-medium">
                           Batched
                         </span>
                         <span className="text-xs text-muted-foreground">
@@ -435,10 +435,10 @@ export function WebhookConfigurationPage() {
 
                     <div className="mt-4 flex items-center gap-6 text-sm text-muted-foreground">
                       <span>
-                        <span className="text-green-600 font-medium">{webhook.success_count}</span> successful
+                        <span className="text-success font-medium">{webhook.success_count}</span> successful
                       </span>
                       <span>
-                        <span className="text-red-600 font-medium">{webhook.failure_count}</span> failed
+                        <span className="text-destructive font-medium">{webhook.failure_count}</span> failed
                       </span>
                       {webhook.last_triggered_at && (
                         <span>Last triggered: {formatDate(webhook.last_triggered_at)}</span>
@@ -718,13 +718,13 @@ export function WebhookConfigurationPage() {
                       <div
                         key={log.id}
                         className={`rounded-lg border p-4 ${
-                          log.success ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'
+                          log.success ? 'border-success/20 bg-success/5/50' : 'border-destructive/20 bg-destructive/5/50'
                         }`}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
                             <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-sm ${
-                              log.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                              log.success ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
                             }`}>
                               {log.success ? '✓' : '✗'}
                             </span>
@@ -737,13 +737,13 @@ export function WebhookConfigurationPage() {
                             </div>
                           </div>
                           <span className={`px-2 py-0.5 text-xs font-medium rounded ${
-                            log.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            log.success ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
                           }`}>
                             {log.responseStatus ? `HTTP ${log.responseStatus}` : 'Error'}
                           </span>
                         </div>
                         {log.error && (
-                          <p className="mt-2 text-sm text-red-600 bg-red-100/50 px-3 py-2 rounded">
+                          <p className="mt-2 text-sm text-destructive bg-destructive/10/50 px-3 py-2 rounded">
                             {log.error}
                           </p>
                         )}

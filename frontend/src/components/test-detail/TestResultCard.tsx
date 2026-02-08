@@ -69,9 +69,9 @@ export function TestResultCard({
  {/* Result Header */}
  <div className="flex items-center gap-3">
  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
- result.status === 'passed' ? 'bg-green-100 text-green-700' :
- result.status === 'failed' ? 'bg-red-100 text-red-700' :
- result.status === 'warning' ? 'bg-amber-100 text-amber-700' :
+ result.status === 'passed' ? 'bg-success/10 text-success' :
+ result.status === 'failed' ? 'bg-destructive/10 text-destructive' :
+ result.status === 'warning' ? 'bg-warning/10 text-warning' :
  'bg-muted text-foreground'
  }`}>
  {result.status}
@@ -91,18 +91,18 @@ export function TestResultCard({
 
  {/* Storage Quota Exceeded */}
  {result.isQuotaExceeded && (
- <div role="alert" className="mt-2 rounded-md bg-amber-100 p-3 border border-amber-300">
+ <div role="alert" className="mt-2 rounded-md bg-warning/10 p-3 border border-warning/30">
  <div className="flex items-center gap-2 mb-2">
- <span className="text-amber-600">⚠️</span>
- <span className="font-semibold text-amber-800">Storage quota exceeded</span>
+ <span className="text-warning">⚠️</span>
+ <span className="font-semibold text-warning">Storage quota exceeded</span>
  </div>
- <p className="text-sm text-amber-700 mb-2">
+ <p className="text-sm text-warning mb-2">
  Unable to save baseline or screenshot due to storage quota limits.
  </p>
  {result.suggestions && result.suggestions.length > 0 && (
  <div className="mt-2">
- <p className="text-xs font-medium text-amber-800 mb-1">Suggested actions:</p>
- <ul className="text-xs text-amber-700 list-disc list-inside space-y-0.5">
+ <p className="text-xs font-medium text-warning mb-1">Suggested actions:</p>
+ <ul className="text-xs text-warning list-disc list-inside space-y-0.5">
  {result.suggestions.map((suggestion, idx) => (
  <li key={idx}>{suggestion}</li>
  ))}
@@ -114,8 +114,8 @@ export function TestResultCard({
 
  {/* Screenshot Timeout */}
  {result.screenshotTimedOut && (
- <div className="mt-2 p-2 rounded-md bg-amber-50 border border-amber-200">
- <span className="text-xs text-amber-700">
+ <div className="mt-2 p-2 rounded-md bg-warning/5 border border-warning/20">
+ <span className="text-xs text-warning">
  ⏱️ Screenshot capture timed out after {result.screenshotTimeoutDuration || 30}s
  </span>
  </div>
@@ -123,8 +123,8 @@ export function TestResultCard({
 
  {/* Navigation Error */}
  {result.navigationError && (
- <div className="mt-2 p-2 rounded-md bg-red-50 border border-red-200">
- <span className="text-xs text-red-700">
+ <div className="mt-2 p-2 rounded-md bg-destructive/5 border border-destructive/20">
+ <span className="text-xs text-destructive">
  🚫 Navigation failed: {result.navigationErrorUrl} ({result.navigationErrorCode})
  </span>
  </div>
@@ -132,26 +132,26 @@ export function TestResultCard({
 
  {/* Browser Crash */}
  {result.browserCrash && (
- <div className="mt-2 p-3 rounded-md bg-red-50 border border-red-200">
+ <div className="mt-2 p-3 rounded-md bg-destructive/5 border border-destructive/20">
  <div className="flex items-center gap-2">
- <span className="text-red-600">💥</span>
- <span className="text-sm font-medium text-red-700">Browser crashed during test</span>
+ <span className="text-destructive">💥</span>
+ <span className="text-sm font-medium text-destructive">Browser crashed during test</span>
  </div>
  {result.crashReason && (
- <p className="mt-1 text-xs text-red-600">{result.crashReason}</p>
+ <p className="mt-1 text-xs text-destructive">{result.crashReason}</p>
  )}
  </div>
  )}
 
  {/* Page Oversized */}
  {result.pageOversized && (
- <div className="mt-2 p-3 rounded-md bg-amber-50 border border-amber-200">
+ <div className="mt-2 p-3 rounded-md bg-warning/5 border border-warning/20">
  <div className="flex items-center gap-2">
- <span className="text-amber-600">📐</span>
- <span className="text-sm font-medium text-amber-700">Page dimensions exceed limits</span>
+ <span className="text-warning">📐</span>
+ <span className="text-sm font-medium text-warning">Page dimensions exceed limits</span>
  </div>
  {result.oversizedDimensions && (
- <p className="mt-1 text-xs text-amber-600">
+ <p className="mt-1 text-xs text-warning">
  {result.oversizedDimensions.width}x{result.oversizedDimensions.height}px
  </p>
  )}
@@ -160,25 +160,25 @@ export function TestResultCard({
 
  {/* K6 Errors */}
  {result.k6ImportError && (
- <div className="mt-2 p-3 rounded-md bg-red-50 border border-red-200">
+ <div className="mt-2 p-3 rounded-md bg-destructive/5 border border-destructive/20">
  <div className="flex items-center gap-2 mb-2">
- <span className="text-red-600">📥</span>
- <span className="text-sm font-medium text-red-700">K6 Script Import Error</span>
+ <span className="text-destructive">📥</span>
+ <span className="text-sm font-medium text-destructive">K6 Script Import Error</span>
  </div>
  {result.k6ImportErrorDetails && (
- <pre className="text-xs text-red-600 overflow-x-auto">{result.k6ImportErrorDetails}</pre>
+ <pre className="text-xs text-destructive overflow-x-auto">{result.k6ImportErrorDetails}</pre>
  )}
  </div>
  )}
 
  {result.k6ThresholdConfigError && (
- <div className="mt-2 p-3 rounded-md bg-amber-50 border border-amber-200">
+ <div className="mt-2 p-3 rounded-md bg-warning/5 border border-warning/20">
  <div className="flex items-center gap-2 mb-2">
- <span className="text-amber-600">⚙️</span>
- <span className="text-sm font-medium text-amber-700">K6 Threshold Configuration Error</span>
+ <span className="text-warning">⚙️</span>
+ <span className="text-sm font-medium text-warning">K6 Threshold Configuration Error</span>
  </div>
  {result.k6ThresholdConfigErrors && result.k6ThresholdConfigErrors.length > 0 && (
- <ul className="text-xs text-amber-600 list-disc list-inside">
+ <ul className="text-xs text-warning list-disc list-inside">
  {result.k6ThresholdConfigErrors.map((err, idx) => (
  <li key={idx}>{err}</li>
  ))}
@@ -188,49 +188,49 @@ export function TestResultCard({
  )}
 
  {result.k6SyntaxError && (
- <div className="mt-2 p-3 rounded-md bg-red-50 border border-red-200">
+ <div className="mt-2 p-3 rounded-md bg-destructive/5 border border-destructive/20">
  <div className="flex items-center gap-2 mb-2">
- <span className="text-red-600">📝</span>
- <span className="text-sm font-medium text-red-700">K6 Script Syntax Error</span>
+ <span className="text-destructive">📝</span>
+ <span className="text-sm font-medium text-destructive">K6 Script Syntax Error</span>
  </div>
  {result.k6SyntaxErrorDetails && (
- <pre className="text-xs text-red-600 overflow-x-auto whitespace-pre-wrap">{result.k6SyntaxErrorDetails}</pre>
+ <pre className="text-xs text-destructive overflow-x-auto whitespace-pre-wrap">{result.k6SyntaxErrorDetails}</pre>
  )}
  </div>
  )}
 
  {result.k6RuntimeError && (
- <div className="mt-2 p-3 rounded-md bg-red-50 border border-red-200">
+ <div className="mt-2 p-3 rounded-md bg-destructive/5 border border-destructive/20">
  <div className="flex items-center gap-2 mb-2">
- <span className="text-red-600">⚡</span>
- <span className="text-sm font-medium text-red-700">K6 Runtime Error</span>
+ <span className="text-destructive">⚡</span>
+ <span className="text-sm font-medium text-destructive">K6 Runtime Error</span>
  </div>
  {result.k6RuntimeErrorDetails && (
- <pre className="text-xs text-red-600 overflow-x-auto whitespace-pre-wrap">{result.k6RuntimeErrorDetails}</pre>
+ <pre className="text-xs text-destructive overflow-x-auto whitespace-pre-wrap">{result.k6RuntimeErrorDetails}</pre>
  )}
  </div>
  )}
 
  {result.k6ServerUnavailable && (
- <div className="mt-2 p-3 rounded-md bg-amber-50 border border-amber-200">
+ <div className="mt-2 p-3 rounded-md bg-warning/5 border border-warning/20">
  <div className="flex items-center gap-2 mb-2">
- <span className="text-amber-600">🖥️</span>
- <span className="text-sm font-medium text-amber-700">K6 Server Unavailable</span>
+ <span className="text-warning">🖥️</span>
+ <span className="text-sm font-medium text-warning">K6 Server Unavailable</span>
  </div>
  {result.k6ServerErrorDetails && (
- <p className="text-xs text-amber-600">{result.k6ServerErrorDetails}</p>
+ <p className="text-xs text-warning">{result.k6ServerErrorDetails}</p>
  )}
  </div>
  )}
 
  {result.k6ResourceExhausted && (
- <div className="mt-2 p-3 rounded-md bg-red-50 border border-red-200">
+ <div className="mt-2 p-3 rounded-md bg-destructive/5 border border-destructive/20">
  <div className="flex items-center gap-2 mb-2">
- <span className="text-red-600">💾</span>
- <span className="text-sm font-medium text-red-700">K6 Resource Exhausted</span>
+ <span className="text-destructive">💾</span>
+ <span className="text-sm font-medium text-destructive">K6 Resource Exhausted</span>
  </div>
  {result.k6ResourceErrorDetails && (
- <p className="text-xs text-red-600">{result.k6ResourceErrorDetails}</p>
+ <p className="text-xs text-destructive">{result.k6ResourceErrorDetails}</p>
  )}
  </div>
  )}

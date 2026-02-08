@@ -174,12 +174,12 @@ export function AIUsageAnalyticsDashboard() {
   const getTrendColor = (trend: string, metric: string) => {
     // For costs, down is good, up is bad
     if (metric === 'cost') {
-      if (trend === 'up') return 'text-red-400';
-      if (trend === 'down') return 'text-green-400';
+      if (trend === 'up') return 'text-destructive';
+      if (trend === 'down') return 'text-success';
     }
     // For others, up is good
-    if (trend === 'up') return 'text-green-400';
-    if (trend === 'down') return 'text-red-400';
+    if (trend === 'up') return 'text-success';
+    if (trend === 'down') return 'text-destructive';
     return 'text-muted-foreground';
   };
 
@@ -225,7 +225,7 @@ export function AIUsageAnalyticsDashboard() {
               <button
                 onClick={handleExport}
                 disabled={isExporting}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="px-4 py-2 bg-success text-white rounded-lg hover:bg-success disabled:opacity-50"
               >
                 {isExporting ? '⏳ Exporting...' : '📥 Export'}
               </button>
@@ -236,7 +236,7 @@ export function AIUsageAnalyticsDashboard() {
 
       {/* Savings Banner */}
       {analytics && (
-        <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl p-6 mb-8">
+        <div className="bg-gradient-to-r from-success to-emerald-600 text-white rounded-xl p-6 mb-8">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold">💰 You've Saved {formatCurrency(analytics.savings.total_saved)}</h2>
@@ -296,7 +296,7 @@ export function AIUsageAnalyticsDashboard() {
           <h2 className="text-xl font-bold mb-6">🔄 Provider Comparison: Kie.ai vs Anthropic</h2>
           <div className="grid grid-cols-2 gap-8">
             {/* Kie.ai */}
-            <div className="p-6 bg-blue-500/10 rounded-xl">
+            <div className="p-6 bg-primary/10 rounded-xl">
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-3xl">🤖</span>
                 <div>
@@ -311,7 +311,7 @@ export function AIUsageAnalyticsDashboard() {
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Total Cost</div>
-                  <div className="text-xl font-bold text-green-400">{formatCurrency(comparison.comparison.kie.total_cost)}</div>
+                  <div className="text-xl font-bold text-success">{formatCurrency(comparison.comparison.kie.total_cost)}</div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Avg Cost/Req</div>
@@ -372,7 +372,7 @@ export function AIUsageAnalyticsDashboard() {
             <div className="flex items-center gap-2">
               <span className="text-xl">💡</span>
               <span className="font-medium">{comparison.recommendation}</span>
-              <span className="ml-auto text-green-400 font-bold">
+              <span className="ml-auto text-success font-bold">
                 {comparison.cost_difference_percent}% cost difference
               </span>
             </div>
@@ -392,7 +392,7 @@ export function AIUsageAnalyticsDashboard() {
                 <div key={idx} className="flex-1 flex flex-col items-center gap-1">
                   <div className="w-full flex flex-col" style={{ height: `${Math.max((totalRequests / maxRequests) * 200, 4)}px` }}>
                     <div
-                      className="w-full bg-blue-500 rounded-t"
+                      className="w-full bg-primary rounded-t"
                       style={{ height: `${(day.kie_requests / totalRequests) * 100}%` }}
                       title={`Kie.ai: ${day.kie_requests} requests`}
                     ></div>
@@ -411,7 +411,7 @@ export function AIUsageAnalyticsDashboard() {
           </div>
           <div className="flex items-center justify-center gap-6 mt-4">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded"></div>
+              <div className="w-3 h-3 bg-primary rounded"></div>
               <span className="text-sm">Kie.ai</span>
             </div>
             <div className="flex items-center gap-2">
@@ -436,7 +436,7 @@ export function AIUsageAnalyticsDashboard() {
                     <div className="w-32 text-sm font-medium truncate">{model}</div>
                     <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-blue-500 to-blue-600"
+                        className="h-full bg-gradient-to-r from-primary to-primary"
                         style={{ width: `${data.percentage}%` }}
                       ></div>
                     </div>
@@ -486,7 +486,7 @@ export function AIUsageAnalyticsDashboard() {
                 <div className="text-sm text-muted-foreground">Peak Hour</div>
                 <div className="text-xs text-muted-foreground">{analytics.peak_usage.requests} requests</div>
               </div>
-              <div className="text-center p-4 bg-blue-500/10 rounded-lg">
+              <div className="text-center p-4 bg-primary/10 rounded-lg">
                 <div className="text-4xl mb-2">📆</div>
                 <div className="text-2xl font-bold">{analytics.peak_usage.day_of_week}</div>
                 <div className="text-sm text-muted-foreground">Busiest Day</div>

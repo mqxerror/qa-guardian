@@ -1211,9 +1211,9 @@ export function AnalyticsPage() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className={`text-sm font-medium ${
-                          test.failure_percentage >= 80 ? 'text-red-600' :
+                          test.failure_percentage >= 80 ? 'text-destructive' :
                           test.failure_percentage >= 50 ? 'text-orange-500' :
-                          'text-yellow-600'
+                          'text-warning'
                         }`}>
                           {test.failure_percentage}%
                         </span>
@@ -1272,8 +1272,8 @@ export function AnalyticsPage() {
                       <span className="text-muted-foreground">Pass Rate</span>
                       <span className={`font-medium ${
                         stat.pass_rate >= 80 ? 'text-emerald-600' :
-                        stat.pass_rate >= 50 ? 'text-yellow-600' :
-                        'text-red-600'
+                        stat.pass_rate >= 50 ? 'text-warning' :
+                        'text-destructive'
                       }`}>
                         {stat.pass_rate}%
                       </span>
@@ -1282,8 +1282,8 @@ export function AnalyticsPage() {
                       <div
                         className={`h-full transition-all ${
                           stat.pass_rate >= 80 ? 'bg-emerald-500' :
-                          stat.pass_rate >= 50 ? 'bg-yellow-500' :
-                          'bg-red-500'
+                          stat.pass_rate >= 50 ? 'bg-warning' :
+                          'bg-destructive'
                         }`}
                         style={{ width: `${stat.pass_rate}%` }}
                       />
@@ -1365,18 +1365,18 @@ export function AnalyticsPage() {
                             <div
                               className={`h-full ${
                                 project.pass_rate >= 80 ? 'bg-emerald-500' :
-                                project.pass_rate >= 50 ? 'bg-yellow-500' :
+                                project.pass_rate >= 50 ? 'bg-warning' :
                                 project.total_runs === 0 ? 'bg-muted' :
-                                'bg-red-500'
+                                'bg-destructive'
                               }`}
                               style={{ width: `${project.pass_rate}%` }}
                             />
                           </div>
                           <span className={`text-sm font-medium ${
                             project.pass_rate >= 80 ? 'text-emerald-600' :
-                            project.pass_rate >= 50 ? 'text-yellow-600' :
+                            project.pass_rate >= 50 ? 'text-warning' :
                             project.total_runs === 0 ? 'text-muted-foreground' :
-                            'text-red-600'
+                            'text-destructive'
                           }`}>
                             {project.total_runs === 0 ? '-' : `${project.pass_rate}%`}
                           </span>
@@ -1459,13 +1459,13 @@ export function AnalyticsPage() {
                       <span className="text-sm text-muted-foreground">Pass Rate:</span>
                       <span className={`text-sm font-medium ${
                         test.pass_rate >= 70 ? 'text-emerald-600' :
-                        test.pass_rate >= 40 ? 'text-yellow-600' :
-                        'text-red-600'
+                        test.pass_rate >= 40 ? 'text-warning' :
+                        'text-destructive'
                       }`}>{test.pass_rate}%</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-emerald-600">{test.pass_count} passed</span>
-                      <span className="text-sm text-red-600">{test.fail_count} failed</span>
+                      <span className="text-sm text-destructive">{test.fail_count} failed</span>
                     </div>
                   </div>
 

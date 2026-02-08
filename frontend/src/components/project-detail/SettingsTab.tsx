@@ -328,7 +328,7 @@ export function SettingsTab({
  <td className="py-3 px-4">
  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
  member.role === 'developer'
- ? 'bg-blue-100 text-blue-800'
+ ? 'bg-primary/10 text-primary'
  : 'bg-muted text-foreground'
  }`}>
  {member.role}
@@ -337,7 +337,7 @@ export function SettingsTab({
  <td className="py-3 px-4 text-right">
  <button
  onClick={() => handleRemoveMember(member.user_id)}
- className="text-sm text-red-600 hover:text-red-700"
+ className="text-sm text-destructive hover:text-destructive"
  >
  Remove
  </button>
@@ -463,7 +463,7 @@ export function SettingsTab({
  {channel.suppress_on_retry_success && (
  <>
  <span>-</span>
- <span className="text-amber-600" title="Alert is suppressed if test passes on retry">
+ <span className="text-warning" title="Alert is suppressed if test passes on retry">
  Retry-aware
  </span>
  </>
@@ -484,7 +484,7 @@ export function SettingsTab({
  </button>
  <button
  onClick={() => handleDeleteAlert(channel.id)}
- className="rounded-md px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+ className="rounded-md px-3 py-1.5 text-sm text-destructive hover:bg-destructive/5"
  >
  Delete
  </button>
@@ -521,12 +521,12 @@ export function SettingsTab({
  key={entry.id}
  className={`flex items-start gap-3 rounded-lg border p-3 ${
  entry.success
- ? 'border-green-200 bg-green-50/50'
- : 'border-red-200 bg-red-50/50'
+ ? 'border-success/20 bg-success/5/50'
+ : 'border-destructive/20 bg-destructive/5/50'
  }`}
  >
  <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
- entry.success ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+ entry.success ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
  }`}>
  {entry.success ? (
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -542,7 +542,7 @@ export function SettingsTab({
  <div className="flex items-center gap-2 flex-wrap">
  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
  entry.type === 'email'
- ? 'bg-blue-100 text-blue-700'
+ ? 'bg-primary/10 text-primary'
  : 'bg-purple-100 text-purple-700'
  }`}>
  {entry.type === 'email' ? 'Email' : 'Webhook'}
@@ -550,7 +550,7 @@ export function SettingsTab({
  <span className="text-sm font-medium text-foreground truncate">
  {entry.channelName}
  </span>
- <span className={`text-xs ${entry.success ? 'text-green-600' : 'text-red-600'}`}>
+ <span className={`text-xs ${entry.success ? 'text-success' : 'text-destructive'}`}>
  {entry.success ? 'Sent' : 'Failed'}
  </span>
  </div>
@@ -563,7 +563,7 @@ export function SettingsTab({
  )}
  </div>
  {entry.error && (
- <div className="mt-1 text-xs text-red-600">
+ <div className="mt-1 text-xs text-destructive">
  Error: {entry.error}
  </div>
  )}
@@ -665,11 +665,11 @@ export function SettingsTab({
  </td>
  <td className="px-4 py-3 text-sm">
  {envVar.is_secret ? (
- <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+ <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-warning/10 text-warning">
  Secret
  </span>
  ) : (
- <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+ <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
  Plain
  </span>
  )}
@@ -685,7 +685,7 @@ export function SettingsTab({
  </button>
  <button
  onClick={() => handleDeleteEnvVar(envVar.id)}
- className="text-sm text-red-600 hover:underline"
+ className="text-sm text-destructive hover:underline"
  >
  Delete
  </button>
@@ -892,7 +892,7 @@ export function SettingsTab({
  {/* Save Button */}
  <div className="flex items-center justify-between pt-4 border-t border-border">
  {healingSettingsMessage && (
- <p className={`text-sm ${healingSettingsMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+ <p className={`text-sm ${healingSettingsMessage.type === 'success' ? 'text-success' : 'text-destructive'}`}>
  {healingSettingsMessage.text}
  </p>
  )}

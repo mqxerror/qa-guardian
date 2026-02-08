@@ -131,11 +131,11 @@ export function usePerformanceHandlers(token: string | null): UsePerformanceHand
   const getPerfStatusBadge = useCallback((status: string | undefined) => {
     switch (status) {
       case 'good':
-        return <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">🟢 Good</span>;
+        return <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-xs font-medium text-success">🟢 Good</span>;
       case 'needs_improvement':
-        return <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-700">🟡 Needs Work</span>;
+        return <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-1 text-xs font-medium text-warning">🟡 Needs Work</span>;
       case 'poor':
-        return <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">🔴 Poor</span>;
+        return <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive">🔴 Poor</span>;
       default:
         return <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs font-medium text-foreground">⚪ Unknown</span>;
     }
@@ -152,9 +152,9 @@ export function usePerformanceHandlers(token: string | null): UsePerformanceHand
     };
     const t = thresholds[metric];
     if (!t) return 'text-foreground';
-    if (value <= t.good) return 'text-green-600';
-    if (value >= t.poor) return 'text-red-600';
-    return 'text-yellow-600';
+    if (value <= t.good) return 'text-success';
+    if (value >= t.poor) return 'text-destructive';
+    return 'text-warning';
   }, []);
 
   return {

@@ -43,8 +43,8 @@ export const FilmstripSection: React.FC<{ lighthouse: any }> = ({ lighthouse }) 
  />
  {frame.label && (
  <span className={`absolute -top-2 left-1/2 -translate-x-1/2 text-[10px] px-1.5 py-0.5 rounded font-medium ${
- frame.label === 'LCP' ? 'bg-green-100 text-green-700' :
- frame.label === 'TTI' ? 'bg-blue-100 text-blue-700' :
+ frame.label === 'LCP' ? 'bg-success/10 text-success' :
+ frame.label === 'TTI' ? 'bg-primary/10 text-primary' :
  'bg-muted text-foreground'
  }`}>
  {frame.label}
@@ -76,7 +76,7 @@ export const OpportunitiesSection: React.FC<OpportunitiesSectionProps> = ({
  toggleOpportunity,
 }) => (
  <div className="border border-border rounded-xl overflow-hidden mb-6 shadow-sm">
- <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-border flex items-center justify-between">
+ <div className="p-4 bg-gradient-to-r from-orange-50 to-warning/5 border-b border-border flex items-center justify-between">
  <h4 className="font-semibold text-foreground flex items-center gap-2">
  <span className="text-lg">💡</span> Opportunities
  </h4>
@@ -130,7 +130,7 @@ export const DiagnosticsSection: React.FC<DiagnosticsSectionProps> = ({
  toggleDiagnostic,
 }) => (
  <div className="border border-border rounded-xl overflow-hidden shadow-sm">
- <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-border flex items-center justify-between">
+ <div className="p-4 bg-gradient-to-r from-primary/5 to-indigo-50 border-b border-border flex items-center justify-between">
  <h4 className="font-semibold text-foreground flex items-center gap-2">
  <span className="text-lg">🔍</span> Diagnostics
  </h4>
@@ -192,21 +192,21 @@ export const SecurityInsightsSection: React.FC<SecurityInsightsSectionProps> = (
  </h4>
  <div className="flex items-center gap-2">
  {lighthouse.csp?.blocksLighthouse && (
- <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+ <span className="text-xs bg-destructive/10 text-destructive px-2 py-1 rounded-full">
  CSP Issue
  </span>
  )}
  {lighthouse.mixedContent?.detected && (
  <span className={`text-xs px-2 py-1 rounded-full ${
  lighthouse.mixedContent.securityImpact === 'high'
- ? 'bg-red-100 text-red-700'
- : 'bg-yellow-100 text-yellow-700'
+ ? 'bg-destructive/10 text-destructive'
+ : 'bg-warning/10 text-warning'
  }`}>
  Mixed Content ({lighthouse.mixedContent.count})
  </span>
  )}
  {lighthouse.authentication?.required && (
- <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+ <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
  Auth Required
  </span>
  )}
@@ -226,14 +226,14 @@ export const SecurityInsightsSection: React.FC<SecurityInsightsSectionProps> = (
  {lighthouse.csp && (
  <div className="p-4 bg-background">
  <div className="flex items-center gap-2 mb-2">
- <span className={`w-3 h-3 rounded-full ${lighthouse.csp.detected ? (lighthouse.csp.blocksLighthouse ? 'bg-red-500' : 'bg-green-500') : 'bg-gray-400'}`}></span>
+ <span className={`w-3 h-3 rounded-full ${lighthouse.csp.detected ? (lighthouse.csp.blocksLighthouse ? 'bg-destructive' : 'bg-success') : 'bg-gray-400'}`}></span>
  <h5 className="font-medium text-foreground">Content Security Policy</h5>
  <span className={`text-xs px-2 py-0.5 rounded ${
  lighthouse.csp.detected
  ? (lighthouse.csp.blocksLighthouse
- ? 'bg-red-100 text-red-600'
- : 'bg-green-100 text-green-600')
- : 'bg-yellow-100 text-yellow-600'
+ ? 'bg-destructive/10 text-destructive'
+ : 'bg-success/10 text-success')
+ : 'bg-warning/10 text-warning'
  }`}>
  {lighthouse.csp.detected
  ? (lighthouse.csp.blocksLighthouse ? 'Restrictive' : 'Present')
@@ -241,10 +241,10 @@ export const SecurityInsightsSection: React.FC<SecurityInsightsSectionProps> = (
  </span>
  </div>
  {lighthouse.csp.warning && (
- <p className="text-sm text-yellow-600 mb-2">⚠️ {lighthouse.csp.warning}</p>
+ <p className="text-sm text-warning mb-2">⚠️ {lighthouse.csp.warning}</p>
  )}
  {lighthouse.csp.suggestion && (
- <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-700">
+ <div className="mt-2 p-2 bg-primary/5 rounded text-sm text-primary">
  💡 {lighthouse.csp.suggestion}
  </div>
  )}
@@ -255,7 +255,7 @@ export const SecurityInsightsSection: React.FC<SecurityInsightsSectionProps> = (
  {lighthouse.mixedContent && lighthouse.mixedContent.detected && (
  <div className="p-4 bg-background">
  <div className="flex items-center gap-2 mb-2">
- <span className={`w-3 h-3 rounded-full ${lighthouse.mixedContent.securityImpact === 'high' ? 'bg-red-500' : 'bg-yellow-500'}`}></span>
+ <span className={`w-3 h-3 rounded-full ${lighthouse.mixedContent.securityImpact === 'high' ? 'bg-destructive' : 'bg-warning'}`}></span>
  <h5 className="font-medium text-foreground">Mixed Content</h5>
  </div>
  {lighthouse.mixedContent.warning && (
@@ -274,14 +274,14 @@ export const SecurityInsightsSection: React.FC<SecurityInsightsSectionProps> = (
  {lighthouse.authentication && lighthouse.authentication.required && (
  <div className="p-4 bg-background">
  <div className="flex items-center gap-2 mb-2">
- <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+ <span className="w-3 h-3 rounded-full bg-primary"></span>
  <h5 className="font-medium text-foreground">Authentication Detection</h5>
  </div>
  {lighthouse.authentication.warning && (
- <p className="text-sm text-yellow-600 mb-2">⚠️ {lighthouse.authentication.warning}</p>
+ <p className="text-sm text-warning mb-2">⚠️ {lighthouse.authentication.warning}</p>
  )}
  {lighthouse.authentication.suggestion && (
- <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-700">
+ <div className="mt-2 p-2 bg-primary/5 rounded text-sm text-primary">
  💡 {lighthouse.authentication.suggestion}
  </div>
  )}

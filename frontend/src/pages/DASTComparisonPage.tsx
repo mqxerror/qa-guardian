@@ -271,17 +271,17 @@ export function DASTComparisonPage() {
 
  const getRiskColor = (risk: DASTCompareRisk) => {
  switch (risk) {
- case 'High': return 'text-red-600 bg-red-100';
- case 'Medium': return 'text-amber-600 bg-amber-100';
- case 'Low': return 'text-blue-600 bg-blue-100';
+ case 'High': return 'text-destructive bg-destructive/10';
+ case 'Medium': return 'text-warning bg-warning/10';
+ case 'Low': return 'text-primary bg-primary/10';
  case 'Informational': return 'text-foreground bg-muted';
  }
  };
 
  const renderAlertCard = (alert: DASTCompareAlert, status: 'new' | 'fixed' | 'unchanged') => (
  <div key={alert.id} className={`p-4 rounded-lg border ${
- status === 'new' ? 'border-red-200 bg-red-50/50' :
- status === 'fixed' ? 'border-green-200 bg-green-50/50' :
+ status === 'new' ? 'border-destructive/20 bg-destructive/5/50' :
+ status === 'fixed' ? 'border-success/20 bg-success/5/50' :
  'border-border bg-card'
  }`}>
  <div className="flex items-start justify-between mb-2">
@@ -290,12 +290,12 @@ export function DASTComparisonPage() {
  {alert.risk}
  </span>
  {status === 'new' && (
- <span className="px-2 py-0.5 rounded text-xs font-medium text-red-600 bg-red-100">
+ <span className="px-2 py-0.5 rounded text-xs font-medium text-destructive bg-destructive/10">
  NEW
  </span>
  )}
  {status === 'fixed' && (
- <span className="px-2 py-0.5 rounded text-xs font-medium text-green-600 bg-green-100">
+ <span className="px-2 py-0.5 rounded text-xs font-medium text-success bg-success/10">
  FIXED
  </span>
  )}
@@ -384,7 +384,7 @@ export function DASTComparisonPage() {
  <button
  onClick={runNewScan}
  disabled={isScanning || !selectedProject || !scanTarget}
- className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+ className="px-6 py-2 bg-destructive text-white rounded-md hover:bg-destructive disabled:opacity-50 flex items-center gap-2"
  >
  {isScanning && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
  {isScanning ? 'Scanning...' : 'Run DAST Scan'}
@@ -395,8 +395,8 @@ export function DASTComparisonPage() {
  </div>
 
  {error && (
- <div className="mt-3 p-3 rounded-md bg-red-50 border border-red-200">
- <p className="text-sm text-red-600">{error}</p>
+ <div className="mt-3 p-3 rounded-md bg-destructive/5 border border-destructive/20">
+ <p className="text-sm text-destructive">{error}</p>
  </div>
  )}
  </div>
@@ -414,7 +414,7 @@ export function DASTComparisonPage() {
  <div>
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
  scan.scanProfile === 'full' ? 'bg-purple-100 text-purple-600' :
- scan.scanProfile === 'api' ? 'bg-blue-100 text-blue-600' :
+ scan.scanProfile === 'api' ? 'bg-primary/10 text-primary' :
  'bg-muted text-foreground'
  }`}>
  {scan.scanProfile}
@@ -429,17 +429,17 @@ export function DASTComparisonPage() {
  </div>
  <div className="flex items-center gap-3">
  {scan.summary.byRisk.high > 0 && (
- <span className="px-2 py-0.5 rounded text-xs font-medium text-red-600 bg-red-100">
+ <span className="px-2 py-0.5 rounded text-xs font-medium text-destructive bg-destructive/10">
  {scan.summary.byRisk.high} High
  </span>
  )}
  {scan.summary.byRisk.medium > 0 && (
- <span className="px-2 py-0.5 rounded text-xs font-medium text-amber-600 bg-amber-100">
+ <span className="px-2 py-0.5 rounded text-xs font-medium text-warning bg-warning/10">
  {scan.summary.byRisk.medium} Medium
  </span>
  )}
  {scan.summary.byRisk.low > 0 && (
- <span className="px-2 py-0.5 rounded text-xs font-medium text-blue-600 bg-blue-100">
+ <span className="px-2 py-0.5 rounded text-xs font-medium text-primary bg-primary/10">
  {scan.summary.byRisk.low} Low
  </span>
  )}
@@ -541,32 +541,32 @@ export function DASTComparisonPage() {
  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
  <div className={`rounded-lg border p-4 ${
  comparisonResult.summary.overallImprovement
- ? 'border-green-200 bg-green-50'
- : 'border-amber-200 bg-amber-50'
+ ? 'border-success/20 bg-success/5'
+ : 'border-warning/20 bg-warning/5'
  }`}>
  <div className="flex items-center gap-2 mb-1">
  <span className="text-2xl">{comparisonResult.summary.overallImprovement ? '📈' : '📉'}</span>
  <span className="text-sm font-medium text-foreground">Overall Status</span>
  </div>
- <p className={`text-lg font-bold ${comparisonResult.summary.overallImprovement ? 'text-green-600' : 'text-amber-600'}`}>
+ <p className={`text-lg font-bold ${comparisonResult.summary.overallImprovement ? 'text-success' : 'text-warning'}`}>
  {comparisonResult.summary.overallImprovement ? 'Improved' : 'Needs Attention'}
  </p>
  </div>
 
- <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+ <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
  <div className="flex items-center gap-2 mb-1">
  <span className="text-2xl">🆕</span>
  <span className="text-sm font-medium text-foreground">New Findings</span>
  </div>
- <p className="text-2xl font-bold text-red-600">{comparisonResult.summary.totalNew}</p>
+ <p className="text-2xl font-bold text-destructive">{comparisonResult.summary.totalNew}</p>
  </div>
 
- <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+ <div className="rounded-lg border border-success/20 bg-success/5 p-4">
  <div className="flex items-center gap-2 mb-1">
  <span className="text-2xl">✅</span>
  <span className="text-sm font-medium text-foreground">Fixed Findings</span>
  </div>
- <p className="text-2xl font-bold text-green-600">{comparisonResult.summary.totalFixed}</p>
+ <p className="text-2xl font-bold text-success">{comparisonResult.summary.totalFixed}</p>
  </div>
 
  <div className="rounded-lg border border-border bg-card p-4">
@@ -591,11 +591,11 @@ export function DASTComparisonPage() {
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getRiskColor(risk.charAt(0).toUpperCase() + risk.slice(1) as DASTCompareRisk)}`}>
  {risk.charAt(0).toUpperCase() + risk.slice(1)}
  </span>
- <span className={`font-medium ${isImproved ? 'text-green-600' : isWorse ? 'text-red-600' : 'text-muted-foreground'}`}>
+ <span className={`font-medium ${isImproved ? 'text-success' : isWorse ? 'text-destructive' : 'text-muted-foreground'}`}>
  {delta > 0 ? '+' : ''}{delta}
  </span>
- {isImproved && <span className="text-green-600">↓</span>}
- {isWorse && <span className="text-red-600">↑</span>}
+ {isImproved && <span className="text-success">↓</span>}
+ {isWorse && <span className="text-destructive">↑</span>}
  </div>
  );
  })}
@@ -609,7 +609,7 @@ export function DASTComparisonPage() {
  onClick={() => setActiveTab('new')}
  className={`flex-1 px-4 py-3 text-sm font-medium ${
  activeTab === 'new'
- ? 'text-red-600 border-b-2 border-red-500'
+ ? 'text-destructive border-b-2 border-destructive'
  : 'text-muted-foreground hover:text-foreground'
  }`}
  >
@@ -619,7 +619,7 @@ export function DASTComparisonPage() {
  onClick={() => setActiveTab('fixed')}
  className={`flex-1 px-4 py-3 text-sm font-medium ${
  activeTab === 'fixed'
- ? 'text-green-600 border-b-2 border-green-500'
+ ? 'text-success border-b-2 border-success'
  : 'text-muted-foreground hover:text-foreground'
  }`}
  >

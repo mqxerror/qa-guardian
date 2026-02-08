@@ -259,15 +259,15 @@ export function ApiKeysPage() {
                 // Show the created key (only shown once!)
                 <div>
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                      <svg aria-hidden="true" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
+                      <svg aria-hidden="true" className="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
                     <h3 className="text-lg font-semibold text-foreground">API Key Created</h3>
                   </div>
-                  <div className="rounded-md bg-amber-50 border border-amber-200 p-3 mb-4">
-                    <p className="text-sm text-amber-800 font-medium">
+                  <div className="rounded-md bg-warning/5 border border-warning/20 p-3 mb-4">
+                    <p className="text-sm text-warning font-medium">
                       Make sure to copy your API key now. You won't be able to see it again!
                     </p>
                   </div>

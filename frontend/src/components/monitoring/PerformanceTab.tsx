@@ -95,8 +95,8 @@ export function PerformanceTab({
                   </td>
                   <td className="px-4 py-3">
                     <span className={`text-lg font-bold ${
-                      (check.latest_score || 0) >= 90 ? 'text-green-600' :
-                      (check.latest_score || 0) >= 50 ? 'text-yellow-600' : 'text-red-600'
+                      (check.latest_score || 0) >= 90 ? 'text-success' :
+                      (check.latest_score || 0) >= 50 ? 'text-warning' : 'text-destructive'
                     }`}>
                       {check.latest_score || '-'}
                     </span>
@@ -118,7 +118,7 @@ export function PerformanceTab({
                       <button
                         onClick={() => deletePerformanceCheck(check.id)}
                         title="Delete"
-                        className="rounded p-1.5 text-muted-foreground hover:bg-red-100 hover:text-red-600"
+                        className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                       >
                         🗑️
                       </button>
@@ -235,8 +235,8 @@ export function PerformanceTab({
                         <dd className="flex items-center gap-1">
                           {performanceTrends.trends.lcp.avg}ms
                           <span className={
-                            performanceTrends.trends.lcp.trend === 'improving' ? 'text-green-600' :
-                            performanceTrends.trends.lcp.trend === 'degrading' ? 'text-red-600' : 'text-muted-foreground'
+                            performanceTrends.trends.lcp.trend === 'improving' ? 'text-success' :
+                            performanceTrends.trends.lcp.trend === 'degrading' ? 'text-destructive' : 'text-muted-foreground'
                           }>
                             {performanceTrends.trends.lcp.trend === 'improving' ? '↓' :
                              performanceTrends.trends.lcp.trend === 'degrading' ? '↑' : '→'}
@@ -248,8 +248,8 @@ export function PerformanceTab({
                         <dd className="flex items-center gap-1">
                           {performanceTrends.trends.lighthouse_score.avg}
                           <span className={
-                            performanceTrends.trends.lighthouse_score.trend === 'improving' ? 'text-green-600' :
-                            performanceTrends.trends.lighthouse_score.trend === 'degrading' ? 'text-red-600' : 'text-muted-foreground'
+                            performanceTrends.trends.lighthouse_score.trend === 'improving' ? 'text-success' :
+                            performanceTrends.trends.lighthouse_score.trend === 'degrading' ? 'text-destructive' : 'text-muted-foreground'
                           }>
                             {performanceTrends.trends.lighthouse_score.trend === 'improving' ? '↑' :
                              performanceTrends.trends.lighthouse_score.trend === 'degrading' ? '↓' : '→'}

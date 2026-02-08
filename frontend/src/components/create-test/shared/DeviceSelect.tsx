@@ -74,7 +74,7 @@ export const DeviceSelect: React.FC<DeviceSelectProps> = ({
  value={value.preset}
  onChange={handlePresetChange}
  disabled={disabled}
- className="block w-full pl-3 pr-10 py-2 text-base border-border focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+ className="block w-full pl-3 pr-10 py-2 text-base border-border focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
  >
  {Object.entries(CATEGORY_CONFIG).map(([category, config]) => (
  <optgroup key={category} label={`${config.icon} ${config.label}`}>
@@ -97,12 +97,12 @@ export const DeviceSelect: React.FC<DeviceSelectProps> = ({
  📐 {currentPreset.viewport.width}x{currentPreset.viewport.height}
  </span>
  {currentPreset.isMobile && (
- <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+ <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
  📱 Mobile
  </span>
  )}
  {currentPreset.hasTouch && (
- <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+ <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success/10 text-success">
  👆 Touch
  </span>
  )}
@@ -165,7 +165,7 @@ export const DeviceSelect: React.FC<DeviceSelectProps> = ({
  ...value,
  customIsMobile: e.target.checked,
  })}
- className="rounded border-border text-blue-600 focus:ring-blue-500"
+ className="rounded border-border text-primary focus:ring-primary"
  />
  <span className="ml-2 text-xs text-foreground">Mobile mode</span>
  </label>
@@ -177,7 +177,7 @@ export const DeviceSelect: React.FC<DeviceSelectProps> = ({
  ...value,
  customHasTouch: e.target.checked,
  })}
- className="rounded border-border text-blue-600 focus:ring-blue-500"
+ className="rounded border-border text-primary focus:ring-primary"
  />
  <span className="ml-2 text-xs text-foreground">Touch enabled</span>
  </label>

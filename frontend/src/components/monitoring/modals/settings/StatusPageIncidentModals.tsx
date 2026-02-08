@@ -145,18 +145,18 @@ export const IncidentManagementPanel: React.FC<IncidentManagementPanelProps> = (
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        incident.impact === 'critical' ? 'bg-red-100 text-red-800' :
+                        incident.impact === 'critical' ? 'bg-destructive/10 text-destructive' :
                         incident.impact === 'major' ? 'bg-orange-100 text-orange-800' :
-                        incident.impact === 'minor' ? 'bg-yellow-100 text-yellow-800' :
+                        incident.impact === 'minor' ? 'bg-warning/10 text-warning' :
                         'bg-muted text-foreground'
                       }`}>
                         {incident.impact.toUpperCase()}
                       </span>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        incident.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                        incident.status === 'monitoring' ? 'bg-blue-100 text-blue-800' :
-                        incident.status === 'identified' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
+                        incident.status === 'resolved' ? 'bg-success/10 text-success' :
+                        incident.status === 'monitoring' ? 'bg-primary/10 text-primary' :
+                        incident.status === 'identified' ? 'bg-warning/10 text-warning' :
+                        'bg-destructive/10 text-destructive'
                       }`}>
                         {incident.status.charAt(0).toUpperCase() + incident.status.slice(1)}
                       </span>
@@ -164,13 +164,13 @@ export const IncidentManagementPanel: React.FC<IncidentManagementPanelProps> = (
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => openAddUpdateModal(incident)}
-                        className="rounded px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200"
+                        className="rounded px-2 py-1 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20"
                       >
                         Add Update
                       </button>
                       <button
                         onClick={() => handleDeleteIncident(incident.id)}
-                        className="rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200"
+                        className="rounded px-2 py-1 text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20"
                       >
                         Delete
                       </button>
@@ -188,10 +188,10 @@ export const IncidentManagementPanel: React.FC<IncidentManagementPanelProps> = (
                         <div key={update.id || idx} className="text-sm">
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span className={`font-medium ${
-                              update.status === 'resolved' ? 'text-green-600' :
-                              update.status === 'monitoring' ? 'text-blue-600' :
-                              update.status === 'identified' ? 'text-yellow-600' :
-                              'text-red-600'
+                              update.status === 'resolved' ? 'text-success' :
+                              update.status === 'monitoring' ? 'text-primary' :
+                              update.status === 'identified' ? 'text-warning' :
+                              'text-destructive'
                             }`}>
                               {update.status.charAt(0).toUpperCase() + update.status.slice(1)}
                             </span>
@@ -534,7 +534,7 @@ export const AddIncidentUpdateModal: React.FC<AddIncidentUpdateModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || !message.trim()}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary disabled:opacity-50"
             >
               {isSubmitting ? 'Posting...' : 'Post Update'}
             </button>

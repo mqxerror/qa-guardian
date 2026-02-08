@@ -69,17 +69,17 @@ export function AccessibilityResultsDisplay({
 
  {/* Summary Stats */}
  <div className="grid grid-cols-4 gap-3 mb-4">
- <div className="p-2 rounded bg-red-100 text-center">
- <div className="text-xs text-red-700">Violations</div>
- <div className="text-lg font-bold text-red-700">{a11y.violations.count}</div>
+ <div className="p-2 rounded bg-destructive/10 text-center">
+ <div className="text-xs text-destructive">Violations</div>
+ <div className="text-lg font-bold text-destructive">{a11y.violations.count}</div>
  </div>
- <div className="p-2 rounded bg-green-100 text-center">
- <div className="text-xs text-green-700">Passes</div>
- <div className="text-lg font-bold text-green-700">{a11y.passes?.count || 0}</div>
+ <div className="p-2 rounded bg-success/10 text-center">
+ <div className="text-xs text-success">Passes</div>
+ <div className="text-lg font-bold text-success">{a11y.passes?.count || 0}</div>
  </div>
- <div className="p-2 rounded bg-amber-100 text-center">
- <div className="text-xs text-amber-700">Incomplete</div>
- <div className="text-lg font-bold text-amber-700">{a11y.incomplete?.count || 0}</div>
+ <div className="p-2 rounded bg-warning/10 text-center">
+ <div className="text-xs text-warning">Incomplete</div>
+ <div className="text-lg font-bold text-warning">{a11y.incomplete?.count || 0}</div>
  </div>
  <div className="p-2 rounded bg-muted text-center">
  <div className="text-xs text-foreground">N/A</div>
@@ -124,7 +124,7 @@ export function AccessibilityResultsDisplay({
  <button
  onClick={() => onSetSeverityFilter('moderate')}
  className={`px-2 py-1 text-xs rounded-full ${
- currentSeverityFilter === 'moderate' ? 'bg-yellow-600 text-white' : 'bg-yellow-100 text-yellow-700'
+ currentSeverityFilter === 'moderate' ? 'bg-warning text-white' : 'bg-warning/10 text-warning'
  }`}
  >
  Moderate: {a11y.violations.moderate}
@@ -134,7 +134,7 @@ export function AccessibilityResultsDisplay({
  <button
  onClick={() => onSetSeverityFilter('minor')}
  className={`px-2 py-1 text-xs rounded-full ${
- currentSeverityFilter === 'minor' ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-700'
+ currentSeverityFilter === 'minor' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'
  }`}
  >
  Minor: {a11y.violations.minor}
@@ -158,10 +158,10 @@ export function AccessibilityResultsDisplay({
  >
  <div className="flex items-center gap-2">
  <span className={`px-2 py-0.5 text-xs rounded-full ${
- violation.impact === 'critical' ? 'bg-red-100 text-red-700' :
+ violation.impact === 'critical' ? 'bg-destructive/10 text-destructive' :
  violation.impact === 'serious' ? 'bg-orange-100 text-orange-700' :
- violation.impact === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-blue-100 text-blue-700'
+ violation.impact === 'moderate' ? 'bg-warning/10 text-warning' :
+ 'bg-primary/10 text-primary'
  }`}>
  {violation.impact}
  </span>

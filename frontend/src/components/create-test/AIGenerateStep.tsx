@@ -204,7 +204,7 @@ const EditModal: React.FC<EditModalProps> = ({
  <button
  onClick={handleSave}
  disabled={!editTestType || !editUrl}
- className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-lg disabled:cursor-not-allowed"
+ className="flex-1 px-4 py-2 bg-primary hover:bg-primary disabled:bg-gray-300 text-white rounded-lg disabled:cursor-not-allowed"
  >
  Save Changes
  </button>
@@ -312,7 +312,7 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  value={input}
  onChange={handleInputChange}
  placeholder="Example: Test the login form on https://myapp.com using mobile viewport..."
- className="w-full h-32 px-4 py-3 border border-border rounded-xl bg-input text-foreground placeholder-muted-foreground resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+ className="w-full h-32 px-4 py-3 border border-border rounded-xl bg-input text-foreground placeholder-muted-foreground resize-none focus:ring-2 focus:ring-primary focus:border-transparent"
  autoFocus
  />
  <div className="flex items-center justify-between mt-2">
@@ -320,7 +320,7 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  {input.length} characters
  </span>
  {isParsing && (
- <span className="flex items-center gap-1 text-xs text-blue-600">
+ <span className="flex items-center gap-1 text-xs text-primary">
  <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -342,7 +342,7 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  <button
  key={i}
  onClick={() => setInput(example)}
- className="block w-full text-left text-sm text-foreground hover:text-blue-600 py-1 px-2 rounded hover:bg-muted transition-colors"
+ className="block w-full text-left text-sm text-foreground hover:text-primary py-1 px-2 rounded hover:bg-muted transition-colors"
  >
  "{example}"
  </button>
@@ -362,12 +362,12 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  {/* Confidence Score */}
  <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
  getConfidenceLevel(result.overallConfidence).color === 'green'
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : getConfidenceLevel(result.overallConfidence).color === 'yellow'
- ? 'bg-yellow-100 text-yellow-700'
+ ? 'bg-warning/10 text-warning'
  : getConfidenceLevel(result.overallConfidence).color === 'orange'
  ? 'bg-orange-100 text-orange-700'
- : 'bg-red-100 text-red-700'
+ : 'bg-destructive/10 text-destructive'
  }`}>
  <span>{Math.round(result.overallConfidence * 100)}%</span>
  <span>confidence</span>
@@ -375,7 +375,7 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  {/* Edit Button */}
  <button
  onClick={() => setShowEditModal(true)}
- className="flex items-center gap-1 px-2 py-1 text-xs text-foreground hover:text-blue-600 hover:bg-muted rounded transition-colors"
+ className="flex items-center gap-1 px-2 py-1 text-xs text-foreground hover:text-primary hover:bg-muted rounded transition-colors"
  >
  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -405,7 +405,7 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
 
  {/* URL */}
  <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
- <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg bg-blue-100">
+ <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg bg-primary/10">
  🌐
  </div>
  <div className="min-w-0 flex-1">
@@ -433,13 +433,13 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  {/* Suggestions */}
  {result.suggestions.length > 0 && (
  <div className="mt-4 pt-4 border-t border-border">
- <p className="text-xs font-medium text-amber-600 mb-2">
+ <p className="text-xs font-medium text-warning mb-2">
  Suggestions to improve detection:
  </p>
  <ul className="space-y-1">
  {result.suggestions.map((suggestion, i) => (
  <li key={i} className="flex items-start gap-2 text-sm text-foreground">
- <span className="text-amber-500">•</span>
+ <span className="text-warning">•</span>
  {suggestion}
  </li>
  ))}

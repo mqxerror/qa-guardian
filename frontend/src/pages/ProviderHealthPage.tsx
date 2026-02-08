@@ -200,13 +200,13 @@ export function ProviderHealthPage() {
     switch (status) {
       case 'healthy':
       case 'operational':
-        return { color: 'bg-green-500', icon: '✅', text: 'text-green-400', bg: 'bg-green-500/10' };
+        return { color: 'bg-success', icon: '✅', text: 'text-success', bg: 'bg-success/10' };
       case 'degraded':
       case 'warning':
-        return { color: 'bg-yellow-500', icon: '⚠️', text: 'text-yellow-400', bg: 'bg-yellow-500/10' };
+        return { color: 'bg-warning', icon: '⚠️', text: 'text-warning', bg: 'bg-warning/10' };
       case 'unhealthy':
       case 'critical':
-        return { color: 'bg-red-500', icon: '❌', text: 'text-red-400', bg: 'bg-red-500/10' };
+        return { color: 'bg-destructive', icon: '❌', text: 'text-destructive', bg: 'bg-destructive/10' };
       default:
         return { color: 'bg-gray-400', icon: '❓', text: 'text-muted-foreground', bg: 'bg-muted/50' };
     }
@@ -224,7 +224,7 @@ export function ProviderHealthPage() {
       <div className="mb-8">
         <button
           onClick={() => navigate('/ai-insights')}
-          className="text-blue-400 hover:text-blue-300 mb-4 flex items-center gap-1"
+          className="text-primary hover:text-primary/70 mb-4 flex items-center gap-1"
         >
           ← Back to AI Insights
         </button>
@@ -280,7 +280,7 @@ export function ProviderHealthPage() {
               <button
                 onClick={() => runHealthCheck(provider.provider)}
                 disabled={isRunningCheck === provider.provider}
-                className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                className="px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary disabled:opacity-50 transition-colors"
               >
                 {isRunningCheck === provider.provider ? '⏳ Checking...' : '🔍 Run Check'}
               </button>
@@ -289,11 +289,11 @@ export function ProviderHealthPage() {
             {/* Metrics Grid */}
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="text-center p-3 bg-muted/50 rounded-lg">
-                <div className="text-2xl font-bold text-green-400">{provider.availability_percent}%</div>
+                <div className="text-2xl font-bold text-success">{provider.availability_percent}%</div>
                 <div className="text-xs text-muted-foreground">Availability (1h)</div>
               </div>
               <div className="text-center p-3 bg-muted/50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-400">{provider.avg_latency_ms}ms</div>
+                <div className="text-2xl font-bold text-primary">{provider.avg_latency_ms}ms</div>
                 <div className="text-xs text-muted-foreground">Avg Latency</div>
               </div>
               <div className="text-center p-3 bg-muted/50 rounded-lg">
@@ -380,7 +380,7 @@ export function ProviderHealthPage() {
             <div key={idx} className="flex-1 flex flex-col items-center gap-1">
               <div className="w-full flex flex-col gap-0.5">
                 <div
-                  className="w-full bg-blue-400 rounded-t transition-all"
+                  className="w-full bg-primary/80 rounded-t transition-all"
                   style={{ height: `${Math.min(point.kie_latency / 4, 100)}px` }}
                   title={`Kie.ai: ${point.kie_latency}ms`}
                 ></div>
@@ -395,7 +395,7 @@ export function ProviderHealthPage() {
         </div>
         <div className="flex items-center justify-center gap-6 mt-4 text-sm text-foreground">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-blue-400 rounded"></div>
+            <div className="w-3 h-3 bg-primary/80 rounded"></div>
             <span>Kie.ai</span>
           </div>
           <div className="flex items-center gap-2">
@@ -422,8 +422,8 @@ export function ProviderHealthPage() {
                   key={alert.id}
                   className={`p-4 rounded-lg border ${
                     alert.severity === 'critical' ? 'border-red-500/30 bg-red-500/10' :
-                    alert.severity === 'warning' ? 'border-yellow-500/30 bg-yellow-500/10' :
-                    'border-blue-500/30 bg-blue-500/10'
+                    alert.severity === 'warning' ? 'border-warning/30 bg-warning/10' :
+                    'border-primary/30 bg-primary/10'
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -439,7 +439,7 @@ export function ProviderHealthPage() {
                           {new Date(alert.triggered_at).toLocaleString()}
                         </div>
                         {alert.resolved_at && (
-                          <div className="text-xs text-green-400 mt-1">
+                          <div className="text-xs text-success mt-1">
                             ✅ Resolved: {new Date(alert.resolved_at).toLocaleString()}
                           </div>
                         )}
@@ -454,7 +454,7 @@ export function ProviderHealthPage() {
                       </button>
                     )}
                     {alert.acknowledged && (
-                      <span className="text-xs text-green-400">✓ Ack</span>
+                      <span className="text-xs text-success">✓ Ack</span>
                     )}
                   </div>
                 </div>
@@ -473,7 +473,7 @@ export function ProviderHealthPage() {
                 <button
                   onClick={() => updateAlertConfig({ enabled: !alertConfig.enabled })}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    alertConfig.enabled ? 'bg-blue-600' : 'bg-muted'
+                    alertConfig.enabled ? 'bg-primary' : 'bg-muted'
                   }`}
                 >
                   <span
@@ -599,7 +599,7 @@ export function ProviderHealthPage() {
                     <div className="w-24 text-sm text-muted-foreground capitalize">{type.replace('_', ' ')}</div>
                     <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-blue-500 transition-all"
+                        className="h-full bg-primary transition-all"
                         style={{ width: `${errorDist.kie?.total ? ((count as number) / errorDist.kie.total) * 100 : 0}%` }}
                       ></div>
                     </div>

@@ -26,11 +26,11 @@ export const TestTypeBadge: React.FC<TestTypeBadgeProps> = React.memo(({
  };
 
  const typeColors: Record<TestTypeEnum, string> = {
- e2e: 'bg-blue-100 text-blue-800',
+ e2e: 'bg-primary/10 text-primary',
  visual_regression: 'bg-purple-100 text-purple-800',
- lighthouse: 'bg-yellow-100 text-yellow-800',
+ lighthouse: 'bg-warning/10 text-warning',
  load: 'bg-orange-100 text-orange-800',
- accessibility: 'bg-green-100 text-green-800',
+ accessibility: 'bg-success/10 text-success',
  api: 'bg-indigo-100 text-indigo-800',
  };
 
@@ -119,10 +119,10 @@ export const ReviewStatusBadge: React.FC<ReviewStatusBadgeProps> = React.memo(({
  };
 
  const statusConfig = {
- pending: { icon: '⏳', label: 'Pending', class: 'bg-yellow-100 text-yellow-800' },
+ pending: { icon: '⏳', label: 'Pending', class: 'bg-warning/10 text-warning' },
  pending_review: { icon: '👀', label: 'Needs Review', class: 'bg-orange-100 text-orange-800' },
- approved: { icon: '✓', label: 'Approved', class: 'bg-green-100 text-green-800' },
- rejected: { icon: '✗', label: 'Rejected', class: 'bg-red-100 text-red-800' },
+ approved: { icon: '✓', label: 'Approved', class: 'bg-success/10 text-success' },
+ rejected: { icon: '✗', label: 'Rejected', class: 'bg-destructive/10 text-destructive' },
  };
 
  const config = statusConfig[status] || statusConfig.pending;

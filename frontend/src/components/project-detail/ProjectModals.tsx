@@ -247,7 +247,7 @@ export function ProjectModals({
  <button
  onClick={handleDeleteProject}
  disabled={isDeleting}
- className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+ className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive disabled:opacity-50"
  >
  {isDeleting ? 'Deleting...' : 'Delete Project'}
  </button>
@@ -760,9 +760,9 @@ export function ProjectModals({
  <span>Vision AI Suggestions</span>
  </div>
  <span className={`text-xs px-2 py-0.5 rounded ${
- visionHealingResult.confidence >= 0.8 ? 'bg-green-100 text-green-700' :
- visionHealingResult.confidence >= 0.6 ? 'bg-yellow-100 text-yellow-700' :
- 'bg-red-100 text-red-700'
+ visionHealingResult.confidence >= 0.8 ? 'bg-success/10 text-success' :
+ visionHealingResult.confidence >= 0.6 ? 'bg-warning/10 text-warning' :
+ 'bg-destructive/10 text-destructive'
  }`}>
  {Math.round(visionHealingResult.confidence * 100)}% confidence
  </span>
@@ -794,7 +794,7 @@ export function ProjectModals({
  </code>
  <div className="flex items-center gap-1 ml-2 flex-shrink-0">
  {suggestion.best_practice && (
- <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700">
+ <span className="text-xs px-1.5 py-0.5 rounded bg-success/10 text-success">
  Best
  </span>
  )}
@@ -810,7 +810,7 @@ export function ProjectModals({
 
  {/* Auto-heal recommendation */}
  {visionHealingResult.auto_heal_recommended && (
- <div className="mt-2 p-2 bg-green-100 rounded text-xs text-green-700 flex items-center gap-1">
+ <div className="mt-2 p-2 bg-success/10 rounded text-xs text-success flex items-center gap-1">
  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
  <polyline points="22 4 12 14.01 9 11.01"/>
@@ -831,11 +831,11 @@ export function ProjectModals({
 
  {/* Current Selector (if healed) */}
  {editSelectorModal.wasHealed && editSelectorModal.currentSelector !== editSelectorModal.originalSelector && (
- <div className="mb-4 p-3 bg-green-50 rounded-md border border-green-200">
- <div className="text-xs font-medium text-green-700 mb-1 flex items-center gap-1">
+ <div className="mb-4 p-3 bg-success/5 rounded-md border border-success/20">
+ <div className="text-xs font-medium text-success mb-1 flex items-center gap-1">
  <span>AI-Healed Selector</span>
  </div>
- <code className="text-sm font-mono text-green-800 break-all">
+ <code className="text-sm font-mono text-success break-all">
  {editSelectorModal.currentSelector}
  </code>
  </div>
@@ -905,7 +905,7 @@ export function ProjectModals({
  <button
  onClick={handleAcceptHealed}
  disabled={isSubmittingSelector}
- className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+ className="rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50"
  >
  {isSubmittingSelector ? 'Accepting...' : 'Accept Healed'}
  </button>

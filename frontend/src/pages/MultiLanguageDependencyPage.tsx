@@ -189,11 +189,11 @@ export function MultiLanguageDependencyPage() {
   };
 
   const languageColors: Record<string, string> = {
-    javascript: 'bg-yellow-500/20 text-yellow-400',
-    python: 'bg-blue-500/20 text-blue-400',
+    javascript: 'bg-warning/20 text-warning',
+    python: 'bg-primary/20 text-primary',
     java: 'bg-orange-500/20 text-orange-400',
     go: 'bg-cyan-500/20 text-cyan-400',
-    rust: 'bg-red-500/20 text-red-400',
+    rust: 'bg-destructive/20 text-destructive',
   };
 
   // Filter dependencies
@@ -274,7 +274,7 @@ export function MultiLanguageDependencyPage() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl">{languageIcons[lang]}</span>
                   {langConfig?.enabled ? (
-                    <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded">Enabled</span>
+                    <span className="text-xs px-2 py-0.5 bg-success/20 text-success rounded">Enabled</span>
                   ) : (
                     <span className="text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded">Disabled</span>
                   )}
@@ -283,17 +283,17 @@ export function MultiLanguageDependencyPage() {
                 <div className="mt-2 text-sm text-muted-foreground">
                   <div>{langSummary.total} packages</div>
                   {langSummary.vulnerable > 0 && (
-                    <div className="text-red-400">{langSummary.vulnerable} vulnerable</div>
+                    <div className="text-destructive">{langSummary.vulnerable} vulnerable</div>
                   )}
                 </div>
                 {scanResult && (
                   <div className="mt-2">
                     {scanResult.status === 'completed' ? (
-                      <span className="text-xs text-green-400 flex items-center gap-1"><Check className="h-3 w-3" /> Scanned</span>
+                      <span className="text-xs text-success flex items-center gap-1"><Check className="h-3 w-3" /> Scanned</span>
                     ) : scanResult.status === 'pending' || scanResult.status === 'scanning' ? (
-                      <span className="text-xs text-blue-400 flex items-center gap-1"><Clock className="h-3 w-3" /> Scanning...</span>
+                      <span className="text-xs text-primary flex items-center gap-1"><Clock className="h-3 w-3" /> Scanning...</span>
                     ) : (
-                      <span className="text-xs text-red-400 flex items-center gap-1"><X className="h-3 w-3" /> Failed</span>
+                      <span className="text-xs text-destructive flex items-center gap-1"><X className="h-3 w-3" /> Failed</span>
                     )}
                   </div>
                 )}
@@ -380,7 +380,7 @@ export function MultiLanguageDependencyPage() {
                     {dep.latest_version !== dep.current_version ? (
                       <span className="text-orange-400">{dep.latest_version}</span>
                     ) : (
-                      <span className="text-green-400">{dep.latest_version}</span>
+                      <span className="text-success">{dep.latest_version}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{dep.license || '-'}</td>
@@ -392,14 +392,14 @@ export function MultiLanguageDependencyPage() {
                       {dep.is_transitive ? (
                         <span className="text-xs px-1.5 py-0.5 bg-muted text-muted-foreground rounded">transitive</span>
                       ) : (
-                        <span className="text-xs px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">direct</span>
+                        <span className="text-xs px-1.5 py-0.5 bg-primary/20 text-primary rounded">direct</span>
                       )}
                     </div>
                   </td>
                   <td className="px-4 py-3">
                     {dep.vulnerabilities.length > 0 ? (
                       <div className="flex items-center">
-                        <span className="text-red-400 font-medium flex items-center gap-1">
+                        <span className="text-destructive font-medium flex items-center gap-1">
                           <AlertTriangle className="h-3 w-3" />
                           {dep.vulnerabilities.length}
                         </span>
@@ -408,7 +408,7 @@ export function MultiLanguageDependencyPage() {
                         </span>
                       </div>
                     ) : (
-                      <span className="text-green-400 flex items-center gap-1"><Check className="h-3 w-3" /> None</span>
+                      <span className="text-success flex items-center gap-1"><Check className="h-3 w-3" /> None</span>
                     )}
                   </td>
                 </tr>
@@ -431,9 +431,9 @@ export function MultiLanguageDependencyPage() {
                 <div className="text-2xl font-bold text-foreground">{stats.summary?.total_dependencies || 0}</div>
                 <div className="text-sm text-muted-foreground">Total Dependencies</div>
               </div>
-              <div className="p-4 rounded-lg bg-red-500/10">
-                <div className="text-2xl font-bold text-red-400">{stats.summary?.total_vulnerabilities || 0}</div>
-                <div className="text-sm text-red-400/80">Vulnerabilities</div>
+              <div className="p-4 rounded-lg bg-destructive/10">
+                <div className="text-2xl font-bold text-destructive">{stats.summary?.total_vulnerabilities || 0}</div>
+                <div className="text-sm text-destructive/80">Vulnerabilities</div>
               </div>
               <div className="p-4 rounded-lg bg-muted/30">
                 <div className="text-2xl font-bold text-foreground">{stats.summary?.languages_tracked || 5}</div>

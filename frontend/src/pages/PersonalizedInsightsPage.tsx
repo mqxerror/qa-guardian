@@ -91,11 +91,11 @@ export function PersonalizedInsightsPage() {
  const getPriorityColor = (priority: string) => {
  switch (priority) {
  case 'high':
- return 'bg-red-500/20 text-red-400';
+ return 'bg-destructive/20 text-destructive';
  case 'medium':
- return 'bg-yellow-500/20 text-yellow-400';
+ return 'bg-warning/20 text-warning';
  case 'low':
- return 'bg-green-500/20 text-green-400';
+ return 'bg-success/20 text-success';
  default:
  return 'bg-muted text-muted-foreground';
  }
@@ -105,13 +105,13 @@ export function PersonalizedInsightsPage() {
  switch (status) {
  case 'passed':
  case 'passing':
- return 'text-green-600';
+ return 'text-success';
  case 'failed':
  case 'failing':
- return 'text-red-600';
+ return 'text-destructive';
  case 'flaky':
  case 'mixed':
- return 'text-yellow-600';
+ return 'text-warning';
  default:
  return 'text-muted-foreground';
  }
@@ -226,9 +226,9 @@ export function PersonalizedInsightsPage() {
  <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
  <div className="flex items-center gap-3">
  <span className={`text-lg ${
- test.status === 'passed' ? 'text-green-500' :
- test.status === 'failed' ? 'text-red-500' :
- 'text-yellow-500'
+ test.status === 'passed' ? 'text-success' :
+ test.status === 'failed' ? 'text-destructive' :
+ 'text-warning'
  }`}>
  {test.status === 'passed' ? '✓' : test.status === 'failed' ? '✗' : '⚡'}
  </span>
@@ -261,9 +261,9 @@ export function PersonalizedInsightsPage() {
  </div>
  </div>
  <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${
- file.status === 'passing' ? 'bg-green-500/20 text-green-400' :
- file.status === 'failing' ? 'bg-red-500/20 text-red-400' :
- 'bg-yellow-500/20 text-yellow-400'
+ file.status === 'passing' ? 'bg-success/20 text-success' :
+ file.status === 'failing' ? 'bg-destructive/20 text-destructive' :
+ 'bg-warning/20 text-warning'
  }`}>
  {file.status}
  </span>
@@ -280,7 +280,7 @@ export function PersonalizedInsightsPage() {
  <div className="text-xs text-muted-foreground">Total Tests</div>
  </div>
  <div className="text-center p-4 rounded-lg bg-muted/50">
- <div className="text-3xl font-bold text-green-600">{insight.data.teamCoverage.covered}</div>
+ <div className="text-3xl font-bold text-success">{insight.data.teamCoverage.covered}</div>
  <div className="text-xs text-muted-foreground">Covered</div>
  </div>
  <div className="text-center p-4 rounded-lg bg-muted/50">
@@ -300,7 +300,7 @@ export function PersonalizedInsightsPage() {
  {insight.type === 'flaky_alert' && insight.data?.tests && (
  <div className="space-y-2">
  {insight.data.tests.map((test, idx) => (
- <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+ <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-warning/5 border border-warning/20">
  <div className="flex items-center gap-3">
  <span className="text-lg">⚡</span>
  <div>
@@ -308,7 +308,7 @@ export function PersonalizedInsightsPage() {
  <p className="text-xs text-muted-foreground">{test.suite}</p>
  </div>
  </div>
- <span className="text-sm text-yellow-700">{test.lastRun}</span>
+ <span className="text-sm text-warning">{test.lastRun}</span>
  </div>
  ))}
  </div>
@@ -316,7 +316,7 @@ export function PersonalizedInsightsPage() {
 
  {/* Recommendation Data */}
  {insight.type === 'recommendation' && insight.data?.recommendation && (
- <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+ <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
  <p className="text-sm text-foreground">{insight.data.recommendation}</p>
  </div>
  )}

@@ -93,11 +93,11 @@ export function EditSelectorModal({
 
  {/* Current Selector (if healed) */}
  {modalState.wasHealed && modalState.currentSelector !== modalState.originalSelector && (
- <div className="mb-4 p-3 bg-green-50 rounded-md border border-green-200">
- <div className="text-xs font-medium text-green-700 mb-1 flex items-center gap-1">
+ <div className="mb-4 p-3 bg-success/5 rounded-md border border-success/20">
+ <div className="text-xs font-medium text-success mb-1 flex items-center gap-1">
  <span>🔧</span> AI-Healed Selector
  </div>
- <code className="text-sm font-mono text-green-800 break-all">
+ <code className="text-sm font-mono text-success break-all">
  {modalState.currentSelector}
  </code>
  </div>
@@ -161,7 +161,7 @@ export function EditSelectorModal({
  <button
  onClick={onAcceptHealed}
  disabled={isSubmitting}
- className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+ className="rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50"
  >
  {isSubmitting ? 'Accepting...' : '✓ Accept Healed'}
  </button>

@@ -138,11 +138,11 @@ export function CurrentRunStatusSection({
         <div className="flex items-center gap-4">
           {/* Feature #1979: Added 'warning' status styling for accessibility tests */}
           <span className={`rounded-full px-3 py-1 text-sm font-medium ${
-            currentRun.status === 'passed' ? 'bg-green-100 text-green-700' :
-            currentRun.status === 'failed' ? 'bg-red-100 text-red-700' :
-            currentRun.status === 'warning' ? 'bg-amber-100 text-amber-700' :
-            currentRun.status === 'running' ? 'bg-blue-100 text-blue-700' :
-            currentRun.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+            currentRun.status === 'passed' ? 'bg-success/10 text-success' :
+            currentRun.status === 'failed' ? 'bg-destructive/10 text-destructive' :
+            currentRun.status === 'warning' ? 'bg-warning/10 text-warning' :
+            currentRun.status === 'running' ? 'bg-primary/10 text-primary' :
+            currentRun.status === 'pending' ? 'bg-warning/10 text-warning' :
             'bg-muted text-foreground'
           }`}>
             {currentRun.status}

@@ -211,25 +211,25 @@ export default function UptimeChecksTab({
  <span className="text-sm text-muted-foreground">Bulk Actions:</span>
  <button
  onClick={() => bulkAction('run', filterGroup)}
- className="rounded px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200"
+ className="rounded px-2 py-1 text-xs bg-primary/10 text-primary hover:bg-primary/20"
  >
  ▶️ Run All
  </button>
  <button
  onClick={() => bulkAction('disable', filterGroup)}
- className="rounded px-2 py-1 text-xs bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+ className="rounded px-2 py-1 text-xs bg-warning/10 text-warning hover:bg-warning/20"
  >
  ⏸️ Disable All
  </button>
  <button
  onClick={() => bulkAction('enable', filterGroup)}
- className="rounded px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200"
+ className="rounded px-2 py-1 text-xs bg-success/10 text-success hover:bg-success/20"
  >
  ▶️ Enable All
  </button>
  <button
  onClick={() => bulkAction('delete', filterGroup)}
- className="rounded px-2 py-1 text-xs bg-red-100 text-red-700 hover:bg-red-200"
+ className="rounded px-2 py-1 text-xs bg-destructive/10 text-destructive hover:bg-destructive/20"
  >
  🗑️ Delete All
  </button>
@@ -265,7 +265,7 @@ export default function UptimeChecksTab({
  {(check.tags && check.tags.length > 0 || check.group) && (
  <div className="flex flex-wrap gap-1 mt-1">
  {check.group && (
- <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700">
+ <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary">
  📁 {check.group}
  </span>
  )}
@@ -308,7 +308,7 @@ export default function UptimeChecksTab({
  <button
  onClick={() => duplicateCheck(check.id)}
  title="Duplicate"
- className="rounded p-1.5 text-muted-foreground hover:bg-blue-100 hover:text-blue-600"
+ className="rounded p-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary"
  >
  📋
  </button>
@@ -322,7 +322,7 @@ export default function UptimeChecksTab({
  <button
  onClick={() => deleteCheck(check.id)}
  title="Delete"
- className="rounded p-1.5 text-muted-foreground hover:bg-red-100 hover:text-red-600"
+ className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
  >
  🗑️
  </button>
@@ -451,7 +451,7 @@ function CheckDetailPanel({
  >
  Incidents
  {incidentData && incidentData.total_incidents > 0 && (
- <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] text-xs rounded-full bg-red-500 text-white">
+ <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] text-xs rounded-full bg-destructive text-white">
  {incidentData.total_incidents}
  </span>
  )}
@@ -466,7 +466,7 @@ function CheckDetailPanel({
  >
  Maintenance
  {maintenanceData?.in_maintenance && (
- <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] text-xs rounded-full bg-yellow-500 text-black">
+ <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] text-xs rounded-full bg-warning text-black">
  🔧
  </span>
  )}
@@ -601,9 +601,9 @@ function DetailsTabContent({
  <span className="font-medium text-sm">{loc.location_name}</span>
  {loc.latest_result && (
  <>
- {loc.latest_result.status === 'up' && <span className="text-green-500">●</span>}
- {loc.latest_result.status === 'down' && <span className="text-red-500">●</span>}
- {loc.latest_result.status === 'degraded' && <span className="text-yellow-500">●</span>}
+ {loc.latest_result.status === 'up' && <span className="text-success">●</span>}
+ {loc.latest_result.status === 'down' && <span className="text-destructive">●</span>}
+ {loc.latest_result.status === 'degraded' && <span className="text-warning">●</span>}
  </>
  )}
  </div>
@@ -616,7 +616,7 @@ function DetailsTabContent({
  </div>
  <div>
  <span className="text-muted-foreground">Uptime:</span>{' '}
- <span className={`font-medium ${loc.uptime_percentage >= 99 ? 'text-green-500' : loc.uptime_percentage >= 95 ? 'text-yellow-500' : 'text-red-500'}`}>
+ <span className={`font-medium ${loc.uptime_percentage >= 99 ? 'text-success' : loc.uptime_percentage >= 95 ? 'text-warning' : 'text-destructive'}`}>
  {loc.uptime_percentage}%
  </span>
  </div>
@@ -652,9 +652,9 @@ function DetailsTabContent({
  <div className="col-span-2">
  <span className="text-muted-foreground">Expires In:</span>
  <span className={`ml-2 font-medium ${
- checkResults[0].ssl_info.days_until_expiry <= 7 ? 'text-red-500' :
- checkResults[0].ssl_info.days_until_expiry <= 30 ? 'text-yellow-500' :
- 'text-green-500'
+ checkResults[0].ssl_info.days_until_expiry <= 7 ? 'text-destructive' :
+ checkResults[0].ssl_info.days_until_expiry <= 30 ? 'text-warning' :
+ 'text-success'
  }`}>
  {checkResults[0].ssl_info.days_until_expiry} days
  {checkResults[0].ssl_info.days_until_expiry <= 30 && ' ⚠️'}
@@ -683,9 +683,9 @@ function DetailsTabContent({
  <div key={label} className="rounded-lg border border-border p-3 bg-muted/20">
  <div className="text-xs text-muted-foreground mb-1">{label}</div>
  <div className={`text-xl font-bold ${
- data.uptime_percentage >= 99.9 ? 'text-green-500' :
- data.uptime_percentage >= 99 ? 'text-yellow-500' :
- 'text-red-500'
+ data.uptime_percentage >= 99.9 ? 'text-success' :
+ data.uptime_percentage >= 99 ? 'text-warning' :
+ 'text-destructive'
  }`}>
  {data.uptime_percentage}%
  </div>
@@ -696,11 +696,11 @@ function DetailsTabContent({
  </div>
  <div className="flex justify-between">
  <span>Successful:</span>
- <span className="text-green-500">{data.successful_checks}</span>
+ <span className="text-success">{data.successful_checks}</span>
  </div>
  <div className="flex justify-between">
  <span>Failed:</span>
- <span className="text-red-500">{data.failed_checks}</span>
+ <span className="text-destructive">{data.failed_checks}</span>
  </div>
  <div className="flex justify-between">
  <span>Avg Response:</span>
@@ -800,9 +800,9 @@ function HistoryTabContent({
  {historyData.status_history.slice(0, 20).map((entry, idx) => (
  <div key={idx} className="flex items-center gap-2 text-xs">
  <span className={`w-2 h-2 rounded-full ${
- entry.status === 'up' ? 'bg-green-500' :
- entry.status === 'down' ? 'bg-red-500' :
- 'bg-yellow-500'
+ entry.status === 'up' ? 'bg-success' :
+ entry.status === 'down' ? 'bg-destructive' :
+ 'bg-warning'
  }`} />
  <span className="text-muted-foreground">
  {new Date(entry.timestamp).toLocaleTimeString()}
@@ -850,16 +850,16 @@ function IncidentsTabContent({
  <div className="space-y-4">
  {/* Active Incident Banner */}
  {incidentData.active_incident && (
- <div className="p-3 rounded-lg bg-red-100 border border-red-200">
+ <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
  <div className="flex items-center gap-2 mb-1">
- <span className="inline-flex h-2 w-2 rounded-full bg-red-500 animate-pulse" />
- <span className="font-medium text-red-700">Active Incident</span>
+ <span className="inline-flex h-2 w-2 rounded-full bg-destructive animate-pulse" />
+ <span className="font-medium text-destructive">Active Incident</span>
  </div>
- <p className="text-sm text-red-600">
+ <p className="text-sm text-destructive">
  Started: {new Date(incidentData.active_incident.started_at).toLocaleString()}
  </p>
  {incidentData.active_incident.error && (
- <p className="text-xs text-red-500 mt-1">{incidentData.active_incident.error}</p>
+ <p className="text-xs text-destructive mt-1">{incidentData.active_incident.error}</p>
  )}
  </div>
  )}
@@ -871,15 +871,15 @@ function IncidentsTabContent({
  key={incident.id}
  className={`p-3 rounded-lg border ${
  incident.is_active
- ? 'border-red-200 bg-red-50'
+ ? 'border-destructive/20 bg-destructive/5'
  : 'border-border bg-muted/30'
  }`}
  >
  <div className="flex items-center justify-between mb-1">
  <span className={`text-xs font-medium px-2 py-0.5 rounded ${
  incident.status === 'down'
- ? 'bg-red-100 text-red-700'
- : 'bg-yellow-100 text-yellow-700'
+ ? 'bg-destructive/10 text-destructive'
+ : 'bg-warning/10 text-warning'
  }`}>
  {incident.status.toUpperCase()}
  </span>
@@ -890,7 +890,7 @@ function IncidentsTabContent({
  {incident.ended_at && ` - ${new Date(incident.ended_at).toLocaleString()}`}
  </p>
  {incident.error && (
- <p className="text-xs text-red-500 mt-1 truncate">{incident.error}</p>
+ <p className="text-xs text-destructive mt-1 truncate">{incident.error}</p>
  )}
  {incident.affected_locations.length > 0 && (
  <div className="flex flex-wrap gap-1 mt-1">
@@ -935,15 +935,15 @@ function MaintenanceTabContent({
  <div className="space-y-4">
  {/* In Maintenance Banner */}
  {maintenanceData?.in_maintenance && maintenanceData.active_window && (
- <div className="p-3 rounded-lg bg-yellow-100 border border-yellow-200">
+ <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
  <div className="flex items-center gap-2 mb-1">
  <span className="text-lg">🔧</span>
- <span className="font-medium text-yellow-700">In Maintenance</span>
+ <span className="font-medium text-warning">In Maintenance</span>
  </div>
- <p className="text-sm text-yellow-600">
+ <p className="text-sm text-warning">
  {maintenanceData.active_window.name}
  </p>
- <p className="text-xs text-yellow-500 mt-1">
+ <p className="text-xs text-warning mt-1">
  Until: {new Date(maintenanceData.active_window.end_time).toLocaleString()}
  </p>
  </div>
@@ -973,14 +973,14 @@ function MaintenanceTabContent({
  <div className="flex items-center gap-2">
  <span className={`text-xs px-2 py-0.5 rounded ${
  isActive
- ? 'bg-yellow-100 text-yellow-700'
+ ? 'bg-warning/10 text-warning'
  : 'bg-muted text-muted-foreground'
  }`}>
  {isActive ? 'Active' : 'Scheduled'}
  </span>
  <button
  onClick={() => deleteMaintenanceWindow(window.id)}
- className="text-xs text-red-500 hover:text-red-700"
+ className="text-xs text-destructive hover:text-destructive"
  title="Delete"
  >
  🗑️

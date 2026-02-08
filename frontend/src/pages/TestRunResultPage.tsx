@@ -494,10 +494,10 @@ export default function TestRunResultPage() {
  // Feature #1834: Get screenshot type badge color
  const getScreenshotTypeBadge = (type: ScreenshotItem['type']) => {
  switch (type) {
- case 'final': return 'bg-blue-100 text-blue-700';
- case 'baseline': return 'bg-green-100 text-green-700';
- case 'diff': return 'bg-red-100 text-red-700';
- case 'step_before': return 'bg-yellow-100 text-yellow-700';
+ case 'final': return 'bg-primary/10 text-primary';
+ case 'baseline': return 'bg-success/10 text-success';
+ case 'diff': return 'bg-destructive/10 text-destructive';
+ case 'step_before': return 'bg-warning/10 text-warning';
  case 'step_after': return 'bg-purple-100 text-purple-700';
  default: return 'bg-muted text-foreground';
  }
@@ -1153,10 +1153,10 @@ export default function TestRunResultPage() {
  </div>
  <div className="flex items-center gap-4">
  <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
- run.status === 'passed' ? 'bg-green-100 text-green-700' :
- run.status === 'failed' ? 'bg-red-100 text-red-700' :
- run.status === 'running' ? 'bg-blue-100 text-blue-700' :
- run.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+ run.status === 'passed' ? 'bg-success/10 text-success' :
+ run.status === 'failed' ? 'bg-destructive/10 text-destructive' :
+ run.status === 'running' ? 'bg-primary/10 text-primary' :
+ run.status === 'pending' ? 'bg-warning/10 text-warning' :
  'bg-muted text-foreground'
  }`}>
  {run.status.charAt(0).toUpperCase() + run.status.slice(1)}
@@ -1167,7 +1167,7 @@ export default function TestRunResultPage() {
  onClick={() => setCompareMode(!compareMode)}
  className={`inline-flex items-center gap-2 px-4 py-2 rounded-md transition-all ${
  compareMode
- ? 'bg-blue-600 text-white'
+ ? 'bg-primary text-white'
  : 'border border-border text-foreground hover:bg-muted'
  }`}
  title="Compare with previous runs"
@@ -1192,11 +1192,11 @@ export default function TestRunResultPage() {
  {/* Feature #1962: AI button removed - AI analysis now only on Visual Review page */}
  {/* Feature #1951: Show tip for simple known errors (no AI cost) */}
  {run.status !== 'passed' && errorAnalysis.isSimple && (
- <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-md text-sm">
- <svg className="h-5 w-5 text-amber-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="flex items-center gap-2 px-4 py-2 bg-warning/5 border border-warning/20 rounded-md text-sm">
+ <svg className="h-5 w-5 text-warning flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
- <span className="text-amber-800">
+ <span className="text-warning">
  <strong>Tip:</strong> {errorAnalysis.tip}
  </span>
  </div>

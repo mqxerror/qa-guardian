@@ -326,7 +326,7 @@ export function SbomPage() {
         {generatedSbom && (
           <div className="bg-card rounded-lg border border-border p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-green-500 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-success flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -374,8 +374,8 @@ export function SbomPage() {
             <div className="flex flex-wrap gap-2 mb-4">
               <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
                 generatedSbom.compliance?.executive_order_14028
-                  ? 'bg-green-500/10 text-green-500'
-                  : 'bg-yellow-500/10 text-yellow-500'
+                  ? 'bg-success/10 text-success'
+                  : 'bg-warning/10 text-warning'
               }`}>
                 {generatedSbom.compliance?.executive_order_14028 ? (
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -390,8 +390,8 @@ export function SbomPage() {
               </span>
               <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
                 generatedSbom.compliance?.ntia_minimum_elements
-                  ? 'bg-green-500/10 text-green-500'
-                  : 'bg-yellow-500/10 text-yellow-500'
+                  ? 'bg-success/10 text-success'
+                  : 'bg-warning/10 text-warning'
               }`}>
                 {generatedSbom.compliance?.ntia_minimum_elements ? (
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">

@@ -294,9 +294,9 @@ export function WebhookIntegrationGuidesPage() {
  </div>
  </div>
 
- <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
- <h4 className="font-medium text-blue-900 mb-2">Pro Tip</h4>
- <p className="text-sm text-blue-800">
+ <div className="rounded-lg bg-primary/5 border border-primary/20 p-4">
+ <h4 className="font-medium text-primary mb-2">Pro Tip</h4>
+ <p className="text-sm text-primary">
  Use n8n's <strong>IF</strong> node to filter webhooks by event type (e.g., only process <code>test.run.failed</code> events).
  Access the event type via <code>$json.event</code>.
  </p>
@@ -396,9 +396,9 @@ export function WebhookIntegrationGuidesPage() {
  </div>
  </div>
 
- <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
- <h4 className="font-medium text-amber-900 mb-2">Note on Signature Verification</h4>
- <p className="text-sm text-amber-800">
+ <div className="rounded-lg bg-warning/5 border border-warning/20 p-4">
+ <h4 className="font-medium text-warning mb-2">Note on Signature Verification</h4>
+ <p className="text-sm text-warning">
  Zapier's Webhooks by Zapier doesn't natively support HMAC signature verification.
  For enhanced security, consider using Zapier's <strong>Code by Zapier</strong> step with JavaScript
  to verify signatures before processing.
@@ -502,9 +502,9 @@ export function WebhookIntegrationGuidesPage() {
  </div>
  </div>
 
- <div className="rounded-lg bg-green-50 border border-green-200 p-4">
- <h4 className="font-medium text-green-900 mb-2">Make + HMAC Verification</h4>
- <p className="text-sm text-green-800">
+ <div className="rounded-lg bg-success/5 border border-success/20 p-4">
+ <h4 className="font-medium text-success mb-2">Make + HMAC Verification</h4>
+ <p className="text-sm text-success">
  Make supports custom code via the <strong>Tools &gt; Set Variable</strong> module with JavaScript.
  You can use this to verify HMAC signatures before processing the webhook data.
  </p>
@@ -535,7 +535,7 @@ export function WebhookIntegrationGuidesPage() {
  title="Copy event name"
  >
  {copiedText === evt.event ? (
- <svg className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
  </svg>
  ) : (
@@ -639,9 +639,9 @@ export function WebhookIntegrationGuidesPage() {
  </div>
  </div>
 
- <div className="mt-6 rounded-lg bg-red-50 border border-red-200 p-4">
- <h4 className="font-medium text-red-900 mb-2">Security Best Practices</h4>
- <ul className="text-sm text-red-800 list-disc list-inside space-y-1">
+ <div className="mt-6 rounded-lg bg-destructive/5 border border-destructive/20 p-4">
+ <h4 className="font-medium text-destructive mb-2">Security Best Practices</h4>
+ <ul className="text-sm text-destructive list-disc list-inside space-y-1">
  <li>Always verify the signature before processing webhook data</li>
  <li>Use a strong, randomly generated secret (32+ characters)</li>
  <li>Reject requests with timestamps older than 5 minutes (replay protection)</li>

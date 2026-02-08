@@ -13,8 +13,8 @@ export const AIBadge = memo(function AIBadge({ isAiGenerated, confidenceScore, r
  if (!isAiGenerated) return null;
 
  const getConfidenceColor = (score: number) => {
- if (score >= 80) return 'text-green-600';
- if (score >= 60) return 'text-yellow-600';
+ if (score >= 80) return 'text-success';
+ if (score >= 60) return 'text-warning';
  return 'text-orange-600';
  };
 
@@ -54,7 +54,7 @@ export const AIBadge = memo(function AIBadge({ isAiGenerated, confidenceScore, r
  )}
  {reviewStatus === 'approved' && (
  <span
- className="rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700"
+ className="rounded-full px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary"
  title="Approved by reviewer"
  >
  ✅ Approved
@@ -62,7 +62,7 @@ export const AIBadge = memo(function AIBadge({ isAiGenerated, confidenceScore, r
  )}
  {reviewStatus === 'rejected' && (
  <span
- className="rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700"
+ className="rounded-full px-2 py-0.5 text-xs font-medium bg-destructive/10 text-destructive"
  title="Rejected by reviewer"
  >
  ❌ Rejected

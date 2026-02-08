@@ -99,9 +99,9 @@ export function BestPracticesPage() {
 
  const getTierBadge = (tier: string) => {
  switch (tier) {
- case 'top': return 'bg-green-500/20 text-green-400';
- case 'mid': return 'bg-amber-500/20 text-amber-400';
- case 'low': return 'bg-red-500/20 text-red-400';
+ case 'top': return 'bg-success/20 text-success';
+ case 'mid': return 'bg-warning/20 text-warning';
+ case 'low': return 'bg-destructive/20 text-destructive';
  default: return 'bg-muted text-muted-foreground';
  }
  };
@@ -131,7 +131,7 @@ export function BestPracticesPage() {
  const getEffortBadge = (effort: string) => {
  switch (effort) {
  case 'high': return 'bg-purple-500/20 text-purple-400';
- case 'medium': return 'bg-blue-500/20 text-blue-400';
+ case 'medium': return 'bg-primary/20 text-primary';
  case 'low': return 'bg-cyan-500/20 text-cyan-400';
  default: return 'bg-muted text-muted-foreground';
  }
@@ -139,21 +139,21 @@ export function BestPracticesPage() {
 
  const getStatusBadge = (status: string) => {
  switch (status) {
- case 'adopted': return 'bg-green-500/20 text-green-400';
- case 'partial': return 'bg-amber-500/20 text-amber-400';
- default: return 'bg-red-500/20 text-red-400';
+ case 'adopted': return 'bg-success/20 text-success';
+ case 'partial': return 'bg-warning/20 text-warning';
+ default: return 'bg-destructive/20 text-destructive';
  }
  };
 
  const getMetricColor = (value: number, type: 'pass_rate' | 'coverage' | 'flakiness') => {
  if (type === 'flakiness') {
- if (value <= 5) return 'text-green-600';
- if (value <= 15) return 'text-amber-600';
- return 'text-red-600';
+ if (value <= 5) return 'text-success';
+ if (value <= 15) return 'text-warning';
+ return 'text-destructive';
  }
- if (value >= 90) return 'text-green-600';
- if (value >= 70) return 'text-amber-600';
- return 'text-red-600';
+ if (value >= 90) return 'text-success';
+ if (value >= 70) return 'text-warning';
+ return 'text-destructive';
  };
 
  const topProjects = projectMetrics.filter(p => p.tier === 'top');
@@ -212,12 +212,12 @@ export function BestPracticesPage() {
 
  {/* Summary Cards */}
  <div className="grid gap-4 md:grid-cols-4">
- <div className="rounded-lg border bg-gradient-to-r from-green-500/10 to-emerald-500/10 p-4">
+ <div className="rounded-lg border bg-gradient-to-r from-success/10 to-emerald-500/10 p-4">
  <div className="flex items-center justify-between">
  <span className="text-sm text-muted-foreground">Top Performing</span>
  <span className="text-2xl">🏆</span>
  </div>
- <p className="text-3xl font-bold text-green-600 mt-2">{topProjects.length}</p>
+ <p className="text-3xl font-bold text-success mt-2">{topProjects.length}</p>
  <p className="text-sm text-muted-foreground">Projects with &gt;95% pass rate</p>
  </div>
  <div className="rounded-lg border bg-card p-4">
@@ -241,7 +241,7 @@ export function BestPracticesPage() {
  <span className="text-sm text-muted-foreground">Potential ROI</span>
  <span className="text-2xl">📈</span>
  </div>
- <p className="text-3xl font-bold text-green-600 mt-2">{Math.round(recommendations.reduce((acc, r) => acc + r.estimated_roi, 0) / 100)}x</p>
+ <p className="text-3xl font-bold text-success mt-2">{Math.round(recommendations.reduce((acc, r) => acc + r.estimated_roi, 0) / 100)}x</p>
  <p className="text-sm text-muted-foreground">Avg. return on investment</p>
  </div>
  </div>
@@ -249,7 +249,7 @@ export function BestPracticesPage() {
  {/* Step 2: AI compares project metrics */}
  <div className="rounded-lg border bg-card p-6">
  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
- <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm">2</span>
+ <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary text-sm">2</span>
  <span>📊</span> Project Metrics Comparison
  </h2>
  <p className="text-sm text-muted-foreground mb-4">AI compares metrics across all projects to identify top performers</p>
@@ -270,7 +270,7 @@ export function BestPracticesPage() {
  </thead>
  <tbody>
  {projectMetrics.map((project) => (
- <tr key={project.id} className={`border-b hover:bg-muted/50 ${project.tier === 'top' ? 'bg-green-50/50' : ''}`}>
+ <tr key={project.id} className={`border-b hover:bg-muted/50 ${project.tier === 'top' ? 'bg-success/5/50' : ''}`}>
  <td className="py-3 px-2">
  <div className="flex items-center gap-2">
  {project.tier === 'top' && <span className="text-lg">🏆</span>}
@@ -297,7 +297,7 @@ export function BestPracticesPage() {
  <div className="flex items-center justify-center gap-2">
  <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
  <div
- className={`h-full ${project.maintainability_score >= 80 ? 'bg-green-500' : project.maintainability_score >= 60 ? 'bg-amber-500' : 'bg-red-500'}`}
+ className={`h-full ${project.maintainability_score >= 80 ? 'bg-success' : project.maintainability_score >= 60 ? 'bg-warning' : 'bg-destructive'}`}
  style={{ width: `${project.maintainability_score}%` }}
  />
  </div>
@@ -347,14 +347,14 @@ export function BestPracticesPage() {
  <div className="space-y-2">
  <div className="flex items-center justify-between text-sm">
  <span className="text-muted-foreground">Top projects:</span>
- <span className="font-bold text-green-600">{practice.adoption_rate_top}%</span>
+ <span className="font-bold text-success">{practice.adoption_rate_top}%</span>
  </div>
  <div className="flex items-center justify-between text-sm">
  <span className="text-muted-foreground">Overall:</span>
- <span className="font-bold text-amber-600">{practice.adoption_rate_overall}%</span>
+ <span className="font-bold text-warning">{practice.adoption_rate_overall}%</span>
  </div>
  <div className="pt-2 border-t">
- <span className="text-sm text-green-600 font-medium">{practice.expected_improvement}</span>
+ <span className="text-sm text-success font-medium">{practice.expected_improvement}</span>
  </div>
  </div>
  </div>
@@ -365,7 +365,7 @@ export function BestPracticesPage() {
  {/* Step 4: AI suggests adopt these practices from Project X */}
  <div className="rounded-lg border bg-card p-6">
  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
- <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-green-400 text-sm">4</span>
+ <span className="flex h-6 w-6 items-center justify-center rounded-full bg-success/20 text-success text-sm">4</span>
  <span>💡</span> Adopt These Practices from Top Projects
  </h2>
  <p className="text-sm text-muted-foreground mb-4">AI suggests specific practices to adopt from high-performing projects</p>
@@ -375,8 +375,8 @@ export function BestPracticesPage() {
  <div key={rec.id} className="rounded-lg border bg-muted/50 p-4">
  <div className="flex items-start gap-4">
  <div className={`flex h-10 w-10 items-center justify-center rounded-full font-bold text-sm flex-shrink-0 ${
- index === 0 ? 'bg-green-500/20 text-green-400' :
- index === 1 ? 'bg-blue-500/20 text-blue-400' :
+ index === 0 ? 'bg-success/20 text-success' :
+ index === 1 ? 'bg-primary/20 text-primary' :
  'bg-violet-500/20 text-violet-400'
  }`}>
  #{index + 1}
@@ -393,14 +393,14 @@ export function BestPracticesPage() {
  </span>
  </div>
 
- <div className="mb-3 p-3 rounded-lg bg-green-50 border border-green-200">
+ <div className="mb-3 p-3 rounded-lg bg-success/5 border border-success/20">
  <div className="flex items-center gap-2 mb-1">
- <span className="text-sm font-medium text-green-800">Adopt from:</span>
- <span className="px-2 py-0.5 rounded-md bg-green-100 text-green-700 text-xs font-medium">
+ <span className="text-sm font-medium text-success">Adopt from:</span>
+ <span className="px-2 py-0.5 rounded-md bg-success/10 text-success text-xs font-medium">
  🏆 {rec.source_project}
  </span>
  <span className="text-muted-foreground">→</span>
- <span className="text-sm font-medium text-green-800">Apply to:</span>
+ <span className="text-sm font-medium text-success">Apply to:</span>
  <span className="px-2 py-0.5 rounded-md bg-violet-100 text-violet-700 text-xs font-medium">
  {rec.target_project}
  </span>
@@ -415,11 +415,11 @@ export function BestPracticesPage() {
  </div>
  <div className="flex items-center gap-1">
  <span className="text-muted-foreground">Expected:</span>
- <span className="font-bold text-green-600">{rec.practice.expected_improvement}</span>
+ <span className="font-bold text-success">{rec.practice.expected_improvement}</span>
  </div>
  <div className="flex items-center gap-1">
  <span className="text-muted-foreground">ROI:</span>
- <span className="font-bold text-blue-600">{rec.estimated_roi}%</span>
+ <span className="font-bold text-primary">{rec.estimated_roi}%</span>
  </div>
  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getEffortBadge(rec.practice.implementation_effort)}`}>
  {rec.practice.implementation_effort} effort

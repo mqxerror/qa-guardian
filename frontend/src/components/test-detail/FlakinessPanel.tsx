@@ -64,9 +64,9 @@ export function FlakinessPanel({
  </div>
  <div className="rounded-lg border border-border bg-muted/30 p-3">
  <div className={`text-2xl font-bold ${
- flakinessTrend.summary.overall_flakiness_score >= 0.7 ? 'text-red-600' :
+ flakinessTrend.summary.overall_flakiness_score >= 0.7 ? 'text-destructive' :
  flakinessTrend.summary.overall_flakiness_score >= 0.4 ? 'text-orange-600' :
- flakinessTrend.summary.overall_flakiness_score > 0 ? 'text-yellow-600' :
+ flakinessTrend.summary.overall_flakiness_score > 0 ? 'text-warning' :
  'text-emerald-600'
  }`}>
  {flakinessTrend.summary.overall_flakiness_score.toFixed(2)}
@@ -115,7 +115,7 @@ export function FlakinessPanel({
  <div className="rounded-md border border-border bg-card p-2 shadow-sm text-xs">
  <div className="font-medium">{new Date(data.date).toLocaleDateString()}</div>
  <div className="text-emerald-600">Passes: {data.passes}</div>
- <div className="text-red-600">Failures: {data.failures}</div>
+ <div className="text-destructive">Failures: {data.failures}</div>
  <div className="text-orange-600">Flakiness: {data.flakiness_score.toFixed(2)}</div>
  </div>
  );
@@ -140,16 +140,16 @@ export function FlakinessPanel({
 
  {/* Code Changes Correlation */}
  {flakinessTrend.code_changes.length > 0 && flakinessTrend.summary.flakiness_started ? (
- <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200">
- <h3 className="text-sm font-medium text-yellow-800 mb-2 flex items-center gap-2">
+ <div className="p-3 rounded-lg bg-warning/5 border border-warning/20">
+ <h3 className="text-sm font-medium text-warning mb-2 flex items-center gap-2">
  <span>⚠️</span> Potential Related Code Changes
  </h3>
- <p className="text-xs text-yellow-700 mb-2">
+ <p className="text-xs text-warning mb-2">
  Flakiness started on {new Date(flakinessTrend.summary.flakiness_started).toLocaleDateString()}.
  The following commits may be related:
  </p>
  {flakinessTrend.code_changes.map((change) => (
- <div key={change.commit_id} className="mt-2 p-2 bg-card rounded border border-yellow-300">
+ <div key={change.commit_id} className="mt-2 p-2 bg-card rounded border border-warning/30">
  <div className="flex items-center gap-2">
  <code className="text-xs font-mono text-primary">{change.commit_id.substring(0, 8)}</code>
  <span className="text-xs text-muted-foreground">{new Date(change.date).toLocaleDateString()}</span>
@@ -186,9 +186,9 @@ export function FlakinessPanel({
  key={run.id || idx}
  className={`flex-1 rounded-sm ${
  run.status === 'passed' ? 'bg-emerald-500' :
- run.status === 'failed' ? 'bg-red-500' :
- run.status === 'warning' ? 'bg-amber-500' :
- run.status === 'running' ? 'bg-blue-500 animate-pulse' :
+ run.status === 'failed' ? 'bg-destructive' :
+ run.status === 'warning' ? 'bg-warning' :
+ run.status === 'running' ? 'bg-primary animate-pulse' :
  'bg-gray-300'
  }`}
  title={`${run.status} - ${run.created_at ? new Date(run.created_at).toLocaleString() : 'Unknown'}`}

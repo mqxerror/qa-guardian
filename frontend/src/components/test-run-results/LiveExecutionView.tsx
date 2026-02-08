@@ -34,22 +34,22 @@ export default function LiveExecutionView({
  }
 
  return (
- <div className="bg-card border-2 border-blue-500 rounded-lg p-6 mb-6 shadow-lg shadow-blue-500/20">
+ <div className="bg-card border-2 border-primary rounded-lg p-6 mb-6 shadow-lg shadow-blue-500/20">
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-3">
  <div className="relative">
- <div className="h-4 w-4 bg-blue-500 rounded-full animate-ping absolute"></div>
- <div className="h-4 w-4 bg-blue-500 rounded-full relative"></div>
+ <div className="h-4 w-4 bg-primary rounded-full animate-ping absolute"></div>
+ <div className="h-4 w-4 bg-primary rounded-full relative"></div>
  </div>
  <h2 className="text-lg font-semibold text-foreground">Live Execution</h2>
- <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+ <span className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-full">
  {runStatus === 'pending' ? 'Starting...' : 'Running'}
  </span>
  </div>
  <button
  onClick={onCancelTest}
  disabled={cancellingTest}
- className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
+ className="flex items-center gap-2 px-4 py-2 bg-destructive text-white rounded-md hover:bg-destructive disabled:opacity-50 transition-colors"
  >
  {cancellingTest ? (
  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -79,7 +79,7 @@ export default function LiveExecutionView({
  </div>
  <div className="h-3 bg-muted rounded-full overflow-hidden">
  <div
- className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+ className="h-full bg-gradient-to-r from-primary to-primary rounded-full transition-all duration-500"
  style={{ width: `${currentStep?.progress || 0}%` }}
  />
  </div>
@@ -89,7 +89,7 @@ export default function LiveExecutionView({
  {/* Current Step */}
  <div className="p-4 bg-muted/30 rounded-lg">
  <h3 className="font-medium text-foreground mb-3 flex items-center gap-2">
- <svg className="w-5 h-5 text-blue-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="w-5 h-5 text-primary animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
  </svg>
  Current Step
@@ -137,7 +137,7 @@ export default function LiveExecutionView({
  {/* Live Screenshot */}
  <div className="p-4 bg-muted/30 rounded-lg">
  <h3 className="font-medium text-foreground mb-3 flex items-center gap-2">
- <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
  </svg>
  Live Screenshot
@@ -175,9 +175,9 @@ export default function LiveExecutionView({
  <div
  key={idx}
  className={`py-0.5 ${
- log.level === 'error' ? 'text-red-400' :
- log.level === 'warn' ? 'text-yellow-400' :
- log.level === 'info' ? 'text-blue-400' :
+ log.level === 'error' ? 'text-destructive' :
+ log.level === 'warn' ? 'text-warning' :
+ log.level === 'info' ? 'text-primary' :
  'text-muted-foreground'
  }`}
  >

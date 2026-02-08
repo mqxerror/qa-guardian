@@ -221,17 +221,17 @@ export function AIRunComparisonPage() {
  <Layout>
  <div className="p-6 space-y-6 max-w-7xl mx-auto">
  {/* Feature #1986: Demo Mode Banner */}
- <div className="rounded-lg border-2 border-amber-400 bg-amber-50 p-4">
+ <div className="rounded-lg border-2 border-warning/80 bg-warning/5 p-4">
  <div className="flex items-center gap-3">
  <span className="text-2xl">🚧</span>
  <div>
  <div className="flex items-center gap-2">
- <h3 className="font-semibold text-amber-800">Demo Mode - Mock Data</h3>
- <span className="px-2 py-0.5 bg-amber-200 text-amber-800 text-xs font-medium rounded-full">
+ <h3 className="font-semibold text-warning">Demo Mode - Mock Data</h3>
+ <span className="px-2 py-0.5 bg-warning/20 text-warning text-xs font-medium rounded-full">
  Coming Soon
  </span>
  </div>
- <p className="text-sm text-amber-700 mt-1">
+ <p className="text-sm text-warning mt-1">
  This feature demonstrates the AI Run Comparison concept with simulated data.
  Real AI-powered analysis will be available in a future release.
  </p>
@@ -245,7 +245,7 @@ export function AIRunComparisonPage() {
  <div className="flex items-center gap-3">
  <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">{'\u2190'}</button>
  <h1 className="text-2xl font-bold text-foreground">{'\u{1F50D}'} AI Run Comparison</h1>
- <span className="px-2 py-1 bg-red-100 text-red-700 text-sm rounded">
+ <span className="px-2 py-1 bg-destructive/10 text-destructive text-sm rounded">
  Failed Run: {runId}
  </span>
  </div>
@@ -266,7 +266,7 @@ export function AIRunComparisonPage() {
  {passedPriorRuns.map((run, index) => (
  <div key={run.runId} className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/30 transition-colors">
  <div className="flex items-center gap-4">
- <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
+ <span className="px-2 py-1 bg-success/10 text-success text-xs rounded">
  {'\u2713'} Passed
  </span>
  <div>
@@ -276,7 +276,7 @@ export function AIRunComparisonPage() {
  </p>
  </div>
  {index === 0 && (
- <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
+ <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded">
  Most Recent
  </span>
  )}
@@ -307,25 +307,25 @@ export function AIRunComparisonPage() {
  <>
  {/* Run Summary Cards */}
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+ <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
  <div className="flex items-center gap-2 mb-2">
- <span className="text-red-600 text-lg">{'\u274C'}</span>
- <h3 className="font-semibold text-red-700">Failed Run</h3>
+ <span className="text-destructive text-lg">{'\u274C'}</span>
+ <h3 className="font-semibold text-destructive">Failed Run</h3>
  </div>
  <p className="font-medium text-foreground">{comparison.failedRun.testName}</p>
  <p className="text-sm text-muted-foreground mt-1">{comparison.failedRun.timestamp.toLocaleString()}</p>
  <p className="text-sm text-muted-foreground">Duration: {(comparison.failedRun.duration / 1000).toFixed(1)}s</p>
- <p className="text-sm text-red-600 mt-2">Failed at step {comparison.failedRun.failedStep}/{comparison.failedRun.totalSteps}</p>
+ <p className="text-sm text-destructive mt-2">Failed at step {comparison.failedRun.failedStep}/{comparison.failedRun.totalSteps}</p>
  </div>
- <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+ <div className="rounded-lg border border-success/20 bg-success/5 p-4">
  <div className="flex items-center gap-2 mb-2">
- <span className="text-green-600 text-lg">{'\u2713'}</span>
- <h3 className="font-semibold text-green-700">Successful Run</h3>
+ <span className="text-success text-lg">{'\u2713'}</span>
+ <h3 className="font-semibold text-success">Successful Run</h3>
  </div>
  <p className="font-medium text-foreground">{comparison.failedRun.testName}</p>
  <p className="text-sm text-muted-foreground mt-1">{comparison.successfulRun.timestamp.toLocaleString()}</p>
  <p className="text-sm text-muted-foreground">Duration: {(comparison.successfulRun.duration / 1000).toFixed(1)}s</p>
- <p className="text-sm text-green-600 mt-2">All {comparison.successfulRun.totalSteps} steps passed</p>
+ <p className="text-sm text-success mt-2">All {comparison.successfulRun.totalSteps} steps passed</p>
  </div>
  </div>
 
@@ -361,23 +361,23 @@ export function AIRunComparisonPage() {
  {comparison.aiAnalysis.whatChanged.map((change, idx) => (
  <div key={idx} className={`p-4 rounded-lg border ${
  change.severity === 'high' ? 'border-red-200 bg-red-50' :
- change.severity === 'medium' ? 'border-yellow-200 bg-yellow-50' :
+ change.severity === 'medium' ? 'border-warning/20 bg-warning/5' :
  'border-border bg-muted'
  }`}>
  <div className="flex items-start justify-between">
  <div className="flex items-center gap-2">
  <span className={`px-2 py-0.5 text-xs rounded ${
  change.category === 'code' ? 'bg-purple-100 text-purple-700' :
- change.category === 'selector' ? 'bg-blue-100 text-blue-700' :
+ change.category === 'selector' ? 'bg-primary/10 text-primary' :
  change.category === 'timing' ? 'bg-orange-100 text-orange-700' :
- change.category === 'environment' ? 'bg-green-100 text-green-700' :
+ change.category === 'environment' ? 'bg-success/10 text-success' :
  'bg-muted text-foreground'
  }`}>
  {change.category.toUpperCase()}
  </span>
  <span className={`px-2 py-0.5 text-xs rounded ${
  change.severity === 'high' ? 'bg-red-100 text-red-700' :
- change.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+ change.severity === 'medium' ? 'bg-warning/10 text-warning' :
  'bg-muted text-foreground'
  }`}>
  {change.severity} severity
@@ -399,10 +399,10 @@ export function AIRunComparisonPage() {
  </h3>
 
  {/* Divergence Point Highlight */}
- <div className="p-4 rounded-lg border-2 border-red-400 bg-red-50">
+ <div className="p-4 rounded-lg border-2 border-destructive/80 bg-destructive/5">
  <div className="flex items-center gap-2 mb-3">
  <span className="text-2xl">{'\u26A0\uFE0F'}</span>
- <h4 className="font-semibold text-red-700">Divergence Point: Step {comparison.aiAnalysis.divergencePoint.step}</h4>
+ <h4 className="font-semibold text-destructive">Divergence Point: Step {comparison.aiAnalysis.divergencePoint.step}</h4>
  </div>
  <div className="space-y-3">
  <div>
@@ -410,12 +410,12 @@ export function AIRunComparisonPage() {
  <code className="text-sm px-2 py-1 bg-muted rounded">{comparison.aiAnalysis.divergencePoint.action}</code>
  </div>
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
- <div className="p-3 rounded border border-green-200 bg-green-50">
- <p className="text-xs text-green-700 font-medium mb-1">{'\u2713'} Successful Run Result</p>
+ <div className="p-3 rounded border border-success/20 bg-success/5">
+ <p className="text-xs text-success font-medium mb-1">{'\u2713'} Successful Run Result</p>
  <p className="text-sm text-foreground">{comparison.aiAnalysis.divergencePoint.successfulResult}</p>
  </div>
- <div className="p-3 rounded border border-red-200 bg-red-50">
- <p className="text-xs text-red-700 font-medium mb-1">{'\u274C'} Failed Run Result</p>
+ <div className="p-3 rounded border border-destructive/20 bg-destructive/5">
+ <p className="text-xs text-destructive font-medium mb-1">{'\u274C'} Failed Run Result</p>
  <p className="text-sm text-foreground">{comparison.aiAnalysis.divergencePoint.failedResult}</p>
  </div>
  </div>
@@ -432,11 +432,11 @@ export function AIRunComparisonPage() {
  <div className="space-y-2">
  {comparison.stepComparison.map((step) => (
  <div key={step.stepNumber} className={`flex items-center gap-4 p-3 rounded ${
- step.isDivergence ? 'bg-red-50 border border-red-200' : 'bg-muted/30'
+ step.isDivergence ? 'bg-destructive/5 border border-destructive/20' : 'bg-muted/30'
  }`}>
  <span className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${
- step.isDivergence ? 'bg-red-500 text-white' :
- step.failedResult === 'passed' ? 'bg-green-500 text-white' :
+ step.isDivergence ? 'bg-destructive text-white' :
+ step.failedResult === 'passed' ? 'bg-success text-white' :
  'bg-gray-400 text-white'
  }`}>
  {step.stepNumber}
@@ -445,13 +445,13 @@ export function AIRunComparisonPage() {
  <code className="text-sm">{step.action}</code>
  </div>
  <div className="text-right text-sm">
- <span className="text-green-600">{step.successfulDuration}ms</span>
+ <span className="text-success">{step.successfulDuration}ms</span>
  <span className="text-muted-foreground mx-2">{'\u2192'}</span>
- <span className={step.failedResult === 'failed' ? 'text-red-600' : 'text-muted-foreground'}>
+ <span className={step.failedResult === 'failed' ? 'text-destructive' : 'text-muted-foreground'}>
  {step.failedResult === 'skipped' ? 'skipped' : `${step.failedDuration}ms`}
  </span>
  </div>
- {step.isDivergence && <span className="text-red-600 font-medium">{'\u2190'} DIVERGED</span>}
+ {step.isDivergence && <span className="text-destructive font-medium">{'\u2190'} DIVERGED</span>}
  </div>
  ))}
  </div>
@@ -481,7 +481,7 @@ export function AIRunComparisonPage() {
  <ul className="space-y-2">
  {comparison.aiAnalysis.likelyCause.evidence.map((item, idx) => (
  <li key={idx} className="flex items-start gap-2 text-sm text-foreground">
- <span className="text-green-600 mt-0.5">{'\u2713'}</span>
+ <span className="text-success mt-0.5">{'\u2713'}</span>
  {item}
  </li>
  ))}
@@ -495,7 +495,7 @@ export function AIRunComparisonPage() {
  <div className="space-y-2">
  {comparison.aiAnalysis.likelyCause.relatedChanges.map((change, idx) => (
  <div key={idx} className="flex items-center gap-2 text-sm p-2 rounded bg-muted">
- <span className="text-blue-600">{'\u{1F4C4}'}</span>
+ <span className="text-primary">{'\u{1F4C4}'}</span>
  <code className="text-xs">{change.file}</code>
  <span className="text-muted-foreground">{'\u2022'}</span>
  <span className="text-foreground">{change.change}</span>
@@ -509,8 +509,8 @@ export function AIRunComparisonPage() {
  )}
 
  {/* Suggested Fix */}
- <div className="mt-6 p-4 rounded-lg bg-green-50 border border-green-200">
- <p className="text-sm font-medium text-green-700 mb-2">{'\u{1F4A1}'} Suggested Fix</p>
+ <div className="mt-6 p-4 rounded-lg bg-success/5 border border-success/20">
+ <p className="text-sm font-medium text-success mb-2">{'\u{1F4A1}'} Suggested Fix</p>
  <p className="text-foreground">{comparison.aiAnalysis.likelyCause.suggestedFix}</p>
  </div>
  </div>

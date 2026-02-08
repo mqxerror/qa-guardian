@@ -51,9 +51,9 @@ export function RegisterPage() {
     if (/[0-9]/.test(pwd)) score++;
     if (/[^A-Za-z0-9]/.test(pwd)) score++;
 
-    if (score <= 2) return { score: 1, label: 'Weak', color: 'bg-red-500' };
-    if (score <= 4) return { score: 2, label: 'Medium', color: 'bg-yellow-500' };
-    return { score: 3, label: 'Strong', color: 'bg-green-500' };
+    if (score <= 2) return { score: 1, label: 'Weak', color: 'bg-destructive' };
+    if (score <= 4) return { score: 2, label: 'Medium', color: 'bg-warning' };
+    return { score: 3, label: 'Strong', color: 'bg-success' };
   };
 
   // Validate email on blur
@@ -180,7 +180,7 @@ export function RegisterPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 role="alert"
-                className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
+                className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
               >
                 {error}
               </motion.div>
@@ -266,20 +266,20 @@ export function RegisterPage() {
                     </span>
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-muted-foreground">
-                    <div className={`flex items-center gap-1 ${password.length >= 8 ? 'text-green-400' : ''}`}>
-                      <CheckCircle2 className={`h-3 w-3 ${password.length >= 8 ? 'text-green-400' : 'text-foreground'}`} />
+                    <div className={`flex items-center gap-1 ${password.length >= 8 ? 'text-success' : ''}`}>
+                      <CheckCircle2 className={`h-3 w-3 ${password.length >= 8 ? 'text-success' : 'text-foreground'}`} />
                       8+ characters
                     </div>
-                    <div className={`flex items-center gap-1 ${/[A-Z]/.test(password) ? 'text-green-400' : ''}`}>
-                      <CheckCircle2 className={`h-3 w-3 ${/[A-Z]/.test(password) ? 'text-green-400' : 'text-foreground'}`} />
+                    <div className={`flex items-center gap-1 ${/[A-Z]/.test(password) ? 'text-success' : ''}`}>
+                      <CheckCircle2 className={`h-3 w-3 ${/[A-Z]/.test(password) ? 'text-success' : 'text-foreground'}`} />
                       Uppercase
                     </div>
-                    <div className={`flex items-center gap-1 ${/[a-z]/.test(password) ? 'text-green-400' : ''}`}>
-                      <CheckCircle2 className={`h-3 w-3 ${/[a-z]/.test(password) ? 'text-green-400' : 'text-foreground'}`} />
+                    <div className={`flex items-center gap-1 ${/[a-z]/.test(password) ? 'text-success' : ''}`}>
+                      <CheckCircle2 className={`h-3 w-3 ${/[a-z]/.test(password) ? 'text-success' : 'text-foreground'}`} />
                       Lowercase
                     </div>
-                    <div className={`flex items-center gap-1 ${/[0-9]/.test(password) ? 'text-green-400' : ''}`}>
-                      <CheckCircle2 className={`h-3 w-3 ${/[0-9]/.test(password) ? 'text-green-400' : 'text-foreground'}`} />
+                    <div className={`flex items-center gap-1 ${/[0-9]/.test(password) ? 'text-success' : ''}`}>
+                      <CheckCircle2 className={`h-3 w-3 ${/[0-9]/.test(password) ? 'text-success' : 'text-foreground'}`} />
                       Number
                     </div>
                   </div>
@@ -315,7 +315,7 @@ export function RegisterPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 font-medium text-white transition-all hover:from-blue-500 hover:to-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:cursor-not-allowed disabled:opacity-50"
+                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary px-4 py-3 font-medium text-white transition-all hover:from-primary hover:to-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isLoading ? (
@@ -345,7 +345,7 @@ export function RegisterPage() {
             className="mt-6 text-center text-sm text-muted-foreground"
           >
             Already have an account?{' '}
-            <Link to="/login" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
+            <Link to="/login" className="text-primary hover:text-primary/70 transition-colors font-medium">
               Sign in
             </Link>
           </motion.div>

@@ -47,7 +47,7 @@ export function TestResultsMessage({ tests }: TestResultsMessageProps) {
       {tests.map((test) => (
         <div key={test.id} className="rounded-md bg-background/50 p-2 text-xs">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-red-500"></span>
+            <span className="w-2 h-2 rounded-full bg-destructive"></span>
             <span className="font-medium">{test.name}</span>
           </div>
           <div className="mt-1 text-muted-foreground">
@@ -55,7 +55,7 @@ export function TestResultsMessage({ tests }: TestResultsMessageProps) {
             <span>⏱️ {test.duration}s</span>
           </div>
           {test.error && (
-            <div className="mt-1 text-red-400 text-xs font-mono bg-red-500/10 rounded px-1 py-0.5">
+            <div className="mt-1 text-destructive text-xs font-mono bg-destructive/10 rounded px-1 py-0.5">
               {test.error}
             </div>
           )}
@@ -87,8 +87,8 @@ export function ExplanationMessage({ explanation }: ExplanationMessageProps) {
           <p key={i} className="text-muted-foreground">{e}</p>
         ))}
       </div>
-      <div className="rounded-md bg-green-500/10 border border-green-500/20 p-2">
-        <p className="font-medium text-green-600">💡 Suggested Fix:</p>
+      <div className="rounded-md bg-success/10 border border-success/20 p-2">
+        <p className="font-medium text-success">💡 Suggested Fix:</p>
         <p className="text-muted-foreground">{explanation.fix_suggestion}</p>
       </div>
     </div>
@@ -105,14 +105,14 @@ export function ActionResultMessage({ action }: ActionResultMessageProps) {
     <div className="mt-2">
       <div className={`rounded-md p-2 text-xs ${
         action.type === 'test_completed' && action.success
-          ? 'bg-green-500/10 border border-green-500/20'
+          ? 'bg-success/10 border border-success/20'
           : action.type === 'test_running'
-          ? 'bg-blue-500/10 border border-blue-500/20'
-          : 'bg-amber-500/10 border border-amber-500/20'
+          ? 'bg-primary/10 border border-primary/20'
+          : 'bg-warning/10 border border-warning/20'
       }`}>
         {action.type === 'test_running' && (
           <div className="flex items-center gap-2">
-            <div className="animate-spin h-3 w-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+            <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full"></div>
             <span>{action.details}</span>
           </div>
         )}
@@ -134,36 +134,36 @@ export function DebugAnalysisMessage({ debug }: DebugAnalysisMessageProps) {
     <div className="mt-2 space-y-2">
       {debug.steps.map((step) => (
         <div key={step.number} className={`rounded-md p-2 text-xs ${
-          step.status === 'passed' ? 'bg-green-500/10 border border-green-500/20' :
-          step.status === 'failed' ? 'bg-red-500/10 border border-red-500/20' :
+          step.status === 'passed' ? 'bg-success/10 border border-success/20' :
+          step.status === 'failed' ? 'bg-destructive/10 border border-destructive/20' :
           'bg-gray-500/10 border border-border/20'
         }`}>
           <div className="flex items-center gap-2">
             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-              step.status === 'passed' ? 'bg-green-500 text-white' :
-              step.status === 'failed' ? 'bg-red-500 text-white' :
+              step.status === 'passed' ? 'bg-success text-white' :
+              step.status === 'failed' ? 'bg-destructive text-white' :
               'bg-gray-400 text-white'
             }`}>{step.number}</span>
             <span className="flex-1">{step.action}</span>
             <span className={`text-[10px] ${
-              step.status === 'passed' ? 'text-green-600' :
-              step.status === 'failed' ? 'text-red-600' :
+              step.status === 'passed' ? 'text-success' :
+              step.status === 'failed' ? 'text-destructive' :
               'text-muted-foreground'
             }`}>
               {step.status === 'passed' ? '✓' : step.status === 'failed' ? '✗' : '○'} {step.duration > 0 ? `${step.duration}s` : ''}
             </span>
           </div>
           {step.error && (
-            <div className="mt-1 text-red-400 text-[10px] font-mono bg-red-500/10 rounded px-1 py-0.5">
+            <div className="mt-1 text-destructive text-[10px] font-mono bg-destructive/10 rounded px-1 py-0.5">
               {step.error}
             </div>
           )}
         </div>
       ))}
       {debug.failure_details && (
-        <div className="rounded-md bg-red-500/10 border border-red-500/20 p-2 mt-2">
-          <p className="text-xs font-medium text-red-600">💥 Step {debug.failure_details.step} failed because:</p>
-          <p className="text-xs text-red-500 mt-1">{debug.failure_details.reason}</p>
+        <div className="rounded-md bg-destructive/10 border border-destructive/20 p-2 mt-2">
+          <p className="text-xs font-medium text-destructive">💥 Step {debug.failure_details.step} failed because:</p>
+          <p className="text-xs text-destructive mt-1">{debug.failure_details.reason}</p>
         </div>
       )}
     </div>
@@ -181,13 +181,13 @@ export function SuggestionsMessage({ suggestions }: SuggestionsMessageProps) {
       {suggestions.map((suggestion, idx) => (
         <div key={idx} className={`rounded-md p-2 text-xs border ${
           suggestion.priority === 'high' ? 'bg-orange-500/10 border-orange-500/20' :
-          suggestion.priority === 'medium' ? 'bg-blue-500/10 border-blue-500/20' :
+          suggestion.priority === 'medium' ? 'bg-primary/10 border-primary/20' :
           'bg-gray-500/10 border-border/20'
         }`}>
           <div className="flex items-center gap-2 mb-1">
             <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
               suggestion.priority === 'high' ? 'bg-orange-500 text-white' :
-              suggestion.priority === 'medium' ? 'bg-blue-500 text-white' :
+              suggestion.priority === 'medium' ? 'bg-primary text-white' :
               'bg-gray-500 text-white'
             }`}>{suggestion.priority}</span>
             <span className="font-medium text-foreground">{suggestion.title}</span>
@@ -195,7 +195,7 @@ export function SuggestionsMessage({ suggestions }: SuggestionsMessageProps) {
           </div>
           <p className="text-muted-foreground mb-1">{suggestion.description}</p>
           {suggestion.code && (
-            <pre className="text-[10px] bg-background/50 rounded p-1.5 overflow-x-auto font-mono text-green-400">
+            <pre className="text-[10px] bg-background/50 rounded p-1.5 overflow-x-auto font-mono text-success">
               {suggestion.code}
             </pre>
           )}
@@ -227,16 +227,16 @@ export function ScreenshotAnalysisMessage({ analysis }: ScreenshotAnalysisMessag
       </div>
 
       {/* Elements Detected */}
-      <div className="rounded-md bg-blue-500/10 border border-blue-500/20 p-2">
+      <div className="rounded-md bg-primary/10 border border-primary/20 p-2">
         <p className="text-xs font-medium text-foreground mb-1">🔍 Elements Detected</p>
         <div className="space-y-1">
           {analysis.elements_detected.slice(0, 6).map((el, idx) => (
             <div key={idx} className="flex items-center gap-2 text-[10px]">
               <span className={`w-2 h-2 rounded-full ${
                 el.type === 'input' ? 'bg-cyan-400' :
-                el.type === 'button' ? 'bg-green-400' :
-                el.type === 'link' ? 'bg-blue-400' :
-                el.type === 'form' ? 'bg-amber-400' :
+                el.type === 'button' ? 'bg-success/80' :
+                el.type === 'link' ? 'bg-primary/80' :
+                el.type === 'form' ? 'bg-warning/80' :
                 'bg-gray-400'
               }`}></span>
               <span className="text-muted-foreground capitalize">{el.type}</span>
@@ -251,16 +251,16 @@ export function ScreenshotAnalysisMessage({ analysis }: ScreenshotAnalysisMessag
 
       {/* Errors Detected */}
       {analysis.errors_detected.length > 0 && (
-        <div className="rounded-md bg-red-500/10 border border-red-500/20 p-2">
-          <p className="text-xs font-medium text-red-400 mb-1">⚠️ Errors Detected</p>
+        <div className="rounded-md bg-destructive/10 border border-destructive/20 p-2">
+          <p className="text-xs font-medium text-destructive mb-1">⚠️ Errors Detected</p>
           <div className="space-y-1">
             {analysis.errors_detected.map((err, idx) => (
               <div key={idx} className="text-[10px]">
                 <div className="flex items-center gap-1">
                   <span className={`px-1 py-0.5 rounded text-[8px] uppercase ${
-                    err.severity === 'error' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'
+                    err.severity === 'error' ? 'bg-destructive text-white' : 'bg-warning text-white'
                   }`}>{err.severity}</span>
-                  <span className="text-red-300">{err.message}</span>
+                  <span className="text-destructive/70">{err.message}</span>
                 </div>
                 <p className="text-muted-foreground ml-4">Location: {err.location}</p>
               </div>
@@ -280,17 +280,17 @@ export function ScreenshotAnalysisMessage({ analysis }: ScreenshotAnalysisMessag
             View: {analysis.visual_state.responsive_view}
           </span>
           {analysis.visual_state.has_loading_spinner && (
-            <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">Loading</span>
+            <span className="px-1.5 py-0.5 rounded bg-primary/20 text-primary">Loading</span>
           )}
           {analysis.visual_state.has_modal && (
-            <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">Modal Open</span>
+            <span className="px-1.5 py-0.5 rounded bg-warning/20 text-warning">Modal Open</span>
           )}
         </div>
       </div>
 
       {/* Semantic Description */}
-      <div className="rounded-md bg-green-500/10 border border-green-500/20 p-2">
-        <p className="text-xs font-medium text-green-400 mb-1">📝 Semantic Description</p>
+      <div className="rounded-md bg-success/10 border border-success/20 p-2">
+        <p className="text-xs font-medium text-success mb-1">📝 Semantic Description</p>
         <div className="text-[11px] text-foreground whitespace-pre-wrap">
           {analysis.semantic_description.split('\n').map((line: string, i: number) => (
             <p key={i} className={i > 0 ? 'mt-1' : ''}>

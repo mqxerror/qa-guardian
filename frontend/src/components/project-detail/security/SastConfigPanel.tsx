@@ -104,9 +104,9 @@ export function SastConfigPanel({
  Last scan: {new Date(sastConfig.lastScanAt).toLocaleString()}
  {sastConfig.lastScanStatus && (
  <span className={`ml-2 ${
- sastConfig.lastScanStatus === 'completed' ? 'text-green-600' :
- sastConfig.lastScanStatus === 'failed' ? 'text-red-600' :
- 'text-amber-600'
+ sastConfig.lastScanStatus === 'completed' ? 'text-success' :
+ sastConfig.lastScanStatus === 'failed' ? 'text-destructive' :
+ 'text-warning'
  }`}>
  ({sastConfig.lastScanStatus})
  </span>
@@ -163,10 +163,10 @@ export function SastConfigPanel({
  checked={sastConfig.blockPrOnCritical || false}
  onChange={(e) => handleUpdateSastConfig({ blockPrOnCritical: e.target.checked })}
  disabled={isUpdatingSast || !sastConfig.prChecksEnabled}
- className="h-4 w-4 rounded border-border text-red-600 focus:ring-red-500 disabled:opacity-50"
+ className="h-4 w-4 rounded border-border text-destructive focus:ring-destructive disabled:opacity-50"
  />
  <label htmlFor="sast-block-critical" className={`text-sm ${sastConfig.prChecksEnabled ? 'text-foreground' : 'text-muted-foreground'}`}>
- <span className="text-red-600 font-medium">Block PR</span> if critical vulnerabilities found
+ <span className="text-destructive font-medium">Block PR</span> if critical vulnerabilities found
  </label>
  </div>
 
@@ -177,17 +177,17 @@ export function SastConfigPanel({
  checked={sastConfig.blockPrOnHigh || false}
  onChange={(e) => handleUpdateSastConfig({ blockPrOnHigh: e.target.checked })}
  disabled={isUpdatingSast || !sastConfig.prChecksEnabled}
- className="h-4 w-4 rounded border-border text-amber-600 focus:ring-amber-500 disabled:opacity-50"
+ className="h-4 w-4 rounded border-border text-warning focus:ring-warning disabled:opacity-50"
  />
  <label htmlFor="sast-block-high" className={`text-sm ${sastConfig.prChecksEnabled ? 'text-foreground' : 'text-muted-foreground'}`}>
- <span className="text-amber-600 font-medium">Block PR</span> if high or critical vulnerabilities found
+ <span className="text-warning font-medium">Block PR</span> if high or critical vulnerabilities found
  </label>
  </div>
  </div>
 
  {sastConfig.prChecksEnabled && (
- <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-200">
- <p className="text-xs text-blue-700">
+ <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+ <p className="text-xs text-primary">
  <strong>Note:</strong> SAST checks will automatically run when a PR is created or updated.
  {sastConfig.blockPrOnCritical && ' PRs with critical vulnerabilities will be blocked from merging.'}
  {sastConfig.blockPrOnHigh && !sastConfig.blockPrOnCritical && ' PRs with high or critical vulnerabilities will be blocked from merging.'}

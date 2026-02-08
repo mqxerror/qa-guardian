@@ -109,13 +109,13 @@ export function AIApiKeyManagement({
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             🔑 API Key Management
-            <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Encrypted</span>
+            <span className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded-full">Encrypted</span>
           </h2>
           <p className="text-sm text-muted-foreground mt-1">Securely manage AI provider API keys with encryption at rest</p>
         </div>
         <button
           onClick={openAddKeyModal}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary flex items-center gap-2"
         >
           <span>➕</span> Add API Key
         </button>
@@ -139,7 +139,7 @@ export function AIApiKeyManagement({
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold">{key.name}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      key.is_active ? 'bg-green-100 text-green-800' : 'bg-muted text-foreground'
+                      key.is_active ? 'bg-success/10 text-success' : 'bg-muted text-foreground'
                     }`}>
                       {key.is_active ? '✓ Active' : '○ Inactive'}
                     </span>
@@ -150,8 +150,8 @@ export function AIApiKeyManagement({
                       v{key.version}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      key.role === 'primary' ? 'bg-blue-100 text-blue-700' :
-                      key.role === 'standby' ? 'bg-amber-100 text-amber-700' :
+                      key.role === 'primary' ? 'bg-primary/10 text-primary' :
+                      key.role === 'standby' ? 'bg-warning/10 text-warning' :
                       'bg-muted text-muted-foreground'
                     }`}>
                       {key.role === 'primary' ? '🔷 Primary' :
@@ -188,11 +188,11 @@ export function AIApiKeyManagement({
                 <button
                   onClick={() => handleTestKey(key.id)}
                   disabled={isTestingKey === key.id}
-                  className="px-3 py-1.5 text-sm border border-blue-300 text-blue-600 rounded hover:bg-blue-50 disabled:opacity-50 flex items-center gap-1"
+                  className="px-3 py-1.5 text-sm border border-primary/30 text-primary rounded hover:bg-primary/5 disabled:opacity-50 flex items-center gap-1"
                 >
                   {isTestingKey === key.id ? (
                     <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-blue-500 border-t-transparent"></div>
+                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent"></div>
                       Testing...
                     </>
                   ) : (
@@ -201,7 +201,7 @@ export function AIApiKeyManagement({
                 </button>
                 <button
                   onClick={() => openRotateKeyModal(key)}
-                  className="px-3 py-1.5 text-sm border border-amber-300 text-amber-600 rounded hover:bg-amber-50 flex items-center gap-1"
+                  className="px-3 py-1.5 text-sm border border-warning/30 text-warning rounded hover:bg-warning/5 flex items-center gap-1"
                 >
                   🔄 Rotate
                 </button>
@@ -210,14 +210,14 @@ export function AIApiKeyManagement({
                   className={`px-3 py-1.5 text-sm border rounded flex items-center gap-1 ${
                     key.is_active
                       ? 'border-border text-foreground hover:bg-muted'
-                      : 'border-green-300 text-green-600 hover:bg-green-50'
+                      : 'border-success/30 text-success hover:bg-success/5'
                   }`}
                 >
                   {key.is_active ? '⏸️ Disable' : '▶️ Enable'}
                 </button>
                 <button
                   onClick={() => onDeleteKey(key.id)}
-                  className="px-3 py-1.5 text-sm border border-red-300 text-red-600 rounded hover:bg-red-50"
+                  className="px-3 py-1.5 text-sm border border-destructive/30 text-destructive rounded hover:bg-destructive/5"
                 >
                   🗑️
                 </button>
@@ -252,7 +252,7 @@ export function AIApiKeyManagement({
             <div className="mt-3 flex items-center gap-2 flex-wrap">
               <span className="text-xs text-muted-foreground">Permissions:</span>
               {key.permissions.map((perm) => (
-                <span key={perm} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                <span key={perm} className="text-xs bg-primary/5 text-primary px-2 py-0.5 rounded">
                   {perm}
                 </span>
               ))}
@@ -261,7 +261,7 @@ export function AIApiKeyManagement({
             {/* Test Result */}
             {keyTestResult && keyTestResult.provider === key.provider && (
               <div className={`mt-4 p-3 rounded-lg ${
-                keyTestResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                keyTestResult.success ? 'bg-success/5 border border-success/20' : 'bg-destructive/5 border border-destructive/20'
               }`}>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xl">{keyTestResult.success ? '✅' : '❌'}</span>
@@ -278,7 +278,7 @@ export function AIApiKeyManagement({
                     {keyTestResult.models_available.join(', ')}
                   </div>
                 ) : (
-                  <div className="text-sm text-red-600">{keyTestResult.error}</div>
+                  <div className="text-sm text-destructive">{keyTestResult.error}</div>
                 )}
               </div>
             )}
@@ -295,7 +295,7 @@ export function AIApiKeyManagement({
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {keyAuditLogs.slice(0, 10).map((log) => (
               <div key={log.id} className="flex items-center gap-2 text-sm p-2 bg-muted rounded">
-                <span className={`w-2 h-2 rounded-full ${log.success ? 'bg-green-500' : 'bg-red-500'}`} />
+                <span className={`w-2 h-2 rounded-full ${log.success ? 'bg-success' : 'bg-destructive'}`} />
                 <span className="text-muted-foreground">{new Date(log.timestamp).toLocaleString()}</span>
                 <span className="font-medium">{log.action}</span>
                 <span className="text-muted-foreground">{log.key_name}</span>
@@ -341,7 +341,7 @@ export function AIApiKeyManagement({
             )}
 
             {keyModalMode === 'rotate' && editingKey && (
-              <div className="mb-4 p-3 bg-amber-50 rounded-lg">
+              <div className="mb-4 p-3 bg-warning/5 rounded-lg">
                 <div className="text-sm">
                   <strong>Rotating:</strong> {editingKey.name} ({editingKey.provider})
                 </div>
@@ -374,7 +374,7 @@ export function AIApiKeyManagement({
               <button
                 onClick={keyModalMode === 'add' ? handleAddKey : handleRotateKey}
                 disabled={!newKeyValue || (keyModalMode === 'add' && !newKeyName)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary disabled:opacity-50"
               >
                 {keyModalMode === 'add' ? 'Add Key' : 'Rotate Key'}
               </button>

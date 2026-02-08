@@ -120,7 +120,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  <div>
  <h2 className="text-lg font-semibold text-foreground">GitHub Account</h2>
  {githubConnected ? (
- <p className="text-sm text-green-600 flex items-center gap-1">
+ <p className="text-sm text-success flex items-center gap-1">
  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
  </svg>
@@ -289,10 +289,10 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  </div>
  {pr.status_check ? (
  <span className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${
- pr.status_check.status === 'success' ? 'bg-green-500/10 text-green-600' :
- pr.status_check.status === 'failure' ? 'bg-red-500/10 text-red-600' :
- pr.status_check.status === 'running' ? 'bg-blue-500/10 text-blue-600' :
- pr.status_check.status === 'pending' ? 'bg-yellow-500/10 text-yellow-600' :
+ pr.status_check.status === 'success' ? 'bg-success/10 text-success' :
+ pr.status_check.status === 'failure' ? 'bg-destructive/10 text-destructive' :
+ pr.status_check.status === 'running' ? 'bg-primary/10 text-primary' :
+ pr.status_check.status === 'pending' ? 'bg-warning/10 text-warning' :
  'bg-gray-500/10 text-foreground'
  }`}>
  {pr.status_check.status === 'running' && (
@@ -454,7 +454,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  id="block-on-critical"
  checked={prDependencyScanBlockOnCritical}
  onChange={(e) => handleUpdatePRDependencyScanConfig({ pr_dependency_scan_block_on_critical: e.target.checked })}
- className="h-4 w-4 rounded border-border text-red-600 focus:ring-red-500"
+ className="h-4 w-4 rounded border-border text-destructive focus:ring-destructive"
  />
  <label htmlFor="block-on-critical" className="text-sm text-foreground">
  Block PR merge on critical vulnerabilities
@@ -480,24 +480,24 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  <div className="flex items-center gap-2">
  <span className={`text-xs font-medium px-2 py-1 rounded-full ${
  prDependencyScanResults[pr.number].summary.critical > 0
- ? 'bg-red-500/10 text-red-600'
+ ? 'bg-destructive/10 text-destructive'
  : prDependencyScanResults[pr.number].summary.high > 0
  ? 'bg-orange-500/10 text-orange-600'
  : prDependencyScanResults[pr.number].summary.total > 0
- ? 'bg-yellow-500/10 text-yellow-600'
- : 'bg-green-500/10 text-green-600'
+ ? 'bg-warning/10 text-warning'
+ : 'bg-success/10 text-success'
  }`}>
  {prDependencyScanResults[pr.number].summary.total === 0
  ? 'Clean'
  : `${prDependencyScanResults[pr.number].summary.total} vuln${prDependencyScanResults[pr.number].summary.total !== 1 ? 's' : ''}`}
  </span>
  {prDependencyScanResults[pr.number].summary.new_in_pr > 0 && (
- <span className="text-xs text-red-500">
+ <span className="text-xs text-destructive">
  +{prDependencyScanResults[pr.number].summary.new_in_pr} new
  </span>
  )}
  {prDependencyScanResults[pr.number].summary.fixed_in_pr > 0 && (
- <span className="text-xs text-green-500">
+ <span className="text-xs text-success">
  -{prDependencyScanResults[pr.number].summary.fixed_in_pr} fixed
  </span>
  )}

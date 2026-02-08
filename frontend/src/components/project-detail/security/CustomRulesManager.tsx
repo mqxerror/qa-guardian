@@ -99,7 +99,7 @@ export function CustomRulesManager(props: CustomRulesManagerProps) {
  </div>
  <button
  onClick={() => handleDeleteCustomRule(rule.id)}
- className="p-2 text-muted-foreground hover:text-red-600 transition-colors"
+ className="p-2 text-muted-foreground hover:text-destructive transition-colors"
  title="Delete rule"
  >
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -133,7 +133,7 @@ export function CustomRulesManager(props: CustomRulesManagerProps) {
  </div>
 
  {customRuleError && (
- <div className="mb-4 p-3 rounded-md bg-red-50 text-red-600 text-sm">
+ <div className="mb-4 p-3 rounded-md bg-destructive/5 text-destructive text-sm">
  {customRuleError}
  </div>
  )}

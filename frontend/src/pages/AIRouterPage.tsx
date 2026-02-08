@@ -1944,8 +1944,8 @@ function AIRouterPage() {
  const getQualityTierColor = (tier: 'premium' | 'standard' | 'economy') => {
  switch (tier) {
  case 'premium': return 'bg-purple-100 text-purple-700 border-purple-200';
- case 'standard': return 'bg-blue-100 text-blue-700 border-blue-200';
- case 'economy': return 'bg-green-100 text-green-700 border-green-200';
+ case 'standard': return 'bg-primary/10 text-primary border-primary/20';
+ case 'economy': return 'bg-success/10 text-success border-success/20';
  }
  };
 
@@ -2070,9 +2070,9 @@ function AIRouterPage() {
 
  const getAlertSeverityColor = (severity: RateLimitAlert['severity']): { bg: string; text: string; border: string } => {
  switch (severity) {
- case 'critical': return { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' };
- case 'warning': return { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' };
- case 'info': return { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' };
+ case 'critical': return { bg: 'bg-destructive/5', text: 'text-destructive', border: 'border-destructive/20' };
+ case 'warning': return { bg: 'bg-warning/5', text: 'text-warning', border: 'border-warning/20' };
+ case 'info': return { bg: 'bg-primary/5', text: 'text-primary', border: 'border-primary/20' };
  default: return { bg: 'bg-muted/50', text: 'text-muted-foreground', border: 'border-border' };
  }
  };
@@ -2486,9 +2486,9 @@ function AIRouterPage() {
 
  const getPriorityColor = (priority: CostReductionSuggestion['priority']): string => {
  const colors: Record<CostReductionSuggestion['priority'], string> = {
- high: 'text-red-600 bg-red-50 border-red-200',
- medium: 'text-yellow-600 bg-yellow-50 border-yellow-200',
- low: 'text-green-600 bg-green-50 border-green-200',
+ high: 'text-destructive bg-destructive/5 border-destructive/20',
+ medium: 'text-warning bg-warning/5 border-warning/20',
+ low: 'text-success bg-success/5 border-success/20',
  };
  return colors[priority];
  };
@@ -2558,10 +2558,10 @@ function AIRouterPage() {
 
  const getCacheEventColor = (type: CacheEvent['type']): string => {
  const colors: Record<CacheEvent['type'], string> = {
- hit: 'bg-green-50 border-green-200 text-green-800',
- miss: 'bg-red-50 border-red-200 text-red-800',
- store: 'bg-blue-50 border-blue-200 text-blue-800',
- invalidate: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+ hit: 'bg-success/5 border-success/20 text-success',
+ miss: 'bg-destructive/5 border-destructive/20 text-destructive',
+ store: 'bg-primary/5 border-primary/20 text-primary',
+ invalidate: 'bg-warning/5 border-warning/20 text-warning',
  expire: 'bg-muted/50 border-border text-muted-foreground',
  evict: 'bg-orange-50 border-orange-200 text-orange-800',
  };
@@ -2679,7 +2679,7 @@ function AIRouterPage() {
  if (isLoading) {
  return (
  <div className="p-8 flex items-center justify-center">
- <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+ <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
  </div>
  );
  }
@@ -2690,7 +2690,7 @@ function AIRouterPage() {
  <div>
  <button
  onClick={() => navigate('/ai-insights')}
- className="text-blue-500 hover:text-blue-700 mb-2 flex items-center gap-1"
+ className="text-primary hover:text-primary mb-2 flex items-center gap-1"
  >
  ← Back to AI Insights
  </button>
@@ -2708,13 +2708,13 @@ function AIRouterPage() {
  <div className="font-medium">Request</div>
  </div>
  <div className="text-2xl">→</div>
- <div className={`rounded-lg p-4 text-center ${config?.primary_provider === 'kie' ? 'bg-green-500/50 ring-2 ring-white' : 'bg-white/20'}`}>
+ <div className={`rounded-lg p-4 text-center ${config?.primary_provider === 'kie' ? 'bg-success/50 ring-2 ring-white' : 'bg-white/20'}`}>
  <div className="text-2xl mb-1">🤖</div>
  <div className="font-medium">Kie.ai</div>
  <div className="text-xs opacity-70">Primary</div>
  </div>
  <div className="text-xl">⚡</div>
- <div className={`rounded-lg p-4 text-center ${config?.fallback_provider === 'anthropic' ? 'bg-amber-500/50' : 'bg-white/20'}`}>
+ <div className={`rounded-lg p-4 text-center ${config?.fallback_provider === 'anthropic' ? 'bg-warning/50' : 'bg-white/20'}`}>
  <div className="text-2xl mb-1">🔵</div>
  <div className="font-medium">Anthropic</div>
  <div className="text-xs opacity-70">Fallback</div>
@@ -2733,13 +2733,13 @@ function AIRouterPage() {
  <div>
  <h2 className="text-lg font-semibold flex items-center gap-2">
  <span>⚡</span> Hot-Swap Provider
- <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">No Restart Required</span>
+ <span className="text-xs bg-success/10 text-success px-2 py-0.5 rounded">No Restart Required</span>
  </h2>
  <p className="text-sm text-foreground">Switch between AI providers instantly without service interruption</p>
  </div>
  {activeProvider?.switching && (
- <div className="flex items-center gap-2 text-amber-600 animate-pulse">
- <div className="animate-spin rounded-full h-4 w-4 border-2 border-amber-600 border-t-transparent"></div>
+ <div className="flex items-center gap-2 text-warning animate-pulse">
+ <div className="animate-spin rounded-full h-4 w-4 border-2 border-warning border-t-transparent"></div>
  <span>Switching...</span>
  </div>
  )}
@@ -2749,8 +2749,8 @@ function AIRouterPage() {
  {/* Kie.ai Provider Card */}
  <div className={`border-2 rounded-lg p-4 transition-all ${
  activeProvider?.current_provider === 'kie'
- ? 'border-green-500 bg-green-50'
- : 'border-border hover:border-blue-300'
+ ? 'border-success bg-success/5'
+ : 'border-border hover:border-primary/30'
  }`}>
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
@@ -2759,18 +2759,18 @@ function AIRouterPage() {
  {/* Connection Status Indicator */}
  <span className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
  activeProvider?.available_providers?.find(p => p.id === 'kie')?.configured
- ? 'bg-green-500'
- : 'bg-yellow-500'
+ ? 'bg-success'
+ : 'bg-warning'
  }`} title={activeProvider?.available_providers?.find(p => p.id === 'kie')?.configured ? 'Connected' : 'Not Configured'}></span>
  </div>
  <div>
  <div className="font-semibold text-lg">Kie.ai</div>
- <div className="text-sm text-green-600 font-medium">💰 70% cost savings</div>
+ <div className="text-sm text-success font-medium">💰 70% cost savings</div>
  </div>
  </div>
  <div className="flex flex-col items-end gap-1">
  {activeProvider?.current_provider === 'kie' ? (
- <span className="px-3 py-1 bg-green-500 text-white text-xs rounded-full font-medium flex items-center gap-1">
+ <span className="px-3 py-1 bg-success text-white text-xs rounded-full font-medium flex items-center gap-1">
  <span className="w-2 h-2 bg-card rounded-full animate-pulse"></span>
  ACTIVE
  </span>
@@ -2778,7 +2778,7 @@ function AIRouterPage() {
  <button
  onClick={() => openSwitchModal('kie')}
  disabled={isSwitching || activeProvider?.switching}
- className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:opacity-50 transition-colors"
+ className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary disabled:opacity-50 transition-colors"
  >
  Switch to Kie.ai
  </button>
@@ -2786,7 +2786,7 @@ function AIRouterPage() {
  {/* Status Badge */}
  <span className={`text-xs px-2 py-0.5 rounded ${
  activeProvider?.available_providers?.find(p => p.id === 'kie')?.enabled
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : 'bg-muted text-muted-foreground'
  }`}>
  {activeProvider?.available_providers?.find(p => p.id === 'kie')?.enabled ? '✓ Enabled' : '○ Disabled'}
@@ -2795,13 +2795,13 @@ function AIRouterPage() {
  </div>
  <div className="text-sm text-foreground space-y-1 border-t pt-3">
  <div className="flex items-center gap-2">
- <span className="text-green-500">✓</span> Intelligent API proxy
+ <span className="text-success">✓</span> Intelligent API proxy
  </div>
  <div className="flex items-center gap-2">
- <span className="text-green-500">✓</span> Lower latency routing
+ <span className="text-success">✓</span> Lower latency routing
  </div>
  <div className="flex items-center gap-2">
- <span className="text-green-500">✓</span> Built-in caching
+ <span className="text-success">✓</span> Built-in caching
  </div>
  </div>
  </div>
@@ -2809,8 +2809,8 @@ function AIRouterPage() {
  {/* Anthropic Direct Card */}
  <div className={`border-2 rounded-lg p-4 transition-all ${
  activeProvider?.current_provider === 'anthropic'
- ? 'border-green-500 bg-green-50'
- : 'border-border hover:border-blue-300'
+ ? 'border-success bg-success/5'
+ : 'border-border hover:border-primary/30'
  }`}>
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
@@ -2819,18 +2819,18 @@ function AIRouterPage() {
  {/* Connection Status Indicator */}
  <span className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
  activeProvider?.available_providers?.find(p => p.id === 'anthropic')?.configured
- ? 'bg-green-500'
- : 'bg-yellow-500'
+ ? 'bg-success'
+ : 'bg-warning'
  }`} title={activeProvider?.available_providers?.find(p => p.id === 'anthropic')?.configured ? 'Connected' : 'Not Configured'}></span>
  </div>
  <div>
  <div className="font-semibold text-lg">Anthropic Direct</div>
- <div className="text-sm text-blue-600 font-medium">🔗 Direct API access</div>
+ <div className="text-sm text-primary font-medium">🔗 Direct API access</div>
  </div>
  </div>
  <div className="flex flex-col items-end gap-1">
  {activeProvider?.current_provider === 'anthropic' ? (
- <span className="px-3 py-1 bg-green-500 text-white text-xs rounded-full font-medium flex items-center gap-1">
+ <span className="px-3 py-1 bg-success text-white text-xs rounded-full font-medium flex items-center gap-1">
  <span className="w-2 h-2 bg-card rounded-full animate-pulse"></span>
  ACTIVE
  </span>
@@ -2838,7 +2838,7 @@ function AIRouterPage() {
  <button
  onClick={() => openSwitchModal('anthropic')}
  disabled={isSwitching || activeProvider?.switching}
- className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:opacity-50 transition-colors"
+ className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary disabled:opacity-50 transition-colors"
  >
  Switch to Anthropic
  </button>
@@ -2846,7 +2846,7 @@ function AIRouterPage() {
  {/* Status Badge */}
  <span className={`text-xs px-2 py-0.5 rounded ${
  activeProvider?.available_providers?.find(p => p.id === 'anthropic')?.enabled
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : 'bg-muted text-muted-foreground'
  }`}>
  {activeProvider?.available_providers?.find(p => p.id === 'anthropic')?.enabled ? '✓ Enabled' : '○ Disabled'}
@@ -2855,13 +2855,13 @@ function AIRouterPage() {
  </div>
  <div className="text-sm text-foreground space-y-1 border-t pt-3">
  <div className="flex items-center gap-2">
- <span className="text-blue-500">✓</span> Full API features
+ <span className="text-primary">✓</span> Full API features
  </div>
  <div className="flex items-center gap-2">
- <span className="text-blue-500">✓</span> Higher rate limits
+ <span className="text-primary">✓</span> Higher rate limits
  </div>
  <div className="flex items-center gap-2">
- <span className="text-blue-500">✓</span> Latest models
+ <span className="text-primary">✓</span> Latest models
  </div>
  </div>
  </div>
@@ -2893,11 +2893,11 @@ function AIRouterPage() {
  <span>⚡</span> Switch Provider
  </h3>
 
- <div className="mb-4 p-3 bg-blue-50 rounded-lg">
- <div className="text-sm text-blue-800">
+ <div className="mb-4 p-3 bg-primary/5 rounded-lg">
+ <div className="text-sm text-primary">
  <strong>Current:</strong> {activeProvider?.current_provider === 'kie' ? 'Kie.ai' : 'Anthropic Direct'}
  </div>
- <div className="text-sm text-blue-800">
+ <div className="text-sm text-primary">
  <strong>Target:</strong> {targetProvider === 'kie' ? 'Kie.ai' : 'Anthropic Direct'}
  </div>
  </div>
@@ -2930,7 +2930,7 @@ function AIRouterPage() {
 
  {switchResult && (
  <div className={`mb-4 p-3 rounded-lg ${
- switchResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+ switchResult.success ? 'bg-success/5 border border-success/20' : 'bg-destructive/5 border border-destructive/20'
  }`}>
  <div className="font-medium text-sm">
  {switchResult.success ? '✅ Switch successful!' : '❌ Switch failed'}
@@ -2957,7 +2957,7 @@ function AIRouterPage() {
  <button
  onClick={hotSwapProvider}
  disabled={isSwitching}
- className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2"
+ className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary disabled:opacity-50 flex items-center gap-2"
  >
  {isSwitching && <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>}
  {isSwitching ? 'Switching...' : 'Switch Provider'}
@@ -2971,15 +2971,15 @@ function AIRouterPage() {
  {stats && (
  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
  <div className="bg-card rounded-lg shadow p-3 text-center">
- <div className="text-2xl font-bold text-blue-600">{formatNumber(stats.total_requests)}</div>
+ <div className="text-2xl font-bold text-primary">{formatNumber(stats.total_requests)}</div>
  <div className="text-xs text-foreground">Total Requests</div>
  </div>
  <div className="bg-card rounded-lg shadow p-3 text-center">
- <div className="text-2xl font-bold text-green-600">{stats.primary_success_rate}%</div>
+ <div className="text-2xl font-bold text-success">{stats.primary_success_rate}%</div>
  <div className="text-xs text-foreground">Primary Success</div>
  </div>
  <div className="bg-card rounded-lg shadow p-3 text-center">
- <div className="text-2xl font-bold text-amber-600">{formatNumber(stats.fallback_requests)}</div>
+ <div className="text-2xl font-bold text-warning">{formatNumber(stats.fallback_requests)}</div>
  <div className="text-xs text-foreground">Fallbacks</div>
  </div>
  <div className="bg-card rounded-lg shadow p-3 text-center">
@@ -2991,7 +2991,7 @@ function AIRouterPage() {
  <div className="text-xs text-foreground">Avg Latency</div>
  </div>
  <div className="bg-card rounded-lg shadow p-3 text-center">
- <div className="text-2xl font-bold text-red-600">{stats.errors}</div>
+ <div className="text-2xl font-bold text-destructive">{stats.errors}</div>
  <div className="text-xs text-foreground">Errors</div>
  </div>
  </div>
@@ -3008,7 +3008,7 @@ function AIRouterPage() {
  <button
  onClick={() => updateConfig({ enabled: !config.enabled })}
  disabled={isSaving}
- className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-green-500' : 'bg-gray-300'}`}
+ className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-success' : 'bg-gray-300'}`}
  >
  <div className={`w-5 h-5 bg-card rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
  </button>
@@ -3080,16 +3080,16 @@ function AIRouterPage() {
 
  {circuitBreakers.map((cb) => (
  <div key={cb.provider} className={`mb-4 p-3 rounded-lg border ${
- cb.state === 'closed' ? 'border-green-200 bg-green-50'
- : cb.state === 'open' ? 'border-red-200 bg-red-50'
- : 'border-amber-200 bg-amber-50'
+ cb.state === 'closed' ? 'border-success/20 bg-success/5'
+ : cb.state === 'open' ? 'border-destructive/20 bg-destructive/5'
+ : 'border-warning/20 bg-warning/5'
  }`}>
  <div className="flex items-center justify-between mb-2">
  <span className="font-medium capitalize">{cb.provider}</span>
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
- cb.state === 'closed' ? 'bg-green-200 text-green-800'
- : cb.state === 'open' ? 'bg-red-200 text-red-800'
- : 'bg-amber-200 text-amber-800'
+ cb.state === 'closed' ? 'bg-success/20 text-success'
+ : cb.state === 'open' ? 'bg-destructive/20 text-destructive'
+ : 'bg-warning/20 text-warning'
  }`}>
  {cb.state}
  </span>
@@ -3103,7 +3103,7 @@ function AIRouterPage() {
  {cb.state !== 'closed' && (
  <button
  onClick={() => resetCircuitBreaker(cb.provider)}
- className="mt-2 text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+ className="mt-2 text-xs px-2 py-1 bg-primary/10 text-primary rounded hover:bg-primary/20"
  >
  Reset
  </button>
@@ -3139,7 +3139,7 @@ function AIRouterPage() {
  <button
  onClick={() => testFailover('timeout')}
  disabled={isTesting}
- className="w-full px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 disabled:opacity-50"
+ className="w-full px-4 py-2 bg-warning/10 text-warning rounded hover:bg-warning/20 disabled:opacity-50"
  >
  Test Timeout Failover
  </button>
@@ -3153,14 +3153,14 @@ function AIRouterPage() {
  <button
  onClick={() => testFailover('error')}
  disabled={isTesting}
- className="w-full px-4 py-2 bg-red-100 text-red-800 rounded hover:bg-red-200 disabled:opacity-50"
+ className="w-full px-4 py-2 bg-destructive/10 text-destructive rounded hover:bg-destructive/20 disabled:opacity-50"
  >
  Test Error Failover
  </button>
  </div>
 
  {testResult && (
- <div className={`p-3 rounded ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+ <div className={`p-3 rounded ${testResult.success ? 'bg-success/5 border border-success/20' : 'bg-destructive/5 border border-destructive/20'}`}>
  <div className="font-medium mb-1">
  {testResult.success ? '✅ Test Passed' : '❌ Test Failed'}
  </div>
@@ -3193,7 +3193,7 @@ function AIRouterPage() {
  onChange={(e) => setRetryConfig({ ...retryConfig, enabled: e.target.checked })}
  className="sr-only peer"
  />
- <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+ <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
  </label>
  </div>
 
@@ -3201,30 +3201,30 @@ function AIRouterPage() {
  <>
  {/* Retry Settings Grid */}
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
- <div className="p-3 bg-blue-50 rounded-lg">
- <label className="block text-sm font-medium text-blue-800 mb-1">Max Retries</label>
+ <div className="p-3 bg-primary/5 rounded-lg">
+ <label className="block text-sm font-medium text-primary mb-1">Max Retries</label>
  <input
  type="number"
  min="1"
  max="10"
  value={retryConfig.max_retries}
  onChange={(e) => setRetryConfig({ ...retryConfig, max_retries: parseInt(e.target.value) || 3 })}
- className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+ className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
  />
- <div className="text-xs text-blue-600 mt-1">Number of retry attempts (1-10)</div>
+ <div className="text-xs text-primary mt-1">Number of retry attempts (1-10)</div>
  </div>
 
- <div className="p-3 bg-amber-50 rounded-lg">
- <label className="block text-sm font-medium text-amber-800 mb-1">Initial Delay (ms)</label>
+ <div className="p-3 bg-warning/5 rounded-lg">
+ <label className="block text-sm font-medium text-warning mb-1">Initial Delay (ms)</label>
  <input
  type="number"
  min="50"
  max="5000"
  value={retryConfig.initial_delay_ms}
  onChange={(e) => setRetryConfig({ ...retryConfig, initial_delay_ms: parseInt(e.target.value) || 100 })}
- className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+ className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-warning focus:border-warning"
  />
- <div className="text-xs text-amber-600 mt-1">Initial backoff delay</div>
+ <div className="text-xs text-warning mt-1">Initial backoff delay</div>
  </div>
 
  <div className="p-3 bg-purple-50 rounded-lg">
@@ -3240,8 +3240,8 @@ function AIRouterPage() {
  <div className="text-xs text-purple-600 mt-1">Maximum backoff delay cap</div>
  </div>
 
- <div className="p-3 bg-green-50 rounded-lg">
- <label className="block text-sm font-medium text-green-800 mb-1">Backoff Multiplier</label>
+ <div className="p-3 bg-success/5 rounded-lg">
+ <label className="block text-sm font-medium text-success mb-1">Backoff Multiplier</label>
  <input
  type="number"
  min="1.5"
@@ -3249,9 +3249,9 @@ function AIRouterPage() {
  step="0.5"
  value={retryConfig.backoff_multiplier}
  onChange={(e) => setRetryConfig({ ...retryConfig, backoff_multiplier: parseFloat(e.target.value) || 2 })}
- className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+ className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-success focus:border-success"
  />
- <div className="text-xs text-green-600 mt-1">Exponential multiplier (1.5-4)</div>
+ <div className="text-xs text-success mt-1">Exponential multiplier (1.5-4)</div>
  </div>
  </div>
 
@@ -3264,7 +3264,7 @@ function AIRouterPage() {
  type="checkbox"
  checked={retryConfig.retry_on_timeout}
  onChange={(e) => setRetryConfig({ ...retryConfig, retry_on_timeout: e.target.checked })}
- className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+ className="w-4 h-4 text-primary rounded focus:ring-primary"
  />
  <span className="text-sm">⏱️ Timeout</span>
  </label>
@@ -3282,7 +3282,7 @@ function AIRouterPage() {
  type="checkbox"
  checked={retryConfig.retry_on_error}
  onChange={(e) => setRetryConfig({ ...retryConfig, retry_on_error: e.target.checked })}
- className="w-4 h-4 text-red-600 rounded focus:ring-red-500"
+ className="w-4 h-4 text-destructive rounded focus:ring-destructive"
  />
  <span className="text-sm">❌ Server Error</span>
  </label>
@@ -3290,7 +3290,7 @@ function AIRouterPage() {
  </div>
 
  {/* Backoff Preview */}
- <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+ <div className="mb-4 p-3 bg-gradient-to-r from-primary/5 to-purple-50 rounded-lg">
  <h3 className="text-sm font-medium mb-2">📊 Backoff Preview</h3>
  <div className="flex items-end gap-1 h-16">
  {Array.from({ length: retryConfig.max_retries }, (_, i) => {
@@ -3300,7 +3300,7 @@ function AIRouterPage() {
  return (
  <div key={i} className="flex flex-col items-center">
  <div
- className="w-8 bg-gradient-to-t from-blue-500 to-purple-500 rounded-t transition-all"
+ className="w-8 bg-gradient-to-t from-primary to-purple-500 rounded-t transition-all"
  style={{ height: `${Math.max(height, 8)}px` }}
  title={`Attempt ${i + 1}: ${delay}ms`}
  />
@@ -3316,17 +3316,17 @@ function AIRouterPage() {
 
  {/* Retry Stats */}
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
- <div className="text-center p-3 bg-blue-50 rounded-lg">
- <div className="text-2xl font-bold text-blue-600">{retryStats.total_retries}</div>
- <div className="text-xs text-blue-800">Total Retries</div>
+ <div className="text-center p-3 bg-primary/5 rounded-lg">
+ <div className="text-2xl font-bold text-primary">{retryStats.total_retries}</div>
+ <div className="text-xs text-primary">Total Retries</div>
  </div>
- <div className="text-center p-3 bg-green-50 rounded-lg">
- <div className="text-2xl font-bold text-green-600">{retryStats.successful_retries}</div>
- <div className="text-xs text-green-800">Successful</div>
+ <div className="text-center p-3 bg-success/5 rounded-lg">
+ <div className="text-2xl font-bold text-success">{retryStats.successful_retries}</div>
+ <div className="text-xs text-success">Successful</div>
  </div>
- <div className="text-center p-3 bg-red-50 rounded-lg">
- <div className="text-2xl font-bold text-red-600">{retryStats.failed_after_retries}</div>
- <div className="text-xs text-red-800">Failed</div>
+ <div className="text-center p-3 bg-destructive/5 rounded-lg">
+ <div className="text-2xl font-bold text-destructive">{retryStats.failed_after_retries}</div>
+ <div className="text-xs text-destructive">Failed</div>
  </div>
  <div className="text-center p-3 bg-purple-50 rounded-lg">
  <div className="text-2xl font-bold text-purple-600">{retryStats.avg_retries_before_success.toFixed(1)}</div>
@@ -3338,7 +3338,7 @@ function AIRouterPage() {
  <div className="mb-4">
  <h3 className="text-sm font-medium mb-2">Retries by Error Type</h3>
  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
- <div className="flex items-center gap-2 p-2 bg-amber-50 rounded">
+ <div className="flex items-center gap-2 p-2 bg-warning/5 rounded">
  <span>⏱️</span>
  <div>
  <div className="text-sm font-medium">{retryStats.by_error_type.timeout}</div>
@@ -3352,7 +3352,7 @@ function AIRouterPage() {
  <div className="text-xs text-muted-foreground">Rate Limit</div>
  </div>
  </div>
- <div className="flex items-center gap-2 p-2 bg-red-50 rounded">
+ <div className="flex items-center gap-2 p-2 bg-destructive/5 rounded">
  <span>❌</span>
  <div>
  <div className="text-sm font-medium">{retryStats.by_error_type.error}</div>
@@ -3376,7 +3376,7 @@ function AIRouterPage() {
  <button
  onClick={() => simulateRetry('timeout')}
  disabled={isSimulatingRetry}
- className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 disabled:opacity-50 flex items-center gap-2"
+ className="px-4 py-2 bg-warning/10 text-warning rounded-lg hover:bg-warning/20 disabled:opacity-50 flex items-center gap-2"
  >
  {isSimulatingRetry ? '⏳' : '⏱️'} Timeout Retry
  </button>
@@ -3390,7 +3390,7 @@ function AIRouterPage() {
  <button
  onClick={() => simulateRetry('error')}
  disabled={isSimulatingRetry}
- className="px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 disabled:opacity-50 flex items-center gap-2"
+ className="px-4 py-2 bg-destructive/10 text-destructive rounded-lg hover:bg-destructive/20 disabled:opacity-50 flex items-center gap-2"
  >
  {isSimulatingRetry ? '⏳' : '❌'} Error Retry
  </button>
@@ -3412,7 +3412,7 @@ function AIRouterPage() {
  <div
  key={idx}
  className={`flex items-center justify-between p-3 rounded border text-sm ${
- log.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+ log.success ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/20'
  }`}
  >
  <div className="flex items-center gap-3">
@@ -3455,11 +3455,11 @@ function AIRouterPage() {
  </div>
 
  {/* Default Timeout Setting */}
- <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
+ <div className="mb-6 p-4 bg-gradient-to-r from-warning/5 to-orange-50 rounded-lg border border-warning/20">
  <div className="flex items-center justify-between">
  <div>
- <h3 className="font-medium text-amber-800">🌐 Default Timeout</h3>
- <p className="text-sm text-amber-600">Base timeout for all AI requests</p>
+ <h3 className="font-medium text-warning">🌐 Default Timeout</h3>
+ <p className="text-sm text-warning">Base timeout for all AI requests</p>
  </div>
  <div className="flex items-center gap-3">
  <input
@@ -3469,9 +3469,9 @@ function AIRouterPage() {
  step="5000"
  value={defaultTimeout}
  onChange={(e) => setDefaultTimeout(parseInt(e.target.value))}
- className="w-32 h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer"
+ className="w-32 h-2 bg-warning/20 rounded-lg appearance-none cursor-pointer"
  />
- <div className="text-2xl font-bold text-amber-700 w-20 text-right">
+ <div className="text-2xl font-bold text-warning w-20 text-right">
  {formatTimeoutDuration(defaultTimeout)}
  </div>
  </div>
@@ -3487,7 +3487,7 @@ function AIRouterPage() {
  key={ft.feature}
  className={`p-4 rounded-lg border-2 transition-all ${
  ft.enabled
- ? 'bg-card border-blue-200 shadow-sm'
+ ? 'bg-card border-primary/20 shadow-sm'
  : 'bg-muted border-border opacity-60'
  }`}
  >
@@ -3506,7 +3506,7 @@ function AIRouterPage() {
  onChange={(e) => updateFeatureTimeout(ft.feature, { enabled: e.target.checked })}
  className="sr-only peer"
  />
- <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+ <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
  </label>
  </div>
 
@@ -3538,14 +3538,14 @@ function AIRouterPage() {
  type="checkbox"
  checked={ft.fallback_on_timeout}
  onChange={(e) => updateFeatureTimeout(ft.feature, { fallback_on_timeout: e.target.checked })}
- className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
+ className="w-4 h-4 text-warning rounded focus:ring-warning"
  />
  <span className="text-foreground">Fallback on timeout</span>
  </label>
  <button
  onClick={() => simulateTimeout(ft.feature)}
  disabled={isSimulatingTimeout}
- className="px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded hover:bg-amber-200 disabled:opacity-50"
+ className="px-2 py-1 text-xs bg-warning/10 text-warning rounded hover:bg-warning/20 disabled:opacity-50"
  >
  {isSimulatingTimeout ? '⏳' : '🧪'} Test
  </button>
@@ -3561,17 +3561,17 @@ function AIRouterPage() {
  <div className="mb-6">
  <h3 className="text-sm font-medium mb-3">📊 Timeout Statistics</h3>
  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
- <div className="text-center p-3 bg-red-50 rounded-lg">
- <div className="text-2xl font-bold text-red-600">{timeoutStats.total_timeouts}</div>
- <div className="text-xs text-red-800">Total Timeouts</div>
+ <div className="text-center p-3 bg-destructive/5 rounded-lg">
+ <div className="text-2xl font-bold text-destructive">{timeoutStats.total_timeouts}</div>
+ <div className="text-xs text-destructive">Total Timeouts</div>
  </div>
- <div className="text-center p-3 bg-amber-50 rounded-lg">
- <div className="text-2xl font-bold text-amber-600">{formatTimeoutDuration(timeoutStats.avg_timeout_duration_ms)}</div>
- <div className="text-xs text-amber-800">Avg Overage</div>
+ <div className="text-center p-3 bg-warning/5 rounded-lg">
+ <div className="text-2xl font-bold text-warning">{formatTimeoutDuration(timeoutStats.avg_timeout_duration_ms)}</div>
+ <div className="text-xs text-warning">Avg Overage</div>
  </div>
- <div className="text-center p-3 bg-green-50 rounded-lg">
- <div className="text-2xl font-bold text-green-600">{timeoutStats.fallback_success_rate.toFixed(1)}%</div>
- <div className="text-xs text-green-800">Fallback Success</div>
+ <div className="text-center p-3 bg-success/5 rounded-lg">
+ <div className="text-2xl font-bold text-success">{timeoutStats.fallback_success_rate.toFixed(1)}%</div>
+ <div className="text-xs text-success">Fallback Success</div>
  </div>
  <div className="text-center p-3 bg-purple-50 rounded-lg col-span-2">
  <div className="text-lg font-bold text-purple-600 flex items-center justify-center gap-2">
@@ -3605,7 +3605,7 @@ function AIRouterPage() {
  </div>
  <div className="h-2 bg-muted rounded-full overflow-hidden">
  <div
- className="h-full bg-gradient-to-r from-amber-400 to-red-500 rounded-full transition-all"
+ className="h-full bg-gradient-to-r from-warning/80 to-destructive rounded-full transition-all"
  style={{ width: `${percentage}%` }}
  />
  </div>
@@ -3633,9 +3633,9 @@ function AIRouterPage() {
  className={`flex items-center justify-between p-3 rounded border text-sm ${
  event.triggered_fallback
  ? event.fallback_success
- ? 'bg-green-50 border-green-200'
- : 'bg-red-50 border-red-200'
- : 'bg-amber-50 border-amber-200'
+ ? 'bg-success/5 border-success/20'
+ : 'bg-destructive/5 border-destructive/20'
+ : 'bg-warning/5 border-warning/20'
  }`}
  >
  <div className="flex items-center gap-3">
@@ -3675,7 +3675,7 @@ function AIRouterPage() {
  <div>
  <h2 className="text-lg font-semibold flex items-center gap-2">
  🤖 Model Selection per Feature
- <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+ <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
  {featureModelConfigs.filter(c => c.override_org_default).length} custom
  </span>
  </h2>
@@ -3729,7 +3729,7 @@ function AIRouterPage() {
  </div>
 
  {/* Organization Default Model */}
- <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+ <div className="mb-6 p-4 bg-gradient-to-r from-primary/5 to-indigo-50 rounded-lg border border-primary/20">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
  <span className="text-2xl">🏢</span>
@@ -3805,7 +3805,7 @@ function AIRouterPage() {
  {modelInfo.tier}
  </span>
  <span className="text-muted-foreground">~{config.avg_latency_ms}ms latency</span>
- <span className="font-medium text-green-600">{modelInfo.costBadge}</span>
+ <span className="font-medium text-success">{modelInfo.costBadge}</span>
  </div>
 
  {usageStats && (
@@ -3838,13 +3838,13 @@ function AIRouterPage() {
  <div className="bg-muted/50 rounded-lg p-4">
  <div className="grid grid-cols-4 gap-4 mb-4">
  <div className="text-center">
- <div className="text-2xl font-bold text-blue-600">
+ <div className="text-2xl font-bold text-primary">
  {modelUsageStats.reduce((sum, s) => sum + s.request_count, 0).toLocaleString()}
  </div>
  <div className="text-xs text-muted-foreground">Total Requests</div>
  </div>
  <div className="text-center">
- <div className="text-2xl font-bold text-green-600">
+ <div className="text-2xl font-bold text-success">
  {(modelUsageStats.reduce((sum, s) => sum + s.total_tokens, 0) / 1000000).toFixed(1)}M
  </div>
  <div className="text-xs text-muted-foreground">Total Tokens</div>
@@ -3856,7 +3856,7 @@ function AIRouterPage() {
  <div className="text-xs text-muted-foreground">Total Cost</div>
  </div>
  <div className="text-center">
- <div className="text-2xl font-bold text-amber-600">
+ <div className="text-2xl font-bold text-warning">
  {Math.round(modelUsageStats.reduce((sum, s) => sum + s.avg_latency_ms * s.request_count, 0) / modelUsageStats.reduce((sum, s) => sum + s.request_count, 0))}ms
  </div>
  <div className="text-xs text-muted-foreground">Avg Latency</div>
@@ -3879,8 +3879,8 @@ function AIRouterPage() {
  <div
  className={`h-full ${
  stat.model.includes('opus') ? 'bg-purple-500' :
- stat.model.includes('sonnet') ? 'bg-blue-500' :
- 'bg-green-500'
+ stat.model.includes('sonnet') ? 'bg-primary' :
+ 'bg-success'
  }`}
  style={{ width: `${percentage}%` }}
  />
@@ -3895,22 +3895,22 @@ function AIRouterPage() {
  </div>
 
  {/* Cost Optimization Suggestions */}
- <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
- <h3 className="font-medium text-green-800 mb-2">💡 Cost Optimization Suggestions</h3>
+ <div className="p-4 bg-gradient-to-r from-success/5 to-emerald-50 rounded-lg border border-success/20">
+ <h3 className="font-medium text-success mb-2">💡 Cost Optimization Suggestions</h3>
  <div className="space-y-2 text-sm">
  {featureModelConfigs
  .filter(c => c.model.includes('opus') && c.feature !== 'analysis' && c.feature !== 'code_review')
  .map(c => (
- <div key={c.feature} className="flex items-center justify-between p-2 bg-card rounded border border-green-200">
+ <div key={c.feature} className="flex items-center justify-between p-2 bg-card rounded border border-success/20">
  <div className="flex items-center gap-2">
  <span>{getFeatureIcon(c.feature)}</span>
  <span className="font-medium">{c.name}</span>
  <span className="text-muted-foreground">→</span>
- <span className="text-green-600">Consider Sonnet 4 for ~80% cost savings</span>
+ <span className="text-success">Consider Sonnet 4 for ~80% cost savings</span>
  </div>
  <button
  onClick={() => updateFeatureModel(c.feature, 'claude-sonnet-4')}
- className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200"
+ className="px-2 py-1 bg-success/10 text-success rounded text-xs hover:bg-success/20"
  >
  Apply
  </button>
@@ -3930,12 +3930,12 @@ function AIRouterPage() {
  <h2 className="text-lg font-semibold flex items-center gap-2">
  🚦 Provider Rate Limiting
  {rateLimitStatus.some(s => s.is_rate_limited) && (
- <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full animate-pulse">
+ <span className="text-xs bg-destructive text-white px-2 py-0.5 rounded-full animate-pulse">
  {rateLimitStatus.filter(s => s.is_rate_limited).length} Limited
  </span>
  )}
  {getTotalQueuedRequests() > 0 && (
- <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+ <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
  {getTotalQueuedRequests()} queued
  </span>
  )}
@@ -3988,10 +3988,10 @@ function AIRouterPage() {
  <div
  key={config.provider}
  className={`p-4 rounded-lg border-2 ${
- status?.is_rate_limited ? 'border-red-300 bg-red-50' :
- color === 'amber' ? 'border-amber-300 bg-amber-50' :
- color === 'yellow' ? 'border-yellow-300 bg-yellow-50' :
- 'border-green-300 bg-green-50'
+ status?.is_rate_limited ? 'border-destructive/30 bg-destructive/5' :
+ color === 'amber' ? 'border-warning/30 bg-warning/5' :
+ color === 'yellow' ? 'border-warning/30 bg-warning/5' :
+ 'border-success/30 bg-success/5'
  }`}
  >
  <div className="flex items-center justify-between mb-3">
@@ -3999,7 +3999,7 @@ function AIRouterPage() {
  <span className="text-xl">{config.provider === 'kie' ? '🤖' : '🅰️'}</span>
  <span className="font-semibold">{config.provider_name}</span>
  {status?.is_rate_limited && (
- <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full animate-pulse">RATE LIMITED</span>
+ <span className="text-xs bg-destructive text-white px-2 py-0.5 rounded-full animate-pulse">RATE LIMITED</span>
  )}
  </div>
  <button
@@ -4019,17 +4019,17 @@ function AIRouterPage() {
  <div>
  <div className="flex justify-between text-xs mb-1">
  <span className="text-foreground">Requests/min</span>
- <span className={`font-medium ${minuteUsage >= config.alert_threshold_percent ? 'text-red-600' : 'text-foreground'}`}>
+ <span className={`font-medium ${minuteUsage >= config.alert_threshold_percent ? 'text-destructive' : 'text-foreground'}`}>
  {status?.requests_remaining_minute || 0} / {config.requests_per_minute} remaining
  </span>
  </div>
  <div className="h-2 bg-muted rounded-full overflow-hidden">
  <div
  className={`h-full transition-all ${
- minuteUsage >= 90 ? 'bg-red-500' :
- minuteUsage >= 75 ? 'bg-amber-500' :
- minuteUsage >= 50 ? 'bg-yellow-500' :
- 'bg-green-500'
+ minuteUsage >= 90 ? 'bg-destructive' :
+ minuteUsage >= 75 ? 'bg-warning' :
+ minuteUsage >= 50 ? 'bg-warning' :
+ 'bg-success'
  }`}
  style={{ width: `${Math.min(minuteUsage, 100)}%` }}
  />
@@ -4043,17 +4043,17 @@ function AIRouterPage() {
  <div>
  <div className="flex justify-between text-xs mb-1">
  <span className="text-foreground">Requests/hour</span>
- <span className={`font-medium ${hourUsage >= config.alert_threshold_percent ? 'text-red-600' : 'text-foreground'}`}>
+ <span className={`font-medium ${hourUsage >= config.alert_threshold_percent ? 'text-destructive' : 'text-foreground'}`}>
  {status?.requests_remaining_hour || 0} / {config.requests_per_hour} remaining
  </span>
  </div>
  <div className="h-2 bg-muted rounded-full overflow-hidden">
  <div
  className={`h-full transition-all ${
- hourUsage >= 90 ? 'bg-red-500' :
- hourUsage >= 75 ? 'bg-amber-500' :
- hourUsage >= 50 ? 'bg-yellow-500' :
- 'bg-green-500'
+ hourUsage >= 90 ? 'bg-destructive' :
+ hourUsage >= 75 ? 'bg-warning' :
+ hourUsage >= 50 ? 'bg-warning' :
+ 'bg-success'
  }`}
  style={{ width: `${Math.min(hourUsage, 100)}%` }}
  />
@@ -4067,17 +4067,17 @@ function AIRouterPage() {
  <div>
  <div className="flex justify-between text-xs mb-1">
  <span className="text-foreground">Tokens/min</span>
- <span className={`font-medium ${tokenUsage >= config.alert_threshold_percent ? 'text-red-600' : 'text-foreground'}`}>
+ <span className={`font-medium ${tokenUsage >= config.alert_threshold_percent ? 'text-destructive' : 'text-foreground'}`}>
  {((status?.tokens_remaining_minute || 0) / 1000).toFixed(1)}k / {(config.tokens_per_minute / 1000).toFixed(0)}k remaining
  </span>
  </div>
  <div className="h-2 bg-muted rounded-full overflow-hidden">
  <div
  className={`h-full transition-all ${
- tokenUsage >= 90 ? 'bg-red-500' :
- tokenUsage >= 75 ? 'bg-amber-500' :
- tokenUsage >= 50 ? 'bg-yellow-500' :
- 'bg-green-500'
+ tokenUsage >= 90 ? 'bg-destructive' :
+ tokenUsage >= 75 ? 'bg-warning' :
+ tokenUsage >= 50 ? 'bg-warning' :
+ 'bg-success'
  }`}
  style={{ width: `${Math.min(tokenUsage, 100)}%` }}
  />
@@ -4108,8 +4108,8 @@ function AIRouterPage() {
  <div key={req.id} className="flex items-center justify-between text-xs bg-card rounded p-2 border">
  <div className="flex items-center gap-2">
  <span className={`px-1.5 py-0.5 rounded text-white text-[10px] ${
- req.priority === 'high' ? 'bg-red-500' :
- req.priority === 'normal' ? 'bg-blue-500' :
+ req.priority === 'high' ? 'bg-destructive' :
+ req.priority === 'normal' ? 'bg-primary' :
  'bg-gray-500'
  }`}>
  {idx + 1}
@@ -4121,7 +4121,7 @@ function AIRouterPage() {
  <span className="text-muted-foreground">~{Math.ceil(req.estimated_wait_ms / 1000)}s</span>
  <button
  onClick={() => clearQueuedRequest(config.provider, req.id)}
- className="text-red-500 hover:text-red-700"
+ className="text-destructive hover:text-destructive"
  title="Remove from queue"
  >
  ✕
@@ -4159,7 +4159,7 @@ function AIRouterPage() {
  </div>
  <div className="text-foreground text-xs">{event.details}</div>
  {event.queue_position && (
- <div className="text-xs text-blue-600">Queue position: #{event.queue_position}</div>
+ <div className="text-xs text-primary">Queue position: #{event.queue_position}</div>
  )}
  </div>
  </div>
@@ -4170,22 +4170,22 @@ function AIRouterPage() {
  </div>
 
  {/* Auto-Distribute Info */}
- <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+ <div className="p-3 bg-gradient-to-r from-primary/5 to-indigo-50 rounded-lg border border-primary/20">
  <div className="flex items-center gap-2 mb-2">
  <span className="text-lg">⚡</span>
- <span className="font-medium text-blue-800">Proactive Rate Limit Management</span>
+ <span className="font-medium text-primary">Proactive Rate Limit Management</span>
  </div>
- <div className="text-sm text-blue-700 space-y-1">
+ <div className="text-sm text-primary space-y-1">
  <div className="flex items-center gap-2">
- <span className="text-green-500">✓</span>
+ <span className="text-success">✓</span>
  <span>Auto-distribute enabled: Requests are spread evenly across time windows</span>
  </div>
  <div className="flex items-center gap-2">
- <span className="text-green-500">✓</span>
+ <span className="text-success">✓</span>
  <span>Burst allowance: +{rateLimitConfigs[0].burst_allowance} requests allowed during traffic spikes</span>
  </div>
  <div className="flex items-center gap-2">
- <span className="text-green-500">✓</span>
+ <span className="text-success">✓</span>
  <span>Failover ready: Anthropic configured to failover on rate limit</span>
  </div>
  </div>
@@ -4337,7 +4337,7 @@ function AIRouterPage() {
  </button>
  <button
  onClick={() => setShowRateLimitConfigModal(false)}
- className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+ className="px-4 py-2 bg-primary text-white rounded hover:bg-primary"
  >
  Save Changes
  </button>
@@ -4356,9 +4356,9 @@ function AIRouterPage() {
  <h2 className="text-lg font-semibold flex items-center gap-2">
  ↔️ Fallback Rules
  <span className={`text-xs px-2 py-0.5 rounded-full ${
- getFallbackSuccessRate() >= 90 ? 'bg-green-100 text-green-700' :
- getFallbackSuccessRate() >= 70 ? 'bg-amber-100 text-amber-700' :
- 'bg-red-100 text-red-700'
+ getFallbackSuccessRate() >= 90 ? 'bg-success/10 text-success' :
+ getFallbackSuccessRate() >= 70 ? 'bg-warning/10 text-warning' :
+ 'bg-destructive/10 text-destructive'
  }`}>
  {getFallbackSuccessRate()}% success rate
  </span>
@@ -4367,7 +4367,7 @@ function AIRouterPage() {
  </div>
  <button
  onClick={createFallbackRule}
- className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+ className="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-primary"
  >
  + Add Rule
  </button>
@@ -4375,17 +4375,17 @@ function AIRouterPage() {
 
  {/* Fallback Stats Overview */}
  <div className="grid grid-cols-4 gap-4 mb-6">
- <div className="p-3 bg-blue-50 rounded-lg text-center">
- <div className="text-2xl font-bold text-blue-600">{fallbackStats.total_fallbacks_24h}</div>
- <div className="text-xs text-blue-700">Total (24h)</div>
+ <div className="p-3 bg-primary/5 rounded-lg text-center">
+ <div className="text-2xl font-bold text-primary">{fallbackStats.total_fallbacks_24h}</div>
+ <div className="text-xs text-primary">Total (24h)</div>
  </div>
- <div className="p-3 bg-green-50 rounded-lg text-center">
- <div className="text-2xl font-bold text-green-600">{fallbackStats.successful_fallbacks_24h}</div>
- <div className="text-xs text-green-700">Successful</div>
+ <div className="p-3 bg-success/5 rounded-lg text-center">
+ <div className="text-2xl font-bold text-success">{fallbackStats.successful_fallbacks_24h}</div>
+ <div className="text-xs text-success">Successful</div>
  </div>
- <div className="p-3 bg-red-50 rounded-lg text-center">
- <div className="text-2xl font-bold text-red-600">{fallbackStats.failed_fallbacks_24h}</div>
- <div className="text-xs text-red-700">Failed</div>
+ <div className="p-3 bg-destructive/5 rounded-lg text-center">
+ <div className="text-2xl font-bold text-destructive">{fallbackStats.failed_fallbacks_24h}</div>
+ <div className="text-xs text-destructive">Failed</div>
  </div>
  <div className="p-3 bg-purple-50 rounded-lg text-center">
  <div className="text-2xl font-bold text-purple-600">{fallbackStats.avg_fallback_latency_ms}ms</div>
@@ -4420,14 +4420,14 @@ function AIRouterPage() {
  key={rule.id}
  className={`p-4 rounded-lg border-2 transition-all ${
  rule.enabled
- ? 'bg-card border-blue-200'
+ ? 'bg-card border-primary/20'
  : 'bg-muted border-border opacity-70'
  }`}
  >
  <div className="flex items-start justify-between mb-3">
  <div className="flex items-center gap-3">
  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
- rule.enabled ? 'bg-blue-500 text-white' : 'bg-gray-300 text-foreground'
+ rule.enabled ? 'bg-primary text-white' : 'bg-gray-300 text-foreground'
  }`}>
  #{rule.priority}
  </div>
@@ -4449,14 +4449,14 @@ function AIRouterPage() {
  onChange={(e) => updateFallbackRule(rule.id, { enabled: e.target.checked })}
  className="sr-only peer"
  />
- <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+ <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
  </label>
  <button
  onClick={() => {
  setEditingFallbackRule(rule);
  setShowFallbackRuleModal(true);
  }}
- className="p-1 text-muted-foreground hover:text-blue-600"
+ className="p-1 text-muted-foreground hover:text-primary"
  title="Edit Rule"
  >
  ⚙️
@@ -4467,7 +4467,7 @@ function AIRouterPage() {
  deleteFallbackRule(rule.id);
  }
  }}
- className="p-1 text-muted-foreground hover:text-red-600"
+ className="p-1 text-muted-foreground hover:text-destructive"
  title="Delete Rule"
  >
  🗑️
@@ -4510,11 +4510,11 @@ function AIRouterPage() {
  <span className="text-muted-foreground">
  Triggered: <strong>{ruleStats.triggered}x</strong>
  </span>
- <span className={`${ruleStats.success_rate >= 80 ? 'text-green-600' : ruleStats.success_rate >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
+ <span className={`${ruleStats.success_rate >= 80 ? 'text-success' : ruleStats.success_rate >= 50 ? 'text-warning' : 'text-destructive'}`}>
  Success rate: <strong>{ruleStats.success_rate}%</strong>
  </span>
  {rule.notify_on_fallback && (
- <span className="text-blue-500">🔔 Notifications on</span>
+ <span className="text-primary">🔔 Notifications on</span>
  )}
  {rule.preserve_context && (
  <span className="text-purple-500">📋 Preserves context</span>
@@ -4528,7 +4528,7 @@ function AIRouterPage() {
  </div>
 
  {/* Test Fallback Manually */}
- <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
+ <div className="mb-6 p-4 bg-gradient-to-r from-warning/5 to-orange-50 rounded-lg border border-warning/20">
  <h3 className="text-sm font-medium mb-3">🧪 Test Fallback Manually</h3>
  <p className="text-xs text-foreground mb-3">Simulate different failure scenarios to test your fallback rules</p>
  <div className="flex flex-wrap gap-2">
@@ -4539,8 +4539,8 @@ function AIRouterPage() {
  disabled={isTestingFallback}
  className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
  isTestingFallback && testingFallbackTrigger === trigger
- ? 'bg-blue-500 text-white animate-pulse'
- : 'bg-card border hover:border-blue-400 hover:bg-blue-50'
+ ? 'bg-primary text-white animate-pulse'
+ : 'bg-card border hover:border-primary/40 hover:bg-primary/5'
  } disabled:opacity-50`}
  >
  {isTestingFallback && testingFallbackTrigger === trigger ? '⏳' : getTriggerIcon(trigger)}
@@ -4568,8 +4568,8 @@ function AIRouterPage() {
  key={idx}
  className={`flex items-center justify-between p-3 rounded-lg border ${
  result.success
- ? 'bg-green-50 border-green-200'
- : 'bg-red-50 border-red-200'
+ ? 'bg-success/5 border-success/20'
+ : 'bg-destructive/5 border-destructive/20'
  }`}
  >
  <div className="flex items-center gap-3">
@@ -4632,7 +4632,7 @@ function AIRouterPage() {
  key={trigger}
  className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
  editingFallbackRule.triggers.includes(trigger)
- ? 'bg-blue-100 border-blue-400'
+ ? 'bg-primary/10 border-primary/40'
  : 'bg-card border-border hover:border-muted-foreground'
  }`}
  >
@@ -4859,7 +4859,7 @@ function AIRouterPage() {
  </button>
  <button
  onClick={() => setShowFallbackRuleModal(false)}
- className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+ className="px-4 py-2 bg-primary text-white rounded hover:bg-primary"
  >
  Save Changes
  </button>
@@ -4877,10 +4877,10 @@ function AIRouterPage() {
  <h2 className="text-lg font-semibold flex items-center gap-2">
  💰 Monthly AI Budget
  {getBudgetStatus() === 'blocked' && (
- <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full animate-pulse">BLOCKED</span>
+ <span className="text-xs bg-destructive text-white px-2 py-0.5 rounded-full animate-pulse">BLOCKED</span>
  )}
  {getBudgetStatus() === 'critical' && (
- <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full">Soft Limit</span>
+ <span className="text-xs bg-warning text-white px-2 py-0.5 rounded-full">Soft Limit</span>
  )}
  </h2>
  <p className="text-sm text-muted-foreground">Track and control AI spending with soft and hard limits</p>
@@ -4897,10 +4897,10 @@ function AIRouterPage() {
 
  {/* Budget Overview */}
  <div className={`mb-6 p-4 rounded-lg border-2 ${
- getBudgetStatus() === 'blocked' ? 'bg-red-50 border-red-300' :
- getBudgetStatus() === 'critical' ? 'bg-amber-50 border-amber-300' :
- getBudgetStatus() === 'warning' ? 'bg-yellow-50 border-yellow-300' :
- 'bg-green-50 border-green-300'
+ getBudgetStatus() === 'blocked' ? 'bg-destructive/5 border-destructive/30' :
+ getBudgetStatus() === 'critical' ? 'bg-warning/5 border-warning/30' :
+ getBudgetStatus() === 'warning' ? 'bg-warning/5 border-warning/30' :
+ 'bg-success/5 border-success/30'
  }`}>
  <div className="flex items-center justify-between mb-3">
  <div>
@@ -4923,22 +4923,22 @@ function AIRouterPage() {
  <div className="relative h-6 bg-muted rounded-full overflow-hidden">
  <div
  className={`h-full transition-all ${
- getBudgetStatus() === 'blocked' ? 'bg-red-500' :
- getBudgetStatus() === 'critical' ? 'bg-amber-500' :
- getBudgetStatus() === 'warning' ? 'bg-yellow-500' :
- 'bg-green-500'
+ getBudgetStatus() === 'blocked' ? 'bg-destructive' :
+ getBudgetStatus() === 'critical' ? 'bg-warning' :
+ getBudgetStatus() === 'warning' ? 'bg-warning' :
+ 'bg-success'
  }`}
  style={{ width: `${Math.min(getBudgetPercentage(), 100)}%` }}
  />
  {/* Soft limit marker */}
  <div
- className="absolute top-0 bottom-0 w-0.5 bg-amber-600"
+ className="absolute top-0 bottom-0 w-0.5 bg-warning"
  style={{ left: `${budgetConfig.soft_limit_percentage}%` }}
  title={`Soft limit: ${budgetConfig.soft_limit_percentage}%`}
  />
  {/* Hard limit marker */}
  <div
- className="absolute top-0 bottom-0 w-0.5 bg-red-600"
+ className="absolute top-0 bottom-0 w-0.5 bg-destructive"
  style={{ left: `${Math.min(budgetConfig.hard_limit_percentage, 100)}%` }}
  title={`Hard limit: ${budgetConfig.hard_limit_percentage}%`}
  />
@@ -4954,13 +4954,13 @@ function AIRouterPage() {
  </div>
  <div className="flex justify-between mt-1 text-xs text-muted-foreground">
  <span>0%</span>
- <span className="text-amber-600">{budgetConfig.soft_limit_percentage}% soft</span>
- <span className="text-red-600">{budgetConfig.hard_limit_percentage}% hard</span>
+ <span className="text-warning">{budgetConfig.soft_limit_percentage}% soft</span>
+ <span className="text-destructive">{budgetConfig.hard_limit_percentage}% hard</span>
  </div>
 
  {/* Projected spend warning */}
  {getProjectedSpend() > budgetConfig.monthly_budget_cents && (
- <div className="mt-3 p-2 bg-amber-100 border border-amber-300 rounded text-sm text-amber-800">
+ <div className="mt-3 p-2 bg-warning/10 border border-warning/30 rounded text-sm text-warning">
  ⚠️ At current rate, projected month-end spend: <strong>{formatCurrency(getProjectedSpend())}</strong>
  (over budget by {formatCurrency(getProjectedSpend() - budgetConfig.monthly_budget_cents)})
  </div>
@@ -4984,20 +4984,20 @@ function AIRouterPage() {
  step="100"
  value={budgetConfig.monthly_budget_cents / 100}
  onChange={(e) => setBudgetConfig({ ...budgetConfig, monthly_budget_cents: parseFloat(e.target.value) * 100 || 50000 })}
- className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+ className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
  />
  </div>
  </div>
 
- <div className="p-3 bg-amber-50 rounded-lg">
+ <div className="p-3 bg-warning/5 rounded-lg">
  <div className="flex items-center justify-between mb-2">
- <label className="text-sm font-medium text-amber-800">Soft Limit: {budgetConfig.soft_limit_percentage}%</label>
+ <label className="text-sm font-medium text-warning">Soft Limit: {budgetConfig.soft_limit_percentage}%</label>
  <label className="flex items-center gap-2 text-xs">
  <input
  type="checkbox"
  checked={budgetConfig.alert_on_soft_limit}
  onChange={(e) => setBudgetConfig({ ...budgetConfig, alert_on_soft_limit: e.target.checked })}
- className="w-4 h-4 text-amber-600 rounded"
+ className="w-4 h-4 text-warning rounded"
  />
  <span>Alert</span>
  </label>
@@ -5008,20 +5008,20 @@ function AIRouterPage() {
  max="95"
  value={budgetConfig.soft_limit_percentage}
  onChange={(e) => setBudgetConfig({ ...budgetConfig, soft_limit_percentage: parseInt(e.target.value) })}
- className="w-full h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer"
+ className="w-full h-2 bg-warning/20 rounded-lg appearance-none cursor-pointer"
  />
- <div className="text-xs text-amber-600 mt-1">Warn at {formatCurrency(budgetConfig.monthly_budget_cents * budgetConfig.soft_limit_percentage / 100)}</div>
+ <div className="text-xs text-warning mt-1">Warn at {formatCurrency(budgetConfig.monthly_budget_cents * budgetConfig.soft_limit_percentage / 100)}</div>
  </div>
 
- <div className="p-3 bg-red-50 rounded-lg">
+ <div className="p-3 bg-destructive/5 rounded-lg">
  <div className="flex items-center justify-between mb-2">
- <label className="text-sm font-medium text-red-800">Hard Limit: {budgetConfig.hard_limit_percentage}%</label>
+ <label className="text-sm font-medium text-destructive">Hard Limit: {budgetConfig.hard_limit_percentage}%</label>
  <label className="flex items-center gap-2 text-xs">
  <input
  type="checkbox"
  checked={budgetConfig.block_on_hard_limit}
  onChange={(e) => setBudgetConfig({ ...budgetConfig, block_on_hard_limit: e.target.checked })}
- className="w-4 h-4 text-red-600 rounded"
+ className="w-4 h-4 text-destructive rounded"
  />
  <span>Block</span>
  </label>
@@ -5032,23 +5032,23 @@ function AIRouterPage() {
  max="150"
  value={budgetConfig.hard_limit_percentage}
  onChange={(e) => setBudgetConfig({ ...budgetConfig, hard_limit_percentage: parseInt(e.target.value) })}
- className="w-full h-2 bg-red-200 rounded-lg appearance-none cursor-pointer"
+ className="w-full h-2 bg-destructive/20 rounded-lg appearance-none cursor-pointer"
  />
- <div className="text-xs text-red-600 mt-1">Block at {formatCurrency(budgetConfig.monthly_budget_cents * budgetConfig.hard_limit_percentage / 100)}</div>
+ <div className="text-xs text-destructive mt-1">Block at {formatCurrency(budgetConfig.monthly_budget_cents * budgetConfig.hard_limit_percentage / 100)}</div>
  </div>
 
- <div className="p-3 bg-blue-50 rounded-lg">
- <label className="block text-sm font-medium text-blue-800 mb-2">Billing Cycle Day</label>
+ <div className="p-3 bg-primary/5 rounded-lg">
+ <label className="block text-sm font-medium text-primary mb-2">Billing Cycle Day</label>
  <select
  value={budgetConfig.billing_cycle_day}
  onChange={(e) => setBudgetConfig({ ...budgetConfig, billing_cycle_day: parseInt(e.target.value) })}
- className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+ className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
  >
  {Array.from({ length: 28 }, (_, i) => (
  <option key={i + 1} value={i + 1}>Day {i + 1}</option>
  ))}
  </select>
- <div className="text-xs text-blue-600 mt-1">Budget resets on this day each month</div>
+ <div className="text-xs text-primary mt-1">Budget resets on this day each month</div>
  </div>
  </div>
 
@@ -5057,21 +5057,21 @@ function AIRouterPage() {
  <h3 className="text-sm font-medium">📊 Spending Breakdown</h3>
 
  <div className="grid grid-cols-2 gap-3">
- <div className="text-center p-3 bg-blue-50 rounded-lg">
- <div className="text-xl font-bold text-blue-600">{spendingData.requests_this_month.toLocaleString()}</div>
- <div className="text-xs text-blue-800">Requests</div>
+ <div className="text-center p-3 bg-primary/5 rounded-lg">
+ <div className="text-xl font-bold text-primary">{spendingData.requests_this_month.toLocaleString()}</div>
+ <div className="text-xs text-primary">Requests</div>
  </div>
- <div className="text-center p-3 bg-green-50 rounded-lg">
- <div className="text-xl font-bold text-green-600">{formatCurrency(spendingData.avg_cost_per_request_cents)}</div>
- <div className="text-xs text-green-800">Avg Cost/Req</div>
+ <div className="text-center p-3 bg-success/5 rounded-lg">
+ <div className="text-xl font-bold text-success">{formatCurrency(spendingData.avg_cost_per_request_cents)}</div>
+ <div className="text-xs text-success">Avg Cost/Req</div>
  </div>
  <div className="text-center p-3 bg-purple-50 rounded-lg">
  <div className="text-xl font-bold text-purple-600">{formatCurrency(spendingData.last_month_spend_cents)}</div>
  <div className="text-xs text-purple-800">Last Month</div>
  </div>
- <div className="text-center p-3 bg-amber-50 rounded-lg">
- <div className="text-xl font-bold text-amber-600">{formatCurrency(getProjectedSpend())}</div>
- <div className="text-xs text-amber-800">Projected</div>
+ <div className="text-center p-3 bg-warning/5 rounded-lg">
+ <div className="text-xl font-bold text-warning">{formatCurrency(getProjectedSpend())}</div>
+ <div className="text-xs text-warning">Projected</div>
  </div>
  </div>
 
@@ -5082,7 +5082,7 @@ function AIRouterPage() {
  <span className="w-16 text-sm font-medium capitalize">{provider}</span>
  <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
  <div
- className={`h-full ${provider === 'kie' ? 'bg-gradient-to-r from-teal-400 to-teal-500' : 'bg-gradient-to-r from-blue-400 to-blue-500'}`}
+ className={`h-full ${provider === 'kie' ? 'bg-gradient-to-r from-teal-400 to-teal-500' : 'bg-gradient-to-r from-primary/80 to-primary'}`}
  style={{ width: `${(cents / spendingData.current_month_spend_cents) * 100}%` }}
  />
  </div>
@@ -5141,7 +5141,7 @@ function AIRouterPage() {
  >
  <div
  className={`w-full rounded-t transition-all ${
- isOverDailyBudget ? 'bg-red-400 hover:bg-red-500' : 'bg-blue-400 hover:bg-blue-500'
+ isOverDailyBudget ? 'bg-destructive/80 hover:bg-destructive' : 'bg-primary/80 hover:bg-primary'
  }`}
  style={{ height: `${Math.max(height, 4)}%` }}
  />
@@ -5161,15 +5161,15 @@ function AIRouterPage() {
  {/* Legend */}
  <div className="flex items-center justify-center gap-4 mt-3 text-xs">
  <div className="flex items-center gap-1">
- <div className="w-3 h-3 bg-blue-400 rounded" />
+ <div className="w-3 h-3 bg-primary/80 rounded" />
  <span>Within daily budget</span>
  </div>
  <div className="flex items-center gap-1">
- <div className="w-3 h-3 bg-red-400 rounded" />
+ <div className="w-3 h-3 bg-destructive/80 rounded" />
  <span>Over daily budget</span>
  </div>
  <div className="flex items-center gap-1">
- <div className="w-0.5 h-3 bg-amber-500" />
+ <div className="w-0.5 h-3 bg-warning" />
  <span>Avg: ~{formatCurrency(budgetConfig.monthly_budget_cents / 30)}/day</span>
  </div>
  </div>
@@ -5177,11 +5177,11 @@ function AIRouterPage() {
  </div>
 
  {/* Feature #1340: Export Budget Reports */}
- <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+ <div className="mb-6 p-4 bg-gradient-to-r from-primary/5 to-indigo-50 rounded-lg border border-primary/20">
  <div className="flex items-center justify-between mb-3">
  <div>
- <h3 className="text-sm font-medium text-blue-800">📄 Export Budget Reports</h3>
- <p className="text-xs text-blue-600">Download spending data for analysis or compliance</p>
+ <h3 className="text-sm font-medium text-primary">📄 Export Budget Reports</h3>
+ <p className="text-xs text-primary">Download spending data for analysis or compliance</p>
  </div>
  </div>
  <div className="flex flex-wrap gap-2">
@@ -5200,7 +5200,7 @@ function AIRouterPage() {
  URL.revokeObjectURL(url);
  alert('✅ Budget report downloaded as CSV');
  }}
- className="px-3 py-2 bg-card border border-blue-300 text-blue-700 rounded hover:bg-blue-50 flex items-center gap-2"
+ className="px-3 py-2 bg-card border border-primary/30 text-primary rounded hover:bg-primary/5 flex items-center gap-2"
  >
  <span>📊</span> Export CSV
  </button>
@@ -5239,7 +5239,7 @@ function AIRouterPage() {
  URL.revokeObjectURL(url);
  alert('✅ Detailed budget report downloaded as JSON');
  }}
- className="px-3 py-2 bg-card border border-blue-300 text-blue-700 rounded hover:bg-blue-50 flex items-center gap-2"
+ className="px-3 py-2 bg-card border border-primary/30 text-primary rounded hover:bg-primary/5 flex items-center gap-2"
  >
  <span>📋</span> Export JSON
  </button>
@@ -5286,7 +5286,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  URL.revokeObjectURL(url);
  alert('✅ Budget summary downloaded as TXT');
  }}
- className="px-3 py-2 bg-card border border-blue-300 text-blue-700 rounded hover:bg-blue-50 flex items-center gap-2"
+ className="px-3 py-2 bg-card border border-primary/30 text-primary rounded hover:bg-primary/5 flex items-center gap-2"
  >
  <span>📝</span> Export Summary
  </button>
@@ -5351,7 +5351,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  printWindow.print();
  }
  }}
- className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-2"
+ className="px-3 py-2 bg-primary text-white rounded hover:bg-primary flex items-center gap-2"
  >
  <span>🖨️</span> Print Report
  </button>
@@ -5365,34 +5365,34 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <button
  onClick={() => simulateSpending(1000)}
  disabled={getBudgetStatus() === 'blocked'}
- className="px-3 py-2 bg-green-100 text-green-800 rounded hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
+ className="px-3 py-2 bg-success/10 text-success rounded hover:bg-success/20 disabled:opacity-50 disabled:cursor-not-allowed"
  >
  +$10.00
  </button>
  <button
  onClick={() => simulateSpending(5000)}
  disabled={getBudgetStatus() === 'blocked'}
- className="px-3 py-2 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+ className="px-3 py-2 bg-primary/10 text-primary rounded hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
  >
  +$50.00
  </button>
  <button
  onClick={() => simulateSpending(10000)}
  disabled={getBudgetStatus() === 'blocked'}
- className="px-3 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 disabled:opacity-50 disabled:cursor-not-allowed"
+ className="px-3 py-2 bg-warning/10 text-warning rounded hover:bg-warning/20 disabled:opacity-50 disabled:cursor-not-allowed"
  >
  +$100.00
  </button>
  <button
  onClick={() => simulateSpending(budgetConfig.monthly_budget_cents - spendingData.current_month_spend_cents + 100)}
  disabled={getBudgetStatus() === 'blocked'}
- className="px-3 py-2 bg-red-100 text-red-800 rounded hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+ className="px-3 py-2 bg-destructive/10 text-destructive rounded hover:bg-destructive/20 disabled:opacity-50 disabled:cursor-not-allowed"
  >
  Exceed Budget
  </button>
  </div>
  {getBudgetStatus() === 'blocked' && (
- <div className="mt-2 text-sm text-red-600">
+ <div className="mt-2 text-sm text-destructive">
  🚫 Spending blocked - hard limit reached. Reset budget to continue.
  </div>
  )}
@@ -5412,10 +5412,10 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div
  key={alert.id}
  className={`flex items-center justify-between p-3 rounded border ${
- alert.type === 'hard_limit' ? 'bg-red-50 border-red-200' :
- alert.type === 'soft_limit' ? 'bg-amber-50 border-amber-200' :
- alert.type === 'reset' ? 'bg-green-50 border-green-200' :
- 'bg-blue-50 border-blue-200'
+ alert.type === 'hard_limit' ? 'bg-destructive/5 border-destructive/20' :
+ alert.type === 'soft_limit' ? 'bg-warning/5 border-warning/20' :
+ alert.type === 'reset' ? 'bg-success/5 border-success/20' :
+ 'bg-primary/5 border-primary/20'
  } ${alert.acknowledged ? 'opacity-60' : ''}`}
  >
  <div className="flex items-center gap-3">
@@ -5455,7 +5455,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  This will reset your current month's spending to $0.00 and clear all spending history.
  This action is typically triggered automatically on billing cycle day {budgetConfig.billing_cycle_day}.
  </p>
- <div className="bg-amber-50 border border-amber-200 rounded p-3 mb-4 text-sm text-amber-800">
+ <div className="bg-warning/5 border border-warning/20 rounded p-3 mb-4 text-sm text-warning">
  ⚠️ Current spend of <strong>{formatCurrency(spendingData.current_month_spend_cents)}</strong> will be cleared.
  </div>
  <div className="flex gap-3 justify-end">
@@ -5467,7 +5467,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  </button>
  <button
  onClick={resetBudget}
- className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+ className="px-4 py-2 bg-primary text-white rounded hover:bg-primary"
  >
  Reset Budget
  </button>
@@ -5482,7 +5482,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <h2 className="text-lg font-semibold">🔔 Cost Alert Notifications</h2>
  <button
  onClick={() => setShowTestNotificationModal(true)}
- className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+ className="px-3 py-1.5 text-sm bg-primary text-white rounded hover:bg-primary"
  >
  📧 Send Test Alert
  </button>
@@ -5506,7 +5506,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  type="checkbox"
  checked={threshold.enabled}
  onChange={(e) => updateAlertThreshold(index, { enabled: e.target.checked })}
- className="w-4 h-4 text-blue-600 rounded"
+ className="w-4 h-4 text-primary rounded"
  />
  <span className="text-sm text-foreground">Enabled</span>
  </label>
@@ -5518,7 +5518,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  type="checkbox"
  checked={threshold.email_enabled}
  onChange={(e) => updateAlertThreshold(index, { email_enabled: e.target.checked })}
- className="w-3.5 h-3.5 text-blue-600 rounded"
+ className="w-3.5 h-3.5 text-primary rounded"
  />
  <span>📧 Email</span>
  </label>
@@ -5555,7 +5555,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  type="checkbox"
  checked={alertNotificationConfig.email_enabled}
  onChange={(e) => setAlertNotificationConfig(prev => ({ ...prev, email_enabled: e.target.checked }))}
- className="w-4 h-4 text-blue-600 rounded"
+ className="w-4 h-4 text-primary rounded"
  />
  <span className="text-sm">{alertNotificationConfig.email_enabled ? 'On' : 'Off'}</span>
  </label>
@@ -5565,11 +5565,11 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <label className="text-xs text-muted-foreground block mb-1">Recipients:</label>
  <div className="flex flex-wrap gap-1 mb-2">
  {alertNotificationConfig.email_recipients.map((email) => (
- <span key={email} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+ <span key={email} className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
  {email}
  <button
  onClick={() => removeEmailRecipient(email)}
- className="hover:text-red-600"
+ className="hover:text-destructive"
  >
  ×
  </button>
@@ -5596,7 +5596,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  input.value = '';
  }
  }}
- className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+ className="px-2 py-1 text-xs bg-primary text-white rounded hover:bg-primary"
  >
  Add
  </button>
@@ -5654,7 +5654,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  type="checkbox"
  checked={alertNotificationConfig.include_breakdown}
  onChange={(e) => setAlertNotificationConfig(prev => ({ ...prev, include_breakdown: e.target.checked }))}
- className="w-4 h-4 text-blue-600 rounded"
+ className="w-4 h-4 text-primary rounded"
  />
  <span className="text-sm">📊 Include Cost Breakdown (by provider & feature)</span>
  </label>
@@ -5663,7 +5663,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  type="checkbox"
  checked={alertNotificationConfig.include_suggestions}
  onChange={(e) => setAlertNotificationConfig(prev => ({ ...prev, include_suggestions: e.target.checked }))}
- className="w-4 h-4 text-blue-600 rounded"
+ className="w-4 h-4 text-primary rounded"
  />
  <span className="text-sm">💡 Include Cost Reduction Suggestions</span>
  </label>
@@ -5701,22 +5701,22 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <span className="font-medium text-sm">{suggestion.title}</span>
  </div>
  <span className={`text-xs px-1.5 py-0.5 rounded font-semibold ${
- suggestion.priority === 'high' ? 'bg-red-200 text-red-800' :
- suggestion.priority === 'medium' ? 'bg-yellow-200 text-yellow-800' :
- 'bg-green-200 text-green-800'
+ suggestion.priority === 'high' ? 'bg-destructive/20 text-destructive' :
+ suggestion.priority === 'medium' ? 'bg-warning/20 text-warning' :
+ 'bg-success/20 text-success'
  }`}>
  {suggestion.priority.toUpperCase()}
  </span>
  </div>
  <p className="text-xs text-foreground mb-2">{suggestion.description}</p>
  <div className="flex items-center justify-between">
- <span className="text-sm font-semibold text-green-700">
+ <span className="text-sm font-semibold text-success">
  ~{suggestion.estimated_savings_percent}% savings
  </span>
  {suggestion.action_url && (
  <button
  onClick={() => alert(`Navigate to: ${suggestion.action_url}`)}
- className="text-xs text-blue-600 hover:underline"
+ className="text-xs text-primary hover:underline"
  >
  Configure →
  </button>
@@ -5741,9 +5741,9 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div
  key={notif.id}
  className={`flex items-center justify-between p-3 rounded border ${
- notif.status === 'sent' ? 'bg-green-50 border-green-200' :
- notif.status === 'failed' ? 'bg-red-50 border-red-200' :
- 'bg-yellow-50 border-yellow-200'
+ notif.status === 'sent' ? 'bg-success/5 border-success/20' :
+ notif.status === 'failed' ? 'bg-destructive/5 border-destructive/20' :
+ 'bg-warning/5 border-warning/20'
  }`}
  >
  <div className="flex items-center gap-3">
@@ -5796,7 +5796,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  onClick={() => setTestNotificationThreshold(threshold)}
  className={`flex-1 py-2 px-3 rounded border text-sm font-medium ${
  testNotificationThreshold === threshold
- ? 'bg-blue-500 text-white border-blue-500'
+ ? 'bg-primary text-white border-primary'
  : 'bg-muted/50 text-muted-foreground border-border hover:bg-muted'
  }`}
  >
@@ -5828,7 +5828,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  </button>
  <button
  onClick={() => sendTestNotification(testNotificationThreshold)}
- className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+ className="px-4 py-2 bg-primary text-white rounded hover:bg-primary"
  >
  Send Test Alert
  </button>
@@ -5843,7 +5843,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="flex items-center gap-3">
  <h2 className="text-lg font-semibold">💾 AI Response Caching</h2>
  <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${
- cacheConfig.enabled ? 'bg-green-100 text-green-800' : 'bg-muted text-foreground'
+ cacheConfig.enabled ? 'bg-success/10 text-success' : 'bg-muted text-foreground'
  }`}>
  {cacheConfig.enabled ? '✓ Enabled' : '○ Disabled'}
  </span>
@@ -5851,7 +5851,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="flex items-center gap-2">
  <button
  onClick={() => setShowCacheClearModal(true)}
- className="px-3 py-1.5 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+ className="px-3 py-1.5 text-sm bg-destructive/10 text-destructive rounded hover:bg-destructive/20"
  >
  🗑️ Clear Cache
  </button>
@@ -5860,7 +5860,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  type="checkbox"
  checked={cacheConfig.enabled}
  onChange={(e) => setCacheConfig(prev => ({ ...prev, enabled: e.target.checked }))}
- className="w-4 h-4 text-blue-600 rounded"
+ className="w-4 h-4 text-primary rounded"
  />
  <span className="text-sm">Caching</span>
  </label>
@@ -5869,13 +5869,13 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
 
  {/* Cache Stats Overview */}
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
- <div className="bg-blue-50 rounded-lg p-3 text-center">
- <div className="text-2xl font-bold text-blue-700">{cacheStats.hit_rate_percent.toFixed(1)}%</div>
- <div className="text-xs text-blue-600">Hit Rate</div>
+ <div className="bg-primary/5 rounded-lg p-3 text-center">
+ <div className="text-2xl font-bold text-primary">{cacheStats.hit_rate_percent.toFixed(1)}%</div>
+ <div className="text-xs text-primary">Hit Rate</div>
  </div>
- <div className="bg-green-50 rounded-lg p-3 text-center">
- <div className="text-2xl font-bold text-green-700">{cacheStats.total_hits.toLocaleString()}</div>
- <div className="text-xs text-green-600">Total Hits</div>
+ <div className="bg-success/5 rounded-lg p-3 text-center">
+ <div className="text-2xl font-bold text-success">{cacheStats.total_hits.toLocaleString()}</div>
+ <div className="text-xs text-success">Total Hits</div>
  </div>
  <div className="bg-purple-50 rounded-lg p-3 text-center">
  <div className="text-2xl font-bold text-purple-700">${(cacheStats.estimated_cost_savings_cents / 100).toFixed(2)}</div>
@@ -5958,7 +5958,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  type="checkbox"
  checked={cacheConfig.invalidate_on_model_change}
  onChange={(e) => setCacheConfig(prev => ({ ...prev, invalidate_on_model_change: e.target.checked }))}
- className="w-4 h-4 text-blue-600 rounded"
+ className="w-4 h-4 text-primary rounded"
  />
  <span className="text-sm">Invalidate on model change</span>
  </label>
@@ -5967,7 +5967,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  type="checkbox"
  checked={cacheConfig.invalidate_on_prompt_change}
  onChange={(e) => setCacheConfig(prev => ({ ...prev, invalidate_on_prompt_change: e.target.checked }))}
- className="w-4 h-4 text-blue-600 rounded"
+ className="w-4 h-4 text-primary rounded"
  />
  <span className="text-sm">Invalidate on system prompt change</span>
  </label>
@@ -5975,7 +5975,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="mt-3 flex gap-2">
  <button
  onClick={() => invalidateCache('Manual invalidation by user')}
- className="px-3 py-1.5 text-sm bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200"
+ className="px-3 py-1.5 text-sm bg-warning/10 text-warning rounded hover:bg-warning/20"
  >
  🔄 Invalidate All
  </button>
@@ -6011,7 +6011,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  type="checkbox"
  checked={config.enabled}
  onChange={(e) => updateFeatureCacheConfig(feature, { enabled: e.target.checked })}
- className="w-4 h-4 text-blue-600 rounded"
+ className="w-4 h-4 text-primary rounded"
  />
  <span className="text-sm">{getFeatureIcon(feature)}</span>
  <span className="text-sm font-medium capitalize">{feature.replace('_', ' ')}</span>
@@ -6048,7 +6048,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <span className="text-sm w-24 capitalize">{feature.replace('_', ' ')}</span>
  <div className="flex-1 bg-secondary rounded-full h-2">
  <div
- className="bg-green-500 h-2 rounded-full"
+ className="bg-success h-2 rounded-full"
  style={{ width: `${hitRate}%` }}
  />
  </div>
@@ -6067,19 +6067,19 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="flex flex-wrap gap-2">
  <button
  onClick={simulateCacheHit}
- className="px-3 py-1.5 text-sm bg-green-100 text-green-800 rounded hover:bg-green-200"
+ className="px-3 py-1.5 text-sm bg-success/10 text-success rounded hover:bg-success/20"
  >
  ✅ Simulate Hit
  </button>
  <button
  onClick={simulateCacheMiss}
- className="px-3 py-1.5 text-sm bg-red-100 text-red-800 rounded hover:bg-red-200"
+ className="px-3 py-1.5 text-sm bg-destructive/10 text-destructive rounded hover:bg-destructive/20"
  >
  ❌ Simulate Miss
  </button>
  <button
  onClick={() => invalidateCache('Model configuration changed')}
- className="px-3 py-1.5 text-sm bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200"
+ className="px-3 py-1.5 text-sm bg-warning/10 text-warning rounded hover:bg-warning/20"
  >
  🔄 Simulate Config Change
  </button>
@@ -6112,7 +6112,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  </div>
  <div className="text-right">
  <div className="text-xs">
- {event.latency_saved_ms && <span className="text-green-700">-{event.latency_saved_ms}ms</span>}
+ {event.latency_saved_ms && <span className="text-success">-{event.latency_saved_ms}ms</span>}
  {event.cost_saved_cents && <span className="ml-2 text-purple-700">-${(event.cost_saved_cents / 100).toFixed(2)}</span>}
  </div>
  <div className="text-xs text-muted-foreground">{formatNotificationTime(event.timestamp)}</div>
@@ -6138,17 +6138,17 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div
  key={entry.id}
  className={`p-3 rounded border ${
- entry.status === 'active' ? 'bg-green-50 border-green-200' :
+ entry.status === 'active' ? 'bg-success/5 border-success/20' :
  entry.status === 'expired' ? 'bg-muted/50 border-border' :
- 'bg-yellow-50 border-yellow-200'
+ 'bg-warning/5 border-warning/20'
  }`}
  >
  <div className="flex items-center justify-between mb-1">
  <div className="flex items-center gap-2">
  <span className={`px-1.5 py-0.5 text-xs rounded ${
- entry.status === 'active' ? 'bg-green-200 text-green-800' :
+ entry.status === 'active' ? 'bg-success/20 text-success' :
  entry.status === 'expired' ? 'bg-secondary text-foreground' :
- 'bg-yellow-200 text-yellow-800'
+ 'bg-warning/20 text-warning'
  }`}>
  {entry.status.toUpperCase()}
  </span>
@@ -6177,7 +6177,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <p className="text-foreground mb-4">
  Are you sure you want to clear all cached AI responses? This will remove {cacheStats.active_entries.toLocaleString()} cached entries ({cacheStats.cache_size_mb.toFixed(1)} MB).
  </p>
- <div className="bg-amber-50 border border-amber-200 rounded p-3 mb-4 text-sm text-amber-800">
+ <div className="bg-warning/5 border border-warning/20 rounded p-3 mb-4 text-sm text-warning">
  ⚠️ This action cannot be undone. Future requests will need to be re-processed, increasing costs and latency temporarily.
  </div>
  <div className="flex gap-3 justify-end">
@@ -6189,7 +6189,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  </button>
  <button
  onClick={clearCache}
- className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+ className="px-4 py-2 bg-destructive text-white rounded hover:bg-destructive"
  >
  Clear Cache
  </button>
@@ -6213,7 +6213,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div
  key={log.id}
  className={`flex items-center justify-between p-3 rounded border ${
- log.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+ log.success ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/20'
  }`}
  >
  <div className="flex items-center gap-3">
@@ -6242,13 +6242,13 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div>
  <h2 className="text-lg font-semibold flex items-center gap-2">
  🔑 API Key Management
- <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Encrypted</span>
+ <span className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded-full">Encrypted</span>
  </h2>
  <p className="text-sm text-muted-foreground mt-1">Securely manage AI provider API keys with encryption at rest</p>
  </div>
  <button
  onClick={openAddKeyModal}
- className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
+ className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary flex items-center gap-2"
  >
  <span>➕</span> Add API Key
  </button>
@@ -6272,7 +6272,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="flex items-center gap-2 flex-wrap">
  <span className="font-semibold">{key.name}</span>
  <span className={`text-xs px-2 py-0.5 rounded-full ${
- key.is_active ? 'bg-green-100 text-green-800' : 'bg-muted text-foreground'
+ key.is_active ? 'bg-success/10 text-success' : 'bg-muted text-foreground'
  }`}>
  {key.is_active ? '✓ Active' : '○ Inactive'}
  </span>
@@ -6284,8 +6284,8 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  v{key.version}
  </span>
  <span className={`text-xs px-2 py-0.5 rounded-full ${
- key.role === 'primary' ? 'bg-blue-100 text-blue-700' :
- key.role === 'standby' ? 'bg-amber-100 text-amber-700' :
+ key.role === 'primary' ? 'bg-primary/10 text-primary' :
+ key.role === 'standby' ? 'bg-warning/10 text-warning' :
  'bg-muted text-muted-foreground'
  }`}>
  {key.role === 'primary' ? '🔷 Primary' :
@@ -6322,11 +6322,11 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <button
  onClick={() => testApiKey(key.id)}
  disabled={isTestingKey === key.id}
- className="px-3 py-1.5 text-sm border border-blue-300 text-blue-600 rounded hover:bg-blue-50 disabled:opacity-50 flex items-center gap-1"
+ className="px-3 py-1.5 text-sm border border-primary/30 text-primary rounded hover:bg-primary/5 disabled:opacity-50 flex items-center gap-1"
  >
  {isTestingKey === key.id ? (
  <>
- <div className="animate-spin rounded-full h-3 w-3 border-2 border-blue-500 border-t-transparent"></div>
+ <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent"></div>
  Testing...
  </>
  ) : (
@@ -6335,7 +6335,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  </button>
  <button
  onClick={() => openRotateKeyModal(key)}
- className="px-3 py-1.5 text-sm border border-amber-300 text-amber-600 rounded hover:bg-amber-50 flex items-center gap-1"
+ className="px-3 py-1.5 text-sm border border-warning/30 text-warning rounded hover:bg-warning/5 flex items-center gap-1"
  >
  🔄 Rotate
  </button>
@@ -6344,14 +6344,14 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  className={`px-3 py-1.5 text-sm border rounded flex items-center gap-1 ${
  key.is_active
  ? 'border-border text-muted-foreground hover:bg-muted/50'
- : 'border-green-300 text-green-600 hover:bg-green-50'
+ : 'border-success/30 text-success hover:bg-success/5'
  }`}
  >
  {key.is_active ? '⏸️ Disable' : '▶️ Enable'}
  </button>
  <button
  onClick={() => deleteApiKey(key.id)}
- className="px-3 py-1.5 text-sm border border-red-300 text-red-600 rounded hover:bg-red-50"
+ className="px-3 py-1.5 text-sm border border-destructive/30 text-destructive rounded hover:bg-destructive/5"
  >
  🗑️
  </button>
@@ -6386,7 +6386,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="mt-3 flex items-center gap-2 flex-wrap">
  <span className="text-xs text-muted-foreground">Permissions:</span>
  {key.permissions.map((perm) => (
- <span key={perm} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+ <span key={perm} className="text-xs bg-primary/5 text-primary px-2 py-0.5 rounded">
  {perm}
  </span>
  ))}
@@ -6397,7 +6397,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  {key.rate_limit_remaining !== null && (
  <div className="flex items-center gap-1">
  <span className="text-muted-foreground">Rate limit:</span>
- <span className={`font-medium ${key.rate_limit_remaining < 1000 ? 'text-amber-600' : 'text-green-600'}`}>
+ <span className={`font-medium ${key.rate_limit_remaining < 1000 ? 'text-warning' : 'text-success'}`}>
  {formatNumber(key.rate_limit_remaining)} remaining
  </span>
  </div>
@@ -6407,7 +6407,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <span className="text-muted-foreground">Expires:</span>
  <span className={`font-medium ${
  new Date(key.expires_at) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
- ? 'text-amber-600'
+ ? 'text-warning'
  : 'text-foreground'
  }`}>
  {new Date(key.expires_at).toLocaleDateString()}
@@ -6419,7 +6419,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  {/* Test Result */}
  {keyTestResult && keyTestResult.provider === key.provider && (
  <div className={`mt-4 p-3 rounded-lg ${
- keyTestResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+ keyTestResult.success ? 'bg-success/5 border border-success/20' : 'bg-destructive/5 border border-destructive/20'
  }`}>
  <div className="flex items-center gap-2 mb-2">
  <span className="text-xl">{keyTestResult.success ? '✅' : '❌'}</span>
@@ -6436,7 +6436,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  {keyTestResult.models_available.join(', ')}
  </div>
  ) : (
- <div className="text-sm text-red-600">{keyTestResult.error}</div>
+ <div className="text-sm text-destructive">{keyTestResult.error}</div>
  )}
  </div>
  )}
@@ -6474,17 +6474,17 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
 
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* Primary Key */}
- <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
- <div className="text-xs text-blue-600 font-medium mb-1">🔷 PRIMARY</div>
+ <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+ <div className="text-xs text-primary font-medium mb-1">🔷 PRIMARY</div>
  {primaryKey ? (
  <>
  <div className="font-medium text-sm">{primaryKey.name}</div>
  <div className="text-xs text-muted-foreground mt-1">
  v{primaryKey.version} • {primaryKey.traffic_percentage}% traffic
  </div>
- <div className="mt-2 w-full bg-blue-200 rounded-full h-2">
+ <div className="mt-2 w-full bg-primary/20 rounded-full h-2">
  <div
- className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+ className="bg-primary h-2 rounded-full transition-all duration-500"
  style={{ width: `${primaryKey.traffic_percentage}%` }}
  />
  </div>
@@ -6495,17 +6495,17 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  </div>
 
  {/* Standby Key */}
- <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
- <div className="text-xs text-amber-600 font-medium mb-1">🔶 STANDBY</div>
+ <div className="p-3 bg-warning/5 border border-warning/20 rounded-lg">
+ <div className="text-xs text-warning font-medium mb-1">🔶 STANDBY</div>
  {standbyKeys.length > 0 ? (
  <>
  <div className="font-medium text-sm">{standbyKeys[0].name}</div>
  <div className="text-xs text-muted-foreground mt-1">
  v{standbyKeys[0].version} • {standbyKeys[0].traffic_percentage}% traffic
  </div>
- <div className="mt-2 w-full bg-amber-200 rounded-full h-2">
+ <div className="mt-2 w-full bg-warning/20 rounded-full h-2">
  <div
- className="bg-amber-500 h-2 rounded-full transition-all duration-500"
+ className="bg-warning h-2 rounded-full transition-all duration-500"
  style={{ width: `${standbyKeys[0].traffic_percentage}%` }}
  />
  </div>
@@ -6522,7 +6522,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <button
  onClick={() => startZeroDowntimeRotation(primaryKey.id, standbyKeys[0].id)}
  disabled={rotatingKeys.has(primaryKey.id) || rotatingKeys.has(standbyKeys[0].id)}
- className="px-4 py-2 bg-gradient-to-r from-blue-500 to-amber-500 text-white rounded-lg hover:from-blue-600 hover:to-amber-600 disabled:opacity-50 flex items-center gap-2"
+ className="px-4 py-2 bg-gradient-to-r from-primary to-warning text-white rounded-lg hover:from-primary hover:to-warning disabled:opacity-50 flex items-center gap-2"
  >
  {rotatingKeys.has(primaryKey.id) ? (
  <>
@@ -6555,7 +6555,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div
  key={log.id}
  className={`flex items-center justify-between p-3 rounded border text-sm ${
- log.success ? 'bg-muted/50 border-border' : 'bg-red-50 border-red-200'
+ log.success ? 'bg-muted/50 border-border' : 'bg-destructive/5 border-destructive/20'
  }`}
  >
  <div className="flex items-center gap-3">
@@ -6579,14 +6579,14 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  </div>
  <div className="flex items-center gap-2">
  <span className={`px-2 py-0.5 rounded text-xs ${
- log.provider === 'kie' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+ log.provider === 'kie' ? 'bg-purple-100 text-purple-700' : 'bg-primary/10 text-primary'
  }`}>
  {log.provider}
  </span>
  {log.success ? (
- <span className="text-green-600">✓</span>
+ <span className="text-success">✓</span>
  ) : (
- <span className="text-red-600">✗</span>
+ <span className="text-destructive">✗</span>
  )}
  </div>
  </div>
@@ -6612,7 +6612,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  value={newKeyName}
  onChange={(e) => setNewKeyName(e.target.value)}
  placeholder="e.g., Production API Key"
- className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+ className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
  />
  </div>
 
@@ -6621,7 +6621,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <select
  value={newKeyProvider}
  onChange={(e) => setNewKeyProvider(e.target.value as 'kie' | 'anthropic')}
- className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+ className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
  >
  <option value="kie">🤖 Kie.ai</option>
  <option value="anthropic">🔵 Anthropic</option>
@@ -6631,12 +6631,12 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  )}
 
  {keyModalMode === 'rotate' && editingKey && (
- <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
- <div className="flex items-center gap-2 text-amber-800">
+ <div className="mb-4 p-3 bg-warning/5 border border-warning/20 rounded-lg">
+ <div className="flex items-center gap-2 text-warning">
  <span className="text-lg">⚠️</span>
  <span className="font-medium">Rotating: {editingKey.name}</span>
  </div>
- <p className="text-sm text-amber-700 mt-1">
+ <p className="text-sm text-warning mt-1">
  The current key will be replaced. Make sure to update any services using this key.
  </p>
  </div>
@@ -6658,7 +6658,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  ? 'kie_xxxxxxxxxxxxx'
  : 'sk-ant-xxxxxxxxxxxxx'
  }
- className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+ className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-mono text-sm"
  />
  </div>
  <p className="text-xs text-muted-foreground mt-1">
@@ -6683,7 +6683,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  </button>
  <button
  onClick={keyModalMode === 'add' ? addNewApiKey : rotateApiKey}
- className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+ className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary"
  >
  {keyModalMode === 'add' ? 'Add Key' : 'Rotate Key'}
  </button>

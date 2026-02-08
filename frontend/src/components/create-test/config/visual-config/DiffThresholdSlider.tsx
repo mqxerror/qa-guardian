@@ -18,7 +18,7 @@ function getStrictnessInfo(threshold: number): { icon: string; label: string; de
  icon: '🔒',
  label: 'Pixel Perfect',
  description: 'Catches every minor change. Best for static content with no animations.',
- colorClass: 'text-red-600',
+ colorClass: 'text-destructive',
  };
  }
  if (threshold <= 0.05) {
@@ -34,7 +34,7 @@ function getStrictnessInfo(threshold: number): { icon: string; label: string; de
  icon: '✅',
  label: 'Balanced (Recommended)',
  description: 'Good balance between catching real issues and ignoring rendering differences.',
- colorClass: 'text-green-600',
+ colorClass: 'text-success',
  };
  }
  if (threshold <= 0.2) {
@@ -42,7 +42,7 @@ function getStrictnessInfo(threshold: number): { icon: string; label: string; de
  icon: '⚡',
  label: 'Lenient',
  description: 'More forgiving. Good for pages with subtle animations or dynamic content.',
- colorClass: 'text-blue-600',
+ colorClass: 'text-primary',
  };
  }
  return {

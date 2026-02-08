@@ -43,7 +43,7 @@ export function SuiteHeaderActions({
         <button
           onClick={onRunWithParallelization}
           disabled={isRunningSuite || isAnalyzingParallel}
-          className="rounded-md bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-sm font-medium text-white hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-md bg-gradient-to-r from-purple-600 to-primary px-4 py-2 text-sm font-medium text-white hover:from-purple-700 hover:to-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isAnalyzingParallel ? '🤖 Analyzing...' : '🤖 AI Parallel Run'}
         </button>
@@ -52,7 +52,7 @@ export function SuiteHeaderActions({
         <button
           onClick={onRunSuite}
           disabled={isRunningSuite}
-          className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isRunningSuite ? 'Running...' : 'Run Suite'}
         </button>
@@ -101,7 +101,7 @@ export function SuiteHeaderActions({
       {canDeleteSuite && (
         <button
           onClick={onShowDeleteSuiteModal}
-          className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+          className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive"
         >
           Delete Suite
         </button>

@@ -408,13 +408,13 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  📋 Test Changes Found ({testDeltas.length})
  </h2>
  <div className="flex gap-2 text-sm">
- <span className="px-2 py-1 rounded bg-green-100 text-green-700">
+ <span className="px-2 py-1 rounded bg-success/10 text-success">
  +{testDeltas.filter(d => d.type === 'added').length} Added
  </span>
- <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700">
+ <span className="px-2 py-1 rounded bg-warning/10 text-warning">
  ~{testDeltas.filter(d => d.type === 'modified').length} Modified
  </span>
- <span className="px-2 py-1 rounded bg-red-100 text-red-700">
+ <span className="px-2 py-1 rounded bg-destructive/10 text-destructive">
  -{testDeltas.filter(d => d.type === 'removed').length} Removed
  </span>
  </div>
@@ -424,16 +424,16 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  {testDeltas.map((delta, index) => (
  <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border">
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
- delta.type === 'added' ? 'bg-green-100 text-green-700' :
- delta.type === 'modified' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-red-100 text-red-700'
+ delta.type === 'added' ? 'bg-success/10 text-success' :
+ delta.type === 'modified' ? 'bg-warning/10 text-warning' :
+ 'bg-destructive/10 text-destructive'
  }`}>
  {delta.type === 'added' ? '+ Added' : delta.type === 'modified' ? '~ Modified' : '- Removed'}
  </span>
  <code className="text-sm font-mono text-foreground">{delta.testName}</code>
  <span className="text-xs text-muted-foreground">{delta.suiteName}</span>
  <span className={`ml-auto px-2 py-0.5 rounded text-xs ${
- delta.category === 'feature' ? 'bg-blue-100 text-blue-700' :
+ delta.category === 'feature' ? 'bg-primary/10 text-primary' :
  delta.category === 'bugfix' ? 'bg-purple-100 text-purple-700' :
  delta.category === 'improvement' ? 'bg-cyan-100 text-cyan-700' :
  'bg-muted text-foreground'
@@ -473,13 +473,13 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  📝 Generated Release Notes
  </h2>
  {isPublished ? (
- <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium">
+ <span className="px-3 py-1 rounded-full bg-success/10 text-success text-sm font-medium">
  ✓ Published
  </span>
  ) : (
  <button
  onClick={publishReleaseNotes}
- className="px-4 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 flex items-center gap-2"
+ className="px-4 py-2 rounded bg-success text-white font-medium hover:bg-success flex items-center gap-2"
  >
  🚀 Publish Release Notes
  </button>
@@ -493,11 +493,11 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
 
  {/* New Features */}
  {generatedNotes.newFeatures.length > 0 && (
- <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
- <h4 className="font-medium text-blue-700 mb-2">✨ New Features ({generatedNotes.newFeatures.length})</h4>
+ <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+ <h4 className="font-medium text-primary mb-2">✨ New Features ({generatedNotes.newFeatures.length})</h4>
  <ul className="space-y-2">
  {generatedNotes.newFeatures.map((f, i) => (
- <li key={i} className="text-sm text-blue-600">
+ <li key={i} className="text-sm text-primary">
  <span className="font-medium">{f.title}</span>: {f.description}
  </li>
  ))}
@@ -535,11 +535,11 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
 
  {/* Breaking Changes */}
  {generatedNotes.breakingChanges.length > 0 && (
- <div className="p-4 rounded-lg bg-red-50 border border-red-200">
- <h4 className="font-medium text-red-700 mb-2">⚠️ Breaking Changes ({generatedNotes.breakingChanges.length})</h4>
+ <div className="p-4 rounded-lg bg-destructive/5 border border-destructive/20">
+ <h4 className="font-medium text-destructive mb-2">⚠️ Breaking Changes ({generatedNotes.breakingChanges.length})</h4>
  <ul className="space-y-1">
  {generatedNotes.breakingChanges.map((c, i) => (
- <li key={i} className="text-sm text-red-600">{c}</li>
+ <li key={i} className="text-sm text-destructive">{c}</li>
  ))}
  </ul>
  </div>
@@ -636,15 +636,15 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
  <div>
  <span className="text-muted-foreground">Tests Added:</span>
- <span className="ml-2 font-medium text-green-600">+{generatedNotes.testingHighlights.testsAdded}</span>
+ <span className="ml-2 font-medium text-success">+{generatedNotes.testingHighlights.testsAdded}</span>
  </div>
  <div>
  <span className="text-muted-foreground">Tests Modified:</span>
- <span className="ml-2 font-medium text-yellow-600">~{generatedNotes.testingHighlights.testsModified}</span>
+ <span className="ml-2 font-medium text-warning">~{generatedNotes.testingHighlights.testsModified}</span>
  </div>
  <div>
  <span className="text-muted-foreground">Tests Removed:</span>
- <span className="ml-2 font-medium text-red-600">-{generatedNotes.testingHighlights.testsRemoved}</span>
+ <span className="ml-2 font-medium text-destructive">-{generatedNotes.testingHighlights.testsRemoved}</span>
  </div>
  <div>
  <span className="text-muted-foreground">Coverage Impact:</span>

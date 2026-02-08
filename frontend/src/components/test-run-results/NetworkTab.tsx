@@ -87,7 +87,7 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  {formatDuration(networkStats.totalDuration)}
  </span>
  {networkStats.failedRequests > 0 && (
- <span className="px-2 py-0.5 rounded bg-red-100 text-red-700">
+ <span className="px-2 py-0.5 rounded bg-destructive/10 text-destructive">
  {networkStats.failedRequests} failed
  </span>
  )}
@@ -192,7 +192,7 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  onClick={() => onSelectNetworkRequest(isSelected ? null : req.index)}
  className={`flex items-stretch border-b border-border hover:bg-muted/30 cursor-pointer transition-colors ${
  isSelected ? 'bg-primary/10' : ''
- } ${req.failed ? 'bg-red-50' : ''}`}
+ } ${req.failed ? 'bg-destructive/5' : ''}`}
  >
  {/* Request info - left side */}
  <div className="w-1/3 p-2 border-r border-border flex-shrink-0">
@@ -200,20 +200,20 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  {/* Status badge */}
  <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
  !req.status ? 'bg-muted text-foreground' :
- req.status >= 200 && req.status < 300 ? 'bg-green-100 text-green-700' :
- req.status >= 300 && req.status < 400 ? 'bg-blue-100 text-blue-700' :
- req.status >= 400 && req.status < 500 ? 'bg-yellow-100 text-yellow-700' :
- 'bg-red-100 text-red-700'
+ req.status >= 200 && req.status < 300 ? 'bg-success/10 text-success' :
+ req.status >= 300 && req.status < 400 ? 'bg-primary/10 text-primary' :
+ req.status >= 400 && req.status < 500 ? 'bg-warning/10 text-warning' :
+ 'bg-destructive/10 text-destructive'
  }`}>
  {req.status || 'ERR'}
  </span>
 
  {/* Method */}
  <span className={`text-xs font-mono font-medium ${
- req.method === 'GET' ? 'text-green-600' :
- req.method === 'POST' ? 'text-blue-600' :
- req.method === 'PUT' ? 'text-yellow-600' :
- req.method === 'DELETE' ? 'text-red-600' :
+ req.method === 'GET' ? 'text-success' :
+ req.method === 'POST' ? 'text-primary' :
+ req.method === 'PUT' ? 'text-warning' :
+ req.method === 'DELETE' ? 'text-destructive' :
  'text-foreground'
  }`}>
  {req.method}
@@ -276,12 +276,12 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  />
  )}
  <div
- className="bg-green-400 h-full"
+ className="bg-success/80 h-full"
  style={{ width: `${((req.timing.ttfb || 0) / (req.duration_ms || 1)) * 100}%` }}
  title={`TTFB: ${req.timing.ttfb}ms`}
  />
  <div
- className="bg-blue-400 h-full"
+ className="bg-primary/80 h-full"
  style={{ width: `${((req.timing.download || 0) / (req.duration_ms || 1)) * 100}%` }}
  title={`Download: ${req.timing.download}ms`}
  />
@@ -333,8 +333,8 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  <div className="flex justify-between">
  <span className="text-muted-foreground">Status</span>
  <span className={`font-medium ${
- req.status && req.status >= 200 && req.status < 300 ? 'text-green-600' :
- req.status && req.status >= 400 ? 'text-red-600' : 'text-foreground'
+ req.status && req.status >= 200 && req.status < 300 ? 'text-success' :
+ req.status && req.status >= 400 ? 'text-destructive' : 'text-foreground'
  }`}>
  {req.status} {req.statusText}
  </span>
@@ -398,14 +398,14 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  )}
  <div className="flex items-center justify-between text-sm">
  <div className="flex items-center gap-2">
- <div className="w-3 h-3 rounded bg-green-400"></div>
+ <div className="w-3 h-3 rounded bg-success/80"></div>
  <span className="text-muted-foreground">TTFB</span>
  </div>
  <span className="font-medium text-foreground">{req.timing?.ttfb}ms</span>
  </div>
  <div className="flex items-center justify-between text-sm">
  <div className="flex items-center gap-2">
- <div className="w-3 h-3 rounded bg-blue-400"></div>
+ <div className="w-3 h-3 rounded bg-primary/80"></div>
  <span className="text-muted-foreground">Download</span>
  </div>
  <span className="font-medium text-foreground">{req.timing?.download}ms</span>
@@ -419,9 +419,9 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
 
  {/* Error info if failed */}
  {req.failed && (
- <div className="p-3 bg-red-100 border border-red-200 rounded-lg">
- <h4 className="text-xs font-medium text-red-700 uppercase mb-1">Error</h4>
- <p className="text-sm text-red-600">
+ <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+ <h4 className="text-xs font-medium text-destructive uppercase mb-1">Error</h4>
+ <p className="text-sm text-destructive">
  {req.failureText || 'Request failed'}
  </p>
  </div>
@@ -451,11 +451,11 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  <span className="text-muted-foreground">SSL</span>
  </div>
  <div className="flex items-center gap-1.5">
- <div className="w-3 h-3 rounded bg-green-400"></div>
+ <div className="w-3 h-3 rounded bg-success/80"></div>
  <span className="text-muted-foreground">TTFB</span>
  </div>
  <div className="flex items-center gap-1.5">
- <div className="w-3 h-3 rounded bg-blue-400"></div>
+ <div className="w-3 h-3 rounded bg-primary/80"></div>
  <span className="text-muted-foreground">Download</span>
  </div>
  </div>
@@ -477,7 +477,7 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  </div>
  <div className="p-4 bg-muted/30 rounded-lg">
  <div className="text-sm text-muted-foreground">Failed Requests</div>
- <div className={`text-2xl font-bold ${networkStats.failedRequests > 0 ? 'text-red-600' : 'text-green-600'}`}>
+ <div className={`text-2xl font-bold ${networkStats.failedRequests > 0 ? 'text-destructive' : 'text-success'}`}>
  {networkStats.failedRequests}
  </div>
  </div>

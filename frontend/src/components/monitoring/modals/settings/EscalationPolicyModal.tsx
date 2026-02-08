@@ -340,7 +340,7 @@ function EscalationLevelCard({
           <button
             type="button"
             onClick={onRemoveLevel}
-            className="text-red-500 hover:text-red-700 text-sm"
+            className="text-destructive hover:text-destructive text-sm"
           >
             ✕ Remove
           </button>
@@ -371,7 +371,7 @@ function EscalationLevelCard({
                 <button
                   type="button"
                   onClick={() => onRemoveTarget(targetIndex)}
-                  className="text-red-500 hover:text-red-700 text-xs"
+                  className="text-destructive hover:text-destructive text-xs"
                 >
                   ✕
                 </button>

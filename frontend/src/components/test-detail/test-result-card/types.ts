@@ -207,13 +207,13 @@ export interface TestResultCardProps {
 
 // Helper function to get score color
 export const getScoreColor = (score: number): string => {
- if (score >= 90) return 'text-green-600';
- if (score >= 50) return 'text-amber-600';
- return 'text-red-600';
+ if (score >= 90) return 'text-success';
+ if (score >= 50) return 'text-warning';
+ return 'text-destructive';
 };
 
 export const getScoreBgColor = (score: number): string => {
- if (score >= 90) return 'bg-green-100';
- if (score >= 50) return 'bg-amber-100';
- return 'bg-red-100';
+ if (score >= 90) return 'bg-success/10';
+ if (score >= 50) return 'bg-warning/10';
+ return 'bg-destructive/10';
 };

@@ -130,11 +130,11 @@ export function TeamSkillGapsPage() {
  const getExpertiseColor = (expertise: string) => {
  switch (expertise) {
  case 'expert':
- return 'bg-green-500/20 text-green-400';
+ return 'bg-success/20 text-success';
  case 'proficient':
- return 'bg-blue-500/20 text-blue-400';
+ return 'bg-primary/20 text-primary';
  case 'learning':
- return 'bg-yellow-500/20 text-yellow-400';
+ return 'bg-warning/20 text-warning';
  case 'none':
  return 'bg-muted text-muted-foreground';
  default:
@@ -145,11 +145,11 @@ export function TeamSkillGapsPage() {
  const getSeverityColor = (severity: string) => {
  switch (severity) {
  case 'critical':
- return 'bg-red-500/20 text-red-400';
+ return 'bg-destructive/20 text-destructive';
  case 'moderate':
- return 'bg-yellow-500/20 text-yellow-400';
+ return 'bg-warning/20 text-warning';
  case 'minor':
- return 'bg-blue-500/20 text-blue-400';
+ return 'bg-primary/20 text-primary';
  default:
  return 'bg-muted text-muted-foreground';
  }
@@ -235,19 +235,19 @@ export function TeamSkillGapsPage() {
  <div className="text-sm text-muted-foreground">Team Members</div>
  </div>
  <div className="rounded-lg border border-border bg-card p-4 text-center">
- <div className="text-3xl font-bold text-red-600">
+ <div className="text-3xl font-bold text-destructive">
  {skillGaps.filter(g => g.severity === 'critical').length}
  </div>
  <div className="text-sm text-muted-foreground">Critical Gaps</div>
  </div>
  <div className="rounded-lg border border-border bg-card p-4 text-center">
- <div className="text-3xl font-bold text-yellow-600">
+ <div className="text-3xl font-bold text-warning">
  {skillGaps.filter(g => g.severity === 'moderate').length}
  </div>
  <div className="text-sm text-muted-foreground">Moderate Gaps</div>
  </div>
  <div className="rounded-lg border border-border bg-card p-4 text-center">
- <div className="text-3xl font-bold text-green-600">
+ <div className="text-3xl font-bold text-success">
  {trainingResources.length}
  </div>
  <div className="text-sm text-muted-foreground">Training Resources</div>
@@ -259,7 +259,7 @@ export function TeamSkillGapsPage() {
  <h2 className="text-lg font-semibold text-foreground mb-4">🚨 Critical Skill Gaps</h2>
  <div className="space-y-3">
  {skillGaps.filter(g => g.severity === 'critical').map((gap) => (
- <div key={gap.id} className="flex items-center justify-between p-4 rounded-lg bg-red-50 border border-red-200">
+ <div key={gap.id} className="flex items-center justify-between p-4 rounded-lg bg-destructive/5 border border-destructive/20">
  <div className="flex-1">
  <div className="flex items-center gap-2">
  <span className="font-semibold text-foreground">{gap.skillArea}</span>
@@ -270,7 +270,7 @@ export function TeamSkillGapsPage() {
  <p className="text-sm text-muted-foreground mt-1">{gap.impactDescription}</p>
  </div>
  <div className="text-right ml-4">
- <div className="text-2xl font-bold text-red-600">{gap.teamCoverage}%</div>
+ <div className="text-2xl font-bold text-destructive">{gap.teamCoverage}%</div>
  <div className="text-xs text-muted-foreground">Team Coverage</div>
  </div>
  </div>
@@ -297,10 +297,10 @@ export function TeamSkillGapsPage() {
  <div className="h-3 bg-muted rounded-full overflow-hidden">
  <div
  className={`h-full rounded-full ${
- percentage >= 75 ? 'bg-green-500' :
- percentage >= 50 ? 'bg-yellow-500' :
+ percentage >= 75 ? 'bg-success' :
+ percentage >= 50 ? 'bg-warning' :
  percentage >= 25 ? 'bg-orange-500' :
- 'bg-red-500'
+ 'bg-destructive'
  }`}
  style={{ width: `${percentage}%` }}
  />
@@ -351,7 +351,7 @@ export function TeamSkillGapsPage() {
  <span className="text-xs text-muted-foreground">Strong Areas:</span>
  <div className="flex flex-wrap gap-1 mt-1">
  {member.strongAreas.map((area) => (
- <span key={area} className="px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs">
+ <span key={area} className="px-2 py-0.5 rounded bg-success/10 text-success text-xs">
  {area}
  </span>
  ))}
@@ -361,7 +361,7 @@ export function TeamSkillGapsPage() {
  <span className="text-xs text-muted-foreground">Gap Areas:</span>
  <div className="flex flex-wrap gap-1 mt-1">
  {member.gapAreas.map((area) => (
- <span key={area} className="px-2 py-0.5 rounded bg-red-100 text-red-700 text-xs">
+ <span key={area} className="px-2 py-0.5 rounded bg-destructive/10 text-destructive text-xs">
  {area}
  </span>
  ))}
@@ -393,9 +393,9 @@ export function TeamSkillGapsPage() {
  </div>
  <div className="text-right">
  <div className={`text-3xl font-bold ${
- gap.teamCoverage >= 50 ? 'text-green-600' :
- gap.teamCoverage >= 25 ? 'text-yellow-600' :
- 'text-red-600'
+ gap.teamCoverage >= 50 ? 'text-success' :
+ gap.teamCoverage >= 25 ? 'text-warning' :
+ 'text-destructive'
  }`}>
  {gap.teamCoverage}%
  </div>
@@ -465,7 +465,7 @@ export function TeamSkillGapsPage() {
  </span>
  <span className="text-xs text-muted-foreground">⏱️ {resource.duration}</span>
  {resource.rating && (
- <span className="text-xs text-yellow-600">⭐ {resource.rating}</span>
+ <span className="text-xs text-warning">⭐ {resource.rating}</span>
  )}
  </div>
  <div className="flex flex-wrap gap-1 mt-3">
@@ -516,9 +516,9 @@ export function TeamSkillGapsPage() {
  <div className="text-xs text-muted-foreground">{member.ownedTests} tests</div>
  </div>
  <span className={`px-2 py-1 rounded text-xs font-medium ${
- member.busFactor === 'critical' ? 'bg-red-500/20 text-red-400' :
- member.busFactor === 'warning' ? 'bg-yellow-500/20 text-yellow-400' :
- 'bg-green-500/20 text-green-400'
+ member.busFactor === 'critical' ? 'bg-destructive/20 text-destructive' :
+ member.busFactor === 'warning' ? 'bg-warning/20 text-warning' :
+ 'bg-success/20 text-success'
  }`}>
  {member.busFactor === 'critical' ? '🚨 High Bus Factor' :
  member.busFactor === 'warning' ? '⚠️ Watch' :
@@ -529,9 +529,9 @@ export function TeamSkillGapsPage() {
  <div className="h-3 bg-muted rounded-full overflow-hidden">
  <div
  className={`h-full rounded-full ${
- member.ownershipPercentage > 40 ? 'bg-red-500' :
- member.ownershipPercentage > 25 ? 'bg-yellow-500' :
- 'bg-green-500'
+ member.ownershipPercentage > 40 ? 'bg-destructive' :
+ member.ownershipPercentage > 25 ? 'bg-warning' :
+ 'bg-success'
  }`}
  style={{ width: `${member.ownershipPercentage}%` }}
  />
@@ -550,12 +550,12 @@ export function TeamSkillGapsPage() {
 
  {/* Bus Factor Warning */}
  {workloadAnalysis.some(m => m.busFactor === 'critical') && (
- <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+ <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-6">
  <div className="flex items-start gap-3">
  <span className="text-2xl">🚨</span>
  <div>
- <h3 className="font-semibold text-red-700">High Bus Factor Risk Detected</h3>
- <p className="text-sm text-red-600 mt-1">
+ <h3 className="font-semibold text-destructive">High Bus Factor Risk Detected</h3>
+ <p className="text-sm text-destructive mt-1">
  {workloadAnalysis.filter(m => m.busFactor === 'critical').map(m => m.memberName).join(', ')} own{workloadAnalysis.filter(m => m.busFactor === 'critical').length > 1 ? '' : 's'} more than 40% of the team's tests.
  If they leave or are unavailable, the team would face significant knowledge gaps.
  </p>
@@ -577,9 +577,9 @@ export function TeamSkillGapsPage() {
  <div className="flex-1">
  <div className="flex items-center gap-2 mb-2">
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
- suggestion.priority === 'high' ? 'bg-red-500/20 text-red-400' :
- suggestion.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
- 'bg-blue-500/20 text-blue-400'
+ suggestion.priority === 'high' ? 'bg-destructive/20 text-destructive' :
+ suggestion.priority === 'medium' ? 'bg-warning/20 text-warning' :
+ 'bg-primary/20 text-primary'
  }`}>
  {suggestion.priority} priority
  </span>
@@ -614,7 +614,7 @@ export function TeamSkillGapsPage() {
  <div className="text-sm text-muted-foreground">Total Tests</div>
  </div>
  <div className="rounded-lg border border-border bg-card p-4 text-center">
- <div className="text-3xl font-bold text-red-600">
+ <div className="text-3xl font-bold text-destructive">
  {workloadAnalysis.filter(m => m.ownershipPercentage > 40).length}
  </div>
  <div className="text-sm text-muted-foreground">Members &gt;40% Ownership</div>

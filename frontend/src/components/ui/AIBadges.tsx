@@ -32,7 +32,7 @@ export function AIPoweredBadge({ size = 'md', className = '' }: BadgeProps) {
 
  return (
  <span
- className={`inline-flex items-center rounded-full bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 text-purple-600 font-medium ${sizeClasses[size]} ${className}`}
+ className={`inline-flex items-center rounded-full bg-gradient-to-r from-purple-500/10 to-primary/10 border border-purple-500/30 text-purple-600 font-medium ${sizeClasses[size]} ${className}`}
  title="Powered by Claude AI"
  >
  <svg
@@ -110,7 +110,7 @@ export function AIReadyBadge({ size = 'md', className = '' }: BadgeProps) {
 
  return (
  <span
- className={`inline-flex items-center rounded-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border border-amber-500/30 text-amber-600 font-medium ${sizeClasses[size]} ${className}`}
+ className={`inline-flex items-center rounded-full bg-gradient-to-r from-warning/10 via-orange-500/10 to-destructive/10 border border-warning/30 text-warning font-medium ${sizeClasses[size]} ${className}`}
  title="AI-ready: Powered by Claude AI and available via MCP"
  >
  <svg

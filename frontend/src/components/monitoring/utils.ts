@@ -37,11 +37,11 @@ export const formatInterval = (seconds: number): string => {
 export const getStatusColorClass = (status: CheckStatus | undefined): string => {
  switch (status) {
  case 'up':
- return 'text-green-600';
+ return 'text-success';
  case 'down':
- return 'text-red-600';
+ return 'text-destructive';
  case 'degraded':
- return 'text-amber-600';
+ return 'text-warning';
  default:
  return 'text-muted-foreground';
  }
@@ -51,11 +51,11 @@ export const getStatusColorClass = (status: CheckStatus | undefined): string => 
 export const getStatusBgClass = (status: CheckStatus | undefined): string => {
  switch (status) {
  case 'up':
- return 'bg-green-100';
+ return 'bg-success/10';
  case 'down':
- return 'bg-red-100';
+ return 'bg-destructive/10';
  case 'degraded':
- return 'bg-amber-100';
+ return 'bg-warning/10';
  default:
  return 'bg-muted';
  }
@@ -65,11 +65,11 @@ export const getStatusBgClass = (status: CheckStatus | undefined): string => {
 export const getStatusBadgeClass = (status: CheckStatus | undefined): string => {
  switch (status) {
  case 'up':
- return 'bg-green-100 text-green-700';
+ return 'bg-success/10 text-success';
  case 'down':
- return 'bg-red-100 text-red-700';
+ return 'bg-destructive/10 text-destructive';
  case 'degraded':
- return 'bg-amber-100 text-amber-700';
+ return 'bg-warning/10 text-warning';
  default:
  return 'bg-muted text-foreground';
  }
@@ -107,11 +107,11 @@ export const getStatusLabel = (status: CheckStatus | undefined): string => {
 export const getPerformanceStatusColorClass = (status: PerformanceStatus | undefined): string => {
  switch (status) {
  case 'good':
- return 'text-green-600';
+ return 'text-success';
  case 'needs_improvement':
- return 'text-amber-600';
+ return 'text-warning';
  case 'poor':
- return 'text-red-600';
+ return 'text-destructive';
  default:
  return 'text-muted-foreground';
  }
@@ -121,11 +121,11 @@ export const getPerformanceStatusColorClass = (status: PerformanceStatus | undef
 export const getPerformanceStatusBadgeClass = (status: PerformanceStatus | undefined): string => {
  switch (status) {
  case 'good':
- return 'bg-green-100 text-green-700';
+ return 'bg-success/10 text-success';
  case 'needs_improvement':
- return 'bg-amber-100 text-amber-700';
+ return 'bg-warning/10 text-warning';
  case 'poor':
- return 'bg-red-100 text-red-700';
+ return 'bg-destructive/10 text-destructive';
  default:
  return 'bg-muted text-foreground';
  }
@@ -198,9 +198,9 @@ export const calculateUptime = (successful: number, total: number): number => {
 
 // Get response time color based on threshold
 export const getResponseTimeColorClass = (ms: number, goodThreshold = 500, warnThreshold = 1000): string => {
- if (ms <= goodThreshold) return 'text-green-600';
- if (ms <= warnThreshold) return 'text-amber-600';
- return 'text-red-600';
+ if (ms <= goodThreshold) return 'text-success';
+ if (ms <= warnThreshold) return 'text-warning';
+ return 'text-destructive';
 };
 
 // Parse headers string to Record

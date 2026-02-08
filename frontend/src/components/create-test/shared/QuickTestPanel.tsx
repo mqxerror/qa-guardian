@@ -66,9 +66,9 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  </svg>
  ),
  colorClasses: {
- selected: 'border-blue-500 bg-blue-50',
- checkbox: 'border-blue-500 bg-blue-500',
- text: 'text-blue-700',
+ selected: 'border-primary bg-primary/5',
+ checkbox: 'border-primary bg-primary',
+ text: 'text-primary',
  },
  },
  {
@@ -97,9 +97,9 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  </svg>
  ),
  colorClasses: {
- selected: 'border-amber-500 bg-amber-50',
- checkbox: 'border-amber-500 bg-amber-500',
- text: 'text-amber-700',
+ selected: 'border-warning bg-warning/5',
+ checkbox: 'border-warning bg-warning',
+ text: 'text-warning',
  },
  },
  {
@@ -112,9 +112,9 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  </svg>
  ),
  colorClasses: {
- selected: 'border-green-500 bg-green-50',
- checkbox: 'border-green-500 bg-green-500',
- text: 'text-green-700',
+ selected: 'border-success bg-success/5',
+ checkbox: 'border-success bg-success',
+ text: 'text-success',
  },
  },
  {
@@ -127,9 +127,9 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  </svg>
  ),
  colorClasses: {
- selected: 'border-red-500 bg-red-50',
- checkbox: 'border-red-500 bg-red-500',
- text: 'text-red-700',
+ selected: 'border-destructive bg-destructive/5',
+ checkbox: 'border-destructive bg-destructive',
+ text: 'text-destructive',
  },
  },
 ];
@@ -309,10 +309,10 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  if (isComplete && created > 0) {
  return (
  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-border">
- <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
- <span className="text-sm font-medium text-green-700">
+ <span className="text-sm font-medium text-success">
  {created === generatedTests.length
  ? `All ${created} test${created !== 1 ? 's' : ''} created successfully!`
  : `${created} of ${generatedTests.length} tests created${failed > 0 ? ` (${failed} failed)` : ''}`}
@@ -339,7 +339,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  <button
  type="button"
  onClick={() => onViewTest?.(test.createdTestId!)}
- className="text-blue-600 hover:underline text-xs font-medium"
+ className="text-primary hover:underline text-xs font-medium"
  >
  View
  </button>
@@ -347,11 +347,11 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  <span
  className={`px-2 py-0.5 rounded text-xs font-medium ${
  test.status === 'created'
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : test.status === 'creating'
- ? 'bg-blue-100 text-blue-700'
+ ? 'bg-primary/10 text-primary'
  : test.status === 'failed'
- ? 'bg-red-100 text-red-700'
+ ? 'bg-destructive/10 text-destructive'
  : 'bg-muted text-foreground'
  }`}
  >
@@ -375,7 +375,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  type="button"
  onClick={handleRunTests}
  disabled={isLoading || selectedCount === 0 || !targetUrl.trim()}
- className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
+ className="w-full px-4 py-2.5 bg-primary hover:bg-primary disabled:bg-gray-300 text-white font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
  >
  {isLoading ? (
  <>

@@ -258,14 +258,14 @@ export function RecordTestModal({
         aria-modal="true"
         aria-labelledby="record-test-title"
         className={`w-full rounded-xl bg-card shadow-2xl transition-all duration-300 max-h-[90vh] overflow-y-auto ${
-          isRecording ? 'max-w-7xl border-2 border-blue-500 shadow-blue-500/20' : 'max-w-xl border border-border'
+          isRecording ? 'max-w-7xl border-2 border-primary shadow-blue-500/20' : 'max-w-xl border border-border'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center gap-3 p-4 pb-0">
           <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-            isRecording ? 'bg-red-100' : 'bg-orange-100'
+            isRecording ? 'bg-destructive/10' : 'bg-orange-100'
           }`}>
             <span className="text-xl">{isRecording ? '🔴' : '🎬'}</span>
           </div>
@@ -282,12 +282,12 @@ export function RecordTestModal({
           {isRecording && (
             <div className="flex items-center gap-3">
               <span className="relative flex h-3.5 w-3.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive/80 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-destructive"></span>
               </span>
-              <span className="font-semibold text-red-700">REC</span>
-              <span className="font-mono text-lg font-bold text-red-800 tabular-nums">{formatElapsed(recordingElapsed)}</span>
-              <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+              <span className="font-semibold text-destructive">REC</span>
+              <span className="font-mono text-lg font-bold text-destructive tabular-nums">{formatElapsed(recordingElapsed)}</span>
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                 {recordedSteps.length} step{recordedSteps.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -306,7 +306,7 @@ export function RecordTestModal({
                 value={recordTargetUrl}
                 onChange={(e) => onRecordTargetUrlChange(e.target.value)}
                 placeholder={projectBaseUrl || 'https://your-site.com'}
-                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
               />
             </div>
 
@@ -321,7 +321,7 @@ export function RecordTestModal({
                     type="checkbox"
                     checked={recordingDeviceEnabled}
                     onChange={(e) => onRecordingDeviceEnabledChange(e.target.checked)}
-                    className="rounded border-border text-blue-600 focus:ring-blue-500"
+                    className="rounded border-border text-primary focus:ring-primary"
                   />
                   <span className="ml-2 text-sm text-muted-foreground">Enable</span>
                 </label>
@@ -347,7 +347,7 @@ export function RecordTestModal({
               </button>
               <button
                 onClick={onStartRecording}
-                className="rounded-lg bg-gradient-to-r from-orange-500 to-red-500 px-5 py-2 font-medium text-white hover:from-orange-600 hover:to-red-600 transition-all shadow-md hover:shadow-lg"
+                className="rounded-lg bg-gradient-to-r from-orange-500 to-destructive px-5 py-2 font-medium text-white hover:from-orange-600 hover:to-destructive transition-all shadow-md hover:shadow-lg"
               >
                 ⏺ Start Recording
               </button>
@@ -359,7 +359,7 @@ export function RecordTestModal({
             <div className="flex-1 min-w-0 flex flex-col">
               {/* Feature #28: URL bar with navigation + connection status */}
               <div className="flex items-center gap-2 mb-2">
-                <div className={`h-2 w-2 rounded-full shrink-0 ${recordingConnected ? 'bg-green-500' : reconnectFailed ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'}`} title={recordingConnected ? 'Connected' : reconnectFailed ? 'Connection Lost' : reconnectAttempt > 0 ? `Reconnecting (${reconnectAttempt}/10)` : 'Disconnected'} />
+                <div className={`h-2 w-2 rounded-full shrink-0 ${recordingConnected ? 'bg-success' : reconnectFailed ? 'bg-destructive' : 'bg-warning animate-pulse'}`} title={recordingConnected ? 'Connected' : reconnectFailed ? 'Connection Lost' : reconnectAttempt > 0 ? `Reconnecting (${reconnectAttempt}/10)` : 'Disconnected'} />
                 <div className="flex items-center gap-1.5 rounded-lg bg-muted px-2 py-1 flex-1 min-w-0">
                   <span className="text-xs shrink-0">🌐</span>
                   <input
@@ -373,14 +373,14 @@ export function RecordTestModal({
                 </div>
                 <button
                   onClick={() => onShowDebugOverlayChange(!showDebugOverlay)}
-                  className={`p-1 rounded text-xs shrink-0 transition-colors ${showDebugOverlay ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+                  className={`p-1 rounded text-xs shrink-0 transition-colors ${showDebugOverlay ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
                   title={showDebugOverlay ? 'Hide coordinate debug overlay' : 'Show coordinate debug overlay'}
                 >🎯</button>
                 <div className="text-[10px] text-muted-foreground shrink-0">Click | Type | Enter=Navigate</div>
               </div>
               <div
                 ref={browserViewRef}
-                className="relative rounded-lg border-2 border-border overflow-hidden bg-background cursor-crosshair focus:outline-none focus:border-blue-400"
+                className="relative rounded-lg border-2 border-border overflow-hidden bg-background cursor-crosshair focus:outline-none focus:border-primary/40"
                 style={{ aspectRatio: '16/9', maxHeight: '500px', width: '100%', maxWidth: 'calc(500px * 16 / 9)' }}
                 tabIndex={0}
                 onClick={handleBrowserViewClick}
@@ -401,7 +401,7 @@ export function RecordTestModal({
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-3"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary/40 mx-auto mb-3"></div>
                       <p className="text-sm text-muted-foreground">Connecting to browser...</p>
                       <p className="text-xs text-muted-foreground mt-1">Loading {recordTargetUrl}</p>
                     </div>
@@ -419,8 +419,8 @@ export function RecordTestModal({
                       height: 30,
                     }}
                   >
-                    <div className="w-full h-full rounded-full border-2 border-blue-400 animate-ping opacity-75" />
-                    <div className="absolute inset-0 rounded-full bg-blue-400/30 animate-pulse" />
+                    <div className="w-full h-full rounded-full border-2 border-primary/40 animate-ping opacity-75" />
+                    <div className="absolute inset-0 rounded-full bg-primary/80/30 animate-pulse" />
                   </div>
                 )}
                 {/* Feature #33: Enhanced disconnection/reconnection overlay */}
@@ -430,12 +430,12 @@ export function RecordTestModal({
                       {reconnectFailed ? (
                         <>
                           <div className="text-3xl mb-2">❌</div>
-                          <p className="text-sm text-red-300 font-medium mb-1">Connection Lost</p>
+                          <p className="text-sm text-destructive/70 font-medium mb-1">Connection Lost</p>
                           <p className="text-xs text-muted-foreground mb-3">All reconnection attempts failed</p>
                           <div className="flex gap-2 justify-center">
                             <button
                               onClick={onRetryConnection}
-                              className="px-3 py-1.5 text-xs rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                              className="px-3 py-1.5 text-xs rounded-md bg-primary hover:bg-primary text-white transition-colors"
                             >
                               🔄 Retry
                             </button>
@@ -449,8 +449,8 @@ export function RecordTestModal({
                         </>
                       ) : (
                         <>
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400 mx-auto mb-2"></div>
-                          <p className="text-sm text-yellow-300 font-medium">Reconnecting...</p>
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-warning/80 mx-auto mb-2"></div>
+                          <p className="text-sm text-warning/70 font-medium">Reconnecting...</p>
                           {reconnectAttempt > 0 && (
                             <p className="text-xs text-muted-foreground mt-1">Attempt {reconnectAttempt}/10</p>
                           )}
@@ -464,8 +464,8 @@ export function RecordTestModal({
                   <div className="absolute bottom-2 left-2 right-2 z-10">
                     <div className={`rounded-md px-3 py-1.5 text-xs text-center ${
                       staleFrameWarning === 'unresponsive'
-                        ? 'bg-red-900/80 text-red-200'
-                        : 'bg-yellow-900/80 text-yellow-200'
+                        ? 'bg-destructive/80 text-destructive-foreground/80'
+                        : 'bg-warning/80 text-warning-foreground/80'
                     }`}>
                       {staleFrameWarning === 'unresponsive'
                         ? '⚠️ Browser may be unresponsive — try clicking or navigating'
@@ -519,7 +519,7 @@ export function RecordTestModal({
                           {getActionIcon(step.action)}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-600">{step.action}</span>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">{step.action}</span>
                           <div className="text-[10px] text-muted-foreground truncate">
                             {step.url && step.url}
                             {step.selector && step.selector}
@@ -530,7 +530,7 @@ export function RecordTestModal({
                         <span className="text-[9px] text-muted-foreground tabular-nums shrink-0">#{idx + 1}</span>
                         <button
                           onClick={() => onRecordedStepsChange(prev => prev.filter((_, i) => i !== idx))}
-                          className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity text-xs shrink-0"
+                          className="text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity text-xs shrink-0"
                           title="Remove step"
                         >
                           ✕
@@ -550,7 +550,7 @@ export function RecordTestModal({
                       const text = prompt('Enter text to assert is visible:');
                       if (text) handleAddRecordingStep('assert_text', { text });
                     }}
-                    className="inline-flex items-center gap-1 rounded-md border border-green-200 bg-green-50 px-2 py-1 text-[10px] font-medium text-green-700 hover:bg-green-100 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-md border border-success/20 bg-success/5 px-2 py-1 text-[10px] font-medium text-success hover:bg-success/10 transition-colors"
                   >
                     ✅ Assert
                   </button>
@@ -574,7 +574,7 @@ export function RecordTestModal({
                       const url = prompt('Enter expected URL pattern:', window.location.href);
                       if (url) handleAddRecordingStep('assert_url', { value: url });
                     }}
-                    className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-primary/5 px-2 py-1 text-[10px] font-medium text-primary hover:bg-primary/10 transition-colors"
                   >
                     🔗 Assert URL
                   </button>
@@ -600,7 +600,7 @@ export function RecordTestModal({
                 </button>
                 <button
                   onClick={onStopRecording}
-                  className="rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-4 py-1.5 text-xs font-semibold text-white hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg flex items-center gap-1.5"
+                  className="rounded-lg bg-gradient-to-r from-destructive to-destructive px-4 py-1.5 text-xs font-semibold text-white hover:from-destructive hover:to-destructive transition-all shadow-md hover:shadow-lg flex items-center gap-1.5"
                 >
                   <span className="inline-block h-2.5 w-2.5 rounded-sm bg-card"></span>
                   Stop Recording

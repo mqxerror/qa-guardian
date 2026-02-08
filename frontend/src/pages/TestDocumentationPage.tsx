@@ -351,7 +351,7 @@ export function TestDocumentationPage() {
  <p className="font-medium text-foreground">{suite.name}</p>
  <p className="text-xs text-muted-foreground mt-1">{suite.description}</p>
  <div className="flex items-center gap-2 mt-2 text-xs">
- <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+ <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary">
  {suite.testCount} tests
  </span>
  <span className="text-muted-foreground">{suite.projectName}</span>
@@ -447,13 +447,13 @@ export function TestDocumentationPage() {
  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
  <div className="flex items-center gap-4">
  <div className="flex items-center gap-2">
- <span className={`w-2 h-2 rounded-full ${isAutoUpdateEnabled ? 'bg-green-500' : 'bg-gray-400'}`} />
+ <span className={`w-2 h-2 rounded-full ${isAutoUpdateEnabled ? 'bg-success' : 'bg-gray-400'}`} />
  <span className="text-sm text-muted-foreground">Auto-update:</span>
  <button
  onClick={() => setIsAutoUpdateEnabled(!isAutoUpdateEnabled)}
  className={`px-2 py-0.5 rounded text-xs font-medium ${
  isAutoUpdateEnabled
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : 'bg-muted text-foreground'
  }`}
  >
@@ -499,8 +499,8 @@ export function TestDocumentationPage() {
  </div>
  <span className={`px-2 py-1 rounded text-xs font-medium ${
  feature.coverage === 'Complete'
- ? 'bg-green-100 text-green-700'
- : 'bg-yellow-100 text-yellow-700'
+ ? 'bg-success/10 text-success'
+ : 'bg-warning/10 text-warning'
  }`}>
  {feature.coverage}
  </span>
@@ -549,7 +549,7 @@ export function TestDocumentationPage() {
  <td className="px-3 py-2 text-foreground">{step.action}</td>
  <td className="px-3 py-2 text-muted-foreground">{step.expectedResult}</td>
  <td className="px-3 py-2">
- <span className="text-green-600">{step.testCoverage}</span>
+ <span className="text-success">{step.testCoverage}</span>
  </td>
  </tr>
  ))}
@@ -583,11 +583,11 @@ export function TestDocumentationPage() {
  <p className="text-sm text-muted-foreground">Total Tests</p>
  </div>
  <div className="p-4 rounded-lg bg-muted/30 border border-border text-center">
- <p className="text-2xl font-bold text-green-600">{generatedDocs.coverageSummary.coveredFeatures}</p>
+ <p className="text-2xl font-bold text-success">{generatedDocs.coverageSummary.coveredFeatures}</p>
  <p className="text-sm text-muted-foreground">Covered Features</p>
  </div>
  <div className="p-4 rounded-lg bg-muted/30 border border-border text-center">
- <p className="text-2xl font-bold text-red-600">{generatedDocs.coverageSummary.uncoveredFeatures}</p>
+ <p className="text-2xl font-bold text-destructive">{generatedDocs.coverageSummary.uncoveredFeatures}</p>
  <p className="text-sm text-muted-foreground">Uncovered Features</p>
  </div>
  <div className="p-4 rounded-lg bg-muted/30 border border-border text-center">
@@ -606,8 +606,8 @@ export function TestDocumentationPage() {
  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
  <div
  className={`h-full rounded-full ${
- cat.coverage >= 90 ? 'bg-green-500' :
- cat.coverage >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+ cat.coverage >= 90 ? 'bg-success' :
+ cat.coverage >= 70 ? 'bg-warning' : 'bg-destructive'
  }`}
  style={{ width: `${cat.coverage}%` }}
  />
@@ -625,7 +625,7 @@ export function TestDocumentationPage() {
  <ul className="space-y-2">
  {generatedDocs.coverageSummary.recommendations.map((rec, index) => (
  <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
- <svg aria-hidden="true" className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg aria-hidden="true" className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
  </svg>
  {rec}
@@ -664,10 +664,10 @@ export function TestDocumentationPage() {
  <div className="flex-1">
  <div className="flex items-center gap-2 mb-1">
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
- version.changeType === 'initial' ? 'bg-blue-100 text-blue-700' :
- version.changeType === 'test_modified' ? 'bg-yellow-100 text-yellow-700' :
- version.changeType === 'test_added' ? 'bg-green-100 text-green-700' :
- version.changeType === 'test_removed' ? 'bg-red-100 text-red-700' :
+ version.changeType === 'initial' ? 'bg-primary/10 text-primary' :
+ version.changeType === 'test_modified' ? 'bg-warning/10 text-warning' :
+ version.changeType === 'test_added' ? 'bg-success/10 text-success' :
+ version.changeType === 'test_removed' ? 'bg-destructive/10 text-destructive' :
  'bg-purple-100 text-purple-700'
  }`}>
  {version.changeType === 'initial' ? '🆕 Initial' :
@@ -739,7 +739,7 @@ export function TestDocumentationPage() {
  <div className="flex items-center justify-between">
  <code className="text-sm font-mono text-foreground">{test.testName}</code>
  {test.currentCode !== test.originalCode && (
- <span className="px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700">
+ <span className="px-1.5 py-0.5 rounded text-xs bg-warning/10 text-warning">
  Modified
  </span>
  )}

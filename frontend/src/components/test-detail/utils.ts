@@ -42,15 +42,15 @@ export const formatRelativeTime = (dateStr?: string): string => {
 export const getStatusColorClass = (status: TestStatus | RunStatus | ResultStatus | StepStatus | undefined): string => {
  switch (status) {
  case 'passed':
- return 'text-green-600';
+ return 'text-success';
  case 'failed':
  case 'error':
- return 'text-red-600';
+ return 'text-destructive';
  case 'warning':
- return 'text-amber-600';
+ return 'text-warning';
  case 'running':
  case 'active':
- return 'text-blue-600';
+ return 'text-primary';
  case 'pending':
  case 'draft':
  return 'text-foreground';
@@ -66,15 +66,15 @@ export const getStatusColorClass = (status: TestStatus | RunStatus | ResultStatu
 export const getStatusBadgeClass = (status: TestStatus | RunStatus | ResultStatus | StepStatus | undefined): string => {
  switch (status) {
  case 'passed':
- return 'bg-green-100 text-green-700';
+ return 'bg-success/10 text-success';
  case 'failed':
  case 'error':
- return 'bg-red-100 text-red-700';
+ return 'bg-destructive/10 text-destructive';
  case 'warning':
- return 'bg-amber-100 text-amber-700';
+ return 'bg-warning/10 text-warning';
  case 'running':
  case 'active':
- return 'bg-blue-100 text-blue-700';
+ return 'bg-primary/10 text-primary';
  case 'pending':
  case 'draft':
  return 'bg-muted text-foreground';
@@ -154,10 +154,10 @@ export const getTestTypeLabel = (type: TestCategory): string => {
 // Get test type color classes
 export const getTestTypeColorClass = (type: TestCategory): string => {
  const colors: Record<TestCategory, string> = {
- 'e2e': 'text-blue-600',
+ 'e2e': 'text-primary',
  'visual_regression': 'text-purple-600',
- 'lighthouse': 'text-amber-600',
- 'load': 'text-green-600',
+ 'lighthouse': 'text-warning',
+ 'load': 'text-success',
  'accessibility': 'text-indigo-600',
  'api': 'text-cyan-600',
  };
@@ -167,10 +167,10 @@ export const getTestTypeColorClass = (type: TestCategory): string => {
 // Get test type badge classes
 export const getTestTypeBadgeClass = (type: TestCategory): string => {
  const badges: Record<TestCategory, string> = {
- 'e2e': 'bg-blue-100 text-blue-700',
+ 'e2e': 'bg-primary/10 text-primary',
  'visual_regression': 'bg-purple-100 text-purple-700',
- 'lighthouse': 'bg-amber-100 text-amber-700',
- 'load': 'bg-green-100 text-green-700',
+ 'lighthouse': 'bg-warning/10 text-warning',
+ 'load': 'bg-success/10 text-success',
  'accessibility': 'bg-indigo-100 text-indigo-700',
  'api': 'bg-cyan-100 text-cyan-700',
  };
@@ -207,29 +207,29 @@ export const formatBytes = (bytes: number): string => {
 
 // Get Lighthouse score color
 export const getLighthouseScoreColorClass = (score: number): string => {
- if (score >= 90) return 'text-green-600';
- if (score >= 50) return 'text-amber-600';
- return 'text-red-600';
+ if (score >= 90) return 'text-success';
+ if (score >= 50) return 'text-warning';
+ return 'text-destructive';
 };
 
 // Get Lighthouse score badge class
 export const getLighthouseScoreBadgeClass = (score: number): string => {
- if (score >= 90) return 'bg-green-100 text-green-700';
- if (score >= 50) return 'bg-amber-100 text-amber-700';
- return 'bg-red-100 text-red-700';
+ if (score >= 90) return 'bg-success/10 text-success';
+ if (score >= 50) return 'bg-warning/10 text-warning';
+ return 'bg-destructive/10 text-destructive';
 };
 
 // Get accessibility impact color
 export const getImpactColorClass = (impact: string): string => {
  switch (impact) {
  case 'critical':
- return 'text-red-600';
+ return 'text-destructive';
  case 'serious':
  return 'text-orange-600';
  case 'moderate':
- return 'text-amber-600';
+ return 'text-warning';
  case 'minor':
- return 'text-blue-600';
+ return 'text-primary';
  default:
  return 'text-foreground';
  }
@@ -239,13 +239,13 @@ export const getImpactColorClass = (impact: string): string => {
 export const getImpactBadgeClass = (impact: string): string => {
  switch (impact) {
  case 'critical':
- return 'bg-red-100 text-red-700';
+ return 'bg-destructive/10 text-destructive';
  case 'serious':
  return 'bg-orange-100 text-orange-700';
  case 'moderate':
- return 'bg-amber-100 text-amber-700';
+ return 'bg-warning/10 text-warning';
  case 'minor':
- return 'bg-blue-100 text-blue-700';
+ return 'bg-primary/10 text-primary';
  default:
  return 'bg-muted text-foreground';
  }

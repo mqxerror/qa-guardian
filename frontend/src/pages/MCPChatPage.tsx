@@ -435,16 +435,16 @@ Just type naturally and I'll help you manage your QA workflows!`,
  <p className="text-sm font-medium text-foreground mb-2">With MCP Chat you can:</p>
  <ul className="text-sm text-muted-foreground space-y-1">
  <li className="flex items-center gap-2">
- <span className="text-green-500">✓</span> Run tests with natural language
+ <span className="text-success">✓</span> Run tests with natural language
  </li>
  <li className="flex items-center gap-2">
- <span className="text-green-500">✓</span> Create and manage test suites
+ <span className="text-success">✓</span> Create and manage test suites
  </li>
  <li className="flex items-center gap-2">
- <span className="text-green-500">✓</span> Analyze test failures with AI
+ <span className="text-success">✓</span> Analyze test failures with AI
  </li>
  <li className="flex items-center gap-2">
- <span className="text-green-500">✓</span> Generate reports and insights
+ <span className="text-success">✓</span> Generate reports and insights
  </li>
  </ul>
  </div>
@@ -487,19 +487,19 @@ Just type naturally and I'll help you manage your QA workflows!`,
  {/* AI Status Indicator */}
  <div className="flex items-center gap-2">
  <div className={`w-2 h-2 rounded-full ${
- aiStatus?.ready ? 'bg-green-500' : 'bg-red-500'
+ aiStatus?.ready ? 'bg-success' : 'bg-destructive'
  }`} />
  <span className="text-xs text-muted-foreground">
  {aiStatus?.ready ? (
- <span className="text-green-600">
+ <span className="text-success">
  AI: {aiStatus.providers.primary.available ? aiStatus.providers.primary.name : aiStatus.providers.fallback.name}
  </span>
  ) : (
- <span className="text-red-600">AI Offline</span>
+ <span className="text-destructive">AI Offline</span>
  )}
  </span>
  {aiStatus?.providers.primary.model && (
- <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
+ <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
  {aiStatus.providers.primary.model.split('-').slice(0, 2).join('-')}
  </span>
  )}
@@ -592,12 +592,12 @@ Just type naturally and I'll help you manage your QA workflows!`,
  {message.role === 'assistant' && (message.toolCalled || message.aiMetadata?.used_real_ai) && (
  <div className="mb-2 pb-2 border-b border-border/50 flex flex-wrap items-center gap-2">
  {message.toolCalled && (
- <span className="text-xs font-mono px-2 py-1 rounded bg-blue-100 text-blue-700">
+ <span className="text-xs font-mono px-2 py-1 rounded bg-primary/10 text-primary">
  {'\u{1F527}'} {message.toolCalled}
  </span>
  )}
  {message.isCommand && (
- <span className="text-xs font-mono px-2 py-1 rounded bg-green-100 text-green-700">
+ <span className="text-xs font-mono px-2 py-1 rounded bg-success/10 text-success">
  {'\u26A1'} Executed
  </span>
  )}

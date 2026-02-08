@@ -27,13 +27,13 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
  <div className="text-2xl font-bold text-foreground">{resultSummary.total}</div>
  <div className="text-sm text-muted-foreground">Total Tests</div>
  </div>
- <div className="bg-green-50 rounded-lg p-4">
- <div className="text-2xl font-bold text-green-600">{resultSummary.passed}</div>
- <div className="text-sm text-green-600/70">Passed</div>
+ <div className="bg-success/5 rounded-lg p-4">
+ <div className="text-2xl font-bold text-success">{resultSummary.passed}</div>
+ <div className="text-sm text-success/70">Passed</div>
  </div>
- <div className="bg-red-50 rounded-lg p-4">
- <div className="text-2xl font-bold text-red-600">{resultSummary.failed}</div>
- <div className="text-sm text-red-600/70">Failed</div>
+ <div className="bg-destructive/5 rounded-lg p-4">
+ <div className="text-2xl font-bold text-destructive">{resultSummary.failed}</div>
+ <div className="text-sm text-destructive/70">Failed</div>
  </div>
  <div className="bg-muted/50 rounded-lg p-4">
  <div className="text-2xl font-bold text-foreground">{formatDuration(durationMs)}</div>

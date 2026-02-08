@@ -58,12 +58,12 @@ export function ViewCodeTab({
           <p className="text-sm text-muted-foreground">
             {test?.use_custom_code ? (
               <span className="inline-flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+                <span className="inline-block w-2 h-2 rounded-full bg-warning"></span>
                 Custom Playwright code (advanced mode)
               </span>
             ) : isEditingCode ? (
               <span className="inline-flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse"></span>
                 Editing Playwright code...
               </span>
             ) : (
@@ -208,7 +208,7 @@ export function ViewCodeTab({
           <button
             onClick={onRevertToSteps}
             disabled={isSavingCode}
-            className="inline-flex items-center gap-1 text-sm text-amber-600 hover:text-amber-700 hover:underline disabled:opacity-50"
+            className="inline-flex items-center gap-1 text-sm text-warning hover:text-warning hover:underline disabled:opacity-50"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>

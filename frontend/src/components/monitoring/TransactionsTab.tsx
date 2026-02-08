@@ -93,7 +93,7 @@ export function TransactionsTab({
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${
-                      txn.enabled ? 'bg-green-100 text-green-700' : 'bg-muted text-foreground'
+                      txn.enabled ? 'bg-success/10 text-success' : 'bg-muted text-foreground'
                     }`}>
                       {txn.enabled ? '✓ Active' : '⏸ Paused'}
                     </span>
@@ -110,7 +110,7 @@ export function TransactionsTab({
                       <button
                         onClick={() => deleteTransaction(txn.id)}
                         title="Delete"
-                        className="rounded p-1.5 text-muted-foreground hover:bg-red-100 hover:text-red-600"
+                        className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                       >
                         🗑️
                       </button>
@@ -146,7 +146,7 @@ export function TransactionsTab({
                     </div>
                     <div className="ml-7 space-y-1 text-muted-foreground">
                       <div className="font-mono">
-                        <span className="text-blue-600">{step.method}</span> {step.url}
+                        <span className="text-primary">{step.method}</span> {step.url}
                       </div>
                       <div>Expected: {step.expected_status}</div>
                       {step.assertions && step.assertions.length > 0 && (
@@ -172,7 +172,7 @@ export function TransactionsTab({
                   {transactionResults.map(result => (
                     <div key={result.id} className="rounded border border-border p-2 text-xs">
                       <div className="flex items-center justify-between mb-1">
-                        <span className={`font-medium ${result.status === 'passed' ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`font-medium ${result.status === 'passed' ? 'text-success' : 'text-destructive'}`}>
                           {result.status === 'passed' ? '✓ Passed' : '✗ Failed'}
                         </span>
                         <span className="text-muted-foreground">{result.total_duration}ms</span>

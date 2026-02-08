@@ -182,9 +182,9 @@ export function PublicStatusPage() {
 
  const getStatusColor = (status: string) => {
  switch (status) {
- case 'up': return 'bg-green-500';
- case 'down': return 'bg-red-500';
- case 'degraded': return 'bg-yellow-500';
+ case 'up': return 'bg-success';
+ case 'down': return 'bg-destructive';
+ case 'degraded': return 'bg-warning';
  default: return 'bg-gray-400';
  }
  };
@@ -200,9 +200,9 @@ export function PublicStatusPage() {
 
  const getOverallStatusBanner = (status: string) => {
  switch (status) {
- case 'up': return { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', icon: '✓', message: 'All Systems Operational' };
- case 'down': return { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: '✕', message: 'System Outage' };
- case 'degraded': return { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700', icon: '⚠', message: 'Partial System Outage' };
+ case 'up': return { bg: 'bg-success/5', border: 'border-success/20', text: 'text-success', icon: '✓', message: 'All Systems Operational' };
+ case 'down': return { bg: 'bg-destructive/5', border: 'border-destructive/20', text: 'text-destructive', icon: '✕', message: 'System Outage' };
+ case 'degraded': return { bg: 'bg-warning/5', border: 'border-warning/20', text: 'text-warning', icon: '⚠', message: 'Partial System Outage' };
  default: return { bg: 'bg-muted/50', border: 'border-border', text: 'text-muted-foreground', icon: '?', message: 'Status Unknown' };
  }
  };
@@ -265,16 +265,16 @@ export function PublicStatusPage() {
  {subscribeResult ? (
  <div className={`p-4 rounded-md mb-4 ${
  subscribeResult.success
- ? 'bg-green-50 border border-green-200'
- : 'bg-red-50 border border-red-200'
+ ? 'bg-success/5 border border-success/20'
+ : 'bg-destructive/5 border border-destructive/20'
  }`}>
- <p className={subscribeResult.success ? 'text-green-700' : 'text-red-700'}>
+ <p className={subscribeResult.success ? 'text-success' : 'text-destructive'}>
  {subscribeResult.message}
  </p>
  {subscribeResult.dev_verify_url && subscribeResult.verification_required && (
  <button
  onClick={handleVerify}
- className="mt-2 px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+ className="mt-2 px-3 py-1 text-sm bg-success text-white rounded hover:bg-success"
  >
  Verify Now (Dev Mode)
  </button>
@@ -381,9 +381,9 @@ export function PublicStatusPage() {
  </span>
  )}
  <span className={`text-sm font-medium ${
- check.status === 'up' ? 'text-green-400' :
- check.status === 'down' ? 'text-red-400' :
- check.status === 'degraded' ? 'text-yellow-400' :
+ check.status === 'up' ? 'text-success' :
+ check.status === 'down' ? 'text-destructive' :
+ check.status === 'degraded' ? 'text-warning' :
  'text-muted-foreground'
  }`}>
  {getStatusText(check.status)}
@@ -407,18 +407,18 @@ export function PublicStatusPage() {
  <div className="flex items-start justify-between mb-2">
  <div className="flex items-center gap-2">
  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
- incident.impact === 'critical' ? 'bg-red-500/20 text-red-400' :
+ incident.impact === 'critical' ? 'bg-destructive/20 text-destructive' :
  incident.impact === 'major' ? 'bg-orange-500/20 text-orange-400' :
- incident.impact === 'minor' ? 'bg-yellow-500/20 text-yellow-400' :
+ incident.impact === 'minor' ? 'bg-warning/20 text-warning' :
  'bg-muted text-muted-foreground'
  }`}>
  {incident.impact.toUpperCase()}
  </span>
  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
- incident.status === 'resolved' ? 'bg-green-500/20 text-green-400' :
- incident.status === 'monitoring' ? 'bg-blue-500/20 text-blue-400' :
- incident.status === 'identified' ? 'bg-yellow-500/20 text-yellow-400' :
- 'bg-red-500/20 text-red-400'
+ incident.status === 'resolved' ? 'bg-success/20 text-success' :
+ incident.status === 'monitoring' ? 'bg-primary/20 text-primary' :
+ incident.status === 'identified' ? 'bg-warning/20 text-warning' :
+ 'bg-destructive/20 text-destructive'
  }`}>
  {incident.status.charAt(0).toUpperCase() + incident.status.slice(1)}
  </span>
@@ -435,10 +435,10 @@ export function PublicStatusPage() {
  <div key={update.id || idx} className="pl-4 border-l-2 border-border">
  <div className="flex items-center gap-2 text-xs text-muted-foreground">
  <span className={`font-medium ${
- update.status === 'resolved' ? 'text-green-600' :
- update.status === 'monitoring' ? 'text-blue-600' :
- update.status === 'identified' ? 'text-yellow-600' :
- 'text-red-600'
+ update.status === 'resolved' ? 'text-success' :
+ update.status === 'monitoring' ? 'text-primary' :
+ update.status === 'identified' ? 'text-warning' :
+ 'text-destructive'
  }`}>
  {update.status.charAt(0).toUpperCase() + update.status.slice(1)}
  </span>
@@ -468,7 +468,7 @@ export function PublicStatusPage() {
  <div className="flex items-center justify-between mb-2">
  <span className="font-medium text-foreground">{incident.check_name}</span>
  <span className={`text-xs px-2 py-1 rounded ${
- incident.ended_at ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+ incident.ended_at ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
  }`}>
  {incident.ended_at ? 'Resolved' : 'Ongoing'}
  </span>
@@ -482,7 +482,7 @@ export function PublicStatusPage() {
  )}
  </div>
  {incident.error && (
- <p className="text-sm text-red-600 mt-2">{incident.error}</p>
+ <p className="text-sm text-destructive mt-2">{incident.error}</p>
  )}
  </div>
  ))}

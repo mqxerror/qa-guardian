@@ -160,16 +160,16 @@ export function getTestTypeLabel(type: TestTypeEnum): string {
 export function getTestStatusClass(status: TestStatus | string | null): string {
  switch (status) {
  case 'passed':
- return 'bg-green-100 text-green-800';
+ return 'bg-success/10 text-success';
  case 'failed':
  case 'error':
- return 'bg-red-100 text-red-800';
+ return 'bg-destructive/10 text-destructive';
  case 'running':
- return 'bg-blue-100 text-blue-800';
+ return 'bg-primary/10 text-primary';
  case 'pending':
  case 'active':
  case 'draft':
- return 'bg-yellow-100 text-yellow-800';
+ return 'bg-warning/10 text-warning';
  default:
  return 'bg-muted text-foreground';
  }
@@ -202,19 +202,19 @@ export function getTestStatusIcon(status: TestStatus | string | null): string {
 export function getActionTypeClass(action: string): string {
  switch (action) {
  case 'click':
- return 'bg-blue-100 text-blue-800';
+ return 'bg-primary/10 text-primary';
  case 'type':
  case 'fill':
  return 'bg-purple-100 text-purple-800';
  case 'navigate':
  case 'goto':
- return 'bg-green-100 text-green-800';
+ return 'bg-success/10 text-success';
  case 'expect':
  case 'assert':
  return 'bg-orange-100 text-orange-800';
  case 'wait':
  case 'screenshot':
- return 'bg-yellow-100 text-yellow-800';
+ return 'bg-warning/10 text-warning';
  default:
  return 'bg-muted text-foreground';
  }
@@ -323,12 +323,12 @@ export function autoCompleteUrl(url: string): string {
  */
 export function getConfidenceClass(score: number): string {
  if (score >= 0.8) {
- return 'bg-green-100 text-green-800';
+ return 'bg-success/10 text-success';
  }
  if (score >= 0.5) {
- return 'bg-yellow-100 text-yellow-800';
+ return 'bg-warning/10 text-warning';
  }
- return 'bg-red-100 text-red-800';
+ return 'bg-destructive/10 text-destructive';
 }
 
 /**

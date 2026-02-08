@@ -367,20 +367,20 @@ export function LicenseCompliancePage() {
 
  const getCategoryColor = (category: string) => {
  switch (category) {
- case 'permissive': return 'text-green-600 bg-green-100';
- case 'copyleft': return 'text-red-600 bg-red-100';
- case 'copyleft-weak': return 'text-amber-600 bg-amber-100';
+ case 'permissive': return 'text-success bg-success/10';
+ case 'copyleft': return 'text-destructive bg-destructive/10';
+ case 'copyleft-weak': return 'text-warning bg-warning/10';
  case 'proprietary': return 'text-purple-600 bg-purple-100';
- case 'public-domain': return 'text-blue-600 bg-blue-100';
+ case 'public-domain': return 'text-primary bg-primary/10';
  default: return 'text-foreground bg-muted';
  }
  };
 
  const getRiskColor = (risk: string) => {
  switch (risk) {
- case 'low': return 'text-green-600';
- case 'medium': return 'text-amber-600';
- case 'high': return 'text-red-600';
+ case 'low': return 'text-success';
+ case 'medium': return 'text-warning';
+ case 'high': return 'text-destructive';
  default: return 'text-foreground';
  }
  };
@@ -451,7 +451,7 @@ export function LicenseCompliancePage() {
  </div>
  <button
  onClick={() => setPolicy({ ...policy, warnOnCopyleft: !policy.warnOnCopyleft })}
- className={`w-10 h-5 rounded-full transition-colors ${policy.warnOnCopyleft ? 'bg-amber-500' : 'bg-muted'}`}
+ className={`w-10 h-5 rounded-full transition-colors ${policy.warnOnCopyleft ? 'bg-warning' : 'bg-muted'}`}
  >
  <div className={`w-4 h-4 rounded-full bg-card shadow transform transition-transform ${policy.warnOnCopyleft ? 'translate-x-5' : 'translate-x-0.5'}`} />
  </button>
@@ -463,7 +463,7 @@ export function LicenseCompliancePage() {
  </div>
  <button
  onClick={() => setPolicy({ ...policy, warnOnUnknown: !policy.warnOnUnknown })}
- className={`w-10 h-5 rounded-full transition-colors ${policy.warnOnUnknown ? 'bg-amber-500' : 'bg-muted'}`}
+ className={`w-10 h-5 rounded-full transition-colors ${policy.warnOnUnknown ? 'bg-warning' : 'bg-muted'}`}
  >
  <div className={`w-4 h-4 rounded-full bg-card shadow transform transition-transform ${policy.warnOnUnknown ? 'translate-x-5' : 'translate-x-0.5'}`} />
  </button>
@@ -475,7 +475,7 @@ export function LicenseCompliancePage() {
  </div>
  <button
  onClick={() => setPolicy({ ...policy, failOnDenied: !policy.failOnDenied })}
- className={`w-10 h-5 rounded-full transition-colors ${policy.failOnDenied ? 'bg-red-500' : 'bg-muted'}`}
+ className={`w-10 h-5 rounded-full transition-colors ${policy.failOnDenied ? 'bg-destructive' : 'bg-muted'}`}
  >
  <div className={`w-4 h-4 rounded-full bg-card shadow transform transition-transform ${policy.failOnDenied ? 'translate-x-5' : 'translate-x-0.5'}`} />
  </button>
@@ -485,8 +485,8 @@ export function LicenseCompliancePage() {
  {/* License Lists */}
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
  {/* Allowed */}
- <div className="p-4 rounded-lg border border-green-200 bg-green-50">
- <h3 className="font-medium text-green-700 mb-3 flex items-center gap-2">
+ <div className="p-4 rounded-lg border border-success/20 bg-success/5">
+ <h3 className="font-medium text-success mb-3 flex items-center gap-2">
  <span>&#x2705;</span> Allowed Licenses
  </h3>
  <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -498,7 +498,7 @@ export function LicenseCompliancePage() {
  onChange={() => toggleLicense('allowedLicenses', license.spdxId)}
  className="rounded border-border"
  />
- <span className={policy.allowedLicenses.includes(license.spdxId) ? 'text-green-700' : 'text-muted-foreground'}>
+ <span className={policy.allowedLicenses.includes(license.spdxId) ? 'text-success' : 'text-muted-foreground'}>
  {license.spdxId}
  </span>
  </label>
@@ -507,8 +507,8 @@ export function LicenseCompliancePage() {
  </div>
 
  {/* Denied */}
- <div className="p-4 rounded-lg border border-red-200 bg-red-50">
- <h3 className="font-medium text-red-700 mb-3 flex items-center gap-2">
+ <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/5">
+ <h3 className="font-medium text-destructive mb-3 flex items-center gap-2">
  <span>&#x274C;</span> Denied Licenses
  </h3>
  <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -520,7 +520,7 @@ export function LicenseCompliancePage() {
  onChange={() => toggleLicense('deniedLicenses', license.spdxId)}
  className="rounded border-border"
  />
- <span className={policy.deniedLicenses.includes(license.spdxId) ? 'text-red-700' : 'text-muted-foreground'}>
+ <span className={policy.deniedLicenses.includes(license.spdxId) ? 'text-destructive' : 'text-muted-foreground'}>
  {license.spdxId}
  </span>
  </label>
@@ -529,8 +529,8 @@ export function LicenseCompliancePage() {
  </div>
 
  {/* Require Approval */}
- <div className="p-4 rounded-lg border border-amber-200 bg-amber-50">
- <h3 className="font-medium text-amber-700 mb-3 flex items-center gap-2">
+ <div className="p-4 rounded-lg border border-warning/20 bg-warning/5">
+ <h3 className="font-medium text-warning mb-3 flex items-center gap-2">
  <span>&#x26A0;&#xFE0F;</span> Require Approval
  </h3>
  <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -542,7 +542,7 @@ export function LicenseCompliancePage() {
  onChange={() => toggleLicense('requireApproval', license.spdxId)}
  className="rounded border-border"
  />
- <span className={policy.requireApproval.includes(license.spdxId) ? 'text-amber-700' : 'text-muted-foreground'}>
+ <span className={policy.requireApproval.includes(license.spdxId) ? 'text-warning' : 'text-muted-foreground'}>
  {license.spdxId}
  </span>
  </label>
@@ -572,14 +572,14 @@ export function LicenseCompliancePage() {
 
  {/* Scan Progress */}
  {scanResult && scanResult.status === 'scanning' && (
- <div className="mt-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
+ <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
  <div className="flex items-center justify-between mb-2">
- <span className="text-sm font-medium text-blue-700">{scanResult.progress?.phase}</span>
- <span className="text-sm font-bold text-blue-600">{scanResult.progress?.percentage}%</span>
+ <span className="text-sm font-medium text-primary">{scanResult.progress?.phase}</span>
+ <span className="text-sm font-bold text-primary">{scanResult.progress?.percentage}%</span>
  </div>
- <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
+ <div className="w-full h-2 bg-primary/20 rounded-full overflow-hidden">
  <div
- className="h-full bg-blue-500 transition-all duration-300"
+ className="h-full bg-primary transition-all duration-300"
  style={{ width: `${scanResult.progress?.percentage}%` }}
  />
  </div>
@@ -596,21 +596,21 @@ export function LicenseCompliancePage() {
  <p className="text-sm text-muted-foreground">Total Dependencies</p>
  <p className="text-2xl font-bold text-foreground">{scanResult.summary.total}</p>
  </div>
- <div className="rounded-lg border border-green-200 bg-green-50 p-4">
- <p className="text-sm text-green-600">Compliant</p>
- <p className="text-2xl font-bold text-green-700">{scanResult.summary.compliant}</p>
+ <div className="rounded-lg border border-success/20 bg-success/5 p-4">
+ <p className="text-sm text-success">Compliant</p>
+ <p className="text-2xl font-bold text-success">{scanResult.summary.compliant}</p>
  </div>
- <div className="rounded-lg border border-red-200 bg-red-50 p-4">
- <p className="text-sm text-red-600">Non-Compliant</p>
- <p className="text-2xl font-bold text-red-700">{scanResult.summary.nonCompliant}</p>
+ <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+ <p className="text-sm text-destructive">Non-Compliant</p>
+ <p className="text-2xl font-bold text-destructive">{scanResult.summary.nonCompliant}</p>
  </div>
- <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
- <p className="text-sm text-amber-600">With Warnings</p>
- <p className="text-2xl font-bold text-amber-700">{scanResult.summary.warnings}</p>
+ <div className="rounded-lg border border-warning/20 bg-warning/5 p-4">
+ <p className="text-sm text-warning">With Warnings</p>
+ <p className="text-2xl font-bold text-warning">{scanResult.summary.warnings}</p>
  </div>
  <div className="rounded-lg border border-border bg-card p-4">
  <p className="text-sm text-muted-foreground">High Risk</p>
- <p className="text-2xl font-bold text-red-600">{scanResult.summary.byRisk.high}</p>
+ <p className="text-2xl font-bold text-destructive">{scanResult.summary.byRisk.high}</p>
  </div>
  </div>
 
@@ -660,7 +660,7 @@ export function LicenseCompliancePage() {
  {filteredDeps.map(dep => (
  <div
  key={dep.id}
- className={`rounded-lg border ${!dep.isCompliant ? 'border-red-200 bg-red-50/50' : dep.warnings.length > 0 ? 'border-amber-200 bg-amber-50/50' : 'border-border bg-card'}`}
+ className={`rounded-lg border ${!dep.isCompliant ? 'border-destructive/20 bg-destructive/5/50' : dep.warnings.length > 0 ? 'border-warning/20 bg-warning/5/50' : 'border-border bg-card'}`}
  >
  <div
  className="p-4 flex items-center justify-between cursor-pointer"
@@ -669,11 +669,11 @@ export function LicenseCompliancePage() {
  <div className="flex items-center gap-4">
  <div className="flex items-center gap-2">
  {!dep.isCompliant ? (
- <span className="text-red-500">&#x274C;</span>
+ <span className="text-destructive">&#x274C;</span>
  ) : dep.warnings.length > 0 ? (
- <span className="text-amber-500">&#x26A0;&#xFE0F;</span>
+ <span className="text-warning">&#x26A0;&#xFE0F;</span>
  ) : (
- <span className="text-green-500">&#x2705;</span>
+ <span className="text-success">&#x2705;</span>
  )}
  <div>
  <p className="font-medium text-foreground">{dep.pkgName}</p>
@@ -684,7 +684,7 @@ export function LicenseCompliancePage() {
  {dep.license.spdxId}
  </span>
  {dep.license.copyleft && (
- <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+ <span className="px-2 py-0.5 rounded text-xs font-medium bg-destructive/10 text-destructive">
  &#x1F504; Copyleft
  </span>
  )}
@@ -706,20 +706,20 @@ export function LicenseCompliancePage() {
  <div>
  <p className="text-xs text-muted-foreground mb-1">Characteristics</p>
  <div className="flex flex-wrap gap-1">
- {dep.license.commercial && <span className="px-1.5 py-0.5 text-xs rounded bg-green-100 text-green-700">Commercial OK</span>}
- {dep.license.attribution && <span className="px-1.5 py-0.5 text-xs rounded bg-blue-100 text-blue-700">Attribution Required</span>}
+ {dep.license.commercial && <span className="px-1.5 py-0.5 text-xs rounded bg-success/10 text-success">Commercial OK</span>}
+ {dep.license.attribution && <span className="px-1.5 py-0.5 text-xs rounded bg-primary/10 text-primary">Attribution Required</span>}
  {dep.license.patentGrant && <span className="px-1.5 py-0.5 text-xs rounded bg-purple-100 text-purple-700">Patent Grant</span>}
- {dep.license.copyleft && <span className="px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-700">Copyleft</span>}
+ {dep.license.copyleft && <span className="px-1.5 py-0.5 text-xs rounded bg-destructive/10 text-destructive">Copyleft</span>}
  </div>
  </div>
  </div>
 
  {dep.warnings.length > 0 && (
- <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
- <p className="text-xs font-medium text-amber-700 mb-2">&#x26A0;&#xFE0F; Warnings</p>
+ <div className="p-3 rounded-lg bg-warning/5 border border-warning/20">
+ <p className="text-xs font-medium text-warning mb-2">&#x26A0;&#xFE0F; Warnings</p>
  <ul className="space-y-1">
  {dep.warnings.map((w, i) => (
- <li key={i} className="text-xs text-amber-600 flex items-start gap-1">
+ <li key={i} className="text-xs text-warning flex items-start gap-1">
  <span>&#x2022;</span>
  <span>{w}</span>
  </li>

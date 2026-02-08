@@ -210,21 +210,21 @@ export const URLInput: React.FC<URLInputProps> = ({
 
  // Determine border color
  const getBorderClass = () => {
- if (error) return 'border-red-500';
- if (validationState === 'valid') return 'border-green-500';
- if (validationState === 'invalid') return 'border-red-300';
+ if (error) return 'border-destructive';
+ if (validationState === 'valid') return 'border-success';
+ if (validationState === 'invalid') return 'border-destructive/30';
  return 'border-border';
  };
 
  // Determine focus ring color
  const getFocusClass = () => {
  if (error || validationState === 'invalid') {
- return 'focus:ring-red-500 focus:border-red-500';
+ return 'focus:ring-destructive focus:border-destructive';
  }
  if (validationState === 'valid') {
- return 'focus:ring-green-500 focus:border-green-500';
+ return 'focus:ring-success focus:border-success';
  }
- return 'focus:ring-blue-500 focus:border-blue-500';
+ return 'focus:ring-primary focus:border-primary';
  };
 
  return (
@@ -235,7 +235,7 @@ export const URLInput: React.FC<URLInputProps> = ({
  className="block text-sm font-medium text-foreground mb-1"
  >
  {label}
- {required && <span className="text-red-500 ml-1">*</span>}
+ {required && <span className="text-destructive ml-1">*</span>}
  </label>
  )}
  <div className="relative">
@@ -288,7 +288,7 @@ export const URLInput: React.FC<URLInputProps> = ({
  {validationState === 'valid' && (
  <div className="absolute right-3 top-1/2 -translate-y-1/2">
  <svg
- className="w-5 h-5 text-green-500"
+ className="w-5 h-5 text-success"
  fill="none"
  viewBox="0 0 24 24"
  stroke="currentColor"
@@ -306,7 +306,7 @@ export const URLInput: React.FC<URLInputProps> = ({
  {validationState === 'invalid' && (
  <div className="absolute right-3 top-1/2 -translate-y-1/2">
  <svg
- className="w-5 h-5 text-red-500"
+ className="w-5 h-5 text-destructive"
  fill="none"
  viewBox="0 0 24 24"
  stroke="currentColor"
@@ -324,14 +324,14 @@ export const URLInput: React.FC<URLInputProps> = ({
 
  {/* Error message */}
  {error && (
- <p id={`${id}-error`} className="mt-1 text-sm text-red-600">
+ <p id={`${id}-error`} className="mt-1 text-sm text-destructive">
  {error}
  </p>
  )}
 
  {/* Validation hint for invalid state (when no explicit error) */}
  {!error && validationState === 'invalid' && (
- <p id={`${id}-hint`} className="mt-1 text-sm text-red-600">
+ <p id={`${id}-hint`} className="mt-1 text-sm text-destructive">
  Please enter a valid URL
  </p>
  )}

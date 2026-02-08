@@ -160,12 +160,12 @@ export function K6ScriptTab({
           <p className="text-sm text-muted-foreground">
             {isEditingK6Script ? (
               <span className="inline-flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse"></span>
                 Editing K6 load test script...
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+                <span className="inline-block w-2 h-2 rounded-full bg-success"></span>
                 K6 Load Test Script (JavaScript)
               </span>
             )}

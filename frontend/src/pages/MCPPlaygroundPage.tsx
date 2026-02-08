@@ -326,7 +326,7 @@ export function MCPPlaygroundPage() {
  <label className="block text-sm font-medium text-foreground mb-1">
  {key}
  {selectedTool.inputSchema?.required?.includes(key) && (
- <span className="text-red-500 ml-1">*</span>
+ <span className="text-destructive ml-1">*</span>
  )}
  {prop.type && (
  <span className="ml-2 text-xs text-muted-foreground font-normal">
@@ -406,14 +406,14 @@ export function MCPPlaygroundPage() {
  {/* Status Badge */}
  <div className="mb-4">
  {response.success ? (
- <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium">
+ <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-success/10 text-success text-sm font-medium">
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
  </svg>
  Success
  </span>
  ) : (
- <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium">
+ <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-destructive/10 text-destructive text-sm font-medium">
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
  </svg>
@@ -424,7 +424,7 @@ export function MCPPlaygroundPage() {
 
  {/* Error Message */}
  {response.error && (
- <div className="mb-4 p-3 rounded-md bg-red-100/50 text-red-800 text-sm">
+ <div className="mb-4 p-3 rounded-md bg-destructive/10/50 text-destructive text-sm">
  {response.error}
  </div>
  )}

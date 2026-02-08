@@ -189,7 +189,7 @@ export function MCPHub() {
  <div className="flex flex-wrap gap-2 mb-4">
  <button
  onClick={() => navigate('/mcp/agent-workspace')}
- className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-green-500/10 text-green-600 hover:bg-green-500/20 transition-colors"
+ className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-success/10 text-success hover:bg-success/20 transition-colors"
  >
  <AgentWorkspaceIcon />
  <span>AI Agent</span>

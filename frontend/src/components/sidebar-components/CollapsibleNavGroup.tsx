@@ -46,8 +46,8 @@ export function CollapsibleNavGroup({
 }: CollapsibleNavGroupProps) {
   // Badge color class mapping
   const badgeColorClass = {
-    amber: 'bg-amber-500',
-    red: 'bg-red-500',
+    amber: 'bg-warning',
+    red: 'bg-destructive',
     primary: 'bg-primary'
   }[badgeColor];
 

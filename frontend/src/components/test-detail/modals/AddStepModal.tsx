@@ -290,12 +290,12 @@ export function AddStepModal({
  />
  <p id="checkpoint-threshold-desc" className="mt-1 text-xs text-muted-foreground">Test fails if diff exceeds this percentage (0 = any change fails)</p>
  </div>
- <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
+ <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
  <div className="flex items-start gap-2">
- <svg className="h-5 w-5 text-blue-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="h-5 w-5 text-primary mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
- <div className="text-sm text-blue-700">
+ <div className="text-sm text-primary">
  <p className="font-medium">Visual Checkpoint</p>
  <p className="mt-1">Takes a screenshot and compares it against the baseline. The test will fail if visual differences exceed the threshold.</p>
  </div>

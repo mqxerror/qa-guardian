@@ -214,8 +214,8 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  placeholder="Visual Test - Homepage"
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.name
- ? 'border-red-500 focus:ring-red-500'
- : 'border-border focus:ring-blue-500'
+ ? 'border-destructive focus:ring-destructive'
+ : 'border-border focus:ring-primary'
  }`}
  />
  </FormField>
@@ -229,8 +229,8 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  placeholder={projectBaseUrl || 'https://your-site.com'}
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.targetUrl
- ? 'border-red-500 focus:ring-red-500'
- : 'border-border focus:ring-blue-500'
+ ? 'border-destructive focus:ring-destructive'
+ : 'border-border focus:ring-primary'
  }`}
  />
  </FormField>
@@ -381,8 +381,8 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  placeholder="#header, .main-content, [data-testid='hero']"
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground font-mono text-sm ${
  errors.elementSelector
- ? 'border-red-500 focus:ring-red-500'
- : 'border-border focus:ring-blue-500'
+ ? 'border-destructive focus:ring-destructive'
+ : 'border-border focus:ring-primary'
  }`}
  />
  </FormField>
@@ -440,8 +440,8 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
 
  {/* Validation Summary */}
  {Object.keys(errors).length > 0 && (
- <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
- <p className="text-sm text-red-600">
+ <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
+ <p className="text-sm text-destructive">
  Please fix the errors above to continue.
  </p>
  </div>

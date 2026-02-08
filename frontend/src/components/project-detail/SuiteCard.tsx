@@ -59,7 +59,7 @@ const SuiteCard: React.FC<SuiteCardProps> = React.memo(({
  </span>
  )}
  {suite.test_count !== undefined && (
- <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+ <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
  {suite.test_count} test{suite.test_count !== 1 ? 's' : ''}
  </span>
  )}

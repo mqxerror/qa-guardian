@@ -110,11 +110,11 @@ export function SuiteRunResults({
  {/* Status and Duration */}
  <div className="flex items-center gap-4 mb-4">
  <span className={`rounded-full px-3 py-1 text-sm font-medium ${
- suiteRun.status === 'passed' ? 'bg-green-100 text-green-700' :
- suiteRun.status === 'failed' ? 'bg-red-100 text-red-700' :
- suiteRun.status === 'running' ? 'bg-blue-100 text-blue-700' :
- suiteRun.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
- suiteRun.status === 'cancelled' ? 'bg-amber-100 text-amber-700' :
+ suiteRun.status === 'passed' ? 'bg-success/10 text-success' :
+ suiteRun.status === 'failed' ? 'bg-destructive/10 text-destructive' :
+ suiteRun.status === 'running' ? 'bg-primary/10 text-primary' :
+ suiteRun.status === 'pending' ? 'bg-warning/10 text-warning' :
+ suiteRun.status === 'cancelled' ? 'bg-warning/10 text-warning' :
  'bg-muted text-foreground'
  }`}>
  {suiteRun.status}
@@ -140,14 +140,14 @@ export function SuiteRunResults({
  </div>
  <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
  <div
- className="h-full bg-blue-500 transition-all duration-300 ease-out"
+ className="h-full bg-primary transition-all duration-300 ease-out"
  style={{ width: `${progressPercent}%` }}
  />
  </div>
  {suiteRun.status === 'running' && (
  <div className="mt-2 flex items-center justify-between">
  <div className="flex items-center gap-2 text-sm text-muted-foreground">
- <svg aria-hidden="true" className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+ <svg aria-hidden="true" className="animate-spin h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
  </svg>
@@ -156,7 +156,7 @@ export function SuiteRunResults({
  <button
  onClick={onCancelSuiteRun}
  disabled={isCancellingSuite}
- className="rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+ className="rounded-md bg-destructive px-3 py-1 text-sm font-medium text-white hover:bg-destructive disabled:opacity-50"
  >
  {isCancellingSuite ? 'Cancelling...' : 'Cancel'}
  </button>
@@ -189,10 +189,10 @@ export function SuiteRunResults({
  {/* Cancelled indicator */}
  {suiteRun.status === 'cancelled' && (
  <div className="mb-4 flex items-center gap-2 text-sm">
- <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+ <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-warning" viewBox="0 0 20 20" fill="currentColor">
  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
  </svg>
- <span className="text-amber-700 font-medium">Test run cancelled</span>
+ <span className="text-warning font-medium">Test run cancelled</span>
  </div>
  )}
 
@@ -201,17 +201,17 @@ export function SuiteRunResults({
  <div className="mb-4 flex items-center gap-2 text-sm">
  {suiteRun.status === 'passed' ? (
  <>
- <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+ <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-success" viewBox="0 0 20 20" fill="currentColor">
  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
  </svg>
- <span className="text-green-700 font-medium">All tests passed!</span>
+ <span className="text-success font-medium">All tests passed!</span>
  </>
  ) : (
  <>
- <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+ <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-destructive" viewBox="0 0 20 20" fill="currentColor">
  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
  </svg>
- <span className="text-red-700 font-medium">
+ <span className="text-destructive font-medium">
  {suiteRun.results?.filter(r => r.status === 'failed').length || 0} test(s) failed
  </span>
  </>
@@ -250,28 +250,28 @@ function LiveScreenshotPanel({
  onExpandScreenshot: (base64: string) => void;
 }) {
  return (
- <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+ <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
  <div className="flex items-center justify-between mb-3">
- <h3 className="text-sm font-semibold text-blue-800 flex items-center gap-2">
+ <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
  <svg className="h-4 w-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
  </svg>
  Live Screenshot
  </h3>
- <span className="text-xs text-blue-600">
+ <span className="text-xs text-primary">
  {liveScreenshot.testName}
  </span>
  </div>
 
  {/* Step label */}
- <div className="mb-2 text-xs text-blue-700 flex items-center gap-2">
+ <div className="mb-2 text-xs text-primary flex items-center gap-2">
  <span className="font-medium">Step {liveScreenshot.stepIndex + 1}:</span>
- <span className="font-mono bg-blue-100 px-1.5 py-0.5 rounded">
+ <span className="font-mono bg-primary/10 px-1.5 py-0.5 rounded">
  {liveScreenshot.stepAction}
  </span>
  {liveScreenshot.stepSelector && (
- <span className="text-blue-500 truncate max-w-[200px]" title={liveScreenshot.stepSelector}>
+ <span className="text-primary truncate max-w-[200px]" title={liveScreenshot.stepSelector}>
  {liveScreenshot.stepSelector}
  </span>
  )}
@@ -279,7 +279,7 @@ function LiveScreenshotPanel({
 
  {/* Main screenshot */}
  <div
- className="relative rounded-md overflow-hidden border border-blue-200 cursor-pointer"
+ className="relative rounded-md overflow-hidden border border-primary/20 cursor-pointer"
  onClick={() => onExpandScreenshot(liveScreenshot.base64)}
  >
  <img
@@ -298,7 +298,7 @@ function LiveScreenshotPanel({
  {/* Thumbnail history */}
  {screenshotHistory.length > 1 && (
  <div className="mt-3">
- <div className="text-xs text-blue-600 mb-2">Recent Screenshots</div>
+ <div className="text-xs text-primary mb-2">Recent Screenshots</div>
  <div className="flex gap-2">
  {screenshotHistory.map((screenshot) => (
  <button
@@ -306,7 +306,7 @@ function LiveScreenshotPanel({
  onClick={() => onExpandScreenshot(screenshot.base64)}
  className={`relative rounded overflow-hidden border-2 transition-all hover:scale-105 ${
  screenshot.timestamp === liveScreenshot.timestamp
- ? 'border-blue-500 ring-2 ring-blue-300'
+ ? 'border-primary ring-2 ring-primary/50'
  : 'border-border opacity-70 hover:opacity-100'
  }`}
  >
@@ -355,8 +355,8 @@ function TestResultItem({
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">
  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
- result.status === 'passed' ? 'bg-green-100 text-green-700' :
- result.status === 'failed' ? 'bg-red-100 text-red-700' :
+ result.status === 'passed' ? 'bg-success/10 text-success' :
+ result.status === 'failed' ? 'bg-destructive/10 text-destructive' :
  'bg-muted text-foreground'
  }`}>
  {result.status}
@@ -376,17 +376,17 @@ function TestResultItem({
  {result.diff_percentage !== undefined && (
  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
  result.diff_percentage === 0
- ? 'bg-green-100 text-green-700'
+ ? 'bg-success/10 text-success'
  : result.diff_percentage > 1
- ? 'bg-red-100 text-red-700'
- : 'bg-yellow-100 text-yellow-700'
+ ? 'bg-destructive/10 text-destructive'
+ : 'bg-warning/10 text-warning'
  }`}>
  {result.diff_percentage === 0 ? '✓ Match' : `${result.diff_percentage.toFixed(2)}% diff`}
  </span>
  )}
  {/* Baseline created indicator */}
  {result.visual_comparison?.hasBaseline === false && (
- <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+ <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
  📸 New Baseline
  </span>
  )}
@@ -417,7 +417,7 @@ function TestResultItem({
  </div>
 
  {result.error && (
- <p className="mt-2 text-sm text-red-600">{result.error}</p>
+ <p className="mt-2 text-sm text-destructive">{result.error}</p>
  )}
 
  {/* Feature #1074: Quick link to healing options for failed tests */}
@@ -450,8 +450,8 @@ function TestResultItem({
 
  {/* Visual comparison summary */}
  {result.visual_comparison?.hasBaseline && result.diff_percentage !== undefined && result.diff_percentage > 0 && (
- <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-200">
- <div className="flex items-center gap-2 text-sm text-yellow-700">
+ <div className="mt-2 p-2 bg-warning/5 rounded border border-warning/20">
+ <div className="flex items-center gap-2 text-sm text-warning">
  <span>🔍</span>
  <span>
  Visual difference detected: {result.visual_comparison.mismatchedPixels?.toLocaleString()} pixels differ ({result.diff_percentage.toFixed(2)}%)
@@ -493,7 +493,7 @@ function StepResultItem({
  return (
  <div className="space-y-1">
  <div className="flex items-center gap-2 text-sm">
- <span className={step.status === 'passed' ? 'text-green-600' : step.status === 'failed' ? 'text-red-600' : 'text-muted-foreground'}>
+ <span className={step.status === 'passed' ? 'text-success' : step.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'}>
  {step.status === 'passed' ? '✓' : step.status === 'failed' ? '✗' : '○'}
  </span>
  <span className="text-muted-foreground">{step.action}</span>
@@ -505,7 +505,7 @@ function StepResultItem({
  </span>
  )}
  {step.manual_override && (
- <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-700" title="This selector was manually overridden">
+ <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-primary/10 text-primary" title="This selector was manually overridden">
  ✏️ Manual
  </span>
  )}
@@ -552,8 +552,8 @@ function StepResultItem({
 
  {/* Feature #603: Display mask selector warnings */}
  {step.metadata?.maskSelectorWarnings && step.metadata.maskSelectorWarnings.length > 0 && (
- <div className="ml-6 p-2 bg-amber-50 rounded border border-amber-200">
- <div className="flex items-start gap-2 text-xs text-amber-700">
+ <div className="ml-6 p-2 bg-warning/5 rounded border border-warning/20">
+ <div className="flex items-start gap-2 text-xs text-warning">
  <span className="mt-0.5">⚠️</span>
  <div className="space-y-1">
  {step.metadata.maskSelectorWarnings.map((warning, wIdx) => (
@@ -566,8 +566,8 @@ function StepResultItem({
 
  {/* Warnings from hide_elements and remove_elements steps */}
  {step.metadata?.warnings && step.metadata.warnings.length > 0 && (
- <div className="ml-6 p-2 bg-amber-50 rounded border border-amber-200">
- <div className="flex items-start gap-2 text-xs text-amber-700">
+ <div className="ml-6 p-2 bg-warning/5 rounded border border-warning/20">
+ <div className="flex items-start gap-2 text-xs text-warning">
  <span className="mt-0.5">⚠️</span>
  <div className="space-y-1">
  {step.metadata.warnings.map((warning, wIdx) => (
@@ -615,17 +615,17 @@ function HealedSelectorDetails({
  <div className="w-20 h-2 bg-secondary rounded-full overflow-hidden">
  <div
  className={`h-full rounded-full transition-all duration-300 ${
- step.healing_confidence >= 85 ? 'bg-green-500' :
- step.healing_confidence >= 70 ? 'bg-yellow-500' :
- 'bg-red-500'
+ step.healing_confidence >= 85 ? 'bg-success' :
+ step.healing_confidence >= 70 ? 'bg-warning' :
+ 'bg-destructive'
  }`}
  style={{ width: `${step.healing_confidence}%` }}
  />
  </div>
  <span className={`text-xs font-semibold ${
- step.healing_confidence >= 85 ? 'text-green-600' :
- step.healing_confidence >= 70 ? 'text-yellow-600' :
- 'text-red-600'
+ step.healing_confidence >= 85 ? 'text-success' :
+ step.healing_confidence >= 70 ? 'text-warning' :
+ 'text-destructive'
  }`}>
  {step.healing_confidence}%
  </span>
@@ -657,28 +657,28 @@ function HealedSelectorDetails({
  {/* Feature #1072: Side-by-side diff visualization */}
  <div className="grid grid-cols-2 gap-3">
  {/* Old selector (left side - red) */}
- <div className="bg-red-50 rounded-lg border border-red-200 overflow-hidden">
- <div className="px-2 py-1 bg-red-100 border-b border-red-200">
- <span className="text-xs font-semibold text-red-700 flex items-center gap-1">
+ <div className="bg-destructive/5 rounded-lg border border-destructive/20 overflow-hidden">
+ <div className="px-2 py-1 bg-destructive/10 border-b border-destructive/20">
+ <span className="text-xs font-semibold text-destructive flex items-center gap-1">
  <span>−</span> Original (Failed)
  </span>
  </div>
  <div className="p-2">
- <code className="text-xs font-mono text-red-700 break-all leading-relaxed block line-through">
+ <code className="text-xs font-mono text-destructive break-all leading-relaxed block line-through">
  {step.original_selector}
  </code>
  </div>
  </div>
 
  {/* New selector (right side - green) */}
- <div className="bg-green-50 rounded-lg border border-green-200 overflow-hidden">
- <div className="px-2 py-1 bg-green-100 border-b border-green-200">
- <span className="text-xs font-semibold text-green-700 flex items-center gap-1">
+ <div className="bg-success/5 rounded-lg border border-success/20 overflow-hidden">
+ <div className="px-2 py-1 bg-success/10 border-b border-success/20">
+ <span className="text-xs font-semibold text-success flex items-center gap-1">
  <span>+</span> Healed (Working)
  </span>
  </div>
  <div className="p-2">
- <code className="text-xs font-mono text-green-700 break-all leading-relaxed block">
+ <code className="text-xs font-mono text-success break-all leading-relaxed block">
  {step.healed_selector || step.selector}
  </code>
  </div>
@@ -705,31 +705,31 @@ function SSLErrorDetails({ metadata }: { metadata: SuiteRunStep['metadata'] }) {
  if (!metadata) return null;
 
  return (
- <div className="ml-6 mt-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+ <div className="ml-6 mt-2 p-3 bg-warning/5 rounded-lg border border-warning/20">
  <div className="flex items-start gap-2 mb-2">
  <span className="text-base">🔐</span>
  <div className="flex-1">
- <span className="text-sm font-semibold text-yellow-800">
+ <span className="text-sm font-semibold text-warning">
  SSL Certificate Error: {metadata.sslErrorCode}
  </span>
- <span className="ml-2 text-xs px-2 py-0.5 rounded font-medium bg-yellow-100 text-yellow-700">
+ <span className="ml-2 text-xs px-2 py-0.5 rounded font-medium bg-warning/10 text-warning">
  🔒 SSL/TLS Error
  </span>
  </div>
  </div>
  {metadata.sslErrorDescription && (
- <p className="text-xs text-yellow-700 mb-2">
+ <p className="text-xs text-warning mb-2">
  {metadata.sslErrorDescription}
  </p>
  )}
  {/* Security Implications Warning */}
  {metadata.securityImplication && (
- <div className="p-2 bg-red-50 rounded border border-red-200 mb-2">
+ <div className="p-2 bg-destructive/5 rounded border border-destructive/20 mb-2">
  <div className="flex items-start gap-2">
  <span className="text-sm">⚠️</span>
  <div>
- <p className="text-xs font-medium text-red-800">Security Implications:</p>
- <p className="text-xs text-red-700 mt-1">{metadata.securityImplication}</p>
+ <p className="text-xs font-medium text-destructive">Security Implications:</p>
+ <p className="text-xs text-destructive mt-1">{metadata.securityImplication}</p>
  </div>
  </div>
  </div>
@@ -737,11 +737,11 @@ function SSLErrorDetails({ metadata }: { metadata: SuiteRunStep['metadata'] }) {
  {/* Ignore SSL Option Status */}
  <div className="text-xs">
  {metadata.ignoreSSLEnabled ? (
- <span className="text-amber-600">
+ <span className="text-warning">
  ⚡ "Ignore SSL errors" is enabled - certificate validation was bypassed
  </span>
  ) : (
- <span className="text-blue-600">
+ <span className="text-primary">
  💡 Enable "Ignore SSL errors" option in test settings to bypass certificate validation (for testing only)
  </span>
  )}

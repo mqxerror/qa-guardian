@@ -78,11 +78,11 @@ const FormField: React.FC<{
  <div className="space-y-1">
  <label className="block text-sm font-medium text-foreground">
  {label}
- {required && <span className="text-red-500 ml-1">*</span>}
+ {required && <span className="text-destructive ml-1">*</span>}
  </label>
  {children}
  {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
- {error && <p className="text-xs text-red-500">{error}</p>}
+ {error && <p className="text-xs text-destructive">{error}</p>}
  </div>
 );
 
@@ -155,8 +155,8 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  placeholder="Enter test name"
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.name
- ? 'border-red-500 focus:ring-red-500'
- : 'border-border focus:ring-blue-500'
+ ? 'border-destructive focus:ring-destructive'
+ : 'border-border focus:ring-primary'
  }`}
  />
  </FormField>
@@ -170,8 +170,8 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  placeholder={projectBaseUrl || 'https://your-site.com'}
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.targetUrl
- ? 'border-red-500 focus:ring-red-500'
- : 'border-border focus:ring-blue-500'
+ ? 'border-destructive focus:ring-destructive'
+ : 'border-border focus:ring-primary'
  }`}
  />
  </FormField>
@@ -225,7 +225,7 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  type="checkbox"
  checked={config.deviceEmulationEnabled}
  onChange={(e) => updateField('deviceEmulationEnabled', e.target.checked)}
- className="rounded border-border text-blue-600 focus:ring-blue-500"
+ className="rounded border-border text-primary focus:ring-primary"
  />
  <span className="ml-2 text-sm text-foreground">Enable</span>
  </label>
@@ -294,8 +294,8 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
 
  {/* Validation Summary */}
  {Object.keys(errors).length > 0 && (
- <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
- <p className="text-sm text-red-600">
+ <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
+ <p className="text-sm text-destructive">
  Please fix the errors above to continue.
  </p>
  </div>

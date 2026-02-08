@@ -87,7 +87,7 @@ export function LoginPage() {
                 initial={prefersReducedMotion ? {} : { opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={prefersReducedMotion ? { duration: 0 } : undefined}
-                className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-400"
+                className="rounded-lg border border-warning/20 bg-warning/10 p-3 text-sm text-warning"
               >
                 Your session has expired. Please log in again.
               </motion.div>
@@ -100,7 +100,7 @@ export function LoginPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={prefersReducedMotion ? { duration: 0 } : undefined}
                 role="alert"
-                className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
+                className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
               >
                 {error}
               </motion.div>
@@ -151,7 +151,7 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 font-medium text-white transition-all hover:from-blue-500 hover:to-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:cursor-not-allowed disabled:opacity-50"
+                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary px-4 py-3 font-medium text-white transition-all hover:from-primary hover:to-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isLoading ? (
@@ -188,7 +188,7 @@ export function LoginPage() {
             onClick={() => {
               window.location.href = `${import.meta.env.VITE_API_BASE_URL || 'https://qa.pixelcraftedmedia.com'}/api/v1/auth/google`;
             }}
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3 font-medium text-foreground transition-colors hover:border-muted-foreground/50 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3 font-medium text-foreground transition-colors hover:border-muted-foreground/50 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
           >
             <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24">
               <path
@@ -218,7 +218,7 @@ export function LoginPage() {
             transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.22 }}
             className="mt-4 text-center"
           >
-            <Link to="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+            <Link to="/forgot-password" className="text-sm text-primary hover:text-primary/70 transition-colors">
               Forgot your password?
             </Link>
           </motion.div>
@@ -247,7 +247,7 @@ export function LoginPage() {
             className="mt-6 text-center text-sm text-muted-foreground"
           >
             Don't have an account?{' '}
-            <Link to="/register" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
+            <Link to="/register" className="text-primary hover:text-primary/70 transition-colors font-medium">
               Create account
             </Link>
           </motion.div>

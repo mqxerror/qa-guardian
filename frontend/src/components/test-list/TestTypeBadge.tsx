@@ -11,7 +11,7 @@ const typeConfig = {
  e2e: {
  icon: '🧪',
  label: 'E2E Test',
- className: 'bg-blue-100 text-blue-700',
+ className: 'bg-primary/10 text-primary',
  },
  visual_regression: {
  icon: '📸',
@@ -26,12 +26,12 @@ const typeConfig = {
  load: {
  icon: '⚡',
  label: 'Load Test',
- className: 'bg-yellow-100 text-yellow-700',
+ className: 'bg-warning/10 text-warning',
  },
  accessibility: {
  icon: '♿',
  label: 'Accessibility Test',
- className: 'bg-green-100 text-green-700',
+ className: 'bg-success/10 text-success',
  },
 };
 
