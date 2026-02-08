@@ -408,30 +408,30 @@ export function QuickTestPage() {
 
     const handleTestComplete = (data: { summary: QuickTestResult['summary'] }) => {
       setIsRunning(false);
-      setResult(prev =>
-        prev
-          ? { ...prev, status: 'completed', summary: data.summary }
-          : null
-      );
+      // Feature #442: Use functional update to avoid stale closure on 'result'
+      setResult(prev => {
+        if (!prev) return null;
+        const updatedResult = { ...prev, status: 'completed' as const, summary: data.summary };
 
-      // Update history
-      if (result) {
+        // Update history using the fresh result from functional update
         const newEntry: HistoryEntry = {
-          runId: result.runId,
-          url: result.url,
-          timestamp: result.timestamp,
+          runId: prev.runId,
+          url: prev.url,
+          timestamp: prev.timestamp,
           score: data.summary?.overallScore,
         };
-        setHistory(prev => {
-          const updated = [newEntry, ...prev.filter(h => h.runId !== newEntry.runId)].slice(0, MAX_HISTORY);
+        setHistory(prevHistory => {
+          const updated = [newEntry, ...prevHistory.filter(h => h.runId !== newEntry.runId)].slice(0, MAX_HISTORY);
           try {
             localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
           } catch {
-            // Ignore
+            // Ignore localStorage errors
           }
           return updated;
         });
-      }
+
+        return updatedResult;
+      });
     };
 
     const handleTestError = (data: { error: string }) => {
