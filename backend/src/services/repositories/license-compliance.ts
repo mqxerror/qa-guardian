@@ -12,6 +12,40 @@
 import { query, isDatabaseConnected } from '../database.js';
 import type { QueryResult, QueryResultRow } from 'pg';
 
+// ============================================
+// Column Constants for SELECT queries
+// ============================================
+
+const LICENSE_POLICY_COLUMNS = `
+  id, organization_id, name, description, allowed_licenses, blocked_licenses,
+  policy_mode, fail_on_unknown, is_active, created_at, updated_at
+`;
+
+const LICENSE_SCAN_RESULT_COLUMNS = `
+  id, project_id, organization_id, scanned_at, scan_duration_ms, policy_id,
+  total_packages, compliant_packages, violation_count, unknown_license_count,
+  compliance_percentage, license_summary, violations, packages, status, error_message, created_at
+`;
+
+const SBOM_ENTRY_COLUMNS = `
+  id, project_id, organization_id, format, spec_version, serial_number,
+  generated_at, generated_by, total_components, production_components,
+  dev_components, unique_licenses, license_distribution, storage_location,
+  storage_bucket, storage_key, storage_path, filename, content_type,
+  size_bytes, sbom_content, eo_14028_compliant, ntia_compliant, missing_elements, created_at
+`;
+
+const DEPENDENCY_ANALYSIS_COLUMNS = `
+  id, project_id, organization_id, analyzed_at, analysis_duration_ms,
+  total_dependencies, direct_dependencies, transitive_dependencies,
+  production_dependencies, dev_dependencies, outdated_count,
+  major_updates_available, minor_updates_available, patch_updates_available,
+  vulnerable_count, critical_vulnerabilities, high_vulnerabilities,
+  medium_vulnerabilities, low_vulnerabilities, health_score,
+  outdated_packages, vulnerable_packages, ecosystem, lockfile_path,
+  status, error_message, created_at
+`;
+
 // Helper to handle potentially null query results (when database not connected)
 function ensureResult<T extends QueryResultRow>(result: QueryResult<T> | null): QueryResult<T> {
   if (!result) {
@@ -180,7 +214,7 @@ export async function createLicensePolicy(
 export async function getLicensePolicy(id: string): Promise<LicensePolicy | null> {
   if (!isDatabaseConnected()) return null;
 
-  const result = ensureResult(await query('SELECT * FROM license_policies WHERE id = $1', [id]));
+  const result = ensureResult(await query(`SELECT ${LICENSE_POLICY_COLUMNS} FROM license_policies WHERE id = $1`, [id]));
   return result.rows.length > 0 ? mapRowToLicensePolicy(result.rows[0]) : null;
 }
 
@@ -188,7 +222,7 @@ export async function getLicensePolicyByOrg(organizationId: string): Promise<Lic
   if (!isDatabaseConnected()) return null;
 
   const result = ensureResult(await query(
-    'SELECT * FROM license_policies WHERE organization_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1',
+    `SELECT ${LICENSE_POLICY_COLUMNS} FROM license_policies WHERE organization_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1`,
     [organizationId]
   ));
   return result.rows.length > 0 ? mapRowToLicensePolicy(result.rows[0]) : null;
@@ -317,7 +351,7 @@ export async function getLicenseScanResults(
 
   const [resultsRaw, countResultRaw] = await Promise.all([
     query(
-      `SELECT * FROM license_scan_results
+      `SELECT ${LICENSE_SCAN_RESULT_COLUMNS} FROM license_scan_results
        WHERE project_id = $1
        ORDER BY scanned_at DESC
        LIMIT $2 OFFSET $3`,
@@ -341,7 +375,7 @@ export async function getLatestLicenseScan(projectId: string): Promise<LicenseSc
   if (!isDatabaseConnected()) return null;
 
   const result = ensureResult(await query(
-    `SELECT * FROM license_scan_results
+    `SELECT ${LICENSE_SCAN_RESULT_COLUMNS} FROM license_scan_results
      WHERE project_id = $1
      ORDER BY scanned_at DESC
      LIMIT 1`,
@@ -452,7 +486,7 @@ export async function getSbomEntries(
 
   const [resultsRaw, countResultRaw] = await Promise.all([
     query(
-      `SELECT * FROM sbom_entries
+      `SELECT ${SBOM_ENTRY_COLUMNS} FROM sbom_entries
        ${whereClause}
        ORDER BY generated_at DESC
        LIMIT $2 OFFSET $3`,
@@ -475,7 +509,7 @@ export async function getSbomEntries(
 export async function getSbomEntry(id: string): Promise<SbomEntry | null> {
   if (!isDatabaseConnected()) return null;
 
-  const result = ensureResult(await query('SELECT * FROM sbom_entries WHERE id = $1', [id]));
+  const result = ensureResult(await query(`SELECT ${SBOM_ENTRY_COLUMNS} FROM sbom_entries WHERE id = $1`, [id]));
   return result.rows.length > 0 ? mapRowToSbomEntry(result.rows[0]) : null;
 }
 
@@ -494,7 +528,7 @@ export async function getLatestSbom(
   }
 
   const result = ensureResult(await query(
-    `SELECT * FROM sbom_entries
+    `SELECT ${SBOM_ENTRY_COLUMNS} FROM sbom_entries
      ${whereClause}
      ORDER BY generated_at DESC
      LIMIT 1`,
@@ -611,7 +645,7 @@ export async function getDependencyAnalyses(
 
   const [resultsRaw, countResultRaw] = await Promise.all([
     query(
-      `SELECT * FROM dependency_analysis
+      `SELECT ${DEPENDENCY_ANALYSIS_COLUMNS} FROM dependency_analysis
        WHERE project_id = $1
        ORDER BY analyzed_at DESC
        LIMIT $2 OFFSET $3`,
@@ -635,7 +669,7 @@ export async function getLatestDependencyAnalysis(projectId: string): Promise<De
   if (!isDatabaseConnected()) return null;
 
   const result = ensureResult(await query(
-    `SELECT * FROM dependency_analysis
+    `SELECT ${DEPENDENCY_ANALYSIS_COLUMNS} FROM dependency_analysis
      WHERE project_id = $1
      ORDER BY analyzed_at DESC
      LIMIT 1`,

@@ -27,6 +27,41 @@ import {
 } from '../../routes/sast/types.js';
 
 // ============================================
+// Column Constants for SELECT queries
+// ============================================
+
+const SAST_CONFIG_COLUMNS = `
+  project_id, enabled, ruleset, custom_rules, custom_rules_yaml,
+  exclude_paths, severity_threshold, auto_scan, last_scan_at,
+  last_scan_status, pr_checks_enabled, pr_comments_enabled,
+  block_pr_on_critical, block_pr_on_high, created_at, updated_at
+`;
+
+const SAST_SCAN_COLUMNS = `
+  id, project_id, repository_url, branch, commit_sha, status,
+  started_at, completed_at, findings, summary, error, created_at, updated_at
+`;
+
+const SAST_FALSE_POSITIVE_COLUMNS = `
+  id, project_id, rule_id, file_path, line, snippet, reason, marked_by, marked_at
+`;
+
+const SAST_PR_CHECK_COLUMNS = `
+  id, project_id, pr_number, pr_title, head_sha, status, conclusion,
+  context, description, target_url, scan_id, findings, blocked,
+  block_reason, created_at, updated_at
+`;
+
+const SAST_PR_COMMENT_COLUMNS = `
+  id, project_id, pr_number, scan_id, body, findings, blocked, created_at
+`;
+
+const SECRET_PATTERN_COLUMNS = `
+  id, project_id, name, description, pattern, severity, category,
+  enabled, created_at, updated_at
+`;
+
+// ============================================
 // Database Row Types
 // ============================================
 
@@ -169,7 +204,7 @@ export function getMemorySecretPatterns(): Map<string, SecretPattern[]> {
 export async function getSASTConfig(projectId: string): Promise<SASTConfig> {
   if (isDatabaseConnected()) {
     const result = await query<SastConfigRow>(
-      'SELECT * FROM sast_configs WHERE project_id = $1',
+      `SELECT ${SAST_CONFIG_COLUMNS} FROM sast_configs WHERE project_id = $1`,
       [projectId]
     );
     if (result && result.rows[0]) {
@@ -297,7 +332,7 @@ export async function createSastScan(scan: SASTScanResult): Promise<SASTScanResu
 export async function getSastScan(scanId: string): Promise<SASTScanResult | null> {
   if (isDatabaseConnected()) {
     const result = await query<SastScanRow>(
-      'SELECT * FROM sast_scans WHERE id = $1',
+      `SELECT ${SAST_SCAN_COLUMNS} FROM sast_scans WHERE id = $1`,
       [scanId]
     );
     if (result && result.rows[0]) {
@@ -356,7 +391,7 @@ export async function updateSastScan(scanId: string, updates: Partial<SASTScanRe
 export async function getSastScansByProject(projectId: string): Promise<SASTScanResult[]> {
   if (isDatabaseConnected()) {
     const result = await query<SastScanRow>(
-      'SELECT * FROM sast_scans WHERE project_id = $1 ORDER BY started_at DESC',
+      `SELECT ${SAST_SCAN_COLUMNS} FROM sast_scans WHERE project_id = $1 ORDER BY started_at DESC`,
       [projectId]
     );
     if (result) {
@@ -405,7 +440,7 @@ function parseSastScanRow(row: SastScanRow): SASTScanResult {
 export async function getFalsePositives(projectId: string): Promise<FalsePositive[]> {
   if (isDatabaseConnected()) {
     const result = await query<FalsePositiveRow>(
-      'SELECT * FROM sast_false_positives WHERE project_id = $1 ORDER BY marked_at DESC',
+      `SELECT ${SAST_FALSE_POSITIVE_COLUMNS} FROM sast_false_positives WHERE project_id = $1 ORDER BY marked_at DESC`,
       [projectId]
     );
     if (result) {
@@ -510,7 +545,7 @@ export async function createSastPRCheck(check: SASTPRCheck): Promise<SASTPRCheck
 export async function getSastPRChecks(projectId: string): Promise<SASTPRCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<SastPRCheckRow>(
-      'SELECT * FROM sast_pr_checks WHERE project_id = $1 ORDER BY created_at DESC',
+      `SELECT ${SAST_PR_CHECK_COLUMNS} FROM sast_pr_checks WHERE project_id = $1 ORDER BY created_at DESC`,
       [projectId]
     );
     if (result) {
@@ -625,7 +660,7 @@ export async function createSastPRComment(comment: SASTPRComment): Promise<SASTP
 export async function getSastPRComments(projectId: string): Promise<SASTPRComment[]> {
   if (isDatabaseConnected()) {
     const result = await query<SastPRCommentRow>(
-      'SELECT * FROM sast_pr_comments WHERE project_id = $1 ORDER BY created_at DESC',
+      `SELECT ${SAST_PR_COMMENT_COLUMNS} FROM sast_pr_comments WHERE project_id = $1 ORDER BY created_at DESC`,
       [projectId]
     );
     if (result) {
@@ -657,7 +692,7 @@ function parseSastPRCommentRow(row: SastPRCommentRow): SASTPRComment {
 export async function getSecretPatterns(projectId: string): Promise<SecretPattern[]> {
   if (isDatabaseConnected()) {
     const result = await query<SecretPatternRow>(
-      'SELECT * FROM secret_patterns WHERE project_id = $1 ORDER BY created_at DESC',
+      `SELECT ${SECRET_PATTERN_COLUMNS} FROM secret_patterns WHERE project_id = $1 ORDER BY created_at DESC`,
       [projectId]
     );
     if (result) {

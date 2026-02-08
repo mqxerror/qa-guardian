@@ -23,6 +23,33 @@ import {
   PRDependencyScanResult,
 } from '../../routes/github/types.js';
 
+// ============================================
+// Column Constants for SELECT queries
+// ============================================
+
+const GITHUB_CONNECTION_COLUMNS = `
+  id, project_id, organization_id, github_owner, github_repo, github_branch,
+  test_path, connected_at, connected_by, last_synced_at,
+  pr_checks_enabled, pr_comments_enabled,
+  pr_dependency_scan_enabled, pr_dependency_scan_files,
+  pr_dependency_scan_severity, pr_dependency_scan_block_on_critical
+`;
+
+const PR_STATUS_CHECK_COLUMNS = `
+  id, project_id, pr_number, pr_title, head_sha, status,
+  context, description, target_url, created_at, updated_at, test_run_id
+`;
+
+const PR_COMMENT_COLUMNS = `
+  id, project_id, pr_number, body, results_url,
+  passed, failed, skipped, total, created_at
+`;
+
+const PR_DEPENDENCY_SCAN_COLUMNS = `
+  id, project_id, pr_number, head_sha, status,
+  started_at, completed_at, changed_files, vulnerabilities, summary
+`;
+
 
 // =============================
 // GITHUB CONNECTIONS CRUD
@@ -61,7 +88,7 @@ export async function createGithubConnection(connection: GitHubConnection): Prom
 export async function getGithubConnection(projectId: string): Promise<GitHubConnection | undefined> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM github_connections WHERE project_id = $1`,
+      `SELECT ${GITHUB_CONNECTION_COLUMNS} FROM github_connections WHERE project_id = $1`,
       [projectId]
     );
     if (result && result.rows[0]) {
@@ -120,7 +147,7 @@ export async function deleteGithubConnection(projectId: string): Promise<boolean
 export async function listGithubConnections(organizationId: string): Promise<GitHubConnection[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM github_connections WHERE organization_id = $1 ORDER BY connected_at DESC`,
+      `SELECT ${GITHUB_CONNECTION_COLUMNS} FROM github_connections WHERE organization_id = $1 ORDER BY connected_at DESC`,
       [organizationId]
     );
     if (result) {
@@ -204,7 +231,7 @@ export async function updatePRStatusCheck(checkId: string, updates: Partial<PRSt
 export async function getPRStatusChecks(projectId: string, limit: number = 100): Promise<PRStatusCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM pr_status_checks WHERE project_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      `SELECT ${PR_STATUS_CHECK_COLUMNS} FROM pr_status_checks WHERE project_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [projectId, limit]
     );
     if (result) {
@@ -218,7 +245,7 @@ export async function getPRStatusChecks(projectId: string, limit: number = 100):
 export async function getPRStatusChecksByPR(projectId: string, prNumber: number): Promise<PRStatusCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM pr_status_checks WHERE project_id = $1 AND pr_number = $2 ORDER BY created_at DESC`,
+      `SELECT ${PR_STATUS_CHECK_COLUMNS} FROM pr_status_checks WHERE project_id = $1 AND pr_number = $2 ORDER BY created_at DESC`,
       [projectId, prNumber]
     );
     if (result) {
@@ -275,7 +302,7 @@ export async function addPRComment(comment: PRComment): Promise<PRComment> {
 export async function getPRComments(projectId: string, limit: number = 100): Promise<PRComment[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM pr_comments WHERE project_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      `SELECT ${PR_COMMENT_COLUMNS} FROM pr_comments WHERE project_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [projectId, limit]
     );
     if (result) {
@@ -289,7 +316,7 @@ export async function getPRComments(projectId: string, limit: number = 100): Pro
 export async function getPRCommentsByPR(projectId: string, prNumber: number): Promise<PRComment[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM pr_comments WHERE project_id = $1 AND pr_number = $2 ORDER BY created_at DESC`,
+      `SELECT ${PR_COMMENT_COLUMNS} FROM pr_comments WHERE project_id = $1 AND pr_number = $2 ORDER BY created_at DESC`,
       [projectId, prNumber]
     );
     if (result) {
@@ -372,7 +399,7 @@ export async function updatePRDependencyScan(scanId: string, updates: Partial<PR
 export async function getPRDependencyScans(projectId: string, limit: number = 100): Promise<PRDependencyScanResult[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM pr_dependency_scans WHERE project_id = $1 ORDER BY started_at DESC LIMIT $2`,
+      `SELECT ${PR_DEPENDENCY_SCAN_COLUMNS} FROM pr_dependency_scans WHERE project_id = $1 ORDER BY started_at DESC LIMIT $2`,
       [projectId, limit]
     );
     if (result) {
@@ -386,7 +413,7 @@ export async function getPRDependencyScans(projectId: string, limit: number = 10
 export async function getPRDependencyScansByPR(projectId: string, prNumber: number): Promise<PRDependencyScanResult[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM pr_dependency_scans WHERE project_id = $1 AND pr_number = $2 ORDER BY started_at DESC`,
+      `SELECT ${PR_DEPENDENCY_SCAN_COLUMNS} FROM pr_dependency_scans WHERE project_id = $1 AND pr_number = $2 ORDER BY started_at DESC`,
       [projectId, prNumber]
     );
     if (result) {

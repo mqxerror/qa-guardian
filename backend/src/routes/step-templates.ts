@@ -8,6 +8,18 @@ import { QueryResult, QueryResultRow } from 'pg';
 import crypto from 'crypto';
 import { TestStep } from './test-suites/types.js';
 
+// ============================================
+// Column Constants for SELECT queries
+// ============================================
+
+const STEP_TEMPLATE_COLUMNS = `
+  id, organization_id, suite_id, name, description, steps, tags, created_by, created_at, updated_at
+`;
+
+const TEST_COLUMNS = `
+  id, suite_id, project_id, name, description, type, config, code, enabled, priority, tags, created_at, updated_at
+`;
+
 // Helper to handle potentially null query results (when database not connected)
 function ensureResult<T extends QueryResultRow>(result: QueryResult<T> | null): QueryResult<T> {
   if (!result) {
@@ -60,7 +72,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
     const { suite_id, search } = request.query as { suite_id?: string; search?: string };
 
-    let sql = `SELECT * FROM step_templates WHERE organization_id = $1`;
+    let sql = `SELECT ${STEP_TEMPLATE_COLUMNS} FROM step_templates WHERE organization_id = $1`;
     const params: unknown[] =[orgId];
     let paramIdx = 2;
 
@@ -103,7 +115,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
 
     try {
       const result = ensureResult(await query(
-        `SELECT * FROM step_templates WHERE id = $1 AND organization_id = $2`,
+        `SELECT ${STEP_TEMPLATE_COLUMNS} FROM step_templates WHERE id = $1 AND organization_id = $2`,
         [templateId, orgId]
       ));
 
@@ -186,7 +198,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     try {
       // Check exists
       const existing = ensureResult(await query(
-        `SELECT * FROM step_templates WHERE id = $1 AND organization_id = $2`,
+        `SELECT ${STEP_TEMPLATE_COLUMNS} FROM step_templates WHERE id = $1 AND organization_id = $2`,
         [templateId, orgId]
       ));
       if ((existing.rowCount ?? 0) === 0) {

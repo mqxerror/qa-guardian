@@ -27,6 +27,43 @@ import {
 } from '../../routes/dast/types.js';
 
 // ============================================
+// Column Constants for SELECT queries
+// ============================================
+
+const DAST_CONFIG_COLUMNS = `
+  project_id, enabled, target_url, scan_profile, auth_config,
+  context_config, alert_threshold, auto_scan, last_scan_at,
+  last_scan_status, openapi_spec_id, created_at, updated_at
+`;
+
+const DAST_SCAN_COLUMNS = `
+  id, project_id, target_url, scan_profile, status,
+  started_at, completed_at, alerts, summary, statistics,
+  error, endpoints_tested, scope_config, progress, created_at, updated_at
+`;
+
+const DAST_FALSE_POSITIVE_COLUMNS = `
+  id, project_id, plugin_id, url, param, reason, marked_by, marked_at
+`;
+
+const OPENAPI_SPEC_COLUMNS = `
+  id, project_id, name, version, content, endpoints, uploaded_at, uploaded_by
+`;
+
+const DAST_SCHEDULE_COLUMNS = `
+  id, project_id, organization_id, name, description, frequency,
+  cron_expression, timezone, enabled, scan_profile, target_url,
+  notify_on_failure, notify_on_high_severity, email_recipients,
+  created_at, updated_at, created_by, next_run_at, last_run_at,
+  last_run_id, run_count
+`;
+
+const GRAPHQL_SCAN_COLUMNS = `
+  id, config, status, started_at, completed_at, schema,
+  operations_tested, findings, summary, progress, error, created_at, updated_at
+`;
+
+// ============================================
 // Memory Store Accessors (DEPRECATED - return empty Maps)
 // ============================================
 
@@ -67,7 +104,7 @@ export function getMemoryGraphqlScans(): Map<string, GraphQLScan> {
 export async function getDastConfig(projectId: string): Promise<DASTConfig | null> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM dast_configs WHERE project_id = $1',
+      `SELECT ${DAST_CONFIG_COLUMNS} FROM dast_configs WHERE project_id = $1`,
       [projectId]
     );
     if (result && result.rows[0]) {
@@ -186,7 +223,7 @@ export async function createDastScan(scan: DASTScanResult): Promise<DASTScanResu
 export async function getDastScan(scanId: string): Promise<DASTScanResult | null> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM dast_scans WHERE id = $1',
+      `SELECT ${DAST_SCAN_COLUMNS} FROM dast_scans WHERE id = $1`,
       [scanId]
     );
     if (result && result.rows[0]) {
@@ -260,7 +297,7 @@ export async function updateDastScan(scanId: string, updates: Partial<DASTScanRe
 export async function getDastScansByProject(projectId: string): Promise<DASTScanResult[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM dast_scans WHERE project_id = $1 ORDER BY started_at DESC',
+      `SELECT ${DAST_SCAN_COLUMNS} FROM dast_scans WHERE project_id = $1 ORDER BY started_at DESC`,
       [projectId]
     );
     if (result) {
@@ -368,7 +405,7 @@ export async function addDastFalsePositive(fp: DASTFalsePositive): Promise<DASTF
 export async function getDastFalsePositives(projectId: string): Promise<DASTFalsePositive[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM dast_false_positives WHERE project_id = $1 ORDER BY marked_at DESC',
+      `SELECT ${DAST_FALSE_POSITIVE_COLUMNS} FROM dast_false_positives WHERE project_id = $1 ORDER BY marked_at DESC`,
       [projectId]
     );
     if (result) {
@@ -393,7 +430,7 @@ export async function deleteDastFalsePositive(id: string): Promise<boolean> {
 export async function checkFalsePositive(projectId: string, pluginId: string, url: string, param?: string): Promise<DASTFalsePositive | null> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM dast_false_positives
+      `SELECT ${DAST_FALSE_POSITIVE_COLUMNS} FROM dast_false_positives
        WHERE project_id = $1 AND plugin_id = $2 AND url = $3
        AND (param = $4 OR (param IS NULL AND $4 IS NULL))`,
       [projectId, pluginId, url, param || null]
@@ -458,7 +495,7 @@ export async function saveOpenApiSpec(spec: OpenAPISpec): Promise<OpenAPISpec> {
 export async function getOpenApiSpec(specId: string): Promise<OpenAPISpec | null> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM openapi_specs WHERE id = $1',
+      `SELECT ${OPENAPI_SPEC_COLUMNS} FROM openapi_specs WHERE id = $1`,
       [specId]
     );
     if (result && result.rows[0]) {
@@ -472,7 +509,7 @@ export async function getOpenApiSpec(specId: string): Promise<OpenAPISpec | null
 export async function getOpenApiSpecsByProject(projectId: string): Promise<OpenAPISpec[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM openapi_specs WHERE project_id = $1 ORDER BY uploaded_at DESC',
+      `SELECT ${OPENAPI_SPEC_COLUMNS} FROM openapi_specs WHERE project_id = $1 ORDER BY uploaded_at DESC`,
       [projectId]
     );
     if (result) {
@@ -556,7 +593,7 @@ export async function createDastSchedule(schedule: DASTSchedule): Promise<DASTSc
 export async function getDastSchedule(scheduleId: string): Promise<DASTSchedule | null> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM dast_schedules WHERE id = $1',
+      `SELECT ${DAST_SCHEDULE_COLUMNS} FROM dast_schedules WHERE id = $1`,
       [scheduleId]
     );
     if (result && result.rows[0]) {
@@ -570,7 +607,7 @@ export async function getDastSchedule(scheduleId: string): Promise<DASTSchedule 
 export async function getDastSchedulesByProject(projectId: string): Promise<DASTSchedule[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM dast_schedules WHERE project_id = $1 ORDER BY created_at DESC',
+      `SELECT ${DAST_SCHEDULE_COLUMNS} FROM dast_schedules WHERE project_id = $1 ORDER BY created_at DESC`,
       [projectId]
     );
     if (result) {
@@ -679,7 +716,7 @@ export async function deleteDastSchedule(scheduleId: string): Promise<boolean> {
 export async function getEnabledDastSchedules(): Promise<DASTSchedule[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM dast_schedules WHERE enabled = true ORDER BY next_run_at ASC',
+      `SELECT ${DAST_SCHEDULE_COLUMNS} FROM dast_schedules WHERE enabled = true ORDER BY next_run_at ASC`,
       []
     );
     if (result) {
@@ -752,7 +789,7 @@ export async function createGraphqlScan(scan: GraphQLScan): Promise<GraphQLScan>
 export async function getGraphqlScan(scanId: string): Promise<GraphQLScan | null> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM graphql_scans WHERE id = $1',
+      `SELECT ${GRAPHQL_SCAN_COLUMNS} FROM graphql_scans WHERE id = $1`,
       [scanId]
     );
     if (result && result.rows[0]) {
@@ -833,7 +870,7 @@ export async function deleteGraphqlScan(scanId: string): Promise<boolean> {
 export async function listGraphqlScans(): Promise<GraphQLScan[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM graphql_scans ORDER BY started_at DESC',
+      `SELECT ${GRAPHQL_SCAN_COLUMNS} FROM graphql_scans ORDER BY started_at DESC`,
       []
     );
     if (result) {

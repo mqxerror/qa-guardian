@@ -45,6 +45,26 @@ import {
   TcpCheckResult,
 } from '../../routes/monitoring/types.js';
 
+// ============================================
+// Column Constants for SELECT queries
+// ============================================
+
+const STATUS_PAGE_COLUMNS = `
+  id, organization_id, name, slug, description, logo_url, favicon_url,
+  primary_color, show_history_days, checks, custom_domain, is_public,
+  show_uptime_percentage, show_response_time, show_incidents,
+  created_by, created_at, updated_at
+`;
+
+const MONITORING_SETTINGS_COLUMNS = `
+  organization_id, retention_days, auto_cleanup_enabled, last_cleanup_at, updated_by, updated_at
+`;
+
+const DELETED_CHECK_HISTORY_COLUMNS = `
+  check_id, check_name, check_type, organization_id, deleted_by, deleted_at,
+  check_config, historical_results_count, last_status
+`;
+
 // =============================
 // STATUS PAGES CRUD
 // =============================
@@ -74,7 +94,7 @@ export async function createStatusPage(page: StatusPage): Promise<StatusPage> {
 
 export async function getStatusPage(id: string): Promise<StatusPage | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(`SELECT * FROM status_pages WHERE id = $1`, [id]);
+    const result = await query<any>(`SELECT ${STATUS_PAGE_COLUMNS} FROM status_pages WHERE id = $1`, [id]);
     if (result && result.rows[0]) return parseStatusPageRow(result.rows[0]);
     return undefined;
   }
@@ -83,7 +103,7 @@ export async function getStatusPage(id: string): Promise<StatusPage | undefined>
 
 export async function getStatusPageBySlug(slug: string): Promise<StatusPage | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(`SELECT * FROM status_pages WHERE slug = $1`, [slug]);
+    const result = await query<any>(`SELECT ${STATUS_PAGE_COLUMNS} FROM status_pages WHERE slug = $1`, [slug]);
     if (result && result.rows[0]) return parseStatusPageRow(result.rows[0]);
     return undefined;
   }
@@ -127,7 +147,7 @@ export async function deleteStatusPage(id: string): Promise<boolean> {
 export async function listStatusPages(organizationId: string, limit: number = 100): Promise<StatusPage[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM status_pages WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      `SELECT ${STATUS_PAGE_COLUMNS} FROM status_pages WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [organizationId, limit]
     );
     if (result) return result.rows.map(parseStatusPageRow);
@@ -167,7 +187,7 @@ function parseStatusPageRow(row: any): StatusPage {
 export async function getMonitoringSettings(orgId: string): Promise<MonitoringSettings | undefined> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM monitoring_settings WHERE organization_id = $1`,
+      `SELECT ${MONITORING_SETTINGS_COLUMNS} FROM monitoring_settings WHERE organization_id = $1`,
       [orgId]
     );
     if (result && result.rows[0]) return parseMonitoringSettingsRow(result.rows[0]);
@@ -228,7 +248,7 @@ export async function addDeletedCheckHistory(history: DeletedCheckHistory): Prom
 export async function getDeletedCheckHistory(checkId: string): Promise<DeletedCheckHistory | undefined> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM deleted_check_history WHERE check_id = $1`,
+      `SELECT ${DELETED_CHECK_HISTORY_COLUMNS} FROM deleted_check_history WHERE check_id = $1`,
       [checkId]
     );
     if (result && result.rows[0]) {
@@ -253,7 +273,7 @@ export async function getDeletedCheckHistory(checkId: string): Promise<DeletedCh
 export async function listDeletedCheckHistory(organizationId: string, limit: number = 100): Promise<DeletedCheckHistory[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM deleted_check_history WHERE organization_id = $1 ORDER BY deleted_at DESC LIMIT $2`,
+      `SELECT ${DELETED_CHECK_HISTORY_COLUMNS} FROM deleted_check_history WHERE organization_id = $1 ORDER BY deleted_at DESC LIMIT $2`,
       [organizationId, limit]
     );
     if (result) {

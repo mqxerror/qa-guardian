@@ -18,6 +18,34 @@ import {
 import crypto from 'crypto';
 
 // ============================================
+// Column Constants for SELECT queries
+// ============================================
+
+const API_KEY_COLUMNS = `
+  id, organization_id, name, key_hash, key_prefix, scopes,
+  last_used_at, expires_at, created_by, created_at, revoked_at,
+  rate_limit, rate_limit_window, burst_limit, burst_window
+`;
+
+const MCP_CONNECTION_COLUMNS = `
+  id, api_key_id, api_key_name, organization_id, connected_at,
+  last_activity_at, client_info, ip_address
+`;
+
+const MCP_TOOL_CALL_COLUMNS = `
+  id, connection_id, organization_id, api_key_id, tool_name,
+  timestamp, duration_ms, success, error
+`;
+
+const MCP_AUDIT_LOG_COLUMNS = `
+  id, timestamp, organization_id, api_key_id, api_key_name,
+  connection_id, client_name, client_version, method, tool_name,
+  resource_uri, request_params, response_type, response_error_code,
+  response_error_message, response_data_preview, duration_ms,
+  ip_address, user_agent
+`;
+
+// ============================================
 // Deprecated Memory Store Accessors
 // ============================================
 
@@ -126,7 +154,7 @@ export async function getApiKeyById(id: string): Promise<ApiKey | null> {
   if (isDatabaseConnected()) {
     try {
       const result = await query<ApiKeyRow>(
-        'SELECT * FROM api_keys WHERE id = $1',
+        `SELECT ${API_KEY_COLUMNS} FROM api_keys WHERE id = $1`,
         [id]
       );
       if (result && result.rows.length > 0) {
@@ -144,7 +172,7 @@ export async function getApiKeyByHash(keyHash: string): Promise<ApiKey | null> {
   if (isDatabaseConnected()) {
     try {
       const result = await query<ApiKeyRow>(
-        'SELECT * FROM api_keys WHERE key_hash = $1 AND revoked_at IS NULL',
+        `SELECT ${API_KEY_COLUMNS} FROM api_keys WHERE key_hash = $1 AND revoked_at IS NULL`,
         [keyHash]
       );
       if (result && result.rows.length > 0) {
@@ -162,7 +190,7 @@ export async function listApiKeysByOrg(orgId: string): Promise<ApiKey[]> {
   if (isDatabaseConnected()) {
     try {
       const result = await query<ApiKeyRow>(
-        'SELECT * FROM api_keys WHERE organization_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC',
+        `SELECT ${API_KEY_COLUMNS} FROM api_keys WHERE organization_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC`,
         [orgId]
       );
       if (result) {
@@ -291,7 +319,7 @@ export async function getMcpConnection(id: string): Promise<McpConnection | null
   if (isDatabaseConnected()) {
     try {
       const result = await query<McpConnectionRow>(
-        'SELECT * FROM mcp_connections WHERE id = $1',
+        `SELECT ${MCP_CONNECTION_COLUMNS} FROM mcp_connections WHERE id = $1`,
         [id]
       );
       if (result && result.rows.length > 0) {
@@ -424,7 +452,7 @@ export async function getMcpToolCallsByOrg(
 ): Promise<McpToolCall[]> {
   if (isDatabaseConnected()) {
     try {
-      let sql = 'SELECT * FROM mcp_tool_calls WHERE organization_id = $1';
+      let sql = `SELECT ${MCP_TOOL_CALL_COLUMNS} FROM mcp_tool_calls WHERE organization_id = $1`;
       const params: any[] = [orgId];
 
       if (since) {
@@ -602,7 +630,7 @@ export async function getMcpAuditLogs(
 
       // Get paginated results
       const result = await query<McpAuditLogRow>(
-        `SELECT * FROM mcp_audit_logs WHERE ${whereClause} ORDER BY timestamp DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
+        `SELECT ${MCP_AUDIT_LOG_COLUMNS} FROM mcp_audit_logs WHERE ${whereClause} ORDER BY timestamp DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
         [...params, limit, offset]
       );
 

@@ -10,6 +10,16 @@
 
 import { query, isDatabaseConnected } from '../database.js';
 
+// ============================================
+// Column Constants for SELECT queries
+// ============================================
+
+const AUDIT_LOG_COLUMNS = `
+  id, organization_id, user_id, user_email, action,
+  resource_type, resource_id, resource_name, details,
+  ip_address, user_agent, created_at
+`;
+
 // Audit log entry interface
 export interface AuditLogEntry {
   id: string;
@@ -102,7 +112,7 @@ export async function createAuditLog(entry: AuditLogEntry): Promise<AuditLogEntr
 export async function getAuditLog(logId: string): Promise<AuditLogEntry | undefined> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM audit_logs WHERE id = $1',
+      `SELECT ${AUDIT_LOG_COLUMNS} FROM audit_logs WHERE id = $1`,
       [logId]
     );
     if (result && result.rows[0]) {
@@ -159,7 +169,7 @@ export async function listAuditLogs(
     // Get paginated results
     params.push(limit, offset);
     const result = await query<any>(
-      `SELECT * FROM audit_logs WHERE ${whereClause}
+      `SELECT ${AUDIT_LOG_COLUMNS} FROM audit_logs WHERE ${whereClause}
        ORDER BY created_at DESC
        LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
       params
@@ -265,7 +275,7 @@ export async function getAuditLogsByUser(
 ): Promise<AuditLogEntry[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM audit_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
+      `SELECT ${AUDIT_LOG_COLUMNS} FROM audit_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [userId, limit]
     );
     if (result) {
@@ -288,7 +298,7 @@ export async function getAuditLogsByResource(
 ): Promise<AuditLogEntry[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM audit_logs WHERE resource_type = $1 AND resource_id = $2 ORDER BY created_at DESC LIMIT $3',
+      `SELECT ${AUDIT_LOG_COLUMNS} FROM audit_logs WHERE resource_type = $1 AND resource_id = $2 ORDER BY created_at DESC LIMIT $3`,
       [resourceType, resourceId, limit]
     );
     if (result) {

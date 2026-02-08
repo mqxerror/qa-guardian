@@ -21,6 +21,17 @@ import { AIGeneratedTest, ApprovalStatus, ApprovalInfo } from '../../routes/ai-t
 import { generateId } from '../../utils/index.js';
 
 // ============================================
+// Column Constants for SELECT queries
+// ============================================
+
+const AI_GENERATED_TEST_COLUMNS = `
+  id, user_id, organization_id, project_id, description, generated_code,
+  test_name, language, confidence_score, confidence_level, version,
+  parent_version_id, feedback, ai_metadata, options, suggested_variations,
+  improvement_suggestions, approval, created_at, updated_at
+`;
+
+// ============================================
 // Deprecated Memory Store Accessors
 // These return empty Maps for backward compatibility.
 // Callers should migrate to the async DB functions.
@@ -162,7 +173,7 @@ export async function createAiGeneratedTest(test: AIGeneratedTest): Promise<AIGe
 export async function getAiGeneratedTest(testId: string): Promise<AIGeneratedTest | null> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM ai_generated_tests WHERE id = $1',
+      `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests WHERE id = $1`,
       [testId]
     );
     if (result && result.rows[0]) {
@@ -257,7 +268,7 @@ export async function deleteAiGeneratedTest(testId: string): Promise<boolean> {
 export async function getTestsByUser(userId: string): Promise<AIGeneratedTest[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM ai_generated_tests WHERE user_id = $1 ORDER BY created_at DESC',
+      `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests WHERE user_id = $1 ORDER BY created_at DESC`,
       [userId]
     );
     if (result) {
@@ -272,7 +283,7 @@ export async function getTestsByUser(userId: string): Promise<AIGeneratedTest[]>
 export async function getTestsByOrganization(organizationId: string): Promise<AIGeneratedTest[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM ai_generated_tests WHERE organization_id = $1 ORDER BY created_at DESC',
+      `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests WHERE organization_id = $1 ORDER BY created_at DESC`,
       [organizationId]
     );
     if (result) {
@@ -287,7 +298,7 @@ export async function getTestsByOrganization(organizationId: string): Promise<AI
 export async function getTestsByProjectId(projectId: string): Promise<AIGeneratedTest[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM ai_generated_tests WHERE project_id = $1 ORDER BY created_at DESC',
+      `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests WHERE project_id = $1 ORDER BY created_at DESC`,
       [projectId]
     );
     if (result) {
@@ -302,7 +313,7 @@ export async function getTestsByProjectId(projectId: string): Promise<AIGenerate
 export async function getTestsByApprovalStatus(status: ApprovalStatus): Promise<AIGeneratedTest[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM ai_generated_tests WHERE approval->>'status' = $1 ORDER BY created_at DESC`,
+      `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests WHERE approval->>'status' = $1 ORDER BY created_at DESC`,
       [status]
     );
     if (result) {
@@ -322,7 +333,7 @@ export async function getVersionChain(userId: string, description: string): Prom
   if (isDatabaseConnected()) {
     // Use LOWER() and TRIM() for case-insensitive matching like memory store
     const result = await query<any>(
-      `SELECT * FROM ai_generated_tests
+      `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests
        WHERE user_id = $1 AND LOWER(TRIM(description)) = LOWER(TRIM($2))
        ORDER BY version ASC`,
       [userId, description]
@@ -399,7 +410,7 @@ export async function getGenerationHistory(
     // Get paginated results
     const dataParams = [...params, limit, offset];
     const result = await query<any>(
-      `SELECT * FROM ai_generated_tests WHERE ${whereClause}
+      `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests WHERE ${whereClause}
        ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
       dataParams
     );
@@ -430,7 +441,7 @@ export async function getPendingReviewCount(): Promise<number> {
 export async function getRecentlyReviewed(limit: number = 10): Promise<AIGeneratedTest[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      `SELECT * FROM ai_generated_tests
+      `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests
        WHERE approval->>'status' IN ('approved', 'rejected')
        ORDER BY (approval->>'reviewed_at')::timestamp DESC NULLS LAST
        LIMIT $1`,

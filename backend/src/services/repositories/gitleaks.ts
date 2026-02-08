@@ -11,6 +11,22 @@
 import { query, isDatabaseConnected } from '../database.js';
 import { GitleaksConfig, GitleaksScan } from '../../routes/sast/gitleaks.js';
 
+// ============================================
+// Column Constants for SELECT queries
+// ============================================
+
+const GITLEAKS_CONFIG_COLUMNS = `
+  project_id, enabled, scan_on_push, scan_on_pr, scan_full_history,
+  exclude_paths, allowlist_patterns, custom_rules, severity_threshold,
+  fail_on_leak, notification_channels, created_at, updated_at
+`;
+
+const GITLEAKS_SCAN_COLUMNS = `
+  id, organization_id, project_id, repository, branch, status,
+  started_at, completed_at, trigger, commits_scanned,
+  findings, summary, error_message, created_at
+`;
+
 // Default Gitleaks configuration
 const DEFAULT_GITLEAKS_CONFIG: GitleaksConfig = {
   enabled: false,
@@ -32,7 +48,7 @@ const DEFAULT_GITLEAKS_CONFIG: GitleaksConfig = {
 export async function getGitleaksConfig(projectId: string): Promise<GitleaksConfig | null> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM gitleaks_configs WHERE project_id = $1',
+      `SELECT ${GITLEAKS_CONFIG_COLUMNS} FROM gitleaks_configs WHERE project_id = $1`,
       [projectId]
     );
     if (result && result.rows[0]) {
@@ -144,7 +160,7 @@ export async function createGitleaksScan(scan: GitleaksScan): Promise<GitleaksSc
 export async function getGitleaksScans(projectId: string, limit: number = 10): Promise<GitleaksScan[]> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM gitleaks_scans WHERE project_id = $1 ORDER BY created_at DESC LIMIT $2',
+      `SELECT ${GITLEAKS_SCAN_COLUMNS} FROM gitleaks_scans WHERE project_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [projectId, limit]
     );
     if (result) {
@@ -158,7 +174,7 @@ export async function getGitleaksScans(projectId: string, limit: number = 10): P
 export async function getGitleaksScan(projectId: string, scanId: string): Promise<GitleaksScan | null> {
   if (isDatabaseConnected()) {
     const result = await query<any>(
-      'SELECT * FROM gitleaks_scans WHERE project_id = $1 AND id = $2',
+      `SELECT ${GITLEAKS_SCAN_COLUMNS} FROM gitleaks_scans WHERE project_id = $1 AND id = $2`,
       [projectId, scanId]
     );
     if (result && result.rows[0]) {
