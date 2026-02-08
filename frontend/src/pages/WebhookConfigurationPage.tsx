@@ -297,7 +297,7 @@ export function WebhookConfigurationPage() {
 
   const getStatusIndicator = (webhook: WebhookSubscription) => {
     if (!webhook.enabled) {
-      return { color: 'bg-gray-400', label: 'Disabled' };
+      return { color: 'bg-muted-foreground', label: 'Disabled' };
     }
     if (webhook.failure_count > webhook.success_count && webhook.failure_count > 0) {
       return { color: 'bg-destructive', label: 'Failing' };
@@ -369,7 +369,7 @@ export function WebhookConfigurationPage() {
                         <button
                           onClick={() => handleToggleEnabled(webhook)}
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            webhook.enabled ? 'bg-primary' : 'bg-gray-300'
+                            webhook.enabled ? 'bg-primary' : 'bg-muted'
                           }`}
                         >
                           <span

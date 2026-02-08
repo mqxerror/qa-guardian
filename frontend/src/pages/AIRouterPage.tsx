@@ -3008,7 +3008,7 @@ function AIRouterPage() {
  <button
  onClick={() => updateConfig({ enabled: !config.enabled })}
  disabled={isSaving}
- className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-success' : 'bg-gray-300'}`}
+ className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-success' : 'bg-muted'}`}
  >
  <div className={`w-5 h-5 bg-card rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
  </button>
@@ -4110,7 +4110,7 @@ function AIRouterPage() {
  <span className={`px-1.5 py-0.5 rounded text-white text-[10px] ${
  req.priority === 'high' ? 'bg-destructive' :
  req.priority === 'normal' ? 'bg-primary' :
- 'bg-gray-500'
+ 'bg-muted-foreground'
  }`}>
  {idx + 1}
  </span>
@@ -4427,7 +4427,7 @@ function AIRouterPage() {
  <div className="flex items-start justify-between mb-3">
  <div className="flex items-center gap-3">
  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
- rule.enabled ? 'bg-primary text-white' : 'bg-gray-300 text-foreground'
+ rule.enabled ? 'bg-primary text-white' : 'bg-muted text-foreground'
  }`}>
  #{rule.priority}
  </div>
@@ -5434,7 +5434,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  {!alert.acknowledged && (
  <button
  onClick={() => acknowledgeAlert(alert.id)}
- className="px-2 py-1 text-xs bg-secondary text-foreground rounded hover:bg-gray-300"
+ className="px-2 py-1 text-xs bg-secondary text-foreground rounded hover:bg-muted"
  >
  Dismiss
  </button>

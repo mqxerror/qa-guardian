@@ -208,7 +208,7 @@ export function ProviderHealthPage() {
       case 'critical':
         return { color: 'bg-destructive', icon: '❌', text: 'text-destructive', bg: 'bg-destructive/10' };
       default:
-        return { color: 'bg-gray-400', icon: '❓', text: 'text-muted-foreground', bg: 'bg-muted/50' };
+        return { color: 'bg-muted-foreground', icon: '❓', text: 'text-muted-foreground', bg: 'bg-muted/50' };
     }
   };
 

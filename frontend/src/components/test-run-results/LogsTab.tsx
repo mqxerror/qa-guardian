@@ -616,7 +616,7 @@ function LogEntry({
  ? 'border-warning hover:bg-warning/10'
  : log.level === 'info'
  ? 'border-primary hover:bg-primary/10'
- : 'border-border hover:bg-gray-500/10'
+ : 'border-border hover:bg-muted/10'
  } transition-colors cursor-pointer rounded-r`}
  onClick={() => log.type === 'network' && log.originalIndex !== undefined && toggleNetworkItem(log.originalIndex)}
  >

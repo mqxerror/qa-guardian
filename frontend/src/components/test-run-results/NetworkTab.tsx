@@ -259,7 +259,7 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  {req.timing && (
  <>
  <div
- className="bg-gray-400 h-full"
+ className="bg-muted-foreground h-full"
  style={{ width: `${((req.timing.dns || 0) / (req.duration_ms || 1)) * 100}%` }}
  title={`DNS: ${req.timing.dns}ms`}
  />
@@ -375,7 +375,7 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  <div className="space-y-2">
  <div className="flex items-center justify-between text-sm">
  <div className="flex items-center gap-2">
- <div className="w-3 h-3 rounded bg-gray-400"></div>
+ <div className="w-3 h-3 rounded bg-muted-foreground"></div>
  <span className="text-muted-foreground">DNS Lookup</span>
  </div>
  <span className="font-medium text-foreground">{req.timing?.dns}ms</span>
@@ -439,7 +439,7 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  <div className="flex flex-wrap items-center gap-4 text-xs">
  <span className="text-muted-foreground font-medium">Timing Legend:</span>
  <div className="flex items-center gap-1.5">
- <div className="w-3 h-3 rounded bg-gray-400"></div>
+ <div className="w-3 h-3 rounded bg-muted-foreground"></div>
  <span className="text-muted-foreground">DNS</span>
  </div>
  <div className="flex items-center gap-1.5">

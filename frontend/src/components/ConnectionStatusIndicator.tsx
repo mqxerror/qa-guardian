@@ -51,7 +51,7 @@ function getStatusColor(status: ConnectionStatus): string {
     case 'disconnected':
       return 'bg-destructive';
     default:
-      return 'bg-gray-500';
+      return 'bg-muted-foreground';
   }
 }
 

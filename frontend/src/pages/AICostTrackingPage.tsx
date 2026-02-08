@@ -525,7 +525,7 @@ export function AICostTrackingPage() {
                   <div key={user.user_id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                        idx === 0 ? 'bg-warning' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-orange-400' : 'bg-muted-foreground'
+                        idx === 0 ? 'bg-warning' : idx === 1 ? 'bg-muted-foreground' : idx === 2 ? 'bg-orange-400' : 'bg-muted-foreground'
                       }`}>
                         {idx + 1}
                       </div>

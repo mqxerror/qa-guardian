@@ -185,7 +185,7 @@ export function PublicStatusPage() {
  case 'up': return 'bg-success';
  case 'down': return 'bg-destructive';
  case 'degraded': return 'bg-warning';
- default: return 'bg-gray-400';
+ default: return 'bg-muted-foreground';
  }
  };
 

@@ -128,7 +128,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
 
  // Filter type colors
  const typeColors: Record<string, string> = {
- 'All': 'bg-gray-500',
+ 'All': 'bg-muted-foreground',
  'E2E': 'bg-primary',
  'Visual': 'bg-purple-500',
  'Performance': 'bg-warning',
@@ -365,7 +365,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  const screenshots = groupedScreenshots[type];
  if (!screenshots || screenshots.length === 0) return null;
  const isCollapsed = collapsedGroups.has(type);
- const typeInfo = typeLabels[type] || { label: `${type} Tests`, icon: '📷', color: 'bg-gray-500' };
+ const typeInfo = typeLabels[type] || { label: `${type} Tests`, icon: '📷', color: 'bg-muted-foreground' };
  const startIndex = globalIndex;
  globalIndex += screenshots.length;
 
@@ -528,7 +528,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  screenshot.testStatus === 'passed' ? 'bg-success' :
  screenshot.testStatus === 'failed' ? 'bg-destructive' :
  screenshot.testStatus === 'error' ? 'bg-destructive' :
- 'bg-gray-500'
+ 'bg-muted-foreground'
  }`} title={screenshot.testStatus} />
  </div>
  ))}
@@ -713,7 +713,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  allScreenshots[lightboxIndex].testType === 'Accessibility' ? 'bg-success' :
  allScreenshots[lightboxIndex].testType === 'Performance' ? 'bg-warning' :
  allScreenshots[lightboxIndex].testType === 'Load' ? 'bg-orange-500' :
- 'bg-gray-500'
+ 'bg-muted-foreground'
  }`}>
  {allScreenshots[lightboxIndex].testType}
  </span>

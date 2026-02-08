@@ -437,7 +437,7 @@ export function AIRunComparisonPage() {
  <span className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${
  step.isDivergence ? 'bg-destructive text-white' :
  step.failedResult === 'passed' ? 'bg-success text-white' :
- 'bg-gray-400 text-white'
+ 'bg-muted-foreground text-white'
  }`}>
  {step.stepNumber}
  </span>

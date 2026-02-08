@@ -293,7 +293,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  pr.status_check.status === 'failure' ? 'bg-destructive/10 text-destructive' :
  pr.status_check.status === 'running' ? 'bg-primary/10 text-primary' :
  pr.status_check.status === 'pending' ? 'bg-warning/10 text-warning' :
- 'bg-gray-500/10 text-foreground'
+ 'bg-muted/10 text-foreground'
  }`}>
  {pr.status_check.status === 'running' && (
  <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">

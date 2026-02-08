@@ -203,11 +203,11 @@ function ImpactBadge({ impact }: { impact: string }) {
     moderate: 'bg-warning text-white',
     low: 'bg-primary text-white',
     minor: 'bg-primary/80 text-white',
-    info: 'bg-gray-500 text-white',
+    info: 'bg-muted-foreground text-white',
   };
 
   return (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${colors[impact] || 'bg-gray-500 text-white'}`}>
+    <span className={`px-2 py-1 rounded text-xs font-medium ${colors[impact] || 'bg-muted-foreground text-white'}`}>
       {impact.charAt(0).toUpperCase() + impact.slice(1)}
     </span>
   );

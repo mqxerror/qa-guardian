@@ -204,7 +204,7 @@ const EditModal: React.FC<EditModalProps> = ({
  <button
  onClick={handleSave}
  disabled={!editTestType || !editUrl}
- className="flex-1 px-4 py-2 bg-primary hover:bg-primary disabled:bg-gray-300 text-white rounded-lg disabled:cursor-not-allowed"
+ className="flex-1 px-4 py-2 bg-primary hover:bg-primary disabled:bg-muted text-white rounded-lg disabled:cursor-not-allowed"
  >
  Save Changes
  </button>

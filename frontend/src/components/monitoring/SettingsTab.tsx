@@ -430,7 +430,7 @@ export default function SettingsTab({
  <div key={schedule.id} className="rounded-lg border border-border p-4 hover:bg-muted/30">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className={`w-3 h-3 rounded-full ${schedule.is_active ? 'bg-success' : 'bg-gray-400'}`} />
+ <div className={`w-3 h-3 rounded-full ${schedule.is_active ? 'bg-success' : 'bg-muted-foreground'}`} />
  <div>
  <h4 className="font-medium text-foreground">{schedule.name}</h4>
  <p className="text-xs text-muted-foreground">
@@ -515,7 +515,7 @@ export default function SettingsTab({
  <div key={policy.id} className="rounded-lg border border-border p-4 hover:bg-muted/30">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className={`w-3 h-3 rounded-full ${policy.is_active ? 'bg-success' : 'bg-gray-400'}`} />
+ <div className={`w-3 h-3 rounded-full ${policy.is_active ? 'bg-success' : 'bg-muted-foreground'}`} />
  <div>
  <h4 className="font-medium text-foreground">
  {policy.name}

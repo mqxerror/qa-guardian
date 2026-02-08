@@ -919,7 +919,7 @@ export default function SharedTestRunPage() {
  } text-white`}>
  {galleryScreenshots[lightboxIndex].status === 'passed' ? '✓ Passed' : '✗ Failed'}
  </span>
- <span className="px-2 py-0.5 text-sm rounded bg-gray-600 text-white">
+ <span className="px-2 py-0.5 text-sm rounded bg-secondary text-white">
  {galleryScreenshots[lightboxIndex].type}
  </span>
  </div>

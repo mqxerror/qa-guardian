@@ -189,7 +189,7 @@ export function FlakinessPanel({
  run.status === 'failed' ? 'bg-destructive' :
  run.status === 'warning' ? 'bg-warning' :
  run.status === 'running' ? 'bg-primary animate-pulse' :
- 'bg-gray-300'
+ 'bg-muted'
  }`}
  title={`${run.status} - ${run.created_at ? new Date(run.created_at).toLocaleString() : 'Unknown'}`}
  />

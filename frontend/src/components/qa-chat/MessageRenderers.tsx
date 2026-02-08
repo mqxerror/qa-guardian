@@ -136,13 +136,13 @@ export function DebugAnalysisMessage({ debug }: DebugAnalysisMessageProps) {
         <div key={step.number} className={`rounded-md p-2 text-xs ${
           step.status === 'passed' ? 'bg-success/10 border border-success/20' :
           step.status === 'failed' ? 'bg-destructive/10 border border-destructive/20' :
-          'bg-gray-500/10 border border-border/20'
+          'bg-muted/10 border border-border/20'
         }`}>
           <div className="flex items-center gap-2">
             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
               step.status === 'passed' ? 'bg-success text-white' :
               step.status === 'failed' ? 'bg-destructive text-white' :
-              'bg-gray-400 text-white'
+              'bg-muted-foreground text-white'
             }`}>{step.number}</span>
             <span className="flex-1">{step.action}</span>
             <span className={`text-[10px] ${
@@ -182,13 +182,13 @@ export function SuggestionsMessage({ suggestions }: SuggestionsMessageProps) {
         <div key={idx} className={`rounded-md p-2 text-xs border ${
           suggestion.priority === 'high' ? 'bg-orange-500/10 border-orange-500/20' :
           suggestion.priority === 'medium' ? 'bg-primary/10 border-primary/20' :
-          'bg-gray-500/10 border-border/20'
+          'bg-muted/10 border-border/20'
         }`}>
           <div className="flex items-center gap-2 mb-1">
             <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
               suggestion.priority === 'high' ? 'bg-orange-500 text-white' :
               suggestion.priority === 'medium' ? 'bg-primary text-white' :
-              'bg-gray-500 text-white'
+              'bg-muted-foreground text-white'
             }`}>{suggestion.priority}</span>
             <span className="font-medium text-foreground">{suggestion.title}</span>
             <span className="ml-auto text-[10px] text-muted-foreground">{suggestion.confidence}% confidence</span>
@@ -237,7 +237,7 @@ export function ScreenshotAnalysisMessage({ analysis }: ScreenshotAnalysisMessag
                 el.type === 'button' ? 'bg-success/80' :
                 el.type === 'link' ? 'bg-primary/80' :
                 el.type === 'form' ? 'bg-warning/80' :
-                'bg-gray-400'
+                'bg-muted-foreground'
               }`}></span>
               <span className="text-muted-foreground capitalize">{el.type}</span>
               <span className="text-foreground flex-1">{el.label || el.role}</span>

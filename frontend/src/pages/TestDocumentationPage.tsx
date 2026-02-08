@@ -447,7 +447,7 @@ export function TestDocumentationPage() {
  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
  <div className="flex items-center gap-4">
  <div className="flex items-center gap-2">
- <span className={`w-2 h-2 rounded-full ${isAutoUpdateEnabled ? 'bg-success' : 'bg-gray-400'}`} />
+ <span className={`w-2 h-2 rounded-full ${isAutoUpdateEnabled ? 'bg-success' : 'bg-muted-foreground'}`} />
  <span className="text-sm text-muted-foreground">Auto-update:</span>
  <button
  onClick={() => setIsAutoUpdateEnabled(!isAutoUpdateEnabled)}

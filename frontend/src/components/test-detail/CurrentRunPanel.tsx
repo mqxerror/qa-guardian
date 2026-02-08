@@ -576,7 +576,7 @@ function TestResultItem({
  step.status === 'passed' ? 'bg-success text-white' :
  step.status === 'failed' ? 'bg-destructive text-white' :
  step.status === 'warning' ? 'bg-warning text-white' :
- 'bg-gray-400 text-white'
+ 'bg-muted-foreground text-white'
  }`}>
  {step.status === 'passed' ? '✓' : step.status === 'failed' ? '✗' : step.status === 'warning' ? '⚠' : '-'}
  </span>

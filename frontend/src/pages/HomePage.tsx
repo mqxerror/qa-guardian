@@ -62,7 +62,7 @@ const stats = [
 export function HomePage() {
   return (
     <LazyMotionWrapper>
-    <div className="min-h-screen bg-gray-950 text-white overflow-hidden">
+    <div className="min-h-screen bg-background text-white overflow-hidden dark">
       {/* Hero Section */}
       <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
         {/* Background Effects */}
@@ -133,7 +133,7 @@ export function HomePage() {
             <Link to="/register">
               <HoverBorderGradient
                 containerClassName="rounded-full"
-                className="flex items-center gap-2 bg-gray-950 px-6 py-2 text-white"
+                className="flex items-center gap-2 bg-background px-6 py-2 text-white"
               >
                 <span>Get Started Free</span>
                 <ArrowRight className="h-4 w-4" />
@@ -189,7 +189,7 @@ export function HomePage() {
       </div>
 
       {/* Features Section */}
-      <div className="relative bg-gray-950 py-24">
+      <div className="relative bg-background py-24">
         <div className="mx-auto max-w-7xl px-4">
           <div className="text-center">
             <m.span
@@ -343,7 +343,7 @@ export function HomePage() {
             <Link to="/register">
               <HoverBorderGradient
                 containerClassName="rounded-full"
-                className="flex items-center gap-2 bg-gray-950 px-8 py-3 text-white"
+                className="flex items-center gap-2 bg-background px-8 py-3 text-white"
               >
                 <span>Start Free Trial</span>
                 <ArrowRight className="h-4 w-4" />
@@ -354,7 +354,7 @@ export function HomePage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-gray-950 py-12">
+      <footer className="border-t border-border bg-background py-12">
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <div className="text-xl font-bold text-white">QA Guardian</div>

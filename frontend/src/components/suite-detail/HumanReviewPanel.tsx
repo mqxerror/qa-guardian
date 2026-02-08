@@ -59,7 +59,7 @@ export function HumanReviewPanel({
  <button
  onClick={onToggleHumanReview}
  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
- requireHumanReview ? 'bg-primary' : 'bg-gray-300'
+ requireHumanReview ? 'bg-primary' : 'bg-muted'
  }`}
  >
  <span

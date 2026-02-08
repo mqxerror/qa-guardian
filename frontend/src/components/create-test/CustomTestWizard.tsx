@@ -462,7 +462,7 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  type="button"
  onClick={handleContinue}
  disabled={!canContinue}
- className="px-4 py-2 bg-primary hover:bg-primary disabled:bg-gray-300 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
+ className="px-4 py-2 bg-primary hover:bg-primary disabled:bg-muted text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
  >
  Continue
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

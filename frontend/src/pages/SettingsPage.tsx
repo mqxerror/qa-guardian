@@ -1260,7 +1260,7 @@ function WebhooksTabContent() {
  <div className="flex justify-between items-start">
  <div>
  <div className="flex items-center gap-2 mb-2">
- <span className={`w-2 h-2 rounded-full ${webhook.active ? 'bg-success' : 'bg-gray-400'}`}></span>
+ <span className={`w-2 h-2 rounded-full ${webhook.active ? 'bg-success' : 'bg-muted-foreground'}`}></span>
  <code className="text-sm text-foreground font-mono">{webhook.url}</code>
  </div>
  <div className="flex gap-1 flex-wrap">

@@ -223,7 +223,7 @@ export default function TimelineTab({
  <div className={`absolute -left-[30px] top-5 h-3 w-3 rounded-full border-2 border-card ${
  step.status === 'passed' ? 'bg-success' :
  step.status === 'failed' ? 'bg-destructive' :
- 'bg-gray-400'
+ 'bg-muted-foreground'
  }`} />
 
  {/* Feature #1928: Changed from button to div to avoid nested button DOM validation error */}
@@ -238,7 +238,7 @@ export default function TimelineTab({
  <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium ${
  step.status === 'passed' ? 'bg-success text-white' :
  step.status === 'failed' ? 'bg-destructive text-white' :
- 'bg-gray-400 text-white'
+ 'bg-muted-foreground text-white'
  }`}>
  {step.status === 'passed' ? '✓' : step.status === 'failed' ? '✗' : '-'}
  </span>
@@ -592,7 +592,7 @@ export default function TimelineTab({
  <div className="flex-1 h-4 bg-muted rounded relative overflow-hidden">
  <div
  className={`h-full rounded ${
- !req.status ? 'bg-gray-400' :
+ !req.status ? 'bg-muted-foreground' :
  req.status >= 200 && req.status < 300 ? 'bg-success' :
  req.status >= 400 ? 'bg-destructive' : 'bg-warning'
  }`}

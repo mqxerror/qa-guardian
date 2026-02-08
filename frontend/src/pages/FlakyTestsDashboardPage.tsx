@@ -633,7 +633,7 @@ Please provide:
  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
  autoQuarantineSettings.enabled && !isLoadingAutoQuarantine
  ? 'bg-warning text-white hover:bg-warning'
- : 'bg-gray-300 text-muted-foreground cursor-not-allowed'
+ : 'bg-muted text-muted-foreground cursor-not-allowed'
  }`}
  >
  {isLoadingAutoQuarantine ? (

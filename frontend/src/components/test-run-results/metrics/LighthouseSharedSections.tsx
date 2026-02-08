@@ -226,7 +226,7 @@ export const SecurityInsightsSection: React.FC<SecurityInsightsSectionProps> = (
  {lighthouse.csp && (
  <div className="p-4 bg-background">
  <div className="flex items-center gap-2 mb-2">
- <span className={`w-3 h-3 rounded-full ${lighthouse.csp.detected ? (lighthouse.csp.blocksLighthouse ? 'bg-destructive' : 'bg-success') : 'bg-gray-400'}`}></span>
+ <span className={`w-3 h-3 rounded-full ${lighthouse.csp.detected ? (lighthouse.csp.blocksLighthouse ? 'bg-destructive' : 'bg-success') : 'bg-muted-foreground'}`}></span>
  <h5 className="font-medium text-foreground">Content Security Policy</h5>
  <span className={`text-xs px-2 py-0.5 rounded ${
  lighthouse.csp.detected

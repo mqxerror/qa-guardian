@@ -292,7 +292,7 @@ function DASTScanResults(props: DASTScanResultsProps) {
  scan.status === 'completed' ? 'bg-success' :
  scan.status === 'failed' ? 'bg-destructive' :
  scan.status === 'running' ? 'bg-warning animate-pulse' :
- 'bg-gray-400'
+ 'bg-muted-foreground'
  }`} />
  <div className="text-left">
  <p className="font-medium text-foreground text-sm truncate max-w-xs">

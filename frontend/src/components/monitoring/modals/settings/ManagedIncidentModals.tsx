@@ -24,8 +24,8 @@ export const getIncidentPriorityColor = (priority: ManagedIncident['priority']) 
     case 'P2': return 'bg-orange-500 text-white';
     case 'P3': return 'bg-warning text-white';
     case 'P4': return 'bg-primary text-white';
-    case 'P5': return 'bg-gray-500 text-white';
-    default: return 'bg-gray-500 text-white';
+    case 'P5': return 'bg-muted-foreground text-white';
+    default: return 'bg-muted-foreground text-white';
   }
 };
 

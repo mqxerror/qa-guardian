@@ -279,7 +279,7 @@ export function AIAgentWorkspacePage() {
  {/* Pending Column */}
  <div className="flex-1 flex flex-col min-w-[250px]">
  <div className="flex items-center gap-2 mb-3 px-2">
- <span className="w-3 h-3 rounded-full bg-gray-400"></span>
+ <span className="w-3 h-3 rounded-full bg-muted-foreground"></span>
  <h3 className="font-semibold">Pending</h3>
  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
  {getTasksByStatus('pending').length}

@@ -510,7 +510,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  type="button"
  onClick={handleCreate}
  disabled={isSubmitting || !testType}
- className="flex-1 py-3 bg-muted hover:bg-secondary disabled:bg-gray-300 text-foreground font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-border"
+ className="flex-1 py-3 bg-muted hover:bg-secondary disabled:bg-muted text-foreground font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-border"
  >
  {isSubmitting && !submissionPhase ? (
  <>
@@ -535,7 +535,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  type="button"
  onClick={handleCreateAndRun}
  disabled={isSubmitting || !testType}
- className="flex-1 py-3 bg-success hover:bg-success disabled:bg-gray-300 text-white font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
+ className="flex-1 py-3 bg-success hover:bg-success disabled:bg-muted text-white font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
  >
  {submissionPhase ? (
  <>

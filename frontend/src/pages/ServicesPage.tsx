@@ -51,7 +51,7 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; 
   healthy: { color: 'text-success', bg: 'bg-success/20', label: 'Healthy', icon: '\u2713', dotColor: 'bg-success' },
   degraded: { color: 'text-warning', bg: 'bg-warning/20', label: 'Degraded', icon: '!', dotColor: 'bg-warning' },
   unavailable: { color: 'text-destructive', bg: 'bg-destructive/20', label: 'Unavailable', icon: '\u2715', dotColor: 'bg-destructive' },
-  not_configured: { color: 'text-muted-foreground', bg: 'bg-muted', label: 'Not Configured', icon: '\u2014', dotColor: 'bg-gray-400' },
+  not_configured: { color: 'text-muted-foreground', bg: 'bg-muted', label: 'Not Configured', icon: '\u2014', dotColor: 'bg-muted-foreground' },
 };
 
 const CAPABILITY_STATUS_CONFIG: Record<string, { color: string; icon: string }> = {

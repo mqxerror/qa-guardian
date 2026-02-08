@@ -372,7 +372,7 @@ export function K6ScriptTab({
             </code>
             <button
               onClick={handleCopyCommand}
-              className="px-2 py-2 rounded bg-card hover:bg-gray-600 text-muted-foreground"
+              className="px-2 py-2 rounded bg-card hover:bg-secondary text-muted-foreground"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
