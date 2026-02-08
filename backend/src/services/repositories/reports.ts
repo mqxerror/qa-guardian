@@ -18,6 +18,48 @@ import { createLogger } from '../logger.js';
 const log = createLogger('repo:reports');
 
 // ============================================
+// Feature #462: Row interfaces to eliminate : any types
+// ============================================
+
+/** Database row type for full report retrieval */
+interface ReportRow {
+  id: string;
+  project_id: string;
+  project_name: string;
+  created_at: Date | string;
+  created_by: string;
+  title: string;
+  description: string | null;
+  period: { start: string; end: string } | null;
+  executive_summary: {
+    overallScore: number;
+    overallStatus: string;
+    highlights: unknown[];
+    criticalIssues: unknown[];
+    recommendations: unknown[];
+  } | null;
+  sections: Record<string, unknown> | null;
+  generated_by: string;
+  format: string;
+  view_url: string | null;
+  organization_id: string;
+}
+
+/** Database row type for summary retrieval (lightweight) */
+interface ReportSummaryRow {
+  id: string;
+  project_id: string;
+  project_name: string;
+  created_at: Date | string;
+  created_by: string;
+  title: string;
+  overall_score: string | null;
+  overall_status: string | null;
+  section_types: string[] | null;
+  view_url: string | null;
+}
+
+// ============================================
 // Column Constants (Feature #210: Replace SELECT *)
 // ============================================
 
@@ -66,7 +108,7 @@ export function generateReportId(): string {
   return generateId('report'); // Feature #357: Use shared ID generator
 }
 
-function parseReportRow(row: any): ComprehensiveReport {
+function parseReportRow(row: ReportRow): ComprehensiveReport {
   return {
     id: row.id,
     projectId: row.project_id,
@@ -74,19 +116,19 @@ function parseReportRow(row: any): ComprehensiveReport {
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
     createdBy: row.created_by,
     title: row.title,
-    description: row.description,
+    description: row.description ?? undefined,
     period: row.period || { start: '', end: '' },
-    executiveSummary: row.executive_summary || {
+    executiveSummary: (row.executive_summary || {
       overallScore: 0,
       overallStatus: 'warning',
       highlights: [],
       criticalIssues: [],
       recommendations: [],
-    },
-    sections: row.sections || {},
-    generatedBy: row.generated_by,
-    format: row.format,
-    viewUrl: row.view_url,
+    }) as ComprehensiveReport['executiveSummary'],
+    sections: (row.sections || {}) as ComprehensiveReport['sections'],
+    generatedBy: row.generated_by as ComprehensiveReport['generatedBy'],
+    format: row.format as ComprehensiveReport['format'],
+    viewUrl: row.view_url ?? '',
   };
 }
 
@@ -110,7 +152,7 @@ function createSummaryFromReport(report: ComprehensiveReport): ReportSummary {
 /**
  * Feature #210: Parse lightweight summary row (from REPORT_SUMMARY_COLUMNS query)
  */
-function parseSummaryRow(row: any): ReportSummary {
+function parseSummaryRow(row: ReportSummaryRow): ReportSummary {
   return {
     id: row.id,
     projectId: row.project_id,
@@ -119,9 +161,9 @@ function parseSummaryRow(row: any): ReportSummary {
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
     createdBy: row.created_by,
     overallScore: row.overall_score ? parseFloat(row.overall_score) : 0,
-    overallStatus: row.overall_status || 'warning',
+    overallStatus: (row.overall_status || 'warning') as ReportSummary['overallStatus'],
     sectionTypes: row.section_types || [],
-    viewUrl: row.view_url,
+    viewUrl: row.view_url ?? '',
   };
 }
 
@@ -190,7 +232,7 @@ export async function getReport(reportId: string): Promise<ComprehensiveReport |
 export async function listReports(projectId?: string, limit: number = 100): Promise<ReportSummary[]> {
   if (isDatabaseConnected()) {
     let sql = `SELECT ${REPORT_SUMMARY_COLUMNS} FROM reports`;
-    const params: any[] = [];
+    const params: unknown[] = [];
     let paramIndex = 1;
 
     if (projectId) {
@@ -232,7 +274,7 @@ export async function deleteReport(reportId: string): Promise<boolean> {
 export async function getReportCount(projectId?: string): Promise<number> {
   if (isDatabaseConnected()) {
     let sql = 'SELECT COUNT(*) as count FROM reports';
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     if (projectId) {
       sql += ' WHERE project_id = $1';
@@ -298,7 +340,7 @@ export async function updateReport(
 ): Promise<ComprehensiveReport | undefined> {
   if (isDatabaseConnected()) {
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: unknown[] = [];
     let paramIndex = 1;
 
     if (updates.title !== undefined) {

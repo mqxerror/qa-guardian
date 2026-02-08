@@ -15,6 +15,41 @@ import { createLogger } from '../logger.js';
 const log = createLogger('repo:audit-logs');
 
 // ============================================
+// Feature #462: Row interfaces to eliminate : any types
+// ============================================
+
+/** Database row type for audit_logs table */
+interface AuditLogRow {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  user_email: string;
+  action: string;
+  resource_type: string;
+  resource_id: string;
+  resource_name: string | null;
+  details: Record<string, unknown> | null;
+  ip_address: string;
+  user_agent: string;
+  created_at: Date | string;
+}
+
+/** Database row type for count queries */
+interface CountRow {
+  count: string;
+}
+
+/** Database row type for action column */
+interface ActionRow {
+  action: string;
+}
+
+/** Database row type for resource_type column */
+interface ResourceTypeRow {
+  resource_type: string;
+}
+
+// ============================================
 // Column Constants for SELECT queries
 // ============================================
 
@@ -54,7 +89,7 @@ export function getMemoryAuditLogs(): Map<string, AuditLogEntry> {
 // Helper Functions
 // ============================================
 
-function parseAuditLogRow(row: any): AuditLogEntry {
+function parseAuditLogRow(row: AuditLogRow): AuditLogEntry {
   return {
     id: row.id,
     organization_id: row.organization_id,
@@ -63,8 +98,8 @@ function parseAuditLogRow(row: any): AuditLogEntry {
     action: row.action,
     resource_type: row.resource_type,
     resource_id: row.resource_id,
-    resource_name: row.resource_name,
-    details: row.details,
+    resource_name: row.resource_name ?? undefined,
+    details: row.details ?? undefined,
     ip_address: row.ip_address,
     user_agent: row.user_agent,
     created_at: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
@@ -80,7 +115,7 @@ function parseAuditLogRow(row: any): AuditLogEntry {
  */
 export async function createAuditLog(entry: AuditLogEntry): Promise<AuditLogEntry> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<AuditLogRow>(
       `INSERT INTO audit_logs (
         id, organization_id, user_id, user_email, action,
         resource_type, resource_id, resource_name, details,
@@ -115,7 +150,7 @@ export async function createAuditLog(entry: AuditLogEntry): Promise<AuditLogEntr
  */
 export async function getAuditLog(logId: string): Promise<AuditLogEntry | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<AuditLogRow>(
       `SELECT ${AUDIT_LOG_COLUMNS} FROM audit_logs WHERE id = $1`,
       [logId]
     );
@@ -145,7 +180,7 @@ export async function listAuditLogs(
   if (isDatabaseConnected()) {
     // Build WHERE clause
     const conditions: string[] = ['organization_id = $1'];
-    const params: any[] = [organizationId];
+    const params: unknown[] = [organizationId];
     let paramIndex = 2;
 
     if (action) {
@@ -164,7 +199,7 @@ export async function listAuditLogs(
     const whereClause = conditions.join(' AND ');
 
     // Get total count
-    const countResult = await query<any>(
+    const countResult = await query<CountRow>(
       `SELECT COUNT(*) as count FROM audit_logs WHERE ${whereClause}`,
       params
     );
@@ -172,7 +207,7 @@ export async function listAuditLogs(
 
     // Get paginated results
     params.push(limit, offset);
-    const result = await query<any>(
+    const result = await query<AuditLogRow>(
       `SELECT ${AUDIT_LOG_COLUMNS} FROM audit_logs WHERE ${whereClause}
        ORDER BY created_at DESC
        LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
@@ -197,12 +232,12 @@ export async function listAuditLogs(
  */
 export async function getUniqueActions(organizationId: string): Promise<string[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<ActionRow>(
       'SELECT DISTINCT action FROM audit_logs WHERE organization_id = $1 ORDER BY action',
       [organizationId]
     );
     if (result) {
-      return result.rows.map((row: any) => row.action);
+      return result.rows.map((row: ActionRow) => row.action);
     }
     return [];
   }
@@ -216,12 +251,12 @@ export async function getUniqueActions(organizationId: string): Promise<string[]
  */
 export async function getUniqueResourceTypes(organizationId: string): Promise<string[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<ResourceTypeRow>(
       'SELECT DISTINCT resource_type FROM audit_logs WHERE organization_id = $1 ORDER BY resource_type',
       [organizationId]
     );
     if (result) {
-      return result.rows.map((row: any) => row.resource_type);
+      return result.rows.map((row: ResourceTypeRow) => row.resource_type);
     }
     return [];
   }
@@ -252,14 +287,14 @@ export async function deleteOldAuditLogs(olderThan: Date): Promise<number> {
 export async function getAuditLogCount(organizationId?: string): Promise<number> {
   if (isDatabaseConnected()) {
     let sql = 'SELECT COUNT(*) as count FROM audit_logs';
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     if (organizationId) {
       sql += ' WHERE organization_id = $1';
       params.push(organizationId);
     }
 
-    const result = await query<any>(sql, params);
+    const result = await query<CountRow>(sql, params);
     if (result && result.rows[0]) {
       return parseInt(result.rows[0].count, 10);
     }
@@ -278,7 +313,7 @@ export async function getAuditLogsByUser(
   limit: number = 50
 ): Promise<AuditLogEntry[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<AuditLogRow>(
       `SELECT ${AUDIT_LOG_COLUMNS} FROM audit_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [userId, limit]
     );
@@ -301,7 +336,7 @@ export async function getAuditLogsByResource(
   limit: number = 50
 ): Promise<AuditLogEntry[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<AuditLogRow>(
       `SELECT ${AUDIT_LOG_COLUMNS} FROM audit_logs WHERE resource_type = $1 AND resource_id = $2 ORDER BY created_at DESC LIMIT $3`,
       [resourceType, resourceId, limit]
     );
