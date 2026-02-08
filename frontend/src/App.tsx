@@ -1572,8 +1572,11 @@ function App() {
         <Route path="/organization/mcp-tech-debt" element={<Navigate to="/mcp/tools" replace />} />
         {/* Feature #1444: test-discovery removed */}
         <Route path="/organization/mcp-test-discovery" element={<Navigate to="/mcp/tools" replace />} />
-        <Route path="/organization/mcp-documentation" element={<Navigate to="/mcp/documentation" replace />} />
-        <Route path="/organization/mcp-release-notes" element={<Navigate to="/mcp/release-notes" replace />} />
+        {/* Feature #413: documentation and release-notes tabs removed - redirect to tools */}
+        <Route path="/organization/mcp-documentation" element={<Navigate to="/mcp/tools" replace />} />
+        <Route path="/organization/mcp-release-notes" element={<Navigate to="/mcp/tools" replace />} />
+        <Route path="/mcp/documentation" element={<Navigate to="/mcp/tools" replace />} />
+        <Route path="/mcp/release-notes" element={<Navigate to="/mcp/tools" replace />} />
         {/* Feature #1410: schedule-optimizer redirect updated to tools */}
         <Route path="/organization/mcp-schedule-optimizer" element={<Navigate to="/mcp/tools" replace />} />
         {/* Feature #1408: team-insights redirect updated to tools */}
