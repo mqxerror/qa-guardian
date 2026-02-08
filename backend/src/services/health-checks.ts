@@ -1,6 +1,8 @@
 /**
  * Feature #359: Health check utility functions
  * Extracted from index.ts to reduce monolithic file size
+ *
+ * Feature #392: Uses execFileSync instead of execSync to prevent command injection
  */
 
 import * as fs from 'fs';
@@ -31,9 +33,10 @@ export interface BackupStatus {
 
 /**
  * Feature #152: Check disk space and warn if < 1GB free
+ * Feature #392: Use execFileSync instead of execSync to prevent command injection
  */
 export async function checkDiskSpace(): Promise<DiskSpaceInfo> {
-  const { execSync } = await import('child_process');
+  const { execFileSync } = await import('child_process');
 
   try {
     // Try to get disk space info
@@ -41,8 +44,12 @@ export async function checkDiskSpace(): Promise<DiskSpaceInfo> {
     let totalBytes = 0;
 
     try {
-      // Works on Linux/macOS
-      const dfOutput = execSync('df -k . 2>/dev/null || df -k / 2>/dev/null', { encoding: 'utf-8' });
+      // Works on Linux/macOS - Use execFileSync with argument array for security
+      // Feature #392: Avoid shell injection by using execFileSync instead of execSync
+      const dfOutput = execFileSync('df', ['-k', '.'], {
+        encoding: 'utf-8',
+        timeout: 5000,
+      });
       const lines = dfOutput.trim().split('\n');
       if (lines.length >= 2) {
         const parts = lines[1].split(/\s+/);
@@ -51,9 +58,23 @@ export async function checkDiskSpace(): Promise<DiskSpaceInfo> {
         freeBytes = parseInt(parts[3], 10) * 1024;
       }
     } catch {
-      // Fallback: estimate from OS memory (not accurate but provides a response)
-      totalBytes = os.totalmem();
-      freeBytes = os.freemem();
+      // Fallback: Try df -k / if current directory fails
+      try {
+        const dfOutput = execFileSync('df', ['-k', '/'], {
+          encoding: 'utf-8',
+          timeout: 5000,
+        });
+        const lines = dfOutput.trim().split('\n');
+        if (lines.length >= 2) {
+          const parts = lines[1].split(/\s+/);
+          totalBytes = parseInt(parts[1], 10) * 1024;
+          freeBytes = parseInt(parts[3], 10) * 1024;
+        }
+      } catch {
+        // Final fallback: estimate from OS memory (not accurate but provides a response)
+        totalBytes = os.totalmem();
+        freeBytes = os.freemem();
+      }
     }
 
     const freeGB = Math.round((freeBytes / 1024 / 1024 / 1024) * 100) / 100;

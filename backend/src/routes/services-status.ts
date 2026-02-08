@@ -3,17 +3,20 @@
  *
  * GET /api/v1/services/status - Health check all platform services
  * Returns status, latency, version, capability matrix per service.
+ *
+ * Feature #392: Uses execFile instead of exec to prevent command injection
  */
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth.js';
 import { isDatabaseConnected, healthCheck as dbHealthCheck } from '../services/database.js';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import * as net from 'net';
 import * as http from 'http';
 
-const execAsync = promisify(exec);
+// Feature #392: Use execFile instead of exec to prevent command injection
+const execFileAsync = promisify(execFile);
 
 // Module-level Socket.IO reference (set from index.ts after server starts)
 let socketIORef: any = null;
@@ -63,9 +66,16 @@ async function timedCheck<T>(fn: () => Promise<T>): Promise<{ result: T; latency
   return { result, latency_ms: Date.now() - start };
 }
 
-// Helper: run a command with timeout
-async function runCommand(cmd: string, timeoutMs = 5000): Promise<{ stdout: string; stderr: string }> {
-  return execAsync(cmd, { timeout: timeoutMs });
+/**
+ * Helper: run a command with timeout using execFile for security
+ * Feature #392: Split command into executable + args array to prevent shell injection
+ */
+async function runCommand(
+  executable: string,
+  args: string[],
+  timeoutMs = 5000
+): Promise<{ stdout: string; stderr: string }> {
+  return execFileAsync(executable, args, { timeout: timeoutMs });
 }
 
 // ---------- Individual service checks ----------
@@ -248,9 +258,10 @@ async function checkMinIO(): Promise<ServiceInfo> {
 async function checkPlaywright(): Promise<ServiceInfo> {
   const last_checked = new Date().toISOString();
   try {
-    const { stdout } = await runCommand('npx playwright --version 2>/dev/null || echo "not_found"');
+    // Feature #392: Use execFile with args array instead of shell command
+    const { stdout } = await runCommand('npx', ['playwright', '--version']);
     const version = stdout.trim();
-    const available = version !== 'not_found' && version.length > 0;
+    const available = version.length > 0;
     return {
       name: 'Playwright',
       category: 'Testing Tools',
@@ -298,9 +309,10 @@ async function checkPlaywright(): Promise<ServiceInfo> {
 async function checkK6(): Promise<ServiceInfo> {
   const last_checked = new Date().toISOString();
   try {
-    const { stdout } = await runCommand('k6 version 2>/dev/null || echo "not_found"');
+    // Feature #392: Use execFile with args array instead of shell command
+    const { stdout } = await runCommand('k6', ['version']);
     const version = stdout.trim();
-    const available = version !== 'not_found' && version.length > 0 && version.includes('k6');
+    const available = version.length > 0 && version.includes('k6');
     return {
       name: 'k6',
       category: 'Testing Tools',
@@ -345,9 +357,10 @@ async function checkK6(): Promise<ServiceInfo> {
 async function checkLighthouse(): Promise<ServiceInfo> {
   const last_checked = new Date().toISOString();
   try {
-    const { stdout } = await runCommand('npx lighthouse --version 2>/dev/null || echo "not_found"');
+    // Feature #392: Use execFile with args array instead of shell command
+    const { stdout } = await runCommand('npx', ['lighthouse', '--version']);
     const version = stdout.trim();
-    const available = version !== 'not_found' && version.length > 0 && /^\d/.test(version);
+    const available = version.length > 0 && /^\d/.test(version);
     return {
       name: 'Lighthouse',
       category: 'Testing Tools',
@@ -387,9 +400,10 @@ async function checkLighthouse(): Promise<ServiceInfo> {
 async function checkGitleaks(): Promise<ServiceInfo> {
   const last_checked = new Date().toISOString();
   try {
-    const { stdout } = await runCommand('gitleaks version 2>/dev/null || echo "not_found"');
+    // Feature #392: Use execFile with args array instead of shell command
+    const { stdout } = await runCommand('gitleaks', ['version']);
     const version = stdout.trim();
-    const available = version !== 'not_found' && version.length > 0;
+    const available = version.length > 0;
     return {
       name: 'Gitleaks',
       category: 'Security Scanners',
@@ -425,9 +439,10 @@ async function checkGitleaks(): Promise<ServiceInfo> {
 async function checkSemgrep(): Promise<ServiceInfo> {
   const last_checked = new Date().toISOString();
   try {
-    const { stdout } = await runCommand('semgrep --version 2>/dev/null || echo "not_found"');
+    // Feature #392: Use execFile with args array instead of shell command
+    const { stdout } = await runCommand('semgrep', ['--version']);
     const version = stdout.trim();
-    const available = version !== 'not_found' && version.length > 0 && /^\d/.test(version);
+    const available = version.length > 0 && /^\d/.test(version);
     return {
       name: 'Semgrep',
       category: 'Security Scanners',
@@ -464,9 +479,10 @@ async function checkZAP(): Promise<ServiceInfo> {
   const last_checked = new Date().toISOString();
   // ZAP is typically run via Docker
   try {
-    const { stdout } = await runCommand('docker ps --filter "name=zap" --format "{{.Status}}" 2>/dev/null || echo "not_found"');
+    // Feature #392: Use execFile with args array instead of shell command
+    const { stdout } = await runCommand('docker', ['ps', '--filter', 'name=zap', '--format', '{{.Status}}']);
     const status = stdout.trim();
-    const running = status !== 'not_found' && status.length > 0 && status.includes('Up');
+    const running = status.length > 0 && status.includes('Up');
     return {
       name: 'OWASP ZAP',
       category: 'Security Scanners',
@@ -663,9 +679,10 @@ interface DockerContainer {
 async function getDockerContainers(): Promise<Map<string, ContainerInfo>> {
   const containerMap = new Map<string, ContainerInfo>();
   try {
-    // Try docker ps with JSON format
+    // Feature #392: Use execFile with args array instead of shell command
     const { stdout } = await runCommand(
-      'docker ps -a --format "{{json .}}" 2>/dev/null',
+      'docker',
+      ['ps', '-a', '--format', '{{json .}}'],
       8000
     );
     if (!stdout || stdout.trim().length === 0) return containerMap;
