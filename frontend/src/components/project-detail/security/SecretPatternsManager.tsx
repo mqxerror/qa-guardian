@@ -99,18 +99,22 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
               className="flex items-center justify-between p-4 rounded-lg border border-border bg-background"
             >
               <div className="flex items-center gap-4">
-                <div
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={pattern.enabled}
+                  aria-label={`Toggle ${pattern.name} pattern`}
+                  onClick={() => handleToggleSecretPattern(pattern.id, !pattern.enabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500/20 ${
                     pattern.enabled ? 'bg-purple-600' : 'bg-muted'
                   }`}
-                  onClick={() => handleToggleSecretPattern(pattern.id, !pattern.enabled)}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                       pattern.enabled ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
-                </div>
+                </button>
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-foreground">{pattern.name}</p>

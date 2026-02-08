@@ -237,13 +237,19 @@ function SastHeader({ sastConfig, isUpdatingSast, handleUpdateSastConfig }: {
           <p className="text-sm text-muted-foreground">Scan your source code for security vulnerabilities using Semgrep</p>
         </div>
       </div>
-      <label className="flex items-center gap-2 cursor-pointer">
-        <span className="text-sm text-muted-foreground">{sastConfig.enabled ? 'Enabled' : 'Disabled'}</span>
-        <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${sastConfig.enabled ? 'bg-orange-600' : 'bg-muted'}`}
-          onClick={() => !isUpdatingSast && handleUpdateSastConfig({ enabled: !sastConfig.enabled })}>
+      <div className="flex items-center gap-2">
+        <span id="sast-toggle-label" className="text-sm text-muted-foreground">{sastConfig.enabled ? 'Enabled' : 'Disabled'}</span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={sastConfig.enabled}
+          aria-labelledby="sast-toggle-label"
+          onClick={() => !isUpdatingSast && handleUpdateSastConfig({ enabled: !sastConfig.enabled })}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500/20 ${sastConfig.enabled ? 'bg-orange-600' : 'bg-muted'}`}
+        >
           <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${sastConfig.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-        </div>
-      </label>
+        </button>
+      </div>
     </div>
   );
 }

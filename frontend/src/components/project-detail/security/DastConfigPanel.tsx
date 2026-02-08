@@ -70,23 +70,27 @@ export function DastConfigPanel(props: DastConfigPanelProps) {
               </p>
             </div>
           </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <span className="text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span id="dast-toggle-label" className="text-sm text-muted-foreground">
               {dastConfig.enabled ? 'Enabled' : 'Disabled'}
             </span>
-            <div
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            <button
+              type="button"
+              role="switch"
+              aria-checked={dastConfig.enabled}
+              aria-labelledby="dast-toggle-label"
+              onClick={() => !isUpdatingDast && handleUpdateDastConfig({ enabled: !dastConfig.enabled })}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500/20 ${
                 dastConfig.enabled ? 'bg-purple-600' : 'bg-muted'
               }`}
-              onClick={() => !isUpdatingDast && handleUpdateDastConfig({ enabled: !dastConfig.enabled })}
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                   dastConfig.enabled ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
-            </div>
-          </label>
+            </button>
+          </div>
         </div>
 
         {isLoadingDast ? (

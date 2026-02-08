@@ -73,18 +73,22 @@ export function CustomRulesManager(props: CustomRulesManagerProps) {
               className="flex items-center justify-between p-4 rounded-lg border border-border bg-background"
             >
               <div className="flex items-center gap-4">
-                <div
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={rule.enabled}
+                  aria-label={`Toggle ${rule.name} rule`}
+                  onClick={() => handleToggleCustomRule(rule.id, !rule.enabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500/20 ${
                     rule.enabled ? 'bg-orange-600' : 'bg-muted'
                   }`}
-                  onClick={() => handleToggleCustomRule(rule.id, !rule.enabled)}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                       rule.enabled ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
-                </div>
+                </button>
                 <div>
                   <p className="font-medium text-foreground">{rule.name}</p>
                   <p className="text-xs text-muted-foreground">
