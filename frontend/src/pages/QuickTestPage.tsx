@@ -12,6 +12,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useQuickTestSocket, WaveState, QuickTestSummary } from '../hooks/useQuickTestSocket';
 import {
@@ -49,6 +50,7 @@ import {
   FileJson,
   Lock,
   Unlock,
+  ArrowLeftRight,
 } from 'lucide-react';
 
 // ============================================================
@@ -1250,6 +1252,16 @@ export function QuickTestPage() {
                 >
                   <History className="w-5 h-5" />
                 </button>
+
+                {/* Feature #473: Compare button */}
+                <Link
+                  to="/quick-test/compare"
+                  className="px-3 py-3 bg-muted text-muted-foreground rounded-lg
+                    hover:bg-muted/80 transition-colors flex items-center"
+                  title="Compare URLs"
+                >
+                  <ArrowLeftRight className="w-5 h-5" />
+                </Link>
               </div>
 
               {urlError && (

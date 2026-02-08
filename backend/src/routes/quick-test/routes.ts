@@ -27,9 +27,20 @@ interface QuickTestBody {
   url: string;
 }
 
+// Feature #473: Comparative Quick Test request body
+interface QuickTestCompareBody {
+  urlA: string;
+  urlB: string;
+}
+
 // Route params for getting results
 interface QuickTestParams {
   runId: string;
+}
+
+// Feature #473: Route params for compare results
+interface QuickTestCompareParams {
+  compareId: string;
 }
 
 // Feature #466: Route params for screenshots
@@ -146,6 +157,236 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
           'quick-test:complete',
           'quick-test:error',
         ],
+      };
+    }
+  );
+
+  /**
+   * POST /api/v1/quick-test/compare
+   * Feature #473: Start a comparative quick test for two URLs side-by-side
+   * Runs both tests in parallel and provides comparison-specific events
+   */
+  app.post<{ Body: QuickTestCompareBody }>(
+    '/api/v1/quick-test/compare',
+    {
+      preHandler: [authenticate, requireScopes(['execute'])],
+      schema: {
+        tags: ['Quick Test'],
+        summary: 'Start a comparative quick test for two URLs',
+        description: 'Initiates parallel analysis of two URLs (e.g., staging vs production) with side-by-side results.',
+        body: {
+          type: 'object',
+          required: ['urlA', 'urlB'],
+          properties: {
+            urlA: {
+              type: 'string',
+              format: 'uri',
+              description: 'The first URL to test (e.g., staging)',
+            },
+            urlB: {
+              type: 'string',
+              format: 'uri',
+              description: 'The second URL to test (e.g., production)',
+            },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              compareId: { type: 'string', format: 'uuid' },
+              runIdA: { type: 'string', format: 'uuid' },
+              runIdB: { type: 'string', format: 'uuid' },
+              status: { type: 'string', enum: ['started'] },
+              message: { type: 'string' },
+              websocketEvents: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'WebSocket events to listen for',
+              },
+            },
+          },
+          400: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              message: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { urlA, urlB } = request.body;
+      const user = request.user as JwtPayload;
+      const orgId = getOrganizationId(request);
+
+      // Validate URLs
+      if (!urlA || !urlB) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Both urlA and urlB are required',
+        });
+      }
+
+      // Feature #433: SSRF protection for both URLs
+      const isProduction = process.env.NODE_ENV === 'production';
+
+      const ssrfA = validateURLForSSRF(urlA, {
+        requireHttps: false,
+        allowLocalhost: !isProduction,
+      });
+      if (!ssrfA.safe) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: `URL A is not allowed: ${ssrfA.error}`,
+        });
+      }
+
+      const ssrfB = validateURLForSSRF(urlB, {
+        requireHttps: false,
+        allowLocalhost: !isProduction,
+      });
+      if (!ssrfB.safe) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: `URL B is not allowed: ${ssrfB.error}`,
+        });
+      }
+
+      // Generate compare ID and individual run IDs
+      const compareId = uuidv4();
+      const runIdA = `${compareId}-a`;
+      const runIdB = `${compareId}-b`;
+
+      // Start both quick tests in parallel
+      Promise.all([
+        runQuickTest({
+          url: urlA,
+          runId: runIdA,
+          orgId,
+          userId: user.id,
+        }),
+        runQuickTest({
+          url: urlB,
+          runId: runIdB,
+          orgId,
+          userId: user.id,
+        }),
+      ]).catch((err) => {
+        console.error('[Quick Test Compare] Unhandled error:', err);
+      });
+
+      // Log audit entry
+      logAuditEntry(request, 'create', 'quick_test_compare', compareId, `Comparative quick test started for ${urlA} vs ${urlB}`, {
+        urlA,
+        urlB,
+        user_id: user.id,
+      });
+
+      return {
+        compareId,
+        runIdA,
+        runIdB,
+        status: 'started',
+        message: 'Comparative quick test started. Listen for WebSocket events to receive results.',
+        websocketEvents: [
+          'wave:start',
+          'wave:progress',
+          'wave:complete',
+          'wave:error',
+          'quick-test:complete',
+          'quick-test:error',
+        ],
+      };
+    }
+  );
+
+  /**
+   * GET /api/v1/quick-test/compare/:compareId
+   * Feature #473: Get the results of a comparative quick test
+   */
+  app.get<{ Params: QuickTestCompareParams }>(
+    '/api/v1/quick-test/compare/:compareId',
+    {
+      preHandler: [authenticate],
+      schema: {
+        tags: ['Quick Test'],
+        summary: 'Get comparative quick test results',
+        description: 'Returns the results of both URLs in a comparison',
+        params: {
+          type: 'object',
+          required: ['compareId'],
+          properties: {
+            compareId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'The comparison ID',
+            },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              compareId: { type: 'string' },
+              resultA: { type: 'object' },
+              resultB: { type: 'object' },
+              comparison: {
+                type: 'object',
+                properties: {
+                  healthDelta: { type: 'number' },
+                  performanceDelta: { type: 'number' },
+                  securityDelta: { type: 'number' },
+                  accessibilityDelta: { type: 'number' },
+                  apiDelta: { type: 'number' },
+                  overallDelta: { type: 'number' },
+                },
+              },
+            },
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              message: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { compareId } = request.params;
+
+      // Get both results
+      const resultA = await getQuickTestResultAsync(`${compareId}-a`);
+      const resultB = await getQuickTestResultAsync(`${compareId}-b`);
+
+      if (!resultA && !resultB) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Comparison not found',
+        });
+      }
+
+      // Calculate deltas if both are complete
+      let comparison = null;
+      if (resultA?.summary && resultB?.summary) {
+        comparison = {
+          healthDelta: (resultA.summary.healthScore ?? 0) - (resultB.summary.healthScore ?? 0),
+          performanceDelta: (resultA.summary.performanceScore ?? 0) - (resultB.summary.performanceScore ?? 0),
+          securityDelta: (resultA.summary.securityScore ?? 0) - (resultB.summary.securityScore ?? 0),
+          accessibilityDelta: (resultA.summary.accessibilityScore ?? 0) - (resultB.summary.accessibilityScore ?? 0),
+          apiDelta: (resultA.summary.apiScore ?? 0) - (resultB.summary.apiScore ?? 0),
+          overallDelta: (resultA.summary.overallScore ?? 0) - (resultB.summary.overallScore ?? 0),
+        };
+      }
+
+      return {
+        compareId,
+        resultA,
+        resultB,
+        comparison,
       };
     }
   );

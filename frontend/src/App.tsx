@@ -102,6 +102,7 @@ const RunHistoryPage = lazy(() => import('./pages/RunHistoryPage').then(m => ({ 
 const ServicesPage = lazy(() => import('./pages/ServicesPage').then(m => ({ default: m.ServicesPage })));
 const OpenAPITestGeneratorPage = lazy(() => import('./pages/OpenAPITestGeneratorPage').then(m => ({ default: m.OpenAPITestGeneratorPage }))); // Feature #324
 const QuickTestPage = lazy(() => import('./pages/QuickTestPage').then(m => ({ default: m.QuickTestPage }))); // Feature #425
+const CompareQuickTestPage = lazy(() => import('./pages/CompareQuickTestPage').then(m => ({ default: m.CompareQuickTestPage }))); // Feature #473
 
 // Feature #432: Loading fallback for lazy-loaded pages using proper skeleton
 import { PageSkeleton } from './components/ui/Skeleton';
@@ -287,6 +288,17 @@ function App() {
             <ProtectedRoute>
               <PageErrorBoundary>
                 <QuickTestPage />
+              </PageErrorBoundary>
+            </ProtectedRoute>
+          }
+        />
+        {/* Feature #473: Comparative Quick Test - side-by-side URL comparison */}
+        <Route
+          path="/quick-test/compare"
+          element={
+            <ProtectedRoute>
+              <PageErrorBoundary>
+                <CompareQuickTestPage />
               </PageErrorBoundary>
             </ProtectedRoute>
           }
