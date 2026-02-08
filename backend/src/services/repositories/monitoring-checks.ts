@@ -29,6 +29,191 @@ import {
 } from '../../routes/monitoring/types.js';
 
 // =============================
+// Feature #363: Typed Database Row Interfaces
+// Replace query<any> and parseXxxRow(row: any) with typed interfaces
+// =============================
+
+/** Database row interface for uptime_checks table */
+interface UptimeCheckRow {
+  id: string;
+  organization_id: string;
+  name: string;
+  url: string;
+  method: string; // Database stores as string, cast to specific type in parser
+  interval_seconds: number;
+  timeout_ms: number;
+  expected_status: number;
+  headers: string | Record<string, string>;
+  body: string | null;
+  locations: string | string[]; // Database may store as JSONB string or parsed array
+  assertions: string | unknown[];
+  ssl_expiry_warning_days: number | null;
+  consecutive_failures_threshold: number;
+  tags: string | string[];
+  group_name: string | null;
+  enabled: boolean;
+  paused_at: string | Date | null;
+  paused_by: string | null;
+  pause_reason: string | null;
+  pause_expires_at: string | Date | null;
+  created_by: string;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+/** Database row interface for check_results table */
+interface CheckResultRow {
+  id: string;
+  check_id: string;
+  location: string; // Database stores as string, parser casts to MonitoringLocation
+  status: string; // Database stores as string ('up', 'down', 'degraded')
+  response_time_ms: number;
+  status_code: number | null;
+  error: string | null;
+  assertion_results: string | unknown[];
+  assertions_passed: number;
+  assertions_failed: number;
+  ssl_info: string | unknown | null;
+  checked_at: string | Date;
+}
+
+/** Database row interface for transaction_checks table */
+interface TransactionCheckRow {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  steps: string | unknown[];
+  interval_seconds: number;
+  enabled: boolean;
+  created_by: string;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+/** Database row interface for transaction_results table */
+interface TransactionResultRow {
+  id: string;
+  transaction_id: string;
+  status: string; // Database stores as string ('passed', 'failed', 'partial')
+  total_time_ms: number;
+  step_results: string | unknown[];
+  checked_at: string | Date;
+}
+
+/** Database row interface for performance_checks table */
+interface PerformanceCheckRow {
+  id: string;
+  organization_id: string;
+  name: string;
+  url: string;
+  device: 'desktop' | 'mobile';
+  interval_seconds: number;
+  enabled: boolean;
+  created_by: string;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+/** Database row interface for performance_results table */
+interface PerformanceResultRow {
+  id: string;
+  check_id: string;
+  status: string; // Database stores as string ('good', 'needs_improvement', 'poor')
+  metrics: string | Record<string, number>;
+  lighthouse_score: number | null;
+  checked_at: string | Date;
+}
+
+/** Database row interface for webhook_checks table */
+interface WebhookCheckRow {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  webhook_url: string;
+  webhook_secret: string | null;
+  expected_interval_seconds: number | null;
+  expected_payload: string | unknown | null;
+  enabled: boolean;
+  created_by: string;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+/** Database row interface for webhook_events table */
+interface WebhookEventRow {
+  id: string;
+  check_id: string;
+  received_at: string | Date;
+  source_ip: string;
+  headers: string | Record<string, string>;
+  payload: string | unknown;
+  payload_valid: boolean;
+  validation_errors: string | string[];
+  signature_valid: boolean | null;
+}
+
+/** Database row interface for dns_checks table */
+interface DnsCheckRow {
+  id: string;
+  organization_id: string;
+  name: string;
+  domain: string;
+  record_type: string; // Database stores as string, parser casts to specific type
+  expected_values: string | string[];
+  nameservers: string | string[];
+  interval_seconds: number;
+  timeout_ms: number;
+  enabled: boolean;
+  created_by: string;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+/** Database row interface for dns_results table */
+interface DnsResultRow {
+  id: string;
+  check_id: string;
+  status: string; // Database stores as string ('up', 'down', 'degraded')
+  resolved_values: string | string[];
+  expected_values: string | string[];
+  response_time_ms: number;
+  nameserver_used: string | null;
+  error: string | null;
+  ttl: number | null;
+  all_expected_found: boolean;
+  unexpected_values: string | string[];
+  checked_at: string | Date;
+}
+
+/** Database row interface for tcp_checks table */
+interface TcpCheckRow {
+  id: string;
+  organization_id: string;
+  name: string;
+  host: string;
+  port: number;
+  timeout_ms: number;
+  interval_seconds: number;
+  enabled: boolean;
+  created_by: string;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+/** Database row interface for tcp_results table */
+interface TcpResultRow {
+  id: string;
+  check_id: string;
+  status: string; // Database stores as string ('up', 'down')
+  port_open: boolean;
+  response_time_ms: number;
+  error: string | null;
+  checked_at: string | Date;
+}
+
+// =============================
 // Feature #210: Explicit Column Lists (Replace SELECT *)
 // =============================
 
@@ -66,7 +251,7 @@ const PERFORMANCE_CHECK_COLUMNS = `
 
 export async function createUptimeCheck(check: UptimeCheck): Promise<UptimeCheck> {
   if (isDatabaseConnected()) {
-    const result = await query<UptimeCheck>(
+    const result = await query<UptimeCheckRow>(
       `INSERT INTO uptime_checks (
         id, organization_id, name, url, method, interval_seconds, timeout_ms,
         expected_status, headers, body, locations, assertions,
@@ -96,7 +281,7 @@ export async function createUptimeCheck(check: UptimeCheck): Promise<UptimeCheck
 
 export async function getUptimeCheck(id: string): Promise<UptimeCheck | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<UptimeCheckRow>(
       `SELECT ${UPTIME_CHECK_COLUMNS} FROM uptime_checks WHERE id = $1`,
       [id]
     );
@@ -119,7 +304,7 @@ export async function updateUptimeCheck(id: string, updates: Partial<UptimeCheck
   };
 
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<UptimeCheckRow>(
       `UPDATE uptime_checks SET
         name = $2, url = $3, method = $4, interval_seconds = $5, timeout_ms = $6,
         expected_status = $7, headers = $8, body = $9, locations = $10, assertions = $11,
@@ -159,7 +344,7 @@ export async function deleteUptimeCheck(id: string): Promise<boolean> {
 
 export async function listUptimeChecks(organizationId: string, limit: number = 100): Promise<UptimeCheck[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<UptimeCheckRow>(
       `SELECT ${UPTIME_CHECK_COLUMNS} FROM uptime_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [organizationId, limit]
     );
@@ -173,7 +358,7 @@ export async function listUptimeChecks(organizationId: string, limit: number = 1
 
 export async function getAllUptimeChecks(limit: number = 100): Promise<UptimeCheck[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(`SELECT ${UPTIME_CHECK_COLUMNS} FROM uptime_checks ORDER BY created_at DESC LIMIT $1`, [limit]);
+    const result = await query<UptimeCheckRow>(`SELECT ${UPTIME_CHECK_COLUMNS} FROM uptime_checks ORDER BY created_at DESC LIMIT $1`, [limit]);
     if (result) {
       return result.rows.map(parseUptimeCheckRow);
     }
@@ -182,28 +367,28 @@ export async function getAllUptimeChecks(limit: number = 100): Promise<UptimeChe
   return [];
 }
 
-function parseUptimeCheckRow(row: any): UptimeCheck {
+function parseUptimeCheckRow(row: UptimeCheckRow): UptimeCheck {
   return {
     id: row.id,
     organization_id: row.organization_id,
     name: row.name,
     url: row.url,
-    method: row.method,
+    method: row.method as UptimeCheck['method'],
     interval: row.interval_seconds,
     timeout: row.timeout_ms,
     expected_status: row.expected_status,
     headers: typeof row.headers === 'string' ? JSON.parse(row.headers) : row.headers,
-    body: row.body,
+    body: row.body ?? undefined,
     locations: typeof row.locations === 'string' ? JSON.parse(row.locations) : row.locations,
     assertions: typeof row.assertions === 'string' ? JSON.parse(row.assertions) : row.assertions,
-    ssl_expiry_warning_days: row.ssl_expiry_warning_days,
-    consecutive_failures_threshold: row.consecutive_failures_threshold,
+    ssl_expiry_warning_days: row.ssl_expiry_warning_days ?? undefined,
+    consecutive_failures_threshold: row.consecutive_failures_threshold ?? undefined,
     tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags,
-    group: row.group_name,
+    group: row.group_name ?? undefined,
     enabled: row.enabled,
     paused_at: row.paused_at ? new Date(row.paused_at) : undefined,
-    paused_by: row.paused_by,
-    pause_reason: row.pause_reason,
+    paused_by: row.paused_by ?? undefined,
+    pause_reason: row.pause_reason ?? undefined,
     pause_expires_at: row.pause_expires_at ? new Date(row.pause_expires_at) : undefined,
     created_by: row.created_by,
     created_at: new Date(row.created_at),
@@ -218,7 +403,7 @@ function parseUptimeCheckRow(row: any): UptimeCheck {
 
 export async function addCheckResult(result: CheckResult): Promise<CheckResult> {
   if (isDatabaseConnected()) {
-    const dbResult = await query<any>(
+    const dbResult = await query<CheckResultRow>(
       `INSERT INTO check_results (
         id, check_id, location, status, response_time_ms, status_code,
         error, assertion_results, assertions_passed, assertions_failed,
@@ -243,7 +428,7 @@ export async function addCheckResult(result: CheckResult): Promise<CheckResult> 
 
 export async function getCheckResults(checkId: string, limit: number = 100): Promise<CheckResult[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<CheckResultRow>(
       `SELECT ${CHECK_RESULT_COLUMNS} FROM check_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT $2`,
       [checkId, limit]
     );
@@ -257,7 +442,7 @@ export async function getCheckResults(checkId: string, limit: number = 100): Pro
 
 export async function getLatestCheckResult(checkId: string): Promise<CheckResult | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<CheckResultRow>(
       `SELECT ${CHECK_RESULT_COLUMNS} FROM check_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT 1`,
       [checkId]
     );
@@ -282,15 +467,15 @@ export async function deleteOldCheckResults(checkId: string, retentionDays: numb
   return 0;
 }
 
-function parseCheckResultRow(row: any): CheckResult {
+function parseCheckResultRow(row: CheckResultRow): CheckResult {
   return {
     id: row.id,
     check_id: row.check_id,
-    location: row.location,
-    status: row.status,
+    location: row.location as CheckResult['location'],
+    status: row.status as CheckResult['status'],
     response_time: row.response_time_ms,
-    status_code: row.status_code,
-    error: row.error,
+    status_code: row.status_code ?? 0,
+    error: row.error ?? undefined,
     assertion_results: typeof row.assertion_results === 'string' ? JSON.parse(row.assertion_results) : row.assertion_results,
     assertions_passed: row.assertions_passed,
     assertions_failed: row.assertions_failed,
@@ -306,7 +491,7 @@ function parseCheckResultRow(row: any): CheckResult {
 
 export async function createTransactionCheck(check: TransactionCheck): Promise<TransactionCheck> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<TransactionCheckRow>(
       `INSERT INTO transaction_checks (
         id, organization_id, name, description, steps, interval_seconds, enabled, created_by, created_at, updated_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -323,7 +508,7 @@ export async function createTransactionCheck(check: TransactionCheck): Promise<T
 
 export async function getTransactionCheck(id: string): Promise<TransactionCheck | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<TransactionCheckRow>(
       `SELECT ${TRANSACTION_CHECK_COLUMNS} FROM transaction_checks WHERE id = $1`,
       [id]
     );
@@ -342,7 +527,7 @@ export async function updateTransactionCheck(id: string, updates: Partial<Transa
   const updated: TransactionCheck = { ...existing, ...updates, updated_at: new Date() };
 
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<TransactionCheckRow>(
       `UPDATE transaction_checks SET
         name = $2, description = $3, steps = $4, interval_seconds = $5, enabled = $6, updated_at = $7
        WHERE id = $1 RETURNING *`,
@@ -366,7 +551,7 @@ export async function deleteTransactionCheck(id: string): Promise<boolean> {
 
 export async function listTransactionChecks(organizationId: string, limit: number = 100): Promise<TransactionCheck[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<TransactionCheckRow>(
       `SELECT ${TRANSACTION_CHECK_COLUMNS} FROM transaction_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [organizationId, limit]
     );
@@ -376,7 +561,7 @@ export async function listTransactionChecks(organizationId: string, limit: numbe
   return [];
 }
 
-function parseTransactionCheckRow(row: any): TransactionCheck {
+function parseTransactionCheckRow(row: TransactionCheckRow): TransactionCheck {
   return {
     id: row.id,
     organization_id: row.organization_id,
@@ -398,7 +583,7 @@ function parseTransactionCheckRow(row: any): TransactionCheck {
 
 export async function addTransactionResult(result: TransactionResult): Promise<TransactionResult> {
   if (isDatabaseConnected()) {
-    const dbResult = await query<any>(
+    const dbResult = await query<TransactionResultRow>(
       `INSERT INTO transaction_results (id, transaction_id, status, total_time_ms, step_results, checked_at)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
@@ -413,7 +598,7 @@ export async function addTransactionResult(result: TransactionResult): Promise<T
 
 export async function getTransactionResults(transactionId: string, limit: number = 100): Promise<TransactionResult[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<TransactionResultRow>(
       `SELECT * FROM transaction_results WHERE transaction_id = $1 ORDER BY checked_at DESC LIMIT $2`,
       [transactionId, limit]
     );
@@ -423,11 +608,11 @@ export async function getTransactionResults(transactionId: string, limit: number
   return [];
 }
 
-function parseTransactionResultRow(row: any): TransactionResult {
+function parseTransactionResultRow(row: TransactionResultRow): TransactionResult {
   return {
     id: row.id,
     transaction_id: row.transaction_id,
-    status: row.status,
+    status: row.status as TransactionResult['status'],
     total_time: row.total_time_ms,
     step_results: typeof row.step_results === 'string' ? JSON.parse(row.step_results) : row.step_results,
     checked_at: new Date(row.checked_at),
@@ -441,7 +626,7 @@ function parseTransactionResultRow(row: any): TransactionResult {
 
 export async function createPerformanceCheck(check: PerformanceCheck): Promise<PerformanceCheck> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<PerformanceCheckRow>(
       `INSERT INTO performance_checks (id, organization_id, name, url, interval_seconds, device, enabled, created_by, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
@@ -456,7 +641,7 @@ export async function createPerformanceCheck(check: PerformanceCheck): Promise<P
 
 export async function getPerformanceCheck(id: string): Promise<PerformanceCheck | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(`SELECT ${PERFORMANCE_CHECK_COLUMNS} FROM performance_checks WHERE id = $1`, [id]);
+    const result = await query<PerformanceCheckRow>(`SELECT ${PERFORMANCE_CHECK_COLUMNS} FROM performance_checks WHERE id = $1`, [id]);
     if (result && result.rows[0]) return parsePerformanceCheckRow(result.rows[0]);
     return undefined;
   }
@@ -470,7 +655,7 @@ export async function updatePerformanceCheck(id: string, updates: Partial<Perfor
   const updated: PerformanceCheck = { ...existing, ...updates, updated_at: new Date() };
 
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<PerformanceCheckRow>(
       `UPDATE performance_checks SET name = $2, url = $3, interval_seconds = $4, device = $5, enabled = $6, updated_at = $7
        WHERE id = $1 RETURNING *`,
       [id, updated.name, updated.url, updated.interval, updated.device, updated.enabled, updated.updated_at]
@@ -491,7 +676,7 @@ export async function deletePerformanceCheck(id: string): Promise<boolean> {
 
 export async function listPerformanceChecks(organizationId: string, limit: number = 100): Promise<PerformanceCheck[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<PerformanceCheckRow>(
       `SELECT ${PERFORMANCE_CHECK_COLUMNS} FROM performance_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [organizationId, limit]
     );
@@ -501,7 +686,7 @@ export async function listPerformanceChecks(organizationId: string, limit: numbe
   return [];
 }
 
-function parsePerformanceCheckRow(row: any): PerformanceCheck {
+function parsePerformanceCheckRow(row: PerformanceCheckRow): PerformanceCheck {
   return {
     id: row.id,
     organization_id: row.organization_id,
@@ -523,7 +708,7 @@ function parsePerformanceCheckRow(row: any): PerformanceCheck {
 
 export async function addPerformanceResult(result: PerformanceResult): Promise<PerformanceResult> {
   if (isDatabaseConnected()) {
-    const dbResult = await query<any>(
+    const dbResult = await query<PerformanceResultRow>(
       `INSERT INTO performance_results (id, check_id, status, metrics, lighthouse_score, checked_at)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
@@ -538,7 +723,7 @@ export async function addPerformanceResult(result: PerformanceResult): Promise<P
 
 export async function getPerformanceResults(checkId: string, limit: number = 100): Promise<PerformanceResult[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<PerformanceResultRow>(
       `SELECT * FROM performance_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT $2`,
       [checkId, limit]
     );
@@ -548,13 +733,13 @@ export async function getPerformanceResults(checkId: string, limit: number = 100
   return [];
 }
 
-function parsePerformanceResultRow(row: any): PerformanceResult {
+function parsePerformanceResultRow(row: PerformanceResultRow): PerformanceResult {
   return {
     id: row.id,
     check_id: row.check_id,
-    status: row.status,
+    status: row.status as PerformanceResult['status'],
     metrics: typeof row.metrics === 'string' ? JSON.parse(row.metrics) : row.metrics,
-    lighthouse_score: row.lighthouse_score,
+    lighthouse_score: row.lighthouse_score ?? 0,
     checked_at: new Date(row.checked_at),
   };
 }
@@ -566,7 +751,7 @@ function parsePerformanceResultRow(row: any): PerformanceResult {
 
 export async function createWebhookCheck(check: WebhookCheck): Promise<WebhookCheck> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<WebhookCheckRow>(
       `INSERT INTO webhook_checks (
         id, organization_id, name, description, webhook_url, webhook_secret,
         expected_interval_seconds, expected_payload, enabled, created_by, created_at, updated_at
@@ -588,7 +773,7 @@ export async function createWebhookCheck(check: WebhookCheck): Promise<WebhookCh
 
 export async function getWebhookCheck(id: string): Promise<WebhookCheck | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(`SELECT * FROM webhook_checks WHERE id = $1`, [id]);
+    const result = await query<WebhookCheckRow>(`SELECT * FROM webhook_checks WHERE id = $1`, [id]);
     if (result && result.rows[0]) return parseWebhookCheckRow(result.rows[0]);
     return undefined;
   }
@@ -597,7 +782,7 @@ export async function getWebhookCheck(id: string): Promise<WebhookCheck | undefi
 
 export async function getWebhookCheckByToken(token: string): Promise<WebhookCheck | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<WebhookCheckRow>(
       `SELECT * FROM webhook_checks WHERE webhook_url LIKE $1`,
       [`%${token}`]
     );
@@ -614,7 +799,7 @@ export async function updateWebhookCheck(id: string, updates: Partial<WebhookChe
   const updated: WebhookCheck = { ...existing, ...updates, updated_at: new Date() };
 
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<WebhookCheckRow>(
       `UPDATE webhook_checks SET
         name = $2, description = $3, webhook_secret = $4,
         expected_interval_seconds = $5, expected_payload = $6, enabled = $7, updated_at = $8
@@ -637,7 +822,7 @@ export async function deleteWebhookCheck(id: string): Promise<boolean> {
 
 export async function listWebhookChecks(organizationId: string, limit: number = 100): Promise<WebhookCheck[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<WebhookCheckRow>(
       `SELECT * FROM webhook_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [organizationId, limit]
     );
@@ -647,7 +832,7 @@ export async function listWebhookChecks(organizationId: string, limit: number = 
   return [];
 }
 
-function parseWebhookCheckRow(row: any): WebhookCheck {
+function parseWebhookCheckRow(row: WebhookCheckRow): WebhookCheck {
   return {
     id: row.id,
     organization_id: row.organization_id,
@@ -671,7 +856,7 @@ function parseWebhookCheckRow(row: any): WebhookCheck {
 
 export async function addWebhookEvent(event: WebhookEvent): Promise<WebhookEvent> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<WebhookEventRow>(
       `INSERT INTO webhook_events (
         id, check_id, received_at, source_ip, headers, payload,
         payload_valid, validation_errors, signature_valid
@@ -693,7 +878,7 @@ export async function addWebhookEvent(event: WebhookEvent): Promise<WebhookEvent
 
 export async function getWebhookEvents(checkId: string, limit: number = 100): Promise<WebhookEvent[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<WebhookEventRow>(
       `SELECT * FROM webhook_events WHERE check_id = $1 ORDER BY received_at DESC LIMIT $2`,
       [checkId, limit]
     );
@@ -703,7 +888,7 @@ export async function getWebhookEvents(checkId: string, limit: number = 100): Pr
   return [];
 }
 
-function parseWebhookEventRow(row: any): WebhookEvent {
+function parseWebhookEventRow(row: WebhookEventRow): WebhookEvent {
   return {
     id: row.id,
     check_id: row.check_id,
@@ -724,7 +909,7 @@ function parseWebhookEventRow(row: any): WebhookEvent {
 
 export async function createDnsCheck(check: DnsCheck): Promise<DnsCheck> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DnsCheckRow>(
       `INSERT INTO dns_checks (
         id, organization_id, name, domain, record_type, expected_values,
         nameservers, interval_seconds, timeout_ms, enabled, created_by, created_at, updated_at
@@ -743,7 +928,7 @@ export async function createDnsCheck(check: DnsCheck): Promise<DnsCheck> {
 
 export async function getDnsCheck(id: string): Promise<DnsCheck | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(`SELECT * FROM dns_checks WHERE id = $1`, [id]);
+    const result = await query<DnsCheckRow>(`SELECT * FROM dns_checks WHERE id = $1`, [id]);
     if (result && result.rows[0]) return parseDnsCheckRow(result.rows[0]);
     return undefined;
   }
@@ -757,7 +942,7 @@ export async function updateDnsCheck(id: string, updates: Partial<DnsCheck>): Pr
   const updated: DnsCheck = { ...existing, ...updates, updated_at: new Date() };
 
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DnsCheckRow>(
       `UPDATE dns_checks SET
         name = $2, domain = $3, record_type = $4, expected_values = $5,
         nameservers = $6, interval_seconds = $7, timeout_ms = $8, enabled = $9, updated_at = $10
@@ -780,7 +965,7 @@ export async function deleteDnsCheck(id: string): Promise<boolean> {
 
 export async function listDnsChecks(organizationId: string, limit: number = 100): Promise<DnsCheck[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DnsCheckRow>(
       `SELECT * FROM dns_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [organizationId, limit]
     );
@@ -790,13 +975,13 @@ export async function listDnsChecks(organizationId: string, limit: number = 100)
   return [];
 }
 
-function parseDnsCheckRow(row: any): DnsCheck {
+function parseDnsCheckRow(row: DnsCheckRow): DnsCheck {
   return {
     id: row.id,
     organization_id: row.organization_id,
     name: row.name,
     domain: row.domain,
-    record_type: row.record_type,
+    record_type: row.record_type as DnsCheck['record_type'],
     expected_values: typeof row.expected_values === 'string' ? JSON.parse(row.expected_values) : row.expected_values,
     nameservers: typeof row.nameservers === 'string' ? JSON.parse(row.nameservers) : row.nameservers,
     interval: row.interval_seconds,
@@ -815,7 +1000,7 @@ function parseDnsCheckRow(row: any): DnsCheck {
 
 export async function addDnsResult(result: DnsCheckResult): Promise<DnsCheckResult> {
   if (isDatabaseConnected()) {
-    const dbResult = await query<any>(
+    const dbResult = await query<DnsResultRow>(
       `INSERT INTO dns_results (
         id, check_id, status, resolved_values, expected_values, response_time_ms,
         nameserver_used, error, ttl, all_expected_found, unexpected_values, checked_at
@@ -834,7 +1019,7 @@ export async function addDnsResult(result: DnsCheckResult): Promise<DnsCheckResu
 
 export async function getDnsResults(checkId: string, limit: number = 100): Promise<DnsCheckResult[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DnsResultRow>(
       `SELECT * FROM dns_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT $2`,
       [checkId, limit]
     );
@@ -844,17 +1029,17 @@ export async function getDnsResults(checkId: string, limit: number = 100): Promi
   return [];
 }
 
-function parseDnsResultRow(row: any): DnsCheckResult {
+function parseDnsResultRow(row: DnsResultRow): DnsCheckResult {
   return {
     id: row.id,
     check_id: row.check_id,
-    status: row.status,
+    status: row.status as DnsCheckResult['status'],
     resolved_values: typeof row.resolved_values === 'string' ? JSON.parse(row.resolved_values) : row.resolved_values,
     expected_values: typeof row.expected_values === 'string' ? JSON.parse(row.expected_values) : row.expected_values,
     response_time: row.response_time_ms,
-    nameserver_used: row.nameserver_used,
-    error: row.error,
-    ttl: row.ttl,
+    nameserver_used: row.nameserver_used ?? '',
+    error: row.error ?? undefined,
+    ttl: row.ttl ?? undefined,
     all_expected_found: row.all_expected_found,
     unexpected_values: typeof row.unexpected_values === 'string' ? JSON.parse(row.unexpected_values) : row.unexpected_values,
     checked_at: new Date(row.checked_at),
@@ -868,7 +1053,7 @@ function parseDnsResultRow(row: any): DnsCheckResult {
 
 export async function createTcpCheck(check: TcpCheck): Promise<TcpCheck> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<TcpCheckRow>(
       `INSERT INTO tcp_checks (
         id, organization_id, name, host, port, timeout_ms, interval_seconds, enabled, created_by, created_at, updated_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -882,7 +1067,7 @@ export async function createTcpCheck(check: TcpCheck): Promise<TcpCheck> {
 
 export async function getTcpCheck(id: string): Promise<TcpCheck | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(`SELECT * FROM tcp_checks WHERE id = $1`, [id]);
+    const result = await query<TcpCheckRow>(`SELECT * FROM tcp_checks WHERE id = $1`, [id]);
     if (result && result.rows[0]) return parseTcpCheckRow(result.rows[0]);
     return undefined;
   }
@@ -896,7 +1081,7 @@ export async function updateTcpCheck(id: string, updates: Partial<TcpCheck>): Pr
   const updated: TcpCheck = { ...existing, ...updates, updated_at: new Date() };
 
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<TcpCheckRow>(
       `UPDATE tcp_checks SET name = $2, host = $3, port = $4, timeout_ms = $5, interval_seconds = $6, enabled = $7, updated_at = $8
        WHERE id = $1 RETURNING *`,
       [id, updated.name, updated.host, updated.port, updated.timeout, updated.interval, updated.enabled, updated.updated_at]
@@ -917,7 +1102,7 @@ export async function deleteTcpCheck(id: string): Promise<boolean> {
 
 export async function listTcpChecks(organizationId: string, limit: number = 100): Promise<TcpCheck[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<TcpCheckRow>(
       `SELECT * FROM tcp_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [organizationId, limit]
     );
@@ -927,7 +1112,7 @@ export async function listTcpChecks(organizationId: string, limit: number = 100)
   return [];
 }
 
-function parseTcpCheckRow(row: any): TcpCheck {
+function parseTcpCheckRow(row: TcpCheckRow): TcpCheck {
   return {
     id: row.id,
     organization_id: row.organization_id,
@@ -950,7 +1135,7 @@ function parseTcpCheckRow(row: any): TcpCheck {
 
 export async function addTcpResult(result: TcpCheckResult): Promise<TcpCheckResult> {
   if (isDatabaseConnected()) {
-    const dbResult = await query<any>(
+    const dbResult = await query<TcpResultRow>(
       `INSERT INTO tcp_results (id, check_id, status, port_open, response_time_ms, error, checked_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
@@ -963,7 +1148,7 @@ export async function addTcpResult(result: TcpCheckResult): Promise<TcpCheckResu
 
 export async function getTcpResults(checkId: string, limit: number = 100): Promise<TcpCheckResult[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<TcpResultRow>(
       `SELECT * FROM tcp_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT $2`,
       [checkId, limit]
     );
@@ -973,14 +1158,14 @@ export async function getTcpResults(checkId: string, limit: number = 100): Promi
   return [];
 }
 
-function parseTcpResultRow(row: any): TcpCheckResult {
+function parseTcpResultRow(row: TcpResultRow): TcpCheckResult {
   return {
     id: row.id,
     check_id: row.check_id,
-    status: row.status,
+    status: row.status as TcpCheckResult['status'],
     port_open: row.port_open,
     response_time: row.response_time_ms,
-    error: row.error,
+    error: row.error ?? undefined,
     checked_at: new Date(row.checked_at),
   };
 }
