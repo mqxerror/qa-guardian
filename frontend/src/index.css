@@ -230,11 +230,10 @@ textarea {
 
 /* Feature #396: Theme Color Palettes */
 /* Each palette overrides --primary, --primary-foreground, --accent, --accent-foreground, --ring */
-
-/* Default Blue (no data-theme attribute needed - uses root values) */
+/* Using :root with attribute selector for higher specificity than @layer base */
 
 /* Purple Haze palette */
-[data-theme-palette="purple"] {
+:root[data-theme-palette="purple"] {
   --primary: 271 81% 56%;           /* #A855F7 purple-500 */
   --primary-foreground: 0 0% 100%;
   --accent: 271 81% 56%;
@@ -243,7 +242,7 @@ textarea {
   --sidebar-primary: 271 81% 56%;
   --sidebar-ring: 271 81% 56%;
 }
-[data-theme-palette="purple"].light {
+:root[data-theme-palette="purple"].light {
   --primary: 271 81% 50%;           /* purple-600 for light mode */
   --ring: 271 81% 50%;
   --sidebar-primary: 271 81% 50%;
@@ -251,7 +250,7 @@ textarea {
 }
 
 /* Emerald palette */
-[data-theme-palette="emerald"] {
+:root[data-theme-palette="emerald"] {
   --primary: 160 84% 39%;           /* #10B981 emerald-500 */
   --primary-foreground: 0 0% 100%;
   --accent: 160 84% 39%;
@@ -260,7 +259,7 @@ textarea {
   --sidebar-primary: 160 84% 39%;
   --sidebar-ring: 160 84% 39%;
 }
-[data-theme-palette="emerald"].light {
+:root[data-theme-palette="emerald"].light {
   --primary: 160 84% 36%;           /* emerald-600 for light mode */
   --ring: 160 84% 36%;
   --sidebar-primary: 160 84% 36%;
@@ -268,7 +267,7 @@ textarea {
 }
 
 /* Sunset Orange palette */
-[data-theme-palette="orange"] {
+:root[data-theme-palette="orange"] {
   --primary: 24 95% 53%;            /* #F97316 orange-500 */
   --primary-foreground: 0 0% 100%;
   --accent: 24 95% 53%;
@@ -277,7 +276,7 @@ textarea {
   --sidebar-primary: 24 95% 53%;
   --sidebar-ring: 24 95% 53%;
 }
-[data-theme-palette="orange"].light {
+:root[data-theme-palette="orange"].light {
   --primary: 25 95% 50%;            /* orange-600 for light mode */
   --ring: 25 95% 50%;
   --sidebar-primary: 25 95% 50%;
@@ -285,7 +284,7 @@ textarea {
 }
 
 /* Rose palette */
-[data-theme-palette="rose"] {
+:root[data-theme-palette="rose"] {
   --primary: 350 89% 60%;           /* #F43F5E rose-500 */
   --primary-foreground: 0 0% 100%;
   --accent: 350 89% 60%;
@@ -294,7 +293,7 @@ textarea {
   --sidebar-primary: 350 89% 60%;
   --sidebar-ring: 350 89% 60%;
 }
-[data-theme-palette="rose"].light {
+:root[data-theme-palette="rose"].light {
   --primary: 350 89% 54%;           /* rose-600 for light mode */
   --ring: 350 89% 54%;
   --sidebar-primary: 350 89% 54%;
@@ -302,7 +301,7 @@ textarea {
 }
 
 /* Monochrome palette */
-[data-theme-palette="mono"] {
+:root[data-theme-palette="mono"] {
   --primary: 0 0% 70%;              /* gray-400 */
   --primary-foreground: 0 0% 9%;
   --accent: 0 0% 70%;
@@ -311,7 +310,7 @@ textarea {
   --sidebar-primary: 0 0% 70%;
   --sidebar-ring: 0 0% 70%;
 }
-[data-theme-palette="mono"].light {
+:root[data-theme-palette="mono"].light {
   --primary: 0 0% 25%;              /* gray-700 for light mode */
   --primary-foreground: 0 0% 100%;
   --ring: 0 0% 25%;
