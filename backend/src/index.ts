@@ -61,6 +61,7 @@ import { registerMetricsHooks } from './services/metrics.js'; // Feature #165: A
 import { setWebSocketIO } from './services/websocket-events.js'; // Feature #108: WebSocket CRUD events
 import { initializeEventSubscriber, closeSubscriber } from './services/redis-events.js'; // Feature #200: Redis Pub/Sub for worker events
 import { generateRequestId } from './utils/index.js';
+import { getTestRun } from './services/repositories/test-runs.js'; // Feature #388: Organization check for Socket.IO join-run
 
 // Socket.IO server instance (will be initialized after server starts)
 let io: SocketIOServer | null = null;
@@ -594,11 +595,32 @@ async function start() {
       });
 
       // Feature #219: Join specific test run room with auth check
-      socket.on('join-run', (runId: string) => {
+      // Feature #388: Organization membership check to prevent cross-org data leakage
+      socket.on('join-run', async (runId: string) => {
         if (!socket.data.authenticated) {
           socket.emit('error', { message: 'Authentication required to join run rooms' });
           return;
         }
+
+        // Feature #388: Verify the run belongs to the user's organization
+        try {
+          const run = await getTestRun(runId);
+          if (!run) {
+            socket.emit('error', { message: 'Test run not found' });
+            return;
+          }
+
+          if (run.organization_id !== socket.data.organizationId) {
+            console.log(`[Socket.IO] Client ${socket.id} denied access to run:${runId} - org mismatch (user org: ${socket.data.organizationId}, run org: ${run.organization_id})`);
+            socket.emit('error', { message: 'Access denied - test run belongs to a different organization' });
+            return;
+          }
+        } catch (error) {
+          console.error(`[Socket.IO] Error checking run ownership for ${runId}:`, error);
+          socket.emit('error', { message: 'Failed to verify run ownership' });
+          return;
+        }
+
         socket.join(`run:${runId}`);
         console.log(`[Socket.IO] Client ${socket.id} joined run:${runId}`);
       });
