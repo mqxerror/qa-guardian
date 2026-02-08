@@ -6,6 +6,7 @@
  */
 
 import { randomUUID, randomBytes } from 'node:crypto';
+import dns from 'node:dns/promises'; // Feature #391: DNS resolution for SSRF protection
 
 // ============================================
 // ID Generation Utilities
@@ -871,4 +872,93 @@ export function validateWebhookURL(
     requireHttps: isProduction,
     allowLocalhost: !isProduction,
   });
+}
+
+/**
+ * Feature #391: Async validation with DNS resolution check.
+ * Resolves the hostname and verifies the resolved IP is not in private ranges.
+ * This prevents DNS rebinding attacks where a hostname resolves to a private IP.
+ *
+ * @param urlString - The URL to validate
+ * @param options - Validation options
+ * @returns Promise resolving to validation result
+ */
+export async function validateWebhookURLWithDNS(
+  urlString: string,
+  options: {
+    isProduction?: boolean;
+    allowLocalhost?: boolean;
+  } = {}
+): Promise<SSRFValidationResult> {
+  const { isProduction = process.env.NODE_ENV === 'production', allowLocalhost = !isProduction } = options;
+
+  // First, run the synchronous URL validation
+  const urlValidation = validateURLForSSRF(urlString, {
+    requireHttps: isProduction,
+    allowLocalhost,
+  });
+
+  if (!urlValidation.safe) {
+    return urlValidation;
+  }
+
+  // Now resolve the hostname and check if it points to a private IP
+  const url = urlValidation.url!;
+  const hostname = url.hostname;
+
+  // Skip DNS check for IP addresses (already validated)
+  const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+  if (ipv4Regex.test(hostname)) {
+    return urlValidation; // Already checked in sync validation
+  }
+
+  // Skip DNS check for localhost if allowed
+  if (allowLocalhost && (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1')) {
+    return urlValidation;
+  }
+
+  try {
+    // Resolve hostname to IP addresses
+    const addresses = await dns.resolve(hostname);
+
+    for (const address of addresses) {
+      const privateCheck = isPrivateIP(address);
+      if (privateCheck.isPrivate) {
+        return {
+          safe: false,
+          error: `DNS resolution to private IP not allowed: ${hostname} resolves to ${address} (${privateCheck.details || 'private range'})`,
+        };
+      }
+    }
+
+    // Also check IPv6 addresses if available
+    try {
+      const ipv6Addresses = await dns.resolve6(hostname);
+      for (const address of ipv6Addresses) {
+        const privateCheck = isPrivateIP(address);
+        if (privateCheck.isPrivate) {
+          return {
+            safe: false,
+            error: `DNS resolution to private IPv6 not allowed: ${hostname} resolves to ${address}`,
+          };
+        }
+      }
+    } catch {
+      // IPv6 resolution may fail, that's OK
+    }
+
+    return urlValidation;
+  } catch (error) {
+    // DNS resolution failed - could be a valid external hostname that's temporarily unavailable
+    // In production, we should be strict; in development, allow it
+    if (isProduction) {
+      return {
+        safe: false,
+        error: `DNS resolution failed for ${hostname} - cannot verify IP safety`,
+      };
+    }
+    // In development, allow DNS resolution failures (hostname might be external but DNS unavailable)
+    console.warn(`[SSRF] DNS resolution failed for ${hostname}, allowing in non-production mode`);
+    return urlValidation;
+  }
 }

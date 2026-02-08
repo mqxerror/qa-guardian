@@ -11,6 +11,7 @@
 import { query, isDatabaseConnected } from '../database.js';
 import type { WebhookSubscription, WebhookEventType, WebhookDeliveryLog } from '../../routes/test-runs/webhooks.js';
 import { MAX_WEBHOOK_RETRIES } from '../../routes/test-runs/webhooks.js';
+import { encrypt, decrypt, encryptIfNeeded } from '../encryption.js'; // Feature #391: Encrypt webhook secrets at rest
 
 // ============================================
 // Column Constants (Feature #100: Replace SELECT * with explicit columns)
@@ -43,6 +44,18 @@ const DELIVERY_LOG_COLUMNS = [
 // ============================================
 
 function parseSubscriptionRow(row: any): WebhookSubscription {
+  // Feature #391: Decrypt the webhook secret after SELECT
+  let decryptedSecret: string | undefined;
+  if (row.secret) {
+    try {
+      decryptedSecret = decrypt(row.secret);
+    } catch (error) {
+      // If decryption fails (e.g., key changed), log warning but don't break
+      console.warn(`[WEBHOOK-REPO] Failed to decrypt secret for subscription ${row.id}:`, error);
+      decryptedSecret = undefined;
+    }
+  }
+
   return {
     id: row.id,
     organization_id: row.organization_id,
@@ -53,7 +66,7 @@ function parseSubscriptionRow(row: any): WebhookSubscription {
     url: row.url,
     events: row.events as WebhookEventType[],
     headers: row.headers || undefined,
-    secret: row.secret || undefined,
+    secret: decryptedSecret,
     payload_template: row.payload_template || undefined,
     retry_enabled: row.retry_enabled ?? true,
     max_retries: row.max_retries ?? MAX_WEBHOOK_RETRIES,
@@ -122,6 +135,9 @@ export async function createSubscription(subscription: WebhookSubscription): Pro
     return subscription;
   }
 
+  // Feature #391: Encrypt the webhook secret before storing
+  const encryptedSecret = subscription.secret ? encryptIfNeeded(subscription.secret) : null;
+
   const result = await query<any>(
     `INSERT INTO webhook_subscriptions (
       id, organization_id, project_id, project_ids, result_statuses,
@@ -141,7 +157,7 @@ export async function createSubscription(subscription: WebhookSubscription): Pro
       subscription.url,
       subscription.events,
       subscription.headers ? JSON.stringify(subscription.headers) : null,
-      subscription.secret || null,
+      encryptedSecret,
       subscription.payload_template || null,
       subscription.retry_enabled ?? true,
       subscription.max_retries ?? MAX_WEBHOOK_RETRIES,
@@ -230,7 +246,8 @@ export async function updateSubscription(
   }
   if (updates.secret !== undefined) {
     setClauses.push(`secret = $${paramIndex++}`);
-    values.push(updates.secret || null);
+    // Feature #391: Encrypt the webhook secret before storing
+    values.push(updates.secret ? encryptIfNeeded(updates.secret) : null);
   }
   if (updates.payload_template !== undefined) {
     setClauses.push(`payload_template = $${paramIndex++}`);
