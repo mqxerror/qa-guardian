@@ -55,7 +55,7 @@ import { registerRateLimiting } from './middleware/rate-limit.js'; // Feature #3
 import { initializeCleanupJob, stopCleanupJob } from './jobs/cleanup.js'; // Feature #154: Data retention cleanup
 import { initializeExecutionQueue, shutdownExecutionQueue } from './services/execution-queue.js'; // Feature #155: BullMQ execution queue
 import { initializeWebhookQueue, shutdownWebhookQueue, registerSubscriptionStatsCallback } from './services/webhook-queue.js'; // Feature #320: BullMQ webhook queue
-import { updateSubscriptionDeliveryStats, initializeWebhookSubscriptionsFromDb, closeWebhookPubSub } from './routes/test-runs/webhooks.js'; // Feature #321: Webhook auto-disable, Feature #329: DB persistence, Feature #372: Pub/Sub cleanup
+import { updateSubscriptionDeliveryStats, initializeWebhookSubscriptionsFromDb, closeWebhookPubSub, initializeWebhookPubSub } from './routes/test-runs/webhooks.js'; // Feature #321: Webhook auto-disable, Feature #329: DB persistence, Feature #362: Pub/Sub init, Feature #372: Pub/Sub cleanup
 import { initializeErrorHandlers } from './services/error-tracking.js'; // Feature #164: Error tracking
 import { registerMetricsHooks } from './services/metrics.js'; // Feature #165: API response time tracking
 import { setWebSocketIO } from './services/websocket-events.js'; // Feature #108: WebSocket CRUD events
@@ -426,6 +426,18 @@ async function start() {
       registerSubscriptionStatsCallback(updateSubscriptionDeliveryStats);
     } else {
       console.log('[Startup] Webhook queue not available - webhooks will use in-memory delivery');
+    }
+
+    // Feature #362: Initialize Redis Pub/Sub for webhook cache invalidation (Feature #381)
+    try {
+      const webhookPubSubInitialized = await initializeWebhookPubSub();
+      if (webhookPubSubInitialized) {
+        console.log('[Startup] Webhook Pub/Sub initialized - cache invalidation across instances enabled');
+      } else {
+        console.log('[Startup] Webhook Pub/Sub already initialized');
+      }
+    } catch (err: any) {
+      console.warn('[Startup] Webhook Pub/Sub not available (non-fatal):', err.message);
     }
 
     // Seed test users AFTER database is connected
