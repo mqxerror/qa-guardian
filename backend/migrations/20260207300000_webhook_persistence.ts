@@ -34,7 +34,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     payload_template: { type: 'text' },
     // Feature #1294: Retry configuration
     retry_enabled: { type: 'boolean', default: true },
-    max_retries: { type: 'integer', default: 5 },
+    max_retries: { type: 'integer', default: 3 }, // Match MAX_WEBHOOK_RETRIES constant
     // Feature #1304: Batch delivery
     batch_enabled: { type: 'boolean', default: false },
     batch_size: { type: 'integer', default: 10 },
