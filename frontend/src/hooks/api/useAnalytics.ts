@@ -199,3 +199,34 @@ export function useBranchComparison(branchA?: string, branchB?: string) {
     gcTime: 10 * 60 * 1000,
   });
 }
+
+/**
+ * Feature #477: Hook to fetch AI usage statistics from database
+ * Provides cost tracking, daily aggregation, and budget status
+ */
+export function useAIUsage(period: 'day' | 'week' | 'month' = 'day') {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: [...analyticsKeys.all, 'aiUsage', period],
+    queryFn: () => fetchWithAuth(`/api/v1/ai/usage?period=${period}`, token),
+    enabled: !!token,
+    staleTime: 2 * 60 * 1000, // 2 minutes - AI usage may change frequently
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Feature #477: Hook to fetch AI usage budget configuration
+ */
+export function useAIUsageBudget() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: [...analyticsKeys.all, 'aiUsageBudget'],
+    queryFn: () => fetchWithAuth('/api/v1/ai/usage/budget', token),
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+}

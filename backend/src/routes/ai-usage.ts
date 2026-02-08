@@ -1,0 +1,213 @@
+/**
+ * AI Usage Routes
+ * Feature #477: Database-backed AI usage statistics for cost tracking
+ *
+ * Provides API endpoints for:
+ * - Usage aggregation (daily/weekly/monthly)
+ * - Budget management
+ * - Usage alerts
+ */
+
+import { FastifyInstance } from 'fastify';
+import { authenticate, getOrganizationId } from '../middleware/auth.js';
+import {
+  getAIUsageAggregation,
+  getCurrentPeriodUsage,
+  getAIUsageBudget,
+  setAIUsageBudget,
+  getRecentAlerts,
+  checkBudgetAndAlert,
+} from '../services/repositories/ai-usage.js';
+
+// ============================================================================
+// Route Registration
+// ============================================================================
+
+export async function aiUsageRoutes(app: FastifyInstance) {
+  // ============================================================================
+  // GET /api/v1/ai/usage - Get AI usage statistics
+  // Feature #477: Returns aggregated usage data from database
+  // ============================================================================
+  app.get<{
+    Querystring: {
+      period?: 'day' | 'week' | 'month';
+      start_date?: string;
+      end_date?: string;
+    };
+  }>('/api/v1/ai/usage', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const orgId = getOrganizationId(request);
+    const { period = 'day', start_date, end_date } = request.query;
+
+    // Parse dates if provided
+    const startDate = start_date ? new Date(start_date) : undefined;
+    const endDate = end_date ? new Date(end_date) : undefined;
+
+    // Get aggregated usage
+    const usage = await getAIUsageAggregation(orgId, period, startDate, endDate);
+
+    // Get current period usage for summary
+    const dailyUsage = await getCurrentPeriodUsage(orgId, 'day');
+    const monthlyUsage = await getCurrentPeriodUsage(orgId, 'month');
+
+    // Get budget
+    const budget = await getAIUsageBudget(orgId);
+
+    // Calculate budget status
+    let budgetStatus: {
+      daily: { used: number; limit: number | null; percent: number | null } | null;
+      monthly: { used: number; limit: number | null; percent: number | null } | null;
+    } | null = null;
+
+    if (budget) {
+      budgetStatus = {
+        daily: budget.daily_limit_usd ? {
+          used: dailyUsage.total_cost_usd,
+          limit: budget.daily_limit_usd,
+          percent: Math.round((dailyUsage.total_cost_usd / budget.daily_limit_usd) * 100),
+        } : null,
+        monthly: budget.monthly_limit_usd ? {
+          used: monthlyUsage.total_cost_usd,
+          limit: budget.monthly_limit_usd,
+          percent: Math.round((monthlyUsage.total_cost_usd / budget.monthly_limit_usd) * 100),
+        } : null,
+      };
+    }
+
+    // Guard against timeout middleware having already sent a 504
+    if (reply.sent) return;
+
+    return {
+      usage,
+      summary: {
+        today: {
+          cost_usd: dailyUsage.total_cost_usd,
+          requests: dailyUsage.total_requests,
+        },
+        this_month: {
+          cost_usd: monthlyUsage.total_cost_usd,
+          requests: monthlyUsage.total_requests,
+        },
+      },
+      budget: budgetStatus,
+      period,
+    };
+  });
+
+  // ============================================================================
+  // GET /api/v1/ai/usage/budget - Get budget configuration
+  // Feature #477: Returns budget limits and alert thresholds
+  // ============================================================================
+  app.get('/api/v1/ai/usage/budget', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const orgId = getOrganizationId(request);
+    const budget = await getAIUsageBudget(orgId);
+
+    // Guard against timeout middleware having already sent a 504
+    if (reply.sent) return;
+
+    return {
+      budget: budget ? {
+        daily_limit_usd: budget.daily_limit_usd,
+        monthly_limit_usd: budget.monthly_limit_usd,
+        alert_threshold_percent: budget.alert_threshold_percent,
+        updated_at: budget.updated_at,
+      } : null,
+    };
+  });
+
+  // ============================================================================
+  // PUT /api/v1/ai/usage/budget - Set budget configuration
+  // Feature #477: Configure daily/monthly limits and alert thresholds
+  // ============================================================================
+  app.put<{
+    Body: {
+      daily_limit_usd?: number | null;
+      monthly_limit_usd?: number | null;
+      alert_threshold_percent?: number;
+    };
+  }>('/api/v1/ai/usage/budget', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const orgId = getOrganizationId(request);
+    const { daily_limit_usd, monthly_limit_usd, alert_threshold_percent } = request.body;
+
+    const budget = await setAIUsageBudget(
+      orgId,
+      daily_limit_usd ?? undefined,
+      monthly_limit_usd ?? undefined,
+      alert_threshold_percent ?? 80
+    );
+
+    if (!budget) {
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to set budget',
+      });
+    }
+
+    // Guard against timeout middleware having already sent a 504
+    if (reply.sent) return;
+
+    return {
+      budget: {
+        daily_limit_usd: budget.daily_limit_usd,
+        monthly_limit_usd: budget.monthly_limit_usd,
+        alert_threshold_percent: budget.alert_threshold_percent,
+        updated_at: budget.updated_at,
+      },
+    };
+  });
+
+  // ============================================================================
+  // GET /api/v1/ai/usage/alerts - Get recent budget alerts
+  // Feature #477: Returns recent budget threshold alerts
+  // ============================================================================
+  app.get<{
+    Querystring: {
+      limit?: string;
+    };
+  }>('/api/v1/ai/usage/alerts', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const orgId = getOrganizationId(request);
+    const limit = parseInt(request.query.limit || '10', 10);
+
+    const alerts = await getRecentAlerts(orgId, Math.min(limit, 100));
+
+    // Guard against timeout middleware having already sent a 504
+    if (reply.sent) return;
+
+    return {
+      alerts: alerts.map(alert => ({
+        id: alert.id,
+        alert_type: alert.alert_type,
+        threshold_percent: alert.threshold_percent,
+        current_usage_usd: alert.current_usage_usd,
+        limit_usd: alert.limit_usd,
+        created_at: alert.created_at,
+      })),
+    };
+  });
+
+  // ============================================================================
+  // POST /api/v1/ai/usage/check-budget - Manually check budget status
+  // Feature #477: Triggers budget check and returns any alerts
+  // ============================================================================
+  app.post('/api/v1/ai/usage/check-budget', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    const orgId = getOrganizationId(request);
+    const result = await checkBudgetAndAlert(orgId);
+
+    // Guard against timeout middleware having already sent a 504
+    if (reply.sent) return;
+
+    return {
+      exceeded: result.exceeded,
+      alerts: result.alerts,
+    };
+  });
+}

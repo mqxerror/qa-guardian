@@ -24,7 +24,9 @@ import type {
   ProviderStatus,
   ProviderConfig,
   AIMessageContent,
+  AIUsageContext,
 } from './providers/types.js';
+import { logAIUsage, checkBudgetAndAlert } from './repositories/ai-usage.js';
 
 // Re-export types for backward compatibility
 export type Message = AIMessage;
@@ -255,6 +257,9 @@ class AIService implements IAIProvider {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < this.config.maxRetries; attempt++) {
+      // Feature #477: Track request latency
+      const startTime = Date.now();
+
       try {
         // Wait for rate limit slot
         await this.rateLimiter.waitForSlot();
@@ -278,6 +283,7 @@ class AIService implements IAIProvider {
         }
 
         const response = await this.client.messages.create(requestParams);
+        const latencyMs = Date.now() - startTime;
 
         // Extract text content
         const textContent = response.content
@@ -294,8 +300,8 @@ class AIService implements IAIProvider {
           provider: 'anthropic',
         };
 
-        // Track usage
-        this.trackUsage(result, true);
+        // Track usage (Feature #477: include context for DB logging)
+        this.trackUsage(result, true, options.usageContext, latencyMs);
 
         return result;
 
@@ -431,8 +437,15 @@ class AIService implements IAIProvider {
 
   /**
    * Track token usage and cost
+   * Feature #477: Also logs to database when context is provided
    */
-  private trackUsage(response: AIResponse, success: boolean): void {
+  private trackUsage(
+    response: AIResponse,
+    success: boolean,
+    context?: AIUsageContext,
+    latencyMs?: number,
+    errorMessage?: string
+  ): void {
     this.usageStats.totalRequests++;
     if (success) {
       this.usageStats.successfulRequests++;
@@ -450,7 +463,35 @@ class AIService implements IAIProvider {
 
     const inputCost = (response.inputTokens / 1_000_000) * pricing.input;
     const outputCost = (response.outputTokens / 1_000_000) * pricing.output;
-    this.usageStats.totalCostUsd += inputCost + outputCost;
+    const totalCost = inputCost + outputCost;
+    this.usageStats.totalCostUsd += totalCost;
+
+    // Feature #477: Persist to database if org context is provided
+    if (context?.organizationId) {
+      // Fire and forget - don't block on DB write
+      logAIUsage({
+        organization_id: context.organizationId,
+        user_id: context.userId,
+        model: response.model,
+        provider: response.provider,
+        feature: context.feature || 'unknown',
+        input_tokens: response.inputTokens,
+        output_tokens: response.outputTokens,
+        cost_usd: totalCost,
+        success,
+        error_message: errorMessage,
+        latency_ms: latencyMs,
+      }).then(() => {
+        // Check budget after logging (fire and forget)
+        return checkBudgetAndAlert(context.organizationId!);
+      }).then(result => {
+        if (result.exceeded) {
+          logger.warn({ alerts: result.alerts, orgId: context.organizationId }, '[AIService] Budget threshold exceeded');
+        }
+      }).catch(err => {
+        logger.error({ error: err }, '[AIService] Failed to log AI usage to database');
+      });
+    }
   }
 
   /**

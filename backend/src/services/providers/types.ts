@@ -65,6 +65,19 @@ export interface AIMessage {
 }
 
 /**
+ * Context for tracking AI usage
+ * Feature #477: Required for persisting usage to database
+ */
+export interface AIUsageContext {
+  /** Organization ID for billing attribution */
+  organizationId?: string;
+  /** User ID who made the request */
+  userId?: string;
+  /** Feature that initiated the request (e.g., 'test-gen', 'chat', 'analysis', 'healing') */
+  feature?: string;
+}
+
+/**
  * Options for sending a message to an AI provider.
  */
 export interface AISendMessageOptions {
@@ -80,6 +93,8 @@ export interface AISendMessageOptions {
   stream?: boolean;
   /** Stop sequences to end generation */
   stopSequences?: string[];
+  /** Feature #477: Context for usage tracking and billing */
+  usageContext?: AIUsageContext;
 }
 
 /**

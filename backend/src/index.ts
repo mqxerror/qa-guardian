@@ -50,6 +50,7 @@ import { servicesStatusRoutes, setServicesSocketIO } from './routes/services-sta
 import { setRecordingSocketIO } from './routes/test-runs/recording-routes.js'; // Feature #26: Playwright recording
 import { stepTemplateRoutes } from './routes/step-templates.js'; // Feature #31: Reusable Step Templates
 import { errorsRoutes } from './routes/errors/index.js'; // Feature #166: Frontend error reporting
+import { aiUsageRoutes } from './routes/ai-usage.js'; // Feature #477: AI usage tracking
 import { healthRoutes, setHealthSocketIO } from './routes/health.js'; // Feature #359: Health check routes
 import { requestTimeoutHook } from './middleware/timeout.js'; // Feature #90: Request timeout middleware
 import { registerRateLimiting } from './middleware/rate-limit.js'; // Feature #359: Rate limiting middleware
@@ -337,6 +338,7 @@ async function registerPlugins() {
   await app.register(servicesStatusRoutes); // Feature #2127
   await app.register(stepTemplateRoutes); // Feature #31: Reusable Step Templates
   await app.register(errorsRoutes); // Feature #166: Frontend error reporting
+  await app.register(aiUsageRoutes); // Feature #477: AI usage tracking
 
   // Global error handler - don't expose stack traces to clients
   app.setErrorHandler((error, request, reply) => {
