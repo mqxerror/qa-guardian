@@ -26,7 +26,7 @@
  */
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Pin, PanelLeft, LogOut, Bell, RefreshCw, Eye, EyeOff, Building2, Check, Users, Key, CreditCard, FileCode, ClipboardList, Bot } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pin, PanelLeft, LogOut, Bell, RefreshCw, Eye, EyeOff, Building2, Check, Users, Key, CreditCard, FileCode, ClipboardList, Bot, Zap } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useSidebarStore, SidebarSection } from '../stores/sidebarStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
@@ -549,11 +549,12 @@ export function AppSidebar() {
 
         {pinnedItems.length > 0 && !isCollapsed && <SidebarSeparator />}
 
-        {/* Group 1: Always Visible - Dashboard & Projects */}
+        {/* Group 1: Always Visible - Dashboard, Quick Test & Projects */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               {renderNavItem({ path: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard', visibility: 'all' })}
+              {renderNavItem({ path: '/quick-test', icon: <Zap className="h-4 w-4" />, label: 'Quick Test', visibility: 'all' })}
               {renderNavItem({ path: '/projects', icon: <ProjectsIcon />, label: 'Projects', visibility: 'all' })}
               {renderNavItem({ path: '/run-history', icon: <RunHistoryIcon />, label: 'Run History', visibility: 'all' })}
             </SidebarMenu>

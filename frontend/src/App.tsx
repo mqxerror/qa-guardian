@@ -110,6 +110,7 @@ const ProjectRunHistoryPage = lazy(() => import('./pages/ProjectRunHistoryPage')
 const RunHistoryPage = lazy(() => import('./pages/RunHistoryPage').then(m => ({ default: m.RunHistoryPage })));
 const ServicesPage = lazy(() => import('./pages/ServicesPage').then(m => ({ default: m.ServicesPage })));
 const OpenAPITestGeneratorPage = lazy(() => import('./pages/OpenAPITestGeneratorPage').then(m => ({ default: m.OpenAPITestGeneratorPage }))); // Feature #324
+const QuickTestPage = lazy(() => import('./pages/QuickTestPage').then(m => ({ default: m.QuickTestPage }))); // Feature #425
 
 // Feature #432: Loading fallback for lazy-loaded pages using proper skeleton
 import { PageSkeleton } from './components/ui/Skeleton';
@@ -1150,6 +1151,15 @@ function App() {
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Feature #425: Quick Test - instant URL analysis */}
+        <Route
+          path="/quick-test"
+          element={
+            <ProtectedRoute>
+              <QuickTestPage />
             </ProtectedRoute>
           }
         />
