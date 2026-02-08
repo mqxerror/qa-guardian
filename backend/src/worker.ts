@@ -47,7 +47,7 @@ console.log(`[Worker] Job Timeout: ${JOB_TIMEOUT}ms`);
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const redisPassword = process.env.REDIS_PASSWORD;
 
-let redisOptions: any;
+let redisOptions: { host: string; port: number; maxRetriesPerRequest: null; password?: string };
 try {
   const url = new URL(redisUrl);
   redisOptions = {

@@ -8,7 +8,8 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { getTest, getTestSuite, getTestsMap } from '../test-suites.js';
 import { getProjectEnvVars } from '../projects.js';
-import { testRuns, TestRun } from './execution.js';
+import { EnvironmentVariable } from '../projects/types.js';
+import { testRuns, TestRun, ConsoleLog, NetworkRequest } from './execution.js';
 import { getTestRun as dbGetTestRun } from '../../services/repositories/test-runs.js';
 
 // Helper: get test run from Map first, then fall back to DB
@@ -152,25 +153,25 @@ export async function runDataRoutes(app: FastifyInstance) {
 
     // Categorize logs by level with highlighting info
     const categorizedLogs = {
-      errors: consoleLogs.filter((l: any) => l.level === 'error').map((l: any) => ({
+      errors: consoleLogs.filter((l: ConsoleLog) => l.level === 'error').map((l: ConsoleLog) => ({
         ...l,
         timestamp: new Date(l.timestamp).toISOString(),
         highlighted: true,
         severity: 'high',
       })),
-      warnings: consoleLogs.filter((l: any) => l.level === 'warn').map((l: any) => ({
+      warnings: consoleLogs.filter((l: ConsoleLog) => l.level === 'warn').map((l: ConsoleLog) => ({
         ...l,
         timestamp: new Date(l.timestamp).toISOString(),
         highlighted: true,
         severity: 'medium',
       })),
-      info: consoleLogs.filter((l: any) => l.level === 'info' || l.level === 'log').map((l: any) => ({
+      info: consoleLogs.filter((l: ConsoleLog) => l.level === 'info' || l.level === 'log').map((l: ConsoleLog) => ({
         ...l,
         timestamp: new Date(l.timestamp).toISOString(),
         highlighted: false,
         severity: 'low',
       })),
-      debug: consoleLogs.filter((l: any) => l.level === 'debug').map((l: any) => ({
+      debug: consoleLogs.filter((l: ConsoleLog) => l.level === 'debug').map((l: ConsoleLog) => ({
         ...l,
         timestamp: new Date(l.timestamp).toISOString(),
         highlighted: false,
@@ -179,14 +180,14 @@ export async function runDataRoutes(app: FastifyInstance) {
     };
 
     // All logs in chronological order with highlighting
-    const allLogs = consoleLogs.map((l: any) => ({
+    const allLogs = consoleLogs.map((l: ConsoleLog) => ({
       timestamp: new Date(l.timestamp).toISOString(),
       level: l.level,
       message: l.message,
       location: l.location,
       highlighted: l.level === 'error' || l.level === 'warn',
       severity: l.level === 'error' ? 'high' : l.level === 'warn' ? 'medium' : 'low',
-    })).sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    })).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     return {
       run_id: runId,
@@ -237,13 +238,13 @@ export async function runDataRoutes(app: FastifyInstance) {
 
     // Calculate statistics
     const totalRequests = networkRequests.length;
-    const failedRequests = networkRequests.filter((r: any) => r.failed || (r.status && r.status >= 400));
-    const successfulRequests = networkRequests.filter((r: any) => !r.failed && (!r.status || r.status < 400));
+    const failedRequests = networkRequests.filter((r: NetworkRequest) => r.failed || (r.status && r.status >= 400));
+    const successfulRequests = networkRequests.filter((r: NetworkRequest) => !r.failed && (!r.status || r.status < 400));
 
     // Calculate response times
     const responseTimes = networkRequests
-      .filter((r: any) => r.duration_ms !== undefined)
-      .map((r: any) => r.duration_ms!);
+      .filter((r: NetworkRequest) => r.duration_ms !== undefined)
+      .map((r: NetworkRequest) => r.duration_ms!);
     const avgResponseTime = responseTimes.length > 0
       ? Math.round(responseTimes.reduce((a: number, b: number) => a + b, 0) / responseTimes.length)
       : null;
@@ -253,12 +254,12 @@ export async function runDataRoutes(app: FastifyInstance) {
     // Group by resource type
     const byResourceType: Record<string, number> = {};
     for (const req of networkRequests) {
-      const type = (req as any).resourceType || 'other';
+      const type = req.resourceType || 'other';
       byResourceType[type] = (byResourceType[type] || 0) + 1;
     }
 
     // Format requests for response with flagging failed ones
-    const formattedRequests = networkRequests.map((req: any) => ({
+    const formattedRequests = networkRequests.map((req: NetworkRequest) => ({
       timestamp: new Date(req.timestamp).toISOString(),
       method: req.method,
       url: req.url,
@@ -271,7 +272,7 @@ export async function runDataRoutes(app: FastifyInstance) {
       failed: req.failed || (req.status && req.status >= 400),
       failure_reason: req.failureText || (req.status && req.status >= 400 ? `HTTP ${req.status}` : null),
       is_slow: req.duration_ms && req.duration_ms > 1000, // Flag requests over 1 second
-    })).sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    })).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     return {
       run_id: runId,
@@ -291,7 +292,7 @@ export async function runDataRoutes(app: FastifyInstance) {
         min_ms: minResponseTime,
       },
       requests: formattedRequests,
-      failed_requests: formattedRequests.filter((r: any) => r.failed),
+      failed_requests: formattedRequests.filter(r => r.failed),
     };
   });
 
@@ -635,7 +636,7 @@ export async function runDataRoutes(app: FastifyInstance) {
         run_env_var_count: Object.keys((run as any).run_env_vars).length,
         project_env_var_count: projectEnvVarsArray.length,
         total_env_var_count: Object.keys((run as any).run_env_vars).length + projectEnvVarsArray.filter(
-          (pv: any) => !(run as any).run_env_vars![pv.key] // Only count project vars not overridden by run vars
+          (pv: EnvironmentVariable) => !(run as TestRun & { run_env_vars: Record<string, string> }).run_env_vars[pv.key] // Only count project vars not overridden by run vars
         ).length,
         merge_mode: merge,
       },

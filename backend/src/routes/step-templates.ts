@@ -6,6 +6,7 @@ import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth.
 import { query } from '../services/database.js';
 import { QueryResult, QueryResultRow } from 'pg';
 import crypto from 'crypto';
+import { TestStep } from './test-suites/types.js';
 
 // Helper to handle potentially null query results (when database not connected)
 function ensureResult<T extends QueryResultRow>(result: QueryResult<T> | null): QueryResult<T> {
@@ -23,7 +24,7 @@ interface StepTemplate {
   suite_id?: string | null;
   name: string;
   description?: string;
-  steps: any[];
+  steps: TestStep[];
   tags: string[];
   created_by: string;
   created_at: Date;
@@ -33,7 +34,7 @@ interface StepTemplate {
 interface CreateTemplateBody {
   name: string;
   description?: string;
-  steps: any[];
+  steps: TestStep[];
   tags?: string[];
   suite_id?: string;
 }
@@ -43,7 +44,7 @@ interface TemplateParams {
 }
 
 interface AppendStepsBody {
-  steps: any[];
+  steps: TestStep[];
 }
 
 interface TestParams {
@@ -60,7 +61,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     const { suite_id, search } = request.query as { suite_id?: string; search?: string };
 
     let sql = `SELECT * FROM step_templates WHERE organization_id = $1`;
-    const params: any[] = [orgId];
+    const params: unknown[] =[orgId];
     let paramIdx = 2;
 
     if (suite_id) {
@@ -193,7 +194,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       }
 
       const updates: string[] = [];
-      const params: any[] = [];
+      const params: unknown[] =[];
       let idx = 1;
 
       if (name !== undefined) { updates.push(`name = $${idx++}`); params.push(name.trim()); }
@@ -298,7 +299,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       const existingSteps = config.steps || [];
       const startOrder = existingSteps.length;
 
-      const appendedSteps = newSteps.map((s: any, i: number) => ({
+      const appendedSteps = newSteps.map((s: TestStep, i: number) => ({
         ...s,
         id: s.id || crypto.randomUUID(),
         order: startOrder + i,

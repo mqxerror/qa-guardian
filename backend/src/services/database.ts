@@ -148,9 +148,9 @@ export async function getClient(): Promise<PoolClient | null> {
 /**
  * Execute a query
  */
-export async function query<T extends QueryResultRow = any>(
+export async function query<T extends QueryResultRow = QueryResultRow>(
   text: string,
-  params?: any[]
+  params?: unknown[]
 ): Promise<QueryResult<T> | null> {
   if (!pool || !isConnected) {
     return null;

@@ -45,7 +45,7 @@ interface ResultDetailsParams {
 }
 
 // Helper function for emitting events (will be passed from parent)
-type EmitRunEventFn = (runId: string, orgId: string, event: string, data: any) => void;
+type EmitRunEventFn = (runId: string, orgId: string, event: string, data: Record<string, unknown>) => void;
 
 // Store reference to emitRunEvent function
 let emitRunEvent: EmitRunEventFn = () => {};

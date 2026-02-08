@@ -37,7 +37,7 @@ interface QueueStatusQuery {
 }
 
 // Helper function for emitting events (will be passed from parent)
-type EmitRunEventFn = (runId: string, orgId: string, event: string, data: any) => void;
+type EmitRunEventFn = (runId: string, orgId: string, event: string, data: Record<string, unknown>) => void;
 
 // Store reference to emitRunEvent function
 let emitRunEvent: EmitRunEventFn = () => {};
@@ -356,7 +356,7 @@ export async function runControlRoutes(app: FastifyInstance) {
       }));
 
     // Optionally include completed runs
-    let completedRuns: any[] = [];
+    let completedRuns: Array<{ id: string; suite_id: string; status: string; started_at?: string; completed_at?: string }> = [];
     if (includeCompleted) {
       completedRuns = orgRuns
         .filter(r => ['passed', 'failed', 'cancelled'].includes(r.status))

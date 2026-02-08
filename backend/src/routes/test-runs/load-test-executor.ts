@@ -68,6 +68,82 @@ interface ThresholdEvaluation {
 }
 
 /**
+ * Check result from K6 load test
+ */
+interface LoadTestCheck {
+  name: string;
+  passes: number;
+  fails: number;
+  success_rate?: string;
+}
+
+/**
+ * Custom metric from K6 load test
+ */
+interface LoadTestCustomMetric {
+  name: string;
+  type: 'counter' | 'gauge' | 'rate' | 'trend';
+  value: number | {
+    avg?: number;
+    min?: number;
+    max?: number;
+    p95?: number;
+    p99?: number;
+  };
+}
+
+/**
+ * Complete load test results structure
+ */
+interface LoadTestResults {
+  summary?: {
+    total_requests?: number;
+    failed_requests?: number;
+    success_rate?: string;
+    requests_per_second?: string;
+    iterations?: number;
+    iterations_per_second?: string;
+    data_transferred?: number;
+    data_transferred_formatted?: string;
+  };
+  response_times?: {
+    min?: number;
+    avg?: number;
+    med?: number;
+    p90?: number;
+    p95?: number;
+    p99?: number;
+    max?: number;
+  };
+  virtual_users?: {
+    configured?: number;
+    max_concurrent?: number;
+  };
+  duration?: {
+    configured?: number;
+    actual?: number;
+    ramp_up?: number;
+  };
+  data_transfer?: {
+    received_bytes?: number;
+    sent_bytes?: number;
+    received_rate?: number;
+    sent_rate?: number;
+  };
+  checks?: LoadTestCheck[];
+  custom_metrics?: LoadTestCustomMetric[];
+  threshold_results?: ThresholdEvalResult[];
+  execution_mode?: 'real_k6' | 'simulated' | 'real_k6_failed';
+  error?: string;
+  server_unavailable?: {
+    detected?: boolean;
+    errorType?: string;
+    errorMessage?: string;
+    failureRate?: number;
+  };
+}
+
+/**
  * Parse a K6 threshold expression and extract components
  * Supports: p(95)<500, avg<200, rate<0.01, count>1000, value>0, med<300, min<100, max<1000
  */
@@ -103,8 +179,8 @@ function getMetricValue(
   metric: string,
   aggregation: string,
   percentile: number | undefined,
-  loadTestResults: any
-): number | null {
+  loadTestResults: LoadTestResults
+): number | null | undefined {
   // Map K6 metric names to our result structure
   switch (metric) {
     case 'http_req_duration':
@@ -166,8 +242,8 @@ function getMetricValue(
     case 'checks':
       // Check pass rate (from checks array)
       if (loadTestResults.checks && loadTestResults.checks.length > 0) {
-        const totalPasses = loadTestResults.checks.reduce((sum: number, c: any) => sum + c.passes, 0);
-        const totalFails = loadTestResults.checks.reduce((sum: number, c: any) => sum + c.fails, 0);
+        const totalPasses = loadTestResults.checks.reduce((sum: number, c: LoadTestCheck) => sum + c.passes, 0);
+        const totalFails = loadTestResults.checks.reduce((sum: number, c: LoadTestCheck) => sum + c.fails, 0);
         const total = totalPasses + totalFails;
         if (total === 0) return 1; // No checks = 100% pass
         return totalPasses / total;
@@ -177,7 +253,7 @@ function getMetricValue(
     default:
       // Check custom metrics
       if (loadTestResults.custom_metrics) {
-        const customMetric = loadTestResults.custom_metrics.find((m: any) => m.name === metric);
+        const customMetric = loadTestResults.custom_metrics.find((m: LoadTestCustomMetric) => m.name === metric);
         if (customMetric) {
           if (typeof customMetric.value === 'object') {
             // Trend metric with aggregations
@@ -219,7 +295,7 @@ function compareValue(actual: number, operator: string, threshold: number): bool
  */
 function evaluateThresholds(
   thresholds: Array<{ metric: string; expression: string; abortOnFail?: boolean; delayAbortEval?: string }> | undefined,
-  loadTestResults: any
+  loadTestResults: LoadTestResults
 ): ThresholdEvaluation {
   const results: ThresholdEvalResult[] = [];
   const failedThresholds: ThresholdEvalResult[] = [];
@@ -255,7 +331,7 @@ function evaluateThresholds(
       loadTestResults
     );
 
-    if (actualValue === null) {
+    if (actualValue === null || actualValue === undefined) {
       // Metric not found - skip but log warning
       console.warn(`[K6 Threshold] Metric not found: ${threshold.metric}`);
       results.push({
@@ -276,7 +352,7 @@ function evaluateThresholds(
       metric: threshold.metric,
       expression: threshold.expression,
       passed,
-      actualValue,
+      actualValue: actualValue,
       threshold: parsed.threshold,
       operator: parsed.operator,
     };
@@ -357,7 +433,7 @@ export interface LoadTestContext {
   browser: Browser;
   runId: string;
   orgId: string;
-  emitRunEvent: (runId: string, orgId: string, event: string, data: any) => void;
+  emitRunEvent: (runId: string, orgId: string, event: string, data: Record<string, unknown>) => void;
 }
 
 /**
@@ -367,7 +443,7 @@ export interface LoadTestResult {
   testStatus: 'passed' | 'failed' | 'error';
   testError?: string;
   stepResults: StepResult[];
-  loadTestResults?: any;
+  loadTestResults?: LoadTestResults;
 }
 
 /**
@@ -567,7 +643,7 @@ function convertK6SummaryToResults(
   summary: K6Summary,
   test: LoadTestConfig,
   actualDuration: number
-): any {
+): LoadTestResults {
   const metrics = summary.metrics;
   const virtualUsers = test.virtual_users || 10;
   const configuredDuration = test.duration || 30;
@@ -615,7 +691,7 @@ function convertK6SummaryToResults(
       received_rate: metrics.data_received?.rate || 0,
       sent_rate: metrics.data_sent?.rate || 0,
     },
-    checks: Object.values(summary.root_group?.checks || {}).map((c: any) => ({
+    checks: Object.values(summary.root_group?.checks || {}).map((c) => ({
       name: c.name,
       passes: c.passes,
       fails: c.fails,
@@ -628,19 +704,29 @@ function convertK6SummaryToResults(
 }
 
 /**
+ * Server error information for simulated failures
+ */
+interface ServerErrorInfo {
+  detected: boolean;
+  errorType?: string;
+  errorMessage?: string;
+  failureRate?: number;
+}
+
+/**
  * Generate simulated results (for CI/testing without K6 installed)
  */
 function generateSimulatedResults(
   test: LoadTestConfig,
   customMetrics: CustomMetricDefinition[],
-  serverError: any
-): any {
+  serverError: ServerErrorInfo | undefined
+): LoadTestResults {
   const virtualUsers = test.virtual_users || 10;
   const duration = test.duration || 30;
   const rampUpTime = test.ramp_up_time || 5;
 
   const totalRequests = virtualUsers * (duration / 10) * (50 + Math.floor(Math.random() * 50));
-  const failureRate = serverError?.detected ? (serverError.failureRate / 100) : (Math.random() * 0.02);
+  const failureRate = serverError?.detected ? ((serverError.failureRate ?? 95) / 100) : (Math.random() * 0.02);
   const failedRequests = Math.floor(totalRequests * failureRate);
   const avgResponseTime = Math.floor(Math.random() * 200 + 50);
   const p95ResponseTime = Math.floor(avgResponseTime * (1.5 + Math.random() * 0.5));
@@ -652,7 +738,7 @@ function generateSimulatedResults(
   const sentBytes = totalRequests * (400 + Math.floor(Math.random() * 200));
   const totalDataTransferred = receivedBytes + sentBytes;
 
-  const results: any = {
+  const results: LoadTestResults = {
     summary: {
       total_requests: totalRequests,
       failed_requests: failedRequests,
@@ -706,7 +792,7 @@ export async function executeLoadTest(
   const stepResults: StepResult[] = [];
   let testStatus: 'passed' | 'failed' | 'error' = 'passed';
   let testError: string | undefined;
-  let loadTestResults: any;
+  let loadTestResults: LoadTestResults | undefined;
 
   console.log(`[Load Test] Starting load test for ${test.name} (USE_REAL_K6=${USE_REAL_K6})`);
 
@@ -813,7 +899,7 @@ export async function executeLoadTest(
     const customMetrics = test.k6_script ? detectCustomMetrics(test.k6_script) : [];
 
     // Check for server unavailable simulation (for testing)
-    let serverError: any;
+    let serverError: ServerErrorInfo | undefined;
     if (simulatedK6ServerUnavailable.enabled) {
       const errorType = simulatedK6ServerUnavailable.errorType || 'connection_refused';
       serverError = {

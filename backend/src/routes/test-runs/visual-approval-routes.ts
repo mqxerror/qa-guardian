@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { getTest, getTestSuite } from '../test-suites.js';
-import { testRuns, TestRun } from './execution.js';
+import { testRuns, TestRun, TestRunResult } from './execution.js';
 import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
 
 /**
@@ -34,6 +34,7 @@ import {
 import { sendBaselineApprovedWebhook } from './webhook-events.js';
 
 // Helper to get user from request
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getUser(request: any): JwtPayload | undefined {
   return request.user as JwtPayload | undefined;
 }
@@ -82,7 +83,8 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     );
 
     // Find the specific run or use the most recent one
-    let targetRun: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+let targetRun: any;
     if (runId) {
       targetRun = allTestRuns.find(r => r.id === runId);
     } else {
@@ -102,7 +104,7 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     }
 
     // Find the test result with the screenshot
-    const testResult = targetRun.results?.find((r: any) => r.test_id === testId);
+    const testResult = targetRun.results?.find((r: TestRunResult) => r.test_id === testId);
     if (!testResult || !testResult.screenshot_base64) {
       return reply.status(400).send({
         error: 'Bad Request',
@@ -271,7 +273,8 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     );
 
     // Find the specific run or use the most recent one
-    let targetRun: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+let targetRun: any;
     if (run_id) {
       targetRun = allTestRuns.find(r => r.id === run_id);
     } else {
@@ -290,7 +293,7 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     }
 
     // Find the test result with the screenshot
-    const testResult = targetRun.results?.find((r: any) => r.test_id === test_id);
+    const testResult = targetRun.results?.find((r: TestRunResult) => r.test_id === test_id);
     // For multi-viewport tests, the screenshot may be in viewportResults
     let screenshotBase64 = testResult?.screenshot_base64;
     if (!screenshotBase64 && testResult?.viewportResults) {
@@ -456,7 +459,7 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     }
 
     // Find the result for this test
-    const testResult = targetRun.results?.find((r: any) => r.test_id === testId);
+    const testResult = targetRun.results?.find((r: TestRunResult) => r.test_id === testId);
     if (!testResult) {
       return reply.status(404).send({
         error: 'Not Found',

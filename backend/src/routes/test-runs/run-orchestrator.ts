@@ -73,7 +73,7 @@ export function getSocketIO(): SocketIOServer | null {
  * Helper to emit test run events to both run room and org room
  * Feature #200: Falls back to Redis Pub/Sub when Socket.IO is not available (worker mode)
  */
-export function emitRunEvent(runId: string, orgId: string, event: string, data: any) {
+export function emitRunEvent(runId: string, orgId: string, event: string, data: Record<string, unknown>) {
   if (io) {
     // Direct Socket.IO emit (API server mode)
     const payload = { runId, orgId, ...data };

@@ -11,11 +11,13 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { getTest, getTestSuite, getTestsMap, updateTest } from '../test-suites.js';
+import { TestStep } from '../test-suites/types.js';
 // Type-only imports (required for ESM compatibility)
 import type {
   PendingHealingApproval,
   HealingRecord,
   DOMChangeContext,
+  HealingEventEntry,
 } from './healing.js';
 // Value imports
 import {
@@ -44,11 +46,11 @@ async function getTestRunWithFallback(runId: string): Promise<TestRun | undefine
 }
 
 // Reference for healing event history - import from healing module
-const healingEventHistory = new Map<string, any[]>();
+const healingEventHistory = new Map<string, HealingEventEntry[]>();
 export { healingEventHistory };
 
 // Initialize from healing module's getHealingHistory function
-function getHealingHistoryForTest(testId: string): any[] {
+function getHealingHistoryForTest(testId: string): HealingEventEntry[] {
   return healingEventHistory.get(testId) || [];
 }
 
@@ -469,7 +471,7 @@ export async function healingRoutes(app: FastifyInstance) {
         } : null,
       })),
       total_heals: history.length,
-      applied_heals: history.filter((e: any) => e.applied).length,
+      applied_heals: history.filter((e: HealingEventEntry) => e.applied).length,
     };
   });
 
@@ -489,7 +491,7 @@ export async function healingRoutes(app: FastifyInstance) {
     }
 
     const history = getHealingHistory(testId);
-    const event = history.find((e: any) => e.id === eventId);
+    const event = history.find((e: HealingEventEntry) => e.id === eventId);
 
     if (!event) {
       return reply.status(404).send({
@@ -664,13 +666,13 @@ export async function healingRoutes(app: FastifyInstance) {
       const testHealingHistory = getHealingHistory(testId);
 
       // Analyze each step's selector
-      test.steps.forEach((step: any, stepIndex: number) => {
+      test.steps.forEach((step: TestStep, stepIndex: number) => {
         if (!step.selector) return;
 
         const { strategy, fragility } = getSelectorFragility(step.selector);
 
         // Count how many times this step needed healing
-        const stepHealings = testHealingHistory.filter((h: any) => h.stepIndex === stepIndex);
+        const stepHealings = testHealingHistory.filter((h: HealingEventEntry) => h.stepIndex === stepIndex);
         const healingCount = stepHealings.length;
 
         // Adjust fragility based on healing history (more heals = more fragile)
@@ -679,7 +681,7 @@ export async function healingRoutes(app: FastifyInstance) {
         // Only include if meets minimum fragility threshold
         if (adjustedFragility < minFragility) return;
 
-        const lastHealing = stepHealings.sort((a: any, b: any) =>
+        const lastHealing = stepHealings.sort((a: HealingEventEntry, b: HealingEventEntry) =>
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         )[0];
 

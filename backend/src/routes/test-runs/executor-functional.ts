@@ -23,6 +23,32 @@ import {
   StepResult,
 } from './execution.js';
 
+import { TestStep } from '../test-suites/types.js';
+// Simplified accessibility results for inline a11y checks
+interface A11yStepResults {
+  wcag_level: string;
+  violations: {
+    count: number;
+    critical: number;
+    serious: number;
+    moderate: number;
+    minor: number;
+    items: Array<{
+      id: string;
+      impact: 'critical' | 'serious' | 'moderate' | 'minor';
+      description: string;
+      wcagTags: string[];
+      nodes: Array<{ html: string; target: string[] }>;
+    }>;
+  };
+  config: {
+    wcagLevel: string;
+    failOnAny: boolean;
+    failOnCritical: boolean;
+    threshold: number;
+  };
+}
+
 import {
   AntiAliasingOptions,
   BASELINES_DIR,
@@ -47,8 +73,20 @@ import {
 
 import { getTestSuite } from '../test-suites.js';
 
+// Selector strategy for healing
+interface SelectorStrategy {
+  selector: string;
+  strategy: string;
+  confidence: number;
+}
+
+// Extended step type with healing properties
+interface ExecutableStep extends TestStep {
+  selectorStrategies?: SelectorStrategy[];
+}
+
 // Event emitter type - passed in from caller
-export type EmitRunEventFn = (runId: string, orgId: string, event: string, data: any) => void;
+export type EmitRunEventFn = (runId: string, orgId: string, event: string, data: Record<string, unknown>) => void;
 
 // Configuration for E2E step execution
 export interface E2EStepExecutionConfig {
@@ -61,7 +99,7 @@ export interface E2EStepExecutionConfig {
     viewport_height?: number;
     anti_aliasing_tolerance?: 'off' | 'low' | 'medium' | 'high';
     color_threshold?: number;
-    steps: any[];
+    steps: TestStep[];
   };
   page: Page;
   browser: Browser;
@@ -133,7 +171,7 @@ export async function executeE2ESteps(config: E2EStepExecutionConfig): Promise<E
               try {
                 await page.waitForLoadState('networkidle', { timeout: 3000 });
               } catch { /* Ignore timeout - some clicks don't trigger AJAX */ }
-            } catch (clickErr: any) {
+            } catch (clickErr: unknown) {
               // Try healing if element not found
               const healResult = await tryHealing(
                 'click',
@@ -165,7 +203,7 @@ export async function executeE2ESteps(config: E2EStepExecutionConfig): Promise<E
           if (step.selector && step.value) {
             try {
               await page.fill(step.selector, step.value, { timeout: stepTimeout });
-            } catch (fillErr: any) {
+            } catch (fillErr: unknown) {
               // Try healing if element not found
               const healResult = await tryHealingForFill(
                 step,
@@ -357,16 +395,16 @@ interface HealingResult {
  */
 async function tryHealing(
   action: 'click',
-  step: any,
+  step: TestStep,
   page: Page,
   test: { id: string; suite_id?: string },
   runId: string,
   stepIndex: number,
   orgId: string,
   isOptionalStep: boolean,
-  originalErr: Error
+  originalErr: unknown
 ): Promise<HealingResult> {
-  const errorMessage = originalErr.message || '';
+  const errorMessage = originalErr instanceof Error ? originalErr.message : String(originalErr);
 
   // Check if this is a healable error
   if (!errorMessage.includes('strict mode') && !errorMessage.includes('not found') &&
@@ -390,10 +428,10 @@ async function tryHealing(
   const enabledStrategies = await getEnabledStrategies(healingProjectId);
   console.log(`[HEALING] Using project ${healingProjectId} threshold: ${projectAutoHealThreshold}, enabled strategies: ${enabledStrategies.join(', ')}`);
 
-  const altSelectors = (step as any).selectorStrategies?.filter((s: any) => s.selector !== step.selector) || [];
+  const altSelectors = (step as ExecutableStep).selectorStrategies?.filter((s: SelectorStrategy) => s.selector !== step.selector) || [];
 
   // Try alternate selectors
-  for (const alt of altSelectors.sort((a: any, b: any) => b.confidence - a.confidence)) {
+  for (const alt of altSelectors.sort((a, b) => b.confidence - a.confidence)) {
     if (alt.strategy === 'visual-match') continue;
     if (!(await isHealingStrategyEnabled(healingProjectId, alt.strategy))) {
       console.log(`[HEALING] Skipping ${alt.strategy} (strategy disabled for project)`);
@@ -410,7 +448,7 @@ async function tryHealing(
         await page.waitForLoadState('networkidle', { timeout: 3000 });
       } catch { /* Ignore timeout */ }
       console.log(`[HEALING] SUCCESS with ${alt.strategy}: ${alt.selector} - auto-applied (confidence >= ${projectAutoHealThreshold})`);
-      recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, alt.selector, alt.strategy, alt.confidence, orgId);
+      recordSuccessfulHeal(runId, test.id, stepIndex, step.selector!, alt.selector, alt.strategy, alt.confidence, orgId);
       trackHealingSuccess(healingProjectId, alt.strategy);
       return { healed: true, skipped: false };
     } catch (altErr) {
@@ -433,7 +471,7 @@ async function tryHealing(
           await page.waitForLoadState('networkidle', { timeout: 3000 });
         } catch { /* Ignore timeout */ }
         console.log(`[HEALING] SUCCESS with visual-match at (${centerX}, ${centerY})`);
-        recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
+        recordSuccessfulHeal(runId, test.id, stepIndex, step.selector!, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
         trackHealingSuccess(healingProjectId, 'visual-match');
         return { healed: true, skipped: false };
       } else if (visualMatch.found && visualMatch.matchLocation) {
@@ -446,7 +484,7 @@ async function tryHealing(
           runId,
           testId: test.id,
           stepIndex,
-          originalSelector: step.selector,
+          originalSelector: step.selector!,
           suggestedSelector: `visual-match:${visualFingerprint}`,
           strategy: 'visual-match',
           confidence: visualMatch.confidence,
@@ -464,7 +502,7 @@ async function tryHealing(
             await page.waitForLoadState('networkidle', { timeout: 3000 });
           } catch { /* Ignore timeout */ }
           console.log(`[HEALING] APPROVED: visual-match at (${centerX}, ${centerY})`);
-          recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
+          recordSuccessfulHeal(runId, test.id, stepIndex, step.selector!, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
           trackHealingSuccess(healingProjectId, 'visual-match');
           return { healed: true, skipped: false };
         } else {
@@ -490,16 +528,16 @@ async function tryHealing(
  * Try healing for fill/type actions
  */
 async function tryHealingForFill(
-  step: any,
+  step: TestStep,
   page: Page,
   test: { id: string; suite_id?: string },
   runId: string,
   stepIndex: number,
   orgId: string,
   isOptionalStep: boolean,
-  originalErr: Error
+  originalErr: unknown
 ): Promise<HealingResult> {
-  const errorMessage = originalErr.message || '';
+  const errorMessage = originalErr instanceof Error ? originalErr.message : String(originalErr);
 
   if (!errorMessage.includes('strict mode') && !errorMessage.includes('not found') &&
       !errorMessage.includes('timeout') && !errorMessage.includes('waiting for')) {
@@ -521,9 +559,9 @@ async function tryHealingForFill(
   const enabledStrategies = await getEnabledStrategies(healingProjectId);
   console.log(`[HEALING] Using project ${healingProjectId} threshold for fill: ${projectThreshold}, enabled strategies: ${enabledStrategies.join(', ')}`);
 
-  const altSelectors = (step as any).selectorStrategies?.filter((s: any) => s.selector !== step.selector) || [];
+  const altSelectors = (step as ExecutableStep).selectorStrategies?.filter((s: SelectorStrategy) => s.selector !== step.selector) || [];
 
-  for (const alt of altSelectors.sort((a: any, b: any) => b.confidence - a.confidence)) {
+  for (const alt of altSelectors.sort((a, b) => b.confidence - a.confidence)) {
     if (alt.strategy === 'visual-match') continue;
     if (!(await isHealingStrategyEnabled(healingProjectId, alt.strategy))) {
       continue;
@@ -535,7 +573,7 @@ async function tryHealingForFill(
       console.log(`[HEALING] Trying alternate selector: ${alt.selector} (confidence: ${alt.confidence})`);
       await page.fill(alt.selector, step.value!, { timeout: 5000 });
       console.log(`[HEALING] SUCCESS with ${alt.strategy}: ${alt.selector} - auto-applied (confidence >= ${projectThreshold})`);
-      recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, alt.selector, alt.strategy, alt.confidence, orgId);
+      recordSuccessfulHeal(runId, test.id, stepIndex, step.selector!, alt.selector, alt.strategy, alt.confidence, orgId);
       trackHealingSuccess(healingProjectId, alt.strategy);
       return { healed: true, skipped: false };
     } catch (altErr) {
@@ -556,7 +594,7 @@ async function tryHealingForFill(
         await page.mouse.click(centerX, centerY);
         await page.keyboard.type(step.value!);
         console.log(`[HEALING] SUCCESS with visual-match fill at (${centerX}, ${centerY})`);
-        recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
+        recordSuccessfulHeal(runId, test.id, stepIndex, step.selector!, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
         trackHealingSuccess(healingProjectId, 'visual-match');
         return { healed: true, skipped: false };
       } else if (visualMatch.found && visualMatch.matchLocation) {
@@ -568,7 +606,7 @@ async function tryHealingForFill(
           runId,
           testId: test.id,
           stepIndex,
-          originalSelector: step.selector,
+          originalSelector: step.selector!,
           suggestedSelector: `visual-match:${visualFingerprint}`,
           strategy: 'visual-match',
           confidence: visualMatch.confidence,
@@ -584,7 +622,7 @@ async function tryHealingForFill(
           await page.mouse.click(centerX, centerY);
           await page.keyboard.type(step.value!);
           console.log(`[HEALING] APPROVED: visual-match fill at (${centerX}, ${centerY})`);
-          recordSuccessfulHeal(runId, test.id, stepIndex, step.selector, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
+          recordSuccessfulHeal(runId, test.id, stepIndex, step.selector!, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
           trackHealingSuccess(healingProjectId, 'visual-match');
           return { healed: true, skipped: false };
         } else {
@@ -609,7 +647,7 @@ async function tryHealingForFill(
  * Execute visual checkpoint step
  */
 async function executeVisualCheckpoint(
-  step: any,
+  step: TestStep,
   stepIndex: number,
   page: Page,
   test: { id: string; anti_aliasing_tolerance?: string; color_threshold?: number; organization_id?: string }
@@ -667,14 +705,14 @@ async function executeVisualCheckpoint(
  * Execute accessibility check step within E2E test
  */
 async function executeAccessibilityCheckStep(
-  step: any,
+  step: TestStep,
   page: Page,
   consoleLogs: ConsoleLog[]
 ): Promise<{
   failed: boolean;
   error?: string;
   screenshot_base64?: string;
-  a11yResults?: any;
+  a11yResults?: A11yStepResults;
 }> {
   const a11yStepConfig = {
     wcagLevel: (step as any).a11y_wcag_level || 'AA',
@@ -762,7 +800,7 @@ async function executeAccessibilityCheckStep(
  * Assert no console errors step
  */
 function assertNoConsoleErrors(
-  step: any,
+  step: TestStep,
   consoleLogs: ConsoleLog[]
 ): { failed: boolean; error?: string } {
   const severityLevel = step.value || 'error';

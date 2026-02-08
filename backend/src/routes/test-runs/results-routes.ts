@@ -18,6 +18,7 @@ import { FastifyInstance } from 'fastify';
 import * as crypto from 'crypto';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { getTestSuite } from '../test-suites.js';
+import { StepResult, NetworkRequest } from './execution.js';
 import { getProject as dbGetProject } from '../projects/stores.js';
 import { testRuns, TestRun } from './execution.js';
 import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
@@ -642,7 +643,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
     let totalStepDuration = 0;
     let bottleneckCount = 0;
 
-    steps.forEach((step: any, index: number) => {
+    steps.forEach((step: StepResult, index: number) => {
       const stepDuration = step.duration_ms || 0;
       const endOffset = currentOffset + stepDuration;
       const percentageOfTotal = totalDurationMs > 0 ? (stepDuration / totalDurationMs) * 100 : 0;
@@ -675,8 +676,8 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
 
     const networkEntries: TimelineEntry[] = [];
     if (includeNetwork && result.network_logs) {
-      const networkLogs = result.network_logs as any[];
-      networkLogs.forEach((entry: any, index: number) => {
+      const networkLogs = result.network_logs as (NetworkRequest & { response_time_ms?: number })[];
+      networkLogs.forEach((entry, index: number) => {
         const responseTime = entry.response_time_ms || entry.duration_ms || 0;
         const isBottleneck = responseTime >= bottleneckThresholdMs;
         if (isBottleneck) bottleneckCount++;
