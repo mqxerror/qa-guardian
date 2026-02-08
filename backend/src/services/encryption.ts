@@ -1,12 +1,18 @@
 /**
  * Encryption Service
  * Feature #217: Encrypt sensitive data at rest in PostgreSQL
+ * Feature #423: LRU cache for PBKDF2 derived keys with TTL
  *
  * Provides AES-256-GCM encryption for sensitive data fields.
  * Key is derived from ENCRYPTION_KEY env var using PBKDF2.
+ *
+ * Future Migration Note (bcrypt):
+ * The current implementation uses PBKDF2 for key derivation. For password hashing
+ * (auth), consider migrating to bcrypt which has better resistance to GPU attacks.
+ * PBKDF2 remains appropriate for encryption key derivation.
  */
 
-import { createCipheriv, createDecipheriv, randomBytes, pbkdf2Sync } from 'node:crypto';
+import { createCipheriv, createDecipheriv, randomBytes, pbkdf2Sync, createHash } from 'node:crypto';
 
 // ============================================================================
 // Configuration
@@ -24,9 +30,117 @@ const ENCRYPTED_PREFIX = 'enc:v1:';
 // Feature #229: New prefix for random salt encryption (more secure)
 const ENCRYPTED_PREFIX_V2 = 'enc:v2:';
 
-// Cache the derived key to avoid repeated PBKDF2 calls
+// Cache the derived key to avoid repeated PBKDF2 calls (v1 format - single key)
 let cachedKey: Buffer | null = null;
 let cachedSalt: string | null = null;
+
+// ============================================================================
+// Feature #423: LRU Cache for PBKDF2 Derived Keys
+// ============================================================================
+
+interface CacheEntry {
+  key: Buffer;
+  createdAt: number;
+}
+
+// LRU cache configuration
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_MAX_SIZE = 100; // Max entries before eviction
+
+// LRU cache for v2 encryption keys (keyed by hash of salt)
+const keyCache = new Map<string, CacheEntry>();
+
+// Cache metrics for monitoring
+let cacheHits = 0;
+let cacheMisses = 0;
+
+/**
+ * Feature #423: Get a cache key from the salt
+ * Uses SHA-256 to create a fixed-length key from the salt buffer
+ */
+function getCacheKey(salt: Buffer): string {
+  return createHash('sha256').update(salt).digest('hex').slice(0, 32);
+}
+
+/**
+ * Feature #423: Get a cached derived key or null if not found/expired
+ */
+function getCachedKey(salt: Buffer): Buffer | null {
+  const cacheKey = getCacheKey(salt);
+  const entry = keyCache.get(cacheKey);
+
+  if (!entry) {
+    cacheMisses++;
+    return null;
+  }
+
+  // Check TTL
+  if (Date.now() - entry.createdAt > CACHE_TTL_MS) {
+    keyCache.delete(cacheKey);
+    cacheMisses++;
+    return null;
+  }
+
+  cacheHits++;
+
+  // Move to end for LRU ordering (delete and re-add)
+  keyCache.delete(cacheKey);
+  keyCache.set(cacheKey, entry);
+
+  return entry.key;
+}
+
+/**
+ * Feature #423: Cache a derived key with TTL
+ */
+function setCachedKey(salt: Buffer, key: Buffer): void {
+  const cacheKey = getCacheKey(salt);
+
+  // Evict oldest entries if at capacity (LRU eviction)
+  if (keyCache.size >= CACHE_MAX_SIZE) {
+    // Delete the first (oldest) entry
+    const firstKey = keyCache.keys().next().value;
+    if (firstKey) {
+      keyCache.delete(firstKey);
+    }
+  }
+
+  keyCache.set(cacheKey, {
+    key,
+    createdAt: Date.now(),
+  });
+}
+
+/**
+ * Feature #423: Get cache statistics for monitoring
+ */
+export function getCacheStats(): { hits: number; misses: number; size: number; hitRate: string } {
+  const total = cacheHits + cacheMisses;
+  const hitRate = total > 0 ? ((cacheHits / total) * 100).toFixed(1) + '%' : 'N/A';
+  return {
+    hits: cacheHits,
+    misses: cacheMisses,
+    size: keyCache.size,
+    hitRate,
+  };
+}
+
+/**
+ * Feature #423: Reset cache statistics (for testing)
+ */
+export function resetCacheStats(): void {
+  cacheHits = 0;
+  cacheMisses = 0;
+}
+
+/**
+ * Feature #423: Clear the key cache (for testing or key rotation)
+ */
+export function clearKeyCache(): void {
+  keyCache.clear();
+  cachedKey = null;
+  cachedSalt = null;
+}
 
 // ============================================================================
 // Key Derivation
@@ -75,6 +189,7 @@ function deriveKey(): Buffer | null {
 
 /**
  * Feature #229: Derive key using a random salt (more secure than fixed salt)
+ * Feature #423: Now uses LRU cache with 5-minute TTL
  * Used for v2 encryption where salt is stored with ciphertext
  */
 function deriveKeyWithSalt(salt: Buffer): Buffer | null {
@@ -83,8 +198,19 @@ function deriveKeyWithSalt(salt: Buffer): Buffer | null {
     return null;
   }
 
+  // Feature #423: Check cache first
+  const cached = getCachedKey(salt);
+  if (cached) {
+    return cached;
+  }
+
   // Derive key using PBKDF2 with the provided random salt
-  return pbkdf2Sync(masterKey, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha256');
+  const derivedKey = pbkdf2Sync(masterKey, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha256');
+
+  // Feature #423: Cache the derived key
+  setCachedKey(salt, derivedKey);
+
+  return derivedKey;
 }
 
 // ============================================================================
