@@ -1,7 +1,8 @@
 // Feature #338: Dark-first auth page with premium design
+// Feature #402: Lazy-load framer-motion for reduced bundle size
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { LazyMotionWrapper, m } from '../components/LazyMotion';
 import { BackgroundBeams, Input } from '../components/aceternity';
 import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { useReducedMotion } from '../components/ui';
@@ -47,7 +48,7 @@ export function ForgotPasswordPage() {
         <BackgroundBeams className="opacity-40" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
 
-        <motion.div
+        <m.div
           initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -55,39 +56,39 @@ export function ForgotPasswordPage() {
         >
           <div className="rounded-2xl border border-border bg-card/80 p-8 shadow-2xl backdrop-blur-sm">
             <div className="text-center">
-              <motion.div
+              <m.div
                 initial={prefersReducedMotion ? {} : { scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
                 className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-success/20"
               >
                 <CheckCircle className="h-8 w-8 text-success" />
-              </motion.div>
-              <motion.h2
+              </m.div>
+              <m.h2
                 initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
                 className="bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-2xl font-bold text-transparent"
               >
                 Check Your Email
-              </motion.h2>
-              <motion.p
+              </m.h2>
+              <m.p
                 initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
                 className="mt-3 text-muted-foreground"
               >
                 If an account with that email exists, we've sent a password reset link.
-              </motion.p>
-              <motion.p
+              </m.p>
+              <m.p
                 initial={prefersReducedMotion ? {} : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
                 className="mt-4 rounded-lg border border-warning/20 bg-warning/10 p-3 text-sm text-warning"
               >
                 <strong>Development Mode:</strong> Check the backend console for the reset link.
-              </motion.p>
-              <motion.div
+              </m.p>
+              <m.div
                 initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
@@ -99,21 +100,22 @@ export function ForgotPasswordPage() {
                   <ArrowLeft className="h-4 w-4" />
                   Back to Login
                 </Link>
-              </motion.div>
+              </m.div>
             </div>
           </div>
-        </motion.div>
+        </m.div>
       </div>
     );
   }
 
   return (
+    <LazyMotionWrapper>
     <div className="relative flex min-h-screen items-center justify-center bg-background p-4">
       {/* Background Effects */}
       <BackgroundBeams className="opacity-40" />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
 
-      <motion.div
+      <m.div
         initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -122,47 +124,47 @@ export function ForgotPasswordPage() {
         <div className="rounded-2xl border border-border bg-card/80 p-8 shadow-2xl backdrop-blur-sm">
           {/* Header */}
           <div className="mb-8 text-center">
-            <motion.div
+            <m.div
               initial={prefersReducedMotion ? {} : { scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
               className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/20"
             >
               <Mail className="h-6 w-6 text-primary" />
-            </motion.div>
-            <motion.h2
+            </m.div>
+            <m.h2
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               className="bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-3xl font-bold text-transparent"
             >
               Forgot Password
-            </motion.h2>
-            <motion.p
+            </m.h2>
+            <m.p
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
               className="mt-2 text-muted-foreground"
             >
               Enter your email and we'll send you a reset link
-            </motion.p>
+            </m.p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             {/* Error Alert */}
             {error && (
-              <motion.div
+              <m.div
                 initial={prefersReducedMotion ? {} : { opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 role="alert"
                 className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
               >
                 {error}
-              </motion.div>
+              </m.div>
             )}
 
             {/* Email Input */}
-            <motion.div
+            <m.div
               initial={prefersReducedMotion ? {} : { opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
@@ -177,10 +179,10 @@ export function ForgotPasswordPage() {
                 required
                 autoComplete="email"
               />
-            </motion.div>
+            </m.div>
 
             {/* Submit Button */}
-            <motion.div
+            <m.div
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -204,11 +206,11 @@ export function ForgotPasswordPage() {
                   )}
                 </span>
               </button>
-            </motion.div>
+            </m.div>
           </form>
 
           {/* Back to Login */}
-          <motion.div
+          <m.div
             initial={prefersReducedMotion ? {} : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
@@ -218,9 +220,10 @@ export function ForgotPasswordPage() {
             <Link to="/login" className="text-primary hover:text-primary/70 transition-colors font-medium">
               Sign in
             </Link>
-          </motion.div>
+          </m.div>
         </div>
-      </motion.div>
+      </m.div>
     </div>
+    </LazyMotionWrapper>
   );
 }

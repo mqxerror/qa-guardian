@@ -1,7 +1,8 @@
 // Feature #338: Dark-first auth page with premium design
+// Feature #402: Lazy-load framer-motion for reduced bundle size
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { LazyMotionWrapper, m } from '../components/LazyMotion';
 import { getErrorMessage } from '../utils/errorHandling';
 import { BackgroundBeams, Input } from '../components/aceternity';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
@@ -140,13 +141,14 @@ export function RegisterPage() {
   const passwordStrength = getPasswordStrength(password);
 
   return (
+    <LazyMotionWrapper>
     <div className="relative flex min-h-screen items-center justify-center bg-gray-950 p-4">
       {/* Background Effects */}
       <BackgroundBeams className="opacity-40" />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
 
       {/* Register Card */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -155,39 +157,39 @@ export function RegisterPage() {
         <div className="rounded-2xl border border-border bg-background/80 p-8 shadow-2xl backdrop-blur-sm">
           {/* Header */}
           <div className="mb-8 text-center">
-            <motion.h2
+            <m.h2
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
               className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-3xl font-bold text-transparent"
             >
               Create Account
-            </motion.h2>
-            <motion.p
+            </m.h2>
+            <m.p
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               className="mt-2 text-muted-foreground"
             >
               Join QA Guardian today
-            </motion.p>
+            </m.p>
           </div>
 
           <form onSubmit={handleRegister} className="space-y-5" noValidate>
             {/* Error Alert */}
             {error && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 role="alert"
                 className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
               >
                 {error}
-              </motion.div>
+              </m.div>
             )}
 
             {/* Name Input */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
@@ -202,10 +204,10 @@ export function RegisterPage() {
                 required
                 autoComplete="name"
               />
-            </motion.div>
+            </m.div>
 
             {/* Email Input */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.35 }}
@@ -224,10 +226,10 @@ export function RegisterPage() {
                 aria-describedby={emailError ? 'register-email-error' : undefined}
                 aria-invalid={!!emailError}
               />
-            </motion.div>
+            </m.div>
 
             {/* Password Input */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
@@ -248,14 +250,14 @@ export function RegisterPage() {
               />
               {/* Password Strength Indicator */}
               {password && (
-                <motion.div
+                <m.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="mt-2"
                 >
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-1 bg-card rounded-full overflow-hidden">
-                      <motion.div
+                      <m.div
                         initial={{ width: 0 }}
                         animate={{ width: `${(passwordStrength.score / 3) * 100}%` }}
                         className={`h-full ${passwordStrength.color}`}
@@ -283,12 +285,12 @@ export function RegisterPage() {
                       Number
                     </div>
                   </div>
-                </motion.div>
+                </m.div>
               )}
-            </motion.div>
+            </m.div>
 
             {/* Confirm Password Input */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.45 }}
@@ -304,10 +306,10 @@ export function RegisterPage() {
                 autoComplete="new-password"
                 error={confirmPassword && password !== confirmPassword ? "Passwords don't match" : undefined}
               />
-            </motion.div>
+            </m.div>
 
             {/* Submit Button */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -334,11 +336,11 @@ export function RegisterPage() {
                   )}
                 </span>
               </button>
-            </motion.div>
+            </m.div>
           </form>
 
           {/* Login Link */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
@@ -348,9 +350,10 @@ export function RegisterPage() {
             <Link to="/login" className="text-primary hover:text-primary/70 transition-colors font-medium">
               Sign in
             </Link>
-          </motion.div>
+          </m.div>
         </div>
-      </motion.div>
+      </m.div>
     </div>
+    </LazyMotionWrapper>
   );
 }

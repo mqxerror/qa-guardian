@@ -1,5 +1,6 @@
+// Feature #402: Lazy-load framer-motion for reduced bundle size
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { LazyMotionWrapper, m } from '../components/LazyMotion';
 import {
   Spotlight,
   TextGenerateEffect,
@@ -60,6 +61,7 @@ const stats = [
 
 export function HomePage() {
   return (
+    <LazyMotionWrapper>
     <div className="min-h-screen bg-gray-950 text-white overflow-hidden">
       {/* Hero Section */}
       <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
@@ -76,7 +78,7 @@ export function HomePage() {
         {/* Hero Content */}
         <div className="relative z-10 mx-auto max-w-7xl px-4 pt-20 pb-16 text-center md:pt-0">
           {/* Badge */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -89,17 +91,17 @@ export function HomePage() {
               </span>
               AI-Native Test Platform
             </span>
-          </motion.div>
+          </m.div>
 
           {/* Main Title */}
-          <motion.h1
+          <m.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
             className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-5xl font-bold tracking-tight text-transparent sm:text-6xl md:text-7xl"
           >
             QA Guardian
-          </motion.h1>
+          </m.h1>
 
           {/* Animated Tagline */}
           <div className="mt-6">
@@ -111,7 +113,7 @@ export function HomePage() {
           </div>
 
           {/* Description */}
-          <motion.p
+          <m.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
@@ -119,10 +121,10 @@ export function HomePage() {
           >
             Unified test management for E2E, visual regression, load testing, accessibility audits,
             and security scanning. Built with Claude AI and 170+ MCP tools.
-          </motion.p>
+          </m.p>
 
           {/* CTA Buttons */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
@@ -144,10 +146,10 @@ export function HomePage() {
               <span>Sign In</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
-          </motion.div>
+          </m.div>
 
           {/* Stats */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.6 }}
@@ -159,46 +161,46 @@ export function HomePage() {
                 <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
               </div>
             ))}
-          </motion.div>
+          </m.div>
         </div>
 
         {/* Scroll Indicator */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 1 }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2"
         >
-          <motion.div
+          <m.div
             animate={{ y: [0, 8, 0] }}
             transition={{ duration: 1.5, repeat: Infinity }}
             className="flex flex-col items-center gap-2"
           >
             <span className="text-xs text-foreground">Scroll to explore</span>
             <div className="h-8 w-5 rounded-full border border-border p-1">
-              <motion.div
+              <m.div
                 animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
                 className="h-2 w-2 rounded-full bg-primary"
               />
             </div>
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       </div>
 
       {/* Features Section */}
       <div className="relative bg-gray-950 py-24">
         <div className="mx-auto max-w-7xl px-4">
           <div className="text-center">
-            <motion.span
+            <m.span
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
               className="text-sm font-medium text-primary"
             >
               Comprehensive Testing
-            </motion.span>
-            <motion.h2
+            </m.span>
+            <m.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -206,8 +208,8 @@ export function HomePage() {
               className="mt-2 text-3xl font-bold text-white md:text-4xl"
             >
               Everything You Need to Ship Quality Software
-            </motion.h2>
-            <motion.p
+            </m.h2>
+            <m.p
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -216,7 +218,7 @@ export function HomePage() {
             >
               One platform for all your testing needs. From functional testing to security scanning,
               powered by AI for maximum efficiency.
-            </motion.p>
+            </m.p>
           </div>
 
           <HoverEffect items={features} className="mt-12" />
@@ -228,15 +230,15 @@ export function HomePage() {
         <div className="mx-auto max-w-7xl px-4">
           <div className="grid gap-12 md:grid-cols-2">
             <div>
-              <motion.span
+              <m.span
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 className="text-sm font-medium text-primary"
               >
                 Why QA Guardian?
-              </motion.span>
-              <motion.h2
+              </m.span>
+              <m.h2
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -244,8 +246,8 @@ export function HomePage() {
                 className="mt-2 text-3xl font-bold text-white md:text-4xl"
               >
                 Built for Modern Teams
-              </motion.h2>
-              <motion.p
+              </m.h2>
+              <m.p
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -254,9 +256,9 @@ export function HomePage() {
               >
                 QA Guardian bridges the gap between human QA engineers and AI agents.
                 Visual recorder for humans, MCP tools for AI - everyone speaks the same language.
-              </motion.p>
+              </m.p>
 
-              <motion.ul
+              <m.ul
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -274,11 +276,11 @@ export function HomePage() {
                     <span className="text-muted-foreground">{item}</span>
                   </li>
                 ))}
-              </motion.ul>
+              </m.ul>
             </div>
 
             <div className="relative">
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
@@ -305,7 +307,7 @@ export function HomePage() {
                     <span className="text-muted-foreground">Time: 8.8s</span>
                   </code>
                 </pre>
-              </motion.div>
+              </m.div>
             </div>
           </div>
         </div>
@@ -314,15 +316,15 @@ export function HomePage() {
       {/* CTA Section */}
       <div className="relative py-24">
         <div className="mx-auto max-w-4xl px-4 text-center">
-          <motion.h2
+          <m.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="text-3xl font-bold text-white md:text-4xl"
           >
             Ready to Transform Your QA?
-          </motion.h2>
-          <motion.p
+          </m.h2>
+          <m.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -330,8 +332,8 @@ export function HomePage() {
             className="mx-auto mt-4 max-w-2xl text-muted-foreground"
           >
             Start testing smarter with AI-powered automation. No credit card required.
-          </motion.p>
-          <motion.div
+          </m.p>
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -347,7 +349,7 @@ export function HomePage() {
                 <ArrowRight className="h-4 w-4" />
               </HoverBorderGradient>
             </Link>
-          </motion.div>
+          </m.div>
         </div>
       </div>
 
@@ -368,5 +370,6 @@ export function HomePage() {
         </div>
       </footer>
     </div>
+    </LazyMotionWrapper>
   );
 }
