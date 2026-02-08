@@ -9,19 +9,10 @@ import { SkeletonTestSuitePage } from '../components/ui/Skeleton';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { getErrorMessage } from '../utils/errorHandling';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 import { UnifiedAIService } from '../services/UnifiedAIService';
 import { CreateTestModal } from '../components/create-test';
 import { logger } from '../utils/logger';
-// Feature #337: Design system components
-import {
-  PageHeader,
-  AnimatedCard,
-  StatusPill,
-  SectionHeader,
-  CardContent,
-} from '../components/ui';
-import { Plus, Play, Settings } from 'lucide-react';
 // Feature #59: React Query hooks for paginated test loading
 // Feature #143: Added mutation hooks for operations
 import {
@@ -30,7 +21,7 @@ import {
   useStartRun, useCancelRun, useStartSuiteRun, useDeleteSuite,
 } from '../hooks/api';
 import {
-  TestSuite, TestType, TestTypeEnum, DeleteSuiteModal, DeleteTestModal,
+  TestType, DeleteSuiteModal, DeleteTestModal,
   ImportTestsModal, EditSelectorModal, ExpandedScreenshotModal, InsertTemplateModal,
   GeneratedTestPreviewModal, RecordTestModal, ReviewRecordedTestModal,
   ParallelizationPanel, SuiteHeaderActions, HumanReviewPanel, SuiteRunResults,
