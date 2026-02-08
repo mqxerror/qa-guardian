@@ -335,17 +335,38 @@ export default function () {
 }
 
 /**
+ * SECURITY: Escape HTML special characters to prevent XSS attacks.
+ * This MUST be called before any regex-based syntax highlighting
+ * when the output will be used with dangerouslySetInnerHTML.
+ */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
  * Syntax highlighting for JavaScript/K6 code
  * Returns an array of JSX elements with syntax highlighting
+ *
+ * SECURITY: Input is HTML-escaped before highlighting to prevent XSS
+ * when used with dangerouslySetInnerHTML.
  */
 export function highlightJavaScriptLine(line: string): string {
+  // SECURITY FIX (Feature #436): Escape HTML BEFORE any regex processing
+  // to prevent XSS attacks when output is used with dangerouslySetInnerHTML
+  const escapedLine = escapeHtml(line);
+
   // Handle comments first (preserve them)
-  const commentIndex = line.indexOf('//');
-  let beforeComment = line;
+  const commentIndex = escapedLine.indexOf('//');
+  let beforeComment = escapedLine;
   let comment = '';
   if (commentIndex !== -1) {
-    beforeComment = line.substring(0, commentIndex);
-    comment = line.substring(commentIndex);
+    beforeComment = escapedLine.substring(0, commentIndex);
+    comment = escapedLine.substring(commentIndex);
   }
 
   // Keywords (blue)
@@ -356,8 +377,9 @@ export function highlightJavaScriptLine(line: string): string {
   });
 
   // Strings (green) - single and double quotes
-  beforeComment = beforeComment.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '<span class="text-success">\'$1\'</span>');
-  beforeComment = beforeComment.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, '<span class="text-success">"$1"</span>');
+  // Note: Quotes are now HTML-escaped (&quot; and &#039;), so we need to match escaped versions
+  beforeComment = beforeComment.replace(/&#039;([^']*(?:&#039;)?)&#039;/g, '<span class="text-success">&#039;$1&#039;</span>');
+  beforeComment = beforeComment.replace(/&quot;([^"]*(?:&quot;)?)&quot;/g, '<span class="text-success">&quot;$1&quot;</span>');
   beforeComment = beforeComment.replace(/`([^`\\]*(\\.[^`\\]*)*)`/g, '<span class="text-success">`$1`</span>');
 
   // Numbers (orange)
