@@ -606,6 +606,185 @@ export async function analyticsRoutes(app: FastifyInstance) {
   });
 
   // ============================================================================
+  // Feature #470: Duration Trends Analytics with p50/p95/p99 percentiles
+  // ============================================================================
+  app.get<{
+    Querystring: {
+      days?: string;
+      project_id?: string;
+      browser?: string;
+      test_type?: string;
+    };
+  }>('/api/v1/analytics/duration-trends', {
+    preHandler: [authenticate],
+  }, async (request) => {
+    const orgId = getOrganizationId(request);
+    const { days: daysParam, project_id: projectIdFilter, browser: browserFilter, test_type: testTypeFilter } = request.query;
+    const days = parseInt(daysParam || '7', 10);
+
+    // Validate days parameter
+    if (days < 1 || days > 90) {
+      return {
+        error: 'Bad Request',
+        message: 'Days parameter must be between 1 and 90',
+      };
+    }
+
+    // Get all projects and suites for filtering
+    const [allProjects, allSuites] = await Promise.all([
+      dbListProjects(orgId),
+      listAllTestSuites(orgId),
+    ]);
+
+    // Filter projects
+    const orgProjects = allProjects.filter(p => !projectIdFilter || p.id === projectIdFilter);
+    const projectIds = orgProjects.map(p => p.id);
+    const orgSuites = allSuites.filter(s => projectIds.includes(s.project_id));
+    const suiteIds = orgSuites.map(s => s.id);
+
+    // Get all completed test runs within the date range
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    let relevantRuns = (await listTestRunsByOrg(orgId))
+      .filter(r => suiteIds.includes(r.suite_id))
+      .filter(r => r.status === 'passed' || r.status === 'failed')
+      .filter(r => r.duration_ms && r.duration_ms > 0)
+      .filter(r => {
+        const runDate = r.completed_at || r.created_at;
+        return runDate >= startDate;
+      });
+
+    // Apply optional filters
+    if (browserFilter) {
+      relevantRuns = relevantRuns.filter(r => r.browser === browserFilter);
+    }
+    if (testTypeFilter) {
+      relevantRuns = relevantRuns.filter((r: any) => r.test_type === testTypeFilter);
+    }
+
+    // Group runs by day
+    const dailyData: Map<string, {
+      date: string;
+      durations: number[];
+    }> = new Map();
+
+    // Initialize all days in the range
+    for (let d = 0; d < days; d++) {
+      const date = new Date();
+      date.setDate(date.getDate() - d);
+      const dateKey = date.toISOString().split('T')[0] || '';
+      dailyData.set(dateKey, { date: dateKey, durations: [] });
+    }
+
+    // Aggregate durations by day
+    for (const run of relevantRuns) {
+      const runDate = (run.completed_at || run.created_at).toISOString().split('T')[0] || '';
+      const dayData = dailyData.get(runDate);
+      if (dayData && run.duration_ms) {
+        dayData.durations.push(run.duration_ms);
+      }
+    }
+
+    // Calculate percentiles for each day
+    const calculatePercentile = (sortedArr: number[], p: number): number | null => {
+      if (sortedArr.length === 0) return null;
+      const index = Math.ceil((p / 100) * sortedArr.length) - 1;
+      return sortedArr[Math.max(0, index)] || null;
+    };
+
+    const trends = Array.from(dailyData.values())
+      .map(d => {
+        const sorted = [...d.durations].sort((a, b) => a - b);
+        const p50 = calculatePercentile(sorted, 50);
+        const p95 = calculatePercentile(sorted, 95);
+        const p99 = calculatePercentile(sorted, 99);
+        const avg = sorted.length > 0 ? Math.round(sorted.reduce((s, v) => s + v, 0) / sorted.length) : null;
+        const min = sorted.length > 0 ? sorted[0] : null;
+        const max = sorted.length > 0 ? sorted[sorted.length - 1] : null;
+
+        return {
+          date: d.date,
+          run_count: d.durations.length,
+          p50_ms: p50 ? Math.round(p50) : null,
+          p95_ms: p95 ? Math.round(p95) : null,
+          p99_ms: p99 ? Math.round(p99) : null,
+          avg_ms: avg,
+          min_ms: min ?? null,
+          max_ms: max ?? null,
+        };
+      })
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Calculate overall summary
+    const allDurations = relevantRuns.map(r => r.duration_ms!).filter(d => d > 0);
+    const sortedAll = [...allDurations].sort((a, b) => a - b);
+    const overallP50 = calculatePercentile(sortedAll, 50);
+    const overallP95 = calculatePercentile(sortedAll, 95);
+    const overallP99 = calculatePercentile(sortedAll, 99);
+    const overallAvg = sortedAll.length > 0 ? Math.round(sortedAll.reduce((s, v) => s + v, 0) / sortedAll.length) : null;
+
+    // Detect regression: compare last week's p95 to previous week's p95
+    let regression: { detected: boolean; change_percent: number | null; message: string } = {
+      detected: false,
+      change_percent: null,
+      message: 'No significant duration regression detected',
+    };
+
+    if (days >= 14) {
+      const midPoint = Math.floor(trends.length / 2);
+      const firstHalf = trends.slice(0, midPoint);
+      const secondHalf = trends.slice(midPoint);
+
+      const firstHalfP95s = firstHalf.filter(d => d.p95_ms !== null).map(d => d.p95_ms!);
+      const secondHalfP95s = secondHalf.filter(d => d.p95_ms !== null).map(d => d.p95_ms!);
+
+      if (firstHalfP95s.length > 0 && secondHalfP95s.length > 0) {
+        const firstAvgP95 = firstHalfP95s.reduce((s, v) => s + v, 0) / firstHalfP95s.length;
+        const secondAvgP95 = secondHalfP95s.reduce((s, v) => s + v, 0) / secondHalfP95s.length;
+
+        if (firstAvgP95 > 0) {
+          const changePercent = ((secondAvgP95 - firstAvgP95) / firstAvgP95) * 100;
+          if (changePercent > 20) {
+            regression = {
+              detected: true,
+              change_percent: Math.round(changePercent),
+              message: `⚠️ Duration regression detected: p95 increased by ${Math.round(changePercent)}% in the recent period`,
+            };
+          }
+        }
+      }
+    }
+
+    // Get unique browsers and test types for filter options
+    const browsers = [...new Set(relevantRuns.map(r => r.browser).filter(Boolean))];
+    const testTypes = [...new Set(relevantRuns.map((r: any) => r.test_type).filter(Boolean))];
+
+    return {
+      trends,
+      summary: {
+        period_days: days,
+        total_runs: allDurations.length,
+        overall_p50_ms: overallP50 ? Math.round(overallP50) : null,
+        overall_p95_ms: overallP95 ? Math.round(overallP95) : null,
+        overall_p99_ms: overallP99 ? Math.round(overallP99) : null,
+        overall_avg_ms: overallAvg,
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: new Date().toISOString().split('T')[0],
+      },
+      regression,
+      filters: {
+        project_id: projectIdFilter || null,
+        browser: browserFilter || null,
+        test_type: testTypeFilter || null,
+        available_browsers: browsers,
+        available_test_types: testTypes,
+      },
+    };
+  });
+
+  // ============================================================================
   // Feature #1542: AI Best Practices Analysis
   // NOTE: Route moved to github/ai-best-practices.ts to avoid duplication
   // ============================================================================

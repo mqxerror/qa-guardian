@@ -34,6 +34,9 @@ export const analyticsKeys = {
   passRateTrends: (days: number) => [...analyticsKeys.all, 'passRateTrends', days] as const,
   accessibilityTrends: (days: number) => [...analyticsKeys.all, 'accessibilityTrends', days] as const,
   failureClusters: (days: number) => [...analyticsKeys.all, 'failureClusters', days] as const,
+  // Feature #470: Duration trends key
+  durationTrends: (days: number, browser?: string, testType?: string) =>
+    [...analyticsKeys.all, 'durationTrends', days, browser || 'all', testType || 'all'] as const,
 };
 
 /**
@@ -142,6 +145,31 @@ export function useFailureClusters(days: 7 | 14 | 30 = 7) {
   return useQuery({
     queryKey: analyticsKeys.failureClusters(days),
     queryFn: () => fetchWithAuth(`/api/v1/ai/failure-clusters?days=${days}`, token),
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+}
+
+/**
+ * Feature #470: Hook to fetch duration trends with p50/p95/p99 percentiles
+ * Caches for 5 minutes, keyed by days, browser, and testType parameters
+ */
+export function useDurationTrends(
+  days: 7 | 30 = 7,
+  browser?: string,
+  testType?: string
+) {
+  const token = useAuthStore(state => state.token);
+
+  // Build query string with optional filters
+  const params = new URLSearchParams({ days: String(days) });
+  if (browser) params.append('browser', browser);
+  if (testType) params.append('test_type', testType);
+
+  return useQuery({
+    queryKey: analyticsKeys.durationTrends(days, browser, testType),
+    queryFn: () => fetchWithAuth(`/api/v1/analytics/duration-trends?${params.toString()}`, token),
     enabled: !!token,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
