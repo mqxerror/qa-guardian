@@ -36,6 +36,9 @@ const READ_ONLY_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 // In-memory rate limit store as fallback when Redis is unavailable
 const rateLimitStore: Map<string, RateLimitEntry> = new Map();
 
+// Feature #390: Store cleanup interval ref for graceful shutdown
+let rateLimitCleanupInterval: NodeJS.Timeout | null = null;
+
 /**
  * Feature #214: Get rate limit for a given request
  */
@@ -58,9 +61,10 @@ export function getRateLimitForRequest(url: string, method: string): number {
 /**
  * Feature #214: Cleanup old fallback entries periodically
  * Note: Redis entries auto-expire via TTL, this only cleans up memory fallback
+ * Feature #390: Returns and stores interval ref for graceful shutdown
  */
 export function startRateLimitCleanup(): NodeJS.Timeout {
-  return setInterval(() => {
+  rateLimitCleanupInterval = setInterval(() => {
     const now = Date.now();
     for (const [key, entry] of rateLimitStore.entries()) {
       if (entry.resetAt < now) {
@@ -68,6 +72,17 @@ export function startRateLimitCleanup(): NodeJS.Timeout {
       }
     }
   }, 5 * 60 * 1000); // Every 5 minutes
+  return rateLimitCleanupInterval;
+}
+
+/**
+ * Feature #390: Stop the rate limit cleanup interval during graceful shutdown
+ */
+export function stopRateLimitCleanup(): void {
+  if (rateLimitCleanupInterval) {
+    clearInterval(rateLimitCleanupInterval);
+    rateLimitCleanupInterval = null;
+  }
 }
 
 /**
@@ -92,48 +107,26 @@ export function registerRateLimiting(app: FastifyInstance): void {
     // Determine rate limit based on endpoint
     const rateLimit = getRateLimitForRequest(request.url, request.method);
 
-    // Try Redis first, fall back to in-memory
+    // Feature #390: Use atomic incr() to prevent race conditions under concurrent load
     const cache = getCache();
     const redisKey = `rate_limit:${identifier}`;
     let count = 0;
     let resetAt = Date.now() + RATE_LIMIT_WINDOW_MS;
 
-    if (cache.isRedisConnected()) {
-      // Use Redis for distributed rate limiting
-      try {
-        const cached = await cache.get(redisKey) as { count: number; resetAt: number } | null;
-        if (cached) {
-          count = cached.count + 1;
-          resetAt = cached.resetAt;
-        } else {
-          count = 1;
-          resetAt = Date.now() + RATE_LIMIT_WINDOW_MS;
-        }
-        // Store updated count with TTL
-        await cache.set(redisKey, { count, resetAt }, RATE_LIMIT_WINDOW_SECONDS);
-      } catch (err) {
-        // Fall back to in-memory on Redis error
-        const entry = rateLimitStore.get(identifier);
-        if (entry && entry.resetAt > Date.now()) {
-          count = entry.count + 1;
-          resetAt = entry.resetAt;
-        } else {
-          count = 1;
-          resetAt = Date.now() + RATE_LIMIT_WINDOW_MS;
-        }
-        rateLimitStore.set(identifier, { count, resetAt });
-      }
-    } else {
-      // In-memory fallback
+    // Use atomic incr() which handles both Redis and in-memory fallback
+    // incr() uses Redis MULTI/EXEC for atomic increment + expire
+    count = await cache.incr(redisKey, RATE_LIMIT_WINDOW_SECONDS);
+
+    // For in-memory fallback, we still need to track resetAt for headers
+    if (!cache.isRedisConnected()) {
       const entry = rateLimitStore.get(identifier);
       if (entry && entry.resetAt > Date.now()) {
-        count = entry.count + 1;
         resetAt = entry.resetAt;
+        entry.count = count;
       } else {
-        count = 1;
         resetAt = Date.now() + RATE_LIMIT_WINDOW_MS;
+        rateLimitStore.set(identifier, { count, resetAt });
       }
-      rateLimitStore.set(identifier, { count, resetAt });
     }
 
     // Calculate remaining requests and reset time

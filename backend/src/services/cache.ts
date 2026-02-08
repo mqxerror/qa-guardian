@@ -26,6 +26,7 @@ export class CacheService {
   private keyPrefix: string;
   private connected: boolean = false;
   private enableFallback: boolean;
+  private cleanupInterval: NodeJS.Timeout | null = null; // Feature #390: Store interval ref for cleanup
 
   constructor(config: CacheConfig = {}) {
     this.defaultTTL = config.defaultTTL || CacheTTL.STANDARD;
@@ -71,7 +72,8 @@ export class CacheService {
     }
 
     // Cleanup expired memory cache entries periodically
-    setInterval(() => this.cleanupMemoryCache(), 60 * 1000);
+    // Feature #390: Store interval ref for graceful shutdown cleanup
+    this.cleanupInterval = setInterval(() => this.cleanupMemoryCache(), 60 * 1000);
   }
 
   /**
@@ -473,6 +475,11 @@ export class CacheService {
    * Close the cache service connection
    */
   async close(): Promise<void> {
+    // Feature #390: Clear the cleanup interval to prevent leaks
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
     if (this.redis) {
       await this.redis.quit();
       this.redis = null;
