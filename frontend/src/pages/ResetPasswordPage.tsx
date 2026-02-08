@@ -249,7 +249,7 @@ export function ResetPasswordPage() {
             {/* Error Alert */}
             {error && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={prefersReducedMotion ? {} : { opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 role="alert"
                 className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
