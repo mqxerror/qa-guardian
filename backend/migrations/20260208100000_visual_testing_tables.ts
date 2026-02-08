@@ -8,11 +8,54 @@
  * - webhooks: Legacy webhooks table (simpler than webhook_subscriptions)
  * - selector_overrides: Healed selector overrides
  * - healed_selector_history: Selector healing history
+ *
+ * NOTE: All operations are idempotent. Tables may already exist from
+ * service-level CREATE TABLE IF NOT EXISTS with a different schema.
+ * Columns are defensively added to handle schema drift.
  */
 
 import { MigrationBuilder, ColumnDefinitions } from 'node-pg-migrate';
 
 export const shorthands: ColumnDefinitions | undefined = undefined;
+
+/**
+ * Defensively ensure columns exist on a table that may have been created
+ * by service-level code with a different schema.
+ */
+function ensureColumns(
+  pgm: MigrationBuilder,
+  table: string,
+  columns: Array<{ name: string; type: string; notNull?: boolean; default?: string }>
+): void {
+  for (const col of columns) {
+    const parts = [`ALTER TABLE "${table}" ADD COLUMN IF NOT EXISTS "${col.name}" ${col.type}`];
+    if (col.default !== undefined) {
+      parts.push(`DEFAULT ${col.default}`);
+    }
+    if (col.notNull && col.default !== undefined) {
+      parts.push('NOT NULL');
+    }
+    pgm.sql(parts.join(' ') + ';');
+  }
+}
+
+function ensureForeignKey(
+  pgm: MigrationBuilder,
+  table: string,
+  constraintName: string,
+  column: string,
+  refTable: string,
+  refColumn: string,
+  onDelete: string = 'CASCADE'
+): void {
+  pgm.sql(`
+    DO $$ BEGIN
+      ALTER TABLE "${table}" ADD CONSTRAINT "${constraintName}"
+        FOREIGN KEY ("${column}") REFERENCES "${refTable}"("${refColumn}") ON DELETE ${onDelete};
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+}
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
   // ============================================================================
@@ -62,6 +105,21 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       default: pgm.func('NOW()'),
     },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'visual_baselines', [
+    { name: 'test_id', type: 'uuid' },
+    { name: 'project_id', type: 'uuid' },
+    { name: 'viewport', type: 'varchar(50)' },
+    { name: 'browser', type: 'varchar(50)' },
+    { name: 'screenshot_path', type: 'text', notNull: true, default: "''" },
+    { name: 'screenshot_hash', type: 'varchar(64)' },
+    { name: 'metadata', type: 'jsonb', default: "'{}'::jsonb" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'visual_baselines', 'visual_baselines_test_id_fkey', 'test_id', 'tests', 'id', 'CASCADE');
+  ensureForeignKey(pgm, 'visual_baselines', 'visual_baselines_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
 
   // Add unique constraint idempotently
   pgm.sql(`
@@ -130,6 +188,22 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'flaky_tests', [
+    { name: 'test_id', type: 'uuid' },
+    { name: 'project_id', type: 'uuid' },
+    { name: 'flaky_score', type: 'decimal(5,2)', default: '0' },
+    { name: 'total_runs', type: 'integer', default: '0' },
+    { name: 'failed_runs', type: 'integer', default: '0' },
+    { name: 'last_flaky_at', type: 'timestamptz' },
+    { name: 'quarantined', type: 'boolean', default: 'false' },
+    { name: 'analysis', type: 'jsonb', default: "'{}'::jsonb" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'flaky_tests', 'flaky_tests_test_id_fkey', 'test_id', 'tests', 'id', 'CASCADE');
+  ensureForeignKey(pgm, 'flaky_tests', 'flaky_tests_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
+
   pgm.createIndex('flaky_tests', 'project_id', { ifNotExists: true, name: 'idx_flaky_tests_project' });
   pgm.createIndex('flaky_tests', 'quarantined', { ifNotExists: true, name: 'idx_flaky_tests_quarantined' });
   pgm.createIndex('flaky_tests', 'flaky_score', { ifNotExists: true, name: 'idx_flaky_tests_score' });
@@ -188,6 +262,22 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'webhooks', [
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'project_id', type: 'uuid' },
+    { name: 'name', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'url', type: 'text', notNull: true, default: "''" },
+    { name: 'secret', type: 'varchar(255)' },
+    { name: 'events', type: 'text[]', notNull: true, default: "ARRAY[]::text[]" },
+    { name: 'enabled', type: 'boolean', default: 'true' },
+    { name: 'headers', type: 'jsonb', default: "'{}'::jsonb" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'webhooks', 'webhooks_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
+  ensureForeignKey(pgm, 'webhooks', 'webhooks_project_id_fkey', 'project_id', 'projects', 'id', 'SET NULL');
+
   pgm.createIndex('webhooks', 'organization_id', { ifNotExists: true, name: 'idx_webhooks_org' });
   pgm.createIndex('webhooks', 'project_id', { ifNotExists: true, name: 'idx_webhooks_project' });
   pgm.createIndex('webhooks', 'enabled', { ifNotExists: true, name: 'idx_webhooks_enabled' });
@@ -245,6 +335,22 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'selector_overrides', [
+    { name: 'test_id', type: 'uuid' },
+    { name: 'project_id', type: 'uuid' },
+    { name: 'original_selector', type: 'text', notNull: true, default: "''" },
+    { name: 'healed_selector', type: 'text', notNull: true, default: "''" },
+    { name: 'confidence', type: 'decimal(5,4)', default: '0.95' },
+    { name: 'approved', type: 'boolean', default: 'false' },
+    { name: 'approved_by', type: 'uuid' },
+    { name: 'approved_at', type: 'timestamptz' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'selector_overrides', 'selector_overrides_test_id_fkey', 'test_id', 'tests', 'id', 'CASCADE');
+  ensureForeignKey(pgm, 'selector_overrides', 'selector_overrides_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
+
   pgm.createIndex('selector_overrides', 'test_id', { ifNotExists: true, name: 'idx_selector_overrides_test' });
   pgm.createIndex('selector_overrides', 'project_id', { ifNotExists: true, name: 'idx_selector_overrides_project' });
   pgm.createIndex('selector_overrides', ['test_id', 'original_selector'], { ifNotExists: true, name: 'idx_selector_overrides_lookup' });
@@ -298,6 +404,22 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       default: pgm.func('NOW()'),
     },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'healed_selector_history', [
+    { name: 'test_id', type: 'uuid' },
+    { name: 'project_id', type: 'uuid' },
+    { name: 'run_id', type: 'uuid' },
+    { name: 'original_selector', type: 'text', notNull: true, default: "''" },
+    { name: 'healed_selector', type: 'text', notNull: true, default: "''" },
+    { name: 'healing_method', type: 'varchar(50)' },
+    { name: 'confidence', type: 'decimal(5,4)' },
+    { name: 'element_context', type: 'jsonb' },
+    { name: 'success', type: 'boolean', default: 'true' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'healed_selector_history', 'healed_selector_history_test_id_fkey', 'test_id', 'tests', 'id', 'CASCADE');
+  ensureForeignKey(pgm, 'healed_selector_history', 'healed_selector_history_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
 
   pgm.createIndex('healed_selector_history', 'test_id', { ifNotExists: true, name: 'idx_healed_selector_history_test' });
   pgm.createIndex('healed_selector_history', 'project_id', { ifNotExists: true, name: 'idx_healed_selector_history_project' });

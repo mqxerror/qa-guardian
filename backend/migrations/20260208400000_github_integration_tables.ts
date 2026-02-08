@@ -8,11 +8,50 @@
  * - pr_comments: PR review comments
  * - pr_dependency_scans: PR vulnerability scans
  * - user_github_tokens: User-level GitHub OAuth tokens
+ *
+ * NOTE: All operations are idempotent. Tables may already exist from
+ * service-level CREATE TABLE IF NOT EXISTS with a different schema.
+ * Columns are defensively added to handle schema drift.
  */
 
 import { MigrationBuilder, ColumnDefinitions } from 'node-pg-migrate';
 
 export const shorthands: ColumnDefinitions | undefined = undefined;
+
+function ensureColumns(
+  pgm: MigrationBuilder,
+  table: string,
+  columns: Array<{ name: string; type: string; notNull?: boolean; default?: string }>
+): void {
+  for (const col of columns) {
+    const parts = [`ALTER TABLE "${table}" ADD COLUMN IF NOT EXISTS "${col.name}" ${col.type}`];
+    if (col.default !== undefined) {
+      parts.push(`DEFAULT ${col.default}`);
+    }
+    if (col.notNull && col.default !== undefined) {
+      parts.push('NOT NULL');
+    }
+    pgm.sql(parts.join(' ') + ';');
+  }
+}
+
+function ensureForeignKey(
+  pgm: MigrationBuilder,
+  table: string,
+  constraintName: string,
+  column: string,
+  refTable: string,
+  refColumn: string,
+  onDelete: string = 'CASCADE'
+): void {
+  pgm.sql(`
+    DO $$ BEGIN
+      ALTER TABLE "${table}" ADD CONSTRAINT "${constraintName}"
+        FOREIGN KEY ("${column}") REFERENCES "${refTable}"("${refColumn}") ON DELETE ${onDelete};
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+}
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
   // ============================================================================
@@ -39,6 +78,29 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
     created_by: { type: 'varchar(255)' },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'github_connections', [
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'installation_id', type: 'varchar(255)' },
+    { name: 'access_token', type: 'text' },
+    { name: 'refresh_token', type: 'text' },
+    { name: 'token_expires_at', type: 'timestamptz' },
+    { name: 'scope', type: 'varchar(255)' },
+    { name: 'owner', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'repo', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'default_branch', type: 'varchar(100)', default: "'main'" },
+    { name: 'webhook_secret', type: 'text' },
+    { name: 'webhook_url', type: 'text' },
+    { name: 'enabled', type: 'boolean', default: 'true' },
+    { name: 'last_sync_at', type: 'timestamptz' },
+    { name: 'sync_status', type: 'varchar(50)', default: "'pending'" },
+    { name: 'sync_error', type: 'text' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'created_by', type: 'varchar(255)' },
+  ]);
+
+  ensureForeignKey(pgm, 'github_connections', 'github_connections_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
 
   // Add unique constraint idempotently
   pgm.sql(`
@@ -81,6 +143,33 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'pr_status_checks', [
+    { name: 'connection_id', type: 'uuid' },
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'pr_number', type: 'integer', notNull: true, default: '0' },
+    { name: 'pr_title', type: 'text' },
+    { name: 'pr_url', type: 'text' },
+    { name: 'head_sha', type: 'varchar(40)', notNull: true, default: "''" },
+    { name: 'base_branch', type: 'varchar(255)' },
+    { name: 'head_branch', type: 'varchar(255)' },
+    { name: 'status', type: 'varchar(50)', notNull: true, default: "'pending'" },
+    { name: 'conclusion', type: 'varchar(50)' },
+    { name: 'check_run_id', type: 'varchar(255)' },
+    { name: 'details_url', type: 'text' },
+    { name: 'test_run_id', type: 'uuid' },
+    { name: 'tests_total', type: 'integer', default: '0' },
+    { name: 'tests_passed', type: 'integer', default: '0' },
+    { name: 'tests_failed', type: 'integer', default: '0' },
+    { name: 'tests_skipped', type: 'integer', default: '0' },
+    { name: 'started_at', type: 'timestamptz', default: 'NOW()' },
+    { name: 'completed_at', type: 'timestamptz' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'pr_status_checks', 'pr_status_checks_connection_id_fkey', 'connection_id', 'github_connections', 'id', 'CASCADE');
+  ensureForeignKey(pgm, 'pr_status_checks', 'pr_status_checks_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
+
   pgm.createIndex('pr_status_checks', 'connection_id', { ifNotExists: true, name: 'idx_pr_status_checks_connection' });
   pgm.createIndex('pr_status_checks', 'organization_id', { ifNotExists: true, name: 'idx_pr_status_checks_org' });
   pgm.createIndex('pr_status_checks', ['connection_id', 'pr_number'], { ifNotExists: true, name: 'idx_pr_status_checks_pr' });
@@ -110,6 +199,28 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'pr_comments', [
+    { name: 'connection_id', type: 'uuid' },
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'pr_number', type: 'integer', notNull: true, default: '0' },
+    { name: 'comment_id', type: 'varchar(255)' },
+    { name: 'comment_type', type: 'varchar(50)', notNull: true, default: "'general'" },
+    { name: 'body', type: 'text', notNull: true, default: "''" },
+    { name: 'path', type: 'text' },
+    { name: 'line', type: 'integer' },
+    { name: 'side', type: 'varchar(10)' },
+    { name: 'commit_id', type: 'varchar(40)' },
+    { name: 'in_reply_to_id', type: 'varchar(255)' },
+    { name: 'posted_at', type: 'timestamptz' },
+    { name: 'posted_by', type: 'varchar(255)' },
+    { name: 'is_bot', type: 'boolean', default: 'false' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'pr_comments', 'pr_comments_connection_id_fkey', 'connection_id', 'github_connections', 'id', 'CASCADE');
+  ensureForeignKey(pgm, 'pr_comments', 'pr_comments_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
+
   pgm.createIndex('pr_comments', 'connection_id', { ifNotExists: true, name: 'idx_pr_comments_connection' });
   pgm.createIndex('pr_comments', 'organization_id', { ifNotExists: true, name: 'idx_pr_comments_org' });
   pgm.createIndex('pr_comments', ['connection_id', 'pr_number'], { ifNotExists: true, name: 'idx_pr_comments_pr' });
@@ -137,6 +248,28 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'pr_dependency_scans', [
+    { name: 'connection_id', type: 'uuid' },
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'pr_number', type: 'integer', notNull: true, default: '0' },
+    { name: 'head_sha', type: 'varchar(40)', notNull: true, default: "''" },
+    { name: 'status', type: 'varchar(50)', notNull: true, default: "'pending'" },
+    { name: 'vulnerabilities_found', type: 'integer', default: '0' },
+    { name: 'critical_count', type: 'integer', default: '0' },
+    { name: 'high_count', type: 'integer', default: '0' },
+    { name: 'medium_count', type: 'integer', default: '0' },
+    { name: 'low_count', type: 'integer', default: '0' },
+    { name: 'vulnerabilities', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'scan_started_at', type: 'timestamptz' },
+    { name: 'scan_completed_at', type: 'timestamptz' },
+    { name: 'scan_error', type: 'text' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'pr_dependency_scans', 'pr_dependency_scans_connection_id_fkey', 'connection_id', 'github_connections', 'id', 'CASCADE');
+  ensureForeignKey(pgm, 'pr_dependency_scans', 'pr_dependency_scans_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
+
   pgm.createIndex('pr_dependency_scans', 'connection_id', { ifNotExists: true, name: 'idx_pr_dependency_scans_connection' });
   pgm.createIndex('pr_dependency_scans', 'organization_id', { ifNotExists: true, name: 'idx_pr_dependency_scans_org' });
   pgm.createIndex('pr_dependency_scans', ['connection_id', 'pr_number'], { ifNotExists: true, name: 'idx_pr_dependency_scans_pr' });
@@ -157,6 +290,22 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     created_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'user_github_tokens', [
+    { name: 'user_id', type: 'uuid' },
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'access_token', type: 'text', notNull: true, default: "''" },
+    { name: 'refresh_token', type: 'text' },
+    { name: 'token_expires_at', type: 'timestamptz' },
+    { name: 'scope', type: 'varchar(255)' },
+    { name: 'github_username', type: 'varchar(255)' },
+    { name: 'github_user_id', type: 'varchar(255)' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'user_github_tokens', 'user_github_tokens_user_id_fkey', 'user_id', 'users', 'id', 'CASCADE');
+  ensureForeignKey(pgm, 'user_github_tokens', 'user_github_tokens_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
 
   // Add unique constraint idempotently
   pgm.sql(`

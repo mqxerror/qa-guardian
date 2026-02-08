@@ -16,11 +16,50 @@
  * - status_pages: Public status pages
  * - monitoring_settings: Organization monitoring config
  * - deleted_check_history: Audit trail for deleted checks
+ *
+ * NOTE: All operations are idempotent. Tables may already exist from
+ * service-level CREATE TABLE IF NOT EXISTS with a different schema.
+ * Columns are defensively added to handle schema drift.
  */
 
 import { MigrationBuilder, ColumnDefinitions } from 'node-pg-migrate';
 
 export const shorthands: ColumnDefinitions | undefined = undefined;
+
+function ensureColumns(
+  pgm: MigrationBuilder,
+  table: string,
+  columns: Array<{ name: string; type: string; notNull?: boolean; default?: string }>
+): void {
+  for (const col of columns) {
+    const parts = [`ALTER TABLE "${table}" ADD COLUMN IF NOT EXISTS "${col.name}" ${col.type}`];
+    if (col.default !== undefined) {
+      parts.push(`DEFAULT ${col.default}`);
+    }
+    if (col.notNull && col.default !== undefined) {
+      parts.push('NOT NULL');
+    }
+    pgm.sql(parts.join(' ') + ';');
+  }
+}
+
+function ensureForeignKey(
+  pgm: MigrationBuilder,
+  table: string,
+  constraintName: string,
+  column: string,
+  refTable: string,
+  refColumn: string,
+  onDelete: string = 'CASCADE'
+): void {
+  pgm.sql(`
+    DO $$ BEGIN
+      ALTER TABLE "${table}" ADD CONSTRAINT "${constraintName}"
+        FOREIGN KEY ("${column}") REFERENCES "${refTable}"("${refColumn}") ON DELETE ${onDelete};
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+}
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
   // ============================================================================
@@ -53,6 +92,34 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'uptime_checks', [
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'name', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'url', type: 'text', notNull: true, default: "''" },
+    { name: 'method', type: 'varchar(10)', notNull: true, default: "'GET'" },
+    { name: 'interval_seconds', type: 'integer', notNull: true, default: '60' },
+    { name: 'timeout_ms', type: 'integer', notNull: true, default: '10000' },
+    { name: 'expected_status', type: 'integer', notNull: true, default: '200' },
+    { name: 'headers', type: 'jsonb', default: "'{}'::jsonb" },
+    { name: 'body', type: 'text' },
+    { name: 'locations', type: 'jsonb', default: "'[\"us-east\"]'::jsonb" },
+    { name: 'assertions', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'ssl_expiry_warning_days', type: 'integer', default: '30' },
+    { name: 'consecutive_failures_threshold', type: 'integer', default: '1' },
+    { name: 'tags', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'group_name', type: 'varchar(255)' },
+    { name: 'enabled', type: 'boolean', default: 'true' },
+    { name: 'paused_at', type: 'timestamptz' },
+    { name: 'paused_by', type: 'varchar(255)' },
+    { name: 'pause_reason', type: 'text' },
+    { name: 'pause_expires_at', type: 'timestamptz' },
+    { name: 'created_by', type: 'varchar(255)', notNull: true, default: "'system'" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'uptime_checks', 'uptime_checks_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
+
   pgm.createIndex('uptime_checks', 'organization_id', { ifNotExists: true, name: 'idx_uptime_checks_org' });
   pgm.createIndex('uptime_checks', 'enabled', { ifNotExists: true, name: 'idx_uptime_checks_enabled' });
 
@@ -74,6 +141,20 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     checked_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'check_results', [
+    { name: 'check_id', type: 'uuid' },
+    { name: 'location', type: 'varchar(50)', notNull: true, default: "''" },
+    { name: 'status', type: 'varchar(20)', notNull: true, default: "''" },
+    { name: 'response_time_ms', type: 'integer', notNull: true, default: '0' },
+    { name: 'status_code', type: 'integer' },
+    { name: 'error', type: 'text' },
+    { name: 'assertion_results', type: 'jsonb' },
+    { name: 'assertions_passed', type: 'integer' },
+    { name: 'assertions_failed', type: 'integer' },
+    { name: 'ssl_info', type: 'jsonb' },
+    { name: 'checked_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
   pgm.createIndex('check_results', 'check_id', { ifNotExists: true, name: 'idx_check_results_check' });
   pgm.createIndex('check_results', [{ name: 'checked_at', sort: 'DESC' }], { ifNotExists: true, name: 'idx_check_results_checked' });
   pgm.createIndex('check_results', ['check_id', { name: 'checked_at', sort: 'DESC' }], { ifNotExists: true, name: 'idx_check_results_check_time' });
@@ -86,6 +167,11 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     consecutive_failures: { type: 'integer', default: 0 },
     updated_at: { type: 'timestamptz', default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'uptime_check_state', [
+    { name: 'consecutive_failures', type: 'integer', default: '0' },
+    { name: 'updated_at', type: 'timestamptz', default: 'NOW()' },
+  ]);
 
   // ============================================================================
   // Check Incidents Table
@@ -100,6 +186,16 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     error: { type: 'text' },
     affected_locations: { type: 'jsonb', default: pgm.func("'[]'::jsonb") },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'check_incidents', [
+    { name: 'check_id', type: 'uuid' },
+    { name: 'status', type: 'varchar(20)', notNull: true, default: "''" },
+    { name: 'started_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'ended_at', type: 'timestamptz' },
+    { name: 'duration_seconds', type: 'integer' },
+    { name: 'error', type: 'text' },
+    { name: 'affected_locations', type: 'jsonb', default: "'[]'::jsonb" },
+  ]);
 
   pgm.createIndex('check_incidents', 'check_id', { ifNotExists: true, name: 'idx_check_incidents_check' });
   pgm.createIndex('check_incidents', [{ name: 'started_at', sort: 'DESC' }], { ifNotExists: true, name: 'idx_check_incidents_started' });
@@ -117,6 +213,16 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     created_by: { type: 'varchar(255)', notNull: true },
     created_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'maintenance_windows', [
+    { name: 'check_id', type: 'uuid' },
+    { name: 'name', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'start_time', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'end_time', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'reason', type: 'text' },
+    { name: 'created_by', type: 'varchar(255)', notNull: true, default: "'system'" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
 
   pgm.createIndex('maintenance_windows', 'check_id', { ifNotExists: true, name: 'idx_maintenance_windows_check' });
 
@@ -136,6 +242,20 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'transaction_checks', [
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'name', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'description', type: 'text' },
+    { name: 'steps', type: 'jsonb', notNull: true, default: "'[]'::jsonb" },
+    { name: 'interval_seconds', type: 'integer', notNull: true, default: '300' },
+    { name: 'enabled', type: 'boolean', default: 'true' },
+    { name: 'created_by', type: 'varchar(255)', notNull: true, default: "'system'" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'transaction_checks', 'transaction_checks_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
+
   pgm.createIndex('transaction_checks', 'organization_id', { ifNotExists: true, name: 'idx_transaction_checks_org' });
 
   // ============================================================================
@@ -149,6 +269,14 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     step_results: { type: 'jsonb', default: pgm.func("'[]'::jsonb") },
     checked_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'transaction_results', [
+    { name: 'transaction_id', type: 'uuid' },
+    { name: 'status', type: 'varchar(20)', notNull: true, default: "''" },
+    { name: 'total_time_ms', type: 'integer', notNull: true, default: '0' },
+    { name: 'step_results', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'checked_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
 
   pgm.createIndex('transaction_results', 'transaction_id', { ifNotExists: true, name: 'idx_transaction_results_tx' });
 
@@ -168,6 +296,20 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'performance_checks', [
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'name', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'url', type: 'text', notNull: true, default: "''" },
+    { name: 'interval_seconds', type: 'integer', notNull: true, default: '300' },
+    { name: 'device', type: 'varchar(20)', notNull: true, default: "'desktop'" },
+    { name: 'enabled', type: 'boolean', default: 'true' },
+    { name: 'created_by', type: 'varchar(255)', notNull: true, default: "'system'" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'performance_checks', 'performance_checks_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
+
   pgm.createIndex('performance_checks', 'organization_id', { ifNotExists: true, name: 'idx_performance_checks_org' });
 
   // ============================================================================
@@ -181,6 +323,14 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     lighthouse_score: { type: 'integer' },
     checked_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'performance_results', [
+    { name: 'check_id', type: 'uuid' },
+    { name: 'status', type: 'varchar(20)', notNull: true, default: "''" },
+    { name: 'metrics', type: 'jsonb', notNull: true, default: "'{}'::jsonb" },
+    { name: 'lighthouse_score', type: 'integer' },
+    { name: 'checked_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
 
   pgm.createIndex('performance_results', 'check_id', { ifNotExists: true, name: 'idx_performance_results_check' });
 
@@ -202,6 +352,22 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'webhook_checks', [
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'name', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'description', type: 'text' },
+    { name: 'webhook_url', type: 'text', notNull: true, default: "''" },
+    { name: 'webhook_secret', type: 'varchar(255)' },
+    { name: 'expected_interval_seconds', type: 'integer', notNull: true, default: '300' },
+    { name: 'expected_payload', type: 'jsonb' },
+    { name: 'enabled', type: 'boolean', default: 'true' },
+    { name: 'created_by', type: 'varchar(255)', notNull: true, default: "'system'" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'webhook_checks', 'webhook_checks_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
+
   pgm.createIndex('webhook_checks', 'organization_id', { ifNotExists: true, name: 'idx_webhook_checks_org' });
 
   // ============================================================================
@@ -218,6 +384,17 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     validation_errors: { type: 'jsonb', default: pgm.func("'[]'::jsonb") },
     signature_valid: { type: 'boolean' },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'webhook_events', [
+    { name: 'check_id', type: 'uuid' },
+    { name: 'received_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'source_ip', type: 'varchar(45)' },
+    { name: 'headers', type: 'jsonb', default: "'{}'::jsonb" },
+    { name: 'payload', type: 'jsonb' },
+    { name: 'payload_valid', type: 'boolean', default: 'true' },
+    { name: 'validation_errors', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'signature_valid', type: 'boolean' },
+  ]);
 
   pgm.createIndex('webhook_events', 'check_id', { ifNotExists: true, name: 'idx_webhook_events_check' });
   pgm.createIndex('webhook_events', [{ name: 'received_at', sort: 'DESC' }], { ifNotExists: true, name: 'idx_webhook_events_received' });
@@ -241,6 +418,23 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'dns_checks', [
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'name', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'domain', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'record_type', type: 'varchar(10)', notNull: true, default: "'A'" },
+    { name: 'expected_values', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'nameservers', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'interval_seconds', type: 'integer', notNull: true, default: '300' },
+    { name: 'timeout_ms', type: 'integer', notNull: true, default: '5000' },
+    { name: 'enabled', type: 'boolean', default: 'true' },
+    { name: 'created_by', type: 'varchar(255)', notNull: true, default: "'system'" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'dns_checks', 'dns_checks_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
+
   pgm.createIndex('dns_checks', 'organization_id', { ifNotExists: true, name: 'idx_dns_checks_org' });
 
   // ============================================================================
@@ -261,6 +455,20 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     checked_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'dns_results', [
+    { name: 'check_id', type: 'uuid' },
+    { name: 'status', type: 'varchar(20)', notNull: true, default: "''" },
+    { name: 'resolved_values', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'expected_values', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'response_time_ms', type: 'integer', notNull: true, default: '0' },
+    { name: 'nameserver_used', type: 'varchar(255)' },
+    { name: 'error', type: 'text' },
+    { name: 'ttl', type: 'integer' },
+    { name: 'all_expected_found', type: 'boolean', default: 'true' },
+    { name: 'unexpected_values', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'checked_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
   pgm.createIndex('dns_results', 'check_id', { ifNotExists: true, name: 'idx_dns_results_check' });
 
   // ============================================================================
@@ -280,6 +488,21 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'tcp_checks', [
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'name', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'host', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'port', type: 'integer', notNull: true, default: '0' },
+    { name: 'timeout_ms', type: 'integer', notNull: true, default: '5000' },
+    { name: 'interval_seconds', type: 'integer', notNull: true, default: '60' },
+    { name: 'enabled', type: 'boolean', default: 'true' },
+    { name: 'created_by', type: 'varchar(255)', notNull: true, default: "'system'" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'tcp_checks', 'tcp_checks_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
+
   pgm.createIndex('tcp_checks', 'organization_id', { ifNotExists: true, name: 'idx_tcp_checks_org' });
 
   // ============================================================================
@@ -294,6 +517,15 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     error: { type: 'text' },
     checked_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'tcp_results', [
+    { name: 'check_id', type: 'uuid' },
+    { name: 'status', type: 'varchar(20)', notNull: true, default: "''" },
+    { name: 'port_open', type: 'boolean', notNull: true, default: 'false' },
+    { name: 'response_time_ms', type: 'integer', notNull: true, default: '0' },
+    { name: 'error', type: 'text' },
+    { name: 'checked_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
 
   pgm.createIndex('tcp_results', 'check_id', { ifNotExists: true, name: 'idx_tcp_results_check' });
 
@@ -321,6 +553,28 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'status_pages', [
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'name', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'slug', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'description', type: 'text' },
+    { name: 'logo_url', type: 'text' },
+    { name: 'favicon_url', type: 'text' },
+    { name: 'primary_color', type: 'varchar(20)' },
+    { name: 'show_history_days', type: 'integer', default: '7' },
+    { name: 'checks', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'custom_domain', type: 'varchar(255)' },
+    { name: 'is_public', type: 'boolean', default: 'true' },
+    { name: 'show_uptime_percentage', type: 'boolean', default: 'true' },
+    { name: 'show_response_time', type: 'boolean', default: 'true' },
+    { name: 'show_incidents', type: 'boolean', default: 'true' },
+    { name: 'created_by', type: 'varchar(255)', notNull: true, default: "'system'" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'status_pages', 'status_pages_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
+
   pgm.createIndex('status_pages', 'organization_id', { ifNotExists: true, name: 'idx_status_pages_org' });
 
   // ============================================================================
@@ -334,6 +588,14 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_by: { type: 'varchar(255)' },
     updated_at: { type: 'timestamptz', default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'monitoring_settings', [
+    { name: 'retention_days', type: 'integer', notNull: true, default: '30' },
+    { name: 'auto_cleanup_enabled', type: 'boolean', default: 'true' },
+    { name: 'last_cleanup_at', type: 'timestamptz' },
+    { name: 'updated_by', type: 'varchar(255)' },
+    { name: 'updated_at', type: 'timestamptz', default: 'NOW()' },
+  ]);
 
   // ============================================================================
   // Deleted Check History Table
@@ -349,6 +611,17 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     historical_results_count: { type: 'integer', default: 0 },
     last_status: { type: 'varchar(20)' },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'deleted_check_history', [
+    { name: 'check_name', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'check_type', type: 'varchar(50)', notNull: true, default: "''" },
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'deleted_by', type: 'varchar(255)', notNull: true, default: "'system'" },
+    { name: 'deleted_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'check_config', type: 'jsonb' },
+    { name: 'historical_results_count', type: 'integer', default: '0' },
+    { name: 'last_status', type: 'varchar(20)' },
+  ]);
 
   pgm.createIndex('deleted_check_history', 'organization_id', { ifNotExists: true, name: 'idx_deleted_check_history_org' });
 }

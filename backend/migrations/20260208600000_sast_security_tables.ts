@@ -11,11 +11,50 @@
  * - secret_patterns: Custom secret detection patterns
  * - gitleaks_configs: Gitleaks configuration
  * - gitleaks_scans: Gitleaks scan history
+ *
+ * NOTE: All operations are idempotent. Tables may already exist from
+ * service-level CREATE TABLE IF NOT EXISTS with a different schema.
+ * Columns are defensively added to handle schema drift.
  */
 
 import { MigrationBuilder, ColumnDefinitions } from 'node-pg-migrate';
 
 export const shorthands: ColumnDefinitions | undefined = undefined;
+
+function ensureColumns(
+  pgm: MigrationBuilder,
+  table: string,
+  columns: Array<{ name: string; type: string; notNull?: boolean; default?: string }>
+): void {
+  for (const col of columns) {
+    const parts = [`ALTER TABLE "${table}" ADD COLUMN IF NOT EXISTS "${col.name}" ${col.type}`];
+    if (col.default !== undefined) {
+      parts.push(`DEFAULT ${col.default}`);
+    }
+    if (col.notNull && col.default !== undefined) {
+      parts.push('NOT NULL');
+    }
+    pgm.sql(parts.join(' ') + ';');
+  }
+}
+
+function ensureForeignKey(
+  pgm: MigrationBuilder,
+  table: string,
+  constraintName: string,
+  column: string,
+  refTable: string,
+  refColumn: string,
+  onDelete: string = 'CASCADE'
+): void {
+  pgm.sql(`
+    DO $$ BEGIN
+      ALTER TABLE "${table}" ADD CONSTRAINT "${constraintName}"
+        FOREIGN KEY ("${column}") REFERENCES "${refTable}"("${refColumn}") ON DELETE ${onDelete};
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+}
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
   // ============================================================================
@@ -40,6 +79,24 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'sast_configs', [
+    { name: 'enabled', type: 'boolean', default: 'false' },
+    { name: 'ruleset', type: 'varchar(50)', default: "'default'" },
+    { name: 'custom_rules', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'custom_rules_yaml', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'exclude_paths', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'severity_threshold', type: 'varchar(20)', default: "'MEDIUM'" },
+    { name: 'auto_scan', type: 'boolean', default: 'false' },
+    { name: 'last_scan_at', type: 'timestamptz' },
+    { name: 'last_scan_status', type: 'varchar(50)' },
+    { name: 'pr_checks_enabled', type: 'boolean', default: 'false' },
+    { name: 'pr_comments_enabled', type: 'boolean', default: 'false' },
+    { name: 'block_pr_on_critical', type: 'boolean', default: 'false' },
+    { name: 'block_pr_on_high', type: 'boolean', default: 'false' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
   // ============================================================================
   // SAST Scans Table
   // ============================================================================
@@ -58,6 +115,23 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     created_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'sast_scans', [
+    { name: 'project_id', type: 'uuid' },
+    { name: 'repository_url', type: 'text' },
+    { name: 'branch', type: 'varchar(255)' },
+    { name: 'commit_sha', type: 'varchar(40)' },
+    { name: 'status', type: 'varchar(50)', notNull: true, default: "'pending'" },
+    { name: 'started_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'completed_at', type: 'timestamptz' },
+    { name: 'findings', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'summary', type: 'jsonb', notNull: true, default: "'{}'::jsonb" },
+    { name: 'error', type: 'text' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'sast_scans', 'sast_scans_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
 
   pgm.createIndex('sast_scans', 'project_id', { ifNotExists: true, name: 'idx_sast_scans_project' });
   pgm.createIndex('sast_scans', [{ name: 'created_at', sort: 'DESC' }], { ifNotExists: true, name: 'idx_sast_scans_created' });
@@ -78,6 +152,20 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     marked_at: { type: 'timestamptz', notNull: true },
     created_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'sast_false_positives', [
+    { name: 'project_id', type: 'uuid' },
+    { name: 'rule_id', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'file_path', type: 'text', notNull: true, default: "''" },
+    { name: 'line', type: 'integer', notNull: true, default: '0' },
+    { name: 'snippet', type: 'text' },
+    { name: 'reason', type: 'text', notNull: true, default: "''" },
+    { name: 'marked_by', type: 'varchar(255)', notNull: true, default: "'system'" },
+    { name: 'marked_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'sast_false_positives', 'sast_false_positives_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
 
   pgm.createIndex('sast_false_positives', 'project_id', { ifNotExists: true, name: 'idx_sast_false_positives_project' });
   pgm.createIndex('sast_false_positives', ['project_id', 'rule_id'], { ifNotExists: true, name: 'idx_sast_false_positives_lookup' });
@@ -104,6 +192,26 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'sast_pr_checks', [
+    { name: 'project_id', type: 'uuid' },
+    { name: 'pr_number', type: 'integer', notNull: true, default: '0' },
+    { name: 'pr_title', type: 'text' },
+    { name: 'head_sha', type: 'varchar(40)', notNull: true, default: "''" },
+    { name: 'status', type: 'varchar(50)', notNull: true, default: "'pending'" },
+    { name: 'conclusion', type: 'varchar(50)' },
+    { name: 'context', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'description', type: 'text' },
+    { name: 'target_url', type: 'text' },
+    { name: 'scan_id', type: 'uuid' },
+    { name: 'findings', type: 'jsonb' },
+    { name: 'blocked', type: 'boolean', default: 'false' },
+    { name: 'block_reason', type: 'text' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'sast_pr_checks', 'sast_pr_checks_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
+
   pgm.createIndex('sast_pr_checks', 'project_id', { ifNotExists: true, name: 'idx_sast_pr_checks_project' });
   pgm.createIndex('sast_pr_checks', ['project_id', 'pr_number'], { ifNotExists: true, name: 'idx_sast_pr_checks_pr' });
   pgm.createIndex('sast_pr_checks', 'head_sha', { ifNotExists: true, name: 'idx_sast_pr_checks_sha' });
@@ -121,6 +229,18 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     blocked: { type: 'boolean', default: false },
     created_at: { type: 'timestamptz', notNull: true },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'sast_pr_comments', [
+    { name: 'project_id', type: 'uuid' },
+    { name: 'pr_number', type: 'integer', notNull: true, default: '0' },
+    { name: 'scan_id', type: 'uuid' },
+    { name: 'body', type: 'text', notNull: true, default: "''" },
+    { name: 'findings', type: 'jsonb', notNull: true, default: "'[]'::jsonb" },
+    { name: 'blocked', type: 'boolean', default: 'false' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'sast_pr_comments', 'sast_pr_comments_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
 
   pgm.createIndex('sast_pr_comments', 'project_id', { ifNotExists: true, name: 'idx_sast_pr_comments_project' });
   pgm.createIndex('sast_pr_comments', ['project_id', 'pr_number'], { ifNotExists: true, name: 'idx_sast_pr_comments_pr' });
@@ -140,6 +260,20 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     created_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'secret_patterns', [
+    { name: 'project_id', type: 'uuid' },
+    { name: 'name', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'description', type: 'text' },
+    { name: 'pattern', type: 'text', notNull: true, default: "''" },
+    { name: 'severity', type: 'varchar(20)', notNull: true, default: "'MEDIUM'" },
+    { name: 'category', type: 'varchar(100)', notNull: true, default: "''" },
+    { name: 'enabled', type: 'boolean', default: 'true' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'secret_patterns', 'secret_patterns_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
 
   pgm.createIndex('secret_patterns', 'project_id', { ifNotExists: true, name: 'idx_secret_patterns_project' });
   pgm.createIndex('secret_patterns', 'enabled', { ifNotExists: true, name: 'idx_secret_patterns_enabled' });
@@ -163,6 +297,21 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'gitleaks_configs', [
+    { name: 'enabled', type: 'boolean', default: 'false' },
+    { name: 'scan_on_push', type: 'boolean', default: 'false' },
+    { name: 'scan_on_pr', type: 'boolean', default: 'false' },
+    { name: 'scan_full_history', type: 'boolean', default: 'false' },
+    { name: 'exclude_paths', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'allowlist_patterns', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'custom_rules', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'severity_threshold', type: 'varchar(20)', default: "'all'" },
+    { name: 'fail_on_leak', type: 'boolean', default: 'true' },
+    { name: 'notification_channels', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
   // ============================================================================
   // Gitleaks Scans Table
   // ============================================================================
@@ -183,6 +332,25 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     created_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'gitleaks_scans', [
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'project_id', type: 'uuid' },
+    { name: 'repository', type: 'varchar(255)' },
+    { name: 'branch', type: 'varchar(255)' },
+    { name: 'status', type: 'varchar(50)', notNull: true, default: "'pending'" },
+    { name: 'started_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'completed_at', type: 'timestamptz' },
+    { name: 'trigger', type: 'varchar(50)', default: "'manual'" },
+    { name: 'commits_scanned', type: 'integer', default: '0' },
+    { name: 'findings', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'summary', type: 'jsonb', notNull: true, default: "'{}'::jsonb" },
+    { name: 'error_message', type: 'text' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'gitleaks_scans', 'gitleaks_scans_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
 
   pgm.createIndex('gitleaks_scans', 'project_id', { ifNotExists: true, name: 'idx_gitleaks_scans_project' });
   pgm.createIndex('gitleaks_scans', [{ name: 'created_at', sort: 'DESC' }], { ifNotExists: true, name: 'idx_gitleaks_scans_created' });

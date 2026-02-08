@@ -9,11 +9,50 @@
  * - openapi_specs: Uploaded OpenAPI specifications
  * - dast_schedules: Scheduled DAST scans
  * - graphql_scans: GraphQL security scans
+ *
+ * NOTE: All operations are idempotent. Tables may already exist from
+ * service-level CREATE TABLE IF NOT EXISTS with a different schema.
+ * Columns are defensively added to handle schema drift.
  */
 
 import { MigrationBuilder, ColumnDefinitions } from 'node-pg-migrate';
 
 export const shorthands: ColumnDefinitions | undefined = undefined;
+
+function ensureColumns(
+  pgm: MigrationBuilder,
+  table: string,
+  columns: Array<{ name: string; type: string; notNull?: boolean; default?: string }>
+): void {
+  for (const col of columns) {
+    const parts = [`ALTER TABLE "${table}" ADD COLUMN IF NOT EXISTS "${col.name}" ${col.type}`];
+    if (col.default !== undefined) {
+      parts.push(`DEFAULT ${col.default}`);
+    }
+    if (col.notNull && col.default !== undefined) {
+      parts.push('NOT NULL');
+    }
+    pgm.sql(parts.join(' ') + ';');
+  }
+}
+
+function ensureForeignKey(
+  pgm: MigrationBuilder,
+  table: string,
+  constraintName: string,
+  column: string,
+  refTable: string,
+  refColumn: string,
+  onDelete: string = 'CASCADE'
+): void {
+  pgm.sql(`
+    DO $$ BEGIN
+      ALTER TABLE "${table}" ADD CONSTRAINT "${constraintName}"
+        FOREIGN KEY ("${column}") REFERENCES "${refTable}"("${refColumn}") ON DELETE ${onDelete};
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+}
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
   // ============================================================================
@@ -34,6 +73,21 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     created_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'dast_configs', [
+    { name: 'enabled', type: 'boolean', default: 'false' },
+    { name: 'target_url', type: 'text' },
+    { name: 'scan_profile', type: 'varchar(50)', default: "'baseline'" },
+    { name: 'auth_config', type: 'jsonb' },
+    { name: 'context_config', type: 'jsonb' },
+    { name: 'alert_threshold', type: 'varchar(20)', default: "'LOW'" },
+    { name: 'auto_scan', type: 'boolean', default: 'false' },
+    { name: 'last_scan_at', type: 'timestamptz' },
+    { name: 'last_scan_status', type: 'varchar(50)' },
+    { name: 'openapi_spec_id', type: 'uuid' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
 
   // ============================================================================
   // DAST Scans Table
@@ -57,6 +111,26 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'dast_scans', [
+    { name: 'project_id', type: 'uuid' },
+    { name: 'target_url', type: 'text', notNull: true, default: "''" },
+    { name: 'scan_profile', type: 'varchar(50)', notNull: true, default: "'baseline'" },
+    { name: 'status', type: 'varchar(50)', notNull: true, default: "'pending'" },
+    { name: 'started_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'completed_at', type: 'timestamptz' },
+    { name: 'alerts', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'summary', type: 'jsonb', notNull: true, default: "'{}'::jsonb" },
+    { name: 'statistics', type: 'jsonb' },
+    { name: 'error', type: 'text' },
+    { name: 'endpoints_tested', type: 'jsonb' },
+    { name: 'scope_config', type: 'jsonb' },
+    { name: 'progress', type: 'jsonb' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'dast_scans', 'dast_scans_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
+
   pgm.createIndex('dast_scans', 'project_id', { ifNotExists: true, name: 'idx_dast_scans_project' });
   pgm.createIndex('dast_scans', [{ name: 'created_at', sort: 'DESC' }], { ifNotExists: true, name: 'idx_dast_scans_created' });
   pgm.createIndex('dast_scans', 'status', { ifNotExists: true, name: 'idx_dast_scans_status' });
@@ -76,6 +150,19 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     created_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'dast_false_positives', [
+    { name: 'project_id', type: 'uuid' },
+    { name: 'plugin_id', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'url', type: 'text', notNull: true, default: "''" },
+    { name: 'param', type: 'text' },
+    { name: 'reason', type: 'text', notNull: true, default: "''" },
+    { name: 'marked_by', type: 'varchar(255)', notNull: true, default: "'system'" },
+    { name: 'marked_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'dast_false_positives', 'dast_false_positives_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
+
   pgm.createIndex('dast_false_positives', 'project_id', { ifNotExists: true, name: 'idx_dast_false_positives_project' });
   pgm.createIndex('dast_false_positives', ['project_id', 'plugin_id'], { ifNotExists: true, name: 'idx_dast_false_positives_lookup' });
 
@@ -93,6 +180,19 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     uploaded_by: { type: 'varchar(255)', notNull: true },
     created_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'openapi_specs', [
+    { name: 'project_id', type: 'uuid' },
+    { name: 'name', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'version', type: 'varchar(100)' },
+    { name: 'content', type: 'text', notNull: true, default: "''" },
+    { name: 'endpoints', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'uploaded_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'uploaded_by', type: 'varchar(255)', notNull: true, default: "'system'" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
+
+  ensureForeignKey(pgm, 'openapi_specs', 'openapi_specs_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
 
   pgm.createIndex('openapi_specs', 'project_id', { ifNotExists: true, name: 'idx_openapi_specs_project' });
 
@@ -123,6 +223,32 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     run_count: { type: 'integer', default: 0 },
   }, { ifNotExists: true });
 
+  ensureColumns(pgm, 'dast_schedules', [
+    { name: 'project_id', type: 'uuid' },
+    { name: 'organization_id', type: 'uuid' },
+    { name: 'name', type: 'varchar(255)', notNull: true, default: "''" },
+    { name: 'description', type: 'text' },
+    { name: 'frequency', type: 'varchar(50)', notNull: true, default: "'daily'" },
+    { name: 'cron_expression', type: 'varchar(100)', notNull: true, default: "'0 0 * * *'" },
+    { name: 'timezone', type: 'varchar(100)', notNull: true, default: "'UTC'" },
+    { name: 'enabled', type: 'boolean', default: 'true' },
+    { name: 'scan_profile', type: 'varchar(50)', notNull: true, default: "'baseline'" },
+    { name: 'target_url', type: 'text', notNull: true, default: "''" },
+    { name: 'notify_on_failure', type: 'boolean', default: 'false' },
+    { name: 'notify_on_high_severity', type: 'boolean', default: 'false' },
+    { name: 'email_recipients', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'created_by', type: 'varchar(255)', notNull: true, default: "'system'" },
+    { name: 'next_run_at', type: 'timestamptz' },
+    { name: 'last_run_at', type: 'timestamptz' },
+    { name: 'last_run_id', type: 'uuid' },
+    { name: 'run_count', type: 'integer', default: '0' },
+  ]);
+
+  ensureForeignKey(pgm, 'dast_schedules', 'dast_schedules_project_id_fkey', 'project_id', 'projects', 'id', 'CASCADE');
+  ensureForeignKey(pgm, 'dast_schedules', 'dast_schedules_organization_id_fkey', 'organization_id', 'organizations', 'id', 'CASCADE');
+
   pgm.createIndex('dast_schedules', 'project_id', { ifNotExists: true, name: 'idx_dast_schedules_project' });
   pgm.createIndex('dast_schedules', 'organization_id', { ifNotExists: true, name: 'idx_dast_schedules_org' });
   pgm.createIndex('dast_schedules', 'enabled', { ifNotExists: true, name: 'idx_dast_schedules_enabled' });
@@ -145,6 +271,21 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     created_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
     updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('NOW()') },
   }, { ifNotExists: true });
+
+  ensureColumns(pgm, 'graphql_scans', [
+    { name: 'config', type: 'jsonb', notNull: true, default: "'{}'::jsonb" },
+    { name: 'status', type: 'varchar(50)', notNull: true, default: "'introspecting'" },
+    { name: 'started_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'completed_at', type: 'timestamptz' },
+    { name: 'schema', type: 'jsonb' },
+    { name: 'operations_tested', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'findings', type: 'jsonb', default: "'[]'::jsonb" },
+    { name: 'summary', type: 'jsonb', notNull: true, default: "'{}'::jsonb" },
+    { name: 'progress', type: 'jsonb' },
+    { name: 'error', type: 'text' },
+    { name: 'created_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+    { name: 'updated_at', type: 'timestamptz', notNull: true, default: 'NOW()' },
+  ]);
 
   pgm.createIndex('graphql_scans', [{ name: 'created_at', sort: 'DESC' }], { ifNotExists: true, name: 'idx_graphql_scans_created' });
   pgm.createIndex('graphql_scans', 'status', { ifNotExists: true, name: 'idx_graphql_scans_status' });
