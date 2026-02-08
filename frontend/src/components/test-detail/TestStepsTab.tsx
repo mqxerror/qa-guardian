@@ -42,7 +42,7 @@ function VisualTestConfig({ test }: { test: TestType }) {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {test?.target_url && (
-            <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
+            <div className="bg-card rounded p-3 border border-border">
               <dt className="text-xs font-medium text-muted-foreground mb-1">Target URL</dt>
               <dd className="text-sm text-foreground break-all">
                 <a href={test.target_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
@@ -51,7 +51,7 @@ function VisualTestConfig({ test }: { test: TestType }) {
               </dd>
             </div>
           )}
-          <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
+          <div className="bg-card rounded p-3 border border-border">
             <dt className="text-xs font-medium text-muted-foreground mb-1">Viewport</dt>
             <dd className="text-sm text-foreground">
               {test?.multi_viewport && test?.viewports?.length > 0 ? (
@@ -65,13 +65,13 @@ function VisualTestConfig({ test }: { test: TestType }) {
               )}
             </dd>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
+          <div className="bg-card rounded p-3 border border-border">
             <dt className="text-xs font-medium text-muted-foreground mb-1">Capture Mode</dt>
             <dd className="text-sm text-foreground capitalize">
               {(test?.capture_mode || 'full_page').replace('_', ' ')}
             </dd>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
+          <div className="bg-card rounded p-3 border border-border">
             <dt className="text-xs font-medium text-muted-foreground mb-1">Diff Threshold</dt>
             <dd className="text-sm text-foreground">
               {(test?.diff_threshold_mode ?? 'percentage') === 'pixel_count'
@@ -99,11 +99,11 @@ function LighthouseTestConfig({ test }: { test: TestType }) {
           Lighthouse performance tests analyze page load metrics. No test steps required.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
+          <div className="bg-card rounded p-3 border border-border">
             <dt className="text-xs font-medium text-muted-foreground mb-1">Device Preset</dt>
             <dd className="text-sm text-foreground capitalize">{test?.device_preset || 'mobile'}</dd>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
+          <div className="bg-card rounded p-3 border border-border">
             <dt className="text-xs font-medium text-muted-foreground mb-1">Performance Threshold</dt>
             <dd className="text-sm text-foreground">{test?.performance_threshold || 0}% minimum score</dd>
           </div>
@@ -126,11 +126,11 @@ function AccessibilityTestConfig({ test }: { test: TestType }) {
           Accessibility tests scan pages for WCAG violations. No test steps required.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
+          <div className="bg-card rounded p-3 border border-border">
             <dt className="text-xs font-medium text-muted-foreground mb-1">WCAG Level</dt>
             <dd className="text-sm text-foreground">{test?.wcag_level || 'AA'}</dd>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded p-3 border border-border">
+          <div className="bg-card rounded p-3 border border-border">
             <dt className="text-xs font-medium text-muted-foreground mb-1">Include Best Practices</dt>
             <dd className="text-sm text-foreground">{test?.include_best_practices ? 'Yes' : 'No'}</dd>
           </div>

@@ -210,7 +210,7 @@ function FindingCard({
                   setSelectedFinding(finding);
                   setShowFalsePositiveModal(true);
                 }}
-                className="shrink-0 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="shrink-0 rounded-md border border-border bg-card px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
               >
                 Mark False Positive
               </button>
@@ -298,7 +298,7 @@ function RemediationGuidance({ finding, expanded, onToggle }: RemediationGuidanc
       </button>
 
       {expanded && (
-        <div className="p-4 bg-white dark:bg-gray-800 space-y-4">
+        <div className="p-4 bg-card space-y-4">
           <p className="text-sm text-foreground font-medium">{finding.remediation.summary}</p>
 
           <div>

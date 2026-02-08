@@ -51,7 +51,7 @@ export function AIProviderHotSwap({
 
   return (
     <>
-      <div className="mb-6 bg-white rounded-lg shadow p-4">
+      <div className="mb-6 bg-card rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -129,7 +129,7 @@ export function AIProviderHotSwap({
       {/* Provider Switch Modal */}
       {showSwitchModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+          <div className="bg-card rounded-lg shadow-xl w-full max-w-md p-6">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <span>⚡</span> Switch Provider
             </h3>

@@ -250,7 +250,7 @@ export function VirtualTable<T>({
     return (
       <div className={`${className}`}>
         {renderHeader && (
-          <div className="sticky top-0 z-10 bg-white dark:bg-gray-800">
+          <div className="sticky top-0 z-10 bg-card">
             {renderHeader()}
           </div>
         )}
@@ -268,7 +268,7 @@ export function VirtualTable<T>({
     return (
       <div className={`${className}`}>
         {renderHeader && (
-          <div className="sticky top-0 z-10 bg-white dark:bg-gray-800">
+          <div className="sticky top-0 z-10 bg-card">
             {renderHeader()}
           </div>
         )}
@@ -287,7 +287,7 @@ export function VirtualTable<T>({
   return (
     <div className={`${className}`}>
       {renderHeader && (
-        <div className="sticky top-0 z-10 bg-white dark:bg-gray-800">
+        <div className="sticky top-0 z-10 bg-card">
           {renderHeader()}
         </div>
       )}

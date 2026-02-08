@@ -419,25 +419,25 @@ function K6LiveMetrics({ k6Metrics, virtualUsers }: K6LiveMetricsProps) {
   return (
     <div className="mt-6 p-3 rounded-lg bg-blue-100/50 dark:bg-blue-800/30 border border-blue-200 dark:border-blue-700">
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
-        <div className="p-2 rounded bg-white/50 dark:bg-gray-800/50">
+        <div className="p-2 rounded bg-muted/50">
           <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
             {k6Metrics.currentVUs ?? virtualUsers ?? 0}
           </div>
           <div className="text-xs text-blue-600 dark:text-blue-400">Virtual Users</div>
         </div>
-        <div className="p-2 rounded bg-white/50 dark:bg-gray-800/50">
+        <div className="p-2 rounded bg-muted/50">
           <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
             {k6Metrics.totalRequests ?? 0}
           </div>
           <div className="text-xs text-blue-600 dark:text-blue-400">Total Requests</div>
         </div>
-        <div className="p-2 rounded bg-white/50 dark:bg-gray-800/50">
+        <div className="p-2 rounded bg-muted/50">
           <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
             {k6Metrics.requestsPerSecond?.toFixed(1) ?? '0.0'}
           </div>
           <div className="text-xs text-blue-600 dark:text-blue-400">Req/sec</div>
         </div>
-        <div className="p-2 rounded bg-white/50 dark:bg-gray-800/50">
+        <div className="p-2 rounded bg-muted/50">
           <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
             {k6Metrics.avgResponseTime ?? 0}ms
           </div>

@@ -22,27 +22,27 @@ export function AIRouterStats({ stats }: AIRouterStatsProps) {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-      <div className="bg-white rounded-lg shadow p-3 text-center">
+      <div className="bg-card rounded-lg shadow p-3 text-center">
         <div className="text-2xl font-bold text-blue-600">{formatNumber(stats.total_requests)}</div>
         <div className="text-xs text-gray-600">Total Requests</div>
       </div>
-      <div className="bg-white rounded-lg shadow p-3 text-center">
+      <div className="bg-card rounded-lg shadow p-3 text-center">
         <div className="text-2xl font-bold text-green-600">{stats.primary_success_rate}%</div>
         <div className="text-xs text-gray-600">Primary Success</div>
       </div>
-      <div className="bg-white rounded-lg shadow p-3 text-center">
+      <div className="bg-card rounded-lg shadow p-3 text-center">
         <div className="text-2xl font-bold text-amber-600">{formatNumber(stats.fallback_requests)}</div>
         <div className="text-xs text-gray-600">Fallbacks</div>
       </div>
-      <div className="bg-white rounded-lg shadow p-3 text-center">
+      <div className="bg-card rounded-lg shadow p-3 text-center">
         <div className="text-2xl font-bold text-purple-600">{stats.fallback_success_rate}%</div>
         <div className="text-xs text-gray-600">Fallback Success</div>
       </div>
-      <div className="bg-white rounded-lg shadow p-3 text-center">
+      <div className="bg-card rounded-lg shadow p-3 text-center">
         <div className="text-2xl font-bold text-cyan-600">{stats.avg_latency_ms}ms</div>
         <div className="text-xs text-gray-600">Avg Latency</div>
       </div>
-      <div className="bg-white rounded-lg shadow p-3 text-center">
+      <div className="bg-card rounded-lg shadow p-3 text-center">
         <div className="text-2xl font-bold text-red-600">{stats.errors}</div>
         <div className="text-xs text-gray-600">Errors</div>
       </div>
