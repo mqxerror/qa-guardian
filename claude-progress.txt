@@ -1,11 +1,56 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 373/385 features passing (96.9%)**
+- **Progress: 376/385 features passing (97.7%)**
 - **Last Updated**: 2026-02-08
-- **Pending**: 12 features
+- **Pending**: 9 features
 - **In Progress**: None
-- **Last Action**: Session 167 - Comprehensive Regression Testing
+- **Last Action**: Session 168 - Dark Mode Fixes (Features #375, #376, #377)
+
+## Session 2026-02-08 (Session 168) - Dark Mode Fixes
+
+### Summary
+Fresh context window. Fixed dark mode violations in three files.
+MCP feature tools have JSON parsing errors - used direct database queries instead.
+
+### Feature Status
+- 376/385 features passing (97.7%)
+- 9 pending features remaining
+
+### Features Completed This Session
+
+#### Feature #375: Fix ExecutiveSummary white backgrounds in dark mode
+- Replaced bg-white dark:bg-gray-800 with bg-card at 3 locations (lines 37, 60, 94)
+- Replaced bg-gray-200 dark:bg-gray-700 with bg-muted for progress bar
+- Replaced bg-gray-400 with bg-muted-foreground/50 for empty state bar
+- Commit: c70435f
+
+#### Feature #376: Fix AIRouterPage 57 bg-white violations in dark mode
+- Replaced 57 bg-white card/panel containers with bg-card
+- Replaced ~26 bg-gray-50 occurrences with bg-muted/50
+- Replaced multiple bg-gray-100/200 patterns with bg-muted
+- Kept legitimate bg-white uses: bg-white/20 overlays, toggle knobs, pulse dots
+- Added dark: modifiers for colored backgrounds (blue, green, red, etc.)
+- Commit: c40870c
+
+#### Feature #377: Fix DependencyTreePage inline style hex colors for dark mode
+- Replaced hardcoded #111827 colors with hsl(var(--foreground))
+- Replaced #6b7280, #9ca3af, #4b5563 with hsl(var(--muted-foreground))
+- Replaced backgroundColor: white with hsl(var(--card))
+- Replaced border colors #e5e7eb with hsl(var(--border))
+- Converted key structural inline styles to Tailwind classes
+- Commit: c1d71d3
+
+### Verification
+- All 3 builds succeeded with 0 errors
+- Files use design tokens consistently
+
+### Next Session
+Work on remaining 9 dark mode features:
+- Feature #378: SharedTestRunPage and FlakyTestsDashboardPage
+- Feature #379: create-test config components (7 files)
+- Feature #380: AI components, TestStepsTab, VirtualList
+- And 6 more...
 
 ## Session 2026-02-08 (Session 167) - Comprehensive Regression Testing
 
