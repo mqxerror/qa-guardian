@@ -365,7 +365,7 @@ function TestDetailPage() {
       const highlighted = highlightJavaScriptLine(line);
       return (
         <div key={lineIndex} className="leading-6 flex">
-          <span className="select-none text-gray-500 pr-4 text-right" style={{ minWidth: '3rem' }}>
+          <span className="select-none text-muted-foreground pr-4 text-right" style={{ minWidth: '3rem' }}>
             {lineIndex + 1}
           </span>
           <span dangerouslySetInnerHTML={{ __html: highlighted || '&nbsp;' }} />

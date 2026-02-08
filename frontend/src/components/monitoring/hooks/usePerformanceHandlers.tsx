@@ -137,7 +137,7 @@ export function usePerformanceHandlers(token: string | null): UsePerformanceHand
       case 'poor':
         return <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">🔴 Poor</span>;
       default:
-        return <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">⚪ Unknown</span>;
+        return <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs font-medium text-foreground">⚪ Unknown</span>;
     }
   }, []);
 

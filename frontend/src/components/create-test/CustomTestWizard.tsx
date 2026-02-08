@@ -66,7 +66,7 @@ const StepIndicator: React.FC<{ currentStep: WizardStep; totalSteps: number }> =
  ? 'bg-blue-600 text-white'
  : step < currentStep
  ? 'bg-green-500 text-white'
- : 'bg-gray-200 text-gray-500'
+ : 'bg-secondary text-muted-foreground'
  }
  `}
  >
@@ -83,7 +83,7 @@ const StepIndicator: React.FC<{ currentStep: WizardStep; totalSteps: number }> =
  className={`w-12 h-1 rounded ${
  step < currentStep
  ? 'bg-green-500'
- : 'bg-gray-200'
+ : 'bg-secondary'
  }`}
  />
  )}
@@ -157,7 +157,7 @@ const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect })
  ${
  isSelected
  ? `border-${color}-500 bg-${color}-50 shadow-lg`
- : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+ : 'border-border hover:border-border hover:shadow-md'
  }
  `}
  aria-pressed={isSelected}
@@ -173,27 +173,27 @@ const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect })
  <div
  className={`
  w-16 h-16 rounded-xl flex items-center justify-center mb-4
- ${isSelected ? `bg-${color}-100 text-${color}-600` : 'bg-gray-100 text-gray-500'}
+ ${isSelected ? `bg-${color}-100 text-${color}-600` : 'bg-muted text-muted-foreground'}
  `}
  >
  {icon}
  </div>
 
  {/* Title */}
- <h4 className={`text-lg font-semibold mb-2 ${isSelected ? `text-${color}-700` : 'text-gray-900'}`}>
+ <h4 className={`text-lg font-semibold mb-2 ${isSelected ? `text-${color}-700` : 'text-foreground'}`}>
  {title}
  </h4>
 
  {/* Description */}
- <p className="text-sm text-gray-600 mb-4">
+ <p className="text-sm text-foreground mb-4">
  {description}
  </p>
 
  {/* Benefits */}
  <ul className="space-y-1">
  {benefits.map((benefit, i) => (
- <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
- <svg className={`w-4 h-4 ${isSelected ? `text-${color}-500` : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <li key={i} className="flex items-center gap-2 text-sm text-foreground">
+ <svg className={`w-4 h-4 ${isSelected ? `text-${color}-500` : 'text-muted-foreground'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
  </svg>
  {benefit}
@@ -205,7 +205,7 @@ const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect })
  <div
  className={`
  absolute top-4 left-4 w-5 h-5 rounded-full border-2 flex items-center justify-center
- ${isSelected ? `border-${color}-500 bg-${color}-500` : 'border-gray-300'}
+ ${isSelected ? `border-${color}-500 bg-${color}-500` : 'border-border'}
  `}
  >
  {isSelected && (
@@ -227,10 +227,10 @@ const MethodSelection: React.FC<{
 }> = ({ selectedMethod, onMethodSelect }) => {
  return (
  <div>
- <h3 className="text-lg font-semibold text-gray-900 mb-2">
+ <h3 className="text-lg font-semibold text-foreground mb-2">
  How would you like to create your test?
  </h3>
- <p className="text-sm text-gray-600 mb-6">
+ <p className="text-sm text-foreground mb-6">
  Choose your preferred method to get started
  </p>
 
@@ -362,19 +362,19 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
  <div className="relative z-[61] bg-card rounded-xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
  {/* Header */}
- <div className="px-6 py-4 border-b border-gray-200">
+ <div className="px-6 py-4 border-b border-border">
  <div className="flex items-center justify-between">
  <div>
- <h2 className="text-xl font-semibold text-gray-900">
+ <h2 className="text-xl font-semibold text-foreground">
  Custom Test Wizard
  </h2>
- <p className="text-sm text-gray-500">
+ <p className="text-sm text-muted-foreground">
  Step {wizardStep}: {stepTitles[wizardStep]}
  </p>
  </div>
  <button
  onClick={onClose}
- className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+ className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors"
  aria-label="Close wizard"
  >
  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -442,11 +442,11 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
 
  {/* Footer - hidden on Step 3 since ReviewStep has its own buttons */}
  {wizardStep !== 3 && (
- <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+ <div className="px-6 py-4 bg-muted border-t border-border flex items-center justify-between">
  <button
  type="button"
  onClick={handleBack}
- className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2"
+ className="px-4 py-2 text-sm font-medium text-foreground hover:text-foreground transition-colors flex items-center gap-2"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -455,7 +455,7 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  </button>
 
  <div className="flex items-center gap-3">
- <span className="text-sm text-gray-500">
+ <span className="text-sm text-muted-foreground">
  {wizardStep} of 3
  </span>
  <button

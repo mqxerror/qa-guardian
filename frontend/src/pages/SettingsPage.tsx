@@ -241,7 +241,7 @@ function TeamTabContent() {
  case 'owner': return 'bg-purple-100 text-purple-800';
  case 'admin': return 'bg-blue-100 text-blue-800';
  case 'developer': return 'bg-green-100 text-green-800';
- default: return 'bg-gray-100 text-gray-800';
+ default: return 'bg-muted text-foreground';
  }
  };
 
@@ -1705,7 +1705,7 @@ function AIConfigurationTabContent() {
  switch (speed) {
  case 'fast': return 'bg-blue-100 text-blue-800';
  case 'medium': return 'bg-purple-100 text-purple-800';
- case 'slow': return 'bg-gray-100 text-gray-800';
+ case 'slow': return 'bg-muted text-foreground';
  }
  };
 

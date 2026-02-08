@@ -834,11 +834,11 @@ export default function VisualTab({
  </div>
  {/* Slider line */}
  <div
- className="absolute top-0 bottom-0 w-1 bg-white shadow-lg"
+ className="absolute top-0 bottom-0 w-1 bg-card shadow-lg"
  style={{ left: `${currentSlider}%`, transform: 'translateX(-50%)' }}
  >
- <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center">
- <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-card rounded-full shadow-md flex items-center justify-center">
+ <svg className="w-4 h-4 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
  </svg>
  </div>

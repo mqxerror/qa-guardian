@@ -504,7 +504,7 @@ export function AILearningPage() {
  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
  suggestion.priority === 'high' ? 'bg-red-100 text-red-700' :
  suggestion.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {suggestion.priority}
  </span>
@@ -612,7 +612,7 @@ export function AILearningPage() {
  orgModel.status === 'active' ? 'bg-green-100 text-green-700' :
  orgModel.status === 'training' ? 'bg-blue-100 text-blue-700' :
  orgModel.status === 'updating' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {orgModel.status === 'active' && '✓ Active'}
  {orgModel.status === 'training' && '⏳ Training'}
@@ -745,7 +745,7 @@ export function AILearningPage() {
  orgModel.trainingSettings.autoRetrain ? 'bg-primary' : 'bg-muted'
  }`}
  >
- <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+ <div className={`w-4 h-4 rounded-full bg-card shadow-sm transition-transform ${
  orgModel.trainingSettings.autoRetrain ? 'translate-x-5' : 'translate-x-0.5'
  }`}></div>
  </button>
@@ -761,7 +761,7 @@ export function AILearningPage() {
  orgModel.trainingSettings.includeHistoricalData ? 'bg-primary' : 'bg-muted'
  }`}
  >
- <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+ <div className={`w-4 h-4 rounded-full bg-card shadow-sm transition-transform ${
  orgModel.trainingSettings.includeHistoricalData ? 'translate-x-5' : 'translate-x-0.5'
  }`}></div>
  </button>

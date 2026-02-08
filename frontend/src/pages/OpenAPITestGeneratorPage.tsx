@@ -454,7 +454,7 @@ export function OpenAPITestGeneratorPage() {
  {/* Method Stats */}
  <div className="flex flex-wrap gap-2 mb-4">
  {Object.entries(generationResult.summary.byMethod).map(([method, count]) => (
- <span key={method} className={`px-2 py-1 rounded text-xs font-medium ${methodColors[method] || 'bg-gray-100'}`}>
+ <span key={method} className={`px-2 py-1 rounded text-xs font-medium ${methodColors[method] || 'bg-muted'}`}>
  {method}: {count}
  </span>
  ))}
@@ -544,11 +544,11 @@ export function OpenAPITestGeneratorPage() {
  type="checkbox"
  checked={selectedTests.has(test.operationId)}
  onChange={() => toggleTestSelection(test.operationId)}
- className="mt-1 rounded border-gray-300"
+ className="mt-1 rounded border-border"
  />
  <div className="flex-1 min-w-0">
  <div className="flex items-center gap-2 flex-wrap">
- <span className={`px-2 py-0.5 rounded text-xs font-bold ${methodColors[test.method] || 'bg-gray-100'}`}>
+ <span className={`px-2 py-0.5 rounded text-xs font-bold ${methodColors[test.method] || 'bg-muted'}`}>
  {test.method}
  </span>
  <code className="text-sm font-mono text-foreground truncate">{test.path}</code>

@@ -111,7 +111,7 @@ export function AIApiKeyManagement({
             🔑 API Key Management
             <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Encrypted</span>
           </h2>
-          <p className="text-sm text-gray-500 mt-1">Securely manage AI provider API keys with encryption at rest</p>
+          <p className="text-sm text-muted-foreground mt-1">Securely manage AI provider API keys with encryption at rest</p>
         </div>
         <button
           onClick={openAddKeyModal}
@@ -127,7 +127,7 @@ export function AIApiKeyManagement({
           <div
             key={key.id}
             className={`border rounded-lg p-4 transition-all ${
-              key.is_active ? 'border-gray-200 bg-white' : 'border-gray-200 bg-gray-50 opacity-60'
+              key.is_active ? 'border-border bg-card' : 'border-border bg-muted opacity-60'
             }`}
           >
             <div className="flex items-start justify-between">
@@ -139,11 +139,11 @@ export function AIApiKeyManagement({
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold">{key.name}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      key.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                      key.is_active ? 'bg-green-100 text-green-800' : 'bg-muted text-foreground'
                     }`}>
                       {key.is_active ? '✓ Active' : '○ Inactive'}
                     </span>
-                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full capitalize">
+                    <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full capitalize">
                       {key.provider}
                     </span>
                     <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
@@ -152,7 +152,7 @@ export function AIApiKeyManagement({
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       key.role === 'primary' ? 'bg-blue-100 text-blue-700' :
                       key.role === 'standby' ? 'bg-amber-100 text-amber-700' :
-                      'bg-gray-100 text-gray-500'
+                      'bg-muted text-muted-foreground'
                     }`}>
                       {key.role === 'primary' ? '🔷 Primary' :
                        key.role === 'standby' ? '🔶 Standby' :
@@ -170,12 +170,12 @@ export function AIApiKeyManagement({
                     )}
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <code className="text-sm bg-gray-100 px-2 py-1 rounded font-mono">
+                    <code className="text-sm bg-muted px-2 py-1 rounded font-mono">
                       {showKeyValue[key.id] ? `${key.key_prefix}${'*'.repeat(24)}${key.key_suffix}` : maskApiKey(key)}
                     </code>
                     <button
                       onClick={() => setShowKeyValue(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-muted-foreground hover:text-foreground"
                       title={showKeyValue[key.id] ? 'Hide key' : 'Show key'}
                     >
                       {showKeyValue[key.id] ? '👁️' : '👁️‍🗨️'}
@@ -209,7 +209,7 @@ export function AIApiKeyManagement({
                   onClick={() => onToggleKey(key.id)}
                   className={`px-3 py-1.5 text-sm border rounded flex items-center gap-1 ${
                     key.is_active
-                      ? 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                      ? 'border-border text-foreground hover:bg-muted'
                       : 'border-green-300 text-green-600 hover:bg-green-50'
                   }`}
                 >
@@ -227,30 +227,30 @@ export function AIApiKeyManagement({
             {/* Key Details */}
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
-                <div className="text-gray-500">Created</div>
+                <div className="text-muted-foreground">Created</div>
                 <div className="font-medium">{new Date(key.created_at).toLocaleDateString()}</div>
               </div>
               <div>
-                <div className="text-gray-500">Last Used</div>
+                <div className="text-muted-foreground">Last Used</div>
                 <div className="font-medium">
                   {key.last_used_at ? new Date(key.last_used_at).toLocaleString() : 'Never'}
                 </div>
               </div>
               <div>
-                <div className="text-gray-500">Last Rotated</div>
+                <div className="text-muted-foreground">Last Rotated</div>
                 <div className="font-medium">
                   {key.last_rotated_at ? new Date(key.last_rotated_at).toLocaleDateString() : 'Never'}
                 </div>
               </div>
               <div>
-                <div className="text-gray-500">Usage Count</div>
+                <div className="text-muted-foreground">Usage Count</div>
                 <div className="font-medium">{formatNumber(key.usage_count)} requests</div>
               </div>
             </div>
 
             {/* Permissions */}
             <div className="mt-3 flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-gray-500">Permissions:</span>
+              <span className="text-xs text-muted-foreground">Permissions:</span>
               {key.permissions.map((perm) => (
                 <span key={perm} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
                   {perm}
@@ -268,13 +268,13 @@ export function AIApiKeyManagement({
                   <span className="font-medium">
                     {keyTestResult.success ? 'Connection Test Passed' : 'Connection Test Failed'}
                   </span>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-muted-foreground">
                     ({keyTestResult.latency_ms}ms)
                   </span>
                 </div>
                 {keyTestResult.success ? (
-                  <div className="text-sm text-gray-600">
-                    <span className="text-gray-500">Available models:</span>{' '}
+                  <div className="text-sm text-foreground">
+                    <span className="text-muted-foreground">Available models:</span>{' '}
                     {keyTestResult.models_available.join(', ')}
                   </div>
                 ) : (
@@ -294,12 +294,12 @@ export function AIApiKeyManagement({
           </h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {keyAuditLogs.slice(0, 10).map((log) => (
-              <div key={log.id} className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded">
+              <div key={log.id} className="flex items-center gap-2 text-sm p-2 bg-muted rounded">
                 <span className={`w-2 h-2 rounded-full ${log.success ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span className="text-gray-400">{new Date(log.timestamp).toLocaleString()}</span>
+                <span className="text-muted-foreground">{new Date(log.timestamp).toLocaleString()}</span>
                 <span className="font-medium">{log.action}</span>
-                <span className="text-gray-500">{log.key_name}</span>
-                <span className="text-gray-400">by {log.performed_by}</span>
+                <span className="text-muted-foreground">{log.key_name}</span>
+                <span className="text-muted-foreground">by {log.performed_by}</span>
               </div>
             ))}
           </div>
@@ -317,7 +317,7 @@ export function AIApiKeyManagement({
             {keyModalMode === 'add' && (
               <>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Provider</label>
                   <select
                     value={newKeyProvider}
                     onChange={(e) => setNewKeyProvider(e.target.value as AIProviderType)}
@@ -328,7 +328,7 @@ export function AIApiKeyManagement({
                   </select>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Key Name</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Key Name</label>
                   <input
                     type="text"
                     value={newKeyName}
@@ -345,14 +345,14 @@ export function AIApiKeyManagement({
                 <div className="text-sm">
                   <strong>Rotating:</strong> {editingKey.name} ({editingKey.provider})
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-muted-foreground mt-1">
                   Current version: v{editingKey.version}
                 </div>
               </div>
             )}
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 {keyModalMode === 'add' ? 'API Key' : 'New API Key'}
               </label>
               <input
@@ -367,7 +367,7 @@ export function AIApiKeyManagement({
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowKeyModal(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-4 py-2 text-foreground hover:text-foreground"
               >
                 Cancel
               </button>

@@ -154,7 +154,7 @@ const Checkbox = memo(function Checkbox({
       checked={checked}
       onChange={(e) => onChange(e.target.checked)}
       disabled={disabled}
-      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
+      className="h-4 w-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
     />
   );
 });

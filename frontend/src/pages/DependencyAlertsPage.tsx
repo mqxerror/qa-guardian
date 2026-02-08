@@ -285,7 +285,7 @@ export function DependencyAlertsPage() {
  disabled={isSavingConfig}
  className="sr-only peer"
  />
- <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+ <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
  </label>
  </div>
 
@@ -317,7 +317,7 @@ export function DependencyAlertsPage() {
  type="checkbox"
  checked={config.notify_in_app}
  onChange={(e) => saveConfig({ notify_in_app: e.target.checked })}
- className="rounded border-gray-300"
+ className="rounded border-border"
  />
  <span className="text-foreground">{'\u{1F514}'} In-App</span>
  </label>
@@ -326,7 +326,7 @@ export function DependencyAlertsPage() {
  type="checkbox"
  checked={config.notify_email}
  onChange={(e) => saveConfig({ notify_email: e.target.checked })}
- className="rounded border-gray-300"
+ className="rounded border-border"
  />
  <span className="text-foreground">{'\u2709'} Email</span>
  </label>
@@ -335,7 +335,7 @@ export function DependencyAlertsPage() {
  type="checkbox"
  checked={config.notify_slack}
  onChange={(e) => saveConfig({ notify_slack: e.target.checked })}
- className="rounded border-gray-300"
+ className="rounded border-border"
  />
  <span className="text-foreground">{'\u{1F4AC}'} Slack</span>
  </label>
@@ -348,7 +348,7 @@ export function DependencyAlertsPage() {
  type="checkbox"
  checked={config.auto_create_issues}
  onChange={(e) => saveConfig({ auto_create_issues: e.target.checked })}
- className="rounded border-gray-300"
+ className="rounded border-border"
  />
  <span className="text-foreground">Automatically create GitHub issues for critical alerts</span>
  </label>

@@ -63,7 +63,7 @@ export function HumanReviewPanel({
  }`}
  >
  <span
- className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+ className={`inline-block h-4 w-4 transform rounded-full bg-card transition-transform ${
  requireHumanReview ? 'translate-x-6' : 'translate-x-1'
  }`}
  />
@@ -113,7 +113,7 @@ export function HumanReviewPanel({
  type="checkbox"
  checked={allSelected}
  onChange={() => onToggleAllTestsSelection(pendingIds)}
- className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+ className="w-4 h-4 rounded border-border text-purple-600 focus:ring-purple-500"
  />
  <span className="text-sm text-muted-foreground">
  Select All ({selectedForReview.size}/{pendingTests.length} selected)
@@ -148,7 +148,7 @@ export function HumanReviewPanel({
  type="checkbox"
  checked={selectedForReview.has(test.id)}
  onChange={() => onToggleTestSelection(test.id)}
- className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+ className="w-4 h-4 rounded border-border text-purple-600 focus:ring-purple-500"
  />
  <div>
  <span className="font-medium text-sm">{test.name}</span>

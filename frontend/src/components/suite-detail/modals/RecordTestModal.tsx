@@ -321,7 +321,7 @@ export function RecordTestModal({
                     type="checkbox"
                     checked={recordingDeviceEnabled}
                     onChange={(e) => onRecordingDeviceEnabledChange(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-border text-blue-600 focus:ring-blue-500"
                   />
                   <span className="ml-2 text-sm text-muted-foreground">Enable</span>
                 </label>
@@ -380,7 +380,7 @@ export function RecordTestModal({
               </div>
               <div
                 ref={browserViewRef}
-                className="relative rounded-lg border-2 border-border overflow-hidden bg-gray-900 cursor-crosshair focus:outline-none focus:border-blue-400"
+                className="relative rounded-lg border-2 border-border overflow-hidden bg-background cursor-crosshair focus:outline-none focus:border-blue-400"
                 style={{ aspectRatio: '16/9', maxHeight: '500px', width: '100%', maxWidth: 'calc(500px * 16 / 9)' }}
                 tabIndex={0}
                 onClick={handleBrowserViewClick}
@@ -402,8 +402,8 @@ export function RecordTestModal({
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-3"></div>
-                      <p className="text-sm text-gray-400">Connecting to browser...</p>
-                      <p className="text-xs text-gray-500 mt-1">Loading {recordTargetUrl}</p>
+                      <p className="text-sm text-muted-foreground">Connecting to browser...</p>
+                      <p className="text-xs text-muted-foreground mt-1">Loading {recordTargetUrl}</p>
                     </div>
                   </div>
                 )}
@@ -431,7 +431,7 @@ export function RecordTestModal({
                         <>
                           <div className="text-3xl mb-2">❌</div>
                           <p className="text-sm text-red-300 font-medium mb-1">Connection Lost</p>
-                          <p className="text-xs text-gray-400 mb-3">All reconnection attempts failed</p>
+                          <p className="text-xs text-muted-foreground mb-3">All reconnection attempts failed</p>
                           <div className="flex gap-2 justify-center">
                             <button
                               onClick={onRetryConnection}
@@ -452,7 +452,7 @@ export function RecordTestModal({
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400 mx-auto mb-2"></div>
                           <p className="text-sm text-yellow-300 font-medium">Reconnecting...</p>
                           {reconnectAttempt > 0 && (
-                            <p className="text-xs text-gray-400 mt-1">Attempt {reconnectAttempt}/10</p>
+                            <p className="text-xs text-muted-foreground mt-1">Attempt {reconnectAttempt}/10</p>
                           )}
                         </>
                       )}
@@ -565,7 +565,7 @@ export function RecordTestModal({
                       const ms = prompt('Enter wait time in milliseconds:', '1000');
                       if (ms) handleAddRecordingStep('wait', { value: ms });
                     }}
-                    className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-2 py-1 text-[10px] font-medium text-foreground hover:bg-muted transition-colors"
                   >
                     ⏱️ Wait
                   </button>
@@ -602,7 +602,7 @@ export function RecordTestModal({
                   onClick={onStopRecording}
                   className="rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-4 py-1.5 text-xs font-semibold text-white hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg flex items-center gap-1.5"
                 >
-                  <span className="inline-block h-2.5 w-2.5 rounded-sm bg-white"></span>
+                  <span className="inline-block h-2.5 w-2.5 rounded-sm bg-card"></span>
                   Stop Recording
                 </button>
               </div>

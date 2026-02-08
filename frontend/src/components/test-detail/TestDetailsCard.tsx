@@ -374,7 +374,7 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  )}
  {test.a11y_fail_on_critical === undefined && test.a11y_fail_on_serious === undefined &&
  test.a11y_fail_on_moderate === undefined && test.a11y_fail_on_minor === undefined && (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-muted text-foreground">
  Default: Fail on Critical/Serious
  </span>
  )}

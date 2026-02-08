@@ -406,17 +406,17 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  role="document"
  >
  {/* Header */}
- <div className="px-6 py-4 border-b border-gray-200">
+ <div className="px-6 py-4 border-b border-border">
  <div className="flex items-center justify-between">
  <h2
  id="create-test-modal-title"
- className="text-xl font-semibold text-gray-900"
+ className="text-xl font-semibold text-foreground"
  >
  Create Test
  </h2>
  <button
  onClick={onClose}
- className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+ className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors"
  aria-label="Close modal"
  >
  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -425,7 +425,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  </button>
  </div>
  {suite && (
- <p className="mt-1 text-sm text-gray-500">
+ <p className="mt-1 text-sm text-muted-foreground">
  Adding to: <span className="font-medium">{suite.name}</span>
  </p>
  )}
@@ -441,7 +441,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
  </svg>
  </div>
- <h3 id="quick-test-heading" className="text-lg font-medium text-gray-900">
+ <h3 id="quick-test-heading" className="text-lg font-medium text-foreground">
  Quick Test
  </h3>
  <span className="px-2 py-0.5 text-xs font-medium text-blue-600 bg-blue-100 rounded-full">
@@ -449,7 +449,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  </span>
  </div>
 
- <p className="text-sm text-gray-600 mb-4">
+ <p className="text-sm text-foreground mb-4">
  Enter a URL and select test types to generate multiple tests at once.
  </p>
 
@@ -468,7 +468,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
 
  {/* Feature #2008: Bundle Presets */}
  <div className="mb-4">
- <label className="block text-sm font-medium text-gray-700 mb-2">
+ <label className="block text-sm font-medium text-foreground mb-2">
  Quick Bundles
  </label>
  <div className="flex gap-2 flex-wrap">
@@ -479,7 +479,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all ${
  activeBundle === key
  ? 'border-blue-500 bg-blue-50 text-blue-700'
- : 'border-gray-200 text-gray-600 hover:border-blue-300 hover:bg-gray-50'
+ : 'border-border text-foreground hover:border-blue-300 hover:bg-muted'
  } ${animatingBundle === key ? 'scale-110' : ''}`}
  style={{ transition: 'all 0.15s ease-out' }}
  type="button"
@@ -494,7 +494,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
 
  {/* Test Type Selection */}
  <div className="mb-4">
- <label className="block text-sm font-medium text-gray-700 mb-2">
+ <label className="block text-sm font-medium text-foreground mb-2">
  Select Test Types ({selectedCount} selected)
  </label>
  {/* Feature #1972: Add icon mapping for test types */}
@@ -517,7 +517,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${
  testSelection[key]
  ? `border-${config.color}-500 bg-${config.color}-50 text-${config.color}-700`
- : 'border-gray-200 text-gray-600 hover:border-gray-300'
+ : 'border-border text-foreground hover:border-border'
  }`}
  type="button"
  aria-pressed={testSelection[key]}
@@ -527,7 +527,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
  testSelection[key]
  ? `border-${config.color}-500 bg-${config.color}-500`
- : 'border-gray-300'
+ : 'border-border'
  }`}
  >
  {testSelection[key] && (
@@ -548,7 +548,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
 
  {/* Generated Tests Preview */}
  {generatedTests.length > 0 && (
- <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+ <div className="mt-4 p-4 bg-muted rounded-lg">
  {/* Feature #1806: Success summary with Run Now button */}
  {(() => {
  const createdCount = generatedTests.filter(t => t.status === 'created').length;
@@ -557,7 +557,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
 
  if (isComplete && createdCount > 0) {
  return (
- <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200">
+ <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
  <div className="flex items-center gap-2">
  {runStatus === 'started' ? (
  <>
@@ -617,7 +617,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  return null;
  })()}
 
- <h4 className="text-sm font-medium text-gray-700 mb-2">
+ <h4 className="text-sm font-medium text-foreground mb-2">
  Generated Tests
  </h4>
  <ul className="space-y-2">
@@ -626,7 +626,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  key={test.id}
  className="flex items-center justify-between text-sm"
  >
- <span className="text-gray-800">{test.name}</span>
+ <span className="text-foreground">{test.name}</span>
  <span
  className={`px-2 py-0.5 rounded text-xs font-medium ${
  test.status === 'created'
@@ -635,7 +635,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  ? 'bg-blue-100 text-blue-700'
  : test.status === 'failed'
  ? 'bg-red-100 text-red-700'
- : 'bg-gray-100 text-gray-600'
+ : 'bg-muted text-foreground'
  }`}
  >
  {test.status === 'created'
@@ -698,10 +698,10 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  {/* Divider */}
  <div className="relative">
  <div className="absolute inset-0 flex items-center">
- <div className="w-full border-t border-gray-200" />
+ <div className="w-full border-t border-border" />
  </div>
  <div className="relative flex justify-center">
- <span className="px-4 text-sm text-gray-500 bg-card">or</span>
+ <span className="px-4 text-sm text-muted-foreground bg-card">or</span>
  </div>
  </div>
 
@@ -714,18 +714,18 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
  </svg>
  </div>
- <h3 id="custom-test-heading" className="text-lg font-medium text-gray-900">
+ <h3 id="custom-test-heading" className="text-lg font-medium text-foreground">
  Custom Test
  </h3>
  </div>
 
- <p className="text-sm text-gray-600 mb-4">
+ <p className="text-sm text-foreground mb-4">
  Create a fully customized test with advanced settings using the step-by-step wizard.
  </p>
 
  <button
  onClick={() => setShowWizard(true)}
- className="w-full px-4 py-2.5 border-2 border-dashed border-gray-300 text-gray-700 hover:border-purple-400 hover:text-purple-600 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+ className="w-full px-4 py-2.5 border-2 border-dashed border-border text-foreground hover:border-purple-400 hover:text-purple-600 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
  type="button"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -737,14 +737,14 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  </div>
 
  {/* Footer */}
- <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
- <p className="text-xs text-gray-500">
- <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-xs">Cmd+Enter</kbd>{' '}
+ <div className="px-6 py-4 bg-muted border-t border-border flex items-center justify-between">
+ <p className="text-xs text-muted-foreground">
+ <kbd className="px-1.5 py-0.5 bg-secondary rounded text-xs">Cmd+Enter</kbd>{' '}
  to generate tests
  </p>
  <button
  onClick={onClose}
- className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+ className="px-4 py-2 text-sm font-medium text-foreground hover:text-foreground transition-colors"
  type="button"
  >
  Cancel

@@ -72,7 +72,7 @@ export function TestResultCard({
  result.status === 'passed' ? 'bg-green-100 text-green-700' :
  result.status === 'failed' ? 'bg-red-100 text-red-700' :
  result.status === 'warning' ? 'bg-amber-100 text-amber-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {result.status}
  </span>

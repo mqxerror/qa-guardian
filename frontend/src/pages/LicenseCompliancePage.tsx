@@ -372,7 +372,7 @@ export function LicenseCompliancePage() {
  case 'copyleft-weak': return 'text-amber-600 bg-amber-100';
  case 'proprietary': return 'text-purple-600 bg-purple-100';
  case 'public-domain': return 'text-blue-600 bg-blue-100';
- default: return 'text-gray-600 bg-gray-100';
+ default: return 'text-foreground bg-muted';
  }
  };
 
@@ -381,7 +381,7 @@ export function LicenseCompliancePage() {
  case 'low': return 'text-green-600';
  case 'medium': return 'text-amber-600';
  case 'high': return 'text-red-600';
- default: return 'text-gray-600';
+ default: return 'text-foreground';
  }
  };
 
@@ -453,7 +453,7 @@ export function LicenseCompliancePage() {
  onClick={() => setPolicy({ ...policy, warnOnCopyleft: !policy.warnOnCopyleft })}
  className={`w-10 h-5 rounded-full transition-colors ${policy.warnOnCopyleft ? 'bg-amber-500' : 'bg-muted'}`}
  >
- <div className={`w-4 h-4 rounded-full bg-white shadow transform transition-transform ${policy.warnOnCopyleft ? 'translate-x-5' : 'translate-x-0.5'}`} />
+ <div className={`w-4 h-4 rounded-full bg-card shadow transform transition-transform ${policy.warnOnCopyleft ? 'translate-x-5' : 'translate-x-0.5'}`} />
  </button>
  </div>
  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
@@ -465,7 +465,7 @@ export function LicenseCompliancePage() {
  onClick={() => setPolicy({ ...policy, warnOnUnknown: !policy.warnOnUnknown })}
  className={`w-10 h-5 rounded-full transition-colors ${policy.warnOnUnknown ? 'bg-amber-500' : 'bg-muted'}`}
  >
- <div className={`w-4 h-4 rounded-full bg-white shadow transform transition-transform ${policy.warnOnUnknown ? 'translate-x-5' : 'translate-x-0.5'}`} />
+ <div className={`w-4 h-4 rounded-full bg-card shadow transform transition-transform ${policy.warnOnUnknown ? 'translate-x-5' : 'translate-x-0.5'}`} />
  </button>
  </div>
  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
@@ -477,7 +477,7 @@ export function LicenseCompliancePage() {
  onClick={() => setPolicy({ ...policy, failOnDenied: !policy.failOnDenied })}
  className={`w-10 h-5 rounded-full transition-colors ${policy.failOnDenied ? 'bg-red-500' : 'bg-muted'}`}
  >
- <div className={`w-4 h-4 rounded-full bg-white shadow transform transition-transform ${policy.failOnDenied ? 'translate-x-5' : 'translate-x-0.5'}`} />
+ <div className={`w-4 h-4 rounded-full bg-card shadow transform transition-transform ${policy.failOnDenied ? 'translate-x-5' : 'translate-x-0.5'}`} />
  </button>
  </div>
  </div>
@@ -496,7 +496,7 @@ export function LicenseCompliancePage() {
  type="checkbox"
  checked={policy.allowedLicenses.includes(license.spdxId)}
  onChange={() => toggleLicense('allowedLicenses', license.spdxId)}
- className="rounded border-gray-300"
+ className="rounded border-border"
  />
  <span className={policy.allowedLicenses.includes(license.spdxId) ? 'text-green-700' : 'text-muted-foreground'}>
  {license.spdxId}
@@ -518,7 +518,7 @@ export function LicenseCompliancePage() {
  type="checkbox"
  checked={policy.deniedLicenses.includes(license.spdxId)}
  onChange={() => toggleLicense('deniedLicenses', license.spdxId)}
- className="rounded border-gray-300"
+ className="rounded border-border"
  />
  <span className={policy.deniedLicenses.includes(license.spdxId) ? 'text-red-700' : 'text-muted-foreground'}>
  {license.spdxId}
@@ -540,7 +540,7 @@ export function LicenseCompliancePage() {
  type="checkbox"
  checked={policy.requireApproval.includes(license.spdxId)}
  onChange={() => toggleLicense('requireApproval', license.spdxId)}
- className="rounded border-gray-300"
+ className="rounded border-border"
  />
  <span className={policy.requireApproval.includes(license.spdxId) ? 'text-amber-700' : 'text-muted-foreground'}>
  {license.spdxId}
@@ -646,7 +646,7 @@ export function LicenseCompliancePage() {
  type="checkbox"
  checked={showNonCompliantOnly}
  onChange={(e) => setShowNonCompliantOnly(e.target.checked)}
- className="rounded border-gray-300"
+ className="rounded border-border"
  />
  <span className="text-muted-foreground">Show issues only</span>
  </label>

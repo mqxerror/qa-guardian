@@ -138,12 +138,12 @@ const FormField: React.FC<{
  error?: string;
 }> = ({ label, required, children, hint, error }) => (
  <div className="space-y-1">
- <label className="block text-sm font-medium text-gray-700">
+ <label className="block text-sm font-medium text-foreground">
  {label}
  {required && <span className="text-red-500 ml-1">*</span>}
  </label>
  {children}
- {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
+ {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
  {error && <p className="text-xs text-red-500">{error}</p>}
  </div>
 );
@@ -222,7 +222,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.name
  ? 'border-red-500 focus:ring-red-500'
- : 'border-gray-300 focus:ring-blue-500'
+ : 'border-border focus:ring-blue-500'
  }`}
  />
  </FormField>
@@ -237,7 +237,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.targetUrl
  ? 'border-red-500 focus:ring-red-500'
- : 'border-gray-300 focus:ring-blue-500'
+ : 'border-border focus:ring-blue-500'
  }`}
  />
  </FormField>
@@ -249,7 +249,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  onChange={(e) => updateField('description', e.target.value)}
  placeholder="Describe what this accessibility test checks..."
  rows={2}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground resize-none"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground resize-none"
  />
  </FormField>
 
@@ -264,20 +264,20 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  className={`flex flex-col items-center p-3 rounded-lg border text-center transition-colors ${
  config.wcagLevel === level.value
  ? 'border-green-500 bg-green-50'
- : 'border-gray-200 hover:border-gray-300'
+ : 'border-border hover:border-border'
  }`}
  >
  <span className={`text-2xl font-bold ${
  config.wcagLevel === level.value
  ? 'text-green-600'
- : 'text-gray-400'
+ : 'text-muted-foreground'
  }`}>
  {level.value}
  </span>
- <span className="text-xs font-medium text-gray-700 mt-1">
+ <span className="text-xs font-medium text-foreground mt-1">
  {level.label}
  </span>
- <span className="text-xs text-gray-500">
+ <span className="text-xs text-muted-foreground">
  {level.description}
  </span>
  </button>
@@ -286,11 +286,11 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  </FormField>
 
  {/* Fail Thresholds by Severity */}
- <div className="p-4 bg-gray-50 rounded-lg">
- <h4 className="text-sm font-medium text-gray-900 mb-3">
+ <div className="p-4 bg-muted rounded-lg">
+ <h4 className="text-sm font-medium text-foreground mb-3">
  Fail Thresholds by Severity
  </h4>
- <p className="text-xs text-gray-500 mb-4">
+ <p className="text-xs text-muted-foreground mb-4">
  Test fails if issues exceed these thresholds. Set to 0 for zero tolerance.
  </p>
 
@@ -307,10 +307,10 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  'bg-blue-500'
  }`} />
  <div className="flex-1">
- <span className="text-sm font-medium text-gray-700">
+ <span className="text-sm font-medium text-foreground">
  {severity.label}
  </span>
- <span className="text-xs text-gray-500 ml-2">
+ <span className="text-xs text-muted-foreground ml-2">
  ({severity.description})
  </span>
  </div>
@@ -321,9 +321,9 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  onChange={(e) => updateThreshold(severity.key, parseInt(e.target.value) || 0)}
  min={0}
  max={100}
- className="w-20 px-2 py-1 text-sm border border-gray-300 rounded bg-input text-foreground text-center"
+ className="w-20 px-2 py-1 text-sm border border-border rounded bg-input text-foreground text-center"
  />
- <span className="text-xs text-gray-500">max issues</span>
+ <span className="text-xs text-muted-foreground">max issues</span>
  </div>
  </div>
  ))}
@@ -337,7 +337,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  onClick={() => {
  updateField('thresholds', { critical: 0, serious: 0, moderate: 0, minor: 0 });
  }}
- className="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
+ className="px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-muted"
  >
  Strict (Zero Tolerance)
  </button>
@@ -346,7 +346,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  onClick={() => {
  updateField('thresholds', { critical: 0, serious: 0, moderate: 5, minor: 10 });
  }}
- className="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
+ className="px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-muted"
  >
  Standard
  </button>
@@ -355,24 +355,24 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  onClick={() => {
  updateField('thresholds', { critical: 0, serious: 5, moderate: 20, minor: 50 });
  }}
- className="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
+ className="px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-muted"
  >
  Lenient
  </button>
  </div>
 
  {/* Advanced Settings */}
- <div className="border border-gray-200 rounded-lg overflow-hidden">
+ <div className="border border-border rounded-lg overflow-hidden">
  <button
  type="button"
  onClick={() => setShowAdvanced(!showAdvanced)}
- className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+ className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted transition-colors"
  >
- <span className="text-sm font-medium text-gray-700">
+ <span className="text-sm font-medium text-foreground">
  Advanced Settings
  </span>
  <svg
- className={`w-5 h-5 text-gray-500 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+ className={`w-5 h-5 text-muted-foreground transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
  fill="none"
  viewBox="0 0 24 24"
  stroke="currentColor"
@@ -382,7 +382,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  </button>
 
  {showAdvanced && (
- <div className="p-4 border-t border-gray-200 space-y-4">
+ <div className="p-4 border-t border-border space-y-4">
  {/* Wait for Selector */}
  <FormField label="Wait for Selector" hint="Wait for this element before running audit">
  <input
@@ -390,7 +390,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  value={config.waitForSelector}
  onChange={(e) => updateField('waitForSelector', e.target.value)}
  placeholder="[data-loaded='true'], .content-ready"
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground font-mono text-sm"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground font-mono text-sm"
  />
  </FormField>
 
@@ -402,7 +402,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  onChange={(e) => updateField('includeIframes', e.target.checked)}
  className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
  />
- <span className="text-sm text-gray-700">
+ <span className="text-sm text-foreground">
  Include iframes in audit
  </span>
  </label>
@@ -417,7 +417,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  updateField('excludeRules', rules);
  }}
  placeholder="color-contrast, html-has-lang"
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground font-mono text-sm"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground font-mono text-sm"
  />
  </FormField>
  </div>

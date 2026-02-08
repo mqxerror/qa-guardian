@@ -58,7 +58,7 @@ export function AIProviderHotSwap({
               <span>⚡</span> Hot-Swap Provider
               <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">No Restart Required</span>
             </h2>
-            <p className="text-sm text-gray-600">Switch between AI providers instantly without service interruption</p>
+            <p className="text-sm text-foreground">Switch between AI providers instantly without service interruption</p>
           </div>
           {activeProvider?.switching && (
             <div className="flex items-center gap-2 text-amber-600 animate-pulse">
@@ -110,17 +110,17 @@ export function AIProviderHotSwap({
 
         {/* Last Switch Info */}
         {activeProvider?.last_switch && (
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg text-sm">
-            <div className="flex items-center gap-2 text-gray-600">
+          <div className="mt-4 p-3 bg-muted rounded-lg text-sm">
+            <div className="flex items-center gap-2 text-foreground">
               <span>📝</span>
               <span>Last switch: {activeProvider.last_switch.from} → {activeProvider.last_switch.to}</span>
-              <span className="text-gray-400">|</span>
+              <span className="text-muted-foreground">|</span>
               <span>By: {activeProvider.last_switch.switched_by}</span>
-              <span className="text-gray-400">|</span>
+              <span className="text-muted-foreground">|</span>
               <span>{new Date(activeProvider.last_switch.switched_at).toLocaleString()}</span>
             </div>
             {activeProvider.last_switch.reason && (
-              <div className="text-gray-500 mt-1">Reason: {activeProvider.last_switch.reason}</div>
+              <div className="text-muted-foreground mt-1">Reason: {activeProvider.last_switch.reason}</div>
             )}
           </div>
         )}
@@ -144,7 +144,7 @@ export function AIProviderHotSwap({
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Reason for switch</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Reason for switch</label>
               <input
                 type="text"
                 value={switchReason}
@@ -164,7 +164,7 @@ export function AIProviderHotSwap({
                 />
                 <div>
                   <div className="text-sm font-medium">Graceful switch</div>
-                  <div className="text-xs text-gray-500">Wait for pending requests to complete (recommended)</div>
+                  <div className="text-xs text-muted-foreground">Wait for pending requests to complete (recommended)</div>
                 </div>
               </label>
             </div>
@@ -178,7 +178,7 @@ export function AIProviderHotSwap({
                 </div>
                 <div className="text-xs mt-1">{switchResult.message || switchResult.error}</div>
                 {switchResult.success && switchResult.switch_duration_ms && (
-                  <div className="text-xs text-gray-600 mt-1">
+                  <div className="text-xs text-foreground mt-1">
                     Duration: {switchResult.switch_duration_ms}ms |
                     Interruption: {switchResult.service_interruption_ms}ms |
                     Requests drained: {switchResult.requests_drained}
@@ -191,7 +191,7 @@ export function AIProviderHotSwap({
               <button
                 onClick={() => setShowSwitchModal(false)}
                 disabled={isSwitching}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-4 py-2 text-foreground hover:text-foreground"
               >
                 Cancel
               </button>
@@ -244,7 +244,7 @@ function ProviderCard({
     <div className={`border-2 rounded-lg p-4 transition-all ${
       isActive
         ? 'border-green-500 bg-green-50'
-        : 'border-gray-200 hover:border-blue-300'
+        : 'border-border hover:border-blue-300'
     }`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
@@ -262,7 +262,7 @@ function ProviderCard({
         <div className="flex flex-col items-end gap-1">
           {isActive ? (
             <span className="px-3 py-1 bg-green-500 text-white text-xs rounded-full font-medium flex items-center gap-1">
-              <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+              <span className="w-2 h-2 bg-card rounded-full animate-pulse"></span>
               ACTIVE
             </span>
           ) : (
@@ -277,13 +277,13 @@ function ProviderCard({
           <span className={`text-xs px-2 py-0.5 rounded ${
             isEnabled
               ? 'bg-green-100 text-green-700'
-              : 'bg-gray-100 text-gray-500'
+              : 'bg-muted text-muted-foreground'
           }`}>
             {isEnabled ? '✓ Enabled' : '○ Disabled'}
           </span>
         </div>
       </div>
-      <div className="text-sm text-gray-600 space-y-1 border-t pt-3">
+      <div className="text-sm text-foreground space-y-1 border-t pt-3">
         {features.map((feature, index) => (
           <div key={index} className="flex items-center gap-2">
             <span className={tagColor === 'green' ? 'text-green-500' : 'text-blue-500'}>✓</span> {feature}

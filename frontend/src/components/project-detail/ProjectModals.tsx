@@ -784,7 +784,7 @@ export function ProjectModals({
  className={`p-2 rounded cursor-pointer transition-colors ${
  editSelectorValue === suggestion.selector
  ? 'bg-violet-200 border-2 border-violet-400'
- : 'bg-white hover:bg-violet-100 border border-violet-200'
+ : 'bg-card hover:bg-violet-100 border border-violet-200'
  }`}
  onClick={() => setEditSelectorValue(suggestion.selector)}
  >

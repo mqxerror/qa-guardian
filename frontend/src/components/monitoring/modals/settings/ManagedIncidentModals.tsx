@@ -14,7 +14,7 @@ export const getIncidentStatusColor = (status: ManagedIncident['status']) => {
     case 'identified': return 'bg-purple-100 text-purple-800';
     case 'monitoring': return 'bg-cyan-100 text-cyan-800';
     case 'resolved': return 'bg-green-100 text-green-800';
-    default: return 'bg-gray-100 text-gray-800';
+    default: return 'bg-muted text-foreground';
   }
 };
 
@@ -426,7 +426,7 @@ export function ManagedIncidentDetailModal({
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-medium text-foreground">{note.author_name}</span>
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${note.visibility === 'public' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${note.visibility === 'public' ? 'bg-green-100 text-green-700' : 'bg-muted text-foreground'}`}>
                             {note.visibility}
                           </span>
                           <span className="text-xs text-muted-foreground">{new Date(note.created_at).toLocaleString()}</span>

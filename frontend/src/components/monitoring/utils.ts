@@ -43,7 +43,7 @@ export const getStatusColorClass = (status: CheckStatus | undefined): string => 
  case 'degraded':
  return 'text-amber-600';
  default:
- return 'text-gray-500';
+ return 'text-muted-foreground';
  }
 };
 
@@ -57,7 +57,7 @@ export const getStatusBgClass = (status: CheckStatus | undefined): string => {
  case 'degraded':
  return 'bg-amber-100';
  default:
- return 'bg-gray-100';
+ return 'bg-muted';
  }
 };
 
@@ -71,7 +71,7 @@ export const getStatusBadgeClass = (status: CheckStatus | undefined): string => 
  case 'degraded':
  return 'bg-amber-100 text-amber-700';
  default:
- return 'bg-gray-100 text-gray-700';
+ return 'bg-muted text-foreground';
  }
 };
 
@@ -113,7 +113,7 @@ export const getPerformanceStatusColorClass = (status: PerformanceStatus | undef
  case 'poor':
  return 'text-red-600';
  default:
- return 'text-gray-500';
+ return 'text-muted-foreground';
  }
 };
 
@@ -127,7 +127,7 @@ export const getPerformanceStatusBadgeClass = (status: PerformanceStatus | undef
  case 'poor':
  return 'bg-red-100 text-red-700';
  default:
- return 'bg-gray-100 text-gray-700';
+ return 'bg-muted text-foreground';
  }
 };
 

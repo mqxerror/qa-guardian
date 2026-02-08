@@ -65,7 +65,7 @@ const colorClasses: Record<BadgeColor, string> = {
  indigo: 'bg-indigo-100 text-indigo-700',
  purple: 'bg-purple-100 text-purple-700',
  pink: 'bg-pink-100 text-pink-700',
- gray: 'bg-gray-100 text-gray-700',
+ gray: 'bg-muted text-foreground',
  teal: 'bg-teal-100 text-teal-700',
  emerald: 'bg-emerald-100 text-emerald-700',
  amber: 'bg-amber-100 text-amber-700',

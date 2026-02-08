@@ -105,12 +105,12 @@ const FormField: React.FC<{
  error?: string;
 }> = ({ label, required, children, hint, error }) => (
  <div className="space-y-1">
- <label className="block text-sm font-medium text-gray-700">
+ <label className="block text-sm font-medium text-foreground">
  {label}
  {required && <span className="text-red-500 ml-1">*</span>}
  </label>
  {children}
- {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
+ {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
  {error && <p className="text-xs text-red-500">{error}</p>}
  </div>
 );
@@ -224,7 +224,7 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.name
  ? 'border-red-500 focus:ring-red-500'
- : 'border-gray-300 focus:ring-blue-500'
+ : 'border-border focus:ring-blue-500'
  }`}
  />
  </FormField>
@@ -239,7 +239,7 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.targetUrl
  ? 'border-red-500 focus:ring-red-500'
- : 'border-gray-300 focus:ring-blue-500'
+ : 'border-border focus:ring-blue-500'
  }`}
  />
  </FormField>
@@ -251,7 +251,7 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  onChange={(e) => updateField('description', e.target.value)}
  placeholder="Describe what this performance test measures..."
  rows={2}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground resize-none"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground resize-none"
  />
  </FormField>
 
@@ -266,15 +266,15 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  className={`flex items-center gap-3 p-4 rounded-lg border text-left transition-colors ${
  config.devicePreset === preset.value
  ? 'border-amber-500 bg-amber-50'
- : 'border-gray-200 hover:border-gray-300'
+ : 'border-border hover:border-border'
  }`}
  >
  <span className="text-2xl">{preset.icon}</span>
  <div>
- <span className="font-medium text-sm text-gray-900 block">
+ <span className="font-medium text-sm text-foreground block">
  {preset.label}
  </span>
- <span className="text-xs text-gray-500">
+ <span className="text-xs text-muted-foreground">
  {preset.description}
  </span>
  </div>
@@ -296,13 +296,13 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  min={0}
  max={100}
  step={5}
- className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+ className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-amber-600"
  />
- <span className="w-12 text-right text-sm font-medium text-gray-700">
+ <span className="w-12 text-right text-sm font-medium text-foreground">
  {config.performanceThreshold}
  </span>
  </div>
- <div className="flex justify-between text-xs text-gray-400 mt-1">
+ <div className="flex justify-between text-xs text-muted-foreground mt-1">
  <span>0 (Any)</span>
  <span className="text-red-500">49</span>
  <span className="text-yellow-500">89</span>
@@ -311,8 +311,8 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  </FormField>
 
  {/* Core Web Vitals */}
- <div className="p-4 bg-gray-50 rounded-lg">
- <h4 className="text-sm font-medium text-gray-900 mb-3">
+ <div className="p-4 bg-muted rounded-lg">
+ <h4 className="text-sm font-medium text-foreground mb-3">
  Core Web Vitals Thresholds
  </h4>
  <div className="grid grid-cols-2 gap-4">
@@ -325,7 +325,7 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  min={0}
  max={10000}
  step={100}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  <ThresholdIndicator value={config.lcpThreshold} goodMax={2500} poorMin={4000} unit="ms" />
  </FormField>
@@ -339,7 +339,7 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  min={0}
  max={1}
  step={0.01}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  <ThresholdIndicator value={config.clsThreshold} goodMax={0.1} poorMin={0.25} />
  </FormField>
@@ -353,7 +353,7 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  min={0}
  max={500}
  step={10}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  <ThresholdIndicator value={config.fidThreshold} goodMax={100} poorMin={300} unit="ms" />
  </FormField>
@@ -367,7 +367,7 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  min={0}
  max={15000}
  step={100}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  <ThresholdIndicator value={config.ttiThreshold} goodMax={3800} poorMin={7300} unit="ms" />
  </FormField>
@@ -388,7 +388,7 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
  config.categories[key as keyof typeof config.categories]
  ? 'border-amber-500 bg-amber-50'
- : 'border-gray-200'
+ : 'border-border'
  }`}
  >
  <input
@@ -398,7 +398,7 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
  />
  <span className="text-lg">{icon}</span>
- <span className="text-sm font-medium text-gray-700">
+ <span className="text-sm font-medium text-foreground">
  {label}
  </span>
  </label>

@@ -233,7 +233,7 @@ export const TestTypeCards: React.FC<TestTypeCardsProps> = ({
  ${
  isSelected
  ? type.selectedBorderClass
- : `border-gray-200 ${type.hoverBorderClass}`
+ : `border-border ${type.hoverBorderClass}`
  }
  ${!disabled && !isSelected ? 'hover:shadow-lg hover:-translate-y-1' : ''}
  ${isSelected ? 'shadow-md' : 'shadow-sm'}
@@ -272,7 +272,7 @@ export const TestTypeCards: React.FC<TestTypeCardsProps> = ({
  <h3
  className={`
  text-sm font-semibold mb-1
- text-gray-900
+ text-foreground
  `}
  >
  {type.label}
@@ -282,7 +282,7 @@ export const TestTypeCards: React.FC<TestTypeCardsProps> = ({
  <p
  className={`
  text-xs text-center
- text-gray-500
+ text-muted-foreground
  `}
  >
  {type.description}

@@ -38,7 +38,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
  <div className="text-sm text-muted-foreground mb-2">Health Score</div>
  <div className="flex items-center gap-3">
  <div className={`text-4xl font-bold ${
- resultSummary.total === 0 ? 'text-gray-400' : getHealthScoreColorClass(healthScore)
+ resultSummary.total === 0 ? 'text-muted-foreground' : getHealthScoreColorClass(healthScore)
  }`}>
  {resultSummary.total === 0 ? 'N/A' : healthScore}
  </div>
@@ -61,7 +61,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
  <div className="text-sm text-muted-foreground mb-2">Pass Rate</div>
  <div className="flex items-baseline gap-2">
  <span className={`text-4xl font-bold ${
- resultSummary.total === 0 ? 'text-gray-400' :
+ resultSummary.total === 0 ? 'text-muted-foreground' :
  resultSummary.failed === 0 ? 'text-green-600' :
  resultSummary.passed === 0 ? 'text-red-600' :
  'text-amber-600'

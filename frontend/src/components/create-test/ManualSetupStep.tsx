@@ -90,15 +90,15 @@ const CollapsibleSection: React.FC<{
  onToggle: () => void;
  children: React.ReactNode;
 }> = ({ title, isOpen, onToggle, children }) => (
- <div className="border border-gray-200 rounded-lg overflow-hidden">
+ <div className="border border-border rounded-lg overflow-hidden">
  <button
  type="button"
  onClick={onToggle}
- className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+ className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted transition-colors"
  >
- <span className="text-sm font-medium text-gray-700">{title}</span>
+ <span className="text-sm font-medium text-foreground">{title}</span>
  <svg
- className={`w-5 h-5 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+ className={`w-5 h-5 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
  fill="none"
  viewBox="0 0 24 24"
  stroke="currentColor"
@@ -106,7 +106,7 @@ const CollapsibleSection: React.FC<{
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
  </svg>
  </button>
- {isOpen && <div className="p-4 border-t border-gray-200">{children}</div>}
+ {isOpen && <div className="p-4 border-t border-border">{children}</div>}
  </div>
 );
 
@@ -121,12 +121,12 @@ const FormField: React.FC<{
  error?: string;
 }> = ({ label, required, children, hint, error }) => (
  <div className="space-y-1">
- <label className="block text-sm font-medium text-gray-700">
+ <label className="block text-sm font-medium text-foreground">
  {label}
  {required && <span className="text-red-500 ml-1">*</span>}
  </label>
  {children}
- {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
+ {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
  {error && <p className="text-xs text-red-500">{error}</p>}
  </div>
 );
@@ -295,7 +295,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  <select
  value={formState.devicePreset}
  onChange={(e) => updateField('devicePreset', e.target.value as 'desktop' | 'mobile')}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  >
  <option value="desktop">Desktop</option>
  <option value="mobile">Mobile</option>
@@ -308,7 +308,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  onChange={(e) => updateField('performanceThreshold', parseInt(e.target.value) || 50)}
  min={0}
  max={100}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
  </div>
@@ -321,7 +321,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  <select
  value={formState.wcagLevel}
  onChange={(e) => updateField('wcagLevel', e.target.value as 'A' | 'AA' | 'AAA')}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  >
  <option value="A">Level A (Minimum)</option>
  <option value="AA">Level AA (Recommended)</option>
@@ -341,7 +341,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  onChange={(e) => updateField('virtualUsers', parseInt(e.target.value) || 10)}
  min={1}
  max={10000}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
  <div className="grid grid-cols-2 gap-4">
@@ -352,7 +352,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  onChange={(e) => updateField('duration', parseInt(e.target.value) || 60)}
  min={10}
  max={3600}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
  <FormField label="Ramp-up (seconds)">
@@ -362,7 +362,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  onChange={(e) => updateField('rampUp', parseInt(e.target.value) || 10)}
  min={0}
  max={300}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
  </div>
@@ -378,10 +378,10 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  <div className="space-y-6">
  {/* Step 1: Select Test Type */}
  <div>
- <h3 className="text-lg font-semibold text-gray-900 mb-2">
+ <h3 className="text-lg font-semibold text-foreground mb-2">
  Select Test Type
  </h3>
- <p className="text-sm text-gray-600 mb-4">
+ <p className="text-sm text-foreground mb-4">
  Choose the type of test you want to create
  </p>
  <TestTypeCards
@@ -393,8 +393,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
 
  {/* Step 2: Basic Info (shown when type is selected) */}
  {formState.testType && (
- <div className="space-y-4 pt-4 border-t border-gray-200">
- <h4 className="text-md font-medium text-gray-900">
+ <div className="space-y-4 pt-4 border-t border-border">
+ <h4 className="text-md font-medium text-foreground">
  Test Configuration
  </h4>
 
@@ -411,7 +411,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  touched.name && errors.name
  ? 'border-red-500 focus:ring-red-500'
- : 'border-gray-300 focus:ring-blue-500'
+ : 'border-border focus:ring-blue-500'
  }`}
  />
  </FormField>
@@ -426,7 +426,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  touched.targetUrl && errors.targetUrl
  ? 'border-red-500 focus:ring-red-500'
- : 'border-gray-300 focus:ring-blue-500'
+ : 'border-border focus:ring-blue-500'
  }`}
  />
  </FormField>
@@ -437,7 +437,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  onChange={(e) => updateField('description', e.target.value)}
  placeholder="Describe what this test does..."
  rows={2}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground resize-none"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground resize-none"
  />
  </FormField>
  </>
@@ -458,7 +458,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  <input
  type="text"
  placeholder="smoke, regression, critical"
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
 
@@ -469,7 +469,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  min={1000}
  max={300000}
  step={1000}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
 
@@ -479,7 +479,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  defaultValue={0}
  min={0}
  max={5}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
  </div>

@@ -148,7 +148,7 @@ export const IncidentManagementPanel: React.FC<IncidentManagementPanelProps> = (
                         incident.impact === 'critical' ? 'bg-red-100 text-red-800' :
                         incident.impact === 'major' ? 'bg-orange-100 text-orange-800' :
                         incident.impact === 'minor' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
+                        'bg-muted text-foreground'
                       }`}>
                         {incident.impact.toUpperCase()}
                       </span>

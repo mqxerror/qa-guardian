@@ -81,9 +81,9 @@ export function AccessibilityResultsDisplay({
  <div className="text-xs text-amber-700">Incomplete</div>
  <div className="text-lg font-bold text-amber-700">{a11y.incomplete?.count || 0}</div>
  </div>
- <div className="p-2 rounded bg-gray-100 text-center">
- <div className="text-xs text-gray-600">N/A</div>
- <div className="text-lg font-bold text-gray-600">{a11y.inapplicable?.count || 0}</div>
+ <div className="p-2 rounded bg-muted text-center">
+ <div className="text-xs text-foreground">N/A</div>
+ <div className="text-lg font-bold text-foreground">{a11y.inapplicable?.count || 0}</div>
  </div>
  </div>
 
@@ -95,7 +95,7 @@ export function AccessibilityResultsDisplay({
  <button
  onClick={() => onSetSeverityFilter('all')}
  className={`px-2 py-1 text-xs rounded-full ${
- currentSeverityFilter === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-100'
+ currentSeverityFilter === 'all' ? 'bg-card text-white' : 'bg-muted'
  }`}
  >
  All: {a11y.violations.count}

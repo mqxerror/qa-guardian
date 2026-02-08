@@ -255,7 +255,7 @@ export default function TimelineTab({
  <span className={`px-1.5 py-0.5 text-xs rounded ${
  step.stepConsoleLogs.some(l => l.level === 'error')
  ? 'bg-red-100 text-red-700'
- : 'bg-gray-100 text-gray-700'
+ : 'bg-muted text-foreground'
  }`} title={`${step.stepConsoleLogs.length} console logs`}>
  📝 {step.stepConsoleLogs.length}
  </span>
@@ -583,7 +583,7 @@ export default function TimelineTab({
  return (
  <div key={rIdx} className="flex items-center gap-2 text-xs">
  <span className={`w-12 text-right font-mono ${
- !req.status ? 'text-gray-500' :
+ !req.status ? 'text-muted-foreground' :
  req.status >= 200 && req.status < 300 ? 'text-green-600' :
  req.status >= 400 ? 'text-red-600' : 'text-yellow-600'
  }`}>
@@ -616,7 +616,7 @@ export default function TimelineTab({
  {step.stepNetworkRequests.slice(0, 10).map((req, rIdx) => (
  <div key={rIdx} className="p-2 bg-muted/30 rounded text-xs flex items-start gap-2">
  <span className={`px-1.5 py-0.5 rounded font-mono ${
- !req.status ? 'bg-gray-100 text-gray-700' :
+ !req.status ? 'bg-muted text-foreground' :
  req.status >= 200 && req.status < 300 ? 'bg-green-100 text-green-700' :
  req.status >= 400 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
  }`}>
@@ -649,7 +649,7 @@ export default function TimelineTab({
  </span>
  )}
  </h4>
- <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs overflow-auto max-h-40">
+ <div className="bg-background rounded-lg p-3 font-mono text-xs overflow-auto max-h-40">
  {step.stepConsoleLogs.map((log, lIdx) => (
  <div
  key={lIdx}
@@ -657,11 +657,11 @@ export default function TimelineTab({
  log.level === 'error' ? 'text-red-400' :
  log.level === 'warn' ? 'text-yellow-400' :
  log.level === 'info' ? 'text-blue-400' :
- log.level === 'debug' ? 'text-gray-400' :
+ log.level === 'debug' ? 'text-muted-foreground' :
  'text-gray-200'
  }`}
  >
- <span className="text-gray-500">[{new Date(log.timestamp).toISOString().split('T')[1].slice(0, 12)}]</span>
+ <span className="text-muted-foreground">[{new Date(log.timestamp).toISOString().split('T')[1].slice(0, 12)}]</span>
  <span className="uppercase ml-1 mr-1">[{log.level}]</span>
  <span className="break-all">{log.message}</span>
  </div>
@@ -693,9 +693,9 @@ export default function TimelineTab({
  <button
  onClick={() => setSelectedScreenshot(null)}
  aria-label="Close dialog"
- className="absolute -top-2 -right-2 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
+ className="absolute -top-2 -right-2 z-10 p-2 bg-card rounded-full shadow-lg hover:bg-muted"
  >
- <svg className="h-5 w-5 text-gray-600" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="h-5 w-5 text-foreground" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
  </svg>
  </button>

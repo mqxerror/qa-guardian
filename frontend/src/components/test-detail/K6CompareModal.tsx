@@ -105,7 +105,7 @@ export function K6CompareModal({
  <span className={`text-lg ${
  results.overall.performance === 'improved' ? 'text-green-600' :
  results.overall.performance === 'regressed' ? 'text-red-600' :
- 'text-gray-600'
+ 'text-foreground'
  }`}>
  {results.overall.performance === 'improved' ? '📈' : results.overall.performance === 'regressed' ? '📉' : '➡️'}
  </span>

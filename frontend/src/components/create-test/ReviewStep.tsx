@@ -137,8 +137,8 @@ const SummaryRow: React.FC<{
  highlight?: boolean;
 }> = ({ label, value, highlight }) => (
  <div className={`flex justify-between py-2 ${highlight ? 'bg-blue-50 -mx-3 px-3 rounded' : ''}`}>
- <span className="text-sm text-gray-500">{label}</span>
- <span className={`text-sm font-medium ${highlight ? 'text-blue-600' : 'text-gray-900'}`}>
+ <span className="text-sm text-muted-foreground">{label}</span>
+ <span className={`text-sm font-medium ${highlight ? 'text-blue-600' : 'text-foreground'}`}>
  {value}
  </span>
  </div>
@@ -440,24 +440,24 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  return (
  <div className="space-y-6">
  <div>
- <h3 className="text-lg font-semibold text-gray-900 mb-2">
+ <h3 className="text-lg font-semibold text-foreground mb-2">
  Review Your Test
  </h3>
- <p className="text-sm text-gray-600">
+ <p className="text-sm text-foreground">
  Verify the configuration below before creating your test
  </p>
  </div>
 
  {/* Summary Card */}
- <div className="bg-card border border-gray-200 rounded-xl p-6 space-y-4">
+ <div className="bg-card border border-border rounded-xl p-6 space-y-4">
  {/* Test Type Header */}
  {typeConfig && (
- <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+ <div className="flex items-center gap-3 pb-4 border-b border-border">
  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl bg-${typeConfig.color}-100`}>
  {typeConfig.icon}
  </div>
  <div>
- <h4 className="text-lg font-semibold text-gray-900">
+ <h4 className="text-lg font-semibold text-foreground">
  {displayName}
  </h4>
  <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-${typeConfig.color}-100 text-${typeConfig.color}-700`}>
@@ -468,7 +468,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  )}
 
  {/* Configuration Summary */}
- <div className="space-y-1 divide-y divide-gray-100">
+ <div className="space-y-1 divide-y divide-border">
  <SummaryRow label="Method" value={config.method === 'ai-generate' ? 'AI Generated' : 'Manual Setup'} />
  <SummaryRow label="Target URL" value={displayUrl || 'Not specified'} highlight />
  <SummaryRow label="Description" value={displayDescription} />
@@ -476,7 +476,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  </div>
 
  {/* Edit Button */}
- <div className="pt-4 border-t border-gray-200">
+ <div className="pt-4 border-t border-border">
  <button
  type="button"
  onClick={onEdit}
@@ -510,7 +510,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  type="button"
  onClick={handleCreate}
  disabled={isSubmitting || !testType}
- className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-300 text-gray-900 font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-gray-300"
+ className="flex-1 py-3 bg-muted hover:bg-secondary disabled:bg-gray-300 text-foreground font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-border"
  >
  {isSubmitting && !submissionPhase ? (
  <>

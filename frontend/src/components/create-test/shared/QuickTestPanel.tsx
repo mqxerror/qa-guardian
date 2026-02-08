@@ -246,7 +246,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
 
  {/* Test Type Checkboxes */}
  <div className="mb-4">
- <label className="block text-sm font-medium text-gray-700 mb-2">
+ <label className="block text-sm font-medium text-foreground mb-2">
  Select Test Types ({selectedCount} selected)
  </label>
  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -263,7 +263,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  ${
  isSelected
  ? `${config.colorClasses.selected} ${config.colorClasses.text}`
- : 'border-gray-200 text-gray-600 hover:border-gray-300'
+ : 'border-border text-foreground hover:border-border'
  }
  `}
  >
@@ -274,7 +274,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  ${
  isSelected
  ? config.colorClasses.checkbox
- : 'border-gray-300'
+ : 'border-border'
  }
  `}
  >
@@ -298,7 +298,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
 
  {/* Generated Tests Preview - Feature #1805 */}
  {generatedTests.length > 0 && (
- <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+ <div className="mb-4 p-4 bg-muted rounded-lg">
  {/* Success Summary */}
  {(() => {
  const created = generatedTests.filter(t => t.status === 'created').length;
@@ -308,7 +308,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
 
  if (isComplete && created > 0) {
  return (
- <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200">
+ <div className="flex items-center gap-2 mb-3 pb-3 border-b border-border">
  <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
@@ -323,7 +323,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  return null;
  })()}
 
- <h4 className="text-sm font-medium text-gray-700 mb-2">
+ <h4 className="text-sm font-medium text-foreground mb-2">
  Generated Tests
  </h4>
  <ul className="space-y-2">
@@ -332,7 +332,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  key={test.id}
  className="flex items-center justify-between text-sm"
  >
- <span className="text-gray-800">{test.name}</span>
+ <span className="text-foreground">{test.name}</span>
  <div className="flex items-center gap-2">
  {/* View Test Link - Feature #1805 */}
  {test.status === 'created' && test.createdTestId && (
@@ -352,7 +352,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  ? 'bg-blue-100 text-blue-700'
  : test.status === 'failed'
  ? 'bg-red-100 text-red-700'
- : 'bg-gray-100 text-gray-600'
+ : 'bg-muted text-foreground'
  }`}
  >
  {test.status === 'created'

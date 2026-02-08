@@ -333,7 +333,7 @@ export function ScanCachingPage() {
                   disabled={isSavingConfig}
                   className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-green-500' : 'bg-muted'}`}
                 >
-                  <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                  <div className={`w-5 h-5 bg-card rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
               </div>
 
@@ -372,7 +372,7 @@ export function ScanCachingPage() {
                   disabled={isSavingConfig}
                   className={`w-12 h-6 rounded-full transition-colors ${config.compression_enabled ? 'bg-green-500' : 'bg-muted'}`}
                 >
-                  <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${config.compression_enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                  <div className={`w-5 h-5 bg-card rounded-full shadow transform transition-transform ${config.compression_enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
               </div>
 

@@ -1506,7 +1506,7 @@ function OrganizationSettingsPage() {
  <p className="text-xs text-muted-foreground">{pref === 'emailNotifications' ? 'Receive notifications via email' : pref === 'testFailureAlerts' ? 'Get notified when tests fail' : pref === 'scheduleCompletionAlerts' ? 'Get notified when scheduled test runs complete' : 'Receive a weekly summary of test results'}</p>
  </div>
  <button id={pref} type="button" role="switch" aria-checked={preferences[pref]} onClick={() => setPreference(pref, !preferences[pref])} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${preferences[pref] ? 'bg-primary' : 'bg-muted'}`}>
- <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${preferences[pref] ? 'translate-x-6' : 'translate-x-1'}`} />
+ <span className={`inline-block h-4 w-4 transform rounded-full bg-card transition-transform ${preferences[pref] ? 'translate-x-6' : 'translate-x-1'}`} />
  </button>
  </div>
  ))}

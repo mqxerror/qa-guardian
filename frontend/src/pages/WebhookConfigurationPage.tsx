@@ -373,7 +373,7 @@ export function WebhookConfigurationPage() {
                           }`}
                         >
                           <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            className={`inline-block h-4 w-4 transform rounded-full bg-card transition-transform ${
                               webhook.enabled ? 'translate-x-6' : 'translate-x-1'
                             }`}
                           />
@@ -413,7 +413,7 @@ export function WebhookConfigurationPage() {
                         {webhook.result_statuses.map(status => {
                           const statusConfig = availableStatuses.find(s => s.value === status);
                           return (
-                            <span key={status} className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusConfig?.color || 'bg-gray-100'}`}>
+                            <span key={status} className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusConfig?.color || 'bg-muted'}`}>
                               {statusConfig?.label || status}
                             </span>
                           );
@@ -516,7 +516,7 @@ export function WebhookConfigurationPage() {
                           type="checkbox"
                           checked={formEvents.includes(event.value)}
                           onChange={() => toggleEvent(event.value)}
-                          className="rounded border-gray-300"
+                          className="rounded border-border"
                         />
                         <span className="text-sm text-foreground">{event.label}</span>
                       </label>
@@ -538,7 +538,7 @@ export function WebhookConfigurationPage() {
                           type="checkbox"
                           checked={formResultStatuses.includes(status.value)}
                           onChange={() => toggleStatus(status.value)}
-                          className="rounded border-gray-300"
+                          className="rounded border-border"
                         />
                         <span className={`text-sm px-2 py-0.5 rounded ${status.color}`}>{status.label}</span>
                       </label>
@@ -552,7 +552,7 @@ export function WebhookConfigurationPage() {
                       type="checkbox"
                       checked={formEnabled}
                       onChange={(e) => setFormEnabled(e.target.checked)}
-                      className="rounded border-gray-300"
+                      className="rounded border-border"
                     />
                     <span className="text-sm text-foreground">Enabled</span>
                   </label>
@@ -562,7 +562,7 @@ export function WebhookConfigurationPage() {
                       type="checkbox"
                       checked={formRetryEnabled}
                       onChange={(e) => setFormRetryEnabled(e.target.checked)}
-                      className="rounded border-gray-300"
+                      className="rounded border-border"
                     />
                     <span className="text-sm text-foreground">Retry on failure</span>
                   </label>
@@ -590,7 +590,7 @@ export function WebhookConfigurationPage() {
                         type="checkbox"
                         checked={formBatchEnabled}
                         onChange={(e) => setFormBatchEnabled(e.target.checked)}
-                        className="rounded border-gray-300"
+                        className="rounded border-border"
                       />
                       <span className="text-sm font-medium text-foreground">Enable Batch Delivery</span>
                     </label>

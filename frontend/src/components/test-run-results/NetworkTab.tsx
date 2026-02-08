@@ -199,7 +199,7 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  <div className="flex items-center gap-2 mb-1">
  {/* Status badge */}
  <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
- !req.status ? 'bg-gray-100 text-gray-600' :
+ !req.status ? 'bg-muted text-foreground' :
  req.status >= 200 && req.status < 300 ? 'bg-green-100 text-green-700' :
  req.status >= 300 && req.status < 400 ? 'bg-blue-100 text-blue-700' :
  req.status >= 400 && req.status < 500 ? 'bg-yellow-100 text-yellow-700' :

@@ -83,11 +83,11 @@ export const SEVERITY_COLORS: Record<SeverityLevel, ColorScheme> = {
  hexDark: '#60a5fa', // blue-400
  },
  info: {
- bg: 'bg-gray-100',
- text: 'text-gray-700',
- border: 'border-gray-200',
- hoverBg: 'hover:bg-gray-200',
- badge: 'bg-gray-100 text-gray-700',
+ bg: 'bg-muted',
+ text: 'text-foreground',
+ border: 'border-border',
+ hoverBg: 'hover:bg-secondary',
+ badge: 'bg-muted text-foreground',
  cardBorder: 'border-l-4 border-l-gray-500',
  hex: '#6b7280', // gray-500
  hexDark: '#9ca3af', // gray-400
@@ -157,21 +157,21 @@ export const STATUS_COLORS: Record<StatusType, ColorScheme> = {
  hexDark: '#facc15', // yellow-400
  },
  cancelled: {
- bg: 'bg-gray-100',
- text: 'text-gray-600',
- border: 'border-gray-200',
- hoverBg: 'hover:bg-gray-200',
- badge: 'bg-gray-100 text-gray-600',
+ bg: 'bg-muted',
+ text: 'text-foreground',
+ border: 'border-border',
+ hoverBg: 'hover:bg-secondary',
+ badge: 'bg-muted text-foreground',
  cardBorder: 'border-l-4 border-l-gray-400',
  hex: '#9ca3af', // gray-400
  hexDark: '#d1d5db', // gray-300
  },
  skipped: {
- bg: 'bg-gray-100',
- text: 'text-gray-500',
- border: 'border-gray-200',
- hoverBg: 'hover:bg-gray-200',
- badge: 'bg-gray-100 text-gray-500',
+ bg: 'bg-muted',
+ text: 'text-muted-foreground',
+ border: 'border-border',
+ hoverBg: 'hover:bg-secondary',
+ badge: 'bg-muted text-muted-foreground',
  cardBorder: 'border-l-4 border-l-gray-300',
  hex: '#6b7280', // gray-500
  hexDark: '#9ca3af', // gray-400

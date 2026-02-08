@@ -66,7 +66,7 @@ export const DeviceSelect: React.FC<DeviceSelectProps> = ({
 
  return (
  <div className={`device-select ${className}`}>
- <label className="block text-sm font-medium text-gray-700 mb-1">
+ <label className="block text-sm font-medium text-foreground mb-1">
  Device
  </label>
  <div className="relative">
@@ -74,7 +74,7 @@ export const DeviceSelect: React.FC<DeviceSelectProps> = ({
  value={value.preset}
  onChange={handlePresetChange}
  disabled={disabled}
- className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+ className="block w-full pl-3 pr-10 py-2 text-base border-border focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
  >
  {Object.entries(CATEGORY_CONFIG).map(([category, config]) => (
  <optgroup key={category} label={`${config.icon} ${config.label}`}>
@@ -93,7 +93,7 @@ export const DeviceSelect: React.FC<DeviceSelectProps> = ({
 
  {/* Device info badges */}
  <div className="mt-2 flex flex-wrap gap-2">
- <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+ <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-foreground">
  📐 {currentPreset.viewport.width}x{currentPreset.viewport.height}
  </span>
  {currentPreset.isMobile && (
@@ -115,10 +115,10 @@ export const DeviceSelect: React.FC<DeviceSelectProps> = ({
 
  {/* Custom device settings */}
  {value.preset === 'custom' && (
- <div className="mt-3 p-3 bg-gray-50 rounded-md space-y-3">
+ <div className="mt-3 p-3 bg-muted rounded-md space-y-3">
  <div className="grid grid-cols-2 gap-3">
  <div>
- <label className="block text-xs font-medium text-gray-600 mb-1">
+ <label className="block text-xs font-medium text-foreground mb-1">
  Width
  </label>
  <input
@@ -133,11 +133,11 @@ export const DeviceSelect: React.FC<DeviceSelectProps> = ({
  height: value.customViewport?.height || 720,
  },
  })}
- className="block w-full px-2 py-1 text-sm border-gray-300 rounded-md"
+ className="block w-full px-2 py-1 text-sm border-border rounded-md"
  />
  </div>
  <div>
- <label className="block text-xs font-medium text-gray-600 mb-1">
+ <label className="block text-xs font-medium text-foreground mb-1">
  Height
  </label>
  <input
@@ -152,7 +152,7 @@ export const DeviceSelect: React.FC<DeviceSelectProps> = ({
  height: parseInt(e.target.value) || 720,
  },
  })}
- className="block w-full px-2 py-1 text-sm border-gray-300 rounded-md"
+ className="block w-full px-2 py-1 text-sm border-border rounded-md"
  />
  </div>
  </div>
@@ -165,9 +165,9 @@ export const DeviceSelect: React.FC<DeviceSelectProps> = ({
  ...value,
  customIsMobile: e.target.checked,
  })}
- className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+ className="rounded border-border text-blue-600 focus:ring-blue-500"
  />
- <span className="ml-2 text-xs text-gray-600">Mobile mode</span>
+ <span className="ml-2 text-xs text-foreground">Mobile mode</span>
  </label>
  <label className="inline-flex items-center">
  <input
@@ -177,13 +177,13 @@ export const DeviceSelect: React.FC<DeviceSelectProps> = ({
  ...value,
  customHasTouch: e.target.checked,
  })}
- className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+ className="rounded border-border text-blue-600 focus:ring-blue-500"
  />
- <span className="ml-2 text-xs text-gray-600">Touch enabled</span>
+ <span className="ml-2 text-xs text-foreground">Touch enabled</span>
  </label>
  </div>
  <div>
- <label className="block text-xs font-medium text-gray-600 mb-1">
+ <label className="block text-xs font-medium text-foreground mb-1">
  Device Scale Factor
  </label>
  <select
@@ -192,7 +192,7 @@ export const DeviceSelect: React.FC<DeviceSelectProps> = ({
  ...value,
  customDeviceScaleFactor: parseFloat(e.target.value),
  })}
- className="block w-full px-2 py-1 text-sm border-gray-300 rounded-md"
+ className="block w-full px-2 py-1 text-sm border-border rounded-md"
  >
  <option value={1}>1x (Standard)</option>
  <option value={1.5}>1.5x</option>

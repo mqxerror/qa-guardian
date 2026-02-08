@@ -213,7 +213,7 @@ export const URLInput: React.FC<URLInputProps> = ({
  if (error) return 'border-red-500';
  if (validationState === 'valid') return 'border-green-500';
  if (validationState === 'invalid') return 'border-red-300';
- return 'border-gray-300';
+ return 'border-border';
  };
 
  // Determine focus ring color
@@ -232,7 +232,7 @@ export const URLInput: React.FC<URLInputProps> = ({
  {label && (
  <label
  htmlFor={id}
- className="block text-sm font-medium text-gray-700 mb-1"
+ className="block text-sm font-medium text-foreground mb-1"
  >
  {label}
  {required && <span className="text-red-500 ml-1">*</span>}
@@ -273,7 +273,7 @@ export const URLInput: React.FC<URLInputProps> = ({
  w-full px-4 py-2.5 rounded-lg border
  bg-input
  text-foreground
- placeholder-gray-400
+ placeholder-muted-foreground
  transition-colors duration-200
  ${getBorderClass()}
  ${getFocusClass()}

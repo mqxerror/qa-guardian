@@ -152,7 +152,7 @@ export function RegisterPage() {
         transition={{ duration: 0.5 }}
         className="relative z-10 w-full max-w-md"
       >
-        <div className="rounded-2xl border border-gray-800 bg-gray-900/80 p-8 shadow-2xl backdrop-blur-sm">
+        <div className="rounded-2xl border border-border bg-background/80 p-8 shadow-2xl backdrop-blur-sm">
           {/* Header */}
           <div className="mb-8 text-center">
             <motion.h2
@@ -167,7 +167,7 @@ export function RegisterPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="mt-2 text-gray-400"
+              className="mt-2 text-muted-foreground"
             >
               Join QA Guardian today
             </motion.p>
@@ -254,7 +254,7 @@ export function RegisterPage() {
                   className="mt-2"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="flex-1 h-1 bg-card rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${(passwordStrength.score / 3) * 100}%` }}
@@ -265,21 +265,21 @@ export function RegisterPage() {
                       {passwordStrength.label}
                     </span>
                   </div>
-                  <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-gray-500">
+                  <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-muted-foreground">
                     <div className={`flex items-center gap-1 ${password.length >= 8 ? 'text-green-400' : ''}`}>
-                      <CheckCircle2 className={`h-3 w-3 ${password.length >= 8 ? 'text-green-400' : 'text-gray-600'}`} />
+                      <CheckCircle2 className={`h-3 w-3 ${password.length >= 8 ? 'text-green-400' : 'text-foreground'}`} />
                       8+ characters
                     </div>
                     <div className={`flex items-center gap-1 ${/[A-Z]/.test(password) ? 'text-green-400' : ''}`}>
-                      <CheckCircle2 className={`h-3 w-3 ${/[A-Z]/.test(password) ? 'text-green-400' : 'text-gray-600'}`} />
+                      <CheckCircle2 className={`h-3 w-3 ${/[A-Z]/.test(password) ? 'text-green-400' : 'text-foreground'}`} />
                       Uppercase
                     </div>
                     <div className={`flex items-center gap-1 ${/[a-z]/.test(password) ? 'text-green-400' : ''}`}>
-                      <CheckCircle2 className={`h-3 w-3 ${/[a-z]/.test(password) ? 'text-green-400' : 'text-gray-600'}`} />
+                      <CheckCircle2 className={`h-3 w-3 ${/[a-z]/.test(password) ? 'text-green-400' : 'text-foreground'}`} />
                       Lowercase
                     </div>
                     <div className={`flex items-center gap-1 ${/[0-9]/.test(password) ? 'text-green-400' : ''}`}>
-                      <CheckCircle2 className={`h-3 w-3 ${/[0-9]/.test(password) ? 'text-green-400' : 'text-gray-600'}`} />
+                      <CheckCircle2 className={`h-3 w-3 ${/[0-9]/.test(password) ? 'text-green-400' : 'text-foreground'}`} />
                       Number
                     </div>
                   </div>
@@ -342,7 +342,7 @@ export function RegisterPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
-            className="mt-6 text-center text-sm text-gray-400"
+            className="mt-6 text-center text-sm text-muted-foreground"
           >
             Already have an account?{' '}
             <Link to="/login" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">

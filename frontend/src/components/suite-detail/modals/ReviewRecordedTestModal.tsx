@@ -230,7 +230,7 @@ export function ReviewRecordedTestModal({
  };
  onRecordedStepsChange(newSteps);
  }}
- className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-3 w-3"
+ className="rounded border-border text-blue-600 focus:ring-blue-500 h-3 w-3"
  />
  <span className="text-xs text-muted-foreground" title="Enable for elements that may not always appear (popups, consent dialogs)">
  Optional

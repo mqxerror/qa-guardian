@@ -371,7 +371,7 @@ export function highlightJavaScriptLine(line: string): string {
 
   // Reassemble with comment (gray)
   if (comment) {
-    return beforeComment + `<span class="text-gray-500">${comment}</span>`;
+    return beforeComment + `<span class="text-muted-foreground">${comment}</span>`;
   }
   return beforeComment;
 }

@@ -48,7 +48,7 @@ export function ImageLightbox({
                 setZoom(Math.max(0.25, zoom - 0.25));
                 if (zoom <= 1) setPan({ x: 0, y: 0 });
               }}
-              className="text-white hover:text-gray-300 px-2 py-1 rounded hover:bg-white/10"
+              className="text-white hover:text-muted-foreground px-2 py-1 rounded hover:bg-white/10"
               aria-label="Zoom out"
             >
               <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -60,7 +60,7 @@ export function ImageLightbox({
             </span>
             <button
               onClick={() => setZoom(Math.min(4, zoom + 0.25))}
-              className="text-white hover:text-gray-300 px-2 py-1 rounded hover:bg-white/10"
+              className="text-white hover:text-muted-foreground px-2 py-1 rounded hover:bg-white/10"
               aria-label="Zoom in"
             >
               <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -72,7 +72,7 @@ export function ImageLightbox({
                 setZoom(1);
                 setPan({ x: 0, y: 0 });
               }}
-              className="text-white text-xs hover:text-gray-300 px-2 py-1 ml-1 rounded hover:bg-white/10"
+              className="text-white text-xs hover:text-muted-foreground px-2 py-1 ml-1 rounded hover:bg-white/10"
               aria-label="Reset zoom"
             >
               Reset
@@ -82,7 +82,7 @@ export function ImageLightbox({
                 setZoom(1);
                 setPan({ x: 0, y: 0 });
               }}
-              className="text-white text-xs hover:text-gray-300 px-2 py-1 rounded hover:bg-white/10 flex items-center gap-1"
+              className="text-white text-xs hover:text-muted-foreground px-2 py-1 rounded hover:bg-white/10 flex items-center gap-1"
               aria-label="Fit to screen"
             >
               <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -98,7 +98,7 @@ export function ImageLightbox({
               href={image}
               download={`screenshot-${Date.now()}.png`}
               onClick={(e) => e.stopPropagation()}
-              className="text-white text-sm hover:text-gray-300 flex items-center gap-1"
+              className="text-white text-sm hover:text-muted-foreground flex items-center gap-1"
             >
               <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -107,7 +107,7 @@ export function ImageLightbox({
             </a>
             <button
               onClick={onClose}
-              className="text-white text-xl hover:text-gray-300"
+              className="text-white text-xl hover:text-muted-foreground"
             >
               ✕ Close
             </button>

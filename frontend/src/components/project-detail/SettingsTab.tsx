@@ -329,7 +329,7 @@ export function SettingsTab({
  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
  member.role === 'developer'
  ? 'bg-blue-100 text-blue-800'
- : 'bg-gray-100 text-gray-800'
+ : 'bg-muted text-foreground'
  }`}>
  {member.role}
  </span>
@@ -736,7 +736,7 @@ export function SettingsTab({
  }`}
  >
  <span
- className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+ className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-card shadow ring-0 transition duration-200 ease-in-out ${
  healingSettings.healing_enabled ? 'translate-x-5' : 'translate-x-0'
  }`}
  />
@@ -882,7 +882,7 @@ export function SettingsTab({
  } ${!healingSettings.healing_enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
  >
  <span
- className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+ className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-card shadow ring-0 transition duration-200 ease-in-out ${
  healingSettings.notify_on_healing ? 'translate-x-5' : 'translate-x-0'
  }`}
  />

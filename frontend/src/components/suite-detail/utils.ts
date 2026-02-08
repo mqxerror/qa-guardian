@@ -171,7 +171,7 @@ export function getTestStatusClass(status: TestStatus | string | null): string {
  case 'draft':
  return 'bg-yellow-100 text-yellow-800';
  default:
- return 'bg-gray-100 text-gray-800';
+ return 'bg-muted text-foreground';
  }
 }
 
@@ -216,7 +216,7 @@ export function getActionTypeClass(action: string): string {
  case 'screenshot':
  return 'bg-yellow-100 text-yellow-800';
  default:
- return 'bg-gray-100 text-gray-800';
+ return 'bg-muted text-foreground';
  }
 }
 

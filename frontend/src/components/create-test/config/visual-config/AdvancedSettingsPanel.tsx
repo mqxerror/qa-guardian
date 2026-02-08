@@ -27,17 +27,17 @@ export const AdvancedSettingsPanel: React.FC<AdvancedSettingsPanelProps> = ({
  const [showAdvanced, setShowAdvanced] = useState(false);
 
  return (
- <div className="border border-gray-200 rounded-lg overflow-hidden">
+ <div className="border border-border rounded-lg overflow-hidden">
  <button
  type="button"
  onClick={() => setShowAdvanced(!showAdvanced)}
- className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+ className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted transition-colors"
  >
- <span className="text-sm font-medium text-gray-700">
+ <span className="text-sm font-medium text-foreground">
  Advanced Settings
  </span>
  <svg
- className={`w-5 h-5 text-gray-500 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+ className={`w-5 h-5 text-muted-foreground transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
  fill="none"
  viewBox="0 0 24 24"
  stroke="currentColor"
@@ -47,7 +47,7 @@ export const AdvancedSettingsPanel: React.FC<AdvancedSettingsPanelProps> = ({
  </button>
 
  {showAdvanced && (
- <div className="p-4 border-t border-gray-200 space-y-4">
+ <div className="p-4 border-t border-border space-y-4">
  {/* Wait for Selector */}
  <FormField label="Wait for Selector" hint="Wait for this element before capturing">
  <input
@@ -55,7 +55,7 @@ export const AdvancedSettingsPanel: React.FC<AdvancedSettingsPanelProps> = ({
  value={waitForSelector}
  onChange={(e) => onWaitForSelectorChange(e.target.value)}
  placeholder="[data-loaded='true'], .content-ready"
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground font-mono text-sm"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground font-mono text-sm"
  />
  </FormField>
 
@@ -68,7 +68,7 @@ export const AdvancedSettingsPanel: React.FC<AdvancedSettingsPanelProps> = ({
  min={0}
  max={10000}
  step={100}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
 
@@ -82,7 +82,7 @@ export const AdvancedSettingsPanel: React.FC<AdvancedSettingsPanelProps> = ({
  onHideSelectorsChange(selectors);
  }}
  placeholder=".ad-banner, .cookie-popup, [data-dynamic]"
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground font-mono text-sm"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground font-mono text-sm"
  />
  </FormField>
  </div>

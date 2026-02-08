@@ -2695,7 +2695,7 @@ function AIRouterPage() {
  ← Back to AI Insights
  </button>
  <h1 className="text-2xl font-bold">🔀 AI Provider Router</h1>
- <p className="text-gray-600">Route AI requests with automatic fallback</p>
+ <p className="text-foreground">Route AI requests with automatic fallback</p>
  </div>
  </div>
 
@@ -2735,7 +2735,7 @@ function AIRouterPage() {
  <span>⚡</span> Hot-Swap Provider
  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">No Restart Required</span>
  </h2>
- <p className="text-sm text-gray-600">Switch between AI providers instantly without service interruption</p>
+ <p className="text-sm text-foreground">Switch between AI providers instantly without service interruption</p>
  </div>
  {activeProvider?.switching && (
  <div className="flex items-center gap-2 text-amber-600 animate-pulse">
@@ -2750,7 +2750,7 @@ function AIRouterPage() {
  <div className={`border-2 rounded-lg p-4 transition-all ${
  activeProvider?.current_provider === 'kie'
  ? 'border-green-500 bg-green-50'
- : 'border-gray-200 hover:border-blue-300'
+ : 'border-border hover:border-blue-300'
  }`}>
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
@@ -2771,7 +2771,7 @@ function AIRouterPage() {
  <div className="flex flex-col items-end gap-1">
  {activeProvider?.current_provider === 'kie' ? (
  <span className="px-3 py-1 bg-green-500 text-white text-xs rounded-full font-medium flex items-center gap-1">
- <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+ <span className="w-2 h-2 bg-card rounded-full animate-pulse"></span>
  ACTIVE
  </span>
  ) : (
@@ -2793,7 +2793,7 @@ function AIRouterPage() {
  </span>
  </div>
  </div>
- <div className="text-sm text-gray-600 space-y-1 border-t pt-3">
+ <div className="text-sm text-foreground space-y-1 border-t pt-3">
  <div className="flex items-center gap-2">
  <span className="text-green-500">✓</span> Intelligent API proxy
  </div>
@@ -2810,7 +2810,7 @@ function AIRouterPage() {
  <div className={`border-2 rounded-lg p-4 transition-all ${
  activeProvider?.current_provider === 'anthropic'
  ? 'border-green-500 bg-green-50'
- : 'border-gray-200 hover:border-blue-300'
+ : 'border-border hover:border-blue-300'
  }`}>
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
@@ -2831,7 +2831,7 @@ function AIRouterPage() {
  <div className="flex flex-col items-end gap-1">
  {activeProvider?.current_provider === 'anthropic' ? (
  <span className="px-3 py-1 bg-green-500 text-white text-xs rounded-full font-medium flex items-center gap-1">
- <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+ <span className="w-2 h-2 bg-card rounded-full animate-pulse"></span>
  ACTIVE
  </span>
  ) : (
@@ -2853,7 +2853,7 @@ function AIRouterPage() {
  </span>
  </div>
  </div>
- <div className="text-sm text-gray-600 space-y-1 border-t pt-3">
+ <div className="text-sm text-foreground space-y-1 border-t pt-3">
  <div className="flex items-center gap-2">
  <span className="text-blue-500">✓</span> Full API features
  </div>
@@ -2870,16 +2870,16 @@ function AIRouterPage() {
  {/* Last Switch Info */}
  {activeProvider?.last_switch && (
  <div className="mt-4 p-3 bg-muted/50 rounded-lg text-sm">
- <div className="flex items-center gap-2 text-gray-600">
+ <div className="flex items-center gap-2 text-foreground">
  <span>📝</span>
  <span>Last switch: {activeProvider.last_switch.from} → {activeProvider.last_switch.to}</span>
- <span className="text-gray-400">|</span>
+ <span className="text-muted-foreground">|</span>
  <span>By: {activeProvider.last_switch.switched_by}</span>
- <span className="text-gray-400">|</span>
+ <span className="text-muted-foreground">|</span>
  <span>{new Date(activeProvider.last_switch.switched_at).toLocaleString()}</span>
  </div>
  {activeProvider.last_switch.reason && (
- <div className="text-gray-500 mt-1">Reason: {activeProvider.last_switch.reason}</div>
+ <div className="text-muted-foreground mt-1">Reason: {activeProvider.last_switch.reason}</div>
  )}
  </div>
  )}
@@ -2903,7 +2903,7 @@ function AIRouterPage() {
  </div>
 
  <div className="mb-4">
- <label className="block text-sm font-medium text-gray-700 mb-1">Reason for switch</label>
+ <label className="block text-sm font-medium text-foreground mb-1">Reason for switch</label>
  <input
  type="text"
  value={switchReason}
@@ -2923,7 +2923,7 @@ function AIRouterPage() {
  />
  <div>
  <div className="text-sm font-medium">Graceful switch</div>
- <div className="text-xs text-gray-500">Wait for pending requests to complete (recommended)</div>
+ <div className="text-xs text-muted-foreground">Wait for pending requests to complete (recommended)</div>
  </div>
  </label>
  </div>
@@ -2937,7 +2937,7 @@ function AIRouterPage() {
  </div>
  <div className="text-xs mt-1">{switchResult.message}</div>
  {switchResult.success && (
- <div className="text-xs text-gray-600 mt-1">
+ <div className="text-xs text-foreground mt-1">
  Duration: {switchResult.switch_duration_ms}ms |
  Interruption: {switchResult.service_interruption_ms}ms |
  Requests drained: {switchResult.requests_drained}
@@ -2950,7 +2950,7 @@ function AIRouterPage() {
  <button
  onClick={() => setShowSwitchModal(false)}
  disabled={isSwitching}
- className="px-4 py-2 text-gray-600 hover:text-gray-800"
+ className="px-4 py-2 text-foreground hover:text-foreground"
  >
  Cancel
  </button>
@@ -2972,27 +2972,27 @@ function AIRouterPage() {
  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
  <div className="bg-card rounded-lg shadow p-3 text-center">
  <div className="text-2xl font-bold text-blue-600">{formatNumber(stats.total_requests)}</div>
- <div className="text-xs text-gray-600">Total Requests</div>
+ <div className="text-xs text-foreground">Total Requests</div>
  </div>
  <div className="bg-card rounded-lg shadow p-3 text-center">
  <div className="text-2xl font-bold text-green-600">{stats.primary_success_rate}%</div>
- <div className="text-xs text-gray-600">Primary Success</div>
+ <div className="text-xs text-foreground">Primary Success</div>
  </div>
  <div className="bg-card rounded-lg shadow p-3 text-center">
  <div className="text-2xl font-bold text-amber-600">{formatNumber(stats.fallback_requests)}</div>
- <div className="text-xs text-gray-600">Fallbacks</div>
+ <div className="text-xs text-foreground">Fallbacks</div>
  </div>
  <div className="bg-card rounded-lg shadow p-3 text-center">
  <div className="text-2xl font-bold text-purple-600">{stats.fallback_success_rate}%</div>
- <div className="text-xs text-gray-600">Fallback Success</div>
+ <div className="text-xs text-foreground">Fallback Success</div>
  </div>
  <div className="bg-card rounded-lg shadow p-3 text-center">
  <div className="text-2xl font-bold text-cyan-600">{stats.avg_latency_ms}ms</div>
- <div className="text-xs text-gray-600">Avg Latency</div>
+ <div className="text-xs text-foreground">Avg Latency</div>
  </div>
  <div className="bg-card rounded-lg shadow p-3 text-center">
  <div className="text-2xl font-bold text-red-600">{stats.errors}</div>
- <div className="text-xs text-gray-600">Errors</div>
+ <div className="text-xs text-foreground">Errors</div>
  </div>
  </div>
  )}
@@ -3010,12 +3010,12 @@ function AIRouterPage() {
  disabled={isSaving}
  className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-green-500' : 'bg-gray-300'}`}
  >
- <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+ <div className={`w-5 h-5 bg-card rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
  </button>
  </div>
 
  <div>
- <label className="text-sm text-gray-600">Primary Provider</label>
+ <label className="text-sm text-foreground">Primary Provider</label>
  <select
  value={config.primary_provider}
  onChange={(e) => updateConfig({ primary_provider: e.target.value as 'kie' | 'anthropic' })}
@@ -3028,7 +3028,7 @@ function AIRouterPage() {
  </div>
 
  <div>
- <label className="text-sm text-gray-600">Fallback Provider</label>
+ <label className="text-sm text-foreground">Fallback Provider</label>
  <select
  value={config.fallback_provider}
  onChange={(e) => updateConfig({ fallback_provider: e.target.value as 'anthropic' | 'kie' | 'none' })}
@@ -3042,7 +3042,7 @@ function AIRouterPage() {
  </div>
 
  <div>
- <label className="text-sm text-gray-600">Timeout (ms)</label>
+ <label className="text-sm text-foreground">Timeout (ms)</label>
  <input
  type="number"
  value={config.timeout_ms}
@@ -3094,7 +3094,7 @@ function AIRouterPage() {
  {cb.state}
  </span>
  </div>
- <div className="text-sm text-gray-600">
+ <div className="text-sm text-foreground">
  <div>Failures: {cb.failure_count}</div>
  {cb.recovery_at && (
  <div>Recovers: {new Date(cb.recovery_at).toLocaleTimeString()}</div>
@@ -3115,15 +3115,15 @@ function AIRouterPage() {
  <div className="mt-4 border-t pt-3">
  <div className="text-sm">
  <div className="flex justify-between mb-1">
- <span className="text-gray-600">CB Enabled:</span>
+ <span className="text-foreground">CB Enabled:</span>
  <span>{config.circuit_breaker.enabled ? 'Yes' : 'No'}</span>
  </div>
  <div className="flex justify-between mb-1">
- <span className="text-gray-600">Threshold:</span>
+ <span className="text-foreground">Threshold:</span>
  <span>{config.circuit_breaker.failure_threshold} failures</span>
  </div>
  <div className="flex justify-between">
- <span className="text-gray-600">Recovery:</span>
+ <span className="text-foreground">Recovery:</span>
  <span>{config.circuit_breaker.recovery_time_ms / 1000}s</span>
  </div>
  </div>
@@ -3164,9 +3164,9 @@ function AIRouterPage() {
  <div className="font-medium mb-1">
  {testResult.success ? '✅ Test Passed' : '❌ Test Failed'}
  </div>
- <div className="text-sm text-gray-600">{testResult.message}</div>
+ <div className="text-sm text-foreground">{testResult.message}</div>
  {testResult.total_latency_ms && (
- <div className="text-xs text-gray-500 mt-1">
+ <div className="text-xs text-muted-foreground mt-1">
  Latency: {testResult.total_latency_ms}ms
  </div>
  )}
@@ -3178,13 +3178,13 @@ function AIRouterPage() {
  {/* Feature #1331: Retry Configuration with Exponential Backoff */}
  <div className="bg-card rounded-lg shadow p-4">
  <h2 className="text-lg font-semibold mb-4">🔄 Retry Configuration</h2>
- <p className="text-sm text-gray-500 mb-4">Configure automatic retries with exponential backoff for transient failures</p>
+ <p className="text-sm text-muted-foreground mb-4">Configure automatic retries with exponential backoff for transient failures</p>
 
  {/* Retry Enable Toggle */}
  <div className="flex items-center justify-between mb-4 p-3 bg-muted/50 rounded-lg">
  <div>
  <div className="font-medium">Enable Retries</div>
- <div className="text-xs text-gray-500">Automatically retry failed AI requests</div>
+ <div className="text-xs text-muted-foreground">Automatically retry failed AI requests</div>
  </div>
  <label className="relative inline-flex items-center cursor-pointer">
  <input
@@ -3193,7 +3193,7 @@ function AIRouterPage() {
  onChange={(e) => setRetryConfig({ ...retryConfig, enabled: e.target.checked })}
  className="sr-only peer"
  />
- <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+ <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
  </label>
  </div>
 
@@ -3304,12 +3304,12 @@ function AIRouterPage() {
  style={{ height: `${Math.max(height, 8)}px` }}
  title={`Attempt ${i + 1}: ${delay}ms`}
  />
- <div className="text-xs text-gray-500 mt-1">#{i + 1}</div>
+ <div className="text-xs text-muted-foreground mt-1">#{i + 1}</div>
  </div>
  );
  })}
  </div>
- <div className="text-xs text-gray-600 mt-2">
+ <div className="text-xs text-foreground mt-2">
  Delays: {Array.from({ length: retryConfig.max_retries }, (_, i) => `${calculateBackoffDelay(i + 1)}ms`).join(' → ')}
  </div>
  </div>
@@ -3342,28 +3342,28 @@ function AIRouterPage() {
  <span>⏱️</span>
  <div>
  <div className="text-sm font-medium">{retryStats.by_error_type.timeout}</div>
- <div className="text-xs text-gray-500">Timeout</div>
+ <div className="text-xs text-muted-foreground">Timeout</div>
  </div>
  </div>
  <div className="flex items-center gap-2 p-2 bg-purple-50 rounded">
  <span>🚦</span>
  <div>
  <div className="text-sm font-medium">{retryStats.by_error_type.rate_limit}</div>
- <div className="text-xs text-gray-500">Rate Limit</div>
+ <div className="text-xs text-muted-foreground">Rate Limit</div>
  </div>
  </div>
  <div className="flex items-center gap-2 p-2 bg-red-50 rounded">
  <span>❌</span>
  <div>
  <div className="text-sm font-medium">{retryStats.by_error_type.error}</div>
- <div className="text-xs text-gray-500">Client Error</div>
+ <div className="text-xs text-muted-foreground">Client Error</div>
  </div>
  </div>
  <div className="flex items-center gap-2 p-2 bg-muted rounded">
  <span>🖥️</span>
  <div>
  <div className="text-sm font-medium">{retryStats.by_error_type.server_error}</div>
- <div className="text-xs text-gray-500">Server Error</div>
+ <div className="text-xs text-muted-foreground">Server Error</div>
  </div>
  </div>
  </div>
@@ -3401,10 +3401,10 @@ function AIRouterPage() {
  <div>
  <h3 className="text-sm font-medium mb-2">📋 Retry Event Logs</h3>
  {retryLogs.length === 0 ? (
- <div className="text-center py-6 text-gray-500 bg-muted/50 rounded-lg">
+ <div className="text-center py-6 text-muted-foreground bg-muted/50 rounded-lg">
  <div className="text-2xl mb-2">📭</div>
  <div className="text-sm">No retry events logged yet</div>
- <div className="text-xs text-gray-400 mt-1">Simulate a retry scenario to see logs</div>
+ <div className="text-xs text-muted-foreground mt-1">Simulate a retry scenario to see logs</div>
  </div>
  ) : (
  <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -3421,14 +3421,14 @@ function AIRouterPage() {
  <div className="font-medium">
  {log.request_id} • Attempt #{log.attempt_number}
  </div>
- <div className="text-xs text-gray-500">
+ <div className="text-xs text-muted-foreground">
  {log.error_type.toUpperCase()} • {log.error_message}
  </div>
  </div>
  </div>
  <div className="text-right">
  <div className="text-xs font-medium">{log.delay_ms}ms delay</div>
- <div className="text-xs text-gray-400">{new Date(log.timestamp).toLocaleTimeString()}</div>
+ <div className="text-xs text-muted-foreground">{new Date(log.timestamp).toLocaleTimeString()}</div>
  </div>
  </div>
  ))}
@@ -3444,7 +3444,7 @@ function AIRouterPage() {
  <div className="flex items-center justify-between mb-4">
  <div>
  <h2 className="text-lg font-semibold">⏱️ Timeout Configuration</h2>
- <p className="text-sm text-gray-500">Configure timeout duration per AI feature type</p>
+ <p className="text-sm text-muted-foreground">Configure timeout duration per AI feature type</p>
  </div>
  <button
  onClick={resetToDefaultTimeouts}
@@ -3496,7 +3496,7 @@ function AIRouterPage() {
  <span className="text-2xl">{getFeatureIcon(ft.feature)}</span>
  <div>
  <div className="font-medium">{ft.name}</div>
- <div className="text-xs text-gray-500">{ft.description}</div>
+ <div className="text-xs text-muted-foreground">{ft.description}</div>
  </div>
  </div>
  <label className="relative inline-flex items-center cursor-pointer">
@@ -3506,7 +3506,7 @@ function AIRouterPage() {
  onChange={(e) => updateFeatureTimeout(ft.feature, { enabled: e.target.checked })}
  className="sr-only peer"
  />
- <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+ <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
  </label>
  </div>
 
@@ -3514,7 +3514,7 @@ function AIRouterPage() {
  <>
  <div className="mb-3">
  <div className="flex items-center justify-between text-sm mb-1">
- <span className="text-gray-600">Timeout</span>
+ <span className="text-foreground">Timeout</span>
  <span className="font-mono font-medium">{formatTimeoutDuration(ft.timeout_ms)}</span>
  </div>
  <input
@@ -3526,7 +3526,7 @@ function AIRouterPage() {
  onChange={(e) => updateFeatureTimeout(ft.feature, { timeout_ms: parseInt(e.target.value) })}
  className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
  />
- <div className="flex justify-between text-xs text-gray-400 mt-1">
+ <div className="flex justify-between text-xs text-muted-foreground mt-1">
  <span>5s</span>
  <span>3m</span>
  </div>
@@ -3540,7 +3540,7 @@ function AIRouterPage() {
  onChange={(e) => updateFeatureTimeout(ft.feature, { fallback_on_timeout: e.target.checked })}
  className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
  />
- <span className="text-gray-600">Fallback on timeout</span>
+ <span className="text-foreground">Fallback on timeout</span>
  </label>
  <button
  onClick={() => simulateTimeout(ft.feature)}
@@ -3600,7 +3600,7 @@ function AIRouterPage() {
  <span className="w-6 text-center">{getFeatureIcon(ft.feature)}</span>
  <div className="flex-1">
  <div className="flex items-center justify-between text-sm mb-1">
- <span className="text-gray-700">{ft.name}</span>
+ <span className="text-foreground">{ft.name}</span>
  <span className="font-medium">{count}</span>
  </div>
  <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -3620,10 +3620,10 @@ function AIRouterPage() {
  <div>
  <h3 className="text-sm font-medium mb-3">📋 Timeout Event Logs</h3>
  {timeoutEvents.length === 0 ? (
- <div className="text-center py-6 text-gray-500 bg-muted/50 rounded-lg">
+ <div className="text-center py-6 text-muted-foreground bg-muted/50 rounded-lg">
  <div className="text-2xl mb-2">⏱️</div>
  <div className="text-sm">No timeout events logged yet</div>
- <div className="text-xs text-gray-400 mt-1">Test a feature timeout to see logs</div>
+ <div className="text-xs text-muted-foreground mt-1">Test a feature timeout to see logs</div>
  </div>
  ) : (
  <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -3651,7 +3651,7 @@ function AIRouterPage() {
  {getFeatureIcon(event.feature)}
  {featureTimeouts.find(f => f.feature === event.feature)?.name}
  </div>
- <div className="text-xs text-gray-500">
+ <div className="text-xs text-muted-foreground">
  Timeout: {formatTimeoutDuration(event.configured_timeout_ms)} •
  Actual: {formatTimeoutDuration(event.actual_duration_ms)} •
  {event.provider}
@@ -3659,7 +3659,7 @@ function AIRouterPage() {
  </div>
  </div>
  </div>
- <div className="text-xs text-gray-400">
+ <div className="text-xs text-muted-foreground">
  {new Date(event.timestamp).toLocaleTimeString()}
  </div>
  </div>
@@ -3679,7 +3679,7 @@ function AIRouterPage() {
  {featureModelConfigs.filter(c => c.override_org_default).length} custom
  </span>
  </h2>
- <p className="text-sm text-gray-500">Configure which AI model to use for each feature (Opus 4.5 Thinking/Sonnet/Haiku)</p>
+ <p className="text-sm text-muted-foreground">Configure which AI model to use for each feature (Opus 4.5 Thinking/Sonnet/Haiku)</p>
  </div>
  <button
  onClick={() => {
@@ -3698,7 +3698,7 @@ function AIRouterPage() {
  </button>
  {/* Feature #1338: Bulk Model Assignment */}
  <div className="flex items-center gap-2">
- <span className="text-sm text-gray-500">Bulk assign:</span>
+ <span className="text-sm text-muted-foreground">Bulk assign:</span>
  <select
  onChange={(e) => {
  if (e.target.value) {
@@ -3735,7 +3735,7 @@ function AIRouterPage() {
  <span className="text-2xl">🏢</span>
  <div>
  <h3 className="font-medium">Organization Default Model</h3>
- <p className="text-sm text-gray-500">Used for features without custom configuration</p>
+ <p className="text-sm text-muted-foreground">Used for features without custom configuration</p>
  </div>
  </div>
  <div className="flex items-center gap-3">
@@ -3751,7 +3751,7 @@ function AIRouterPage() {
  </select>
  </div>
  </div>
- <div className="mt-3 flex items-center gap-4 text-sm text-gray-600">
+ <div className="mt-3 flex items-center gap-4 text-sm text-foreground">
  <span className={`px-2 py-0.5 rounded border ${getQualityTierColor(getModelInfo(orgDefaultModel).tier.toLowerCase() as 'premium' | 'standard' | 'economy')}`}>
  {getModelInfo(orgDefaultModel).tier}
  </span>
@@ -3780,7 +3780,7 @@ function AIRouterPage() {
  <span className="text-xl">{getFeatureIcon(config.feature)}</span>
  <div>
  <div className="font-medium">{config.name}</div>
- <div className="text-xs text-gray-500">{config.description}</div>
+ <div className="text-xs text-muted-foreground">{config.description}</div>
  </div>
  </div>
  {config.override_org_default && (
@@ -3804,12 +3804,12 @@ function AIRouterPage() {
  <span className={`px-2 py-0.5 rounded border ${getQualityTierColor(config.quality_tier)}`}>
  {modelInfo.tier}
  </span>
- <span className="text-gray-500">~{config.avg_latency_ms}ms latency</span>
+ <span className="text-muted-foreground">~{config.avg_latency_ms}ms latency</span>
  <span className="font-medium text-green-600">{modelInfo.costBadge}</span>
  </div>
 
  {usageStats && (
- <div className="pt-2 border-t text-xs text-gray-500">
+ <div className="pt-2 border-t text-xs text-muted-foreground">
  <div className="flex justify-between">
  <span>{usageStats.request_count.toLocaleString()} requests</span>
  <span>${(usageStats.total_cost_cents / 100).toFixed(2)} this month</span>
@@ -3841,25 +3841,25 @@ function AIRouterPage() {
  <div className="text-2xl font-bold text-blue-600">
  {modelUsageStats.reduce((sum, s) => sum + s.request_count, 0).toLocaleString()}
  </div>
- <div className="text-xs text-gray-500">Total Requests</div>
+ <div className="text-xs text-muted-foreground">Total Requests</div>
  </div>
  <div className="text-center">
  <div className="text-2xl font-bold text-green-600">
  {(modelUsageStats.reduce((sum, s) => sum + s.total_tokens, 0) / 1000000).toFixed(1)}M
  </div>
- <div className="text-xs text-gray-500">Total Tokens</div>
+ <div className="text-xs text-muted-foreground">Total Tokens</div>
  </div>
  <div className="text-center">
  <div className="text-2xl font-bold text-purple-600">
  ${(getTotalEstimatedMonthlyCost() / 100).toFixed(2)}
  </div>
- <div className="text-xs text-gray-500">Total Cost</div>
+ <div className="text-xs text-muted-foreground">Total Cost</div>
  </div>
  <div className="text-center">
  <div className="text-2xl font-bold text-amber-600">
  {Math.round(modelUsageStats.reduce((sum, s) => sum + s.avg_latency_ms * s.request_count, 0) / modelUsageStats.reduce((sum, s) => sum + s.request_count, 0))}ms
  </div>
- <div className="text-xs text-gray-500">Avg Latency</div>
+ <div className="text-xs text-muted-foreground">Avg Latency</div>
  </div>
  </div>
 
@@ -3874,7 +3874,7 @@ function AIRouterPage() {
  <div key={stat.feature} className="flex items-center gap-3">
  <span className="w-6">{getFeatureIcon(stat.feature)}</span>
  <span className="w-28 text-sm font-medium truncate">{config?.name}</span>
- <span className="w-20 text-xs text-gray-500">{modelInfo.icon} {modelInfo.name.split(' ')[0]}</span>
+ <span className="w-20 text-xs text-muted-foreground">{modelInfo.icon} {modelInfo.name.split(' ')[0]}</span>
  <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
  <div
  className={`h-full ${
@@ -3886,7 +3886,7 @@ function AIRouterPage() {
  />
  </div>
  <span className="w-16 text-right text-sm font-medium">${(stat.total_cost_cents / 100).toFixed(2)}</span>
- <span className="w-12 text-right text-xs text-gray-400">{percentage.toFixed(1)}%</span>
+ <span className="w-12 text-right text-xs text-muted-foreground">{percentage.toFixed(1)}%</span>
  </div>
  );
  })}
@@ -3905,7 +3905,7 @@ function AIRouterPage() {
  <div className="flex items-center gap-2">
  <span>{getFeatureIcon(c.feature)}</span>
  <span className="font-medium">{c.name}</span>
- <span className="text-gray-400">→</span>
+ <span className="text-muted-foreground">→</span>
  <span className="text-green-600">Consider Sonnet 4 for ~80% cost savings</span>
  </div>
  <button
@@ -3917,7 +3917,7 @@ function AIRouterPage() {
  </div>
  ))}
  {featureModelConfigs.filter(c => c.model.includes('opus') && c.feature !== 'analysis' && c.feature !== 'code_review').length === 0 && (
- <div className="text-gray-500 italic">✅ Your configuration is already cost-optimized!</div>
+ <div className="text-muted-foreground italic">✅ Your configuration is already cost-optimized!</div>
  )}
  </div>
  </div>
@@ -3940,10 +3940,10 @@ function AIRouterPage() {
  </span>
  )}
  </h2>
- <p className="text-sm text-gray-500">Respect and manage rate limits for each AI provider with request queuing</p>
+ <p className="text-sm text-muted-foreground">Respect and manage rate limits for each AI provider with request queuing</p>
  </div>
  <div className="flex items-center gap-2">
- <span className="text-xs text-gray-500">{getTotalRateLimitHits()} hits (24h)</span>
+ <span className="text-xs text-muted-foreground">{getTotalRateLimitHits()} hits (24h)</span>
  </div>
  </div>
 
@@ -3958,7 +3958,7 @@ function AIRouterPage() {
  <span className="text-lg">{alert.severity === 'critical' ? '🚨' : alert.severity === 'warning' ? '⚠️' : 'ℹ️'}</span>
  <div>
  <div className={`font-medium ${colors.text}`}>{alert.message}</div>
- <div className="text-xs text-gray-500">
+ <div className="text-xs text-muted-foreground">
  {new Date(alert.timestamp).toLocaleString()} · {alert.provider === 'kie' ? 'Kie.ai' : 'Anthropic'}
  </div>
  </div>
@@ -4018,8 +4018,8 @@ function AIRouterPage() {
  {/* Requests per Minute */}
  <div>
  <div className="flex justify-between text-xs mb-1">
- <span className="text-gray-600">Requests/min</span>
- <span className={`font-medium ${minuteUsage >= config.alert_threshold_percent ? 'text-red-600' : 'text-gray-700'}`}>
+ <span className="text-foreground">Requests/min</span>
+ <span className={`font-medium ${minuteUsage >= config.alert_threshold_percent ? 'text-red-600' : 'text-foreground'}`}>
  {status?.requests_remaining_minute || 0} / {config.requests_per_minute} remaining
  </span>
  </div>
@@ -4034,7 +4034,7 @@ function AIRouterPage() {
  style={{ width: `${Math.min(minuteUsage, 100)}%` }}
  />
  </div>
- <div className="text-xs text-gray-500 mt-0.5">
+ <div className="text-xs text-muted-foreground mt-0.5">
  Resets in: {status ? formatTimeRemaining(status.reset_at_minute) : '—'}
  </div>
  </div>
@@ -4042,8 +4042,8 @@ function AIRouterPage() {
  {/* Requests per Hour */}
  <div>
  <div className="flex justify-between text-xs mb-1">
- <span className="text-gray-600">Requests/hour</span>
- <span className={`font-medium ${hourUsage >= config.alert_threshold_percent ? 'text-red-600' : 'text-gray-700'}`}>
+ <span className="text-foreground">Requests/hour</span>
+ <span className={`font-medium ${hourUsage >= config.alert_threshold_percent ? 'text-red-600' : 'text-foreground'}`}>
  {status?.requests_remaining_hour || 0} / {config.requests_per_hour} remaining
  </span>
  </div>
@@ -4058,7 +4058,7 @@ function AIRouterPage() {
  style={{ width: `${Math.min(hourUsage, 100)}%` }}
  />
  </div>
- <div className="text-xs text-gray-500 mt-0.5">
+ <div className="text-xs text-muted-foreground mt-0.5">
  Resets in: {status ? formatTimeRemaining(status.reset_at_hour) : '—'}
  </div>
  </div>
@@ -4066,8 +4066,8 @@ function AIRouterPage() {
  {/* Tokens per Minute */}
  <div>
  <div className="flex justify-between text-xs mb-1">
- <span className="text-gray-600">Tokens/min</span>
- <span className={`font-medium ${tokenUsage >= config.alert_threshold_percent ? 'text-red-600' : 'text-gray-700'}`}>
+ <span className="text-foreground">Tokens/min</span>
+ <span className={`font-medium ${tokenUsage >= config.alert_threshold_percent ? 'text-red-600' : 'text-foreground'}`}>
  {((status?.tokens_remaining_minute || 0) / 1000).toFixed(1)}k / {(config.tokens_per_minute / 1000).toFixed(0)}k remaining
  </span>
  </div>
@@ -4088,12 +4088,12 @@ function AIRouterPage() {
  {/* Strategy & Stats */}
  <div className="flex items-center justify-between text-xs border-t pt-3">
  <div className="flex items-center gap-2">
- <span className="text-gray-500">On limit:</span>
+ <span className="text-muted-foreground">On limit:</span>
  <span className="flex items-center gap-1 px-2 py-0.5 bg-card rounded border">
  {getStrategyIcon(config.strategy_on_limit)} {getStrategyLabel(config.strategy_on_limit)}
  </span>
  </div>
- <div className="flex items-center gap-3 text-gray-500">
+ <div className="flex items-center gap-3 text-muted-foreground">
  <span title="Rate limit hits in last hour">🛑 {status?.rate_limit_hits_1h || 0}/h</span>
  <span title="Queued requests">📋 {status?.current_queue_size || 0}</span>
  </div>
@@ -4102,7 +4102,7 @@ function AIRouterPage() {
  {/* Queue Preview */}
  {status && status.queued_requests.length > 0 && (
  <div className="mt-3 pt-3 border-t">
- <div className="text-xs font-medium text-gray-600 mb-2">📋 Request Queue ({status.current_queue_size})</div>
+ <div className="text-xs font-medium text-foreground mb-2">📋 Request Queue ({status.current_queue_size})</div>
  <div className="space-y-1">
  {status.queued_requests.slice(0, 3).map((req, idx) => (
  <div key={req.id} className="flex items-center justify-between text-xs bg-card rounded p-2 border">
@@ -4115,10 +4115,10 @@ function AIRouterPage() {
  {idx + 1}
  </span>
  <span>{getFeatureIcon(req.feature)}</span>
- <span className="text-gray-600">{req.tokens_estimate.toLocaleString()} tokens</span>
+ <span className="text-foreground">{req.tokens_estimate.toLocaleString()} tokens</span>
  </div>
  <div className="flex items-center gap-2">
- <span className="text-gray-500">~{Math.ceil(req.estimated_wait_ms / 1000)}s</span>
+ <span className="text-muted-foreground">~{Math.ceil(req.estimated_wait_ms / 1000)}s</span>
  <button
  onClick={() => clearQueuedRequest(config.provider, req.id)}
  className="text-red-500 hover:text-red-700"
@@ -4130,7 +4130,7 @@ function AIRouterPage() {
  </div>
  ))}
  {status.queued_requests.length > 3 && (
- <div className="text-xs text-gray-500 text-center">+{status.queued_requests.length - 3} more...</div>
+ <div className="text-xs text-muted-foreground text-center">+{status.queued_requests.length - 3} more...</div>
  )}
  </div>
  </div>
@@ -4145,7 +4145,7 @@ function AIRouterPage() {
  <h3 className="text-sm font-medium mb-2">📜 Recent Rate Limit Events</h3>
  <div className="bg-muted/50 rounded-lg p-3 max-h-48 overflow-y-auto">
  {rateLimitEvents.length === 0 ? (
- <div className="text-center text-sm text-gray-500 py-4">No rate limit events yet</div>
+ <div className="text-center text-sm text-muted-foreground py-4">No rate limit events yet</div>
  ) : (
  <div className="space-y-2">
  {rateLimitEvents.slice(0, 10).map(event => (
@@ -4154,10 +4154,10 @@ function AIRouterPage() {
  <div className="flex-1">
  <div className="flex items-center gap-2">
  <span className="font-medium">{event.provider === 'kie' ? 'Kie.ai' : 'Anthropic'}</span>
- <span className="text-gray-400">·</span>
- <span className="text-xs text-gray-500">{new Date(event.timestamp).toLocaleTimeString()}</span>
+ <span className="text-muted-foreground">·</span>
+ <span className="text-xs text-muted-foreground">{new Date(event.timestamp).toLocaleTimeString()}</span>
  </div>
- <div className="text-gray-600 text-xs">{event.details}</div>
+ <div className="text-foreground text-xs">{event.details}</div>
  {event.queue_position && (
  <div className="text-xs text-blue-600">Queue position: #{event.queue_position}</div>
  )}
@@ -4200,7 +4200,7 @@ function AIRouterPage() {
  <h3 className="text-lg font-semibold">
  ⚙️ Configure Rate Limits - {editingRateLimitProvider === 'kie' ? 'Kie.ai' : 'Anthropic'}
  </h3>
- <button onClick={() => setShowRateLimitConfigModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+ <button onClick={() => setShowRateLimitConfigModal(false)} className="text-muted-foreground hover:text-foreground">✕</button>
  </div>
 
  {(() => {
@@ -4312,7 +4312,7 @@ function AIRouterPage() {
  onChange={(e) => updateRateLimitConfig(editingRateLimitProvider, { burst_allowance: parseInt(e.target.value) || 0 })}
  className="w-20 px-2 py-1 border rounded text-sm"
  />
- <span className="text-sm text-gray-500">extra requests</span>
+ <span className="text-sm text-muted-foreground">extra requests</span>
  </div>
 
  <div className="flex items-center gap-2">
@@ -4323,7 +4323,7 @@ function AIRouterPage() {
  onChange={(e) => updateRateLimitConfig(editingRateLimitProvider, { alert_threshold_percent: parseInt(e.target.value) || 0 })}
  className="w-20 px-2 py-1 border rounded text-sm"
  />
- <span className="text-sm text-gray-500">% usage</span>
+ <span className="text-sm text-muted-foreground">% usage</span>
  </div>
  </div>
 
@@ -4331,7 +4331,7 @@ function AIRouterPage() {
  <div className="flex justify-end gap-2 pt-4 border-t">
  <button
  onClick={() => setShowRateLimitConfigModal(false)}
- className="px-4 py-2 text-gray-600 hover:bg-muted rounded"
+ className="px-4 py-2 text-foreground hover:bg-muted rounded"
  >
  Cancel
  </button>
@@ -4363,7 +4363,7 @@ function AIRouterPage() {
  {getFallbackSuccessRate()}% success rate
  </span>
  </h2>
- <p className="text-sm text-gray-500">Configure when and how to fallback between providers</p>
+ <p className="text-sm text-muted-foreground">Configure when and how to fallback between providers</p>
  </div>
  <button
  onClick={createFallbackRule}
@@ -4427,16 +4427,16 @@ function AIRouterPage() {
  <div className="flex items-start justify-between mb-3">
  <div className="flex items-center gap-3">
  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
- rule.enabled ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-600'
+ rule.enabled ? 'bg-blue-500 text-white' : 'bg-gray-300 text-foreground'
  }`}>
  #{rule.priority}
  </div>
  <div>
  <div className="font-semibold flex items-center gap-2">
  {rule.name}
- {!rule.enabled && <span className="text-xs text-gray-500">(disabled)</span>}
+ {!rule.enabled && <span className="text-xs text-muted-foreground">(disabled)</span>}
  </div>
- <div className="text-sm text-gray-500">
+ <div className="text-sm text-muted-foreground">
  {getProviderLabel(rule.source_provider)} → {getProviderLabel(rule.target_provider)}
  </div>
  </div>
@@ -4449,14 +4449,14 @@ function AIRouterPage() {
  onChange={(e) => updateFallbackRule(rule.id, { enabled: e.target.checked })}
  className="sr-only peer"
  />
- <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+ <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
  </label>
  <button
  onClick={() => {
  setEditingFallbackRule(rule);
  setShowFallbackRuleModal(true);
  }}
- className="p-1 text-gray-400 hover:text-blue-600"
+ className="p-1 text-muted-foreground hover:text-blue-600"
  title="Edit Rule"
  >
  ⚙️
@@ -4467,7 +4467,7 @@ function AIRouterPage() {
  deleteFallbackRule(rule.id);
  }
  }}
- className="p-1 text-gray-400 hover:text-red-600"
+ className="p-1 text-muted-foreground hover:text-red-600"
  title="Delete Rule"
  >
  🗑️
@@ -4485,21 +4485,21 @@ function AIRouterPage() {
  </div>
 
  {/* Rule Settings Summary */}
- <div className="grid grid-cols-4 gap-3 text-xs text-gray-600 mb-3">
+ <div className="grid grid-cols-4 gap-3 text-xs text-foreground mb-3">
  <div className="flex items-center gap-1">
- <span className="text-gray-400">🔄</span>
+ <span className="text-muted-foreground">🔄</span>
  <span>{rule.retry_before_fallback} retries before fallback</span>
  </div>
  <div className="flex items-center gap-1">
- <span className="text-gray-400">⏱️</span>
+ <span className="text-muted-foreground">⏱️</span>
  <span>{rule.timeout_threshold_ms / 1000}s timeout</span>
  </div>
  <div className="flex items-center gap-1">
- <span className="text-gray-400">🎯</span>
+ <span className="text-muted-foreground">🎯</span>
  <span>Max {rule.max_fallback_attempts} attempts</span>
  </div>
  <div className="flex items-center gap-1">
- <span className="text-gray-400">⏲️</span>
+ <span className="text-muted-foreground">⏲️</span>
  <span>{rule.cooldown_after_fallback_ms / 1000}s cooldown</span>
  </div>
  </div>
@@ -4507,7 +4507,7 @@ function AIRouterPage() {
  {/* Rule Stats */}
  {ruleStats && (
  <div className="flex items-center gap-4 pt-3 border-t text-sm">
- <span className="text-gray-500">
+ <span className="text-muted-foreground">
  Triggered: <strong>{ruleStats.triggered}x</strong>
  </span>
  <span className={`${ruleStats.success_rate >= 80 ? 'text-green-600' : ruleStats.success_rate >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
@@ -4530,7 +4530,7 @@ function AIRouterPage() {
  {/* Test Fallback Manually */}
  <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
  <h3 className="text-sm font-medium mb-3">🧪 Test Fallback Manually</h3>
- <p className="text-xs text-gray-600 mb-3">Simulate different failure scenarios to test your fallback rules</p>
+ <p className="text-xs text-foreground mb-3">Simulate different failure scenarios to test your fallback rules</p>
  <div className="flex flex-wrap gap-2">
  {(['timeout', 'rate_limit', 'error', 'server_error', 'network_error'] as FallbackTrigger[]).map(trigger => (
  <button
@@ -4554,10 +4554,10 @@ function AIRouterPage() {
  <div>
  <h3 className="text-sm font-medium mb-3">📋 Recent Fallback Events</h3>
  {fallbackTestResults.length === 0 ? (
- <div className="text-center py-6 text-gray-500 bg-muted/50 rounded-lg">
+ <div className="text-center py-6 text-muted-foreground bg-muted/50 rounded-lg">
  <div className="text-2xl mb-2">📭</div>
  <div className="text-sm">No fallback events recorded yet</div>
- <div className="text-xs text-gray-400 mt-1">Test a fallback scenario to see events</div>
+ <div className="text-xs text-muted-foreground mt-1">Test a fallback scenario to see events</div>
  </div>
  ) : (
  <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -4577,9 +4577,9 @@ function AIRouterPage() {
  <div>
  <div className="font-medium text-sm">
  {getTriggerIcon(result.trigger)} {getTriggerLabel(result.trigger)} Fallback
- {rule && <span className="text-gray-500 font-normal"> • {rule.name}</span>}
+ {rule && <span className="text-muted-foreground font-normal"> • {rule.name}</span>}
  </div>
- <div className="text-xs text-gray-500">
+ <div className="text-xs text-muted-foreground">
  {result.source_provider} → {result.target_provider}
  {result.retries_attempted > 0 && ` • ${result.retries_attempted} retries`}
  {result.error_message && ` • ${result.error_message}`}
@@ -4588,7 +4588,7 @@ function AIRouterPage() {
  </div>
  <div className="text-right">
  <div className="text-sm font-medium">{result.fallback_latency_ms}ms</div>
- <div className="text-xs text-gray-400">{new Date(result.timestamp).toLocaleTimeString()}</div>
+ <div className="text-xs text-muted-foreground">{new Date(result.timestamp).toLocaleTimeString()}</div>
  </div>
  </div>
  );
@@ -4604,7 +4604,7 @@ function AIRouterPage() {
  <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl p-6 m-4 max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between mb-4">
  <h3 className="text-lg font-semibold">⚙️ Configure Fallback Rule</h3>
- <button onClick={() => setShowFallbackRuleModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+ <button onClick={() => setShowFallbackRuleModal(false)} className="text-muted-foreground hover:text-foreground">✕</button>
  </div>
 
  <div className="space-y-4">
@@ -4711,7 +4711,7 @@ function AIRouterPage() {
  }}
  className="w-full px-3 py-2 border rounded"
  />
- <div className="text-xs text-gray-500 mt-1">Number of retries before triggering fallback</div>
+ <div className="text-xs text-muted-foreground mt-1">Number of retries before triggering fallback</div>
  </div>
  <div>
  <label className="block text-sm font-medium mb-1">Retry Delay (ms)</label>
@@ -4729,7 +4729,7 @@ function AIRouterPage() {
  }}
  className="w-full px-3 py-2 border rounded"
  />
- <div className="text-xs text-gray-500 mt-1">Delay between retries</div>
+ <div className="text-xs text-muted-foreground mt-1">Delay between retries</div>
  </div>
  </div>
 
@@ -4751,7 +4751,7 @@ function AIRouterPage() {
  }}
  className="w-full px-3 py-2 border rounded"
  />
- <div className="text-xs text-gray-500 mt-1">Timeout for fallback requests</div>
+ <div className="text-xs text-muted-foreground mt-1">Timeout for fallback requests</div>
  </div>
  <div>
  <label className="block text-sm font-medium mb-1">Max Fallback Attempts</label>
@@ -4768,7 +4768,7 @@ function AIRouterPage() {
  }}
  className="w-full px-3 py-2 border rounded"
  />
- <div className="text-xs text-gray-500 mt-1">Max attempts at fallback provider</div>
+ <div className="text-xs text-muted-foreground mt-1">Max attempts at fallback provider</div>
  </div>
  </div>
 
@@ -4789,7 +4789,7 @@ function AIRouterPage() {
  }}
  className="w-full px-3 py-2 border rounded"
  />
- <div className="text-xs text-gray-500 mt-1">Wait time after fallback before returning to primary</div>
+ <div className="text-xs text-muted-foreground mt-1">Wait time after fallback before returning to primary</div>
  </div>
 
  {/* Options */}
@@ -4853,7 +4853,7 @@ function AIRouterPage() {
  <div className="flex gap-2">
  <button
  onClick={() => setShowFallbackRuleModal(false)}
- className="px-4 py-2 text-gray-600 hover:bg-muted rounded"
+ className="px-4 py-2 text-foreground hover:bg-muted rounded"
  >
  Cancel
  </button>
@@ -4883,7 +4883,7 @@ function AIRouterPage() {
  <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full">Soft Limit</span>
  )}
  </h2>
- <p className="text-sm text-gray-500">Track and control AI spending with soft and hard limits</p>
+ <p className="text-sm text-muted-foreground">Track and control AI spending with soft and hard limits</p>
  </div>
  <div className="flex items-center gap-2">
  <button
@@ -4906,16 +4906,16 @@ function AIRouterPage() {
  <div>
  <div className="text-3xl font-bold">
  {formatCurrency(spendingData.current_month_spend_cents)}
- <span className="text-lg font-normal text-gray-500"> / {formatCurrency(budgetConfig.monthly_budget_cents)}</span>
+ <span className="text-lg font-normal text-muted-foreground"> / {formatCurrency(budgetConfig.monthly_budget_cents)}</span>
  </div>
- <div className="text-sm text-gray-600">
+ <div className="text-sm text-foreground">
  {getBudgetPercentage().toFixed(1)}% of monthly budget used
  </div>
  </div>
  <div className="text-right">
- <div className="text-sm text-gray-500">Resets in</div>
+ <div className="text-sm text-muted-foreground">Resets in</div>
  <div className="text-2xl font-bold">{getDaysUntilReset()} days</div>
- <div className="text-xs text-gray-400">on day {budgetConfig.billing_cycle_day}</div>
+ <div className="text-xs text-muted-foreground">on day {budgetConfig.billing_cycle_day}</div>
  </div>
  </div>
 
@@ -4944,15 +4944,15 @@ function AIRouterPage() {
  />
  {/* Labels */}
  <div className="absolute inset-0 flex items-center justify-between px-3 text-xs font-medium">
- <span className={getBudgetPercentage() > 50 ? 'text-white' : 'text-gray-700'}>
+ <span className={getBudgetPercentage() > 50 ? 'text-white' : 'text-foreground'}>
  {formatCurrency(spendingData.current_month_spend_cents)}
  </span>
- <span className="text-gray-600">
+ <span className="text-foreground">
  {formatCurrency(budgetConfig.monthly_budget_cents)}
  </span>
  </div>
  </div>
- <div className="flex justify-between mt-1 text-xs text-gray-500">
+ <div className="flex justify-between mt-1 text-xs text-muted-foreground">
  <span>0%</span>
  <span className="text-amber-600">{budgetConfig.soft_limit_percentage}% soft</span>
  <span className="text-red-600">{budgetConfig.hard_limit_percentage}% hard</span>
@@ -4974,9 +4974,9 @@ function AIRouterPage() {
  <h3 className="text-sm font-medium">⚙️ Budget Configuration</h3>
 
  <div className="p-3 bg-muted/50 rounded-lg">
- <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Budget</label>
+ <label className="block text-sm font-medium text-foreground mb-1">Monthly Budget</label>
  <div className="flex items-center gap-2">
- <span className="text-gray-500">$</span>
+ <span className="text-muted-foreground">$</span>
  <input
  type="number"
  min="100"
@@ -5076,7 +5076,7 @@ function AIRouterPage() {
  </div>
 
  <div>
- <h4 className="text-xs font-medium text-gray-500 mb-2">By Provider</h4>
+ <h4 className="text-xs font-medium text-muted-foreground mb-2">By Provider</h4>
  {Object.entries(spendingData.by_provider).map(([provider, cents]) => (
  <div key={provider} className="flex items-center gap-2 mb-2">
  <span className="w-16 text-sm font-medium capitalize">{provider}</span>
@@ -5086,13 +5086,13 @@ function AIRouterPage() {
  style={{ width: `${(cents / spendingData.current_month_spend_cents) * 100}%` }}
  />
  </div>
- <span className="text-xs text-gray-600 w-16 text-right">{formatCurrency(cents)}</span>
+ <span className="text-xs text-foreground w-16 text-right">{formatCurrency(cents)}</span>
  </div>
  ))}
  </div>
 
  <div>
- <h4 className="text-xs font-medium text-gray-500 mb-2">By Feature</h4>
+ <h4 className="text-xs font-medium text-muted-foreground mb-2">By Feature</h4>
  <div className="space-y-1 max-h-32 overflow-y-auto">
  {Object.entries(spendingData.by_feature)
  .sort(([, a], [, b]) => b - a)
@@ -5100,7 +5100,7 @@ function AIRouterPage() {
  <div key={feature} className="flex items-center gap-2 text-sm">
  <span className="w-6">{getFeatureIcon(feature as AIFeatureType)}</span>
  <span className="flex-1 truncate capitalize">{feature.replace('_', ' ')}</span>
- <span className="text-gray-600">{formatCurrency(cents)}</span>
+ <span className="text-foreground">{formatCurrency(cents)}</span>
  </div>
  ))}
  </div>
@@ -5145,7 +5145,7 @@ function AIRouterPage() {
  }`}
  style={{ height: `${Math.max(height, 4)}%` }}
  />
- <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-10">
+ <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-card text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-10">
  {formatCurrency(day.amount_cents)}
  </div>
  </div>
@@ -5153,7 +5153,7 @@ function AIRouterPage() {
  })}
  </div>
  {/* X-axis labels */}
- <div className="flex justify-between text-xs text-gray-500 mt-1">
+ <div className="flex justify-between text-xs text-muted-foreground mt-1">
  <span>{spendingData.daily_spend[0]?.date ? new Date(spendingData.daily_spend[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
  <span>Daily avg: {formatCurrency(spendingData.daily_spend.length > 0 ? spendingData.daily_spend.reduce((a, b) => a + b.amount_cents, 0) / spendingData.daily_spend.length : 0)}</span>
  <span>{spendingData.daily_spend.length > 0 ? new Date(spendingData.daily_spend[spendingData.daily_spend.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
@@ -5402,7 +5402,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div>
  <h3 className="text-sm font-medium mb-3">🔔 Budget Alerts</h3>
  {budgetAlerts.length === 0 ? (
- <div className="text-center py-6 text-gray-500 bg-muted/50 rounded-lg">
+ <div className="text-center py-6 text-muted-foreground bg-muted/50 rounded-lg">
  <div className="text-2xl mb-2">🔕</div>
  <div className="text-sm">No budget alerts</div>
  </div>
@@ -5426,7 +5426,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  </span>
  <div>
  <div className="font-medium text-sm">{alert.message}</div>
- <div className="text-xs text-gray-500">
+ <div className="text-xs text-muted-foreground">
  {new Date(alert.timestamp).toLocaleString()}
  </div>
  </div>
@@ -5434,7 +5434,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  {!alert.acknowledged && (
  <button
  onClick={() => acknowledgeAlert(alert.id)}
- className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+ className="px-2 py-1 text-xs bg-secondary text-foreground rounded hover:bg-gray-300"
  >
  Dismiss
  </button>
@@ -5451,7 +5451,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
  <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
  <h3 className="text-lg font-semibold mb-4">🔄 Reset Monthly Budget</h3>
- <p className="text-gray-600 mb-4">
+ <p className="text-foreground mb-4">
  This will reset your current month's spending to $0.00 and clear all spending history.
  This action is typically triggered automatically on billing cycle day {budgetConfig.billing_cycle_day}.
  </p>
@@ -5461,7 +5461,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="flex gap-3 justify-end">
  <button
  onClick={() => setShowBudgetResetModal(false)}
- className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+ className="px-4 py-2 bg-muted text-foreground rounded hover:bg-secondary"
  >
  Cancel
  </button>
@@ -5491,7 +5491,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
  {/* Alert Thresholds Configuration */}
  <div className="space-y-4">
- <h3 className="font-medium text-gray-800 border-b pb-2">📊 Alert Thresholds (50%, 80%, 100%)</h3>
+ <h3 className="font-medium text-foreground border-b pb-2">📊 Alert Thresholds (50%, 80%, 100%)</h3>
  {alertNotificationConfig.thresholds.map((threshold, index) => (
  <div key={threshold.percentage} className="border rounded-lg p-3 bg-muted/50">
  <div className="flex items-center justify-between mb-2">
@@ -5508,7 +5508,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  onChange={(e) => updateAlertThreshold(index, { enabled: e.target.checked })}
  className="w-4 h-4 text-blue-600 rounded"
  />
- <span className="text-sm text-gray-600">Enabled</span>
+ <span className="text-sm text-foreground">Enabled</span>
  </label>
  </div>
  {threshold.enabled && (
@@ -5532,7 +5532,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <span>💬 Slack</span>
  </label>
  {threshold.last_triggered && (
- <span className="text-xs text-gray-500 ml-auto">
+ <span className="text-xs text-muted-foreground ml-auto">
  Last: {formatNotificationTime(threshold.last_triggered)}
  </span>
  )}
@@ -5544,7 +5544,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
 
  {/* Notification Channels */}
  <div className="space-y-4">
- <h3 className="font-medium text-gray-800 border-b pb-2">📬 Notification Channels</h3>
+ <h3 className="font-medium text-foreground border-b pb-2">📬 Notification Channels</h3>
 
  {/* Email Configuration */}
  <div className="border rounded-lg p-3">
@@ -5562,7 +5562,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  </div>
  {alertNotificationConfig.email_enabled && (
  <div className="mt-2">
- <label className="text-xs text-gray-500 block mb-1">Recipients:</label>
+ <label className="text-xs text-muted-foreground block mb-1">Recipients:</label>
  <div className="flex flex-wrap gap-1 mb-2">
  {alertNotificationConfig.email_recipients.map((email) => (
  <span key={email} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
@@ -5622,7 +5622,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  {alertNotificationConfig.slack_enabled && (
  <div className="mt-2 space-y-2">
  <div>
- <label className="text-xs text-gray-500 block mb-1">Channel:</label>
+ <label className="text-xs text-muted-foreground block mb-1">Channel:</label>
  <input
  type="text"
  value={alertNotificationConfig.slack_channel}
@@ -5632,7 +5632,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  />
  </div>
  <div>
- <label className="text-xs text-gray-500 block mb-1">Webhook URL:</label>
+ <label className="text-xs text-muted-foreground block mb-1">Webhook URL:</label>
  <input
  type="password"
  value={alertNotificationConfig.slack_webhook_url}
@@ -5668,7 +5668,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <span className="text-sm">💡 Include Cost Reduction Suggestions</span>
  </label>
  <div className="flex items-center gap-2 mt-2">
- <label className="text-xs text-gray-500">Cooldown:</label>
+ <label className="text-xs text-muted-foreground">Cooldown:</label>
  <select
  value={alertNotificationConfig.cooldown_minutes}
  onChange={(e) => setAlertNotificationConfig(prev => ({ ...prev, cooldown_minutes: parseInt(e.target.value) }))}
@@ -5688,7 +5688,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
 
  {/* Cost Reduction Suggestions */}
  <div className="mt-6">
- <h3 className="font-medium text-gray-800 border-b pb-2 mb-3">💡 Cost Reduction Suggestions</h3>
+ <h3 className="font-medium text-foreground border-b pb-2 mb-3">💡 Cost Reduction Suggestions</h3>
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
  {costReductionSuggestions.map((suggestion) => (
  <div
@@ -5708,7 +5708,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  {suggestion.priority.toUpperCase()}
  </span>
  </div>
- <p className="text-xs text-gray-600 mb-2">{suggestion.description}</p>
+ <p className="text-xs text-foreground mb-2">{suggestion.description}</p>
  <div className="flex items-center justify-between">
  <span className="text-sm font-semibold text-green-700">
  ~{suggestion.estimated_savings_percent}% savings
@@ -5729,9 +5729,9 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
 
  {/* Notification History */}
  <div className="mt-6">
- <h3 className="font-medium text-gray-800 border-b pb-2 mb-3">📜 Notification History</h3>
+ <h3 className="font-medium text-foreground border-b pb-2 mb-3">📜 Notification History</h3>
  {sentNotifications.length === 0 ? (
- <div className="text-center py-6 text-gray-500">
+ <div className="text-center py-6 text-muted-foreground">
  <div className="text-3xl mb-2">📭</div>
  <div>No notifications sent yet</div>
  </div>
@@ -5754,16 +5754,16 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="font-medium text-sm">
  {notif.threshold_percentage}% Threshold Alert
  </div>
- <div className="text-xs text-gray-500">
+ <div className="text-xs text-muted-foreground">
  {notif.current_percentage.toFixed(1)}% used • ${formatCurrency(notif.spend_amount_cents)} / ${formatCurrency(notif.budget_amount_cents)}
  </div>
- <div className="text-xs text-gray-500 mt-0.5">
+ <div className="text-xs text-muted-foreground mt-0.5">
  {notif.channels_sent.map(c => c === 'email' ? '📧' : '💬').join(' ')} → {notif.recipients.slice(0, 2).join(', ')}{notif.recipients.length > 2 ? ` +${notif.recipients.length - 2}` : ''}
  </div>
  </div>
  </div>
  <div className="text-right">
- <div className="text-xs text-gray-500">{formatNotificationTime(notif.timestamp)}</div>
+ <div className="text-xs text-muted-foreground">{formatNotificationTime(notif.timestamp)}</div>
  <div className="flex items-center gap-1 mt-1">
  {notif.breakdown_included && <span className="text-xs" title="Breakdown included">📊</span>}
  {notif.suggestions_included && <span className="text-xs" title="Suggestions included">💡</span>}
@@ -5781,12 +5781,12 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
  <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
  <h3 className="text-lg font-semibold mb-4">📧 Send Test Alert</h3>
- <p className="text-gray-600 mb-4">
+ <p className="text-foreground mb-4">
  Send a test notification to verify your alert configuration is working correctly.
  </p>
 
  <div className="mb-4">
- <label className="block text-sm font-medium text-gray-700 mb-2">
+ <label className="block text-sm font-medium text-foreground mb-2">
  Simulate Threshold:
  </label>
  <div className="flex gap-2">
@@ -5808,7 +5808,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
 
  <div className="bg-muted/50 rounded p-3 mb-4 text-sm">
  <div className="font-medium mb-1">Preview:</div>
- <div className="text-gray-600">
+ <div className="text-foreground">
  <div>• Channels: {[
  alertNotificationConfig.email_enabled && 'Email',
  alertNotificationConfig.slack_enabled && 'Slack'
@@ -5822,7 +5822,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="flex gap-3 justify-end">
  <button
  onClick={() => setShowTestNotificationModal(false)}
- className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+ className="px-4 py-2 bg-muted text-foreground rounded hover:bg-secondary"
  >
  Cancel
  </button>
@@ -5843,7 +5843,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="flex items-center gap-3">
  <h2 className="text-lg font-semibold">💾 AI Response Caching</h2>
  <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${
- cacheConfig.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+ cacheConfig.enabled ? 'bg-green-100 text-green-800' : 'bg-muted text-foreground'
  }`}>
  {cacheConfig.enabled ? '✓ Enabled' : '○ Disabled'}
  </span>
@@ -5890,13 +5890,13 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
  {/* Cache Configuration */}
  <div className="space-y-4">
- <h3 className="font-medium text-gray-800 border-b pb-2">⚙️ Cache Configuration</h3>
+ <h3 className="font-medium text-foreground border-b pb-2">⚙️ Cache Configuration</h3>
 
  <div className="space-y-3">
  <div className="flex items-center justify-between">
  <div>
  <div className="font-medium text-sm">Default TTL</div>
- <div className="text-xs text-gray-500">Time-to-live for cached responses</div>
+ <div className="text-xs text-muted-foreground">Time-to-live for cached responses</div>
  </div>
  <div className="flex items-center gap-2">
  <select
@@ -5916,7 +5916,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="flex items-center justify-between">
  <div>
  <div className="font-medium text-sm">Max Cache Size</div>
- <div className="text-xs text-gray-500">{cacheStats.cache_size_mb.toFixed(1)} MB / {cacheStats.max_size_mb} MB used</div>
+ <div className="text-xs text-muted-foreground">{cacheStats.cache_size_mb.toFixed(1)} MB / {cacheStats.max_size_mb} MB used</div>
  </div>
  <div className="flex items-center gap-2">
  <select
@@ -5935,7 +5935,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="flex items-center justify-between">
  <div>
  <div className="font-medium text-sm">Hash Algorithm</div>
- <div className="text-xs text-gray-500">Algorithm for cache key generation</div>
+ <div className="text-xs text-muted-foreground">Algorithm for cache key generation</div>
  </div>
  <select
  value={cacheConfig.hash_algorithm}
@@ -6001,7 +6001,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
 
  {/* Per-Feature Cache Settings */}
  <div className="space-y-4">
- <h3 className="font-medium text-gray-800 border-b pb-2">📋 Per-Feature TTL Settings</h3>
+ <h3 className="font-medium text-foreground border-b pb-2">📋 Per-Feature TTL Settings</h3>
 
  <div className="space-y-2">
  {(Object.entries(cacheConfig.cache_by_feature) as [AIFeatureType, { enabled: boolean; ttl_seconds: number }][]).map(([feature, config]) => (
@@ -6029,7 +6029,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <option value={7200}>2h</option>
  <option value={86400}>24h</option>
  </select>
- <span className="text-xs text-gray-500 w-16 text-right">
+ <span className="text-xs text-muted-foreground w-16 text-right">
  {cacheStats.by_feature[feature]?.hits.toLocaleString() || 0} hits
  </span>
  </div>
@@ -6046,13 +6046,13 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  return (
  <div key={feature} className="flex items-center gap-2">
  <span className="text-sm w-24 capitalize">{feature.replace('_', ' ')}</span>
- <div className="flex-1 bg-gray-200 rounded-full h-2">
+ <div className="flex-1 bg-secondary rounded-full h-2">
  <div
  className="bg-green-500 h-2 rounded-full"
  style={{ width: `${hitRate}%` }}
  />
  </div>
- <span className="text-xs text-gray-600 w-12 text-right">{hitRate.toFixed(0)}%</span>
+ <span className="text-xs text-foreground w-12 text-right">{hitRate.toFixed(0)}%</span>
  </div>
  );
  })}
@@ -6063,7 +6063,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
 
  {/* Simulate Cache Actions */}
  <div className="mt-6 border-t pt-4">
- <h3 className="font-medium text-gray-800 mb-3">🧪 Simulate Cache Scenarios</h3>
+ <h3 className="font-medium text-foreground mb-3">🧪 Simulate Cache Scenarios</h3>
  <div className="flex flex-wrap gap-2">
  <button
  onClick={simulateCacheHit}
@@ -6088,9 +6088,9 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
 
  {/* Cache Event Log */}
  <div className="mt-6 border-t pt-4">
- <h3 className="font-medium text-gray-800 mb-3">📜 Cache Event Log</h3>
+ <h3 className="font-medium text-foreground mb-3">📜 Cache Event Log</h3>
  {cacheEvents.length === 0 ? (
- <div className="text-center py-4 text-gray-500">
+ <div className="text-center py-4 text-muted-foreground">
  <div className="text-2xl mb-1">📭</div>
  <div className="text-sm">No cache events yet</div>
  </div>
@@ -6115,8 +6115,8 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  {event.latency_saved_ms && <span className="text-green-700">-{event.latency_saved_ms}ms</span>}
  {event.cost_saved_cents && <span className="ml-2 text-purple-700">-${(event.cost_saved_cents / 100).toFixed(2)}</span>}
  </div>
- <div className="text-xs text-gray-500">{formatNotificationTime(event.timestamp)}</div>
- {event.reason && <div className="text-xs text-gray-500 italic">{event.reason}</div>}
+ <div className="text-xs text-muted-foreground">{formatNotificationTime(event.timestamp)}</div>
+ {event.reason && <div className="text-xs text-muted-foreground italic">{event.reason}</div>}
  </div>
  </div>
  ))}
@@ -6126,9 +6126,9 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
 
  {/* Recent Cache Entries */}
  <div className="mt-6 border-t pt-4">
- <h3 className="font-medium text-gray-800 mb-3">📦 Recent Cache Entries ({cacheStats.active_entries.toLocaleString()} active)</h3>
+ <h3 className="font-medium text-foreground mb-3">📦 Recent Cache Entries ({cacheStats.active_entries.toLocaleString()} active)</h3>
  {cacheEntries.length === 0 ? (
- <div className="text-center py-4 text-gray-500">
+ <div className="text-center py-4 text-muted-foreground">
  <div className="text-2xl mb-1">📭</div>
  <div className="text-sm">No cache entries</div>
  </div>
@@ -6147,16 +6147,16 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="flex items-center gap-2">
  <span className={`px-1.5 py-0.5 text-xs rounded ${
  entry.status === 'active' ? 'bg-green-200 text-green-800' :
- entry.status === 'expired' ? 'bg-gray-200 text-gray-600' :
+ entry.status === 'expired' ? 'bg-secondary text-foreground' :
  'bg-yellow-200 text-yellow-800'
  }`}>
  {entry.status.toUpperCase()}
  </span>
  <span className="text-sm font-mono">{entry.cache_key}</span>
  </div>
- <span className="text-xs text-gray-500">{formatBytes(entry.response_size_bytes)}</span>
+ <span className="text-xs text-muted-foreground">{formatBytes(entry.response_size_bytes)}</span>
  </div>
- <div className="flex items-center gap-4 text-xs text-gray-600">
+ <div className="flex items-center gap-4 text-xs text-foreground">
  <span>{getFeatureIcon(entry.feature_type)} {entry.feature_type}</span>
  <span>🤖 {entry.provider}</span>
  <span>📊 {entry.hit_count} hits</span>
@@ -6174,7 +6174,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
  <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
  <h3 className="text-lg font-semibold mb-4">🗑️ Clear AI Cache</h3>
- <p className="text-gray-600 mb-4">
+ <p className="text-foreground mb-4">
  Are you sure you want to clear all cached AI responses? This will remove {cacheStats.active_entries.toLocaleString()} cached entries ({cacheStats.cache_size_mb.toFixed(1)} MB).
  </p>
  <div className="bg-amber-50 border border-amber-200 rounded p-3 mb-4 text-sm text-amber-800">
@@ -6183,7 +6183,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="flex gap-3 justify-end">
  <button
  onClick={() => setShowCacheClearModal(false)}
- className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+ className="px-4 py-2 bg-muted text-foreground rounded hover:bg-secondary"
  >
  Cancel
  </button>
@@ -6203,7 +6203,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <h2 className="text-lg font-semibold mb-4">📋 Provider Switch Logs</h2>
 
  {logs.length === 0 ? (
- <div className="text-center py-6 text-gray-500">
+ <div className="text-center py-6 text-muted-foreground">
  <div className="text-3xl mb-2">📭</div>
  <div>No provider switches logged yet</div>
  </div>
@@ -6222,13 +6222,13 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="font-medium">
  {log.from_provider} → {log.to_provider}
  </div>
- <div className="text-xs text-gray-500">
+ <div className="text-xs text-muted-foreground">
  {log.reason} • {new Date(log.timestamp).toLocaleTimeString()}
  </div>
  </div>
  </div>
  {log.latency_ms && (
- <span className="text-sm text-gray-600">{log.latency_ms}ms</span>
+ <span className="text-sm text-foreground">{log.latency_ms}ms</span>
  )}
  </div>
  ))}
@@ -6244,7 +6244,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  🔑 API Key Management
  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Encrypted</span>
  </h2>
- <p className="text-sm text-gray-500 mt-1">Securely manage AI provider API keys with encryption at rest</p>
+ <p className="text-sm text-muted-foreground mt-1">Securely manage AI provider API keys with encryption at rest</p>
  </div>
  <button
  onClick={openAddKeyModal}
@@ -6272,11 +6272,11 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="flex items-center gap-2 flex-wrap">
  <span className="font-semibold">{key.name}</span>
  <span className={`text-xs px-2 py-0.5 rounded-full ${
- key.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+ key.is_active ? 'bg-green-100 text-green-800' : 'bg-muted text-foreground'
  }`}>
  {key.is_active ? '✓ Active' : '○ Inactive'}
  </span>
- <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full capitalize">
+ <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full capitalize">
  {key.provider}
  </span>
  {/* Feature #1328: Key version and role badges */}
@@ -6304,12 +6304,12 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  )}
  </div>
  <div className="flex items-center gap-2 mt-1">
- <code className="text-sm bg-gray-100 px-2 py-1 rounded font-mono">
+ <code className="text-sm bg-muted px-2 py-1 rounded font-mono">
  {showKeyValue[key.id] ? `${key.key_prefix}${'*'.repeat(24)}${key.key_suffix}` : maskApiKey(key)}
  </code>
  <button
  onClick={() => setShowKeyValue(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
- className="text-gray-400 hover:text-gray-600"
+ className="text-muted-foreground hover:text-foreground"
  title={showKeyValue[key.id] ? 'Hide key' : 'Show key'}
  >
  {showKeyValue[key.id] ? '👁️' : '👁️‍🗨️'}
@@ -6361,30 +6361,30 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  {/* Key Details */}
  <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
  <div>
- <div className="text-gray-500">Created</div>
+ <div className="text-muted-foreground">Created</div>
  <div className="font-medium">{new Date(key.created_at).toLocaleDateString()}</div>
  </div>
  <div>
- <div className="text-gray-500">Last Used</div>
+ <div className="text-muted-foreground">Last Used</div>
  <div className="font-medium">
  {key.last_used_at ? new Date(key.last_used_at).toLocaleString() : 'Never'}
  </div>
  </div>
  <div>
- <div className="text-gray-500">Last Rotated</div>
+ <div className="text-muted-foreground">Last Rotated</div>
  <div className="font-medium">
  {key.last_rotated_at ? new Date(key.last_rotated_at).toLocaleDateString() : 'Never'}
  </div>
  </div>
  <div>
- <div className="text-gray-500">Usage Count</div>
+ <div className="text-muted-foreground">Usage Count</div>
  <div className="font-medium">{formatNumber(key.usage_count)} requests</div>
  </div>
  </div>
 
  {/* Permissions */}
  <div className="mt-3 flex items-center gap-2 flex-wrap">
- <span className="text-xs text-gray-500">Permissions:</span>
+ <span className="text-xs text-muted-foreground">Permissions:</span>
  {key.permissions.map((perm) => (
  <span key={perm} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
  {perm}
@@ -6396,7 +6396,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="mt-3 flex items-center gap-4 text-sm">
  {key.rate_limit_remaining !== null && (
  <div className="flex items-center gap-1">
- <span className="text-gray-500">Rate limit:</span>
+ <span className="text-muted-foreground">Rate limit:</span>
  <span className={`font-medium ${key.rate_limit_remaining < 1000 ? 'text-amber-600' : 'text-green-600'}`}>
  {formatNumber(key.rate_limit_remaining)} remaining
  </span>
@@ -6404,11 +6404,11 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  )}
  {key.expires_at && (
  <div className="flex items-center gap-1">
- <span className="text-gray-500">Expires:</span>
+ <span className="text-muted-foreground">Expires:</span>
  <span className={`font-medium ${
  new Date(key.expires_at) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
  ? 'text-amber-600'
- : 'text-gray-700'
+ : 'text-foreground'
  }`}>
  {new Date(key.expires_at).toLocaleDateString()}
  </span>
@@ -6426,13 +6426,13 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <span className="font-medium">
  {keyTestResult.success ? 'Connection Test Passed' : 'Connection Test Failed'}
  </span>
- <span className="text-sm text-gray-500">
+ <span className="text-sm text-muted-foreground">
  ({keyTestResult.latency_ms}ms)
  </span>
  </div>
  {keyTestResult.success ? (
- <div className="text-sm text-gray-600">
- <span className="text-gray-500">Available models:</span>{' '}
+ <div className="text-sm text-foreground">
+ <span className="text-muted-foreground">Available models:</span>{' '}
  {keyTestResult.models_available.join(', ')}
  </div>
  ) : (
@@ -6452,7 +6452,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  Gradual Traffic Shift
  </span>
  </h3>
- <p className="text-sm text-gray-500 mb-4">
+ <p className="text-sm text-muted-foreground mb-4">
  Rotate API keys without downtime by gradually shifting traffic from primary to standby key.
  </p>
 
@@ -6469,7 +6469,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="flex items-center gap-2 mb-3">
  <span className="text-lg">{provider === 'kie' ? '🤖' : '🔵'}</span>
  <span className="font-medium capitalize">{provider}</span>
- <span className="text-xs text-gray-500">({providerKeys.length} keys)</span>
+ <span className="text-xs text-muted-foreground">({providerKeys.length} keys)</span>
  </div>
 
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -6479,7 +6479,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  {primaryKey ? (
  <>
  <div className="font-medium text-sm">{primaryKey.name}</div>
- <div className="text-xs text-gray-500 mt-1">
+ <div className="text-xs text-muted-foreground mt-1">
  v{primaryKey.version} • {primaryKey.traffic_percentage}% traffic
  </div>
  <div className="mt-2 w-full bg-blue-200 rounded-full h-2">
@@ -6490,7 +6490,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  </div>
  </>
  ) : (
- <div className="text-sm text-gray-400">No primary key</div>
+ <div className="text-sm text-muted-foreground">No primary key</div>
  )}
  </div>
 
@@ -6500,7 +6500,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  {standbyKeys.length > 0 ? (
  <>
  <div className="font-medium text-sm">{standbyKeys[0].name}</div>
- <div className="text-xs text-gray-500 mt-1">
+ <div className="text-xs text-muted-foreground mt-1">
  v{standbyKeys[0].version} • {standbyKeys[0].traffic_percentage}% traffic
  </div>
  <div className="mt-2 w-full bg-amber-200 rounded-full h-2">
@@ -6511,7 +6511,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  </div>
  </>
  ) : (
- <div className="text-sm text-gray-400">No standby key - add one first</div>
+ <div className="text-sm text-muted-foreground">No standby key - add one first</div>
  )}
  </div>
  </div>
@@ -6546,7 +6546,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="mt-6 border-t pt-6">
  <h3 className="text-md font-semibold mb-4 flex items-center gap-2">
  📜 API Key Audit Log
- <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+ <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full">
  Last {keyAuditLogs.length} changes
  </span>
  </h3>
@@ -6572,7 +6572,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  <div className="font-medium capitalize">
  {log.action} - {log.key_name}
  </div>
- <div className="text-xs text-gray-500">
+ <div className="text-xs text-muted-foreground">
  by {log.performed_by} • {log.ip_address} • {new Date(log.timestamp).toLocaleString()}
  </div>
  </div>
@@ -6606,7 +6606,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  {keyModalMode === 'add' && (
  <>
  <div className="mb-4">
- <label className="block text-sm font-medium text-gray-700 mb-1">Key Name</label>
+ <label className="block text-sm font-medium text-foreground mb-1">Key Name</label>
  <input
  type="text"
  value={newKeyName}
@@ -6617,7 +6617,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  </div>
 
  <div className="mb-4">
- <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
+ <label className="block text-sm font-medium text-foreground mb-1">Provider</label>
  <select
  value={newKeyProvider}
  onChange={(e) => setNewKeyProvider(e.target.value as 'kie' | 'anthropic')}
@@ -6643,7 +6643,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  )}
 
  <div className="mb-4">
- <label className="block text-sm font-medium text-gray-700 mb-1">
+ <label className="block text-sm font-medium text-foreground mb-1">
  {keyModalMode === 'add' ? 'API Key' : 'New API Key'}
  </label>
  <div className="relative">
@@ -6661,7 +6661,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
  />
  </div>
- <p className="text-xs text-gray-500 mt-1">
+ <p className="text-xs text-muted-foreground mt-1">
  {keyModalMode === 'add'
  ? `${newKeyProvider === 'kie' ? 'Kie.ai' : 'Anthropic'} keys should start with "${newKeyProvider === 'kie' ? 'kie_' : 'sk-ant-'}"`
  : editingKey && `${editingKey.provider === 'kie' ? 'Kie.ai' : 'Anthropic'} keys should start with "${editingKey.provider === 'kie' ? 'kie_' : 'sk-ant-'}"`
@@ -6677,7 +6677,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
  setNewKeyName('');
  setEditingKey(null);
  }}
- className="px-4 py-2 text-gray-600 hover:text-gray-800"
+ className="px-4 py-2 text-foreground hover:text-foreground"
  >
  Cancel
  </button>

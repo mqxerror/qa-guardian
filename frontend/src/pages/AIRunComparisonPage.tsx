@@ -362,7 +362,7 @@ export function AIRunComparisonPage() {
  <div key={idx} className={`p-4 rounded-lg border ${
  change.severity === 'high' ? 'border-red-200 bg-red-50' :
  change.severity === 'medium' ? 'border-yellow-200 bg-yellow-50' :
- 'border-gray-200 bg-gray-50'
+ 'border-border bg-muted'
  }`}>
  <div className="flex items-start justify-between">
  <div className="flex items-center gap-2">
@@ -371,14 +371,14 @@ export function AIRunComparisonPage() {
  change.category === 'selector' ? 'bg-blue-100 text-blue-700' :
  change.category === 'timing' ? 'bg-orange-100 text-orange-700' :
  change.category === 'environment' ? 'bg-green-100 text-green-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {change.category.toUpperCase()}
  </span>
  <span className={`px-2 py-0.5 text-xs rounded ${
  change.severity === 'high' ? 'bg-red-100 text-red-700' :
  change.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {change.severity} severity
  </span>
@@ -500,7 +500,7 @@ export function AIRunComparisonPage() {
  <span className="text-muted-foreground">{'\u2022'}</span>
  <span className="text-foreground">{change.change}</span>
  {change.commitHash && (
- <span className="text-xs px-1.5 py-0.5 bg-gray-200 rounded">{change.commitHash}</span>
+ <span className="text-xs px-1.5 py-0.5 bg-secondary rounded">{change.commitHash}</span>
  )}
  </div>
  ))}

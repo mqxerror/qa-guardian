@@ -45,7 +45,7 @@ export const FilmstripSection: React.FC<{ lighthouse: any }> = ({ lighthouse }) 
  <span className={`absolute -top-2 left-1/2 -translate-x-1/2 text-[10px] px-1.5 py-0.5 rounded font-medium ${
  frame.label === 'LCP' ? 'bg-green-100 text-green-700' :
  frame.label === 'TTI' ? 'bg-blue-100 text-blue-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {frame.label}
  </span>

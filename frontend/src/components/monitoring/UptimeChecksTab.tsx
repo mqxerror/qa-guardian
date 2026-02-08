@@ -270,7 +270,7 @@ export default function UptimeChecksTab({
  </span>
  )}
  {check.tags?.slice(0, 3).map(tag => (
- <span key={tag} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-700">
+ <span key={tag} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-muted text-foreground">
  {tag}
  </span>
  ))}

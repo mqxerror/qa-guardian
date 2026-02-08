@@ -16,12 +16,12 @@ interface FormFieldProps {
  */
 export const FormField: React.FC<FormFieldProps> = ({ label, required, children, hint, error }) => (
  <div className="space-y-1">
- <label className="block text-sm font-medium text-gray-700">
+ <label className="block text-sm font-medium text-foreground">
  {label}
  {required && <span className="text-red-500 ml-1">*</span>}
  </label>
  {children}
- {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
+ {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
  {error && <p className="text-xs text-red-500">{error}</p>}
  </div>
 );

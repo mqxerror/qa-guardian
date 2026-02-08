@@ -49,7 +49,7 @@ function getStrictnessInfo(threshold: number): { icon: string; label: string; de
  icon: '🔓',
  label: 'Very Lenient',
  description: 'Only catches major visual changes. Use for highly dynamic pages.',
- colorClass: 'text-gray-600',
+ colorClass: 'text-foreground',
  };
 }
 
@@ -76,25 +76,25 @@ export const DiffThresholdSlider: React.FC<DiffThresholdSliderProps> = ({
  min={0}
  max={100}
  step={1}
- className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+ className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-purple-600"
  />
- <span className="w-12 text-right text-sm font-medium text-gray-700">
+ <span className="w-12 text-right text-sm font-medium text-foreground">
  {Math.round(value * 100)}%
  </span>
  </div>
- <div className="flex justify-between text-xs text-gray-400 mt-1">
+ <div className="flex justify-between text-xs text-muted-foreground mt-1">
  <span>Strict</span>
  <span>Lenient</span>
  </div>
  {/* Feature #1964: Strictness Preview */}
- <div className="mt-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
+ <div className="mt-3 p-3 rounded-lg border border-border bg-muted">
  <div className="flex items-center gap-2 mb-2">
  <span className="text-lg">{strictness.icon}</span>
  <span className={`text-sm font-medium ${strictness.colorClass}`}>
  {strictness.label}
  </span>
  </div>
- <p className="text-xs text-gray-500">
+ <p className="text-xs text-muted-foreground">
  {strictness.description}
  </p>
  </div>

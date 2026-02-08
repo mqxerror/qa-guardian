@@ -420,9 +420,9 @@ export function ReportPage() {
                     <div className="text-2xl font-bold text-red-700">{report.sections.e2e.summary.failed}</div>
                     <div className="text-sm text-red-600">Failed</div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-gray-700">{report.sections.e2e.summary.skipped}</div>
-                    <div className="text-sm text-gray-600">Skipped</div>
+                  <div className="bg-muted rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-foreground">{report.sections.e2e.summary.skipped}</div>
+                    <div className="text-sm text-foreground">Skipped</div>
                   </div>
                   <div className="bg-primary/10 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-primary">{report.sections.e2e.summary.passRate}%</div>
@@ -737,9 +737,9 @@ export function ReportPage() {
                     <div className="text-2xl font-bold text-blue-700">{report.sections.security.summary.low}</div>
                     <div className="text-sm text-blue-600">Low</div>
                   </div>
-                  <div className="bg-gray-100 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-gray-700">{report.sections.security.summary.info}</div>
-                    <div className="text-sm text-gray-600">Info</div>
+                  <div className="bg-muted rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-foreground">{report.sections.security.summary.info}</div>
+                    <div className="text-sm text-foreground">Info</div>
                   </div>
                   <div className={`rounded-lg p-4 text-center ${
                     report.sections.security.summary.riskScore > 50 ? 'bg-red-100' : 'bg-green-100'

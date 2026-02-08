@@ -35,7 +35,7 @@ export const TestTypeBadge: React.FC<TestTypeBadgeProps> = React.memo(({
  };
 
  return (
- <span className={`inline-flex items-center gap-1 font-medium rounded-full ${sizeClasses[size]} ${typeColors[type] || 'bg-gray-100 text-gray-800'}`}>
+ <span className={`inline-flex items-center gap-1 font-medium rounded-full ${sizeClasses[size]} ${typeColors[type] || 'bg-muted text-foreground'}`}>
  {showIcon && <span>{getTestTypeIcon(type)}</span>}
  {getTestTypeLabel(type)}
  </span>

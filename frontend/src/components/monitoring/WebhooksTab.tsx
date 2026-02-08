@@ -101,7 +101,7 @@ export function WebhooksTab({
                       <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">❌ Invalid</span>
                     )}
                     {check.last_payload_valid === null && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">⚪ Waiting</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs font-medium text-foreground">⚪ Waiting</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">

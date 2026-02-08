@@ -130,12 +130,12 @@ const FormField: React.FC<{
  error?: string;
 }> = ({ label, required, children, hint, error }) => (
  <div className="space-y-1">
- <label className="block text-sm font-medium text-gray-700">
+ <label className="block text-sm font-medium text-foreground">
  {label}
  {required && <span className="text-red-500 ml-1">*</span>}
  </label>
  {children}
- {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
+ {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
  {error && <p className="text-xs text-red-500">{error}</p>}
  </div>
 );
@@ -241,7 +241,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.name
  ? 'border-red-500 focus:ring-red-500'
- : 'border-gray-300 focus:ring-blue-500'
+ : 'border-border focus:ring-blue-500'
  }`}
  />
  </FormField>
@@ -256,7 +256,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.targetUrl
  ? 'border-red-500 focus:ring-red-500'
- : 'border-gray-300 focus:ring-blue-500'
+ : 'border-border focus:ring-blue-500'
  }`}
  />
  </FormField>
@@ -268,7 +268,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  onChange={(e) => updateField('description', e.target.value)}
  placeholder="Describe what this load test measures..."
  rows={2}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground resize-none"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground resize-none"
  />
  </FormField>
 
@@ -290,7 +290,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.virtualUsers
  ? 'border-red-500'
- : 'border-gray-300'
+ : 'border-border'
  }`}
  />
  </FormField>
@@ -311,7 +311,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.duration
  ? 'border-red-500'
- : 'border-gray-300'
+ : 'border-border'
  }`}
  />
  </FormField>
@@ -324,7 +324,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  onChange={(e) => updateField('rampUp', parseInt(e.target.value) || 0)}
  min={0}
  max={300}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
  </div>
@@ -355,13 +355,13 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  className={`flex flex-col items-start p-3 rounded-lg border text-left transition-colors ${
  config.scenario === scenario.value
  ? 'border-red-500 bg-red-50'
- : 'border-gray-200 hover:border-gray-300'
+ : 'border-border hover:border-border'
  }`}
  >
- <span className="font-medium text-sm text-gray-900">
+ <span className="font-medium text-sm text-foreground">
  {scenario.label}
  </span>
- <span className="text-xs text-gray-500">
+ <span className="text-xs text-muted-foreground">
  {scenario.description}
  </span>
  </button>
@@ -385,24 +385,24 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground font-mono text-sm resize-none ${
  errors.k6Script
  ? 'border-red-500'
- : 'border-gray-300'
+ : 'border-border'
  }`}
  />
  </FormField>
  )}
 
  {/* Advanced Settings */}
- <div className="border border-gray-200 rounded-lg overflow-hidden">
+ <div className="border border-border rounded-lg overflow-hidden">
  <button
  type="button"
  onClick={() => setShowAdvanced(!showAdvanced)}
- className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+ className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted transition-colors"
  >
- <span className="text-sm font-medium text-gray-700">
+ <span className="text-sm font-medium text-foreground">
  Thresholds & Advanced
  </span>
  <svg
- className={`w-5 h-5 text-gray-500 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+ className={`w-5 h-5 text-muted-foreground transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
  fill="none"
  viewBox="0 0 24 24"
  stroke="currentColor"
@@ -412,7 +412,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  </button>
 
  {showAdvanced && (
- <div className="p-4 border-t border-gray-200 space-y-4">
+ <div className="p-4 border-t border-border space-y-4">
  <div className="grid grid-cols-2 gap-4">
  {/* P95 Response Time Threshold */}
  <FormField
@@ -426,7 +426,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  min={0}
  max={30000}
  step={100}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
 
@@ -442,7 +442,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  min={0}
  max={100}
  step={0.1}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
  </div>
@@ -450,7 +450,7 @@ export const LoadConfig: React.FC<LoadConfigProps> = ({
  {/* Generated Script Preview (non-custom) */}
  {config.scenario !== 'custom' && (
  <FormField label="Generated K6 Script" hint="Auto-generated based on your configuration">
- <pre className="w-full p-3 bg-gray-100 rounded-lg text-xs font-mono text-gray-700 overflow-x-auto">
+ <pre className="w-full p-3 bg-muted rounded-lg text-xs font-mono text-foreground overflow-x-auto">
  {generateScript(config)}
  </pre>
  </FormField>

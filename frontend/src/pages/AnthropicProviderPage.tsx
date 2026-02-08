@@ -338,7 +338,7 @@ export function AnthropicProviderPage() {
                   disabled={isSaving}
                   className={`w-10 h-5 rounded-full transition-colors ${config.enabled ? 'bg-green-500' : 'bg-muted'}`}
                 >
-                  <div className={`w-4 h-4 bg-white rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  <div className={`w-4 h-4 bg-card rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
                 </button>
               </div>
 
@@ -349,7 +349,7 @@ export function AnthropicProviderPage() {
                   disabled={isSaving}
                   className={`w-10 h-5 rounded-full transition-colors ${config.use_as_fallback ? 'bg-green-500' : 'bg-muted'}`}
                 >
-                  <div className={`w-4 h-4 bg-white rounded-full shadow transform transition-transform ${config.use_as_fallback ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  <div className={`w-4 h-4 bg-card rounded-full shadow transform transition-transform ${config.use_as_fallback ? 'translate-x-5' : 'translate-x-0.5'}`} />
                 </button>
               </div>
 

@@ -41,23 +41,23 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
  return (
  <>
  {/* Add Custom Viewport Button/Form */}
- <div className="pt-4 border-t border-gray-200">
+ <div className="pt-4 border-t border-border">
  {!showCustomViewport ? (
  <button
  type="button"
  onClick={() => setShowCustomViewport(true)}
- className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:border-purple-400 hover:text-purple-600 transition-colors flex items-center justify-center gap-2"
+ className="w-full py-2 px-4 border-2 border-dashed border-border rounded-lg text-sm text-foreground hover:border-purple-400 hover:text-purple-600 transition-colors flex items-center justify-center gap-2"
  >
  <span>+</span> Add Custom Viewport
  </button>
  ) : (
  <div className="p-4 rounded-lg border border-purple-200 bg-purple-50/50 space-y-3">
  <div className="flex items-center justify-between">
- <span className="text-sm font-medium text-gray-700">Custom Viewport</span>
+ <span className="text-sm font-medium text-foreground">Custom Viewport</span>
  <button
  type="button"
  onClick={() => setShowCustomViewport(false)}
- className="text-gray-400 hover:text-gray-600"
+ className="text-muted-foreground hover:text-foreground"
  >
  ✕
  </button>
@@ -67,7 +67,7 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
  value={customViewportName}
  onChange={(e) => setCustomViewportName(e.target.value)}
  placeholder="Viewport name (e.g., Our Kiosk Display)"
- className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground"
  />
  <div className="flex items-center gap-2">
  <input
@@ -76,17 +76,17 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
  onChange={(e) => setCustomViewportWidth(Math.min(3840, Math.max(320, parseInt(e.target.value) || 320)))}
  min={320}
  max={3840}
- className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-input text-foreground"
+ className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground"
  placeholder="Width"
  />
- <span className="text-gray-400">×</span>
+ <span className="text-muted-foreground">×</span>
  <input
  type="number"
  value={customViewportHeight}
  onChange={(e) => setCustomViewportHeight(Math.min(2160, Math.max(240, parseInt(e.target.value) || 240)))}
  min={240}
  max={2160}
- className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-input text-foreground"
+ className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground"
  placeholder="Height"
  />
  </div>
@@ -104,7 +104,7 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
  {/* Display custom viewports that were added */}
  {customViewports.length > 0 && (
  <div className="mt-4">
- <div className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1">
+ <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
  <span>⚙️</span> Custom Viewports
  </div>
  <div className="grid grid-cols-2 gap-2">
@@ -116,7 +116,7 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
  className={`flex items-center gap-2 p-2 rounded-lg border transition-colors ${
  viewport.enabled
  ? 'border-purple-500 bg-purple-50'
- : 'border-gray-200'
+ : 'border-border'
  }`}
  >
  <label className="flex items-center gap-2 cursor-pointer flex-1">
@@ -127,10 +127,10 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
  />
  <div className="flex-1 min-w-0">
- <div className="text-sm font-medium text-gray-700 truncate">
+ <div className="text-sm font-medium text-foreground truncate">
  {viewport.name}
  </div>
- <div className="text-xs text-gray-500">
+ <div className="text-xs text-muted-foreground">
  {viewport.width}×{viewport.height}
  </div>
  </div>
@@ -138,7 +138,7 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
  <button
  type="button"
  onClick={() => onRemoveViewport(index)}
- className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+ className="p-1 text-muted-foreground hover:text-red-500 transition-colors"
  title="Remove custom viewport"
  >
  ✕

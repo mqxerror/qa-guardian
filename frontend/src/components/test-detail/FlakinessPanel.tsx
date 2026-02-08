@@ -149,7 +149,7 @@ export function FlakinessPanel({
  The following commits may be related:
  </p>
  {flakinessTrend.code_changes.map((change) => (
- <div key={change.commit_id} className="mt-2 p-2 bg-white rounded border border-yellow-300">
+ <div key={change.commit_id} className="mt-2 p-2 bg-card rounded border border-yellow-300">
  <div className="flex items-center gap-2">
  <code className="text-xs font-mono text-primary">{change.commit_id.substring(0, 8)}</code>
  <span className="text-xs text-muted-foreground">{new Date(change.date).toLocaleDateString()}</span>
@@ -158,7 +158,7 @@ export function FlakinessPanel({
  <div className="text-xs text-muted-foreground mt-1">by {change.author}</div>
  <div className="flex flex-wrap gap-1 mt-1">
  {change.files_changed.map((file, idx) => (
- <span key={idx} className="px-1.5 py-0.5 text-xs bg-gray-100 rounded">
+ <span key={idx} className="px-1.5 py-0.5 text-xs bg-muted rounded">
  {file}
  </span>
  ))}
@@ -167,11 +167,11 @@ export function FlakinessPanel({
  ))}
  </div>
  ) : (
- <div className="p-3 rounded-lg bg-gray-50 border border-gray-200">
- <h3 className="text-sm font-medium text-gray-500 mb-1 flex items-center gap-2">
+ <div className="p-3 rounded-lg bg-muted border border-border">
+ <h3 className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
  <span>🔗</span> Code Changes Correlation
  </h3>
- <p className="text-xs text-gray-400">
+ <p className="text-xs text-muted-foreground">
  Git integration not configured. Connect your repository to see commits correlated with flakiness.
  </p>
  </div>

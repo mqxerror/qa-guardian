@@ -146,7 +146,7 @@ export function ScheduleDetailsPage() {
  case 'cancelled':
  return 'bg-yellow-100 text-yellow-800';
  default:
- return 'bg-gray-100 text-gray-800';
+ return 'bg-muted text-foreground';
  }
  };
 
@@ -197,7 +197,7 @@ export function ScheduleDetailsPage() {
  )}
  <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
- schedule.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+ schedule.enabled ? 'bg-green-100 text-green-800' : 'bg-muted text-foreground'
  }`}>
  {schedule.enabled ? 'Active' : 'Disabled'}
  </span>

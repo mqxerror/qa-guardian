@@ -451,7 +451,7 @@ export function SchedulesPage() {
  <h3 className="font-semibold text-foreground">{schedule.name}</h3>
  <div className="flex items-center gap-2">
  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
- schedule.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+ schedule.enabled ? 'bg-green-100 text-green-800' : 'bg-muted text-foreground'
  }`}>
  {schedule.enabled ? 'Active' : 'Disabled'}
  </span>
@@ -503,7 +503,7 @@ export function SchedulesPage() {
  }`}
  >
  <span
- className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+ className={`inline-block h-4 w-4 transform rounded-full bg-card transition-transform ${
  schedule.enabled ? 'translate-x-6' : 'translate-x-1'
  }`}
  />

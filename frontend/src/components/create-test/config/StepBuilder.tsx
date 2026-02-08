@@ -179,18 +179,18 @@ const StepRow: React.FC<{
  className={`step-row flex items-center gap-2 p-2 rounded-lg transition-all ${
  isDragging ? 'opacity-50 scale-95' : ''
  } ${
- isDropTarget ? 'border-2 border-dashed border-blue-400 bg-blue-50' : 'bg-gray-50'
+ isDropTarget ? 'border-2 border-dashed border-blue-400 bg-blue-50' : 'bg-muted'
  }`}
  >
  {/* Drag Handle */}
- <div className="cursor-grab text-gray-400 hover:text-gray-600 px-1">
+ <div className="cursor-grab text-muted-foreground hover:text-foreground px-1">
  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
  <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm8-12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>
  </svg>
  </div>
 
  {/* Step Number */}
- <span className="w-6 h-6 flex items-center justify-center text-xs font-bold text-gray-500 bg-gray-200 rounded-full">
+ <span className="w-6 h-6 flex items-center justify-center text-xs font-bold text-muted-foreground bg-secondary rounded-full">
  {index + 1}
  </span>
 
@@ -198,7 +198,7 @@ const StepRow: React.FC<{
  <select
  value={step.action}
  onChange={(e) => onUpdate(step.id, { action: e.target.value as StepAction })}
- className="w-32 px-2 py-1.5 text-sm border border-gray-300 rounded bg-input text-foreground"
+ className="w-32 px-2 py-1.5 text-sm border border-border rounded bg-input text-foreground"
  title="Select action"
  >
  {(Object.entries(ACTION_CONFIG) as [StepAction, ActionConfig][]).map(([action, cfg]) => (
@@ -215,7 +215,7 @@ const StepRow: React.FC<{
  onChange={(e) => onUpdate(step.id, { selector: e.target.value })}
  placeholder={config.placeholder.selector || 'Selector (optional)'}
  disabled={!config.requiresSelector && !step.selector}
- className={`flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded bg-input text-foreground font-mono ${
+ className={`flex-1 px-2 py-1.5 text-sm border border-border rounded bg-input text-foreground font-mono ${
  !config.requiresSelector && !step.selector ? 'opacity-50' : ''
  }`}
  title="CSS selector"
@@ -228,7 +228,7 @@ const StepRow: React.FC<{
  onChange={(e) => onUpdate(step.id, { value: e.target.value })}
  placeholder={config.placeholder.value || 'Value (optional)'}
  disabled={!config.requiresValue && !step.value}
- className={`w-40 px-2 py-1.5 text-sm border border-gray-300 rounded bg-input text-foreground ${
+ className={`w-40 px-2 py-1.5 text-sm border border-border rounded bg-input text-foreground ${
  !config.requiresValue && !step.value ? 'opacity-50' : ''
  }`}
  title="Value"
@@ -357,7 +357,7 @@ export const StepBuilder: React.FC<StepBuilderProps> = ({
  type="button"
  onClick={addStep}
  disabled={steps.length >= maxSteps}
- className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+ className="w-full py-2 border-2 border-dashed border-border rounded-lg text-muted-foreground hover:border-blue-400 hover:text-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -367,7 +367,7 @@ export const StepBuilder: React.FC<StepBuilderProps> = ({
  </button>
 
  {/* Step Count */}
- <div className="mt-2 text-xs text-gray-500 text-right">
+ <div className="mt-2 text-xs text-muted-foreground text-right">
  {steps.length} step{steps.length !== 1 ? 's' : ''} defined
  </div>
  </div>

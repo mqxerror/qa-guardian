@@ -75,7 +75,7 @@ export function AIThinkingIndicator({
               <span className="text-xl animate-pulse">🧠</span>
             </div>
             <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-              <div className="w-2 h-2 rounded-full bg-white animate-ping" />
+              <div className="w-2 h-2 rounded-full bg-card animate-ping" />
             </div>
           </div>
           <div>

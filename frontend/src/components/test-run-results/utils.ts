@@ -133,7 +133,7 @@ export const getScreenshotTypeBadgeColor = (type: string): string => {
  case 'Accessibility':
  return 'bg-indigo-100 text-indigo-700';
  default:
- return 'bg-gray-100 text-gray-700';
+ return 'bg-muted text-foreground';
  }
 };
 

@@ -116,7 +116,7 @@ export function VirtualList<T>({
     return (
       emptyState || (
         <div
-          className={`flex items-center justify-center text-gray-500 ${className}`}
+          className={`flex items-center justify-center text-muted-foreground ${className}`}
           style={{ height: containerHeight }}
         >
           No items to display
@@ -274,7 +274,7 @@ export function VirtualTable<T>({
         )}
         {emptyState || (
           <div
-            className="flex items-center justify-center text-gray-500"
+            className="flex items-center justify-center text-muted-foreground"
             style={{ height: containerHeight }}
           >
             No items to display

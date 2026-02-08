@@ -363,7 +363,7 @@ function VirtualizedTestList({
  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
  test.status === 'active' ? 'bg-green-100 text-green-700' :
  test.status === 'draft' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {test.status}
  </span>
@@ -442,7 +442,7 @@ function VirtualizedTestList({
  ? 'bg-green-100 text-green-700'
  : testResult.status === 'failed'
  ? 'bg-red-100 text-red-700'
- : 'bg-gray-100 text-gray-700'
+ : 'bg-muted text-foreground'
  }`}>
  {testResult.status === 'passed' ? '✓' : testResult.status === 'failed' ? '✗' : '○'}
  <span className="capitalize">{testResult.status}</span>
@@ -455,7 +455,7 @@ function VirtualizedTestList({
  ? 'bg-red-100 text-red-700'
  : test.last_result === 'error'
  ? 'bg-orange-100 text-orange-700'
- : 'bg-gray-100 text-gray-700'
+ : 'bg-muted text-foreground'
  }`}>
  {test.last_result === 'passed' ? '✓' : test.last_result === 'failed' ? '✗' : test.last_result === 'error' ? '⚠' : '○'}
  <span className="capitalize">{test.last_result}</span>
@@ -650,7 +650,7 @@ function VirtualizedTestList({
  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
  test.status === 'active' ? 'bg-green-100 text-green-700' :
  test.status === 'draft' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {test.status}
  </span>

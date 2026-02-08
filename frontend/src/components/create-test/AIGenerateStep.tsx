@@ -113,20 +113,20 @@ const EditModal: React.FC<EditModalProps> = ({
 
  return (
  <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50">
- <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
- <h3 className="text-lg font-semibold text-gray-900 mb-4">
+ <div className="bg-card rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+ <h3 className="text-lg font-semibold text-foreground mb-4">
  Edit Test Configuration
  </h3>
 
  {/* Test Type */}
  <div className="mb-4">
- <label className="block text-sm font-medium text-gray-700 mb-2">
+ <label className="block text-sm font-medium text-foreground mb-2">
  Test Type
  </label>
  <select
  value={editTestType || ''}
  onChange={(e) => setEditTestType(e.target.value as DetectedTestType)}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  >
  <option value="">Select type...</option>
  {Object.entries(TEST_TYPE_CONFIG).map(([key, config]) => (
@@ -137,7 +137,7 @@ const EditModal: React.FC<EditModalProps> = ({
 
  {/* URL */}
  <div className="mb-4">
- <label className="block text-sm font-medium text-gray-700 mb-2">
+ <label className="block text-sm font-medium text-foreground mb-2">
  Target URL
  </label>
  <input
@@ -145,13 +145,13 @@ const EditModal: React.FC<EditModalProps> = ({
  value={editUrl}
  onChange={(e) => setEditUrl(e.target.value)}
  placeholder={projectBaseUrl || 'https://your-site.com'}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </div>
 
  {/* Viewport */}
  <div className="mb-6">
- <label className="block text-sm font-medium text-gray-700 mb-2">
+ <label className="block text-sm font-medium text-foreground mb-2">
  Viewport
  </label>
  <select
@@ -166,7 +166,7 @@ const EditModal: React.FC<EditModalProps> = ({
  };
  setEditViewport({ preset, ...presetDimensions[preset] });
  }}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  >
  {Object.entries(VIEWPORT_CONFIG).map(([key, config]) => (
  <option key={key} value={key}>{config.icon} {config.label}</option>
@@ -179,15 +179,15 @@ const EditModal: React.FC<EditModalProps> = ({
  value={editViewport.width}
  onChange={(e) => setEditViewport({ ...editViewport, width: parseInt(e.target.value) || 0 })}
  placeholder="Width"
- className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="flex-1 px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
- <span className="py-2 text-gray-500">×</span>
+ <span className="py-2 text-muted-foreground">×</span>
  <input
  type="number"
  value={editViewport.height}
  onChange={(e) => setEditViewport({ ...editViewport, height: parseInt(e.target.value) || 0 })}
  placeholder="Height"
- className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="flex-1 px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </div>
  )}
@@ -197,7 +197,7 @@ const EditModal: React.FC<EditModalProps> = ({
  <div className="flex gap-3">
  <button
  onClick={onClose}
- className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+ className="flex-1 px-4 py-2 border border-border text-foreground rounded-lg hover:bg-muted"
  >
  Cancel
  </button>
@@ -298,10 +298,10 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  <div className="space-y-6">
  {/* Header */}
  <div>
- <h3 className="text-lg font-semibold text-gray-900 mb-2">
+ <h3 className="text-lg font-semibold text-foreground mb-2">
  Describe your test
  </h3>
- <p className="text-sm text-gray-600">
+ <p className="text-sm text-foreground">
  Tell us what you want to test in natural language. We'll automatically detect the test type, URL, and settings.
  </p>
  </div>
@@ -312,11 +312,11 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  value={input}
  onChange={handleInputChange}
  placeholder="Example: Test the login form on https://myapp.com using mobile viewport..."
- className="w-full h-32 px-4 py-3 border border-gray-300 rounded-xl bg-input text-foreground placeholder-gray-400 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+ className="w-full h-32 px-4 py-3 border border-border rounded-xl bg-input text-foreground placeholder-muted-foreground resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
  autoFocus
  />
  <div className="flex items-center justify-between mt-2">
- <span className="text-xs text-gray-500">
+ <span className="text-xs text-muted-foreground">
  {input.length} characters
  </span>
  {isParsing && (
@@ -333,8 +333,8 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
 
  {/* Examples */}
  {!input && (
- <div className="bg-gray-50 rounded-lg p-4">
- <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+ <div className="bg-muted rounded-lg p-4">
+ <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
  Try one of these examples:
  </p>
  <div className="space-y-1">
@@ -342,7 +342,7 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  <button
  key={i}
  onClick={() => setInput(example)}
- className="block w-full text-left text-sm text-gray-600 hover:text-blue-600 py-1 px-2 rounded hover:bg-gray-100 transition-colors"
+ className="block w-full text-left text-sm text-foreground hover:text-blue-600 py-1 px-2 rounded hover:bg-muted transition-colors"
  >
  "{example}"
  </button>
@@ -353,9 +353,9 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
 
  {/* Preview Card */}
  {result && (
- <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+ <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
  <div className="flex items-center justify-between mb-4">
- <h4 className="text-sm font-medium text-gray-900">
+ <h4 className="text-sm font-medium text-foreground">
  Detected Configuration
  </h4>
  <div className="flex items-center gap-2">
@@ -375,7 +375,7 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  {/* Edit Button */}
  <button
  onClick={() => setShowEditModal(true)}
- className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded transition-colors"
+ className="flex items-center gap-1 px-2 py-1 text-xs text-foreground hover:text-blue-600 hover:bg-muted rounded transition-colors"
  >
  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -387,43 +387,43 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
  {/* Test Type */}
- <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+ <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${
  result.testType
  ? `bg-${TEST_TYPE_CONFIG[result.testType].color}-100`
- : 'bg-gray-100'
+ : 'bg-muted'
  }`}>
  {result.testType ? TEST_TYPE_CONFIG[result.testType].icon : '?'}
  </div>
  <div>
- <p className="text-xs text-gray-500">Test Type</p>
- <p className="text-sm font-medium text-gray-900">
+ <p className="text-xs text-muted-foreground">Test Type</p>
+ <p className="text-sm font-medium text-foreground">
  {result.testType ? TEST_TYPE_CONFIG[result.testType].label : 'Not detected'}
  </p>
  </div>
  </div>
 
  {/* URL */}
- <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+ <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
  <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg bg-blue-100">
  🌐
  </div>
  <div className="min-w-0 flex-1">
- <p className="text-xs text-gray-500">Target URL</p>
- <p className="text-sm font-medium text-gray-900 truncate">
+ <p className="text-xs text-muted-foreground">Target URL</p>
+ <p className="text-sm font-medium text-foreground truncate">
  {result.url || 'Not detected'}
  </p>
  </div>
  </div>
 
  {/* Viewport */}
- <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+ <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
  <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg bg-purple-100">
  {VIEWPORT_CONFIG[result.viewport.preset].icon}
  </div>
  <div>
- <p className="text-xs text-gray-500">Viewport</p>
- <p className="text-sm font-medium text-gray-900">
+ <p className="text-xs text-muted-foreground">Viewport</p>
+ <p className="text-sm font-medium text-foreground">
  {VIEWPORT_CONFIG[result.viewport.preset].label} ({result.viewport.width}×{result.viewport.height})
  </p>
  </div>
@@ -432,13 +432,13 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
 
  {/* Suggestions */}
  {result.suggestions.length > 0 && (
- <div className="mt-4 pt-4 border-t border-gray-200">
+ <div className="mt-4 pt-4 border-t border-border">
  <p className="text-xs font-medium text-amber-600 mb-2">
  Suggestions to improve detection:
  </p>
  <ul className="space-y-1">
  {result.suggestions.map((suggestion, i) => (
- <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+ <li key={i} className="flex items-start gap-2 text-sm text-foreground">
  <span className="text-amber-500">•</span>
  {suggestion}
  </li>

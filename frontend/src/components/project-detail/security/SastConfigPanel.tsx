@@ -68,7 +68,7 @@ export function SastConfigPanel({
  checked={sastConfig.autoScan}
  onChange={(e) => handleUpdateSastConfig({ autoScan: e.target.checked })}
  disabled={isUpdatingSast}
- className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+ className="h-4 w-4 rounded border-border text-orange-600 focus:ring-orange-500"
  />
  <label htmlFor="auto-scan" className="text-sm text-foreground">
  Automatically scan on repository changes
@@ -135,7 +135,7 @@ export function SastConfigPanel({
  checked={sastConfig.prChecksEnabled || false}
  onChange={(e) => handleUpdateSastConfig({ prChecksEnabled: e.target.checked })}
  disabled={isUpdatingSast}
- className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+ className="h-4 w-4 rounded border-border text-orange-600 focus:ring-orange-500"
  />
  <label htmlFor="sast-pr-checks" className="text-sm text-foreground">
  Enable SAST checks on pull requests
@@ -149,7 +149,7 @@ export function SastConfigPanel({
  checked={sastConfig.prCommentsEnabled || false}
  onChange={(e) => handleUpdateSastConfig({ prCommentsEnabled: e.target.checked })}
  disabled={isUpdatingSast || !sastConfig.prChecksEnabled}
- className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 disabled:opacity-50"
+ className="h-4 w-4 rounded border-border text-orange-600 focus:ring-orange-500 disabled:opacity-50"
  />
  <label htmlFor="sast-pr-comments" className={`text-sm ${sastConfig.prChecksEnabled ? 'text-foreground' : 'text-muted-foreground'}`}>
  Post SAST findings as PR comments
@@ -163,7 +163,7 @@ export function SastConfigPanel({
  checked={sastConfig.blockPrOnCritical || false}
  onChange={(e) => handleUpdateSastConfig({ blockPrOnCritical: e.target.checked })}
  disabled={isUpdatingSast || !sastConfig.prChecksEnabled}
- className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-50"
+ className="h-4 w-4 rounded border-border text-red-600 focus:ring-red-500 disabled:opacity-50"
  />
  <label htmlFor="sast-block-critical" className={`text-sm ${sastConfig.prChecksEnabled ? 'text-foreground' : 'text-muted-foreground'}`}>
  <span className="text-red-600 font-medium">Block PR</span> if critical vulnerabilities found
@@ -177,7 +177,7 @@ export function SastConfigPanel({
  checked={sastConfig.blockPrOnHigh || false}
  onChange={(e) => handleUpdateSastConfig({ blockPrOnHigh: e.target.checked })}
  disabled={isUpdatingSast || !sastConfig.prChecksEnabled}
- className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500 disabled:opacity-50"
+ className="h-4 w-4 rounded border-border text-amber-600 focus:ring-amber-500 disabled:opacity-50"
  />
  <label htmlFor="sast-block-high" className={`text-sm ${sastConfig.prChecksEnabled ? 'text-foreground' : 'text-muted-foreground'}`}>
  <span className="text-amber-600 font-medium">Block PR</span> if high or critical vulnerabilities found

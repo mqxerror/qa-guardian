@@ -85,7 +85,7 @@ export function DastConfigPanel(props: DastConfigPanelProps) {
  }`}
  >
  <span
- className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+ className={`inline-block h-4 w-4 transform rounded-full bg-card transition-transform ${
  dastConfig.enabled ? 'translate-x-6' : 'translate-x-1'
  }`}
  />
@@ -356,7 +356,7 @@ function DASTScanResults(props: DASTScanResultsProps) {
  ? 'bg-amber-100 text-amber-800'
  : alert.risk === 'Low'
  ? 'bg-blue-100 text-blue-800'
- : 'bg-gray-100 text-gray-800'
+ : 'bg-muted text-foreground'
  }`}>
  {alert.risk}
  </span>

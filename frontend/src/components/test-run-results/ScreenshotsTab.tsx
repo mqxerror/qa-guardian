@@ -485,7 +485,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
  screenshot.testStatus === 'passed' ? 'bg-green-100 text-green-700' :
  screenshot.testStatus === 'failed' ? 'bg-red-100 text-red-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {screenshot.testStatus}
  </span>

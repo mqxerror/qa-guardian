@@ -76,12 +76,12 @@ const FormField: React.FC<{
  error?: string;
 }> = ({ label, required, children, hint, error }) => (
  <div className="space-y-1">
- <label className="block text-sm font-medium text-gray-700">
+ <label className="block text-sm font-medium text-foreground">
  {label}
  {required && <span className="text-red-500 ml-1">*</span>}
  </label>
  {children}
- {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
+ {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
  {error && <p className="text-xs text-red-500">{error}</p>}
  </div>
 );
@@ -156,7 +156,7 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.name
  ? 'border-red-500 focus:ring-red-500'
- : 'border-gray-300 focus:ring-blue-500'
+ : 'border-border focus:ring-blue-500'
  }`}
  />
  </FormField>
@@ -171,7 +171,7 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.targetUrl
  ? 'border-red-500 focus:ring-red-500'
- : 'border-gray-300 focus:ring-blue-500'
+ : 'border-border focus:ring-blue-500'
  }`}
  />
  </FormField>
@@ -183,7 +183,7 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  onChange={(e) => updateField('description', e.target.value)}
  placeholder="Describe what this test does..."
  rows={2}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground resize-none"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground resize-none"
  />
  </FormField>
 
@@ -215,9 +215,9 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  </FormField>
 
  {/* Feature #36: Device Emulation */}
- <div className="pt-4 border-t border-gray-200">
+ <div className="pt-4 border-t border-border">
  <div className="flex items-center justify-between mb-3">
- <h4 className="text-sm font-medium text-gray-700">
+ <h4 className="text-sm font-medium text-foreground">
  Device Emulation
  </h4>
  <label className="inline-flex items-center">
@@ -225,9 +225,9 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  type="checkbox"
  checked={config.deviceEmulationEnabled}
  onChange={(e) => updateField('deviceEmulationEnabled', e.target.checked)}
- className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+ className="rounded border-border text-blue-600 focus:ring-blue-500"
  />
- <span className="ml-2 text-sm text-gray-600">Enable</span>
+ <span className="ml-2 text-sm text-foreground">Enable</span>
  </label>
  </div>
 
@@ -239,15 +239,15 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  )}
 
  {!config.deviceEmulationEnabled && (
- <p className="text-xs text-gray-500">
+ <p className="text-xs text-muted-foreground">
  Enable to run tests on mobile/tablet devices with touch emulation and proper user agents.
  </p>
  )}
  </div>
 
  {/* Advanced Settings */}
- <div className="pt-4 border-t border-gray-200">
- <h4 className="text-sm font-medium text-gray-700 mb-3">
+ <div className="pt-4 border-t border-border">
+ <h4 className="text-sm font-medium text-foreground mb-3">
  Advanced Settings
  </h4>
 
@@ -261,7 +261,7 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  min={1000}
  max={300000}
  step={1000}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
 
@@ -273,7 +273,7 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  onChange={(e) => updateField('retries', parseInt(e.target.value) || 0)}
  min={0}
  max={5}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
  </div>
@@ -286,7 +286,7 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  defaultValue={config.tags.join(', ')}
  onChange={handleTagsChange}
  placeholder="smoke, regression, critical"
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
  />
  </FormField>
  </div>

@@ -260,7 +260,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  checked={prChecksEnabled}
  onChange={(e) => handleTogglePRChecks(e.target.checked)}
  disabled={isTogglingPRChecks}
- className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
+ className="h-4 w-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
  />
  <span className="text-sm text-muted-foreground">
  {isTogglingPRChecks ? 'Updating...' : 'Enabled'}
@@ -293,7 +293,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  pr.status_check.status === 'failure' ? 'bg-red-500/10 text-red-600' :
  pr.status_check.status === 'running' ? 'bg-blue-500/10 text-blue-600' :
  pr.status_check.status === 'pending' ? 'bg-yellow-500/10 text-yellow-600' :
- 'bg-gray-500/10 text-gray-600'
+ 'bg-gray-500/10 text-foreground'
  }`}>
  {pr.status_check.status === 'running' && (
  <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -341,7 +341,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  checked={prCommentsEnabled}
  onChange={(e) => handleTogglePRComments(e.target.checked)}
  disabled={isTogglingPRComments}
- className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
+ className="h-4 w-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
  />
  <span className="text-sm text-muted-foreground">
  {isTogglingPRComments ? 'Updating...' : 'Enabled'}
@@ -395,7 +395,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  checked={prDependencyScanEnabled}
  onChange={(e) => handleTogglePRDependencyScan(e.target.checked)}
  disabled={isTogglingPRDependencyScan}
- className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+ className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
  />
  <span className="text-sm text-muted-foreground">
  {isTogglingPRDependencyScan ? 'Updating...' : 'Enabled'}
@@ -424,7 +424,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  : prDependencyScanFiles.filter(f => f !== file);
  handleUpdatePRDependencyScanConfig({ pr_dependency_scan_files: newFiles });
  }}
- className="h-3 w-3 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+ className="h-3 w-3 rounded border-border text-emerald-600 focus:ring-emerald-500"
  />
  <span className="text-muted-foreground font-mono">{file}</span>
  </label>
@@ -454,7 +454,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  id="block-on-critical"
  checked={prDependencyScanBlockOnCritical}
  onChange={(e) => handleUpdatePRDependencyScanConfig({ pr_dependency_scan_block_on_critical: e.target.checked })}
- className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+ className="h-4 w-4 rounded border-border text-red-600 focus:ring-red-500"
  />
  <label htmlFor="block-on-critical" className="text-sm text-foreground">
  Block PR merge on critical vulnerabilities

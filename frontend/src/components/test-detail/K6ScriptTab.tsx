@@ -283,10 +283,10 @@ export function K6ScriptTab({
 
       {/* K6 script display or editor */}
       {isEditingK6Script ? (
-        <div className="relative rounded-lg bg-gray-900 overflow-hidden">
+        <div className="relative rounded-lg bg-background overflow-hidden">
           <div className="flex h-[500px]">
             {/* Line numbers gutter */}
-            <div className="select-none text-gray-500 text-sm font-mono py-4 pr-2 text-right bg-gray-800/50 overflow-hidden" style={{ minWidth: '3rem' }}>
+            <div className="select-none text-muted-foreground text-sm font-mono py-4 pr-2 text-right bg-card/50 overflow-hidden" style={{ minWidth: '3rem' }}>
               {k6Script.split('\n').map((_, i) => (
                 <div key={i} className="leading-6 px-2">{i + 1}</div>
               ))}
@@ -302,10 +302,10 @@ export function K6ScriptTab({
           </div>
         </div>
       ) : (
-        <div className="relative rounded-lg bg-gray-900 overflow-hidden">
+        <div className="relative rounded-lg bg-background overflow-hidden">
           <div className="flex max-h-[500px] overflow-auto">
             {/* Line numbers and fold icons gutter */}
-            <div className="select-none text-gray-500 text-sm font-mono py-4 pr-2 text-right bg-gray-800/50 sticky left-0" style={{ minWidth: '3rem' }}>
+            <div className="select-none text-muted-foreground text-sm font-mono py-4 pr-2 text-right bg-card/50 sticky left-0" style={{ minWidth: '3rem' }}>
               {displayScript.split('\n').map((_, i) => {
                 const foldable = foldableSections.find(s => s.start === i);
                 const isCollapsed = collapsedSections.has(i);
@@ -314,7 +314,7 @@ export function K6ScriptTab({
                     {foldable && (
                       <button
                         onClick={() => toggleSection(i)}
-                        className="text-gray-400 hover:text-gray-200 text-xs"
+                        className="text-muted-foreground hover:text-gray-200 text-xs"
                         title={isCollapsed ? 'Expand' : 'Collapse'}
                       >
                         {isCollapsed ? '▶' : '▼'}
@@ -342,7 +342,7 @@ export function K6ScriptTab({
                     <div key={i}>
                       {line}
                       {foldable && isCollapsed && (
-                        <span className="text-gray-500 ml-2">
+                        <span className="text-muted-foreground ml-2">
                           {`... ${foldable.end - foldable.start} lines hidden ...`}
                         </span>
                       )}
@@ -367,12 +367,12 @@ export function K6ScriptTab({
         <div className="p-3 rounded-lg bg-muted/50 border border-border">
           <p className="text-sm font-medium text-foreground mb-2">🚀 Run this script with K6:</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 px-3 py-2 rounded bg-gray-900 text-gray-100 text-sm font-mono">
+            <code className="flex-1 px-3 py-2 rounded bg-background text-gray-100 text-sm font-mono">
               k6 run {test?.name?.replace(/\s+/g, '-').toLowerCase() || 'load-test'}.js
             </code>
             <button
               onClick={handleCopyCommand}
-              className="px-2 py-2 rounded bg-gray-700 hover:bg-gray-600 text-gray-300"
+              className="px-2 py-2 rounded bg-card hover:bg-gray-600 text-muted-foreground"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>

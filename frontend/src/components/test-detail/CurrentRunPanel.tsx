@@ -138,7 +138,7 @@ export function CurrentRunPanel({
  case 'serious': return 'text-orange-600 bg-orange-100';
  case 'moderate': return 'text-yellow-600 bg-yellow-100';
  case 'minor': return 'text-blue-600 bg-blue-100';
- default: return 'text-gray-600 bg-gray-100';
+ default: return 'text-foreground bg-muted';
  }
  };
 
@@ -184,7 +184,7 @@ export function CurrentRunPanel({
  currentRun.status === 'warning' ? 'bg-amber-100 text-amber-700' :
  currentRun.status === 'running' ? 'bg-blue-100 text-blue-700' :
  currentRun.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {currentRun.status}
  </span>
@@ -387,7 +387,7 @@ function LiveExecutionPanel({
  </svg>
  Live Console ({liveConsoleLogs.length})
  </h3>
- <div className="bg-gray-900 rounded-lg p-3 max-h-40 overflow-auto font-mono text-xs">
+ <div className="bg-background rounded-lg p-3 max-h-40 overflow-auto font-mono text-xs">
  {liveConsoleLogs.slice(-20).map((log, idx) => (
  <div
  key={idx}
@@ -395,10 +395,10 @@ function LiveExecutionPanel({
  log.level === 'error' ? 'text-red-400' :
  log.level === 'warn' ? 'text-yellow-400' :
  log.level === 'info' ? 'text-blue-400' :
- 'text-gray-300'
+ 'text-muted-foreground'
  }`}
  >
- <span className="text-gray-500">[{new Date(log.timestamp).toISOString().split('T')[1].slice(0, 12)}]</span>
+ <span className="text-muted-foreground">[{new Date(log.timestamp).toISOString().split('T')[1].slice(0, 12)}]</span>
  <span className="ml-1">{log.message}</span>
  </div>
  ))}
@@ -553,7 +553,7 @@ function TestResultItem({
  result.status === 'passed' ? 'bg-green-100 text-green-700' :
  result.status === 'failed' ? 'bg-red-100 text-red-700' :
  result.status === 'warning' ? 'bg-amber-100 text-amber-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {result.status}
  </span>

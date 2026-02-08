@@ -37,17 +37,17 @@ export const DeviceCategoryPanel: React.FC<DeviceCategoryPanelProps> = ({
  totalCount,
 }) => {
  return (
- <div className="border border-gray-200 rounded-lg overflow-hidden">
+ <div className="border border-border rounded-lg overflow-hidden">
  <button
  type="button"
  onClick={onToggleExpand}
- className="w-full flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 transition-colors"
+ className="w-full flex items-center justify-between p-2 bg-muted hover:bg-muted transition-colors"
  >
  <div className="flex items-center gap-2">
  <span className="text-sm">{expanded ? '▼' : '▶'}</span>
  <span className="text-sm">{categoryIcon}</span>
- <span className="text-sm font-medium text-gray-700">{categoryLabel}</span>
- <span className="text-xs text-gray-500">
+ <span className="text-sm font-medium text-foreground">{categoryLabel}</span>
+ <span className="text-xs text-muted-foreground">
  ({selectedCount}/{totalCount})
  </span>
  </div>
@@ -77,7 +77,7 @@ export const DeviceCategoryPanel: React.FC<DeviceCategoryPanelProps> = ({
  className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
  viewport.enabled
  ? 'border-purple-500 bg-purple-50'
- : 'border-gray-200 hover:border-gray-300'
+ : 'border-border hover:border-border'
  }`}
  >
  <input
@@ -87,10 +87,10 @@ export const DeviceCategoryPanel: React.FC<DeviceCategoryPanelProps> = ({
  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
  />
  <div className="flex-1 min-w-0">
- <div className="text-sm font-medium text-gray-700 truncate">
+ <div className="text-sm font-medium text-foreground truncate">
  {viewport.name}
  </div>
- <div className="text-xs text-gray-500 flex items-center gap-1">
+ <div className="text-xs text-muted-foreground flex items-center gap-1">
  {viewport.width}×{viewport.height}
  {showOrientationToggle && (
  <button
@@ -100,7 +100,7 @@ export const DeviceCategoryPanel: React.FC<DeviceCategoryPanelProps> = ({
  e.stopPropagation();
  onToggleOrientation(index);
  }}
- className="ml-1 px-1.5 py-0.5 text-[10px] rounded bg-gray-100 hover:bg-gray-200 transition-colors"
+ className="ml-1 px-1.5 py-0.5 text-[10px] rounded bg-muted hover:bg-secondary transition-colors"
  title={`Switch to ${viewport.orientation === 'landscape' ? 'portrait' : 'landscape'}`}
  >
  {viewport.orientation === 'landscape' ? '↔️' : '↕️'}

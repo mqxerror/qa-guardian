@@ -92,7 +92,7 @@ interface MemberRoleBadgeProps {
 export const MemberRoleBadge: React.FC<MemberRoleBadgeProps> = React.memo(({ role }) => {
  const badgeClass = role === 'developer'
  ? 'bg-blue-100 text-blue-800'
- : 'bg-gray-100 text-gray-800';
+ : 'bg-muted text-foreground';
 
  return (
  <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${badgeClass}`}>

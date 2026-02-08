@@ -215,7 +215,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.name
  ? 'border-red-500 focus:ring-red-500'
- : 'border-gray-300 focus:ring-blue-500'
+ : 'border-border focus:ring-blue-500'
  }`}
  />
  </FormField>
@@ -230,7 +230,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
  errors.targetUrl
  ? 'border-red-500 focus:ring-red-500'
- : 'border-gray-300 focus:ring-blue-500'
+ : 'border-border focus:ring-blue-500'
  }`}
  />
  </FormField>
@@ -242,7 +242,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  onChange={(e) => updateField('description', e.target.value)}
  placeholder="Describe what this visual test verifies..."
  rows={2}
- className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-input text-foreground resize-none"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground resize-none"
  />
  </FormField>
 
@@ -250,7 +250,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  <FormField label="Device Viewports" required error={errors.viewports as string}>
  {/* Header with selection controls */}
  <div className="flex items-center justify-between mb-3">
- <span className="text-sm text-gray-600">
+ <span className="text-sm text-foreground">
  {config.viewports.filter(v => v.enabled).length} device{config.viewports.filter(v => v.enabled).length !== 1 ? 's' : ''} selected
  </span>
  <div className="flex gap-2">
@@ -282,7 +282,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  return newConfig;
  });
  }}
- className="text-xs px-2 py-1 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+ className="text-xs px-2 py-1 text-foreground hover:bg-muted rounded transition-colors"
  >
  Clear All
  </button>
@@ -357,13 +357,13 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  className={`flex flex-col items-start p-3 rounded-lg border text-left transition-colors ${
  config.captureMode === mode.value
  ? 'border-purple-500 bg-purple-50'
- : 'border-gray-200 hover:border-gray-300'
+ : 'border-border hover:border-border'
  }`}
  >
- <span className="font-medium text-sm text-gray-900">
+ <span className="font-medium text-sm text-foreground">
  {mode.label}
  </span>
- <span className="text-xs text-gray-500">
+ <span className="text-xs text-muted-foreground">
  {mode.description}
  </span>
  </button>
@@ -382,7 +382,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground font-mono text-sm ${
  errors.elementSelector
  ? 'border-red-500 focus:ring-red-500'
- : 'border-gray-300 focus:ring-blue-500'
+ : 'border-border focus:ring-blue-500'
  }`}
  />
  </FormField>
@@ -401,7 +401,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  min={0}
  max={10}
  step={0.5}
- className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+ className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-purple-600"
  />
  <div className="flex items-center gap-1 min-w-[80px]">
  <input
@@ -411,12 +411,12 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  min={0}
  max={10}
  step={0.5}
- className="w-16 px-2 py-1 text-sm border border-gray-300 rounded bg-input text-foreground text-center"
+ className="w-16 px-2 py-1 text-sm border border-border rounded bg-input text-foreground text-center"
  />
- <span className="text-sm text-gray-500">sec</span>
+ <span className="text-sm text-muted-foreground">sec</span>
  </div>
  </div>
- <div className="flex justify-between text-xs text-gray-400 mt-1">
+ <div className="flex justify-between text-xs text-muted-foreground mt-1">
  <span>0s (instant)</span>
  <span>10s (slow pages)</span>
  </div>

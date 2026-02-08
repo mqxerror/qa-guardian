@@ -561,14 +561,14 @@ Please provide:
  type="checkbox"
  checked={autoQuarantineSettings.enabled}
  onChange={(e) => handleUpdateAutoQuarantineSettings({ enabled: e.target.checked })}
- className="w-5 h-5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+ className="w-5 h-5 rounded border-border text-amber-600 focus:ring-amber-500"
  />
  <span className="text-sm font-medium text-foreground">Enabled</span>
  </label>
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
  autoQuarantineSettings.enabled
  ? 'bg-green-100 text-green-700'
- : 'bg-gray-100 text-gray-500'
+ : 'bg-muted text-muted-foreground'
  }`}>
  {autoQuarantineSettings.enabled ? 'Active' : 'Disabled'}
  </span>
@@ -587,7 +587,7 @@ Please provide:
  step="0.05"
  value={autoQuarantineSettings.threshold}
  onChange={(e) => handleUpdateAutoQuarantineSettings({ threshold: parseFloat(e.target.value) })}
- className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+ className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-amber-600"
  />
  <span className="text-sm font-bold text-amber-600 min-w-[3rem] text-right">
  {(autoQuarantineSettings.threshold * 100).toFixed(0)}%
@@ -618,7 +618,7 @@ Please provide:
  type="checkbox"
  checked={autoQuarantineSettings.notify_on_quarantine}
  onChange={(e) => handleUpdateAutoQuarantineSettings({ notify_on_quarantine: e.target.checked })}
- className="w-5 h-5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+ className="w-5 h-5 rounded border-border text-amber-600 focus:ring-amber-500"
  />
  <span className="text-sm font-medium text-foreground">🔔 Notify on Quarantine</span>
  </label>
@@ -633,7 +633,7 @@ Please provide:
  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
  autoQuarantineSettings.enabled && !isLoadingAutoQuarantine
  ? 'bg-amber-600 text-white hover:bg-amber-700'
- : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+ : 'bg-gray-300 text-muted-foreground cursor-not-allowed'
  }`}
  >
  {isLoadingAutoQuarantine ? (
@@ -700,14 +700,14 @@ Please provide:
  type="checkbox"
  checked={retryStrategySettings.enabled}
  onChange={(e) => handleUpdateRetryStrategySettings({ enabled: e.target.checked })}
- className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+ className="w-5 h-5 rounded border-border text-blue-600 focus:ring-blue-500"
  />
  <span className="text-sm font-medium text-foreground">Enable Dynamic Retry Strategy</span>
  </label>
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
  retryStrategySettings.enabled
  ? 'bg-green-100 text-green-700'
- : 'bg-gray-100 text-gray-500'
+ : 'bg-muted text-muted-foreground'
  }`}>
  {retryStrategySettings.enabled ? 'Active' : 'Disabled'}
  </span>
@@ -1050,7 +1050,7 @@ Please provide:
  </button>
  <button
  onClick={() => handleIgnore(test.test_id)}
- className="px-2 py-1 text-xs font-medium rounded border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors"
+ className="px-2 py-1 text-xs font-medium rounded border border-border bg-muted text-foreground hover:bg-muted transition-colors"
  title="Ignore this test from flaky reports"
  >
  🙈 Ignore
@@ -1266,7 +1266,7 @@ Please provide:
  className={`rounded-lg border p-3 ${
  rec.priority === 'high' ? 'border-red-200 bg-red-50' :
  rec.priority === 'medium' ? 'border-orange-200 bg-orange-50' :
- 'border-gray-200 bg-gray-50'
+ 'border-border bg-muted'
  }`}
  >
  <div className="flex items-center justify-between">
@@ -1274,7 +1274,7 @@ Please provide:
  <span className={`px-2 py-0.5 rounded text-xs font-medium uppercase ${
  rec.priority === 'high' ? 'bg-red-200 text-red-800' :
  rec.priority === 'medium' ? 'bg-orange-200 text-orange-800' :
- 'bg-gray-200 text-gray-800'
+ 'bg-secondary text-foreground'
  }`}>
  {rec.priority}
  </span>
@@ -1367,7 +1367,7 @@ Please provide:
  className={`rounded-lg border p-4 ${
  s.priority === 'high' ? 'border-red-200 bg-red-50/50' :
  s.priority === 'medium' ? 'border-orange-200 bg-orange-50/50' :
- 'border-gray-200 bg-gray-50/50'
+ 'border-border bg-muted/50'
  }`}
  >
  <div className="flex items-start justify-between mb-2">
@@ -1375,7 +1375,7 @@ Please provide:
  <span className={`px-2 py-0.5 rounded text-xs font-medium uppercase ${
  s.priority === 'high' ? 'bg-red-200 text-red-800' :
  s.priority === 'medium' ? 'bg-orange-200 text-orange-800' :
- 'bg-gray-200 text-gray-800'
+ 'bg-secondary text-foreground'
  }`}>
  {s.priority}
  </span>
@@ -1396,19 +1396,19 @@ Please provide:
  </div>
 
  {s.code_example && (
- <div className="mb-3 rounded-lg bg-gray-900 p-4 overflow-x-auto">
+ <div className="mb-3 rounded-lg bg-background p-4 overflow-x-auto">
  <div className="flex gap-4 mb-3">
  <div className="flex-1">
  <div className="text-xs text-red-400 mb-2 font-semibold">❌ Before</div>
- <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap">{s.code_example.before}</pre>
+ <pre className="text-xs text-muted-foreground font-mono whitespace-pre-wrap">{s.code_example.before}</pre>
  </div>
- <div className="w-px bg-gray-700" />
+ <div className="w-px bg-card" />
  <div className="flex-1">
  <div className="text-xs text-green-400 mb-2 font-semibold">✅ After</div>
- <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap">{s.code_example.after}</pre>
+ <pre className="text-xs text-muted-foreground font-mono whitespace-pre-wrap">{s.code_example.after}</pre>
  </div>
  </div>
- <p className="text-xs text-gray-400 border-t border-gray-700 pt-2 mt-2">
+ <p className="text-xs text-muted-foreground border-t border-border pt-2 mt-2">
  💡 {s.code_example.explanation}
  </p>
  </div>

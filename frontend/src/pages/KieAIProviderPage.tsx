@@ -357,7 +357,7 @@ export function KieAIProviderPage() {
                   disabled={isSaving}
                   className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-green-500' : 'bg-muted'}`}
                 >
-                  <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                  <div className={`w-5 h-5 bg-card rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
               </div>
 
@@ -407,7 +407,7 @@ export function KieAIProviderPage() {
                   disabled={isSaving}
                   className={`w-12 h-6 rounded-full transition-colors ${config.cost_tracking_enabled ? 'bg-green-500' : 'bg-muted'}`}
                 >
-                  <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${config.cost_tracking_enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                  <div className={`w-5 h-5 bg-card rounded-full shadow transform transition-transform ${config.cost_tracking_enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
               </div>
             </div>

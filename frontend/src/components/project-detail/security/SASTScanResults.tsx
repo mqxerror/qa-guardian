@@ -166,7 +166,7 @@ function FindingCard({
  setSelectedFinding,
 }: FindingCardProps) {
  const borderColorClass = finding.isFalsePositive
- ? 'border-gray-200 bg-gray-50/50 opacity-60'
+ ? 'border-border bg-muted/50 opacity-60'
  : finding.severity === 'CRITICAL'
  ? 'border-red-200 bg-red-50/50'
  : finding.severity === 'HIGH'
@@ -176,7 +176,7 @@ function FindingCard({
  : 'border-blue-200 bg-blue-50/50';
 
  const severityColorClass = finding.isFalsePositive
- ? 'bg-gray-100 text-gray-600'
+ ? 'bg-muted text-foreground'
  : finding.severity === 'CRITICAL'
  ? 'bg-red-100 text-red-800'
  : finding.severity === 'HIGH'
@@ -193,7 +193,7 @@ function FindingCard({
  {finding.severity}
  </span>
  {finding.isFalsePositive && (
- <span className="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-600">
+ <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-xs text-foreground">
  False Positive
  </span>
  )}

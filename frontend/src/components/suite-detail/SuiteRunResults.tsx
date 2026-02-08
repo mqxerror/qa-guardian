@@ -115,7 +115,7 @@ export function SuiteRunResults({
  suiteRun.status === 'running' ? 'bg-blue-100 text-blue-700' :
  suiteRun.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
  suiteRun.status === 'cancelled' ? 'bg-amber-100 text-amber-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {suiteRun.status}
  </span>
@@ -138,7 +138,7 @@ export function SuiteRunResults({
  {totalCount > 0 && ` (${progressPercent}%)`}
  </span>
  </div>
- <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+ <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
  <div
  className="h-full bg-blue-500 transition-all duration-300 ease-out"
  style={{ width: `${progressPercent}%` }}
@@ -174,7 +174,7 @@ export function SuiteRunResults({
 
  {/* Placeholder when no live screenshot yet */}
  {!liveScreenshot && (
- <div className="mt-4 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
+ <div className="mt-4 rounded-lg border border-dashed border-border bg-muted p-4">
  <div className="flex items-center gap-2 text-sm text-muted-foreground">
  <svg className="h-5 w-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -285,7 +285,7 @@ function LiveScreenshotPanel({
  <img
  src={`data:image/jpeg;base64,${liveScreenshot.base64}`}
  alt={`Live screenshot - Step ${liveScreenshot.stepIndex + 1}`}
- className="w-full max-h-[300px] object-contain bg-gray-100"
+ className="w-full max-h-[300px] object-contain bg-muted"
  />
  <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -307,7 +307,7 @@ function LiveScreenshotPanel({
  className={`relative rounded overflow-hidden border-2 transition-all hover:scale-105 ${
  screenshot.timestamp === liveScreenshot.timestamp
  ? 'border-blue-500 ring-2 ring-blue-300'
- : 'border-gray-300 opacity-70 hover:opacity-100'
+ : 'border-border opacity-70 hover:opacity-100'
  }`}
  >
  <img
@@ -357,7 +357,7 @@ function TestResultItem({
  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
  result.status === 'passed' ? 'bg-green-100 text-green-700' :
  result.status === 'failed' ? 'bg-red-100 text-red-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {result.status}
  </span>
@@ -493,7 +493,7 @@ function StepResultItem({
  return (
  <div className="space-y-1">
  <div className="flex items-center gap-2 text-sm">
- <span className={step.status === 'passed' ? 'text-green-600' : step.status === 'failed' ? 'text-red-600' : 'text-gray-500'}>
+ <span className={step.status === 'passed' ? 'text-green-600' : step.status === 'failed' ? 'text-red-600' : 'text-muted-foreground'}>
  {step.status === 'passed' ? '✓' : step.status === 'failed' ? '✗' : '○'}
  </span>
  <span className="text-muted-foreground">{step.action}</span>
@@ -612,7 +612,7 @@ function HealedSelectorDetails({
  {/* Feature #1073: Confidence meter visualization */}
  {step.healing_confidence !== undefined && (
  <div className="flex items-center gap-2" title={`Healing confidence: ${step.healing_confidence}%`}>
- <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+ <div className="w-20 h-2 bg-secondary rounded-full overflow-hidden">
  <div
  className={`h-full rounded-full transition-all duration-300 ${
  step.healing_confidence >= 85 ? 'bg-green-500' :

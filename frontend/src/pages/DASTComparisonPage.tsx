@@ -274,7 +274,7 @@ export function DASTComparisonPage() {
  case 'High': return 'text-red-600 bg-red-100';
  case 'Medium': return 'text-amber-600 bg-amber-100';
  case 'Low': return 'text-blue-600 bg-blue-100';
- case 'Informational': return 'text-gray-600 bg-gray-100';
+ case 'Informational': return 'text-foreground bg-muted';
  }
  };
 
@@ -415,7 +415,7 @@ export function DASTComparisonPage() {
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
  scan.scanProfile === 'full' ? 'bg-purple-100 text-purple-600' :
  scan.scanProfile === 'api' ? 'bg-blue-100 text-blue-600' :
- 'bg-gray-100 text-gray-600'
+ 'bg-muted text-foreground'
  }`}>
  {scan.scanProfile}
  </span>

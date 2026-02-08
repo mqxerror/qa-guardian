@@ -136,7 +136,7 @@ export function DebugAnalysisMessage({ debug }: DebugAnalysisMessageProps) {
         <div key={step.number} className={`rounded-md p-2 text-xs ${
           step.status === 'passed' ? 'bg-green-500/10 border border-green-500/20' :
           step.status === 'failed' ? 'bg-red-500/10 border border-red-500/20' :
-          'bg-gray-500/10 border border-gray-500/20'
+          'bg-gray-500/10 border border-border/20'
         }`}>
           <div className="flex items-center gap-2">
             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
@@ -148,7 +148,7 @@ export function DebugAnalysisMessage({ debug }: DebugAnalysisMessageProps) {
             <span className={`text-[10px] ${
               step.status === 'passed' ? 'text-green-600' :
               step.status === 'failed' ? 'text-red-600' :
-              'text-gray-500'
+              'text-muted-foreground'
             }`}>
               {step.status === 'passed' ? '✓' : step.status === 'failed' ? '✗' : '○'} {step.duration > 0 ? `${step.duration}s` : ''}
             </span>
@@ -182,7 +182,7 @@ export function SuggestionsMessage({ suggestions }: SuggestionsMessageProps) {
         <div key={idx} className={`rounded-md p-2 text-xs border ${
           suggestion.priority === 'high' ? 'bg-orange-500/10 border-orange-500/20' :
           suggestion.priority === 'medium' ? 'bg-blue-500/10 border-blue-500/20' :
-          'bg-gray-500/10 border-gray-500/20'
+          'bg-gray-500/10 border-border/20'
         }`}>
           <div className="flex items-center gap-2 mb-1">
             <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${

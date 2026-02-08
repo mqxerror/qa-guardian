@@ -192,7 +192,7 @@ const ResultsTab = ({
  ? 'bg-green-100'
  : result.status === 'failed' || result.status === 'error'
  ? 'bg-red-100'
- : 'bg-gray-100'
+ : 'bg-muted'
  }`}>
  {result.status === 'passed' && (
  <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -205,7 +205,7 @@ const ResultsTab = ({
  </svg>
  )}
  {result.status === 'skipped' && (
- <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="w-5 h-5 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
  </svg>
  )}
@@ -221,7 +221,7 @@ const ResultsTab = ({
  keyMetric.type === 'accessibility' ? 'bg-blue-100 text-blue-700' :
  keyMetric.type === 'load' ? 'bg-orange-100 text-orange-700' :
  keyMetric.type === 'visual' ? 'bg-pink-100 text-pink-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {keyMetric.type.toUpperCase()}
  </span>

@@ -499,7 +499,7 @@ export default function TestRunResultPage() {
  case 'diff': return 'bg-red-100 text-red-700';
  case 'step_before': return 'bg-yellow-100 text-yellow-700';
  case 'step_after': return 'bg-purple-100 text-purple-700';
- default: return 'bg-gray-100 text-gray-700';
+ default: return 'bg-muted text-foreground';
  }
  };
 
@@ -1157,7 +1157,7 @@ export default function TestRunResultPage() {
  run.status === 'failed' ? 'bg-red-100 text-red-700' :
  run.status === 'running' ? 'bg-blue-100 text-blue-700' :
  run.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {run.status.charAt(0).toUpperCase() + run.status.slice(1)}
  </span>

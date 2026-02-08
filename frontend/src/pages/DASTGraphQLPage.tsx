@@ -247,7 +247,7 @@ export function DASTGraphQLPage() {
  case 'High': return 'text-red-600 bg-red-100';
  case 'Medium': return 'text-amber-600 bg-amber-100';
  case 'Low': return 'text-blue-600 bg-blue-100';
- default: return 'text-gray-600 bg-gray-100';
+ default: return 'text-foreground bg-muted';
  }
  };
 
@@ -311,7 +311,7 @@ export function DASTGraphQLPage() {
  onClick={() => setConfig({ ...config, introspectionEnabled: !config.introspectionEnabled })}
  className={`w-12 h-6 rounded-full transition-colors ${config.introspectionEnabled ? 'bg-primary' : 'bg-muted'}`}
  >
- <div className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform ${config.introspectionEnabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+ <div className={`w-5 h-5 rounded-full bg-card shadow transform transition-transform ${config.introspectionEnabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
  </button>
  </div>
 
@@ -325,7 +325,7 @@ export function DASTGraphQLPage() {
  onClick={() => setConfig({ ...config, includeMutations: !config.includeMutations })}
  className={`w-12 h-6 rounded-full transition-colors ${config.includeMutations ? 'bg-primary' : 'bg-muted'}`}
  >
- <div className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform ${config.includeMutations ? 'translate-x-6' : 'translate-x-0.5'}`} />
+ <div className={`w-5 h-5 rounded-full bg-card shadow transform transition-transform ${config.includeMutations ? 'translate-x-6' : 'translate-x-0.5'}`} />
  </button>
  </div>
 

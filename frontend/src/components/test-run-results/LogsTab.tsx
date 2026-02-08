@@ -520,7 +520,7 @@ function VirtualizedLogList({
  });
 
  return (
- <div className="bg-gray-900 rounded-lg overflow-hidden">
+ <div className="bg-background rounded-lg overflow-hidden">
  {useVirtual ? (
  <div
  ref={parentRef}
@@ -576,7 +576,7 @@ function VirtualizedLogList({
  {!expandedLogs && logs.length > 100 && (
  <button
  onClick={() => setExpandedLogs(true)}
- className="w-full p-3 bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors text-sm"
+ className="w-full p-3 bg-card text-muted-foreground hover:bg-card transition-colors text-sm"
  >
  Show all {logs.length} logs
  </button>
@@ -584,7 +584,7 @@ function VirtualizedLogList({
  {expandedLogs && logs.length > 100 && (
  <button
  onClick={() => setExpandedLogs(false)}
- className="w-full p-3 bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors text-sm"
+ className="w-full p-3 bg-card text-muted-foreground hover:bg-card transition-colors text-sm"
  >
  Show less
  </button>
@@ -616,13 +616,13 @@ function LogEntry({
  ? 'border-yellow-500 hover:bg-yellow-500/10'
  : log.level === 'info'
  ? 'border-blue-500 hover:bg-blue-500/10'
- : 'border-gray-500 hover:bg-gray-500/10'
+ : 'border-border hover:bg-gray-500/10'
  } transition-colors cursor-pointer rounded-r`}
  onClick={() => log.type === 'network' && log.originalIndex !== undefined && toggleNetworkItem(log.originalIndex)}
  >
  <div className="flex items-start gap-2">
  {/* Timestamp */}
- <span className="text-gray-500 flex-shrink-0">
+ <span className="text-muted-foreground flex-shrink-0">
  [{new Date(log.timestamp).toISOString().split('T')[1].slice(0, 12)}]
  </span>
 
@@ -636,7 +636,7 @@ function LogEntry({
  ? 'bg-yellow-800 text-yellow-200'
  : log.level === 'info'
  ? 'bg-blue-800 text-blue-200'
- : 'bg-gray-700 text-gray-300'
+ : 'bg-card text-muted-foreground'
  }`}>
  {log.type === 'network' ? 'NET' : log.level?.slice(0, 3) || 'LOG'}
  </span>
@@ -646,7 +646,7 @@ function LogEntry({
  <>
  <span className="font-semibold text-purple-400 flex-shrink-0">{log.method}</span>
  <span className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${
- !log.status ? 'bg-gray-700 text-gray-300' :
+ !log.status ? 'bg-card text-muted-foreground' :
  log.status >= 200 && log.status < 300 ? 'bg-green-800 text-green-200' :
  log.status >= 300 && log.status < 400 ? 'bg-blue-800 text-blue-200' :
  log.status >= 400 && log.status < 500 ? 'bg-yellow-800 text-yellow-200' :
@@ -674,46 +674,46 @@ function LogEntry({
 
  {/* Duration for network */}
  {log.type === 'network' && log.duration_ms && (
- <span className="text-gray-500 flex-shrink-0 ml-auto">
+ <span className="text-muted-foreground flex-shrink-0 ml-auto">
  {log.duration_ms}ms
  </span>
  )}
 
  {/* Location for console */}
  {log.type === 'console' && log.location && (
- <span className="text-gray-500 text-xs flex-shrink-0 ml-auto">@ {log.location}</span>
+ <span className="text-muted-foreground text-xs flex-shrink-0 ml-auto">@ {log.location}</span>
  )}
  </div>
 
  {/* Expanded network details */}
  {log.type === 'network' && log.originalIndex !== undefined && expandedNetworkItems.has(log.originalIndex) && (
- <div className="mt-2 ml-6 p-3 bg-gray-800 rounded-lg text-xs space-y-2">
+ <div className="mt-2 ml-6 p-3 bg-card rounded-lg text-xs space-y-2">
  <div className="grid grid-cols-2 gap-4">
  <div>
- <span className="text-gray-500">Resource Type:</span>{' '}
- <span className="text-gray-300">{log.resourceType || 'unknown'}</span>
+ <span className="text-muted-foreground">Resource Type:</span>{' '}
+ <span className="text-muted-foreground">{log.resourceType || 'unknown'}</span>
  </div>
  <div>
- <span className="text-gray-500">Duration:</span>{' '}
- <span className="text-gray-300">{log.duration_ms ? `${log.duration_ms}ms` : '-'}</span>
+ <span className="text-muted-foreground">Duration:</span>{' '}
+ <span className="text-muted-foreground">{log.duration_ms ? `${log.duration_ms}ms` : '-'}</span>
  </div>
  <div>
- <span className="text-gray-500">Request Size:</span>{' '}
- <span className="text-gray-300">{log.requestSize ? `${(log.requestSize / 1024).toFixed(1)}KB` : '-'}</span>
+ <span className="text-muted-foreground">Request Size:</span>{' '}
+ <span className="text-muted-foreground">{log.requestSize ? `${(log.requestSize / 1024).toFixed(1)}KB` : '-'}</span>
  </div>
  <div>
- <span className="text-gray-500">Response Size:</span>{' '}
- <span className="text-gray-300">{log.responseSize ? `${(log.responseSize / 1024).toFixed(1)}KB` : '-'}</span>
+ <span className="text-muted-foreground">Response Size:</span>{' '}
+ <span className="text-muted-foreground">{log.responseSize ? `${(log.responseSize / 1024).toFixed(1)}KB` : '-'}</span>
  </div>
  </div>
  {log.failed && (
  <div className="text-red-400">
- <span className="text-gray-500">Error:</span> {log.failureText || 'Request failed'}
+ <span className="text-muted-foreground">Error:</span> {log.failureText || 'Request failed'}
  </div>
  )}
  <div className="mt-2">
- <span className="text-gray-500">Full URL:</span>
- <div className="mt-1 p-2 bg-gray-900 rounded break-all text-gray-300">{log.url}</div>
+ <span className="text-muted-foreground">Full URL:</span>
+ <div className="mt-1 p-2 bg-background rounded break-all text-muted-foreground">{log.url}</div>
  </div>
  </div>
  )}
@@ -876,7 +876,7 @@ function NetworkRow({
  </div>
  <div>
  <span className={`px-2 py-0.5 text-xs rounded font-medium ${
- !req.status ? 'bg-gray-100 text-gray-700' :
+ !req.status ? 'bg-muted text-foreground' :
  req.status >= 200 && req.status < 300 ? 'bg-green-100 text-green-700' :
  req.status >= 400 ? 'bg-red-100 text-red-700' :
  'bg-yellow-100 text-yellow-700'

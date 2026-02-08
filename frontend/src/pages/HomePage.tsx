@@ -105,7 +105,7 @@ export function HomePage() {
           <div className="mt-6">
             <TextGenerateEffect
               words="All tests. One platform. AI-ready."
-              className="text-xl text-gray-400 md:text-2xl"
+              className="text-xl text-muted-foreground md:text-2xl"
               duration={0.3}
             />
           </div>
@@ -115,7 +115,7 @@ export function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="mx-auto mt-6 max-w-2xl text-base text-gray-500 md:text-lg"
+            className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground md:text-lg"
           >
             Unified test management for E2E, visual regression, load testing, accessibility audits,
             and security scanning. Built with Claude AI and 170+ MCP tools.
@@ -139,7 +139,7 @@ export function HomePage() {
             </Link>
             <Link
               to="/login"
-              className="group flex items-center gap-2 rounded-full border border-gray-700 bg-gray-900/50 px-6 py-2.5 text-gray-300 transition-colors hover:border-gray-600 hover:text-white"
+              className="group flex items-center gap-2 rounded-full border border-border bg-background/50 px-6 py-2.5 text-muted-foreground transition-colors hover:border-border hover:text-white"
             >
               <span>Sign In</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -156,7 +156,7 @@ export function HomePage() {
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-3xl font-bold text-white md:text-4xl">{stat.value}</div>
-                <div className="mt-1 text-sm text-gray-500">{stat.label}</div>
+                <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
               </div>
             ))}
           </motion.div>
@@ -174,8 +174,8 @@ export function HomePage() {
             transition={{ duration: 1.5, repeat: Infinity }}
             className="flex flex-col items-center gap-2"
           >
-            <span className="text-xs text-gray-600">Scroll to explore</span>
-            <div className="h-8 w-5 rounded-full border border-gray-700 p-1">
+            <span className="text-xs text-foreground">Scroll to explore</span>
+            <div className="h-8 w-5 rounded-full border border-border p-1">
               <motion.div
                 animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
@@ -212,7 +212,7 @@ export function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
-              className="mx-auto mt-4 max-w-2xl text-gray-400"
+              className="mx-auto mt-4 max-w-2xl text-muted-foreground"
             >
               One platform for all your testing needs. From functional testing to security scanning,
               powered by AI for maximum efficiency.
@@ -224,7 +224,7 @@ export function HomePage() {
       </div>
 
       {/* Why QA Guardian Section */}
-      <div className="relative bg-gray-900/50 py-24">
+      <div className="relative bg-background/50 py-24">
         <div className="mx-auto max-w-7xl px-4">
           <div className="grid gap-12 md:grid-cols-2">
             <div>
@@ -250,7 +250,7 @@ export function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="mt-4 text-gray-400"
+                className="mt-4 text-muted-foreground"
               >
                 QA Guardian bridges the gap between human QA engineers and AI agents.
                 Visual recorder for humans, MCP tools for AI - everyone speaks the same language.
@@ -271,7 +271,7 @@ export function HomePage() {
                 ].map((item, index) => (
                   <li key={index} className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-500" />
-                    <span className="text-gray-300">{item}</span>
+                    <span className="text-muted-foreground">{item}</span>
                   </li>
                 ))}
               </motion.ul>
@@ -283,26 +283,26 @@ export function HomePage() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="rounded-2xl border border-gray-800 bg-gray-900/80 p-6 backdrop-blur-sm"
+                className="rounded-2xl border border-border bg-background/80 p-6 backdrop-blur-sm"
               >
                 <div className="mb-4 flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full bg-red-500" />
                   <div className="h-3 w-3 rounded-full bg-yellow-500" />
                   <div className="h-3 w-3 rounded-full bg-green-500" />
-                  <span className="ml-2 text-sm text-gray-500">terminal</span>
+                  <span className="ml-2 text-sm text-muted-foreground">terminal</span>
                 </div>
                 <pre className="overflow-x-auto text-sm">
-                  <code className="text-gray-300">
+                  <code className="text-muted-foreground">
                     <span className="text-green-400">$</span> qa-guardian test run{'\n'}
-                    <span className="text-gray-500"># Running test suite...</span>{'\n'}
-                    <span className="text-blue-400">✓</span> Login flow <span className="text-gray-500">(1.2s)</span>{'\n'}
-                    <span className="text-blue-400">✓</span> Dashboard loads <span className="text-gray-500">(0.8s)</span>{'\n'}
-                    <span className="text-blue-400">✓</span> Visual regression <span className="text-gray-500">(2.1s)</span>{'\n'}
-                    <span className="text-blue-400">✓</span> A11y audit passed <span className="text-gray-500">(1.5s)</span>{'\n'}
-                    <span className="text-blue-400">✓</span> Security scan clean <span className="text-gray-500">(3.2s)</span>{'\n'}
+                    <span className="text-muted-foreground"># Running test suite...</span>{'\n'}
+                    <span className="text-blue-400">✓</span> Login flow <span className="text-muted-foreground">(1.2s)</span>{'\n'}
+                    <span className="text-blue-400">✓</span> Dashboard loads <span className="text-muted-foreground">(0.8s)</span>{'\n'}
+                    <span className="text-blue-400">✓</span> Visual regression <span className="text-muted-foreground">(2.1s)</span>{'\n'}
+                    <span className="text-blue-400">✓</span> A11y audit passed <span className="text-muted-foreground">(1.5s)</span>{'\n'}
+                    <span className="text-blue-400">✓</span> Security scan clean <span className="text-muted-foreground">(3.2s)</span>{'\n'}
                     {'\n'}
                     <span className="text-green-400">All 5 tests passed!</span>{'\n'}
-                    <span className="text-gray-500">Time: 8.8s</span>
+                    <span className="text-muted-foreground">Time: 8.8s</span>
                   </code>
                 </pre>
               </motion.div>
@@ -327,7 +327,7 @@ export function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="mx-auto mt-4 max-w-2xl text-gray-400"
+            className="mx-auto mt-4 max-w-2xl text-muted-foreground"
           >
             Start testing smarter with AI-powered automation. No credit card required.
           </motion.p>
@@ -352,17 +352,17 @@ export function HomePage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800 bg-gray-950 py-12">
+      <footer className="border-t border-border bg-gray-950 py-12">
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <div className="text-xl font-bold text-white">QA Guardian</div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               © 2026 QA Guardian. All rights reserved.
             </div>
             <div className="flex gap-6">
-              <a href="#" className="text-gray-500 hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="text-gray-500 hover:text-white transition-colors">Terms</a>
-              <a href="#" className="text-gray-500 hover:text-white transition-colors">Contact</a>
+              <a href="#" className="text-muted-foreground hover:text-white transition-colors">Privacy</a>
+              <a href="#" className="text-muted-foreground hover:text-white transition-colors">Terms</a>
+              <a href="#" className="text-muted-foreground hover:text-white transition-colors">Contact</a>
             </div>
           </div>
         </div>

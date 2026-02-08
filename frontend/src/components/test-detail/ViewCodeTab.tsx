@@ -168,16 +168,16 @@ export function ViewCodeTab({
           <textarea
             value={editedCode}
             onChange={(e) => onSetEditedCode(e.target.value)}
-            className="w-full h-96 rounded-lg bg-gray-900 p-4 text-sm text-gray-100 font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full h-96 rounded-lg bg-background p-4 text-sm text-gray-100 font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/50"
             placeholder="Enter your Playwright test code here..."
             spellCheck={false}
           />
-          <div className="absolute bottom-2 right-2 text-xs text-gray-500">
+          <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
             {editedCode.split('\n').length} lines
           </div>
         </div>
       ) : (
-        <pre className="rounded-lg bg-gray-900 p-4 overflow-x-auto text-sm max-h-96 overflow-y-auto">
+        <pre className="rounded-lg bg-background p-4 overflow-x-auto text-sm max-h-96 overflow-y-auto">
           <code className="text-gray-100 font-mono whitespace-pre">
             {test?.use_custom_code && test?.playwright_code
               ? test.playwright_code

@@ -239,7 +239,7 @@ const MetricsTab: React.FC<MetricsTabProps> = ({
                   type="checkbox"
                   checked={k6ShowThresholds}
                   onChange={(e) => setK6ShowThresholds(e.target.checked)}
-                  className="rounded border-gray-300"
+                  className="rounded border-border"
                 />
                 <span className="text-muted-foreground">Show Thresholds</span>
               </label>

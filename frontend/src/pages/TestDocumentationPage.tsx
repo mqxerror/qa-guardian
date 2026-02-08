@@ -454,7 +454,7 @@ export function TestDocumentationPage() {
  className={`px-2 py-0.5 rounded text-xs font-medium ${
  isAutoUpdateEnabled
  ? 'bg-green-100 text-green-700'
- : 'bg-gray-100 text-gray-700'
+ : 'bg-muted text-foreground'
  }`}
  >
  {isAutoUpdateEnabled ? 'ON' : 'OFF'}

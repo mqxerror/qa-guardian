@@ -111,7 +111,7 @@ export const TestListItem = memo(function TestListItem({
  checked={isSelected}
  onChange={handleCheckboxChange}
  onClick={(e) => e.stopPropagation()}
- className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 flex-shrink-0"
+ className="w-4 h-4 rounded border-border text-purple-600 focus:ring-purple-500 flex-shrink-0"
  />
  )}
  <div className="min-w-0">

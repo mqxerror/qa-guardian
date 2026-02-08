@@ -53,12 +53,12 @@ export const getStatusColorClass = (status: TestStatus | RunStatus | ResultStatu
  return 'text-blue-600';
  case 'pending':
  case 'draft':
- return 'text-gray-600';
+ return 'text-foreground';
  case 'skipped':
  case 'cancelled':
- return 'text-gray-500';
+ return 'text-muted-foreground';
  default:
- return 'text-gray-500';
+ return 'text-muted-foreground';
  }
 };
 
@@ -77,12 +77,12 @@ export const getStatusBadgeClass = (status: TestStatus | RunStatus | ResultStatu
  return 'bg-blue-100 text-blue-700';
  case 'pending':
  case 'draft':
- return 'bg-gray-100 text-gray-700';
+ return 'bg-muted text-foreground';
  case 'skipped':
  case 'cancelled':
- return 'bg-gray-100 text-gray-500';
+ return 'bg-muted text-muted-foreground';
  default:
- return 'bg-gray-100 text-gray-700';
+ return 'bg-muted text-foreground';
  }
 };
 
@@ -161,7 +161,7 @@ export const getTestTypeColorClass = (type: TestCategory): string => {
  'accessibility': 'text-indigo-600',
  'api': 'text-cyan-600',
  };
- return colors[type] || 'text-gray-600';
+ return colors[type] || 'text-foreground';
 };
 
 // Get test type badge classes
@@ -174,7 +174,7 @@ export const getTestTypeBadgeClass = (type: TestCategory): string => {
  'accessibility': 'bg-indigo-100 text-indigo-700',
  'api': 'bg-cyan-100 text-cyan-700',
  };
- return badges[type] || 'bg-gray-100 text-gray-700';
+ return badges[type] || 'bg-muted text-foreground';
 };
 
 // Get test type icon
@@ -231,7 +231,7 @@ export const getImpactColorClass = (impact: string): string => {
  case 'minor':
  return 'text-blue-600';
  default:
- return 'text-gray-600';
+ return 'text-foreground';
  }
 };
 
@@ -247,7 +247,7 @@ export const getImpactBadgeClass = (impact: string): string => {
  case 'minor':
  return 'bg-blue-100 text-blue-700';
  default:
- return 'bg-gray-100 text-gray-700';
+ return 'bg-muted text-foreground';
  }
 };
 

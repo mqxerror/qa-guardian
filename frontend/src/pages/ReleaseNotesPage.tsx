@@ -436,7 +436,7 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  delta.category === 'feature' ? 'bg-blue-100 text-blue-700' :
  delta.category === 'bugfix' ? 'bg-purple-100 text-purple-700' :
  delta.category === 'improvement' ? 'bg-cyan-100 text-cyan-700' :
- 'bg-gray-100 text-gray-700'
+ 'bg-muted text-foreground'
  }`}>
  {delta.category}
  </span>
