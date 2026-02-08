@@ -327,14 +327,14 @@ export function AIAnalyticsPage() {
         {/* Tab Navigation */}
         <div className="border-b border-border mb-6">
           <nav className="flex gap-1 -mb-px">
-            {[
+            {([
               { id: 'overview', label: 'Overview', icon: '📊' },
               { id: 'costs', label: 'Cost Tracking', icon: '💰' },
               { id: 'comparison', label: 'Provider Comparison', icon: '🔄' },
-            ].map(tab => (
+            ] as const).map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
                   activeTab === tab.id
                     ? 'border-primary text-primary'

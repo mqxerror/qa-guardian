@@ -31,7 +31,12 @@ export interface TableColumn<T> {
   showOnMobile?: boolean;
 }
 
-interface ResponsiveTableProps<T> {
+// Feature #421: Helper function for safe property access
+function getItemProperty<T extends Record<string, unknown>>(item: T, key: string): unknown {
+  return item[key];
+}
+
+interface ResponsiveTableProps<T extends Record<string, unknown>> {
   /** Data array */
   data: T[];
   /** Column definitions */
@@ -54,7 +59,7 @@ interface ResponsiveTableProps<T> {
   loadingRowsCount?: number;
 }
 
-export function ResponsiveTable<T>({
+export function ResponsiveTable<T extends Record<string, unknown>>({
   data,
   columns,
   keyExtractor,
@@ -143,7 +148,7 @@ export function ResponsiveTable<T>({
                     {col.header}
                   </span>
                   <span className="text-sm text-foreground">
-                    {col.render ? col.render(item, index) : String((item as any)[col.key] ?? '-')}
+                    {col.render ? col.render(item, index) : String(getItemProperty(item, col.key) ?? '-')}
                   </span>
                 </div>
               ))}
@@ -176,7 +181,7 @@ export function ResponsiveTable<T>({
               >
                 {columns.map((col) => (
                   <td key={col.key} className={`px-4 py-3 ${col.className || ''}`}>
-                    {col.render ? col.render(item, index) : String((item as any)[col.key] ?? '-')}
+                    {col.render ? col.render(item, index) : String(getItemProperty(item, col.key) ?? '-')}
                   </td>
                 ))}
               </tr>

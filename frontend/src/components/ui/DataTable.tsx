@@ -23,6 +23,11 @@ import React, { memo, useMemo, useCallback, useState } from 'react';
 // TYPES
 // =============================================================================
 
+// Feature #421: Helper function for safe property access
+function getItemProperty<T extends Record<string, unknown>>(item: T, key: string): unknown {
+  return item[key];
+}
+
 export type SortDirection = 'asc' | 'desc' | null;
 
 export interface DataTableColumn<T> {
@@ -61,7 +66,7 @@ export interface DataTablePagination {
   pageSizeOptions?: number[];
 }
 
-export interface DataTableProps<T> {
+export interface DataTableProps<T extends Record<string, unknown>> {
   /** Data array */
   data: T[];
   /** Column definitions */
@@ -271,7 +276,7 @@ const Pagination = memo(function Pagination({
 // MAIN COMPONENT
 // =============================================================================
 
-function DataTableComponent<T>({
+function DataTableComponent<T extends Record<string, unknown>>({
   data,
   columns,
   keyExtractor,
@@ -476,7 +481,7 @@ function DataTableComponent<T>({
                       >
                         {col.render
                           ? col.render(item, index)
-                          : String((item as any)[col.key] ?? '-')}
+                          : String(getItemProperty(item, col.key) ?? '-')}
                       </td>
                     );
                   })}

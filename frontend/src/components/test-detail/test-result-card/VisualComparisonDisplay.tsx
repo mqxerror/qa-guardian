@@ -4,10 +4,13 @@
 import React from 'react';
 import { TestResult } from './types';
 
+// Feature #421: Proper type for visual comparison view modes
+type ComparisonViewMode = 'side-by-side' | 'slider' | 'onion-skin' | 'diff' | 'diff-overlay';
+
 interface VisualComparisonDisplayProps {
  result: TestResult;
- comparisonViewMode: string;
- setComparisonViewMode: (mode: any) => void;
+ comparisonViewMode: ComparisonViewMode;
+ setComparisonViewMode: (mode: ComparisonViewMode) => void;
  sliderPosition: number;
  setSliderPosition: (pos: number) => void;
  onionSkinOpacity: number;
@@ -103,10 +106,10 @@ export function VisualComparisonDisplay({
  {/* View Mode Toggle */}
  <div className="flex flex-wrap items-center gap-2">
  <div className="flex items-center gap-1 rounded-md border border-border bg-background p-0.5">
- {['side-by-side', 'slider', 'onion-skin', 'diff', 'diff-overlay'].map((mode) => (
+ {(['side-by-side', 'slider', 'onion-skin', 'diff', 'diff-overlay'] as const).map((mode) => (
  <button
  key={mode}
- onClick={() => setComparisonViewMode(mode as any)}
+ onClick={() => setComparisonViewMode(mode)}
  className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
  comparisonViewMode === mode
  ? 'bg-primary text-primary-foreground'

@@ -362,18 +362,23 @@ describe('useRealtimeCacheInvalidation event handlers', () => {
 
 describe('Event payload field format compatibility', () => {
   it('should support both camelCase and snake_case field names', () => {
+    // Feature #421: Proper type for payload that could be either format
+    type CamelCasePayload = { testId: string; suiteId: string; projectId: string };
+    type SnakeCasePayload = { test_id: string; suite_id: string; project_id: string };
+    type MixedPayload = Partial<CamelCasePayload> & Partial<SnakeCasePayload>;
+
     // Test the logic for extracting IDs from payloads
-    const camelCasePayload = { testId: 'test-1', suiteId: 'suite-1', projectId: 'project-1' };
-    const snakeCasePayload = { test_id: 'test-1', suite_id: 'suite-1', project_id: 'project-1' };
+    const camelCasePayload: MixedPayload = { testId: 'test-1', suiteId: 'suite-1', projectId: 'project-1' };
+    const snakeCasePayload: MixedPayload = { test_id: 'test-1', suite_id: 'suite-1', project_id: 'project-1' };
 
-    // camelCase extraction
-    expect(camelCasePayload.testId || (camelCasePayload as any).test_id).toBe('test-1');
-    expect(camelCasePayload.suiteId || (camelCasePayload as any).suite_id).toBe('suite-1');
-    expect(camelCasePayload.projectId || (camelCasePayload as any).project_id).toBe('project-1');
+    // camelCase extraction - OR operator handles missing fields
+    expect(camelCasePayload.testId || camelCasePayload.test_id).toBe('test-1');
+    expect(camelCasePayload.suiteId || camelCasePayload.suite_id).toBe('suite-1');
+    expect(camelCasePayload.projectId || camelCasePayload.project_id).toBe('project-1');
 
-    // snake_case extraction
-    expect((snakeCasePayload as any).testId || snakeCasePayload.test_id).toBe('test-1');
-    expect((snakeCasePayload as any).suiteId || snakeCasePayload.suite_id).toBe('suite-1');
-    expect((snakeCasePayload as any).projectId || snakeCasePayload.project_id).toBe('project-1');
+    // snake_case extraction - OR operator handles missing fields
+    expect(snakeCasePayload.testId || snakeCasePayload.test_id).toBe('test-1');
+    expect(snakeCasePayload.suiteId || snakeCasePayload.suite_id).toBe('suite-1');
+    expect(snakeCasePayload.projectId || snakeCasePayload.project_id).toBe('project-1');
   });
 });

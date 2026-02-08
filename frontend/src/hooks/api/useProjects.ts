@@ -5,6 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
+import { Schedule } from './useSchedules'; // Feature #421: Proper type import
 
 // Types
 export interface Project {
@@ -512,8 +513,7 @@ export function useDastConfig(projectId: string | undefined) {
       const targetUrl = configData?.config?.targetUrl || '';
       const scans = scansRes.ok ? (await scansRes.json()).scans as DASTScanResult[] : [];
       const spec = specRes.ok ? (await specRes.json()).spec as OpenAPISpec | null : null;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const schedules = schedulesRes.ok ? (await schedulesRes.json()).schedules as any[] : [];
+      const schedules = schedulesRes.ok ? (await schedulesRes.json()).schedules as Schedule[] : [];
 
       return { config, targetUrl, scans, spec, schedules };
     },
