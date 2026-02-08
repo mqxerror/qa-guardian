@@ -159,7 +159,8 @@ export function DashboardPage() {
         <div className="space-y-4">
           <SectionHeader title="Quick Access" description="Navigate to key features" />
           <div className="grid gap-6 md:grid-cols-2">
-            {/* AI Insights Hub Card */}
+            {/* Feature #456: Updated to match current AI features (removed deleted pages) */}
+            {/* AI Insights Card */}
             <Link
               to="/ai-insights"
               className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-accent/10 via-card to-card p-6 transition-all hover:border-accent/50 hover:shadow-lg hover:shadow-accent/10"
@@ -174,7 +175,7 @@ export function DashboardPage() {
                   </div>
                   <div>
                     <h4 className="text-lg font-semibold text-foreground group-hover:text-accent transition-colors">
-                      AI Insights Hub
+                      AI Insights
                     </h4>
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-accent bg-accent/10 px-2 py-0.5 rounded-full">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
@@ -185,7 +186,7 @@ export function DashboardPage() {
                   </div>
                 </div>
                 <p className="mt-4 text-sm text-muted-foreground">
-                  Analyze flaky tests, view organization insights, best practices, benchmarks, and AI-generated documentation.
+                  Analyze flaky tests, improve test quality, generate documentation, and track release notes.
                 </p>
                 <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
@@ -202,9 +203,9 @@ export function DashboardPage() {
                   </span>
                   <span className="flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
-                    Best Practices
+                    Release Notes
                   </span>
                 </div>
                 <div className="mt-4 flex items-center text-sm font-medium text-accent group-hover:translate-x-1 transition-transform">
