@@ -1,6 +1,7 @@
 "use client";
 import { cn } from "../../lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
+// Feature #422: Use m from LazyMotion for reduced bundle size
+import { AnimatePresence, m } from "../LazyMotion";
 import React, { useState } from "react";
 
 export const HoverEffect = ({
@@ -33,7 +34,7 @@ export const HoverEffect = ({
         >
           <AnimatePresence>
             {hoveredIndex === idx && (
-              <motion.span
+              <m.span
                 className="absolute inset-0 h-full w-full bg-primary/[0.8] block rounded-3xl"
                 layoutId="hoverBackground"
                 initial={{ opacity: 0 }}

@@ -11,7 +11,7 @@
  * 3. Use <m.div> instead of <motion.div>
  */
 
-import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, domAnimation, m, useMotionTemplate, useMotionValue, useAnimate, stagger, AnimatePresence, useInView, useSpring } from 'framer-motion';
 import { ReactNode } from 'react';
 
 interface LazyMotionWrapperProps {
@@ -32,8 +32,9 @@ export function LazyMotionWrapper({ children }: LazyMotionWrapperProps) {
   );
 }
 
-// Re-export m for use with LazyMotion
-export { m };
+// Re-export m and motion hooks for use with LazyMotion
+// Feature #422: Export motion hooks alongside m for components using advanced animation features
+export { m, useMotionTemplate, useMotionValue, useAnimate, stagger, AnimatePresence, useInView, useSpring };
 
 // Export commonly used animation variants
 export const fadeInUp = {

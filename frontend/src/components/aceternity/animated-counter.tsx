@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useInView, useMotionValue, useSpring } from "framer-motion";
+// Feature #422: Use LazyMotion exports for reduced bundle size
+import { useInView, useMotionValue, useSpring } from "../LazyMotion";
 
 interface AnimatedCounterProps {
   value: number;

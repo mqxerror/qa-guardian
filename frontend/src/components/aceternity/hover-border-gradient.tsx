@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+// Feature #422: Use m from LazyMotion for reduced bundle size
+import { m } from "../LazyMotion";
 import { cn } from "../../lib/utils";
 
 type Direction = "TOP" | "LEFT" | "BOTTOM" | "RIGHT";
@@ -73,7 +74,7 @@ export function HoverBorderGradient({
  >
  {children}
  </div>
- <motion.div
+ <m.div
  className={cn(
  "flex-none inset-0 overflow-hidden absolute z-0 rounded-[inherit]"
  )}

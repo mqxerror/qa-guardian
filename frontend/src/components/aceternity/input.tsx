@@ -1,7 +1,8 @@
 "use client";
 import * as React from "react";
 import { cn } from "../../lib/utils";
-import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
+// Feature #422: Use m from LazyMotion for reduced bundle size
+import { m, useMotionTemplate, useMotionValue } from "../LazyMotion";
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -33,7 +34,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {label}
           </label>
         )}
-        <motion.div
+        <m.div
           style={{
             background: useMotionTemplate`
               radial-gradient(
@@ -64,7 +65,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             {...props}
           />
-        </motion.div>
+        </m.div>
         {error && (
           <p role="alert" className="text-sm text-destructive">{error}</p>
         )}
