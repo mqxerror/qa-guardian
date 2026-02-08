@@ -29,14 +29,17 @@ const RATE_LIMIT_WINDOW_MS = RATE_LIMIT_WINDOW_SECONDS * 1000;
 
 // Different limits for different endpoint categories
 const RATE_LIMITS = {
-  AUTH: 20,       // Auth endpoints: 20 requests per minute (stricter)
+  QUICK_TEST: 5,  // Feature #437: Quick Test: 5 requests per minute (amplification prevention)
+  AUTH: 10,       // Feature #437: Auth endpoints: 10 requests per minute (brute-force prevention)
   ERROR_REPORT: 10, // Feature #389: Error reporting: 10 requests per minute (tighter limit)
-  DEFAULT: 200,   // Default limit: 200 requests per minute
-  READ_ONLY: 500, // Read-only endpoints: 500 requests per minute (higher)
+  DEFAULT: 100,   // Feature #437: Default limit: 100 requests per minute (global safety net)
+  READ_ONLY: 300, // Read-only endpoints: 300 requests per minute (higher but safer)
 };
 
 // Patterns for endpoint classification
 const AUTH_ENDPOINT_PATTERNS = ['/api/v1/auth'];
+// Feature #437: Quick Test endpoints make outbound HTTP requests - strict limit to prevent amplification
+const QUICK_TEST_PATTERNS = ['/api/v1/quick-test'];
 // Feature #389: Tighter rate limit for unauthenticated error reporting endpoint
 const ERROR_REPORT_PATTERNS = ['/api/v1/errors'];
 const READ_ONLY_METHODS = ['GET', 'HEAD', 'OPTIONS'];
@@ -49,9 +52,15 @@ let rateLimitCleanupInterval: NodeJS.Timeout | null = null;
 
 /**
  * Feature #214: Get rate limit for a given request
+ * Feature #437: Added Quick Test and stricter auth limits
  */
 export function getRateLimitForRequest(url: string, method: string): number {
-  // Auth endpoints get stricter limits
+  // Feature #437: Quick Test endpoints are amplification vectors - strictest limit
+  // POST /api/v1/quick-test makes outbound HTTP requests on behalf of the user
+  if (method === 'POST' && QUICK_TEST_PATTERNS.some(pattern => url.startsWith(pattern))) {
+    return RATE_LIMITS.QUICK_TEST;
+  }
+  // Feature #437: Auth endpoints get stricter limits to prevent brute-force attacks
   if (AUTH_ENDPOINT_PATTERNS.some(pattern => url.startsWith(pattern))) {
     return RATE_LIMITS.AUTH;
   }
