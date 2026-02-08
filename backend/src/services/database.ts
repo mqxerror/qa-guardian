@@ -11,6 +11,16 @@
  * - Graceful shutdown support
  * - Feature #157: Pool monitoring and tuning
  * - Feature #247: Schema extracted to database-schema.ts
+ * - Feature #409: Query timeout support (queryWithTimeout, transactionWithTimeout)
+ *
+ * Environment Variables:
+ * - DATABASE_URL / SUPABASE_DATABASE_URL: PostgreSQL connection string
+ * - DB_POOL_MIN: Minimum pool size (default: 2)
+ * - DB_POOL_MAX: Maximum pool size (default: 20)
+ * - DB_POOL_IDLE_TIMEOUT: Idle connection timeout in ms (default: 30000)
+ * - DB_POOL_CONNECTION_TIMEOUT: Connection acquisition timeout in ms (default: 5000)
+ * - DB_POOL_STATS_INTERVAL: Stats logging interval in ms (default: 60000)
+ * - DB_QUERY_TIMEOUT: Statement timeout in ms (default: 5000)
  */
 
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
@@ -31,6 +41,8 @@ const POOL_MAX = parseInt(process.env.DB_POOL_MAX || '20', 10);
 const POOL_IDLE_TIMEOUT = parseInt(process.env.DB_POOL_IDLE_TIMEOUT || '30000', 10);
 const POOL_CONNECTION_TIMEOUT = parseInt(process.env.DB_POOL_CONNECTION_TIMEOUT || '5000', 10);
 const POOL_STATS_INTERVAL = parseInt(process.env.DB_POOL_STATS_INTERVAL || '60000', 10); // Log stats every 60s
+// Feature #409: Query timeout in milliseconds (default 5 seconds)
+const QUERY_TIMEOUT_MS = parseInt(process.env.DB_QUERY_TIMEOUT || '5000', 10);
 
 // Feature #157: Pool monitoring state
 let poolStatsInterval: NodeJS.Timeout | null = null;
@@ -39,6 +51,7 @@ let lastPoolExhaustedAt: Date | null = null;
 
 /**
  * Feature #157: Pool statistics interface for health endpoint
+ * Feature #409: Added query timeout info
  */
 export interface PoolStats {
   totalConnections: number;
@@ -48,6 +61,7 @@ export interface PoolStats {
   minConnections: number;
   poolExhaustedCount: number;
   lastPoolExhaustedAt: string | null;
+  queryTimeoutMs: number; // Feature #409
 }
 
 /**
@@ -94,7 +108,7 @@ export async function initializeDatabase(): Promise<boolean> {
 
     isConnected = true;
     connectionAttempts = 0;
-    console.log(`[Database] PostgreSQL connection established successfully (pool: min=${POOL_MIN}, max=${POOL_MAX})`);
+    console.log(`[Database] PostgreSQL connection established successfully (pool: min=${POOL_MIN}, max=${POOL_MAX}, query_timeout=${QUERY_TIMEOUT_MS}ms)`);
 
     // Feature #157: Start periodic pool stats logging
     startPoolStatsLogging();
@@ -159,6 +173,64 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
 }
 
 /**
+ * Feature #409: Execute a query with statement-level timeout
+ * Wraps the query with PostgreSQL's statement_timeout to prevent runaway queries.
+ * The timeout is reset after each query to not affect subsequent queries.
+ *
+ * @param text - SQL query text
+ * @param params - Query parameters
+ * @param timeoutMs - Query timeout in milliseconds (default: QUERY_TIMEOUT_MS from env or 5000ms)
+ * @returns Query result or null if not connected
+ * @throws Error if query times out
+ */
+export async function queryWithTimeout<T extends QueryResultRow = QueryResultRow>(
+  text: string,
+  params?: unknown[],
+  timeoutMs: number = QUERY_TIMEOUT_MS
+): Promise<QueryResult<T> | null> {
+  if (!pool || !isConnected) {
+    return null;
+  }
+
+  const client = await pool.connect();
+  try {
+    // Set statement timeout for this session
+    await client.query(`SET statement_timeout = ${timeoutMs}`);
+
+    // Execute the actual query
+    const result = await client.query<T>(text, params);
+
+    // Reset timeout to default (0 = no limit) for connection reuse
+    await client.query('SET statement_timeout = 0');
+
+    return result;
+  } catch (error) {
+    // Reset timeout before releasing even on error
+    try {
+      await client.query('SET statement_timeout = 0');
+    } catch {
+      // Ignore reset errors - connection may be dead
+    }
+
+    // Check if this was a timeout error
+    if (error instanceof Error && error.message.includes('statement timeout')) {
+      console.error(`[Database] Query timed out after ${timeoutMs}ms:`, text.substring(0, 100));
+      throw new Error(`Query timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Feature #409: Get the configured query timeout
+ */
+export function getQueryTimeout(): number {
+  return QUERY_TIMEOUT_MS;
+}
+
+/**
  * Execute a transaction
  */
 export async function transaction<T>(
@@ -176,6 +248,56 @@ export async function transaction<T>(
     return result;
   } catch (error) {
     await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Feature #409: Execute a transaction with statement-level timeout
+ * All queries within the transaction will have the specified timeout.
+ *
+ * @param callback - Function receiving the client to execute queries
+ * @param timeoutMs - Query timeout in milliseconds (default: QUERY_TIMEOUT_MS from env or 5000ms)
+ * @returns Transaction result or null if not connected
+ * @throws Error if any query times out
+ */
+export async function transactionWithTimeout<T>(
+  callback: (client: PoolClient) => Promise<T>,
+  timeoutMs: number = QUERY_TIMEOUT_MS
+): Promise<T | null> {
+  if (!pool || !isConnected) {
+    return null;
+  }
+
+  const client = await pool.connect();
+  try {
+    // Set statement timeout for entire transaction
+    await client.query(`SET statement_timeout = ${timeoutMs}`);
+    await client.query('BEGIN');
+
+    const result = await callback(client);
+
+    await client.query('COMMIT');
+
+    // Reset timeout for connection reuse
+    await client.query('SET statement_timeout = 0');
+
+    return result;
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+      await client.query('SET statement_timeout = 0');
+    } catch {
+      // Ignore cleanup errors
+    }
+
+    // Check if this was a timeout error
+    if (error instanceof Error && error.message.includes('statement timeout')) {
+      console.error(`[Database] Transaction query timed out after ${timeoutMs}ms`);
+      throw new Error(`Transaction query timed out after ${timeoutMs}ms`);
+    }
     throw error;
   } finally {
     client.release();
@@ -205,6 +327,7 @@ export function getPoolStats(): PoolStats | null {
     minConnections: POOL_MIN,
     poolExhaustedCount,
     lastPoolExhaustedAt: lastPoolExhaustedAt?.toISOString() || null,
+    queryTimeoutMs: QUERY_TIMEOUT_MS, // Feature #409
   };
 }
 
