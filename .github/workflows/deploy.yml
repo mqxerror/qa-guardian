@@ -106,8 +106,9 @@ jobs:
             git reset --hard origin/main
 
             # Rebuild and deploy backend + frontend
-            docker compose build backend frontend
-            docker compose up -d --force-recreate backend frontend
+            # Uses deploy overlay to add Traefik labels + dokploy-network
+            docker compose -f docker-compose.yml -f docker-compose.deploy.yml build backend frontend
+            docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate backend frontend
 
             # Wait for services to start
             sleep 15
@@ -116,19 +117,20 @@ jobs:
             docker exec qa-guardian-backend npm run migrate || true
 
             # Health check - fail deployment if backend is unhealthy
-            curl -sf http://localhost:3001/health || { echo "ERROR: Backend health check failed"; exit 1; }
+            docker exec qa-guardian-backend curl -sf http://localhost:3001/health || { echo "ERROR: Backend health check failed"; exit 1; }
             echo "Backend healthy"
 
       - name: Verify production deployment
         run: |
           sleep 15
-          # The SSH deploy step already verified backend health via localhost:3001
-          # The external check validates that the frontend (Nginx) is serving correctly
-          echo "Verifying frontend is accessible..."
+          DOMAIN="https://${{ env.PRODUCTION_DOMAIN }}"
+
+          # 1. Verify frontend is accessible via Traefik
+          echo "Verifying frontend..."
           for i in 1 2 3; do
-            echo "Frontend check attempt $i..."
-            if curl -sf https://${{ env.PRODUCTION_DOMAIN }}/ -o /dev/null; then
-              echo "Frontend accessible"
+            echo "  Frontend check attempt $i..."
+            if curl -sf "${DOMAIN}/" -o /dev/null; then
+              echo "  Frontend accessible"
               break
             fi
             if [ $i -eq 3 ]; then
@@ -137,9 +139,25 @@ jobs:
             fi
             sleep 10
           done
-          # Note: /health via Traefik routes to backend which may not be on the Traefik network
-          # The internal health check (curl localhost:3001/health in SSH step) is the authoritative check
-          echo "Deployment verified (backend health confirmed via SSH, frontend confirmed via HTTPS)"
+
+          # 2. Verify backend API is routable through Traefik
+          # Any non-502 response proves Traefik can reach the backend container
+          echo "Verifying backend API routing via Traefik..."
+          for i in 1 2 3; do
+            echo "  Backend API check attempt $i..."
+            status=$(curl -s -o /dev/null -w "%{http_code}" "${DOMAIN}/api/v1/health")
+            if [ "$status" != "502" ] && [ "$status" != "503" ] && [ "$status" != "000" ]; then
+              echo "  Backend API routable (HTTP ${status})"
+              break
+            fi
+            if [ $i -eq 3 ]; then
+              echo "ERROR: Backend not accessible via Traefik after 3 attempts (HTTP ${status})"
+              exit 1
+            fi
+            sleep 10
+          done
+
+          echo "Deployment verified (frontend + backend API confirmed via HTTPS)"
 
       - name: Deployment complete
         run: |

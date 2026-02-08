@@ -1,0 +1,57 @@
+# =============================================================================
+# QA Guardian - Production Deployment Overlay
+# =============================================================================
+# Extends docker-compose.yml with Traefik labels and dokploy-network access.
+# Used by the CI/CD deploy script to make backend + frontend routable
+# through Dokploy's Traefik reverse proxy.
+#
+# Usage (always pair with base compose):
+#   docker compose -f docker-compose.yml -f docker-compose.deploy.yml build backend frontend
+#   docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d backend frontend
+# =============================================================================
+
+services:
+  backend:
+    # Override networks: keep qa-network (for inter-service comms) + add dokploy-network (for Traefik)
+    networks:
+      qa-network: {}
+      dokploy-network: {}
+    labels:
+      # --- Traefik: API routing ---
+      - "traefik.enable=true"
+      - "traefik.http.routers.qa-guardian-api.rule=Host(`qa.pixelcraftedmedia.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.qa-guardian-api.entrypoints=websecure"
+      - "traefik.http.routers.qa-guardian-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.qa-guardian-api.loadbalancer.server.port=3001"
+      - "traefik.http.routers.qa-guardian-api.priority=10"
+      # --- Traefik: WebSocket routing (Socket.IO) ---
+      - "traefik.http.routers.qa-guardian-ws.rule=Host(`qa.pixelcraftedmedia.com`) && PathPrefix(`/socket.io`)"
+      - "traefik.http.routers.qa-guardian-ws.entrypoints=websecure"
+      - "traefik.http.routers.qa-guardian-ws.tls.certresolver=letsencrypt"
+      - "traefik.http.services.qa-guardian-ws.loadbalancer.server.port=3001"
+      - "traefik.http.routers.qa-guardian-ws.priority=10"
+
+  frontend:
+    # Override networks: keep qa-network + add dokploy-network (for Traefik)
+    networks:
+      qa-network: {}
+      dokploy-network: {}
+    labels:
+      # --- Traefik: Frontend catch-all routing ---
+      - "traefik.enable=true"
+      - "traefik.http.routers.qa-guardian-frontend.rule=Host(`qa.pixelcraftedmedia.com`)"
+      - "traefik.http.routers.qa-guardian-frontend.entrypoints=websecure"
+      - "traefik.http.routers.qa-guardian-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.qa-guardian-frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.qa-guardian-frontend.priority=1"
+      # --- Traefik: HTTP → HTTPS redirect ---
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.qa-guardian-frontend-http.rule=Host(`qa.pixelcraftedmedia.com`)"
+      - "traefik.http.routers.qa-guardian-frontend-http.entrypoints=web"
+      - "traefik.http.routers.qa-guardian-frontend-http.middlewares=redirect-to-https"
+
+# External network managed by Dokploy/Traefik
+networks:
+  dokploy-network:
+    external: true
+    name: dokploy-network
