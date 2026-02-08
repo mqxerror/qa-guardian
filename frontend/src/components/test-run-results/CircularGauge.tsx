@@ -17,9 +17,10 @@ export default function CircularGauge({ score, label, size = 120 }: CircularGaug
   const progress = (score / 100) * circumference;
   const offset = circumference - progress;
 
+  // Feature #454: Migrated hardcoded colors to semantic tokens
   const getColor = (value: number) => {
-    if (value >= 90) return { stroke: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)', text: 'text-green-600' };
-    if (value >= 50) return { stroke: '#eab308', bg: 'rgba(234, 179, 8, 0.1)', text: 'text-yellow-600' };
+    if (value >= 90) return { stroke: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)', text: 'text-success' };
+    if (value >= 50) return { stroke: '#eab308', bg: 'rgba(234, 179, 8, 0.1)', text: 'text-warning' };
     return { stroke: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)', text: 'text-destructive' };
   };
 

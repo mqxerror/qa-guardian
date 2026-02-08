@@ -324,7 +324,7 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  <dt className="text-sm font-medium text-muted-foreground">Options</dt>
  <dd className="text-foreground flex flex-wrap gap-2">
  {test.include_best_practices !== false && (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-800">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-info/10 text-info">
  ✓ Best Practices
  </span>
  )}

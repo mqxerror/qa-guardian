@@ -56,6 +56,7 @@ const shapeClasses: Record<BadgeShape, string> = {
 };
 
 // Custom color palettes
+// Feature #454: Pink kept as intentional design variant (no semantic equivalent)
 const colorClasses: Record<BadgeColor, string> = {
  red: 'bg-destructive/10 text-destructive',
  orange: 'bg-warning/10 text-warning',
@@ -64,7 +65,7 @@ const colorClasses: Record<BadgeColor, string> = {
  blue: 'bg-primary/10 text-primary',
  indigo: 'bg-accent/10 text-accent',
  purple: 'bg-accent/10 text-accent',
- pink: 'bg-pink-100 text-pink-700',
+ pink: 'bg-pink-100 text-pink-700', // Intentional: no semantic equivalent, used for visual variety
  gray: 'bg-muted text-foreground',
  teal: 'bg-info/10 text-info',
  emerald: 'bg-success/10 text-success',

@@ -87,6 +87,7 @@ export const Card = ({
   );
 };
 
+// Feature #454: Migrated text-zinc-100 to text-foreground
 export const CardTitle = ({
   className,
   children,
@@ -95,12 +96,13 @@ export const CardTitle = ({
   children: React.ReactNode;
 }) => {
   return (
-    <h4 className={cn("text-zinc-100 font-bold tracking-wide", className)}>
+    <h4 className={cn("text-foreground font-bold tracking-wide", className)}>
       {children}
     </h4>
   );
 };
 
+// Feature #454: Migrated text-zinc-400 to text-muted-foreground
 export const CardDescription = ({
   className,
   children,
@@ -111,7 +113,7 @@ export const CardDescription = ({
   return (
     <p
       className={cn(
-        "mt-4 text-zinc-400 tracking-wide leading-relaxed text-sm",
+        "mt-4 text-muted-foreground tracking-wide leading-relaxed text-sm",
         className
       )}
     >
