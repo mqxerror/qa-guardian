@@ -342,7 +342,8 @@ export async function deleteOldLicenseScans(daysToKeep: number = 90): Promise<nu
 
   const result = await query(
     `DELETE FROM license_scan_results
-     WHERE scanned_at < NOW() - INTERVAL '${daysToKeep} days'`
+     WHERE scanned_at < NOW() - $1 * INTERVAL '1 day'`,
+    [daysToKeep]
   );
 
   return result.rowCount ?? 0;
@@ -492,7 +493,8 @@ export async function deleteOldSboms(daysToKeep: number = 180): Promise<number> 
 
   const result = await query(
     `DELETE FROM sbom_entries
-     WHERE generated_at < NOW() - INTERVAL '${daysToKeep} days'`
+     WHERE generated_at < NOW() - $1 * INTERVAL '1 day'`,
+    [daysToKeep]
   );
 
   return result.rowCount ?? 0;
@@ -630,7 +632,8 @@ export async function deleteOldDependencyAnalyses(daysToKeep: number = 90): Prom
 
   const result = await query(
     `DELETE FROM dependency_analysis
-     WHERE analyzed_at < NOW() - INTERVAL '${daysToKeep} days'`
+     WHERE analyzed_at < NOW() - $1 * INTERVAL '1 day'`,
+    [daysToKeep]
   );
 
   return result.rowCount ?? 0;
