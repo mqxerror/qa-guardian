@@ -245,6 +245,51 @@ const PERFORMANCE_CHECK_COLUMNS = `
   created_by, created_at, updated_at
 `.trim().replace(/\s+/g, ' ');
 
+/** Columns for transaction_results table */
+const TRANSACTION_RESULT_COLUMNS = `
+  id, transaction_id, status, total_time_ms, step_results, checked_at
+`.trim().replace(/\s+/g, ' ');
+
+/** Columns for performance_results table */
+const PERFORMANCE_RESULT_COLUMNS = `
+  id, check_id, status, metrics, lighthouse_score, checked_at
+`.trim().replace(/\s+/g, ' ');
+
+/** Columns for webhook_checks table */
+const WEBHOOK_CHECK_COLUMNS = `
+  id, organization_id, name, description, webhook_url, webhook_secret,
+  expected_interval_seconds, expected_payload, enabled, created_by, created_at, updated_at
+`.trim().replace(/\s+/g, ' ');
+
+/** Columns for webhook_events table */
+const WEBHOOK_EVENT_COLUMNS = `
+  id, check_id, received_at, source_ip, headers, payload,
+  payload_valid, validation_errors, signature_valid
+`.trim().replace(/\s+/g, ' ');
+
+/** Columns for dns_checks table */
+const DNS_CHECK_COLUMNS = `
+  id, organization_id, name, domain, record_type, expected_values,
+  nameservers, interval_seconds, timeout_ms, enabled, created_by, created_at, updated_at
+`.trim().replace(/\s+/g, ' ');
+
+/** Columns for dns_results table */
+const DNS_RESULT_COLUMNS = `
+  id, check_id, status, resolved_values, expected_values, response_time_ms,
+  nameserver_used, error, ttl, all_expected_found, unexpected_values, checked_at
+`.trim().replace(/\s+/g, ' ');
+
+/** Columns for tcp_checks table */
+const TCP_CHECK_COLUMNS = `
+  id, organization_id, name, host, port, timeout_ms, interval_seconds, enabled,
+  created_by, created_at, updated_at
+`.trim().replace(/\s+/g, ' ');
+
+/** Columns for tcp_results table */
+const TCP_RESULT_COLUMNS = `
+  id, check_id, status, port_open, response_time_ms, error, checked_at
+`.trim().replace(/\s+/g, ' ');
+
 // =============================
 // UPTIME CHECKS CRUD
 // =============================
@@ -599,7 +644,7 @@ export async function addTransactionResult(result: TransactionResult): Promise<T
 export async function getTransactionResults(transactionId: string, limit: number = 100): Promise<TransactionResult[]> {
   if (isDatabaseConnected()) {
     const result = await query<TransactionResultRow>(
-      `SELECT * FROM transaction_results WHERE transaction_id = $1 ORDER BY checked_at DESC LIMIT $2`,
+      `SELECT ${TRANSACTION_RESULT_COLUMNS} FROM transaction_results WHERE transaction_id = $1 ORDER BY checked_at DESC LIMIT $2`,
       [transactionId, limit]
     );
     if (result) return result.rows.map(parseTransactionResultRow);
@@ -724,7 +769,7 @@ export async function addPerformanceResult(result: PerformanceResult): Promise<P
 export async function getPerformanceResults(checkId: string, limit: number = 100): Promise<PerformanceResult[]> {
   if (isDatabaseConnected()) {
     const result = await query<PerformanceResultRow>(
-      `SELECT * FROM performance_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT $2`,
+      `SELECT ${PERFORMANCE_RESULT_COLUMNS} FROM performance_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT $2`,
       [checkId, limit]
     );
     if (result) return result.rows.map(parsePerformanceResultRow);
@@ -773,7 +818,7 @@ export async function createWebhookCheck(check: WebhookCheck): Promise<WebhookCh
 
 export async function getWebhookCheck(id: string): Promise<WebhookCheck | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<WebhookCheckRow>(`SELECT * FROM webhook_checks WHERE id = $1`, [id]);
+    const result = await query<WebhookCheckRow>(`SELECT ${WEBHOOK_CHECK_COLUMNS} FROM webhook_checks WHERE id = $1`, [id]);
     if (result && result.rows[0]) return parseWebhookCheckRow(result.rows[0]);
     return undefined;
   }
@@ -783,7 +828,7 @@ export async function getWebhookCheck(id: string): Promise<WebhookCheck | undefi
 export async function getWebhookCheckByToken(token: string): Promise<WebhookCheck | undefined> {
   if (isDatabaseConnected()) {
     const result = await query<WebhookCheckRow>(
-      `SELECT * FROM webhook_checks WHERE webhook_url LIKE $1`,
+      `SELECT ${WEBHOOK_CHECK_COLUMNS} FROM webhook_checks WHERE webhook_url LIKE $1`,
       [`%${token}`]
     );
     if (result && result.rows[0]) return parseWebhookCheckRow(result.rows[0]);
@@ -823,7 +868,7 @@ export async function deleteWebhookCheck(id: string): Promise<boolean> {
 export async function listWebhookChecks(organizationId: string, limit: number = 100): Promise<WebhookCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<WebhookCheckRow>(
-      `SELECT * FROM webhook_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      `SELECT ${WEBHOOK_CHECK_COLUMNS} FROM webhook_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [organizationId, limit]
     );
     if (result) return result.rows.map(parseWebhookCheckRow);
@@ -879,7 +924,7 @@ export async function addWebhookEvent(event: WebhookEvent): Promise<WebhookEvent
 export async function getWebhookEvents(checkId: string, limit: number = 100): Promise<WebhookEvent[]> {
   if (isDatabaseConnected()) {
     const result = await query<WebhookEventRow>(
-      `SELECT * FROM webhook_events WHERE check_id = $1 ORDER BY received_at DESC LIMIT $2`,
+      `SELECT ${WEBHOOK_EVENT_COLUMNS} FROM webhook_events WHERE check_id = $1 ORDER BY received_at DESC LIMIT $2`,
       [checkId, limit]
     );
     if (result) return result.rows.map(parseWebhookEventRow);
@@ -928,7 +973,7 @@ export async function createDnsCheck(check: DnsCheck): Promise<DnsCheck> {
 
 export async function getDnsCheck(id: string): Promise<DnsCheck | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<DnsCheckRow>(`SELECT * FROM dns_checks WHERE id = $1`, [id]);
+    const result = await query<DnsCheckRow>(`SELECT ${DNS_CHECK_COLUMNS} FROM dns_checks WHERE id = $1`, [id]);
     if (result && result.rows[0]) return parseDnsCheckRow(result.rows[0]);
     return undefined;
   }
@@ -966,7 +1011,7 @@ export async function deleteDnsCheck(id: string): Promise<boolean> {
 export async function listDnsChecks(organizationId: string, limit: number = 100): Promise<DnsCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<DnsCheckRow>(
-      `SELECT * FROM dns_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      `SELECT ${DNS_CHECK_COLUMNS} FROM dns_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [organizationId, limit]
     );
     if (result) return result.rows.map(parseDnsCheckRow);
@@ -1020,7 +1065,7 @@ export async function addDnsResult(result: DnsCheckResult): Promise<DnsCheckResu
 export async function getDnsResults(checkId: string, limit: number = 100): Promise<DnsCheckResult[]> {
   if (isDatabaseConnected()) {
     const result = await query<DnsResultRow>(
-      `SELECT * FROM dns_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT $2`,
+      `SELECT ${DNS_RESULT_COLUMNS} FROM dns_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT $2`,
       [checkId, limit]
     );
     if (result) return result.rows.map(parseDnsResultRow);
@@ -1067,7 +1112,7 @@ export async function createTcpCheck(check: TcpCheck): Promise<TcpCheck> {
 
 export async function getTcpCheck(id: string): Promise<TcpCheck | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<TcpCheckRow>(`SELECT * FROM tcp_checks WHERE id = $1`, [id]);
+    const result = await query<TcpCheckRow>(`SELECT ${TCP_CHECK_COLUMNS} FROM tcp_checks WHERE id = $1`, [id]);
     if (result && result.rows[0]) return parseTcpCheckRow(result.rows[0]);
     return undefined;
   }
@@ -1103,7 +1148,7 @@ export async function deleteTcpCheck(id: string): Promise<boolean> {
 export async function listTcpChecks(organizationId: string, limit: number = 100): Promise<TcpCheck[]> {
   if (isDatabaseConnected()) {
     const result = await query<TcpCheckRow>(
-      `SELECT * FROM tcp_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      `SELECT ${TCP_CHECK_COLUMNS} FROM tcp_checks WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [organizationId, limit]
     );
     if (result) return result.rows.map(parseTcpCheckRow);
@@ -1149,7 +1194,7 @@ export async function addTcpResult(result: TcpCheckResult): Promise<TcpCheckResu
 export async function getTcpResults(checkId: string, limit: number = 100): Promise<TcpCheckResult[]> {
   if (isDatabaseConnected()) {
     const result = await query<TcpResultRow>(
-      `SELECT * FROM tcp_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT $2`,
+      `SELECT ${TCP_RESULT_COLUMNS} FROM tcp_results WHERE check_id = $1 ORDER BY checked_at DESC LIMIT $2`,
       [checkId, limit]
     );
     if (result) return result.rows.map(parseTcpResultRow);
