@@ -884,13 +884,13 @@ export function AnalyticsPage() {
                   <div className="text-2xl font-bold text-foreground">{trendSummary.total_runs}</div>
                   <div className="text-xs text-muted-foreground">Total Runs</div>
                 </div>
-                <div className="text-center p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                  <div className="text-2xl font-bold text-green-700 dark:text-green-400">{trendSummary.total_passed}</div>
-                  <div className="text-xs text-green-600 dark:text-green-400">Passed</div>
+                <div className="text-center p-3 bg-success/15 rounded-lg">
+                  <div className="text-2xl font-bold text-success">{trendSummary.total_passed}</div>
+                  <div className="text-xs text-success">Passed</div>
                 </div>
-                <div className="text-center p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                  <div className="text-2xl font-bold text-red-700 dark:text-red-400">{trendSummary.total_failed}</div>
-                  <div className="text-xs text-red-600 dark:text-red-400">Failed</div>
+                <div className="text-center p-3 bg-destructive/15 rounded-lg">
+                  <div className="text-2xl font-bold text-destructive">{trendSummary.total_failed}</div>
+                  <div className="text-xs text-destructive">Failed</div>
                 </div>
               </div>
 
@@ -1011,24 +1011,24 @@ export function AnalyticsPage() {
                   <div className="text-2xl font-bold text-foreground">{a11yTrendSummary.total_violations}</div>
                   <div className="text-xs text-muted-foreground">Total Violations</div>
                 </div>
-                <div className="text-center p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                  <div className="text-2xl font-bold text-orange-700 dark:text-orange-400">
+                <div className="text-center p-3 bg-warning/15 rounded-lg">
+                  <div className="text-2xl font-bold text-warning">
                     {a11yTrendSummary.avg_violations_per_run.toFixed(1)}
                   </div>
-                  <div className="text-xs text-orange-600 dark:text-orange-400">Avg Violations/Run</div>
+                  <div className="text-xs text-warning">Avg Violations/Run</div>
                 </div>
                 <div className={`text-center p-3 rounded-lg ${
                   a11yTrendSummary.violation_trend === 'improving'
-                    ? 'bg-green-100 dark:bg-green-900/30'
+                    ? 'bg-success/15'
                     : a11yTrendSummary.violation_trend === 'worsening'
-                    ? 'bg-red-100 dark:bg-red-900/30'
+                    ? 'bg-destructive/15'
                     : 'bg-muted/30'
                 }`}>
                   <div className={`text-2xl font-bold ${
                     a11yTrendSummary.violation_trend === 'improving'
-                      ? 'text-green-700 dark:text-green-400'
+                      ? 'text-success'
                       : a11yTrendSummary.violation_trend === 'worsening'
-                      ? 'text-red-700 dark:text-red-400'
+                      ? 'text-destructive'
                       : 'text-foreground'
                   }`}>
                     {a11yTrendSummary.violation_trend === 'improving' ? 'Improving' :
@@ -1155,15 +1155,15 @@ export function AnalyticsPage() {
               </div>
               {/* Happy checkmark character */}
               <div className="relative mx-auto w-20 h-20 mb-6">
-                <div className="w-full h-full rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
-                  <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-full h-full rounded-full bg-success/20 flex items-center justify-center">
+                  <svg className="w-12 h-12 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
                 <div className="absolute -bottom-1 -right-1 text-2xl">😊</div>
               </div>
-              <h3 className="text-xl font-semibold text-green-700 dark:text-green-400 mb-2">All Tests Passing!</h3>
-              <p className="text-green-600 dark:text-green-500 max-w-md mx-auto">
+              <h3 className="text-xl font-semibold text-success mb-2">All Tests Passing!</h3>
+              <p className="text-success/80 max-w-md mx-auto">
                 Your code is looking great. No failing tests found in the selected time period.
               </p>
             </div>
@@ -1202,7 +1202,7 @@ export function AnalyticsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 text-sm font-bold text-red-600 bg-red-100 dark:bg-red-900/30 rounded">
+                        <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 text-sm font-bold text-destructive bg-destructive/15 rounded">
                           {test.failure_count}
                         </span>
                       </td>
@@ -1296,13 +1296,13 @@ export function AnalyticsPage() {
                       <p className="text-xs text-muted-foreground">Total</p>
                       <p className="text-sm font-semibold text-foreground">{stat.total_runs}</p>
                     </div>
-                    <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded">
-                      <p className="text-xs text-emerald-600">Passed</p>
-                      <p className="text-sm font-semibold text-emerald-600">{stat.passed}</p>
+                    <div className="p-2 bg-success/15 rounded">
+                      <p className="text-xs text-success">Passed</p>
+                      <p className="text-sm font-semibold text-success">{stat.passed}</p>
                     </div>
-                    <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded">
-                      <p className="text-xs text-red-600">Failed</p>
-                      <p className="text-sm font-semibold text-red-600">{stat.failed + stat.error}</p>
+                    <div className="p-2 bg-destructive/15 rounded">
+                      <p className="text-xs text-destructive">Failed</p>
+                      <p className="text-sm font-semibold text-destructive">{stat.failed + stat.error}</p>
                     </div>
                   </div>
                 </div>
@@ -1383,13 +1383,13 @@ export function AnalyticsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium">
+                        <span className="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 rounded-full bg-success/15 text-success text-sm font-medium">
                           {project.passed_runs}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className={`inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 rounded-full text-sm font-medium ${
-                          project.failed_runs > 0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'
+                          project.failed_runs > 0 ? 'bg-destructive/15 text-destructive' : 'bg-muted text-muted-foreground'
                         }`}>
                           {project.failed_runs}
                         </span>
@@ -1436,13 +1436,13 @@ export function AnalyticsPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-warning/15 text-warning">
                         Flaky
                       </span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        test.flakiness_percentage >= 70 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                        test.flakiness_percentage >= 40 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
-                        'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        test.flakiness_percentage >= 70 ? 'bg-destructive/15 text-destructive' :
+                        test.flakiness_percentage >= 40 ? 'bg-warning/15 text-warning' :
+                        'bg-warning/10 text-warning/80'
                       }`}>
                         {test.flakiness_percentage}% flaky
                       </span>
@@ -1535,16 +1535,16 @@ function FailureClustersSection({ navigate }: { token: string | null; navigate: 
 
   const getClusterColor = (patternType: string): string => {
     const colors: Record<string, string> = {
-      'Network Issues': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800',
-      'Timing/Race Conditions': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-orange-200 dark:border-orange-800',
-      'Data Issues': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-800',
-      'Element Locator Issues': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800',
-      'Environment Issues': 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300 border-slate-200 dark:border-slate-800',
-      'Timeout': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-orange-200 dark:border-orange-800',
-      'Element Not Found': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800',
-      'Network': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+      'Network Issues': 'bg-info/15 text-info border-info/30',
+      'Timing/Race Conditions': 'bg-warning/15 text-warning border-warning/30',
+      'Data Issues': 'bg-primary/15 text-primary border-primary/30',
+      'Element Locator Issues': 'bg-destructive/15 text-destructive border-destructive/30',
+      'Environment Issues': 'bg-muted text-muted-foreground border-border',
+      'Timeout': 'bg-warning/15 text-warning border-warning/30',
+      'Element Not Found': 'bg-destructive/15 text-destructive border-destructive/30',
+      'Network': 'bg-info/15 text-info border-info/30',
     };
-    return colors[patternType] || 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300 border-gray-200 dark:border-gray-800';
+    return colors[patternType] || 'bg-muted text-muted-foreground border-border';
   };
 
   return (
@@ -1595,23 +1595,23 @@ function FailureClustersSection({ navigate }: { token: string | null; navigate: 
 
             {/* Summary Stats */}
             <div className="grid grid-cols-4 gap-4 text-center">
-              <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
+              <div className="p-2 rounded-lg bg-muted">
                 <div className="text-2xl font-bold text-foreground">{clusters.length}</div>
                 <div className="text-xs text-muted-foreground">Clusters</div>
               </div>
-              <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+              <div className="p-2 rounded-lg bg-muted">
+                <div className="text-2xl font-bold text-destructive">
                   {clusters.reduce((sum, c) => sum + c.count, 0)}
                 </div>
                 <div className="text-xs text-muted-foreground">Total Failures</div>
               </div>
-              <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-                <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+              <div className="p-2 rounded-lg bg-muted">
+                <div className="text-2xl font-bold text-warning">
                   {new Set(clusters.flatMap(c => c.affected_tests)).size}
                 </div>
                 <div className="text-xs text-muted-foreground">Tests Affected</div>
               </div>
-              <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
+              <div className="p-2 rounded-lg bg-muted">
                 <div className="text-2xl font-bold text-foreground">
                   {Math.max(...clusters.map(c => c.count))}
                 </div>
@@ -1680,7 +1680,7 @@ function FailureClustersSection({ navigate }: { token: string | null; navigate: 
                             <p className="text-xs text-muted-foreground truncate">
                               {failure.suite_name} / {failure.project_name}
                             </p>
-                            <p className="text-xs text-red-600 dark:text-red-400 mt-1 truncate" title={failure.error_message}>
+                            <p className="text-xs text-destructive mt-1 truncate" title={failure.error_message}>
                               {failure.error_message.slice(0, 100)}{failure.error_message.length > 100 ? '...' : ''}
                             </p>
                           </div>
