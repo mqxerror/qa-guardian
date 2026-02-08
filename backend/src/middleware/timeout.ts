@@ -8,6 +8,11 @@
 
 import { FastifyRequest, FastifyReply, HookHandlerDoneFunction } from 'fastify';
 
+// Extend FastifyRequest to include timeout ID
+interface FastifyRequestWithTimeout extends FastifyRequest {
+  _timeoutId?: ReturnType<typeof setTimeout>;
+}
+
 // Default timeout in milliseconds (30 seconds)
 export const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
 
@@ -66,7 +71,7 @@ function getTimeoutForPath(url: string): number | null {
  * the timeout, it responds with 504 Gateway Timeout.
  */
 export function requestTimeoutHook(
-  request: FastifyRequest,
+  request: FastifyRequestWithTimeout,
   reply: FastifyReply,
   done: HookHandlerDoneFunction
 ) {
@@ -97,7 +102,7 @@ export function requestTimeoutHook(
   }, timeout);
 
   // Store timeout ID on request for cleanup
-  (request as any)._timeoutId = timeoutId;
+  request._timeoutId = timeoutId;
 
   // Clear timeout when response is sent
   reply.raw.on('finish', () => {

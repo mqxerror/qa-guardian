@@ -14,6 +14,14 @@ interface RateLimitEntry {
   resetAt: number;
 }
 
+// User payload type for authenticated requests (optional since rate limiting runs before auth for some paths)
+interface AuthenticatedUser {
+  id?: string;
+  email?: string;
+  role?: string;
+  organization_id?: string;
+}
+
 // ========== RATE LIMITING CONFIGURATION ==========
 // Feature #214: Rate limit configuration with endpoint-specific limits
 const RATE_LIMIT_WINDOW_SECONDS = 60; // 1 minute window
@@ -100,7 +108,8 @@ export function registerRateLimiting(app: FastifyInstance): void {
     }
 
     // Get client identifier (prefer JWT user ID, fall back to IP)
-    const userId = (request as any).user?.id;
+    // User may be set by auth middleware, cast to get typed access
+    const userId = (request.user as AuthenticatedUser | undefined)?.id;
     const clientIp = request.ip || request.headers['x-forwarded-for'] || 'unknown';
     const identifier = userId ? `user:${userId}` : `ip:${clientIp}`;
 
