@@ -200,7 +200,7 @@ export function SecurityDashboardPage() {
       case 'HIGH': return 'bg-orange-500 text-white';
       case 'MEDIUM': return 'bg-yellow-500 text-black';
       case 'LOW': return 'bg-blue-500 text-white';
-      default: return 'bg-gray-500 text-white';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -210,7 +210,7 @@ export function SecurityDashboardPage() {
       case 'HIGH': return 'border-l-orange-500';
       case 'MEDIUM': return 'border-l-yellow-500';
       case 'LOW': return 'border-l-blue-500';
-      default: return 'border-l-gray-500';
+      default: return 'border-l-muted';
     }
   };
 
