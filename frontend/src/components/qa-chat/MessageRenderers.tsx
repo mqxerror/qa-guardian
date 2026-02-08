@@ -180,13 +180,13 @@ export function SuggestionsMessage({ suggestions }: SuggestionsMessageProps) {
     <div className="mt-2 space-y-2">
       {suggestions.map((suggestion, idx) => (
         <div key={idx} className={`rounded-md p-2 text-xs border ${
-          suggestion.priority === 'high' ? 'bg-orange-500/10 border-orange-500/20' :
+          suggestion.priority === 'high' ? 'bg-warning/10 border-warning/20' :
           suggestion.priority === 'medium' ? 'bg-primary/10 border-primary/20' :
           'bg-muted/10 border-border/20'
         }`}>
           <div className="flex items-center gap-2 mb-1">
             <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-              suggestion.priority === 'high' ? 'bg-orange-500 text-white' :
+              suggestion.priority === 'high' ? 'bg-warning text-white' :
               suggestion.priority === 'medium' ? 'bg-primary text-white' :
               'bg-muted-foreground text-white'
             }`}>{suggestion.priority}</span>
@@ -214,15 +214,15 @@ export function ScreenshotAnalysisMessage({ analysis }: ScreenshotAnalysisMessag
   return (
     <div className="mt-2 space-y-2">
       {/* Page Type Identification */}
-      <div className="rounded-md bg-purple-500/10 border border-purple-500/20 p-2">
+      <div className="rounded-md bg-accent/10 border border-accent/20 p-2">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-purple-400">🖼️</span>
+          <span className="text-accent">🖼️</span>
           <span className="text-xs font-medium text-foreground">Page Identified</span>
-          <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] bg-purple-500 text-white">
+          <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] bg-accent text-white">
             {analysis.page_type.confidence}% confidence
           </span>
         </div>
-        <p className="text-sm font-bold text-purple-300">{analysis.page_type.identified}</p>
+        <p className="text-sm font-bold text-accent">{analysis.page_type.identified}</p>
         <p className="text-[10px] text-muted-foreground">Category: {analysis.page_type.category}</p>
       </div>
 
@@ -233,7 +233,7 @@ export function ScreenshotAnalysisMessage({ analysis }: ScreenshotAnalysisMessag
           {analysis.elements_detected.slice(0, 6).map((el, idx) => (
             <div key={idx} className="flex items-center gap-2 text-[10px]">
               <span className={`w-2 h-2 rounded-full ${
-                el.type === 'input' ? 'bg-cyan-400' :
+                el.type === 'input' ? 'bg-info' :
                 el.type === 'button' ? 'bg-success/80' :
                 el.type === 'link' ? 'bg-primary/80' :
                 el.type === 'form' ? 'bg-warning/80' :
@@ -304,12 +304,12 @@ export function ScreenshotAnalysisMessage({ analysis }: ScreenshotAnalysisMessag
 
       {/* Suggested Test Assertions */}
       {analysis.suggested_test_assertions && (
-        <div className="rounded-md bg-cyan-500/10 border border-cyan-500/20 p-2">
-          <p className="text-xs font-medium text-cyan-400 mb-1">✅ Suggested Test Assertions</p>
+        <div className="rounded-md bg-info/10 border border-info/20 p-2">
+          <p className="text-xs font-medium text-info mb-1">✅ Suggested Test Assertions</p>
           <ul className="space-y-0.5">
             {analysis.suggested_test_assertions.map((assertion: string, idx: number) => (
               <li key={idx} className="text-[10px] text-muted-foreground flex items-start gap-1">
-                <span className="text-cyan-400">•</span>
+                <span className="text-info">•</span>
                 {assertion}
               </li>
             ))}

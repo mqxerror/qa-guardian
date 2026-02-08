@@ -348,7 +348,7 @@ export function AIAPIKeyManager({
                     <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full capitalize">
                       {key.provider}
                     </span>
-                    <span className="text-xs bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
                       v{key.version}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -361,7 +361,7 @@ export function AIAPIKeyManager({
                        '⬜ Retiring'}
                     </span>
                     {key.traffic_percentage > 0 && key.traffic_percentage < 100 && (
-                      <span className="text-xs bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-full animate-pulse">
+                      <span className="text-xs bg-info/10 text-info px-2 py-0.5 rounded-full animate-pulse">
                         🔄 {key.traffic_percentage}% traffic
                       </span>
                     )}
@@ -576,7 +576,7 @@ export function AIAPIKeyManager({
               </div>
               <div className="flex items-center gap-2">
                 <span className={`px-2 py-0.5 rounded text-xs ${
-                  log.provider === 'kie' ? 'bg-purple-500/10 text-purple-400' : 'bg-primary/10 text-primary'
+                  log.provider === 'kie' ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'
                 }`}>
                   {log.provider}
                 </span>

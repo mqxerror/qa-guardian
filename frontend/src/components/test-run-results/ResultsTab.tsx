@@ -104,7 +104,7 @@ const ResultsTab = ({
  <button
  onClick={rerunFailedTests}
  disabled={rerunningTests.size > 0}
- className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50"
+ className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-warning text-warning-foreground rounded-md hover:bg-warning/90 transition-colors disabled:opacity-50"
  >
  {rerunningTests.size > 0 ? (
  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -217,10 +217,10 @@ const ResultsTab = ({
  <h3 className="font-medium text-foreground truncate">{result.test_name}</h3>
  {/* Type badge based on metrics */}
  <span className={`px-2 py-0.5 text-xs rounded-full ${
- keyMetric.type === 'performance' ? 'bg-purple-100 text-purple-700' :
+ keyMetric.type === 'performance' ? 'bg-accent/10 text-accent' :
  keyMetric.type === 'accessibility' ? 'bg-primary/10 text-primary' :
- keyMetric.type === 'load' ? 'bg-orange-100 text-orange-700' :
- keyMetric.type === 'visual' ? 'bg-pink-100 text-pink-700' :
+ keyMetric.type === 'load' ? 'bg-warning/10 text-warning' :
+ keyMetric.type === 'visual' ? 'bg-accent/10 text-accent' :
  'bg-muted text-foreground'
  }`}>
  {keyMetric.type.toUpperCase()}

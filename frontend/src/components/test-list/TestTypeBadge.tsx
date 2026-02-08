@@ -16,12 +16,12 @@ const typeConfig = {
  visual_regression: {
  icon: '📸',
  label: 'Visual Regression Test',
- className: 'bg-purple-100 text-purple-700',
+ className: 'bg-accent/10 text-accent',
  },
  lighthouse: {
  icon: '🏠',
  label: 'Performance Test',
- className: 'bg-orange-100 text-orange-700',
+ className: 'bg-warning/10 text-warning',
  },
  load: {
  icon: '⚡',

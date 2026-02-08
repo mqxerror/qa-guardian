@@ -114,7 +114,7 @@ export function AccessibilityResultsDisplay({
  <button
  onClick={() => onSetSeverityFilter('serious')}
  className={`px-2 py-1 text-xs rounded-full ${
- currentSeverityFilter === 'serious' ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-700'
+ currentSeverityFilter === 'serious' ? 'bg-warning text-white' : 'bg-warning/10 text-warning'
  }`}
  >
  Serious: {a11y.violations.serious}
@@ -159,8 +159,8 @@ export function AccessibilityResultsDisplay({
  <div className="flex items-center gap-2">
  <span className={`px-2 py-0.5 text-xs rounded-full ${
  violation.impact === 'critical' ? 'bg-destructive/10 text-destructive' :
- violation.impact === 'serious' ? 'bg-orange-100 text-orange-700' :
- violation.impact === 'moderate' ? 'bg-warning/10 text-warning' :
+ violation.impact === 'serious' ? 'bg-warning/10 text-warning' :
+ violation.impact === 'moderate' ? 'bg-info/10 text-info' :
  'bg-primary/10 text-primary'
  }`}>
  {violation.impact}

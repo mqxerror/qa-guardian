@@ -255,7 +255,7 @@ export function K6ScriptTab({
               <button
                 onClick={handleSave}
                 disabled={isSaving || isSavingK6Script || !k6Script.trim()}
-                className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-md bg-success px-3 py-1.5 text-sm font-medium text-white hover:bg-success/90 disabled:opacity-50"
               >
                 {(isSaving || isSavingK6Script) ? (
                   <>

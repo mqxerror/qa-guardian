@@ -131,7 +131,7 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
  'border-destructive'
  }`}>
  <div className={`p-5 bg-gradient-to-r ${
- lighthouseStatus === 'excellent' ? 'from-success/5 to-emerald-50/50' :
+ lighthouseStatus === 'excellent' ? 'from-success/5 to-success/5' :
  lighthouseStatus === 'needs-improvement' ? 'from-warning/5 to-warning/5/50' :
  'from-destructive/5 to-rose-50/50'
  }`}>
@@ -158,7 +158,7 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
  <button
  onClick={() => analyzePerformanceResults(result.test_name, lighthouse)}
  disabled={perfAILoading && perfAIAnalysisOpen === result.test_name}
- className="px-3 py-1.5 text-sm bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+ className="px-3 py-1.5 text-sm bg-gradient-to-r from-accent to-accent/80 text-white rounded-lg hover:from-accent/90 hover:to-accent/70 transition-colors flex items-center gap-1.5 disabled:opacity-50"
  >
  {perfAILoading && perfAIAnalysisOpen === result.test_name ? (
  <>
@@ -202,11 +202,11 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
 
  {/* AI Analysis Result */}
  {perfAIResult[result.test_name] && (
- <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl mb-4">
+ <div className="p-4 bg-gradient-to-r from-accent/5 to-accent/10 border border-accent/20 rounded-xl mb-4">
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-2">
  <span className="text-xl">🤖</span>
- <h4 className="font-semibold text-purple-700">AI Performance Analysis</h4>
+ <h4 className="font-semibold text-accent">AI Performance Analysis</h4>
  </div>
  <button
  onClick={() => setPerfAIResult(prev => {
@@ -237,7 +237,7 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
  <div key={opp.id} className="flex items-center justify-between py-1">
  <span className="text-sm text-foreground truncate flex-1">{opp.title}</span>
  <span className={`text-xs font-semibold ml-2 ${
- parseFloat(String(opp.savings)) > 1 ? 'text-orange-600' :
+ parseFloat(String(opp.savings)) > 1 ? 'text-warning' :
  'text-warning'
  }`}>
  Save {opp.savings}

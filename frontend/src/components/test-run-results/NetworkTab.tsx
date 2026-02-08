@@ -19,12 +19,12 @@ import { formatBytes, formatDuration } from './utils';
 // Network type filter configuration
 const NETWORK_TYPE_FILTERS = [
  { id: 'xhr', label: 'XHR', color: 'blue' },
- { id: 'fetch', label: 'Fetch', color: 'indigo' },
+ { id: 'fetch', label: 'Fetch', color: 'accent' },
  { id: 'script', label: 'JS', color: 'yellow' },
- { id: 'stylesheet', label: 'CSS', color: 'purple' },
+ { id: 'stylesheet', label: 'CSS', color: 'accent' },
  { id: 'image', label: 'Images', color: 'green' },
  { id: 'font', label: 'Fonts', color: 'pink' },
- { id: 'document', label: 'Doc', color: 'orange' },
+ { id: 'document', label: 'Doc', color: 'warning' },
  { id: 'other', label: 'Other', color: 'gray' },
 ] as const;
 
@@ -264,13 +264,13 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  title={`DNS: ${req.timing.dns}ms`}
  />
  <div
- className="bg-orange-400 h-full"
+ className="bg-warning h-full"
  style={{ width: `${((req.timing.connect || 0) / (req.duration_ms || 1)) * 100}%` }}
  title={`Connect: ${req.timing.connect}ms`}
  />
  {(req.timing.ssl || 0) > 0 && (
  <div
- className="bg-purple-400 h-full"
+ className="bg-accent h-full"
  style={{ width: `${((req.timing.ssl || 0) / (req.duration_ms || 1)) * 100}%` }}
  title={`SSL: ${req.timing.ssl}ms`}
  />
@@ -382,7 +382,7 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  </div>
  <div className="flex items-center justify-between text-sm">
  <div className="flex items-center gap-2">
- <div className="w-3 h-3 rounded bg-orange-400"></div>
+ <div className="w-3 h-3 rounded bg-warning"></div>
  <span className="text-muted-foreground">Connect</span>
  </div>
  <span className="font-medium text-foreground">{req.timing?.connect}ms</span>
@@ -390,7 +390,7 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  {(req.timing?.ssl || 0) > 0 && (
  <div className="flex items-center justify-between text-sm">
  <div className="flex items-center gap-2">
- <div className="w-3 h-3 rounded bg-purple-400"></div>
+ <div className="w-3 h-3 rounded bg-accent"></div>
  <span className="text-muted-foreground">SSL</span>
  </div>
  <span className="font-medium text-foreground">{req.timing?.ssl}ms</span>
@@ -443,11 +443,11 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  <span className="text-muted-foreground">DNS</span>
  </div>
  <div className="flex items-center gap-1.5">
- <div className="w-3 h-3 rounded bg-orange-400"></div>
+ <div className="w-3 h-3 rounded bg-warning"></div>
  <span className="text-muted-foreground">Connect</span>
  </div>
  <div className="flex items-center gap-1.5">
- <div className="w-3 h-3 rounded bg-purple-400"></div>
+ <div className="w-3 h-3 rounded bg-accent"></div>
  <span className="text-muted-foreground">SSL</span>
  </div>
  <div className="flex items-center gap-1.5">

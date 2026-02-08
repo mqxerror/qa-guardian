@@ -68,7 +68,7 @@ export function SastConfigPanel({
  checked={sastConfig.autoScan}
  onChange={(e) => handleUpdateSastConfig({ autoScan: e.target.checked })}
  disabled={isUpdatingSast}
- className="h-4 w-4 rounded border-border text-orange-600 focus:ring-orange-500"
+ className="h-4 w-4 rounded border-border text-warning focus:ring-warning"
  />
  <label htmlFor="auto-scan" className="text-sm text-foreground">
  Automatically scan on repository changes
@@ -80,7 +80,7 @@ export function SastConfigPanel({
  <button
  onClick={handleTriggerScan}
  disabled={isRunningScan || isUpdatingSast}
- className="flex items-center gap-2 rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
+ className="flex items-center gap-2 rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning/90 disabled:opacity-50"
  >
  {isRunningScan ? (
  <>
@@ -135,7 +135,7 @@ export function SastConfigPanel({
  checked={sastConfig.prChecksEnabled || false}
  onChange={(e) => handleUpdateSastConfig({ prChecksEnabled: e.target.checked })}
  disabled={isUpdatingSast}
- className="h-4 w-4 rounded border-border text-orange-600 focus:ring-orange-500"
+ className="h-4 w-4 rounded border-border text-warning focus:ring-warning"
  />
  <label htmlFor="sast-pr-checks" className="text-sm text-foreground">
  Enable SAST checks on pull requests
@@ -149,7 +149,7 @@ export function SastConfigPanel({
  checked={sastConfig.prCommentsEnabled || false}
  onChange={(e) => handleUpdateSastConfig({ prCommentsEnabled: e.target.checked })}
  disabled={isUpdatingSast || !sastConfig.prChecksEnabled}
- className="h-4 w-4 rounded border-border text-orange-600 focus:ring-orange-500 disabled:opacity-50"
+ className="h-4 w-4 rounded border-border text-warning focus:ring-warning disabled:opacity-50"
  />
  <label htmlFor="sast-pr-comments" className={`text-sm ${sastConfig.prChecksEnabled ? 'text-foreground' : 'text-muted-foreground'}`}>
  Post SAST findings as PR comments

@@ -179,7 +179,7 @@ export default function AccessibilityTab({
  <button
  onClick={() => onAnalyzeAccessibility(result.test_name, a11y)}
  disabled={aiLoading && aiAnalysisOpen === result.test_name}
- className="px-3 py-1.5 text-sm bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+ className="px-3 py-1.5 text-sm bg-gradient-to-r from-accent to-accent/80 text-accent-foreground rounded-lg hover:from-accent/90 hover:to-accent/70 transition-colors flex items-center gap-1.5 disabled:opacity-50"
  title="AI Accessibility Analysis"
  >
  {aiLoading && aiAnalysisOpen === result.test_name ? (
@@ -202,11 +202,11 @@ export default function AccessibilityTab({
 
  {/* AI Analysis Results Panel */}
  {aiResult[result.test_name] && (
- <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl">
+ <div className="mt-4 p-4 bg-gradient-to-r from-accent/10 to-accent/5 border border-accent/20 rounded-xl">
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-2">
  <span className="text-xl">🤖</span>
- <h4 className="font-semibold text-purple-700">AI Accessibility Analysis</h4>
+ <h4 className="font-semibold text-accent">AI Accessibility Analysis</h4>
  </div>
  <button
  onClick={() => setAiResult(prev => {
@@ -273,7 +273,7 @@ export default function AccessibilityTab({
  const count = violationGroups[severity]?.length || 0;
  const colors = {
  critical: { bg: 'bg-destructive/10', text: 'text-destructive', badge: 'bg-destructive' },
- serious: { bg: 'bg-orange-100', text: 'text-orange-700', badge: 'bg-orange-600' },
+ serious: { bg: 'bg-warning/10', text: 'text-warning', badge: 'bg-warning' },
  moderate: { bg: 'bg-warning/10', text: 'text-warning', badge: 'bg-warning' },
  minor: { bg: 'bg-primary/10', text: 'text-primary', badge: 'bg-primary' },
  };
@@ -305,7 +305,7 @@ export default function AccessibilityTab({
  const isExpanded = a11yExpandedSeverities.has(severity);
  const colors = {
  critical: { border: 'border-destructive', header: 'bg-destructive/5', badge: 'bg-destructive text-white' },
- serious: { border: 'border-orange-500', header: 'bg-orange-50', badge: 'bg-orange-600 text-white' },
+ serious: { border: 'border-warning', header: 'bg-warning/10', badge: 'bg-warning text-white' },
  moderate: { border: 'border-warning', header: 'bg-warning/5', badge: 'bg-warning text-white' },
  minor: { border: 'border-primary', header: 'bg-primary/5', badge: 'bg-primary text-white' },
  };
@@ -467,7 +467,7 @@ export default function AccessibilityTab({
  key={vIdx}
  className={`p-4 rounded-lg border ${
  violation.impact === 'critical' ? 'border-destructive bg-destructive/5' :
- violation.impact === 'serious' ? 'border-orange-500 bg-orange-50' :
+ violation.impact === 'serious' ? 'border-warning bg-warning/10' :
  violation.impact === 'moderate' ? 'border-warning bg-warning/5' :
  'border-primary bg-primary/5'
  }`}
@@ -476,7 +476,7 @@ export default function AccessibilityTab({
  <div className="flex items-center gap-2">
  <span className={`px-2 py-0.5 text-xs font-medium rounded text-white ${
  violation.impact === 'critical' ? 'bg-destructive' :
- violation.impact === 'serious' ? 'bg-orange-600' :
+ violation.impact === 'serious' ? 'bg-warning' :
  violation.impact === 'moderate' ? 'bg-warning' :
  'bg-primary'
  }`}>

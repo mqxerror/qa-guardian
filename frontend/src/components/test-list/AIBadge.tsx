@@ -15,7 +15,7 @@ export const AIBadge = memo(function AIBadge({ isAiGenerated, confidenceScore, r
  const getConfidenceColor = (score: number) => {
  if (score >= 80) return 'text-success';
  if (score >= 60) return 'text-warning';
- return 'text-orange-600';
+ return 'text-warning';
  };
 
  const getConfidenceTooltip = (score: number) => {
@@ -28,7 +28,7 @@ export const AIBadge = memo(function AIBadge({ isAiGenerated, confidenceScore, r
  <div className="flex items-center gap-1">
  {/* AI Generated Badge */}
  <span
- className="rounded-full px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 cursor-help"
+ className="rounded-full px-2 py-0.5 text-xs font-medium bg-accent/10 text-accent cursor-help"
  title={
  confidenceScore !== undefined
  ? `AI Generated - ${confidenceScore}% confidence\n${getConfidenceTooltip(confidenceScore)}`
@@ -46,7 +46,7 @@ export const AIBadge = memo(function AIBadge({ isAiGenerated, confidenceScore, r
  {/* Review Status Badges */}
  {reviewStatus === 'pending_review' && (
  <span
- className="rounded-full px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-700"
+ className="rounded-full px-2 py-0.5 text-xs font-medium bg-warning/10 text-warning"
  title="Pending human review"
  >
  ⏳ Review

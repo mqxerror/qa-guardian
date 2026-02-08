@@ -32,7 +32,7 @@ export function AIPoweredBadge({ size = 'md', className = '' }: BadgeProps) {
 
  return (
  <span
- className={`inline-flex items-center rounded-full bg-gradient-to-r from-purple-500/10 to-primary/10 border border-purple-500/30 text-purple-600 font-medium ${sizeClasses[size]} ${className}`}
+ className={`inline-flex items-center rounded-full bg-gradient-to-r from-accent/10 to-primary/10 border border-accent/30 text-accent font-medium ${sizeClasses[size]} ${className}`}
  title="Powered by Claude AI"
  >
  <svg
@@ -71,7 +71,7 @@ export function MCPReadyBadge({ size = 'md', className = '' }: BadgeProps) {
 
  return (
  <span
- className={`inline-flex items-center rounded-full bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 text-emerald-600 font-medium ${sizeClasses[size]} ${className}`}
+ className={`inline-flex items-center rounded-full bg-gradient-to-r from-success/10 to-info/10 border border-success/30 text-success font-medium ${sizeClasses[size]} ${className}`}
  title="Available via Model Context Protocol (MCP)"
  >
  <svg
@@ -110,7 +110,7 @@ export function AIReadyBadge({ size = 'md', className = '' }: BadgeProps) {
 
  return (
  <span
- className={`inline-flex items-center rounded-full bg-gradient-to-r from-warning/10 via-orange-500/10 to-destructive/10 border border-warning/30 text-warning font-medium ${sizeClasses[size]} ${className}`}
+ className={`inline-flex items-center rounded-full bg-gradient-to-r from-warning/10 via-warning/10 to-destructive/10 border border-warning/30 text-warning font-medium ${sizeClasses[size]} ${className}`}
  title="AI-ready: Powered by Claude AI and available via MCP"
  >
  <svg
@@ -137,7 +137,7 @@ export function AIReadyBadge({ size = 'md', className = '' }: BadgeProps) {
 export function AIDot({ className = '' }: { className?: string }) {
  return (
  <span
- className={`inline-block w-1.5 h-1.5 rounded-full bg-purple-500 ${className}`}
+ className={`inline-block w-1.5 h-1.5 rounded-full bg-accent ${className}`}
  title="AI Powered"
  />
  );
@@ -149,7 +149,7 @@ export function AIDot({ className = '' }: { className?: string }) {
 export function MCPDot({ className = '' }: { className?: string }) {
  return (
  <span
- className={`inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 ${className}`}
+ className={`inline-block w-1.5 h-1.5 rounded-full bg-success ${className}`}
  title="MCP Ready"
  />
  );

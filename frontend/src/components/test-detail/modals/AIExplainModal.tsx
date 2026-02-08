@@ -40,8 +40,8 @@ export function AIExplainModal({
  {/* Header */}
  <div className="flex items-center justify-between p-6 border-b border-border">
  <div className="flex items-center gap-3">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-100">
- <svg className="h-6 w-6 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
+ <svg className="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
  </svg>
  </div>
@@ -66,7 +66,7 @@ export function AIExplainModal({
  <div className="flex-1 overflow-y-auto p-6">
  {isLoading ? (
  <div className="flex flex-col items-center justify-center py-12">
- <svg className="animate-spin h-10 w-10 text-violet-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+ <svg className="animate-spin h-10 w-10 text-accent mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
  </svg>
@@ -75,10 +75,10 @@ export function AIExplainModal({
  ) : explanation ? (
  <div className="space-y-6">
  {/* Summary Section */}
- <div className="rounded-lg border border-violet-200 bg-violet-50 p-4">
- <h4 className="font-semibold text-violet-900 mb-2">Summary</h4>
- <p className="text-violet-800">{explanation.summary}</p>
- <p className="text-sm text-violet-600 mt-2"><strong>Purpose:</strong> {explanation.purpose}</p>
+ <div className="rounded-lg border border-accent/20 bg-accent/5 p-4">
+ <h4 className="font-semibold text-accent mb-2">Summary</h4>
+ <p className="text-accent/90">{explanation.summary}</p>
+ <p className="text-sm text-accent/80 mt-2"><strong>Purpose:</strong> {explanation.purpose}</p>
  </div>
 
  {/* Complexity Badge */}
@@ -118,7 +118,7 @@ export function AIExplainModal({
  <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded ${
  step.type === 'navigation' ? 'bg-primary/10 text-primary' :
  step.type === 'interaction' ? 'bg-success/10 text-success' :
- step.type === 'assertion' ? 'bg-purple-100 text-purple-700' :
+ step.type === 'assertion' ? 'bg-accent/10 text-accent' :
  step.type === 'wait' ? 'bg-warning/10 text-warning' :
  'bg-muted text-foreground'
  }`}>{step.type}</span>
@@ -147,7 +147,7 @@ export function AIExplainModal({
  <p className="text-sm text-foreground">{assertion.what_it_checks}</p>
  <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded ${
  assertion.importance === 'critical' ? 'bg-destructive/10 text-destructive' :
- assertion.importance === 'high' ? 'bg-orange-100 text-orange-700' :
+ assertion.importance === 'high' ? 'bg-warning/10 text-warning' :
  'bg-primary/10 text-primary'
  }`}>{assertion.importance} importance</span>
  </div>

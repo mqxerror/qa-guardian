@@ -104,7 +104,7 @@ export const OpportunitiesSection: React.FC<OpportunitiesSectionProps> = ({
  toggleOpportunity,
 }) => (
  <div className="border border-border rounded-xl overflow-hidden mb-6 shadow-sm">
- <div className="p-4 bg-gradient-to-r from-orange-50 to-warning/5 border-b border-border flex items-center justify-between">
+ <div className="p-4 bg-gradient-to-r from-warning/5 to-warning/5 border-b border-border flex items-center justify-between">
  <h4 className="font-semibold text-foreground flex items-center gap-2">
  <span className="text-lg">💡</span> Opportunities
  </h4>
@@ -130,7 +130,7 @@ export const OpportunitiesSection: React.FC<OpportunitiesSectionProps> = ({
  </svg>
  <span className="text-sm text-foreground">{opp.title}</span>
  </div>
- <span className="text-sm font-medium text-orange-600">
+ <span className="text-sm font-medium text-warning">
  Save ~{opp.savings}
  </span>
  </button>
@@ -158,7 +158,7 @@ export const DiagnosticsSection: React.FC<DiagnosticsSectionProps> = ({
  toggleDiagnostic,
 }) => (
  <div className="border border-border rounded-xl overflow-hidden shadow-sm">
- <div className="p-4 bg-gradient-to-r from-primary/5 to-indigo-50 border-b border-border flex items-center justify-between">
+ <div className="p-4 bg-gradient-to-r from-primary/5 to-accent/5 border-b border-border flex items-center justify-between">
  <h4 className="font-semibold text-foreground flex items-center gap-2">
  <span className="text-lg">🔍</span> Diagnostics
  </h4>
@@ -213,9 +213,9 @@ export const SecurityInsightsSection: React.FC<SecurityInsightsSectionProps> = (
  <div className="border border-border rounded-lg overflow-hidden mt-6">
  <button
  onClick={() => setSecurityInsightsCollapsed(!securityInsightsCollapsed)}
- className="w-full p-3 bg-purple-50 border-b border-border flex items-center justify-between hover:bg-purple-100 transition-colors"
+ className="w-full p-3 bg-accent/5 border-b border-border flex items-center justify-between hover:bg-accent/10 transition-colors"
  >
- <h4 className="font-medium text-purple-700 flex items-center gap-2">
+ <h4 className="font-medium text-accent flex items-center gap-2">
  <span>🔒</span> Security Insights
  </h4>
  <div className="flex items-center gap-2">
@@ -239,7 +239,7 @@ export const SecurityInsightsSection: React.FC<SecurityInsightsSectionProps> = (
  </span>
  )}
  <svg
- className={`w-4 h-4 text-purple-600 transition-transform ${securityInsightsCollapsed ? '' : 'rotate-180'}`}
+ className={`w-4 h-4 text-accent transition-transform ${securityInsightsCollapsed ? '' : 'rotate-180'}`}
  fill="none"
  viewBox="0 0 24 24"
  stroke="currentColor"

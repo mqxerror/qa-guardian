@@ -27,11 +27,11 @@ export const TestTypeBadge: React.FC<TestTypeBadgeProps> = React.memo(({
 
  const typeColors: Record<TestTypeEnum, string> = {
  e2e: 'bg-primary/10 text-primary',
- visual_regression: 'bg-purple-100 text-purple-800',
+ visual_regression: 'bg-accent/10 text-accent',
  lighthouse: 'bg-warning/10 text-warning',
- load: 'bg-orange-100 text-orange-800',
+ load: 'bg-warning/10 text-warning',
  accessibility: 'bg-success/10 text-success',
- api: 'bg-indigo-100 text-indigo-800',
+ api: 'bg-accent/10 text-accent',
  };
 
  return (
@@ -120,7 +120,7 @@ export const ReviewStatusBadge: React.FC<ReviewStatusBadgeProps> = React.memo(({
 
  const statusConfig = {
  pending: { icon: '⏳', label: 'Pending', class: 'bg-warning/10 text-warning' },
- pending_review: { icon: '👀', label: 'Needs Review', class: 'bg-orange-100 text-orange-800' },
+ pending_review: { icon: '👀', label: 'Needs Review', class: 'bg-warning/10 text-warning' },
  approved: { icon: '✓', label: 'Approved', class: 'bg-success/10 text-success' },
  rejected: { icon: '✗', label: 'Rejected', class: 'bg-destructive/10 text-destructive' },
  };

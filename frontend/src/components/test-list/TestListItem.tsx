@@ -55,7 +55,7 @@ const ResultBadge = memo(function ResultBadge({ result }: { result: 'passed' | '
  const styles = {
  passed: 'bg-success/10 text-success',
  failed: 'bg-destructive/10 text-destructive',
- error: 'bg-orange-100 text-orange-800',
+ error: 'bg-warning/10 text-warning',
  running: 'bg-primary/10 text-primary',
  };
 
@@ -111,7 +111,7 @@ export const TestListItem = memo(function TestListItem({
  checked={isSelected}
  onChange={handleCheckboxChange}
  onClick={(e) => e.stopPropagation()}
- className="w-4 h-4 rounded border-border text-purple-600 focus:ring-purple-500 flex-shrink-0"
+ className="w-4 h-4 rounded border-border text-accent focus:ring-accent flex-shrink-0"
  />
  )}
  <div className="min-w-0">

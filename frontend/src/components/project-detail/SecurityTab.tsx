@@ -227,8 +227,8 @@ function SastHeader({ sastConfig, isUpdatingSast, handleUpdateSastConfig }: {
  return (
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-4">
- <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
- <svg className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warning/10">
+ <svg className="h-6 w-6 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
  </svg>
  </div>
@@ -245,7 +245,7 @@ function SastHeader({ sastConfig, isUpdatingSast, handleUpdateSastConfig }: {
  aria-checked={sastConfig.enabled}
  aria-labelledby="sast-toggle-label"
  onClick={() => !isUpdatingSast && handleUpdateSastConfig({ enabled: !sastConfig.enabled })}
- className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500/20 ${sastConfig.enabled ? 'bg-orange-600' : 'bg-muted'}`}
+ className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-warning/20 ${sastConfig.enabled ? 'bg-warning' : 'bg-muted'}`}
  >
  <span className={`inline-block h-4 w-4 transform rounded-full bg-card transition-transform ${sastConfig.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
  </button>
@@ -274,7 +274,7 @@ function SastEmptyState({ handleUpdateSastConfig }: { handleUpdateSastConfig: (u
  </svg>
  <h3 className="mt-4 text-lg font-semibold text-foreground">SAST Scanning Disabled</h3>
  <p className="mt-2 text-muted-foreground">Enable SAST scanning to detect security vulnerabilities in your source code using Semgrep.</p>
- <button onClick={() => handleUpdateSastConfig({ enabled: true })} className="mt-4 rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
+ <button onClick={() => handleUpdateSastConfig({ enabled: true })} className="mt-4 rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning/90">
  Enable SAST Scanning
  </button>
  </div>

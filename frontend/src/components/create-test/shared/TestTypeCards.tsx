@@ -60,10 +60,10 @@ const TEST_TYPES: TestTypeConfig[] = [
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
  </svg>
  ),
- colorClass: 'text-purple-600',
- hoverBorderClass: 'hover:border-purple-300',
- selectedBorderClass: 'border-purple-500 ring-2 ring-purple-500/20',
- iconBgClass: 'bg-purple-100',
+ colorClass: 'text-accent',
+ hoverBorderClass: 'hover:border-accent/30',
+ selectedBorderClass: 'border-accent ring-2 ring-accent/20',
+ iconBgClass: 'bg-accent/10',
  },
  {
  id: 'performance',

@@ -265,7 +265,7 @@ export function RecordTestModal({
         {/* Header */}
         <div className="flex items-center gap-3 p-4 pb-0">
           <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-            isRecording ? 'bg-destructive/10' : 'bg-orange-100'
+            isRecording ? 'bg-destructive/10' : 'bg-warning/10'
           }`}>
             <span className="text-xl">{isRecording ? '🔴' : '🎬'}</span>
           </div>
@@ -347,7 +347,7 @@ export function RecordTestModal({
               </button>
               <button
                 onClick={onStartRecording}
-                className="rounded-lg bg-gradient-to-r from-orange-500 to-destructive px-5 py-2 font-medium text-white hover:from-orange-600 hover:to-destructive transition-all shadow-md hover:shadow-lg"
+                className="rounded-lg bg-gradient-to-r from-warning to-destructive px-5 py-2 font-medium text-white hover:from-warning/90 hover:to-destructive transition-all shadow-md hover:shadow-lg"
               >
                 ⏺ Start Recording
               </button>
@@ -441,7 +441,7 @@ export function RecordTestModal({
                             </button>
                             <button
                               onClick={onStopAndSave}
-                              className="px-3 py-1.5 text-xs rounded-md bg-orange-600 hover:bg-orange-700 text-white transition-colors"
+                              className="px-3 py-1.5 text-xs rounded-md bg-warning hover:bg-warning/90 text-white transition-colors"
                             >
                               💾 Stop & Save
                             </button>
@@ -488,9 +488,9 @@ export function RecordTestModal({
                     {/* Crosshair and coordinate readout */}
                     {debugCoords && (
                       <>
-                        <div className="absolute bg-cyan-400" style={{ left: debugCoords.cssX, top: 0, width: 1, height: '100%', opacity: 0.5 }} />
-                        <div className="absolute bg-cyan-400" style={{ left: 0, top: debugCoords.cssY, width: '100%', height: 1, opacity: 0.5 }} />
-                        <div className="absolute rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-cyan-300 font-mono whitespace-nowrap"
+                        <div className="absolute bg-info" style={{ left: debugCoords.cssX, top: 0, width: 1, height: '100%', opacity: 0.5 }} />
+                        <div className="absolute bg-info" style={{ left: 0, top: debugCoords.cssY, width: '100%', height: 1, opacity: 0.5 }} />
+                        <div className="absolute rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-info font-mono whitespace-nowrap"
                           style={{ left: Math.min(debugCoords.cssX + 10, (browserViewRef.current?.clientWidth || 300) - 120), top: Math.min(debugCoords.cssY + 10, (browserViewRef.current?.clientHeight || 200) - 30) }}>
                           VP: {debugCoords.vpX},{debugCoords.vpY} | CSS: {Math.round(debugCoords.cssX)},{Math.round(debugCoords.cssY)}
                         </div>
@@ -556,7 +556,7 @@ export function RecordTestModal({
                   </button>
                   <button
                     onClick={() => handleAddRecordingStep('screenshot', {})}
-                    className="inline-flex items-center gap-1 rounded-md border border-purple-200 bg-purple-50 px-2 py-1 text-[10px] font-medium text-purple-700 hover:bg-purple-100 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-md border border-accent/20 bg-accent/5 px-2 py-1 text-[10px] font-medium text-accent hover:bg-accent/10 transition-colors"
                   >
                     📸 Screenshot
                   </button>
@@ -583,7 +583,7 @@ export function RecordTestModal({
                       handleAddRecordingStep('hover', { selector: 'body', value: 'Hover over element' });
                       toast.info('Hover step added. Edit the selector in the review modal.');
                     }}
-                    className="inline-flex items-center gap-1 rounded-md border border-orange-200 bg-orange-50 px-2 py-1 text-[10px] font-medium text-orange-700 hover:bg-orange-100 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-md border border-warning/20 bg-warning/5 px-2 py-1 text-[10px] font-medium text-warning hover:bg-warning/10 transition-colors"
                   >
                     👆 Hover
                   </button>

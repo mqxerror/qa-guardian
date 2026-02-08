@@ -366,7 +366,7 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  : getConfidenceLevel(result.overallConfidence).color === 'yellow'
  ? 'bg-warning/10 text-warning'
  : getConfidenceLevel(result.overallConfidence).color === 'orange'
- ? 'bg-orange-100 text-orange-700'
+ ? 'bg-warning/10 text-warning'
  : 'bg-destructive/10 text-destructive'
  }`}>
  <span>{Math.round(result.overallConfidence * 100)}%</span>
@@ -418,7 +418,7 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
 
  {/* Viewport */}
  <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
- <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg bg-purple-100">
+ <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg bg-accent/10">
  {VIEWPORT_CONFIG[result.viewport.preset].icon}
  </div>
  <div>

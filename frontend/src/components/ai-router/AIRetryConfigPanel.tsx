@@ -151,17 +151,17 @@ export function AIRetryConfigPanel({
               <div className="text-xs text-warning mt-1">Initial backoff delay</div>
             </div>
 
-            <div className="p-3 bg-purple-500/10 rounded-lg">
-              <label className="block text-sm font-medium text-purple-400 mb-1">Max Delay (ms)</label>
+            <div className="p-3 bg-accent/10 rounded-lg">
+              <label className="block text-sm font-medium text-accent mb-1">Max Delay (ms)</label>
               <input
                 type="number"
                 min="1000"
                 max="60000"
                 value={retryConfig.max_delay_ms}
                 onChange={(e) => setRetryConfig({ ...retryConfig, max_delay_ms: parseInt(e.target.value) || 5000 })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-input text-foreground"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-input text-foreground"
               />
-              <div className="text-xs text-purple-400 mt-1">Maximum backoff delay cap</div>
+              <div className="text-xs text-accent mt-1">Maximum backoff delay cap</div>
             </div>
 
             <div className="p-3 bg-success/5 rounded-lg">
@@ -197,7 +197,7 @@ export function AIRetryConfigPanel({
                   type="checkbox"
                   checked={retryConfig.retry_on_rate_limit}
                   onChange={(e) => setRetryConfig({ ...retryConfig, retry_on_rate_limit: e.target.checked })}
-                  className="w-4 h-4 text-purple-400 rounded focus:ring-purple-500"
+                  className="w-4 h-4 text-accent rounded focus:ring-accent"
                 />
                 <span className="text-sm">Rate Limit</span>
               </label>
@@ -214,7 +214,7 @@ export function AIRetryConfigPanel({
           </div>
 
           {/* Backoff Preview */}
-          <div className="mb-4 p-3 bg-gradient-to-r from-primary/5 to-purple-500/10 rounded-lg">
+          <div className="mb-4 p-3 bg-gradient-to-r from-primary/5 to-accent/10 rounded-lg">
             <h3 className="text-sm font-medium mb-2">Backoff Preview</h3>
             <div className="flex items-end gap-1 h-16">
               {Array.from({ length: retryConfig.max_retries }, (_, i) => {
@@ -224,7 +224,7 @@ export function AIRetryConfigPanel({
                 return (
                   <div key={i} className="flex flex-col items-center">
                     <div
-                      className="w-8 bg-gradient-to-t from-primary to-purple-500 rounded-t transition-all"
+                      className="w-8 bg-gradient-to-t from-primary to-accent rounded-t transition-all"
                       style={{ height: `${Math.max(height, 8)}px` }}
                       title={`Attempt ${i + 1}: ${delay}ms`}
                     />
@@ -252,9 +252,9 @@ export function AIRetryConfigPanel({
               <div className="text-2xl font-bold text-destructive">{retryStats.failed_after_retries}</div>
               <div className="text-xs text-destructive">Failed</div>
             </div>
-            <div className="text-center p-3 bg-purple-500/10 rounded-lg">
-              <div className="text-2xl font-bold text-purple-400">{retryStats.avg_retries_before_success.toFixed(1)}</div>
-              <div className="text-xs text-purple-400">Avg Attempts</div>
+            <div className="text-center p-3 bg-accent/10 rounded-lg">
+              <div className="text-2xl font-bold text-accent">{retryStats.avg_retries_before_success.toFixed(1)}</div>
+              <div className="text-xs text-accent">Avg Attempts</div>
             </div>
           </div>
 
@@ -269,7 +269,7 @@ export function AIRetryConfigPanel({
                   <div className="text-xs text-muted-foreground">Timeout</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 p-2 bg-purple-500/10 rounded">
+              <div className="flex items-center gap-2 p-2 bg-accent/10 rounded">
                 <span>Rate</span>
                 <div>
                   <div className="text-sm font-medium">{retryStats.by_error_type.rate_limit}</div>
@@ -307,7 +307,7 @@ export function AIRetryConfigPanel({
               <button
                 onClick={() => simulateRetry('rate_limit')}
                 disabled={isSimulatingRetry}
-                className="px-4 py-2 bg-purple-500/10 text-purple-400 rounded-lg hover:bg-purple-500/20 disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 bg-accent/10 text-accent rounded-lg hover:bg-accent/20 disabled:opacity-50 flex items-center gap-2"
               >
                 {isSimulatingRetry ? 'Simulating...' : 'Rate Limit Retry'}
               </button>

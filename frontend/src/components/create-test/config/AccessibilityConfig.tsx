@@ -302,7 +302,7 @@ export const AccessibilityConfig: React.FC<AccessibilityConfigProps> = ({
  >
  <div className={`w-3 h-3 rounded-full ${
  severity.color === 'red' ? 'bg-destructive' :
- severity.color === 'orange' ? 'bg-orange-500' :
+ severity.color === 'orange' ? 'bg-warning' :
  severity.color === 'yellow' ? 'bg-warning' :
  'bg-primary'
  }`} />

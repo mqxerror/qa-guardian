@@ -158,8 +158,8 @@ export function AITimeoutPanel({
             <div className="text-2xl font-bold text-success">{timeoutStats.fallback_success_rate.toFixed(1)}%</div>
             <div className="text-xs text-success">Fallback Success</div>
           </div>
-          <div className="text-center p-3 bg-purple-500/10 rounded-lg col-span-2">
-            <div className="text-lg font-bold text-purple-400 flex items-center justify-center gap-2">
+          <div className="text-center p-3 bg-accent/10 rounded-lg col-span-2">
+            <div className="text-lg font-bold text-accent flex items-center justify-center gap-2">
               {timeoutStats.most_timeout_prone_feature && (
                 <>
                   {getFeatureIcon(timeoutStats.most_timeout_prone_feature)}
@@ -167,7 +167,7 @@ export function AITimeoutPanel({
                 </>
               )}
             </div>
-            <div className="text-xs text-purple-400">Most Timeout-Prone</div>
+            <div className="text-xs text-accent">Most Timeout-Prone</div>
           </div>
         </div>
       </div>

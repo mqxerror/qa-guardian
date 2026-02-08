@@ -58,7 +58,7 @@ export function InsertTemplateModal({
  onClick={(e) => e.stopPropagation()}
  >
  <div className="flex items-center gap-3 mb-4">
- <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
+ <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
  <span className="text-xl">📋</span>
  </div>
  <div>
@@ -99,7 +99,7 @@ export function InsertTemplateModal({
  <div className="flex gap-2">
  <button
  onClick={() => onInsertTemplate(testId, tpl)}
- className="rounded-md bg-purple-500 px-3 py-1 text-xs font-medium text-white hover:bg-purple-600 transition-colors"
+ className="rounded-md bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent/90 transition-colors"
  >
  Insert Steps
  </button>

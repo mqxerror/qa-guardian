@@ -256,9 +256,9 @@ export function AIBudgetDashboard({
               <div className="text-xl font-bold text-success">{formatCurrency(spendingData.avg_cost_per_request_cents)}</div>
               <div className="text-xs text-success">Avg Cost/Req</div>
             </div>
-            <div className="text-center p-3 bg-purple-50 rounded-lg">
-              <div className="text-xl font-bold text-purple-600">{formatCurrency(spendingData.last_month_spend_cents)}</div>
-              <div className="text-xs text-purple-800">Last Month</div>
+            <div className="text-center p-3 bg-accent/5 rounded-lg">
+              <div className="text-xl font-bold text-accent">{formatCurrency(spendingData.last_month_spend_cents)}</div>
+              <div className="text-xs text-accent">Last Month</div>
             </div>
             <div className="text-center p-3 bg-warning/5 rounded-lg">
               <div className="text-xl font-bold text-warning">{formatCurrency(getProjectedSpend())}</div>

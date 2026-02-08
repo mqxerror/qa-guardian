@@ -103,13 +103,13 @@ export function TestListSection({
  );
  case 'visual_regression':
  return (
- <span className="inline-flex items-center rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700" title="Visual Regression Test">
+ <span className="inline-flex items-center rounded bg-accent/10 px-1.5 py-0.5 text-xs font-medium text-accent" title="Visual Regression Test">
  📸
  </span>
  );
  case 'accessibility':
  return (
- <span className="inline-flex items-center rounded bg-teal-100 px-1.5 py-0.5 text-xs font-medium text-teal-700" title="Accessibility Test">
+ <span className="inline-flex items-center rounded bg-info/10 px-1.5 py-0.5 text-xs font-medium text-info" title="Accessibility Test">
  ♿
  </span>
  );
@@ -121,7 +121,7 @@ export function TestListSection({
  );
  case 'load':
  return (
- <span className="inline-flex items-center rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-700" title="Load Test (K6)">
+ <span className="inline-flex items-center rounded bg-warning/10 px-1.5 py-0.5 text-xs font-medium text-warning" title="Load Test (K6)">
  📊
  </span>
  );
@@ -388,7 +388,7 @@ function VirtualizedTestList({
  {/* Feature #1164: AI Generated badge with confidence level */}
  {test.ai_generated && (
  <span
- className="rounded-full px-2 py-0.5 text-xs font-medium cursor-help bg-purple-100 text-purple-700"
+ className="rounded-full px-2 py-0.5 text-xs font-medium cursor-help bg-accent/10 text-accent"
  title={
  test.ai_confidence_score !== undefined
  ? `AI Generated - ${test.ai_confidence_score}% confidence\n${
@@ -406,7 +406,7 @@ function VirtualizedTestList({
  <span className={`ml-1 font-semibold ${
  test.ai_confidence_score >= 80 ? 'text-success' :
  test.ai_confidence_score >= 60 ? 'text-warning' :
- 'text-orange-600'
+ 'text-warning'
  }`}>
  {test.ai_confidence_score}%
  </span>
@@ -415,7 +415,7 @@ function VirtualizedTestList({
  )}
  {/* Feature #1151: Human review workflow - Show review status for AI-generated tests */}
  {test.ai_generated && test.review_status === 'pending_review' && (
- <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-700" title="Pending human review">
+ <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-warning/10 text-warning" title="Pending human review">
  ⏳ Review
  </span>
  )}
@@ -472,7 +472,7 @@ function VirtualizedTestList({
  : test.last_result === 'failed'
  ? 'bg-destructive/10 text-destructive'
  : test.last_result === 'error'
- ? 'bg-orange-100 text-orange-700'
+ ? 'bg-warning/10 text-warning'
  : 'bg-muted text-foreground'
  }`}>
  {test.last_result === 'passed' ? '✓' : test.last_result === 'failed' ? '✗' : test.last_result === 'error' ? '⚠' : '○'}
@@ -674,7 +674,7 @@ function VirtualizedTestList({
  </span>
  {test.ai_generated && (
  <span
- className="rounded-full px-2 py-0.5 text-xs font-medium cursor-help bg-purple-100 text-purple-700"
+ className="rounded-full px-2 py-0.5 text-xs font-medium cursor-help bg-accent/10 text-accent"
  title={
  test.ai_confidence_score !== undefined
  ? `AI Generated - ${test.ai_confidence_score}% confidence`

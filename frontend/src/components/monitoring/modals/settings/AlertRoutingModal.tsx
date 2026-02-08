@@ -499,8 +499,8 @@ function PagerDutyConfig({ dest, index, onUpdate }: ConfigProps) {
  <div key={severity} className="flex items-center gap-2">
  <span className={`w-16 font-medium ${
  severity === 'critical' ? 'text-destructive' :
- severity === 'high' ? 'text-orange-500' :
- severity === 'medium' ? 'text-warning' : 'text-primary'
+ severity === 'high' ? 'text-warning' :
+ severity === 'medium' ? 'text-info' : 'text-primary'
  }`}>{severity}:</span>
  <select
  value={dest.config.severity_mapping?.[severity] || (
@@ -794,8 +794,8 @@ function TeamsConfig({ dest, index, onUpdate }: ConfigProps) {
 
 function DiscordConfig({ dest, index, onUpdate }: ConfigProps) {
  return (
- <div className="space-y-3 p-3 rounded-md bg-indigo-500/10 border border-indigo-500/30">
- <p className="text-xs text-indigo-600 mb-2">
+ <div className="space-y-3 p-3 rounded-md bg-accent/10 border border-accent/30">
+ <p className="text-xs text-accent mb-2">
  🎮 Discord Webhook - send alerts to Discord channels
  </p>
  <div>

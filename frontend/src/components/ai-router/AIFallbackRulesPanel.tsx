@@ -177,9 +177,9 @@ export function AIFallbackRulesPanel({
             <div className="text-2xl font-bold text-destructive">{fallbackStats.failed_fallbacks_24h}</div>
             <div className="text-xs text-destructive">Failed</div>
           </div>
-          <div className="p-3 bg-purple-500/10 rounded-lg text-center">
-            <div className="text-2xl font-bold text-purple-400">{fallbackStats.avg_fallback_latency_ms}ms</div>
-            <div className="text-xs text-purple-400">Avg Latency</div>
+          <div className="p-3 bg-accent/10 rounded-lg text-center">
+            <div className="text-2xl font-bold text-accent">{fallbackStats.avg_fallback_latency_ms}ms</div>
+            <div className="text-xs text-accent">Avg Latency</div>
           </div>
         </div>
 
@@ -307,7 +307,7 @@ export function AIFallbackRulesPanel({
                         <span className="text-primary">🔔 Notifications on</span>
                       )}
                       {rule.preserve_context && (
-                        <span className="text-purple-400">📋 Preserves context</span>
+                        <span className="text-accent">📋 Preserves context</span>
                       )}
                     </div>
                   )}
@@ -318,7 +318,7 @@ export function AIFallbackRulesPanel({
         </div>
 
         {/* Test Fallback Manually */}
-        <div className="mb-6 p-4 bg-gradient-to-r from-warning/5 to-orange-500/10 rounded-lg border border-warning/20">
+        <div className="mb-6 p-4 bg-gradient-to-r from-warning/5 to-warning/10 rounded-lg border border-warning/20">
           <h3 className="text-sm font-medium mb-3">🧪 Test Fallback Manually</h3>
           <p className="text-xs text-foreground mb-3">Simulate different failure scenarios to test your fallback rules</p>
           <div className="flex flex-wrap gap-2">

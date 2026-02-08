@@ -35,11 +35,11 @@ export function AIRouterStats({ stats }: AIRouterStatsProps) {
         <div className="text-xs text-foreground">Fallbacks</div>
       </div>
       <div className="bg-card rounded-lg shadow p-3 text-center">
-        <div className="text-2xl font-bold text-purple-600">{stats.fallback_success_rate}%</div>
+        <div className="text-2xl font-bold text-accent">{stats.fallback_success_rate}%</div>
         <div className="text-xs text-foreground">Fallback Success</div>
       </div>
       <div className="bg-card rounded-lg shadow p-3 text-center">
-        <div className="text-2xl font-bold text-cyan-600">{stats.avg_latency_ms}ms</div>
+        <div className="text-2xl font-bold text-info">{stats.avg_latency_ms}ms</div>
         <div className="text-xs text-foreground">Avg Latency</div>
       </div>
       <div className="bg-card rounded-lg shadow p-3 text-center">

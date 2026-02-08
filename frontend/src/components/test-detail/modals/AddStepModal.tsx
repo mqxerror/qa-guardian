@@ -358,12 +358,12 @@ export function AddStepModal({
  <span className="text-sm text-foreground">Fail on any violation (ignore threshold)</span>
  </label>
  </div>
- <div className="rounded-md border border-purple-200 bg-purple-50 p-3">
+ <div className="rounded-md border border-accent/20 bg-accent/5 p-3">
  <div className="flex items-start gap-2">
- <svg className="h-5 w-5 text-purple-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="h-5 w-5 text-accent mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
  </svg>
- <div className="text-sm text-purple-700">
+ <div className="text-sm text-accent">
  <p className="font-medium">Accessibility Check</p>
  <p className="mt-1">Runs an accessibility scan on the current page using axe-core. The E2E test will fail if accessibility violations exceed the configured threshold.</p>
  </div>

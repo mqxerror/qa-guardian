@@ -205,13 +205,13 @@ export function getActionTypeClass(action: string): string {
  return 'bg-primary/10 text-primary';
  case 'type':
  case 'fill':
- return 'bg-purple-100 text-purple-800';
+ return 'bg-accent/10 text-accent';
  case 'navigate':
  case 'goto':
  return 'bg-success/10 text-success';
  case 'expect':
  case 'assert':
- return 'bg-orange-100 text-orange-800';
+ return 'bg-warning/10 text-warning';
  case 'wait':
  case 'screenshot':
  return 'bg-warning/10 text-warning';

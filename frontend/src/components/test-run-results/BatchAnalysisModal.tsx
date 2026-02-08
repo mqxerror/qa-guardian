@@ -135,10 +135,10 @@ Please identify:
  aria-labelledby="batch-analysis-title"
  className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
  >
- <div className="p-4 border-b border-border bg-gradient-to-r from-purple-600/10 to-indigo-600/10">
+ <div className="p-4 border-b border-border bg-gradient-to-r from-accent/10 to-accent/10">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center" aria-hidden="true">
+ <div className="h-10 w-10 rounded-full bg-gradient-to-r from-accent to-accent/80 flex items-center justify-center" aria-hidden="true">
  <span className="text-white text-lg">🤖</span>
  </div>
  <div>
@@ -181,11 +181,11 @@ Please identify:
  {/* Analysis Content */}
  {batchAnalysisLoading ? (
  <div className="flex flex-col items-center justify-center py-8">
- <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent mb-3" />
+ <div className="animate-spin rounded-full h-8 w-8 border-2 border-accent border-t-transparent mb-3" />
  <p className="text-sm text-muted-foreground">Finding common patterns across failures...</p>
  </div>
  ) : batchAnalysisResult ? (
- <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 border border-purple-200">
+ <div className="bg-gradient-to-r from-accent/5 to-accent/10 rounded-lg p-4 border border-accent/20">
  <div className="whitespace-pre-wrap text-sm text-foreground">{batchAnalysisResult}</div>
  </div>
  ) : null}
@@ -208,7 +208,7 @@ Please identify:
  setBatchAnalysisResult(null);
  handleBatchAnalysis();
  }}
- className="text-purple-600 hover:text-purple-700"
+ className="text-accent hover:text-accent/80"
  >
  🔄 Refresh
  </button>

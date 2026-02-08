@@ -266,7 +266,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  return newConfig;
  });
  }}
- className="text-xs px-2 py-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+ className="text-xs px-2 py-1 text-accent hover:bg-accent/5 rounded transition-colors"
  >
  Select All
  </button>
@@ -356,7 +356,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  onClick={() => updateField('captureMode', mode.value)}
  className={`flex flex-col items-start p-3 rounded-lg border text-left transition-colors ${
  config.captureMode === mode.value
- ? 'border-purple-500 bg-purple-50'
+ ? 'border-accent bg-accent/5'
  : 'border-border hover:border-border'
  }`}
  >
@@ -401,7 +401,7 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  min={0}
  max={10}
  step={0.5}
- className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-purple-600"
+ className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-accent"
  />
  <div className="flex items-center gap-1 min-w-[80px]">
  <input

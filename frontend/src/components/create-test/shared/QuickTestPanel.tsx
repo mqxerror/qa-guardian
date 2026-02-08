@@ -82,9 +82,9 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  </svg>
  ),
  colorClasses: {
- selected: 'border-purple-500 bg-purple-50',
- checkbox: 'border-purple-500 bg-purple-500',
- text: 'text-purple-700',
+ selected: 'border-accent bg-accent/5',
+ checkbox: 'border-accent bg-accent/50',
+ text: 'text-accent',
  },
  },
  {

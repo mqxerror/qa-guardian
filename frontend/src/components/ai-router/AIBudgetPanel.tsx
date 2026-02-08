@@ -330,9 +330,9 @@ export function AIBudgetPanel({
                 <div className="text-xl font-bold text-success">{formatCurrency(spendingData.avg_cost_per_request_cents)}</div>
                 <div className="text-xs text-success">Avg Cost/Req</div>
               </div>
-              <div className="text-center p-3 bg-purple-500/10 rounded-lg">
-                <div className="text-xl font-bold text-purple-400">{formatCurrency(spendingData.last_month_spend_cents)}</div>
-                <div className="text-xs text-purple-400">Last Month</div>
+              <div className="text-center p-3 bg-accent/10 rounded-lg">
+                <div className="text-xl font-bold text-accent">{formatCurrency(spendingData.last_month_spend_cents)}</div>
+                <div className="text-xs text-accent">Last Month</div>
               </div>
               <div className="text-center p-3 bg-warning/5 rounded-lg">
                 <div className="text-xl font-bold text-warning">{formatCurrency(getProjectedSpend())}</div>
@@ -442,7 +442,7 @@ export function AIBudgetPanel({
         </div>
 
         {/* Feature #1340: Export Budget Reports */}
-        <div className="mb-6 p-4 bg-gradient-to-r from-primary/5 to-indigo-500/10 rounded-lg border border-primary/20">
+        <div className="mb-6 p-4 bg-gradient-to-r from-primary/5 to-accent/10 rounded-lg border border-primary/20">
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-sm font-medium text-primary">Export Budget Reports</h3>

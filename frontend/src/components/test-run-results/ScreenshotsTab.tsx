@@ -120,9 +120,9 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  // Type labels and colors for grouping
  const typeLabels: Record<string, { label: string; icon: string; color: string }> = {
  'E2E': { label: 'E2E Tests', icon: '🧪', color: 'bg-primary' },
- 'Visual': { label: 'Visual Tests', icon: '🎨', color: 'bg-purple-500' },
+ 'Visual': { label: 'Visual Tests', icon: '🎨', color: 'bg-accent' },
  'Performance': { label: 'Performance Tests', icon: '⚡', color: 'bg-warning' },
- 'Load': { label: 'Load Tests', icon: '📊', color: 'bg-orange-500' },
+ 'Load': { label: 'Load Tests', icon: '📊', color: 'bg-warning' },
  'Accessibility': { label: 'Accessibility Tests', icon: '♿', color: 'bg-success' },
  };
 
@@ -130,9 +130,9 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  const typeColors: Record<string, string> = {
  'All': 'bg-muted-foreground',
  'E2E': 'bg-primary',
- 'Visual': 'bg-purple-500',
+ 'Visual': 'bg-accent',
  'Performance': 'bg-warning',
- 'Load': 'bg-orange-500',
+ 'Load': 'bg-warning',
  'Accessibility': 'bg-success',
  };
 
@@ -709,10 +709,10 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  </span>
  <span className={`text-xs px-2 py-0.5 rounded text-white ${
  allScreenshots[lightboxIndex].testType === 'E2E' ? 'bg-primary' :
- allScreenshots[lightboxIndex].testType === 'Visual' ? 'bg-purple-500' :
+ allScreenshots[lightboxIndex].testType === 'Visual' ? 'bg-accent' :
  allScreenshots[lightboxIndex].testType === 'Accessibility' ? 'bg-success' :
  allScreenshots[lightboxIndex].testType === 'Performance' ? 'bg-warning' :
- allScreenshots[lightboxIndex].testType === 'Load' ? 'bg-orange-500' :
+ allScreenshots[lightboxIndex].testType === 'Load' ? 'bg-warning' :
  'bg-muted-foreground'
  }`}>
  {allScreenshots[lightboxIndex].testType}

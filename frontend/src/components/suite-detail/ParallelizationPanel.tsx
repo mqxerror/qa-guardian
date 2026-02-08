@@ -48,7 +48,7 @@ export function ParallelizationPanel({
  onRunSuite,
 }: ParallelizationPanelProps) {
  return (
- <div className="mb-6 rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-primary/5 p-6">
+ <div className="mb-6 rounded-lg border border-accent/20 bg-gradient-to-r from-accent/5 to-primary/5 p-6">
  <div className="flex items-center justify-between mb-4">
  <div>
  <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -71,7 +71,7 @@ export function ParallelizationPanel({
  {isAnalyzing ? (
  <div className="flex items-center justify-center py-8">
  <div className="text-center">
- <svg aria-hidden="true" className="animate-spin h-8 w-8 text-purple-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+ <svg aria-hidden="true" className="animate-spin h-8 w-8 text-accent mx-auto mb-2" fill="none" viewBox="0 0 24 24">
  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
  </svg>

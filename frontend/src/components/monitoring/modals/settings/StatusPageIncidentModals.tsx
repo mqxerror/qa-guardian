@@ -120,7 +120,7 @@ export const IncidentManagementPanel: React.FC<IncidentManagementPanelProps> = (
           <div className="flex items-center justify-end mb-4">
             <button
               onClick={() => setShowCreateModal(true)}
-              className="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
+              className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning/90"
             >
               + Create Incident
             </button>
@@ -146,8 +146,8 @@ export const IncidentManagementPanel: React.FC<IncidentManagementPanelProps> = (
                     <div className="flex items-center gap-3">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         incident.impact === 'critical' ? 'bg-destructive/10 text-destructive' :
-                        incident.impact === 'major' ? 'bg-orange-100 text-orange-800' :
-                        incident.impact === 'minor' ? 'bg-warning/10 text-warning' :
+                        incident.impact === 'major' ? 'bg-warning/10 text-warning' :
+                        incident.impact === 'minor' ? 'bg-info/10 text-info' :
                         'bg-muted text-foreground'
                       }`}>
                         {incident.impact.toUpperCase()}
@@ -396,7 +396,7 @@ export const CreateStatusPageIncidentModal: React.FC<CreateStatusPageIncidentMod
             <button
               type="submit"
               disabled={isSubmitting || !title.trim()}
-              className="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
+              className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning/90 disabled:opacity-50"
             >
               {isSubmitting ? 'Creating...' : 'Create Incident'}
             </button>

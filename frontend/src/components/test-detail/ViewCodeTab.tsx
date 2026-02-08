@@ -87,7 +87,7 @@ export function ViewCodeTab({
               <button
                 onClick={onExplainTest}
                 disabled={isExplainingTest}
-                className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-700 hover:underline disabled:opacity-50"
+                className="inline-flex items-center gap-1 text-sm text-accent hover:text-accent/80 hover:underline disabled:opacity-50"
               >
                 {isExplainingTest ? (
                   <svg className="animate-spin w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -129,7 +129,7 @@ export function ViewCodeTab({
               <button
                 onClick={onSaveCode}
                 disabled={isSavingCode || !editedCode.trim()}
-                className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-md bg-success px-3 py-1.5 text-sm font-medium text-white hover:bg-success/90 disabled:opacity-50"
               >
                 {isSavingCode ? (
                   <>

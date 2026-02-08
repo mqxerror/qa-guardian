@@ -150,7 +150,7 @@ export function getHealingStrategyClass(strategy: string): string {
  case 'selector_fallback':
  return getSeverityColor('low').badge; // blue
  case 'visual_match':
- return 'bg-purple-100 text-purple-800'; // purple not in standard
+ return 'bg-accent/10 text-accent'; // using semantic accent token
  case 'text_match':
  return getStatusColor('passed').badge; // green
  case 'attribute_match':

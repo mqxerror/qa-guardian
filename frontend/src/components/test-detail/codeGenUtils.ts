@@ -361,13 +361,13 @@ export function highlightJavaScriptLine(line: string): string {
   beforeComment = beforeComment.replace(/`([^`\\]*(\\.[^`\\]*)*)`/g, '<span class="text-success">`$1`</span>');
 
   // Numbers (orange)
-  beforeComment = beforeComment.replace(/\b(\d+\.?\d*)\b/g, '<span class="text-orange-400">$1</span>');
+  beforeComment = beforeComment.replace(/\b(\d+\.?\d*)\b/g, '<span class="text-warning">$1</span>');
 
   // Function names (yellow)
   beforeComment = beforeComment.replace(/(\w+)\s*\(/g, '<span class="text-warning/70">$1</span>(');
 
   // Properties after dot (cyan)
-  beforeComment = beforeComment.replace(/\.(\w+)/g, '.<span class="text-cyan-300">$1</span>');
+  beforeComment = beforeComment.replace(/\.(\w+)/g, '.<span class="text-info">$1</span>');
 
   // Reassemble with comment (gray)
   if (comment) {

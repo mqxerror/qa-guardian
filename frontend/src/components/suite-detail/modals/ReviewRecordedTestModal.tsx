@@ -283,20 +283,20 @@ export function ReviewRecordedTestModal({
  </div>
 
  {/* Feature #31: Save as Template */}
- <div className="rounded-lg border border-dashed border-purple-300 bg-purple-50/50 p-3">
- <p className="text-xs font-semibold text-purple-700 mb-2">📋 Save as Reusable Template</p>
+ <div className="rounded-lg border border-dashed border-accent/30 bg-accent/5 p-3">
+ <p className="text-xs font-semibold text-accent mb-2">📋 Save as Reusable Template</p>
  <div className="flex gap-2">
  <input
  type="text"
  value={templateName}
  onChange={(e) => onTemplateNameChange(e.target.value)}
  placeholder="Template name..."
- className="flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-purple-400"
+ className="flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-accent"
  />
  <button
  onClick={onSaveAsTemplate}
  disabled={isSavingTemplate || !templateName.trim() || recordedSteps.length === 0}
- className="rounded-md bg-purple-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-600 disabled:opacity-50 transition-colors whitespace-nowrap"
+ className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50 transition-colors whitespace-nowrap"
  >
  {isSavingTemplate ? 'Saving...' : '📋 Save Template'}
  </button>

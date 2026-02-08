@@ -380,11 +380,11 @@ export default function LogsTab({
  onClick={() => setLogsFilter(f => ({ ...f, network: !f.network }))}
  className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full border transition-colors ${
  logsFilter.network
- ? 'bg-purple-100 border-purple-300 text-purple-700'
+ ? 'bg-accent/10 border-accent/30 text-accent'
  : 'bg-muted border-border text-muted-foreground line-through'
  }`}
  >
- <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+ <span className="w-2 h-2 rounded-full bg-accent"></span>
  Network ({logCounts.network})
  </button>
  </div>
@@ -609,7 +609,7 @@ function LogEntry({
  <div
  className={`py-1.5 border-l-2 pl-3 mb-1 ${
  log.type === 'network'
- ? 'border-purple-500 hover:bg-purple-500/10'
+ ? 'border-accent hover:bg-accent/10'
  : log.level === 'error'
  ? 'border-destructive hover:bg-destructive/10'
  : log.level === 'warn'
@@ -629,7 +629,7 @@ function LogEntry({
  {/* Type badge */}
  <span className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded uppercase ${
  log.type === 'network'
- ? 'bg-purple-800 text-purple-200'
+ ? 'bg-accent text-accent-foreground'
  : log.level === 'error'
  ? 'bg-destructive/80 text-destructive-foreground/80'
  : log.level === 'warn'
@@ -644,7 +644,7 @@ function LogEntry({
  {/* Network: Method + Status */}
  {log.type === 'network' && (
  <>
- <span className="font-semibold text-purple-400 flex-shrink-0">{log.method}</span>
+ <span className="font-semibold text-accent flex-shrink-0">{log.method}</span>
  <span className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${
  !log.status ? 'bg-card text-muted-foreground' :
  log.status >= 200 && log.status < 300 ? 'bg-success/80 text-success-foreground/80' :
@@ -660,7 +660,7 @@ function LogEntry({
  {/* Message/URL */}
  <span className={`break-all ${
  log.type === 'network'
- ? 'text-purple-300'
+ ? 'text-accent'
  : log.level === 'error'
  ? 'text-destructive'
  : log.level === 'warn'

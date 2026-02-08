@@ -115,7 +115,7 @@ export const K6ResultCard: React.FC<K6ResultCardProps> = ({
  <div className="p-5 bg-gradient-to-r from-muted/50 to-muted/20">
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
- <span className="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full flex items-center gap-1.5">
+ <span className="px-3 py-1 bg-accent/10 text-accent text-xs font-medium rounded-full flex items-center gap-1.5">
  <span>⚡</span> K6 Load Test
  </span>
  <span className="text-xs text-muted-foreground">
@@ -164,7 +164,7 @@ export const K6ResultCard: React.FC<K6ResultCardProps> = ({
  <button
  onClick={() => analyzePerformanceResults(result.test_name, null, loadTest)}
  disabled={perfAILoading && perfAIAnalysisOpen === result.test_name}
- className="px-3 py-1.5 text-sm bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+ className="px-3 py-1.5 text-sm bg-gradient-to-r from-accent to-accent/80 text-white rounded-lg hover:from-accent/90 hover:to-accent/70 transition-colors flex items-center gap-1.5 disabled:opacity-50"
  >
  {perfAILoading && perfAIAnalysisOpen === result.test_name ? (
  <>
@@ -187,11 +187,11 @@ export const K6ResultCard: React.FC<K6ResultCardProps> = ({
 
  {/* AI Analysis Result */}
  {perfAIResult[result.test_name] && (
- <div className="mx-6 my-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl">
+ <div className="mx-6 my-4 p-4 bg-gradient-to-r from-accent/5 to-accent/10 border border-accent/20 rounded-xl">
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-2">
  <span className="text-xl">🤖</span>
- <h4 className="font-semibold text-purple-700">AI Load Test Analysis</h4>
+ <h4 className="font-semibold text-accent">AI Load Test Analysis</h4>
  </div>
  <button
  onClick={() => setPerfAIResult(prev => {

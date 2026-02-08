@@ -155,11 +155,11 @@ export const getTestTypeLabel = (type: TestCategory): string => {
 export const getTestTypeColorClass = (type: TestCategory): string => {
  const colors: Record<TestCategory, string> = {
  'e2e': 'text-primary',
- 'visual_regression': 'text-purple-600',
+ 'visual_regression': 'text-accent',
  'lighthouse': 'text-warning',
  'load': 'text-success',
- 'accessibility': 'text-indigo-600',
- 'api': 'text-cyan-600',
+ 'accessibility': 'text-accent',
+ 'api': 'text-info',
  };
  return colors[type] || 'text-foreground';
 };
@@ -168,11 +168,11 @@ export const getTestTypeColorClass = (type: TestCategory): string => {
 export const getTestTypeBadgeClass = (type: TestCategory): string => {
  const badges: Record<TestCategory, string> = {
  'e2e': 'bg-primary/10 text-primary',
- 'visual_regression': 'bg-purple-100 text-purple-700',
+ 'visual_regression': 'bg-accent/10 text-accent',
  'lighthouse': 'bg-warning/10 text-warning',
  'load': 'bg-success/10 text-success',
- 'accessibility': 'bg-indigo-100 text-indigo-700',
- 'api': 'bg-cyan-100 text-cyan-700',
+ 'accessibility': 'bg-accent/10 text-accent',
+ 'api': 'bg-info/10 text-info',
  };
  return badges[type] || 'bg-muted text-foreground';
 };
@@ -225,7 +225,7 @@ export const getImpactColorClass = (impact: string): string => {
  case 'critical':
  return 'text-destructive';
  case 'serious':
- return 'text-orange-600';
+ return 'text-warning';
  case 'moderate':
  return 'text-warning';
  case 'minor':
@@ -241,7 +241,7 @@ export const getImpactBadgeClass = (impact: string): string => {
  case 'critical':
  return 'bg-destructive/10 text-destructive';
  case 'serious':
- return 'bg-orange-100 text-orange-700';
+ return 'bg-warning/10 text-warning';
  case 'moderate':
  return 'bg-warning/10 text-warning';
  case 'minor':

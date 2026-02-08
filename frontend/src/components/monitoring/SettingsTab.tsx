@@ -293,7 +293,7 @@ export default function SettingsTab({
  <td className="px-4 py-3 text-right text-sm">{data.total}</td>
  <td className="px-4 py-3 text-right text-sm text-success">{data.last30}</td>
  <td className="px-4 py-3 text-right text-sm text-warning">{data.last90}</td>
- <td className="px-4 py-3 text-right text-sm text-orange-600">{data.last365}</td>
+ <td className="px-4 py-3 text-right text-sm text-warning">{data.last365}</td>
  <td className="px-4 py-3 text-right text-sm text-destructive">{data.older}</td>
  </tr>
  ))}
@@ -372,7 +372,7 @@ export default function SettingsTab({
  </button>
  <button
  onClick={() => onOpenIncidentManagement?.(page)}
- className="rounded px-3 py-1.5 text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200"
+ className="rounded px-3 py-1.5 text-xs font-medium bg-warning/10 text-warning hover:bg-warning/20"
  >
  Incidents
  </button>

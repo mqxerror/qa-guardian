@@ -162,13 +162,13 @@ export function K6CompareModal({
  <div key={key} className={`p-2 rounded-lg border text-center ${
  key === 'median' ? 'border-success/20 bg-success/5/50' :
  key === 'p95' ? 'border-warning/20 bg-warning/5/50' :
- key === 'p99' ? 'border-orange-200 bg-orange-50/50' :
+ key === 'p99' ? 'border-warning/20 bg-warning/5' :
  'border-border bg-muted/20'
  }`}>
  <div className={`text-xs mb-1 ${
  key === 'median' ? 'text-success' :
  key === 'p95' ? 'text-warning' :
- key === 'p99' ? 'text-orange-600' :
+ key === 'p99' ? 'text-warning' :
  'text-muted-foreground'
  }`}>{key}</div>
  <div className={`text-sm font-bold ${

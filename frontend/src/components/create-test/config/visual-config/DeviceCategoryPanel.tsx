@@ -52,14 +52,14 @@ export const DeviceCategoryPanel: React.FC<DeviceCategoryPanelProps> = ({
  </span>
  </div>
  <label
- className="flex items-center gap-1 text-xs text-purple-600"
+ className="flex items-center gap-1 text-xs text-accent"
  onClick={(e) => e.stopPropagation()}
  >
  <input
  type="checkbox"
  checked={selectedCount === totalCount}
  onChange={(e) => onToggleCategoryAll(e.target.checked)}
- className="w-3 h-3 text-purple-600 rounded focus:ring-purple-500"
+ className="w-3 h-3 text-accent rounded focus:ring-accent"
  />
  All
  </label>
@@ -76,7 +76,7 @@ export const DeviceCategoryPanel: React.FC<DeviceCategoryPanelProps> = ({
  key={viewport.name}
  className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
  viewport.enabled
- ? 'border-purple-500 bg-purple-50'
+ ? 'border-accent bg-accent/5'
  : 'border-border hover:border-border'
  }`}
  >
@@ -84,7 +84,7 @@ export const DeviceCategoryPanel: React.FC<DeviceCategoryPanelProps> = ({
  type="checkbox"
  checked={viewport.enabled}
  onChange={() => onToggleViewport(index)}
- className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+ className="w-4 h-4 text-accent rounded focus:ring-accent"
  />
  <div className="flex-1 min-w-0">
  <div className="text-sm font-medium text-foreground truncate">

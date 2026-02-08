@@ -22,7 +22,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
  const healthScore = calculateHealthScore(resultSummary.passed, resultSummary.total);
 
  return (
- <div className="mt-6 bg-gradient-to-r from-primary/5 to-indigo-50 border border-primary/20 rounded-xl p-6">
+ <div className="mt-6 bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20 rounded-xl p-6">
  <div className="flex items-center justify-between mb-4">
  <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
  <span className="text-2xl">📊</span>

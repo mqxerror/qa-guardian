@@ -46,12 +46,12 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
  <button
  type="button"
  onClick={() => setShowCustomViewport(true)}
- className="w-full py-2 px-4 border-2 border-dashed border-border rounded-lg text-sm text-foreground hover:border-purple-400 hover:text-purple-600 transition-colors flex items-center justify-center gap-2"
+ className="w-full py-2 px-4 border-2 border-dashed border-border rounded-lg text-sm text-foreground hover:border-accent/40 hover:text-accent transition-colors flex items-center justify-center gap-2"
  >
  <span>+</span> Add Custom Viewport
  </button>
  ) : (
- <div className="p-4 rounded-lg border border-purple-200 bg-purple-50/50 space-y-3">
+ <div className="p-4 rounded-lg border border-accent/20 bg-accent/5 space-y-3">
  <div className="flex items-center justify-between">
  <span className="text-sm font-medium text-foreground">Custom Viewport</span>
  <button
@@ -93,7 +93,7 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
  <button
  type="button"
  onClick={handleAddViewport}
- className="w-full py-2 px-4 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+ className="w-full py-2 px-4 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
  >
  Add Viewport
  </button>
@@ -115,7 +115,7 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
  key={viewport.name}
  className={`flex items-center gap-2 p-2 rounded-lg border transition-colors ${
  viewport.enabled
- ? 'border-purple-500 bg-purple-50'
+ ? 'border-accent bg-accent/5'
  : 'border-border'
  }`}
  >
@@ -124,7 +124,7 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
  type="checkbox"
  checked={viewport.enabled}
  onChange={() => onToggleViewport(index)}
- className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+ className="w-4 h-4 text-accent rounded focus:ring-accent"
  />
  <div className="flex-1 min-w-0">
  <div className="text-sm font-medium text-foreground truncate">

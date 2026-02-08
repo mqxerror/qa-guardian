@@ -304,8 +304,8 @@ export default function ExportModal({
  <div className="p-4 border border-border rounded-lg">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center">
- <svg className="h-5 w-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center">
+ <svg className="h-5 w-5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
  </svg>
  </div>
@@ -317,7 +317,7 @@ export default function ExportModal({
  <button
  onClick={handleGenerateHtmlReport}
  disabled={generatingHtml}
- className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 transition-colors"
+ className="px-4 py-2 bg-warning text-white rounded-md hover:bg-warning/90 disabled:opacity-50 transition-colors"
  >
  {generatingHtml ? (
  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">

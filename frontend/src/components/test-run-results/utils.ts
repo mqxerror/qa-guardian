@@ -125,13 +125,13 @@ export const getScreenshotTypeBadgeColor = (type: string): string => {
  case 'E2E':
  return 'bg-primary/10 text-primary';
  case 'Visual':
- return 'bg-purple-100 text-purple-700';
+ return 'bg-accent/10 text-accent';
  case 'Performance':
  return 'bg-warning/10 text-warning';
  case 'Load':
  return 'bg-success/10 text-success';
  case 'Accessibility':
- return 'bg-indigo-100 text-indigo-700';
+ return 'bg-accent/10 text-accent';
  default:
  return 'bg-muted text-foreground';
  }
@@ -147,7 +147,7 @@ export const calculateHealthScore = (passed: number, total: number): number => {
 export const getHealthScoreColorClass = (score: number): string => {
  if (score >= 85) return 'text-success';
  if (score >= 70) return 'text-warning';
- if (score >= 50) return 'text-orange-600';
+ if (score >= 50) return 'text-warning';
  return 'text-destructive';
 };
 
@@ -155,7 +155,7 @@ export const getHealthScoreColorClass = (score: number): string => {
 export const getHealthScoreBarClass = (score: number): string => {
  if (score >= 85) return 'bg-success';
  if (score >= 70) return 'bg-warning';
- if (score >= 50) return 'bg-orange-500';
+ if (score >= 50) return 'bg-warning';
  return 'bg-destructive';
 };
 

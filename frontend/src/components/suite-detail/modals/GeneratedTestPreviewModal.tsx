@@ -199,11 +199,11 @@ export function GeneratedTestPreviewModal({
  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-sm rounded-full font-medium ${
  preview.complexity === 'simple' ? 'bg-success/10 text-success border border-success/30' :
  preview.complexity === 'medium' ? 'bg-warning/10 text-warning border border-warning/30' :
- 'bg-orange-500/10 text-orange-600 border border-orange-500/30'
+ 'bg-warning/10 text-warning border border-warning/30'
  }`}>
  {preview.complexity === 'simple' ? '📗' : preview.complexity === 'medium' ? '📙' : '📕'} {preview.complexity.charAt(0).toUpperCase() + preview.complexity.slice(1)} Complexity
  </span>
- <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-sm rounded-full font-medium bg-purple-500/10 text-purple-600 border border-purple-500/30">
+ <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-sm rounded-full font-medium bg-accent/10 text-accent border border-accent/30">
  🎯 {preview.selectors.length} Selectors
  </span>
  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-sm rounded-full font-medium bg-primary/10 text-primary border border-primary/30">
@@ -216,14 +216,14 @@ export function GeneratedTestPreviewModal({
  <div className={`mb-4 p-4 rounded-lg border ${
  preview.confidence_score >= 80 ? 'bg-success/5 border-success/30' :
  preview.confidence_score >= 60 ? 'bg-warning/5 border-warning/30' :
- 'bg-orange-500/5 border-orange-500/30'
+ 'bg-warning/5 border-warning/30'
  }`}>
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
  <div className={`flex items-center justify-center w-14 h-14 rounded-full border-4 ${
  preview.confidence_score >= 80 ? 'border-success text-success' :
  preview.confidence_score >= 60 ? 'border-warning text-warning' :
- 'border-orange-500 text-orange-600'
+ 'border-warning text-warning'
  }`}>
  <span className="text-lg font-bold">{preview.confidence_score}%</span>
  </div>
@@ -237,7 +237,7 @@ export function GeneratedTestPreviewModal({
  </div>
  </div>
  {preview.confidence_score < 70 && (
- <span className="flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-full bg-orange-100 text-orange-700">
+ <span className="flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-full bg-warning/10 text-warning">
  ⚠️ Flagged for Review
  </span>
  )}
@@ -256,7 +256,7 @@ export function GeneratedTestPreviewModal({
  factor.score < 0 ? 'text-destructive' :
  factor.max_score > 0 && factor.score >= factor.max_score * 0.7 ? 'text-success' :
  factor.max_score > 0 && factor.score >= factor.max_score * 0.4 ? 'text-warning' :
- 'text-orange-600'
+ 'text-warning'
  }`}>
  {factor.score < 0 ? factor.score : `${factor.score}/${factor.max_score}`}
  </span>
@@ -267,7 +267,7 @@ export function GeneratedTestPreviewModal({
  className={`h-1.5 rounded-full ${
  factor.score >= factor.max_score * 0.7 ? 'bg-success' :
  factor.score >= factor.max_score * 0.4 ? 'bg-warning' :
- 'bg-orange-500'
+ 'bg-warning'
  }`}
  style={{ width: `${Math.min(100, (factor.score / factor.max_score) * 100)}%` }}
  />
@@ -372,7 +372,7 @@ export function GeneratedTestPreviewModal({
  onClick={() => onSetShowDiffView(!showDiffView)}
  className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md border transition-colors ${
  showDiffView
- ? 'bg-purple-500/20 text-purple-600 border-purple-500/50'
+ ? 'bg-accent/20 text-accent border-accent/50'
  : 'border-border hover:bg-muted text-muted-foreground'
  }`}
  >
@@ -427,13 +427,13 @@ export function GeneratedTestPreviewModal({
  value={regenerationFeedback}
  onChange={(e) => onSetRegenerationFeedback(e.target.value)}
  placeholder="e.g., Add more assertions, use better selectors, include error handling..."
- className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+ className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
  />
  <button
  type="button"
  disabled={isRegenerating || regenerationFeedback.trim().length < 5}
  onClick={handleRegenerate}
- className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+ className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-warning text-white hover:bg-warning/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
  >
  {isRegenerating ? (
  <>
@@ -471,7 +471,7 @@ export function GeneratedTestPreviewModal({
  <button
  type="button"
  onClick={handleUseTest}
- className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-purple-600 text-white hover:bg-purple-700"
+ className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent/90"
  >
  <span>✨</span>
  Use This Test

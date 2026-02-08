@@ -65,16 +65,16 @@ export function FlakinessPanel({
  <div className="rounded-lg border border-border bg-muted/30 p-3">
  <div className={`text-2xl font-bold ${
  flakinessTrend.summary.overall_flakiness_score >= 0.7 ? 'text-destructive' :
- flakinessTrend.summary.overall_flakiness_score >= 0.4 ? 'text-orange-600' :
+ flakinessTrend.summary.overall_flakiness_score >= 0.4 ? 'text-warning' :
  flakinessTrend.summary.overall_flakiness_score > 0 ? 'text-warning' :
- 'text-emerald-600'
+ 'text-success'
  }`}>
  {flakinessTrend.summary.overall_flakiness_score.toFixed(2)}
  </div>
  <div className="text-xs text-muted-foreground">Flakiness Score</div>
  </div>
  <div className="rounded-lg border border-border bg-muted/30 p-3">
- <div className="text-2xl font-bold text-emerald-600">{flakinessTrend.summary.overall_pass_rate}%</div>
+ <div className="text-2xl font-bold text-success">{flakinessTrend.summary.overall_pass_rate}%</div>
  <div className="text-xs text-muted-foreground">Pass Rate</div>
  </div>
  <div className="rounded-lg border border-border bg-muted/30 p-3">
@@ -114,9 +114,9 @@ export function FlakinessPanel({
  return (
  <div className="rounded-md border border-border bg-card p-2 shadow-sm text-xs">
  <div className="font-medium">{new Date(data.date).toLocaleDateString()}</div>
- <div className="text-emerald-600">Passes: {data.passes}</div>
+ <div className="text-success">Passes: {data.passes}</div>
  <div className="text-destructive">Failures: {data.failures}</div>
- <div className="text-orange-600">Flakiness: {data.flakiness_score.toFixed(2)}</div>
+ <div className="text-warning">Flakiness: {data.flakiness_score.toFixed(2)}</div>
  </div>
  );
  }}
@@ -185,7 +185,7 @@ export function FlakinessPanel({
  <div
  key={run.id || idx}
  className={`flex-1 rounded-sm ${
- run.status === 'passed' ? 'bg-emerald-500' :
+ run.status === 'passed' ? 'bg-success' :
  run.status === 'failed' ? 'bg-destructive' :
  run.status === 'warning' ? 'bg-warning' :
  run.status === 'running' ? 'bg-primary animate-pulse' :

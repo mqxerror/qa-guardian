@@ -384,7 +384,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  <div className="mt-6 pt-4 border-t border-border">
  <div className="flex items-center justify-between mb-3">
  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
- <svg className="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
  </svg>
  PR Dependency Scanning
@@ -395,7 +395,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  checked={prDependencyScanEnabled}
  onChange={(e) => handleTogglePRDependencyScan(e.target.checked)}
  disabled={isTogglingPRDependencyScan}
- className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+ className="h-4 w-4 rounded border-border text-success focus:ring-success disabled:opacity-50"
  />
  <span className="text-sm text-muted-foreground">
  {isTogglingPRDependencyScan ? 'Updating...' : 'Enabled'}
@@ -424,7 +424,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  : prDependencyScanFiles.filter(f => f !== file);
  handleUpdatePRDependencyScanConfig({ pr_dependency_scan_files: newFiles });
  }}
- className="h-3 w-3 rounded border-border text-emerald-600 focus:ring-emerald-500"
+ className="h-3 w-3 rounded border-border text-success focus:ring-success"
  />
  <span className="text-muted-foreground font-mono">{file}</span>
  </label>
@@ -482,7 +482,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  prDependencyScanResults[pr.number].summary.critical > 0
  ? 'bg-destructive/10 text-destructive'
  : prDependencyScanResults[pr.number].summary.high > 0
- ? 'bg-orange-500/10 text-orange-600'
+ ? 'bg-warning/10 text-warning'
  : prDependencyScanResults[pr.number].summary.total > 0
  ? 'bg-warning/10 text-warning'
  : 'bg-success/10 text-success'
@@ -506,7 +506,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  <button
  onClick={() => handleTriggerPRDependencyScan(pr.number)}
  disabled={isRunningPRDependencyScan === pr.number}
- className="rounded-md bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1"
+ className="rounded-md bg-success px-2 py-1 text-xs font-medium text-white hover:bg-success/90 disabled:opacity-50 flex items-center gap-1"
  >
  {isRunningPRDependencyScan === pr.number ? (
  <>

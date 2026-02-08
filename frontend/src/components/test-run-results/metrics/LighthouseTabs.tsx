@@ -214,9 +214,9 @@ export const LighthouseOverviewTab: React.FC<LighthouseOverviewTabProps> = ({
 
  {/* Desktop Gauges */}
  <div>
- <div className="flex items-center justify-center gap-2 mb-4 py-2 bg-purple-50 rounded-lg">
+ <div className="flex items-center justify-center gap-2 mb-4 py-2 bg-accent/5 rounded-lg">
  <span className="text-xl">🖥️</span>
- <span className="font-semibold text-purple-700">Desktop Results</span>
+ <span className="font-semibold text-accent">Desktop Results</span>
  </div>
  <div className="flex justify-center gap-6 flex-wrap">
  {[
@@ -357,7 +357,7 @@ export const LighthouseAccessibilityTab: React.FC<LighthouseAccessibilityTabProp
  {/* Accessibility-specific passed audits */}
  {passedAudits.filter((a) => a.category === 'Accessibility').length > 0 && (
  <div className="border border-border rounded-xl overflow-hidden mb-6 shadow-sm">
- <div className="p-4 bg-gradient-to-r from-success/5 to-emerald-50 border-b border-border">
+ <div className="p-4 bg-gradient-to-r from-success/5 to-success/5 border-b border-border">
  <h4 className="font-semibold text-success flex items-center gap-2">
  <span className="text-lg">✅</span> Passed Accessibility Audits
  <span className="text-xs bg-success/10 px-2 py-0.5 rounded-full ml-2">
@@ -411,10 +411,10 @@ export const LighthouseBestPracticesTab: React.FC<LighthouseBestPracticesTabProp
  {/* Best Practices passed audits */}
  {passedAudits.filter((a) => a.category === 'Best Practices').length > 0 && (
  <div className="border border-border rounded-xl overflow-hidden mb-6 shadow-sm">
- <div className="p-4 bg-gradient-to-r from-purple-50 to-violet-50 border-b border-border">
- <h4 className="font-semibold text-purple-700 flex items-center gap-2">
+ <div className="p-4 bg-gradient-to-r from-accent/5 to-accent/10 border-b border-border">
+ <h4 className="font-semibold text-accent flex items-center gap-2">
  <span className="text-lg">✓</span> Passed Best Practice Audits
- <span className="text-xs bg-purple-100 px-2 py-0.5 rounded-full ml-2">
+ <span className="text-xs bg-accent/10 px-2 py-0.5 rounded-full ml-2">
  {passedAudits.filter((a) => a.category === 'Best Practices').length} passed
  </span>
  </h4>
@@ -422,7 +422,7 @@ export const LighthouseBestPracticesTab: React.FC<LighthouseBestPracticesTabProp
  <div className="divide-y divide-border max-h-64 overflow-y-auto">
  {passedAudits.filter((a) => a.category === 'Best Practices').slice(0, 10).map((audit) => (
  <div key={audit.id} className="p-3 flex items-center gap-2">
- <span className="text-purple-500">✓</span>
+ <span className="text-accent">✓</span>
  <span className="text-sm text-foreground">{audit.title}</span>
  </div>
  ))}
@@ -460,7 +460,7 @@ export const LighthouseSEOTab: React.FC<LighthouseSEOTabProps> = ({
  {/* SEO passed audits */}
  {passedAudits.filter((a) => a.category === 'SEO').length > 0 && (
  <div className="border border-border rounded-xl overflow-hidden mb-6 shadow-sm">
- <div className="p-4 bg-gradient-to-r from-primary/5 to-indigo-50 border-b border-border">
+ <div className="p-4 bg-gradient-to-r from-primary/5 to-accent/5 border-b border-border">
  <h4 className="font-semibold text-primary flex items-center gap-2">
  <span className="text-lg">🔍</span> Passed SEO Audits
  <span className="text-xs bg-primary/10 px-2 py-0.5 rounded-full ml-2">

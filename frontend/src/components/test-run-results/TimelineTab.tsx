@@ -261,7 +261,7 @@ export default function TimelineTab({
  </span>
  )}
  {(step.screenshot_before || step.screenshot_after) && (
- <span className="px-1.5 py-0.5 text-xs bg-purple-100 text-purple-700 rounded" title="Has screenshots">
+ <span className="px-1.5 py-0.5 text-xs bg-accent/10 text-accent rounded" title="Has screenshots">
  📸
  </span>
  )}
@@ -521,7 +521,7 @@ export default function TimelineTab({
  key={vIdx}
  className={`p-3 rounded-lg border ${
  violation.impact === 'critical' ? 'border-destructive bg-destructive/5' :
- violation.impact === 'serious' ? 'border-orange-500 bg-orange-50' :
+ violation.impact === 'serious' ? 'border-warning bg-warning/10' :
  violation.impact === 'moderate' ? 'border-warning bg-warning/5' :
  'border-primary bg-primary/5'
  }`}
@@ -529,7 +529,7 @@ export default function TimelineTab({
  <div className="flex items-center gap-2 mb-1">
  <span className={`px-2 py-0.5 text-xs font-medium rounded ${
  violation.impact === 'critical' ? 'bg-destructive text-white' :
- violation.impact === 'serious' ? 'bg-orange-600 text-white' :
+ violation.impact === 'serious' ? 'bg-warning text-white' :
  violation.impact === 'moderate' ? 'bg-warning text-white' :
  'bg-primary text-white'
  }`}>

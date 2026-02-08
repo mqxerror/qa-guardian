@@ -507,6 +507,15 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  performance: '⚡',
  load: '📊',
  };
+ // Semantic color mapping for test types
+ const colorClassMap: Record<string, { selected: string; checkbox: string }> = {
+ blue: { selected: 'border-primary bg-primary/5 text-primary', checkbox: 'border-primary bg-primary' },
+ purple: { selected: 'border-accent bg-accent/5 text-accent', checkbox: 'border-accent bg-accent' },
+ green: { selected: 'border-success bg-success/5 text-success', checkbox: 'border-success bg-success' },
+ amber: { selected: 'border-warning bg-warning/5 text-warning', checkbox: 'border-warning bg-warning' },
+ orange: { selected: 'border-warning bg-warning/5 text-warning', checkbox: 'border-warning bg-warning' },
+ red: { selected: 'border-destructive bg-destructive/5 text-destructive', checkbox: 'border-destructive bg-destructive' },
+ };
  return (
  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
  {(Object.entries(TEST_TYPE_CONFIG) as [keyof QuickTestSelection, typeof TEST_TYPE_CONFIG.e2e][]).map(
@@ -516,7 +525,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  onClick={() => toggleTestType(key)}
  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${
  testSelection[key]
- ? `border-${config.color}-500 bg-${config.color}-50 text-${config.color}-700`
+ ? (colorClassMap[config.color] || colorClassMap.blue).selected
  : 'border-border text-foreground hover:border-border'
  }`}
  type="button"
@@ -526,7 +535,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  <div
  className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
  testSelection[key]
- ? `border-${config.color}-500 bg-${config.color}-500`
+ ? (colorClassMap[config.color] || colorClassMap.blue).checkbox
  : 'border-border'
  }`}
  >
@@ -708,8 +717,8 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  {/* Section 2: Custom Test Entry */}
  <section aria-labelledby="custom-test-heading">
  <div className="flex items-center gap-2 mb-4">
- <div className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-100">
- <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="flex items-center justify-center w-8 h-8 rounded-full bg-accent/10">
+ <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
  </svg>
@@ -725,7 +734,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
 
  <button
  onClick={() => setShowWizard(true)}
- className="w-full px-4 py-2.5 border-2 border-dashed border-border text-foreground hover:border-purple-400 hover:text-purple-600 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+ className="w-full px-4 py-2.5 border-2 border-dashed border-border text-foreground hover:border-accent/40 hover:text-accent font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
  type="button"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

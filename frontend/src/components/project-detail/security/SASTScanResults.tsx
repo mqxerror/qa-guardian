@@ -34,8 +34,8 @@ export function SASTScanResults(props: SASTScanResultsProps) {
  key={scan.id}
  className={`rounded-lg border p-4 cursor-pointer transition-colors ${
  selectedScan?.id === scan.id
- ? 'border-orange-500 bg-orange-50/50'
- : 'border-border hover:border-orange-300'
+ ? 'border-warning bg-warning/5'
+ : 'border-border hover:border-warning/50'
  }`}
  onClick={() => setSelectedScan(selectedScan?.id === scan.id ? null : scan)}
  >
@@ -86,7 +86,7 @@ function ScanStatusIcon({ scan }: { scan: SASTScanResult }) {
  const colorClasses = scan.status === 'completed' && scan.summary.bySeverity.critical > 0
  ? 'bg-destructive/10 text-destructive'
  : scan.status === 'completed' && scan.summary.bySeverity.high > 0
- ? 'bg-orange-100 text-orange-600'
+ ? 'bg-warning/10 text-warning'
  : scan.status === 'completed' && scan.summary.bySeverity.medium > 0
  ? 'bg-warning/10 text-warning'
  : scan.status === 'completed'
@@ -128,7 +128,7 @@ function SeveritySummary({ summary }: { summary: SASTScanResult['summary'] }) {
  </span>
  )}
  {summary.bySeverity.high > 0 && (
- <span className="flex items-center gap-1 text-orange-600">
+ <span className="flex items-center gap-1 text-warning">
  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
  </svg>
@@ -170,7 +170,7 @@ function FindingCard({
  : finding.severity === 'CRITICAL'
  ? 'border-destructive/20 bg-destructive/5/50'
  : finding.severity === 'HIGH'
- ? 'border-orange-200 bg-orange-50/50'
+ ? 'border-warning/20 bg-warning/5'
  : finding.severity === 'MEDIUM'
  ? 'border-warning/20 bg-warning/5/50'
  : 'border-primary/20 bg-primary/5/50';
@@ -180,7 +180,7 @@ function FindingCard({
  : finding.severity === 'CRITICAL'
  ? 'bg-destructive/10 text-destructive'
  : finding.severity === 'HIGH'
- ? 'bg-orange-100 text-orange-800'
+ ? 'bg-warning/10 text-warning'
  : finding.severity === 'MEDIUM'
  ? 'bg-warning/10 text-warning'
  : 'bg-primary/10 text-primary';
@@ -230,12 +230,12 @@ function FindingCard({
  )}
  <div className="mt-2 flex flex-wrap gap-2">
  {finding.cweId && (
- <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">
+ <span className="inline-flex items-center rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
  {finding.cweId}
  </span>
  )}
  {finding.owaspCategory && (
- <span className="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700">
+ <span className="inline-flex items-center rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
  {finding.owaspCategory}
  </span>
  )}

@@ -695,8 +695,8 @@ export function ProjectModals({
  <div role="dialog" aria-modal="true" className="w-full max-w-lg rounded-lg bg-card p-6 shadow-lg max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
- <svg className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
+ <svg className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
  </svg>
  </div>
@@ -727,7 +727,7 @@ export function ProjectModals({
  <button
  onClick={handleHealWithVision}
  disabled={isHealingWithVision || isSubmittingSelector}
- className="w-full flex items-center justify-center gap-2 rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50"
+ className="w-full flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
  >
  {isHealingWithVision ? (
  <>
@@ -754,9 +754,9 @@ export function ProjectModals({
 
  {/* Vision Healing Results */}
  {visionHealingResult && (
- <div className="mb-4 p-3 bg-violet-50 rounded-md border border-violet-200">
+ <div className="mb-4 p-3 bg-accent/5 rounded-md border border-accent/20">
  <div className="flex items-center justify-between mb-2">
- <div className="text-xs font-medium text-violet-700 flex items-center gap-1">
+ <div className="text-xs font-medium text-accent flex items-center gap-1">
  <span>Vision AI Suggestions</span>
  </div>
  <span className={`text-xs px-2 py-0.5 rounded ${
@@ -769,7 +769,7 @@ export function ProjectModals({
  </div>
 
  {/* Element Analysis */}
- <div className="text-xs text-violet-600 mb-2">
+ <div className="text-xs text-accent mb-2">
  Detected: <span className="font-medium">{visionHealingResult.analysis.element_type}</span>
  {visionHealingResult.analysis.text_content && (
  <> with text "<span className="font-medium">{visionHealingResult.analysis.text_content}</span>"</>
@@ -783,13 +783,13 @@ export function ProjectModals({
  key={idx}
  className={`p-2 rounded cursor-pointer transition-colors ${
  editSelectorValue === suggestion.selector
- ? 'bg-violet-200 border-2 border-violet-400'
- : 'bg-card hover:bg-violet-100 border border-violet-200'
+ ? 'bg-accent/20 border-2 border-accent'
+ : 'bg-card hover:bg-accent/10 border border-accent/20'
  }`}
  onClick={() => setEditSelectorValue(suggestion.selector)}
  >
  <div className="flex items-center justify-between mb-1">
- <code className="text-xs font-mono text-violet-800 break-all">
+ <code className="text-xs font-mono text-accent break-all">
  {suggestion.selector}
  </code>
  <div className="flex items-center gap-1 ml-2 flex-shrink-0">
@@ -798,7 +798,7 @@ export function ProjectModals({
  Best
  </span>
  )}
- <span className="text-xs px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">
+ <span className="text-xs px-1.5 py-0.5 rounded bg-accent/10 text-accent">
  {suggestion.type}
  </span>
  </div>

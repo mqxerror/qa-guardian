@@ -95,7 +95,7 @@ export function AICachePanel({
       store: 'bg-primary/5 border-primary/20 text-primary',
       invalidate: 'bg-warning/5 border-warning/20 text-warning',
       expire: 'bg-muted/50 border-border text-muted-foreground',
-      evict: 'bg-orange-500/10 border-orange-500/20 text-orange-400',
+      evict: 'bg-warning/10 border-warning/20 text-warning',
     };
     return colors[type];
   };
@@ -296,13 +296,13 @@ export function AICachePanel({
             <div className="text-2xl font-bold text-success">{cacheStats.total_hits.toLocaleString()}</div>
             <div className="text-xs text-success">Total Hits</div>
           </div>
-          <div className="bg-purple-500/10 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-purple-400">${(cacheStats.estimated_cost_savings_cents / 100).toFixed(2)}</div>
-            <div className="text-xs text-purple-400">Cost Saved</div>
+          <div className="bg-accent/10 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-accent">${(cacheStats.estimated_cost_savings_cents / 100).toFixed(2)}</div>
+            <div className="text-xs text-accent">Cost Saved</div>
           </div>
-          <div className="bg-orange-500/10 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-orange-400">{(cacheStats.estimated_latency_savings_ms / 1000).toFixed(1)}s</div>
-            <div className="text-xs text-orange-400">Latency Saved</div>
+          <div className="bg-warning/10 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-warning">{(cacheStats.estimated_latency_savings_ms / 1000).toFixed(1)}s</div>
+            <div className="text-xs text-warning">Latency Saved</div>
           </div>
         </div>
 
@@ -532,7 +532,7 @@ export function AICachePanel({
                   <div className="text-right">
                     <div className="text-xs">
                       {event.latency_saved_ms && <span className="text-success">-{event.latency_saved_ms}ms</span>}
-                      {event.cost_saved_cents && <span className="ml-2 text-purple-400">-${(event.cost_saved_cents / 100).toFixed(2)}</span>}
+                      {event.cost_saved_cents && <span className="ml-2 text-accent">-${(event.cost_saved_cents / 100).toFixed(2)}</span>}
                     </div>
                     <div className="text-xs text-muted-foreground">{formatNotificationTime(event.timestamp)}</div>
                     {event.reason && <div className="text-xs text-muted-foreground italic">{event.reason}</div>}

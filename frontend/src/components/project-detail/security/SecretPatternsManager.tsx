@@ -60,8 +60,8 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  <div className="rounded-lg border border-border bg-card p-6">
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-4">
- <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100">
- <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
+ <svg className="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
  </svg>
  </div>
@@ -74,7 +74,7 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  </div>
  <button
  onClick={() => setShowAddSecretPatternModal(true)}
- className="flex items-center gap-2 rounded-md bg-purple-600 px-3 py-2 text-sm font-medium text-white hover:bg-purple-700"
+ className="flex items-center gap-2 rounded-md bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent/90"
  >
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -105,8 +105,8 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  aria-checked={pattern.enabled}
  aria-label={`Toggle ${pattern.name} pattern`}
  onClick={() => handleToggleSecretPattern(pattern.id, !pattern.enabled)}
- className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500/20 ${
- pattern.enabled ? 'bg-purple-600' : 'bg-muted'
+ className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent/20 ${
+ pattern.enabled ? 'bg-accent' : 'bg-muted'
  }`}
  >
  <span
@@ -120,7 +120,7 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  <p className="font-medium text-foreground">{pattern.name}</p>
  <span className={`text-xs px-2 py-0.5 rounded-full ${
  pattern.severity === 'CRITICAL' ? 'bg-destructive/10 text-destructive' :
- pattern.severity === 'HIGH' ? 'bg-orange-100 text-orange-700' :
+ pattern.severity === 'HIGH' ? 'bg-warning/10 text-warning' :
  pattern.severity === 'MEDIUM' ? 'bg-warning/10 text-warning' :
  'bg-primary/10 text-primary'
  }`}>
@@ -301,7 +301,7 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  <button
  onClick={handleAddSecretPattern}
  disabled={isAddingPattern || !newPatternName.trim() || !newPatternRegex.trim()}
- className="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+ className="px-4 py-2 rounded-md bg-accent text-white hover:bg-accent/90 disabled:opacity-50"
  >
  {isAddingPattern ? 'Adding...' : 'Add Pattern'}
  </button>

@@ -58,8 +58,8 @@ export function EditSelectorModal({
  <div role="dialog" aria-modal="true" className="w-full max-w-lg rounded-lg bg-card p-4 sm:p-6 shadow-lg max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
- <svg className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
+ <svg className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
  </svg>
  </div>

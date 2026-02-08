@@ -364,7 +364,7 @@ function TestResultItem({
  <span className="font-medium text-foreground group-hover:text-primary transition-colors">{result.test_name}</span>
  {/* Visual test indicator */}
  {result.test_type === 'visual_regression' && (
- <span className="inline-flex items-center gap-1 text-xs text-purple-600">
+ <span className="inline-flex items-center gap-1 text-xs text-accent">
  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -422,9 +422,9 @@ function TestResultItem({
 
  {/* Feature #1074: Quick link to healing options for failed tests */}
  {result.status === 'failed' && result.test_id && (
- <div className="mt-2 p-2 bg-purple-50 rounded border border-purple-200">
+ <div className="mt-2 p-2 bg-accent/5 rounded border border-accent/20">
  <div className="flex items-center justify-between">
- <div className="flex items-center gap-2 text-sm text-purple-700">
+ <div className="flex items-center gap-2 text-sm text-accent">
  <span>🔧</span>
  <span>AI healing may help fix selector issues automatically</span>
  </div>
@@ -436,7 +436,7 @@ function TestResultItem({
  onNavigate(`/tests/${result.test_id}`);
  }
  }}
- className="px-3 py-1 text-xs font-medium rounded bg-purple-600 text-white hover:bg-purple-700 transition-colors flex items-center gap-1"
+ className="px-3 py-1 text-xs font-medium rounded bg-accent text-white hover:bg-accent/90 transition-colors flex items-center gap-1"
  >
  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
  <path d="M12 20h9"/>
@@ -500,7 +500,7 @@ function StepResultItem({
  <span className="text-muted-foreground">{step.duration_ms}ms</span>
  {/* Feature #1065: Healed selector indicator */}
  {step.was_healed && (
- <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-purple-100 text-purple-700" title="This selector was auto-healed by AI">
+ <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-accent/10 text-accent" title="This selector was auto-healed by AI">
  🔧 Healed
  </span>
  )}
@@ -599,13 +599,13 @@ function HealedSelectorDetails({
  onEditSelector: (state: EditSelectorModalState) => void;
 }) {
  return (
- <div className="ml-6 p-3 bg-purple-50 rounded border border-purple-200">
+ <div className="ml-6 p-3 bg-accent/5 rounded border border-accent/20">
  {/* Header with strategy and confidence meter */}
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-2 text-xs">
- <span className="text-purple-700 font-semibold">🔧 AI-Healed Selector</span>
+ <span className="text-accent font-semibold">🔧 AI-Healed Selector</span>
  {step.healing_strategy && (
- <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-600">
+ <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent">
  {step.healing_strategy.replace(/_/g, ' ')}
  </span>
  )}
@@ -644,7 +644,7 @@ function HealedSelectorDetails({
  wasHealed: true,
  });
  }}
- className="px-2 py-1 text-xs font-medium rounded bg-purple-600 text-white hover:bg-purple-700 transition-colors flex items-center gap-1"
+ className="px-2 py-1 text-xs font-medium rounded bg-accent text-white hover:bg-accent/90 transition-colors flex items-center gap-1"
  >
  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>

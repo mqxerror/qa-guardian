@@ -32,7 +32,7 @@ interface TestStepsTabProps {
 function VisualTestConfig({ test }: { test: TestType }) {
  return (
  <div className="mt-4 space-y-4">
- <div className="rounded-lg border border-purple-200 bg-purple-50/50 p-4">
+ <div className="rounded-lg border border-accent/20 bg-accent/5 p-4">
  <div className="flex items-center gap-2 mb-3">
  <span className="text-xl">📸</span>
  <h4 className="font-medium text-foreground">Visual Test Configuration</h4>
@@ -199,7 +199,7 @@ function StepItem({
  </span>
  ) : step.action === 'accessibility_check' ? (
  <span className="flex items-center gap-1">
- <svg className="h-4 w-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className="h-4 w-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
  </svg>
  Accessibility Check
@@ -224,7 +224,7 @@ function StepItem({
  )}
  {step.action === 'accessibility_check' && (
  <div className="flex flex-wrap gap-2 mt-1">
- <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+ <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-accent/10 text-accent">
  WCAG {step.a11y_wcag_level || 'AA'}
  </span>
  {step.a11y_fail_on_any && (
@@ -233,7 +233,7 @@ function StepItem({
  </span>
  )}
  {step.a11y_fail_on_critical && !step.a11y_fail_on_any && (
- <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+ <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-warning/10 text-warning">
  Critical/Serious only
  </span>
  )}

@@ -146,7 +146,7 @@ export function AIApiKeyManagement({
                     <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full capitalize">
                       {key.provider}
                     </span>
-                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
                       v{key.version}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -159,12 +159,12 @@ export function AIApiKeyManagement({
                        '⬜ Retiring'}
                     </span>
                     {key.traffic_percentage > 0 && key.traffic_percentage < 100 && (
-                      <span className="text-xs bg-cyan-100 text-cyan-700 px-2 py-0.5 rounded-full animate-pulse">
+                      <span className="text-xs bg-info/10 text-info px-2 py-0.5 rounded-full animate-pulse">
                         🔄 {key.traffic_percentage}% traffic
                       </span>
                     )}
                     {rotatingKeys.has(key.id) && (
-                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full animate-pulse">
+                      <span className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded-full animate-pulse">
                         ⏳ Rotating...
                       </span>
                     )}

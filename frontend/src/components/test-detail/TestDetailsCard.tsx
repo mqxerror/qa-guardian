@@ -79,7 +79,7 @@ const viewportPresets: Record<string, { width: number; height: number; label: st
 function TestTypeBadge({ testType }: { testType?: string }) {
  if (testType === 'visual_regression') {
  return (
- <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-700">
+ <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
  📸 Visual Regression
  </span>
  );
@@ -247,7 +247,7 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  ? 'bg-success/10 text-success'
  : (test.anti_aliasing_tolerance === 'medium'
  ? 'bg-warning/10 text-warning'
- : 'bg-orange-100 text-orange-800'))
+ : 'bg-warning/10 text-warning'))
  }`}>
  {test.color_threshold !== undefined
  ? `Custom (${test.color_threshold.toFixed(2)})`
@@ -266,7 +266,7 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  <dd className="text-foreground">
  <div className="flex flex-wrap gap-1.5">
  {test.ignore_regions.map((region, idx) => (
- <span key={region.id || idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+ <span key={region.id || idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-accent/10 text-accent">
  {region.name || `Region ${idx + 1}`}: {region.x},{region.y} ({region.width}×{region.height})
  </span>
  ))}
@@ -281,7 +281,7 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  <dd className="text-foreground">
  <div className="flex flex-wrap gap-1.5">
  {test.ignore_selectors.map((selector, idx) => (
- <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-cyan-100 text-cyan-800 font-mono">
+ <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-info/10 text-info font-mono">
  {selector}
  </span>
  ))}
@@ -308,7 +308,7 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  <dd className="text-foreground">
  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
  test.wcag_level === 'AAA'
- ? 'bg-purple-100 text-purple-800'
+ ? 'bg-accent/10 text-accent'
  : test.wcag_level === 'AA'
  ? 'bg-success/10 text-success'
  : 'bg-primary/10 text-primary'
@@ -334,7 +334,7 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  </span>
  )}
  {test.include_pa11y === true && (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-accent/10 text-accent">
  🔍 Pa11y
  </span>
  )}
@@ -358,7 +358,7 @@ export function TestDetailsCard({ test, suiteName, formatDate }: TestDetailsCard
  </span>
  )}
  {test.a11y_fail_on_serious !== undefined && (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-warning/10 text-warning">
  🟠 Serious: {test.a11y_fail_on_serious === 0 ? 'Fail on any' : `max ${test.a11y_fail_on_serious}`}
  </span>
  )}

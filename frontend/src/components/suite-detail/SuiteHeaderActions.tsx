@@ -43,7 +43,7 @@ export function SuiteHeaderActions({
         <button
           onClick={onRunWithParallelization}
           disabled={isRunningSuite || isAnalyzingParallel}
-          className="rounded-md bg-gradient-to-r from-purple-600 to-primary px-4 py-2 text-sm font-medium text-white hover:from-purple-700 hover:to-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-md bg-gradient-to-r from-accent to-primary px-4 py-2 text-sm font-medium text-white hover:from-accent/90 hover:to-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isAnalyzingParallel ? '🤖 Analyzing...' : '🤖 AI Parallel Run'}
         </button>
@@ -85,7 +85,7 @@ export function SuiteHeaderActions({
           </button>
           <button
             onClick={onShowRecordModal}
-            className="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
+            className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning/90"
           >
             🎬 Record New Test
           </button>

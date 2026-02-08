@@ -75,7 +75,7 @@ export function HumanReviewPanel({
  {reviewStats && reviewStats.pending_review > 0 && (
  <button
  onClick={onToggleReviewPanel}
- className="flex items-center gap-1 rounded-md bg-orange-100 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-200"
+ className="flex items-center gap-1 rounded-md bg-warning/10 px-3 py-1 text-sm font-medium text-warning hover:bg-warning/20"
  >
  <span>⏳</span>
  <span>{reviewStats.pending_review} Pending Review</span>
@@ -93,7 +93,7 @@ export function HumanReviewPanel({
 
  {/* Feature #1151: Pending Review Tests Panel - Enhanced with #1152 Batch Review */}
  {showReviewPanel && pendingTests.length > 0 && (
- <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 p-4">
+ <div className="mb-4 rounded-lg border border-warning/20 bg-warning/5 p-4">
  <div className="flex items-center justify-between mb-3">
  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
  ⏳ Tests Pending Review
@@ -107,13 +107,13 @@ export function HumanReviewPanel({
  </div>
 
  {/* Feature #1152: Batch selection controls */}
- <div className="flex items-center justify-between mb-3 pb-2 border-b border-orange-200">
+ <div className="flex items-center justify-between mb-3 pb-2 border-b border-warning/20">
  <label className="flex items-center gap-2 cursor-pointer">
  <input
  type="checkbox"
  checked={allSelected}
  onChange={() => onToggleAllTestsSelection(pendingIds)}
- className="w-4 h-4 rounded border-border text-purple-600 focus:ring-purple-500"
+ className="w-4 h-4 rounded border-border text-accent focus:ring-accent"
  />
  <span className="text-sm text-muted-foreground">
  Select All ({selectedForReview.size}/{pendingTests.length} selected)
@@ -148,7 +148,7 @@ export function HumanReviewPanel({
  type="checkbox"
  checked={selectedForReview.has(test.id)}
  onChange={() => onToggleTestSelection(test.id)}
- className="w-4 h-4 rounded border-border text-purple-600 focus:ring-purple-500"
+ className="w-4 h-4 rounded border-border text-accent focus:ring-accent"
  />
  <div>
  <span className="font-medium text-sm">{test.name}</span>

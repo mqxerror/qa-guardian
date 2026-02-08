@@ -48,7 +48,7 @@ export function CustomRulesManager(props: CustomRulesManagerProps) {
  </div>
  <button
  onClick={() => setShowAddCustomRuleModal(true)}
- className="flex items-center gap-2 rounded-md bg-orange-600 px-3 py-2 text-sm font-medium text-white hover:bg-orange-700"
+ className="flex items-center gap-2 rounded-md bg-warning px-3 py-2 text-sm font-medium text-white hover:bg-warning/90"
  >
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -79,8 +79,8 @@ export function CustomRulesManager(props: CustomRulesManagerProps) {
  aria-checked={rule.enabled}
  aria-label={`Toggle ${rule.name} rule`}
  onClick={() => handleToggleCustomRule(rule.id, !rule.enabled)}
- className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500/20 ${
- rule.enabled ? 'bg-orange-600' : 'bg-muted'
+ className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-warning/20 ${
+ rule.enabled ? 'bg-warning' : 'bg-muted'
  }`}
  >
  <span
@@ -174,7 +174,7 @@ export function CustomRulesManager(props: CustomRulesManagerProps) {
  href="https://semgrep.dev/docs/writing-rules/overview/"
  target="_blank"
  rel="noopener noreferrer"
- className="text-orange-600 hover:underline"
+ className="text-warning hover:underline"
  >
  Learn more about Semgrep rules
  </a>
@@ -197,7 +197,7 @@ export function CustomRulesManager(props: CustomRulesManagerProps) {
  <button
  onClick={handleAddCustomRule}
  disabled={isAddingCustomRule || !newCustomRuleName.trim() || !newCustomRuleYaml.trim()}
- className="px-4 py-2 rounded-md bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50"
+ className="px-4 py-2 rounded-md bg-warning text-white hover:bg-warning/90 disabled:opacity-50"
  >
  {isAddingCustomRule ? 'Adding...' : 'Add Rule'}
  </button>

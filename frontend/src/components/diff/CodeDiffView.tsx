@@ -437,7 +437,7 @@ export function CodeDiffView({
  <button
  type="button"
  onClick={handleApply}
- className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+ className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent/90 transition-colors"
  >
  <span>✓</span>
  Apply {stats.accepted > 0 || stats.pending > 0 ? `(${stats.accepted + stats.pending} hunks)` : 'Changes'}

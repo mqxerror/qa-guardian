@@ -58,16 +58,16 @@ const shapeClasses: Record<BadgeShape, string> = {
 // Custom color palettes
 const colorClasses: Record<BadgeColor, string> = {
  red: 'bg-destructive/10 text-destructive',
- orange: 'bg-orange-100 text-orange-700',
+ orange: 'bg-warning/10 text-warning',
  yellow: 'bg-warning/10 text-warning',
  green: 'bg-success/10 text-success',
  blue: 'bg-primary/10 text-primary',
- indigo: 'bg-indigo-100 text-indigo-700',
- purple: 'bg-purple-100 text-purple-700',
+ indigo: 'bg-accent/10 text-accent',
+ purple: 'bg-accent/10 text-accent',
  pink: 'bg-pink-100 text-pink-700',
  gray: 'bg-muted text-foreground',
- teal: 'bg-teal-100 text-teal-700',
- emerald: 'bg-emerald-100 text-emerald-700',
+ teal: 'bg-info/10 text-info',
+ emerald: 'bg-success/10 text-success',
  amber: 'bg-warning/10 text-warning',
 };
 
@@ -85,22 +85,22 @@ const aiBadgeConfig: Record<AIBadgeType, { icon?: string; label: string; classNa
  'ai-generated': {
  icon: '🤖',
  label: 'AI Generated',
- className: 'bg-purple-100 text-purple-700',
+ className: 'bg-accent/10 text-accent',
  },
  'ai-powered': {
  icon: undefined,
  label: 'AI Powered',
- className: 'bg-gradient-to-r from-purple-500/10 to-primary/10 border border-purple-500/30 text-purple-600',
+ className: 'bg-gradient-to-r from-accent/10 to-primary/10 border border-accent/30 text-accent',
  },
  'mcp-ready': {
  icon: undefined,
  label: 'MCP Ready',
- className: 'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 text-emerald-600',
+ className: 'bg-gradient-to-r from-success/10 to-info/10 border border-success/30 text-success',
  },
  'ai-ready': {
  icon: undefined,
  label: 'AI Ready',
- className: 'bg-gradient-to-r from-warning/10 via-orange-500/10 to-destructive/10 border border-warning/30 text-warning',
+ className: 'bg-gradient-to-r from-warning/10 via-warning/10 to-destructive/10 border border-warning/30 text-warning',
  },
  'healing': {
  icon: '🔧',

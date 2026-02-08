@@ -26,7 +26,7 @@ function getStrictnessInfo(threshold: number): { icon: string; label: string; de
  icon: '🎯',
  label: 'Very Strict',
  description: 'Catches most changes while allowing minor anti-aliasing differences.',
- colorClass: 'text-orange-600',
+ colorClass: 'text-warning',
  };
  }
  if (threshold <= 0.1) {
@@ -76,7 +76,7 @@ export const DiffThresholdSlider: React.FC<DiffThresholdSliderProps> = ({
  min={0}
  max={100}
  step={1}
- className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-purple-600"
+ className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-accent"
  />
  <span className="w-12 text-right text-sm font-medium text-foreground">
  {Math.round(value * 100)}%

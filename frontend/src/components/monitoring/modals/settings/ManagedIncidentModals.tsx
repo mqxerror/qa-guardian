@@ -11,8 +11,8 @@ export const getIncidentStatusColor = (status: ManagedIncident['status']) => {
     case 'triggered': return 'bg-destructive/10 text-destructive';
     case 'acknowledged': return 'bg-warning/10 text-warning';
     case 'investigating': return 'bg-primary/10 text-primary';
-    case 'identified': return 'bg-purple-100 text-purple-800';
-    case 'monitoring': return 'bg-cyan-100 text-cyan-800';
+    case 'identified': return 'bg-accent/10 text-accent';
+    case 'monitoring': return 'bg-info/10 text-info';
     case 'resolved': return 'bg-success/10 text-success';
     default: return 'bg-muted text-foreground';
   }
@@ -21,7 +21,7 @@ export const getIncidentStatusColor = (status: ManagedIncident['status']) => {
 export const getIncidentPriorityColor = (priority: ManagedIncident['priority']) => {
   switch (priority) {
     case 'P1': return 'bg-destructive text-white';
-    case 'P2': return 'bg-orange-500 text-white';
+    case 'P2': return 'bg-warning text-white';
     case 'P3': return 'bg-warning text-white';
     case 'P4': return 'bg-primary text-white';
     case 'P5': return 'bg-muted-foreground text-white';
