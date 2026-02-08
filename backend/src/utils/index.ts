@@ -5,13 +5,15 @@
  * Feature #1360: Code duplication detection and elimination
  */
 
+import { randomUUID, randomBytes } from 'node:crypto';
+
 // ============================================
 // ID Generation Utilities
 // ============================================
 
 /**
- * Generates a unique ID with a prefix.
- * Replaces the common pattern: `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+ * Generates a unique ID with a prefix using cryptographically secure randomness.
+ * Uses crypto.randomBytes() for secure random generation.
  *
  * @param prefix - The prefix for the ID (e.g., 'test', 'run', 'result')
  * @param length - Length of the random suffix (default: 9)
@@ -23,13 +25,15 @@
  */
 export function generateId(prefix: string, length: number = 9): string {
   const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 2 + length);
+  // Use crypto.randomBytes for cryptographically secure random generation
+  const bytesNeeded = Math.ceil(length * 0.75); // base36 encoding ratio
+  const random = randomBytes(bytesNeeded).toString('hex').substring(0, length);
   return `${prefix}_${timestamp}_${random}`;
 }
 
 /**
- * Generates a simple unique ID without prefix.
- * Useful for generic IDs where prefix is not needed.
+ * Generates a simple unique ID without prefix using cryptographically secure randomness.
+ * Uses crypto.randomBytes() for secure random generation.
  *
  * @param length - Total length of random string (default: 12)
  * @returns A unique random string
@@ -39,18 +43,21 @@ export function generateId(prefix: string, length: number = 9): string {
  */
 export function generateSimpleId(length: number = 12): string {
   const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 2 + Math.max(1, length - timestamp.length));
+  const randomLength = Math.max(1, length - timestamp.length);
+  const bytesNeeded = Math.ceil(randomLength * 0.75);
+  const random = randomBytes(bytesNeeded).toString('hex').substring(0, randomLength);
   return timestamp + random;
 }
 
 /**
- * Generates a request/session ID.
- * Common pattern: `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+ * Generates a request/session ID using cryptographically secure randomness.
+ * Uses crypto.randomBytes() for secure random generation.
  *
  * @returns A unique request ID
  */
 export function generateRequestId(): string {
-  return `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const random = randomBytes(4).toString('hex'); // 8 hex characters
+  return `req-${Date.now()}-${random.substring(0, 6)}`;
 }
 
 // ============================================
