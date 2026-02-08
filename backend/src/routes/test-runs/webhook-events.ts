@@ -27,6 +27,10 @@ import {
   MAX_WEBHOOK_RETRIES,
 } from './webhooks.js';
 import { webhookLog, WebhookLogEntry } from './alerts.js';
+// Feature #448: Use structured logger instead of console.*
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('webhook-events');
 
 // ============================================================================
 // Types
@@ -182,7 +186,7 @@ export async function sendRunStartedWebhook(
   );
 
   if (subscriptions.length === 0) {
-    console.log('[WEBHOOK] No subscriptions for test.run.started event');
+    log.debug('No subscriptions for test.run.started event');
     return;
   }
 
@@ -221,15 +225,15 @@ export async function sendRunStartedWebhook(
 
   // Send to all matching subscriptions with retry support
   for (const subscription of subscriptions) {
-    console.log('\n' + '='.repeat(80));
-    console.log('[WEBHOOK] Sending test.run.started event');
-    console.log('='.repeat(80));
-    console.log(`Subscription: ${subscription.name} (${subscription.id})`);
-    console.log(`URL: ${subscription.url}`);
-    console.log(`Retry enabled: ${subscription.retry_enabled ?? true}, Max retries: ${subscription.max_retries ?? MAX_WEBHOOK_RETRIES}`);
-    console.log('Payload:');
-    console.log(JSON.stringify(payload, null, 2));
-    console.log('='.repeat(80) + '\n');
+    log.info({
+      event: 'test.run.started',
+      subscriptionId: subscription.id,
+      subscriptionName: subscription.name,
+      url: subscription.url,
+      retryEnabled: subscription.retry_enabled ?? true,
+      maxRetries: subscription.max_retries ?? MAX_WEBHOOK_RETRIES,
+      payload,
+    }, 'Sending test.run.started webhook');
 
     await deliverOrBatchWebhook(subscription, payload, 'test.run.started', {
       runId: run.id,
@@ -262,7 +266,7 @@ export async function sendRunCompletedWebhook(
   );
 
   if (subscriptions.length === 0) {
-    console.log('[WEBHOOK] No subscriptions for test.run.completed event');
+    log.debug('No subscriptions for test.run.completed event');
     return;
   }
 
@@ -319,13 +323,13 @@ export async function sendRunCompletedWebhook(
 
   // Send to all matching subscriptions
   for (const subscription of subscriptions) {
-    console.log('\n' + '='.repeat(80));
-    console.log('[WEBHOOK] Sending test.run.completed event');
-    console.log('='.repeat(80));
-    console.log(`Subscription: ${subscription.name} (${subscription.id})`);
-    console.log(`URL: ${subscription.url}`);
-    console.log(`Summary: ${passedTests.length}/${totalTests} passed (${passRate}%)`);
-    console.log('='.repeat(80) + '\n');
+    log.info({
+      event: 'test.run.completed',
+      subscriptionId: subscription.id,
+      subscriptionName: subscription.name,
+      url: subscription.url,
+      summary: { passed: passedTests.length, total: totalTests, passRate },
+    }, 'Sending test.run.completed webhook');
 
     await deliverOrBatchWebhook(subscription, payload, 'test.run.completed', {
       runId: run.id,
@@ -357,7 +361,7 @@ export async function sendRunFailedWebhook(
   );
 
   if (subscriptions.length === 0) {
-    console.log('[WEBHOOK] No subscriptions for test.run.failed event');
+    log.debug('No subscriptions for test.run.failed event');
     return;
   }
 
@@ -408,13 +412,14 @@ export async function sendRunFailedWebhook(
 
   // Send to all matching subscriptions
   for (const subscription of subscriptions) {
-    console.log('\n' + '='.repeat(80));
-    console.log('[WEBHOOK] Sending test.run.failed event');
-    console.log('='.repeat(80));
-    console.log(`Subscription: ${subscription.name} (${subscription.id})`);
-    console.log(`URL: ${subscription.url}`);
-    console.log(`Failed: ${failedTests.length}/${totalTests} tests`);
-    console.log('='.repeat(80) + '\n');
+    log.info({
+      event: 'test.run.failed',
+      subscriptionId: subscription.id,
+      subscriptionName: subscription.name,
+      url: subscription.url,
+      failedCount: failedTests.length,
+      totalCount: totalTests,
+    }, 'Sending test.run.failed webhook');
 
     await deliverOrBatchWebhook(subscription, payload, 'test.run.failed', {
       runId: run.id,
@@ -446,7 +451,7 @@ export async function sendRunPassedWebhook(
   );
 
   if (subscriptions.length === 0) {
-    console.log('[WEBHOOK] No subscriptions for test.run.passed event');
+    log.debug('No subscriptions for test.run.passed event');
     return;
   }
 
@@ -490,13 +495,13 @@ export async function sendRunPassedWebhook(
 
   // Send to all matching subscriptions
   for (const subscription of subscriptions) {
-    console.log('\n' + '='.repeat(80));
-    console.log('[WEBHOOK] Sending test.run.passed event');
-    console.log('='.repeat(80));
-    console.log(`Subscription: ${subscription.name} (${subscription.id})`);
-    console.log(`URL: ${subscription.url}`);
-    console.log(`All ${totalTests} tests passed`);
-    console.log('='.repeat(80) + '\n');
+    log.info({
+      event: 'test.run.passed',
+      subscriptionId: subscription.id,
+      subscriptionName: subscription.name,
+      url: subscription.url,
+      totalTests,
+    }, 'Sending test.run.passed webhook');
 
     await deliverOrBatchWebhook(subscription, payload, 'test.run.passed', {
       runId: run.id,
@@ -544,7 +549,7 @@ export async function sendVisualDiffWebhook(
   );
 
   if (subscriptions.length === 0) {
-    console.log('[WEBHOOK] No subscriptions for visual.diff.detected event');
+    log.debug('No subscriptions for visual.diff.detected event');
     return;
   }
 
@@ -588,13 +593,14 @@ export async function sendVisualDiffWebhook(
 
   // Send to all matching subscriptions
   for (const sub of subscriptions) {
-    console.log('\n' + '='.repeat(80));
-    console.log('[WEBHOOK] Sending visual.diff.detected event');
-    console.log('='.repeat(80));
-    console.log(`Subscription: ${sub.name} (${sub.id})`);
-    console.log(`Test: ${diffData.test_name}`);
-    console.log(`Diff: ${diffData.diff_percentage.toFixed(2)}% (threshold: ${diffData.threshold}%)`);
-    console.log('='.repeat(80) + '\n');
+    log.info({
+      event: 'visual.diff.detected',
+      subscriptionId: sub.id,
+      subscriptionName: sub.name,
+      testName: diffData.test_name,
+      diffPercentage: diffData.diff_percentage,
+      threshold: diffData.threshold,
+    }, 'Sending visual.diff.detected webhook');
 
     await deliverOrBatchWebhook(sub, payload, 'visual.diff.detected', {
       runId: diffData.run_id,
@@ -650,7 +656,7 @@ export async function sendPerformanceBudgetExceededWebhook(
   );
 
   if (subscriptions.length === 0) {
-    console.log('[WEBHOOK] No subscriptions for performance.budget.exceeded event');
+    log.debug('No subscriptions for performance.budget.exceeded event');
     return;
   }
 
@@ -692,13 +698,13 @@ export async function sendPerformanceBudgetExceededWebhook(
 
   // Send to all matching subscriptions
   for (const sub of subscriptions) {
-    console.log('\n' + '='.repeat(80));
-    console.log('[WEBHOOK] Sending performance.budget.exceeded event');
-    console.log('='.repeat(80));
-    console.log(`Subscription: ${sub.name} (${sub.id})`);
-    console.log(`Test: ${perfData.test_name}`);
-    console.log(`Violations: ${perfData.violations.length}`);
-    console.log('='.repeat(80) + '\n');
+    log.info({
+      event: 'performance.budget.exceeded',
+      subscriptionId: sub.id,
+      subscriptionName: sub.name,
+      testName: perfData.test_name,
+      violationsCount: perfData.violations.length,
+    }, 'Sending performance.budget.exceeded webhook');
 
     await deliverOrBatchWebhook(sub, payload, 'performance.budget.exceeded', {
       runId: perfData.run_id,
@@ -749,7 +755,7 @@ export async function sendBaselineApprovedWebhook(
   );
 
   if (subscriptions.length === 0) {
-    console.log('[WEBHOOK] No subscriptions for baseline.approved event');
+    log.debug('No subscriptions for baseline.approved event');
     return;
   }
 
@@ -837,7 +843,7 @@ export async function sendScheduleTriggeredWebhook(
   );
 
   if (subscriptions.length === 0) {
-    console.log('[WEBHOOK] No subscriptions for schedule.triggered event');
+    log.debug('No subscriptions for schedule.triggered event');
     return;
   }
 
@@ -918,7 +924,7 @@ export async function sendFlakyTestWebhook(
   );
 
   if (subscriptions.length === 0) {
-    console.log('[WEBHOOK] No subscriptions for flaky.test.detected event');
+    log.debug('No subscriptions for flaky.test.detected event');
     return;
   }
 
@@ -1019,7 +1025,7 @@ export async function sendAccessibilityIssueWebhook(
   );
 
   if (subscriptions.length === 0) {
-    console.log('[WEBHOOK] No subscriptions for accessibility.issue.found event');
+    log.debug('No subscriptions for accessibility.issue.found event');
     return;
   }
 
@@ -1068,18 +1074,20 @@ export async function sendAccessibilityIssueWebhook(
   };
 
   // Log the webhook emission
-  console.log('');
-  console.log('================================================================================');
-  console.log('[WEBHOOK] Emitting accessibility.issue.found event');
-  console.log('================================================================================');
-  console.log(`Test: ${issueData.test_name} (${issueData.test_id})`);
-  console.log(`Run ID: ${issueData.run_id}`);
-  console.log(`URL: ${issueData.target_url}`);
-  console.log(`WCAG Level: ${issueData.wcag_level}`);
-  console.log(`Score: ${issueData.score}`);
-  console.log(`Violations: ${issueData.summary.total} (${issueData.summary.critical} critical, ${issueData.summary.serious} serious)`);
-  console.log('================================================================================');
-  console.log('');
+  log.info({
+    event: 'accessibility.issue.found',
+    testId: issueData.test_id,
+    testName: issueData.test_name,
+    runId: issueData.run_id,
+    url: issueData.target_url,
+    wcagLevel: issueData.wcag_level,
+    score: issueData.score,
+    violations: {
+      total: issueData.summary.total,
+      critical: issueData.summary.critical,
+      serious: issueData.summary.serious,
+    },
+  }, 'Emitting accessibility.issue.found webhook event');
 
   // Send to each subscription
   for (const sub of subscriptions) {
@@ -1119,7 +1127,7 @@ export async function sendTestCreatedWebhook(
   );
 
   if (subscriptions.length === 0) {
-    console.log('[WEBHOOK] No subscriptions for test.created event');
+    log.debug('No subscriptions for test.created event');
     return;
   }
 
@@ -1150,16 +1158,15 @@ export async function sendTestCreatedWebhook(
   };
 
   // Log test.created event
-  console.log('');
-  console.log('📝 TEST CREATED EVENT:');
-  console.log('================================================================================');
-  console.log(`Test: ${testData.test_name} (${testData.test_id})`);
-  console.log(`Type: ${testData.test_type}`);
-  console.log(`Suite: ${testData.suite_name}`);
-  console.log(`Project: ${projectName}`);
-  console.log(`Created by: ${testData.created_by || 'Unknown'}`);
-  console.log('================================================================================');
-  console.log('');
+  log.info({
+    event: 'test.created',
+    testId: testData.test_id,
+    testName: testData.test_name,
+    testType: testData.test_type,
+    suiteName: testData.suite_name,
+    projectName,
+    createdBy: testData.created_by || 'Unknown',
+  }, 'Test created webhook event');
 
   // Send to each subscription
   for (const sub of subscriptions) {

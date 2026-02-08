@@ -73,6 +73,11 @@ import {
 
 import { getTestSuite } from '../test-suites.js';
 
+// Feature #448: Use structured logger instead of console.*
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('executor-functional');
+
 // Note: SelectorStrategy and ExecutableStep are no longer needed -
 // TestStep now includes selectorStrategies property (Feature #414)
 
@@ -351,9 +356,9 @@ export async function executeE2ESteps(config: E2EStepExecutionConfig): Promise<E
           height: test.viewport_height || 720,
           timestamp: Date.now(),
         });
-        console.log(`[LIVE_SCREENSHOT] Emitted screenshot for step ${stepIndex + 1}/${test.steps.length}: ${step.action}`);
+        log.debug({ stepIndex: stepIndex + 1, totalSteps: test.steps.length, action: step.action }, 'Live screenshot emitted');
       } catch (screenshotErr) {
-        console.warn(`[LIVE_SCREENSHOT] Failed to capture screenshot after step ${stepIndex}: ${screenshotErr}`);
+        log.warn({ stepIndex, error: String(screenshotErr) }, 'Failed to capture live screenshot');
       }
     }
 
@@ -406,13 +411,13 @@ async function tryHealing(
   if (!errorMessage.includes('strict mode') && !errorMessage.includes('not found') &&
       !errorMessage.includes('timeout') && !errorMessage.includes('waiting for')) {
     if (isOptionalStep) {
-      console.log(`[OPTIONAL] Step skipped (optional): ${step.selector} not found - ${step.optionalReason || 'user_marked'}`);
+      log.debug({ selector: step.selector, reason: step.optionalReason || 'user_marked' }, 'Optional step skipped');
       return { healed: false, skipped: true, error: `Optional element not found: ${step.selector}` };
     }
     return { healed: false, skipped: false };
   }
 
-  console.log(`[HEALING] Element not found for selector: ${step.selector}`);
+  log.info({ selector: step.selector }, 'Element not found, initiating healing');
 
   // Get project ID for stats tracking
   const healingSuite = test.suite_id ? await getTestSuite(test.suite_id) : undefined;
@@ -422,7 +427,7 @@ async function tryHealing(
 
   const projectAutoHealThreshold = await getAutoHealThreshold(healingProjectId);
   const enabledStrategies = await getEnabledStrategies(healingProjectId);
-  console.log(`[HEALING] Using project ${healingProjectId} threshold: ${projectAutoHealThreshold}, enabled strategies: ${enabledStrategies.join(', ')}`);
+  log.debug({ projectId: healingProjectId, threshold: projectAutoHealThreshold, enabledStrategies }, 'Healing configuration loaded');
 
   const altSelectors = step.selectorStrategies?.filter(s => s.selector !== step.selector) || [];
 
@@ -430,25 +435,25 @@ async function tryHealing(
   for (const alt of altSelectors.sort((a, b) => b.confidence - a.confidence)) {
     if (alt.strategy === 'visual-match') continue;
     if (!(await isHealingStrategyEnabled(healingProjectId, alt.strategy))) {
-      console.log(`[HEALING] Skipping ${alt.strategy} (strategy disabled for project)`);
+      log.debug({ strategy: alt.strategy }, 'Skipping disabled healing strategy');
       continue;
     }
     if (alt.confidence < projectAutoHealThreshold) {
-      console.log(`[HEALING] Skipping ${alt.strategy} (confidence ${alt.confidence} below threshold ${projectAutoHealThreshold})`);
+      log.debug({ strategy: alt.strategy, confidence: alt.confidence, threshold: projectAutoHealThreshold }, 'Skipping healing strategy below threshold');
       continue;
     }
     try {
-      console.log(`[HEALING] Trying alternate selector: ${alt.selector} (confidence: ${alt.confidence})`);
+      log.debug({ selector: alt.selector, confidence: alt.confidence }, 'Trying alternate selector');
       await page.click(alt.selector, { timeout: 5000 });
       try {
         await page.waitForLoadState('networkidle', { timeout: 3000 });
       } catch { /* Ignore timeout */ }
-      console.log(`[HEALING] SUCCESS with ${alt.strategy}: ${alt.selector} - auto-applied (confidence >= ${projectAutoHealThreshold})`);
+      log.info({ strategy: alt.strategy, selector: alt.selector, threshold: projectAutoHealThreshold }, 'Healing succeeded with auto-apply');
       recordSuccessfulHeal(runId, test.id, stepIndex, step.selector!, alt.selector, alt.strategy, alt.confidence, orgId);
       trackHealingSuccess(healingProjectId, alt.strategy);
       return { healed: true, skipped: false };
     } catch (altErr) {
-      console.log(`[HEALING] Failed with ${alt.strategy}: ${alt.selector}`);
+      log.debug({ strategy: alt.strategy, selector: alt.selector }, 'Healing attempt failed');
     }
   }
 
@@ -456,7 +461,7 @@ async function tryHealing(
   if (await isHealingStrategyEnabled(healingProjectId, 'visual-match')) {
     const visualFingerprint = step.visualFingerprint;
     if (visualFingerprint) {
-      console.log(`[HEALING] All selectors failed or below threshold, attempting visual matching...`);
+      log.debug('All selectors failed or below threshold, attempting visual matching');
       const visualMatch = await findElementByVisualMatch(page, visualFingerprint);
 
       if (visualMatch.found && visualMatch.matchLocation && visualMatch.confidence >= projectAutoHealThreshold) {
@@ -466,13 +471,13 @@ async function tryHealing(
         try {
           await page.waitForLoadState('networkidle', { timeout: 3000 });
         } catch { /* Ignore timeout */ }
-        console.log(`[HEALING] SUCCESS with visual-match at (${centerX}, ${centerY})`);
+        log.info({ x: centerX, y: centerY }, 'Healing succeeded with visual-match click');
         recordSuccessfulHeal(runId, test.id, stepIndex, step.selector!, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
         trackHealingSuccess(healingProjectId, 'visual-match');
         return { healed: true, skipped: false };
       } else if (visualMatch.found && visualMatch.matchLocation) {
         // Below threshold - require manual approval
-        console.log(`[HEALING] Visual match found but below threshold (${(visualMatch.confidence * 100).toFixed(1)}% < ${projectAutoHealThreshold * 100}%) - waiting for approval`);
+        log.info({ confidence: visualMatch.confidence * 100, threshold: projectAutoHealThreshold * 100 }, 'Visual match below threshold - waiting for approval');
 
         const approvalId = `heal-${runId}-${test.id}-${stepIndex}-${Date.now()}`;
         const pendingApproval: PendingHealingApproval = {
@@ -497,22 +502,22 @@ async function tryHealing(
           try {
             await page.waitForLoadState('networkidle', { timeout: 3000 });
           } catch { /* Ignore timeout */ }
-          console.log(`[HEALING] APPROVED: visual-match at (${centerX}, ${centerY})`);
+          log.info({ x: centerX, y: centerY }, 'Visual-match healing approved');
           recordSuccessfulHeal(runId, test.id, stepIndex, step.selector!, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
           trackHealingSuccess(healingProjectId, 'visual-match');
           return { healed: true, skipped: false };
         } else {
-          console.log(`[HEALING] REJECTED or TIMEOUT: visual-match not applied`);
+          log.info('Visual-match healing rejected or timed out');
         }
       } else {
-        console.log(`[HEALING] Visual match failed (confidence: ${(visualMatch.confidence * 100).toFixed(1)}%)`);
+        log.debug({ confidence: visualMatch.confidence * 100 }, 'Visual match failed');
       }
     }
   }
 
   // Healing failed
   if (isOptionalStep) {
-    console.log(`[OPTIONAL] Step skipped (optional): ${step.selector} not found - ${step.optionalReason || 'user_marked'}`);
+    log.debug({ selector: step.selector, reason: step.optionalReason || 'user_marked' }, 'Optional step skipped');
     return { healed: false, skipped: true, error: `Optional element not found: ${step.selector}` };
   }
 
@@ -538,13 +543,13 @@ async function tryHealingForFill(
   if (!errorMessage.includes('strict mode') && !errorMessage.includes('not found') &&
       !errorMessage.includes('timeout') && !errorMessage.includes('waiting for')) {
     if (isOptionalStep) {
-      console.log(`[OPTIONAL] Step skipped (optional fill): ${step.selector} not found - ${step.optionalReason || 'user_marked'}`);
+      log.debug({ selector: step.selector, reason: step.optionalReason || 'user_marked' }, 'Optional fill step skipped');
       return { healed: false, skipped: true, error: `Optional element not found: ${step.selector}` };
     }
     return { healed: false, skipped: false };
   }
 
-  console.log(`[HEALING] Element not found for selector: ${step.selector}`);
+  log.info({ selector: step.selector }, 'Element not found, initiating healing');
 
   const healingSuite = test.suite_id ? await getTestSuite(test.suite_id) : undefined;
   const healingProjectId = healingSuite?.project_id || null;
@@ -553,7 +558,7 @@ async function tryHealingForFill(
 
   const projectThreshold = await getAutoHealThreshold(healingProjectId);
   const enabledStrategies = await getEnabledStrategies(healingProjectId);
-  console.log(`[HEALING] Using project ${healingProjectId} threshold for fill: ${projectThreshold}, enabled strategies: ${enabledStrategies.join(', ')}`);
+  log.debug({ projectId: healingProjectId, threshold: projectThreshold, enabledStrategies }, 'Healing configuration for fill');
 
   const altSelectors = step.selectorStrategies?.filter(s => s.selector !== step.selector) || [];
 
@@ -566,14 +571,14 @@ async function tryHealingForFill(
       continue;
     }
     try {
-      console.log(`[HEALING] Trying alternate selector: ${alt.selector} (confidence: ${alt.confidence})`);
+      log.debug({ selector: alt.selector, confidence: alt.confidence }, 'Trying alternate selector');
       await page.fill(alt.selector, step.value!, { timeout: 5000 });
-      console.log(`[HEALING] SUCCESS with ${alt.strategy}: ${alt.selector} - auto-applied (confidence >= ${projectThreshold})`);
+      log.info({ strategy: alt.strategy, selector: alt.selector, threshold: projectThreshold }, 'Fill healing succeeded with auto-apply');
       recordSuccessfulHeal(runId, test.id, stepIndex, step.selector!, alt.selector, alt.strategy, alt.confidence, orgId);
       trackHealingSuccess(healingProjectId, alt.strategy);
       return { healed: true, skipped: false };
     } catch (altErr) {
-      console.log(`[HEALING] Failed with ${alt.strategy}: ${alt.selector}`);
+      log.debug({ strategy: alt.strategy, selector: alt.selector }, 'Healing attempt failed');
     }
   }
 
@@ -581,7 +586,7 @@ async function tryHealingForFill(
   if (await isHealingStrategyEnabled(healingProjectId, 'visual-match')) {
     const visualFingerprint = step.visualFingerprint;
     if (visualFingerprint) {
-      console.log(`[HEALING] All selectors failed or below threshold, attempting visual matching for fill...`);
+      log.debug('All fill selectors failed, attempting visual matching');
       const visualMatch = await findElementByVisualMatch(page, visualFingerprint);
 
       if (visualMatch.found && visualMatch.matchLocation && visualMatch.confidence >= projectThreshold) {
@@ -589,12 +594,12 @@ async function tryHealingForFill(
         const centerY = visualMatch.matchLocation.y + visualMatch.matchLocation.height / 2;
         await page.mouse.click(centerX, centerY);
         await page.keyboard.type(step.value!);
-        console.log(`[HEALING] SUCCESS with visual-match fill at (${centerX}, ${centerY})`);
+        log.info({ x: centerX, y: centerY }, 'Fill healing succeeded with visual-match');
         recordSuccessfulHeal(runId, test.id, stepIndex, step.selector!, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
         trackHealingSuccess(healingProjectId, 'visual-match');
         return { healed: true, skipped: false };
       } else if (visualMatch.found && visualMatch.matchLocation) {
-        console.log(`[HEALING] Visual match found but below threshold (${(visualMatch.confidence * 100).toFixed(1)}% < ${projectThreshold * 100}%) - waiting for approval`);
+        log.info({ confidence: visualMatch.confidence * 100, threshold: projectThreshold * 100 }, 'Fill visual match below threshold - waiting for approval');
 
         const approvalId = `heal-${runId}-${test.id}-${stepIndex}-fill-${Date.now()}`;
         const pendingApproval: PendingHealingApproval = {
@@ -617,21 +622,21 @@ async function tryHealingForFill(
           const centerY = visualMatch.matchLocation.y + visualMatch.matchLocation.height / 2;
           await page.mouse.click(centerX, centerY);
           await page.keyboard.type(step.value!);
-          console.log(`[HEALING] APPROVED: visual-match fill at (${centerX}, ${centerY})`);
+          log.info({ x: centerX, y: centerY }, 'Fill visual-match healing approved');
           recordSuccessfulHeal(runId, test.id, stepIndex, step.selector!, `visual-match:${visualFingerprint}`, 'visual-match', visualMatch.confidence, orgId);
           trackHealingSuccess(healingProjectId, 'visual-match');
           return { healed: true, skipped: false };
         } else {
-          console.log(`[HEALING] REJECTED or TIMEOUT: visual-match fill not applied`);
+          log.info('Fill visual-match healing rejected or timed out');
         }
       } else {
-        console.log(`[HEALING] Visual match failed (confidence: ${(visualMatch.confidence * 100).toFixed(1)}%)`);
+        log.debug({ confidence: visualMatch.confidence * 100 }, 'Visual match failed');
       }
     }
   }
 
   if (isOptionalStep) {
-    console.log(`[OPTIONAL] Step skipped (optional fill): ${step.selector} not found - ${step.optionalReason || 'user_marked'}`);
+    log.debug({ selector: step.selector, reason: step.optionalReason || 'user_marked' }, 'Optional fill step skipped');
     return { healed: false, skipped: true, error: `Optional element not found: ${step.selector}` };
   }
 
@@ -686,13 +691,13 @@ async function executeVisualCheckpoint(
         diffImageBase64: checkpointComparison.diffImage,
       };
     } else {
-      console.log(`[Visual Checkpoint] "${checkpointName}" passed: ${checkpointComparison.diffPercentage?.toFixed(2) ?? 0}% difference`);
+      log.info({ checkpoint: checkpointName, diffPercentage: checkpointComparison.diffPercentage ?? 0 }, 'Visual checkpoint passed');
       return { failed: false, screenshot_base64 };
     }
   } else {
     fs.mkdirSync(BASELINES_DIR, { recursive: true });
     fs.writeFileSync(checkpointBaselinePath, checkpointBuffer);
-    console.log(`[Visual Checkpoint] Created baseline for "${checkpointName}"`);
+    log.info({ checkpoint: checkpointName }, 'Created baseline for visual checkpoint');
     return { failed: false, screenshot_base64 };
   }
 }
@@ -717,7 +722,7 @@ async function executeAccessibilityCheckStep(
     threshold: step.a11y_threshold || 0,
   };
 
-  console.log(`[Accessibility Check Step] Running axe-core scan with config:`, a11yStepConfig);
+  log.debug({ config: a11yStepConfig }, 'Running axe-core accessibility scan');
 
   const a11yScreenshot = await page.screenshot();
   const screenshot_base64 = a11yScreenshot.toString('base64');
@@ -779,7 +784,7 @@ async function executeAccessibilityCheckStep(
   };
 
   if (stepShouldFail) {
-    console.log(`[Accessibility Check Step] FAILED: ${a11yStepFailReason}`);
+    log.info({ reason: a11yStepFailReason }, 'Accessibility check step failed');
     return {
       failed: true,
       error: `Accessibility check failed: ${a11yStepFailReason}`,
@@ -787,7 +792,7 @@ async function executeAccessibilityCheckStep(
       a11yResults,
     };
   } else {
-    console.log(`[Accessibility Check Step] PASSED: ${totalStepViolations} violation(s) found (within threshold)`);
+    log.info({ violations: totalStepViolations }, 'Accessibility check step passed (within threshold)');
     return { failed: false, screenshot_base64, a11yResults };
   }
 }
@@ -812,13 +817,13 @@ function assertNoConsoleErrors(
 
   if (consoleErrors.length > 0) {
     const errorMessages = consoleErrors.map(e => `[${e.level}] ${e.message.substring(0, 100)}`).join('; ');
-    console.log(`[Console Errors Check] FAILED: Found ${consoleErrors.length} console error(s)`);
+    log.info({ errorCount: consoleErrors.length }, 'Console errors check failed');
     return {
       failed: true,
       error: `Found ${consoleErrors.length} console error(s): ${errorMessages}`,
     };
   } else {
-    console.log(`[Console Errors Check] PASSED: No console errors detected (severity: ${severityLevel})`);
+    log.debug({ severity: severityLevel }, 'Console errors check passed - no errors detected');
     return { failed: false };
   }
 }
