@@ -380,13 +380,6 @@ export interface WebhookDeliveryAttempt {
   completed_at?: Date;
 }
 
-/**
- * @deprecated Feature #358: This Map is dead code from pre-BullMQ implementation.
- * Webhook delivery now uses BullMQ queue (Feature #320) - see webhook-queue.ts.
- * Kept for backward compatibility but never populated.
- */
-export const webhookDeliveryQueue: Map<string, WebhookDeliveryAttempt> = new Map();
-
 // ============================================================================
 // Webhook Batching
 // ============================================================================

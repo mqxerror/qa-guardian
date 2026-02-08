@@ -206,7 +206,6 @@ export {
 
   // In-Memory Stores
   webhookSubscriptions,
-  webhookDeliveryQueue,
   webhookBatchQueues,
   webhookBatchTimers,
   webhookDeliveryLogs,
