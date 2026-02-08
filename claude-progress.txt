@@ -1,11 +1,62 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 390/397 features passing (98.2%)**
+- **Progress: 395/397 features passing (99.5%)**
 - **Last Updated**: 2026-02-08
-- **Pending**: 7 features
+- **Pending**: 2 features
 - **In Progress**: None
-- **Last Action**: Session 169 - Security Hardening (Features #387-391)
+- **Last Action**: Session 170 - Theme Token Migration (Features #393-394)
+
+## Session 2026-02-08 (Session 170) - Theme Token Migration
+
+### Summary
+Fresh context window. Completed 2 major theme refactoring features:
+1. Removed 2,953 dead dark: prefix declarations from frontend
+2. Migrated 1,133 gray color tokens to CSS variable system
+
+### Feature Status
+- 395/397 features passing (99.5%)
+- 2 pending features remaining
+
+### Features Completed This Session
+
+#### Feature #393: Remove all dead dark: prefix declarations from frontend
+- Created Node.js script `scripts/remove-dark-prefixes.js` to automate removal
+- Removed 2,953 dark: prefixed Tailwind classes from 137 files
+- Key insight: The frontend uses darkMode: ['class'] but the dark theme is set via :root CSS variables, making dark: prefixes dead code
+- Kept 8 legitimate `dark:` object property keys in colors.ts for chart colors
+- Fixed dynamic template literal cases (e.g., `dark:bg-${color}-900/30`)
+- Commit: c7556ef
+
+#### Feature #394: Migrate gray color tokens to CSS variable system
+- Created Node.js script `scripts/migrate-gray-tokens.js` for migration
+- Migrated 1,133 gray color tokens across 117 files
+- Mapping applied:
+  - text-gray-300/400/500 → text-muted-foreground (314 replacements)
+  - text-gray-600/700/800/900 → text-foreground (341)
+  - bg-gray-50/100 → bg-muted (165)
+  - bg-gray-200 → bg-secondary (30)
+  - bg-gray-800/900 → bg-card/bg-background (36)
+  - bg-white → bg-card (49)
+  - border-gray-* → border-border (188)
+- Preserved intentional uses: disabled states, status indicators, code text colors
+- Commit: 4b805f8
+
+### Verification
+- Both builds succeeded with 0 TypeScript errors
+- Visual verification via browser automation confirmed all pages render correctly
+- Screenshots captured: dark-prefix-removal-*.png, gray-token-migration-*.png
+
+### Commits This Session
+- c7556ef: refactor(theme): Remove 2,953 dead dark: prefix declarations from frontend
+- 4b805f8: refactor(theme): Migrate 1,133 gray color tokens to CSS variable system
+
+### Next Session
+Continue with remaining 2 pending features:
+- Feature #395: Migrate semantic color tokens (blue/green/red/yellow) to CSS variables (~3,590 replacements)
+- Feature #397: (to be determined)
+
+---
 
 ## Session 2026-02-08 (Session 169) - Security Hardening
 
