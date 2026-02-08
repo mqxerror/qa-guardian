@@ -14,6 +14,10 @@
 
 import { Queue, Worker, Job, QueueEvents, JobsOptions } from 'bullmq';
 import { Redis as IORedis } from 'ioredis';
+import { createLogger } from './logger.js';
+
+// Feature #439: Structured logging for execution queue
+const logger = createLogger('execution-queue');
 
 // ============================================================================
 // Types and Interfaces
@@ -92,7 +96,7 @@ let executeTestRunCallback: ((runId: string) => Promise<void>) | null = null;
  */
 export async function initializeExecutionQueue(): Promise<boolean> {
   if (isInitialized) {
-    console.log('[ExecutionQueue] Already initialized');
+    logger.debug({ action: 'init' }, 'Already initialized');
     return true;
   }
 
@@ -121,7 +125,7 @@ export async function initializeExecutionQueue(): Promise<boolean> {
 
     // Test connection
     await connection.ping();
-    console.log('[ExecutionQueue] Redis connection established');
+    logger.info({ action: 'connect' }, 'Redis connection established');
 
     // Create queue
     queue = new Queue(QUEUE_NAME, {
@@ -149,14 +153,14 @@ export async function initializeExecutionQueue(): Promise<boolean> {
     // Feature #169: In API-only mode, skip worker creation
     // A separate worker container will handle job processing
     if (API_ONLY_MODE) {
-      console.log('[ExecutionQueue] API-only mode (EXECUTION_MAX_CONCURRENCY=0) - worker NOT started');
-      console.log('[ExecutionQueue] Jobs will be processed by separate worker container');
+      logger.info({ mode: 'api-only' }, 'API-only mode - worker NOT started');
+      logger.info({ mode: 'api-only' }, 'Jobs will be processed by separate worker container');
     } else {
       // Create worker with concurrency limit
       worker = new Worker(
         QUEUE_NAME,
         async (job: Job<ExecutionJobData>) => {
-          console.log(`[ExecutionQueue] Processing job ${job.id} for run ${job.data.runId}`);
+          logger.info({ jobId: job.id, runId: job.data.runId }, 'Processing job');
 
           if (!executeTestRunCallback) {
             throw new Error('Test execution callback not registered');
@@ -166,7 +170,7 @@ export async function initializeExecutionQueue(): Promise<boolean> {
           await executeTestRunCallback(job.data.runId);
 
           lastJobProcessedAt = new Date().toISOString();
-          console.log(`[ExecutionQueue] Completed job ${job.id} for run ${job.data.runId}`);
+          logger.info({ jobId: job.id, runId: job.data.runId }, 'Completed job');
         },
         {
           connection: redisOptions,
@@ -177,34 +181,34 @@ export async function initializeExecutionQueue(): Promise<boolean> {
 
       // Set up event handlers
       worker.on('completed', (job) => {
-        console.log(`[ExecutionQueue] Job ${job.id} completed successfully`);
+        logger.info({ jobId: job.id }, 'Job completed successfully');
       });
 
       worker.on('failed', (job, err) => {
-        console.error(`[ExecutionQueue] Job ${job?.id} failed:`, err.message);
+        logger.error({ jobId: job?.id, error: err.message }, 'Job failed');
       });
 
       worker.on('error', (err) => {
-        console.error('[ExecutionQueue] Worker error:', err);
+        logger.error({ error: err }, 'Worker error');
       });
     }
 
     queueEvents.on('waiting', ({ jobId }) => {
-      console.log(`[ExecutionQueue] Job ${jobId} is waiting`);
+      logger.debug({ jobId }, 'Job is waiting');
     });
 
     queueEvents.on('active', ({ jobId }) => {
-      console.log(`[ExecutionQueue] Job ${jobId} is now active`);
+      logger.debug({ jobId }, 'Job is now active');
     });
 
     startedAt = new Date();
     isInitialized = true;
     const modeStr = API_ONLY_MODE ? 'API-only (enqueue only)' : `max concurrency: ${MAX_CONCURRENCY}`;
-    console.log(`[ExecutionQueue] Initialized - ${modeStr}`);
+    logger.info({ mode: modeStr }, 'Initialized');
 
     return true;
   } catch (error) {
-    console.error('[ExecutionQueue] Failed to initialize:', error);
+    logger.error({ error }, 'Failed to initialize');
     return false;
   }
 }
@@ -215,7 +219,7 @@ export async function initializeExecutionQueue(): Promise<boolean> {
  */
 export function registerExecutionCallback(callback: (runId: string) => Promise<void>): void {
   executeTestRunCallback = callback;
-  console.log('[ExecutionQueue] Execution callback registered');
+  logger.debug({ action: 'register_callback' }, 'Execution callback registered');
 }
 
 // ============================================================================
@@ -236,7 +240,7 @@ export async function queueTestRun(
   }
 ): Promise<string | null> {
   if (!queue || !isInitialized) {
-    console.warn('[ExecutionQueue] Queue not initialized, executing directly');
+    logger.warn({ action: 'queue_not_init' }, 'Queue not initialized, executing directly');
     return null;
   }
 
@@ -259,10 +263,10 @@ export async function queueTestRun(
 
   try {
     const job = await queue.add('execute-test', jobData, jobOptions);
-    console.log(`[ExecutionQueue] Queued test run ${runId} with job ID ${job.id}`);
+    logger.info({ runId, jobId: job.id }, 'Queued test run');
     return job.id || null;
   } catch (error) {
-    console.error('[ExecutionQueue] Failed to queue test run:', error);
+    logger.error({ error }, 'Failed to queue test run');
     return null;
   }
 }
@@ -286,7 +290,7 @@ export async function getJobPosition(runId: string): Promise<number | null> {
     const index = waitingJobs.findIndex(j => j.id === job.id);
     return index >= 0 ? index + 1 : null;
   } catch (error) {
-    console.error('[ExecutionQueue] Failed to get job position:', error);
+    logger.error({ error }, 'Failed to get job position');
     return null;
   }
 }
@@ -305,13 +309,13 @@ export async function cancelQueuedJob(runId: string): Promise<boolean> {
     const state = await job.getState();
     if (state === 'waiting' || state === 'delayed') {
       await job.remove();
-      console.log(`[ExecutionQueue] Cancelled queued job for run ${runId}`);
+      logger.info({ runId }, 'Cancelled queued job');
       return true;
     }
 
     return false;
   } catch (error) {
-    console.error('[ExecutionQueue] Failed to cancel job:', error);
+    logger.error({ error }, 'Failed to cancel job');
     return false;
   }
 }
@@ -348,7 +352,7 @@ export async function getQueueStats(): Promise<QueueStats | null> {
       maxConcurrency: MAX_CONCURRENCY,
     };
   } catch (error) {
-    console.error('[ExecutionQueue] Failed to get stats:', error);
+    logger.error({ error }, 'Failed to get stats');
     return null;
   }
 }
@@ -408,7 +412,7 @@ export async function getQueueHealth(): Promise<QueueHealth> {
       uptime: startedAt ? Math.floor((Date.now() - startedAt.getTime()) / 1000) : 0,
     };
   } catch (error) {
-    console.error('[ExecutionQueue] Failed to get health:', error);
+    logger.error({ error }, 'Failed to get health');
     return {
       status: 'unhealthy',
       connected: false,
@@ -450,10 +454,10 @@ export async function pauseQueue(): Promise<boolean> {
 
   try {
     await queue.pause();
-    console.log('[ExecutionQueue] Queue paused');
+    logger.info({ action: 'pause' }, 'Queue paused');
     return true;
   } catch (error) {
-    console.error('[ExecutionQueue] Failed to pause queue:', error);
+    logger.error({ error }, 'Failed to pause queue');
     return false;
   }
 }
@@ -466,10 +470,10 @@ export async function resumeQueue(): Promise<boolean> {
 
   try {
     await queue.resume();
-    console.log('[ExecutionQueue] Queue resumed');
+    logger.info({ action: 'resume' }, 'Queue resumed');
     return true;
   } catch (error) {
-    console.error('[ExecutionQueue] Failed to resume queue:', error);
+    logger.error({ error }, 'Failed to resume queue');
     return false;
   }
 }
@@ -478,7 +482,7 @@ export async function resumeQueue(): Promise<boolean> {
  * Gracefully shutdown the execution queue
  */
 export async function shutdownExecutionQueue(): Promise<void> {
-  console.log('[ExecutionQueue] Shutting down...');
+  logger.info({ action: 'shutdown' }, 'Shutting down');
 
   try {
     if (worker) {
@@ -502,9 +506,9 @@ export async function shutdownExecutionQueue(): Promise<void> {
     }
 
     isInitialized = false;
-    console.log('[ExecutionQueue] Shutdown complete');
+    logger.info({ action: 'shutdown' }, 'Shutdown complete');
   } catch (error) {
-    console.error('[ExecutionQueue] Error during shutdown:', error);
+    logger.error({ error }, 'Error during shutdown');
   }
 }
 
@@ -521,7 +525,7 @@ export async function executeDirectly(runId: string): Promise<void> {
     throw new Error('Test execution callback not registered');
   }
 
-  console.log(`[ExecutionQueue] Executing run ${runId} directly (queue bypassed)`);
+  logger.info({ runId }, 'Executing run directly (queue bypassed)');
   await executeTestRunCallback(runId);
 }
 
@@ -548,14 +552,14 @@ export async function enqueueOrExecute(
 
   // In API-only mode, never execute directly - the whole point is to keep Chromium out of the API process
   if (API_ONLY_MODE) {
-    console.error(`[ExecutionQueue] Queue unavailable in API-only mode, cannot execute run ${runId}. Is Redis running?`);
+    logger.error({ runId }, 'Queue unavailable in API-only mode - is Redis running?');
     return { queued: false, error: 'Queue unavailable - worker container required' };
   }
 
   // Queue not available, execute directly (only in non-API-only mode)
-  console.log('[ExecutionQueue] Queue not available, executing directly');
+  logger.info({ action: 'direct_execute' }, 'Queue not available, executing directly');
   executeDirectly(runId).catch(err => {
-    console.error(`[ExecutionQueue] Direct execution failed for run ${runId}:`, err);
+    logger.error({ runId, error: err }, 'Direct execution failed');
   });
 
   return { queued: false };

@@ -18,6 +18,10 @@
 
 import { Redis } from 'ioredis';
 import type { Server as SocketIOServer } from 'socket.io';
+import { createLogger } from './logger.js';
+
+// Feature #439: Structured logging for redis events
+const logger = createLogger('redis-events');
 
 // Redis channel name for Socket.IO events
 const SOCKET_EVENTS_CHANNEL = 'qa-guardian:socket-events';
@@ -92,7 +96,7 @@ function getRedisOptions(): {
 
     return options;
   } catch (err) {
-    console.error('[RedisEvents] Invalid REDIS_URL:', err);
+    logger.error({ error: err }, 'Invalid REDIS_URL');
     return {
       host: 'localhost',
       port: 6379,
@@ -115,15 +119,15 @@ export async function initializeEventPublisher(): Promise<boolean> {
     pubClient = new Redis(options);
 
     pubClient.on('connect', () => {
-      console.log('[RedisEvents] Publisher connected to Redis');
+      logger.info({ action: 'publisher_connect' }, 'Publisher connected to Redis');
     });
 
     pubClient.on('error', (err) => {
-      console.error('[RedisEvents] Publisher error:', err.message);
+      logger.error({ error: err.message }, 'Publisher error');
     });
 
     pubClient.on('close', () => {
-      console.log('[RedisEvents] Publisher connection closed');
+      logger.info({ action: 'publisher_close' }, 'Publisher connection closed');
       publisherInitialized = false;
 
       // Feature #224: Schedule reconnection with exponential backoff
@@ -131,12 +135,12 @@ export async function initializeEventPublisher(): Promise<boolean> {
         clearTimeout(publisherReconnectTimer);
       }
       const delay = getReconnectDelay(publisherReconnectAttempts);
-      console.log(`[RedisEvents] Publisher scheduling reconnection in ${Math.round(delay)}ms (attempt ${publisherReconnectAttempts + 1})`);
+      logger.info({ delayMs: Math.round(delay), attempt: publisherReconnectAttempts + 1 }, 'Publisher scheduling reconnection');
       publisherReconnectTimer = setTimeout(async () => {
         publisherReconnectAttempts++;
         const success = await initializeEventPublisher();
         if (success) {
-          console.log('[RedisEvents] Publisher reconnected successfully');
+          logger.info({ action: 'publisher_reconnect' }, 'Publisher reconnected successfully');
           publisherReconnectAttempts = 0; // Reset on success
         }
       }, delay);
@@ -160,10 +164,10 @@ export async function initializeEventPublisher(): Promise<boolean> {
     });
 
     publisherInitialized = true;
-    console.log('[RedisEvents] Event publisher initialized');
+    logger.info({ action: 'init' }, 'Event publisher initialized');
     return true;
   } catch (err) {
-    console.error('[RedisEvents] Failed to initialize event publisher:', err);
+    logger.error({ error: err }, 'Failed to initialize event publisher');
     pubClient = null;
     publisherInitialized = false;
     return false;
@@ -181,7 +185,7 @@ export async function publishRunEvent(
   data: Record<string, unknown>
 ): Promise<boolean> {
   if (!pubClient || !publisherInitialized) {
-    console.warn('[RedisEvents] Publisher not initialized, cannot publish event');
+    logger.warn({ action: 'publish' }, 'Publisher not initialized, cannot publish event');
     return false;
   }
 
@@ -196,10 +200,10 @@ export async function publishRunEvent(
 
     const message = JSON.stringify(payload);
     await pubClient.publish(SOCKET_EVENTS_CHANNEL, message);
-    console.log(`[RedisEvents] Published ${event} for run ${runId} (org: ${orgId})`);
+    logger.debug({ event, runId, orgId }, 'Published event');
     return true;
   } catch (err) {
-    console.error('[RedisEvents] Failed to publish event:', err);
+    logger.error({ error: err }, 'Failed to publish event');
     return false;
   }
 }
@@ -221,15 +225,15 @@ export async function initializeEventSubscriber(io: SocketIOServer): Promise<boo
     subClient = new Redis(options);
 
     subClient.on('connect', () => {
-      console.log('[RedisEvents] Subscriber connected to Redis');
+      logger.info({ action: 'subscriber_connect' }, 'Subscriber connected to Redis');
     });
 
     subClient.on('error', (err) => {
-      console.error('[RedisEvents] Subscriber error:', err.message);
+      logger.error({ error: err.message }, 'Subscriber error');
     });
 
     subClient.on('close', () => {
-      console.log('[RedisEvents] Subscriber connection closed');
+      logger.info({ action: 'subscriber_close' }, 'Subscriber connection closed');
       subscriberInitialized = false;
 
       // Feature #224: Schedule reconnection with exponential backoff
@@ -237,24 +241,24 @@ export async function initializeEventSubscriber(io: SocketIOServer): Promise<boo
         clearTimeout(subscriberReconnectTimer);
       }
       const delay = getReconnectDelay(subscriberReconnectAttempts);
-      console.log(`[RedisEvents] Subscriber scheduling reconnection in ${Math.round(delay)}ms (attempt ${subscriberReconnectAttempts + 1})`);
+      logger.info({ delayMs: Math.round(delay), attempt: subscriberReconnectAttempts + 1 }, 'Subscriber scheduling reconnection');
       subscriberReconnectTimer = setTimeout(async () => {
         subscriberReconnectAttempts++;
         if (cachedIO) {
           const success = await initializeEventSubscriber(cachedIO);
           if (success) {
-            console.log('[RedisEvents] Subscriber reconnected successfully');
+            logger.info({ action: 'subscriber_reconnect' }, 'Subscriber reconnected successfully');
             subscriberReconnectAttempts = 0; // Reset on success
           }
         } else {
-          console.error('[RedisEvents] Cannot reconnect subscriber - no cached IO instance');
+          logger.error({ action: 'subscriber_reconnect' }, 'Cannot reconnect subscriber - no cached IO instance');
         }
       }, delay);
     });
 
     // Subscribe to the socket events channel
     await subClient.subscribe(SOCKET_EVENTS_CHANNEL);
-    console.log(`[RedisEvents] Subscribed to channel: ${SOCKET_EVENTS_CHANNEL}`);
+    logger.info({ channel: SOCKET_EVENTS_CHANNEL }, 'Subscribed to channel');
 
     // Handle incoming messages
     subClient.on('message', (channel, message) => {
@@ -275,17 +279,17 @@ export async function initializeEventSubscriber(io: SocketIOServer): Promise<boo
         // Also emit to organization room for cross-tab sync
         io.to(`org:${orgId}`).emit(event, socketPayload);
 
-        console.log(`[RedisEvents] Forwarded ${event} for run ${runId} to Socket.IO clients`);
+        logger.debug({ event, runId }, 'Forwarded event to Socket.IO clients');
       } catch (err) {
-        console.error('[RedisEvents] Failed to parse/forward event:', err);
+        logger.error({ error: err }, 'Failed to parse/forward event');
       }
     });
 
     subscriberInitialized = true;
-    console.log('[RedisEvents] Event subscriber initialized');
+    logger.info({ action: 'subscriber_init' }, 'Event subscriber initialized');
     return true;
   } catch (err) {
-    console.error('[RedisEvents] Failed to initialize event subscriber:', err);
+    logger.error({ error: err }, 'Failed to initialize event subscriber');
     subClient = null;
     subscriberInitialized = false;
     return false;
@@ -321,7 +325,7 @@ export async function closePublisher(): Promise<void> {
     await pubClient.quit();
     pubClient = null;
     publisherInitialized = false;
-    console.log('[RedisEvents] Publisher closed');
+    logger.info({ action: 'publisher_closed' }, 'Publisher closed');
   }
 }
 
@@ -342,7 +346,7 @@ export async function closeSubscriber(): Promise<void> {
     await subClient.quit();
     subClient = null;
     subscriberInitialized = false;
-    console.log('[RedisEvents] Subscriber closed');
+    logger.info({ action: 'subscriber_closed' }, 'Subscriber closed');
   }
 }
 

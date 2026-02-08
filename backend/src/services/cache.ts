@@ -8,6 +8,10 @@
 
 import { Redis } from 'ioredis';
 import { CacheTTL } from './cache-keys.js';
+import { createLogger } from './logger.js';
+
+// Feature #439: Structured logging for cache service
+const logger = createLogger('cache');
 
 // Cache service singleton
 let cacheInstance: CacheService | null = null;
@@ -41,7 +45,7 @@ export class CacheService {
           maxRetriesPerRequest: 3,
           retryStrategy: (times) => {
             if (times > 3) {
-              console.warn('[CacheService] Redis connection failed after 3 retries, using memory fallback');
+              logger.warn({ retries: 3 }, 'Redis connection failed, using memory fallback');
               return null; // Stop retrying
             }
             return Math.min(times * 100, 2000); // Exponential backoff
@@ -51,24 +55,24 @@ export class CacheService {
 
         this.redis.on('connect', () => {
           this.connected = true;
-          console.log('[CacheService] Connected to Redis');
+          logger.info({ action: 'connect' }, 'Connected to Redis');
         });
 
         this.redis.on('error', (err) => {
-          console.warn('[CacheService] Redis error:', err.message);
+          logger.warn({ error: err.message }, 'Redis error');
           this.connected = false;
         });
 
         this.redis.on('close', () => {
           this.connected = false;
-          console.log('[CacheService] Redis connection closed');
+          logger.info({ action: 'close' }, 'Redis connection closed');
         });
       } catch (err) {
-        console.warn('[CacheService] Failed to initialize Redis:', err);
+        logger.warn({ error: err }, 'Failed to initialize Redis');
         this.redis = null;
       }
     } else {
-      console.log('[CacheService] No REDIS_URL configured, using in-memory cache');
+      logger.info({ action: 'init' }, 'No REDIS_URL configured, using in-memory cache');
     }
 
     // Cleanup expired memory cache entries periodically
@@ -88,7 +92,7 @@ export class CacheService {
       await this.redis.connect();
       return true;
     } catch (err) {
-      console.warn('[CacheService] Failed to connect to Redis:', err);
+      logger.warn({ error: err }, 'Failed to connect to Redis');
       return false;
     }
   }
@@ -121,7 +125,7 @@ export class CacheService {
           return JSON.parse(value) as T;
         }
       } catch (err) {
-        console.warn(`[CacheService] Redis get error for key ${key}:`, err);
+        logger.warn({ key, error: err }, 'Redis get error');
       }
     }
 
@@ -154,7 +158,7 @@ export class CacheService {
         await this.redis.setex(fullKey, ttlSeconds, serialized);
         return true;
       } catch (err) {
-        console.warn(`[CacheService] Redis set error for key ${key}:`, err);
+        logger.warn({ key, error: err }, 'Redis set error');
       }
     }
 
@@ -184,7 +188,7 @@ export class CacheService {
         const result = await this.redis.del(fullKey);
         deleted = result > 0;
       } catch (err) {
-        console.warn(`[CacheService] Redis delete error for key ${key}:`, err);
+        logger.warn({ key, error: err }, 'Redis delete error');
       }
     }
 
@@ -218,7 +222,7 @@ export class CacheService {
           }
         } while (cursor !== '0');
       } catch (err) {
-        console.warn(`[CacheService] Redis invalidate error for pattern ${pattern}:`, err);
+        logger.warn({ pattern, error: err }, 'Redis invalidate error');
       }
     }
 
@@ -248,7 +252,7 @@ export class CacheService {
         const result = await this.redis.exists(fullKey);
         if (result > 0) return true;
       } catch (err) {
-        console.warn(`[CacheService] Redis exists error for key ${key}:`, err);
+        logger.warn({ key, error: err }, 'Redis exists error');
       }
     }
 
@@ -301,7 +305,7 @@ export class CacheService {
           }
         } while (cursor !== '0');
       } catch (err) {
-        console.warn('[CacheService] Redis clear error:', err);
+        logger.warn({ error: err }, 'Redis clear error');
       }
     }
 
@@ -384,7 +388,7 @@ export class CacheService {
           };
         }
       } catch (err) {
-        console.warn('[CacheService] Redis stats error:', err);
+        logger.warn({ error: err }, 'Redis stats error');
       }
     }
 
@@ -413,7 +417,7 @@ export class CacheService {
           return result[0][1] as number;
         }
       } catch (err) {
-        console.warn(`[CacheService] Redis incr error for key ${key}:`, err);
+        logger.warn({ key, error: err }, 'Redis incr error');
       }
     }
 
@@ -456,7 +460,7 @@ export class CacheService {
           return parseInt(value, 10) || 0;
         }
       } catch (err) {
-        console.warn(`[CacheService] Redis getCount error for key ${key}:`, err);
+        logger.warn({ key, error: err }, 'Redis getCount error');
       }
     }
 

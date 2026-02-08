@@ -25,6 +25,10 @@
 
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { getCompleteSchemaSQL } from './database-schema.js';
+import { createLogger } from './logger.js';
+
+// Feature #439: Structured logging for database service
+const logger = createLogger('database');
 
 // Database connection pool
 let pool: Pool | null = null;
@@ -71,7 +75,7 @@ export async function initializeDatabase(): Promise<boolean> {
   const databaseUrl = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
 
   if (!databaseUrl) {
-    console.warn('[Database] No DATABASE_URL or SUPABASE_DATABASE_URL configured - using in-memory storage');
+    logger.warn({ action: 'init' }, 'No DATABASE_URL configured - using in-memory storage');
     return false;
   }
 
@@ -88,17 +92,17 @@ export async function initializeDatabase(): Promise<boolean> {
 
     // Feature #157: Handle pool errors gracefully
     pool.on('error', (err) => {
-      console.error('[Database] Pool error:', err.message);
+      logger.error({ error: err.message }, 'Pool error');
       // Don't throw - pool will handle reconnection
     });
 
     // Feature #157: Track when clients are acquired/released for debugging
     pool.on('connect', () => {
-      console.log('[Database] New client connected to pool');
+      logger.debug({ action: 'connect' }, 'New client connected to pool');
     });
 
     pool.on('remove', () => {
-      console.log('[Database] Client removed from pool');
+      logger.debug({ action: 'remove' }, 'Client removed from pool');
     });
 
     // Test the connection
@@ -108,7 +112,7 @@ export async function initializeDatabase(): Promise<boolean> {
 
     isConnected = true;
     connectionAttempts = 0;
-    console.log(`[Database] PostgreSQL connection established successfully (pool: min=${POOL_MIN}, max=${POOL_MAX}, query_timeout=${QUERY_TIMEOUT_MS}ms)`);
+    logger.info({ poolMin: POOL_MIN, poolMax: POOL_MAX, queryTimeoutMs: QUERY_TIMEOUT_MS }, 'PostgreSQL connection established');
 
     // Feature #157: Start periodic pool stats logging
     startPoolStatsLogging();
@@ -119,15 +123,15 @@ export async function initializeDatabase(): Promise<boolean> {
     return true;
   } catch (error) {
     connectionAttempts++;
-    console.error(`[Database] Failed to connect (attempt ${connectionAttempts}/${MAX_CONNECTION_ATTEMPTS}):`, error);
+    logger.error({ attempt: connectionAttempts, maxAttempts: MAX_CONNECTION_ATTEMPTS, error }, 'Failed to connect');
 
     if (connectionAttempts < MAX_CONNECTION_ATTEMPTS) {
-      console.log(`[Database] Retrying in ${RETRY_DELAY_MS}ms...`);
+      logger.info({ retryDelayMs: RETRY_DELAY_MS }, 'Retrying connection');
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
       return initializeDatabase();
     }
 
-    console.warn('[Database] Max connection attempts reached - falling back to in-memory storage');
+    logger.warn({ maxAttempts: MAX_CONNECTION_ATTEMPTS }, 'Max connection attempts reached - falling back to in-memory storage');
     return false;
   }
 }
@@ -142,9 +146,9 @@ async function initializeSchema(): Promise<void> {
   try {
     const schemaSQL = getCompleteSchemaSQL();
     await pool.query(schemaSQL);
-    console.log('[Database] Schema initialized successfully');
+    logger.info({ action: 'schema_init' }, 'Schema initialized successfully');
   } catch (error) {
-    console.error('[Database] Failed to initialize schema:', error);
+    logger.error({ error }, 'Failed to initialize schema');
     throw error;
   }
 }
@@ -214,7 +218,7 @@ export async function queryWithTimeout<T extends QueryResultRow = QueryResultRow
 
     // Check if this was a timeout error
     if (error instanceof Error && error.message.includes('statement timeout')) {
-      console.error(`[Database] Query timed out after ${timeoutMs}ms:`, text.substring(0, 100));
+      logger.error({ timeoutMs, queryPreview: text.substring(0, 100) }, 'Query timed out');
       throw new Error(`Query timed out after ${timeoutMs}ms`);
     }
     throw error;
@@ -295,7 +299,7 @@ export async function transactionWithTimeout<T>(
 
     // Check if this was a timeout error
     if (error instanceof Error && error.message.includes('statement timeout')) {
-      console.error(`[Database] Transaction query timed out after ${timeoutMs}ms`);
+      logger.error({ timeoutMs }, 'Transaction query timed out');
       throw new Error(`Transaction query timed out after ${timeoutMs}ms`);
     }
     throw error;
@@ -348,11 +352,11 @@ function startPoolStatsLogging(): void {
     // Log warning if pool is near exhaustion
     const usagePercent = (stats.totalConnections / stats.maxConnections) * 100;
     if (usagePercent >= 80) {
-      console.warn(`[Database] Pool near exhaustion: ${stats.totalConnections}/${stats.maxConnections} connections (${usagePercent.toFixed(1)}%), waiting: ${stats.waitingClients}`);
+      logger.warn({ totalConnections: stats.totalConnections, maxConnections: stats.maxConnections, usagePercent: usagePercent.toFixed(1), waitingClients: stats.waitingClients }, 'Pool near exhaustion');
       poolExhaustedCount++;
       lastPoolExhaustedAt = new Date();
     } else if (stats.waitingClients > 0) {
-      console.log(`[Database] Pool stats: ${stats.totalConnections}/${stats.maxConnections} connections, idle: ${stats.idleConnections}, waiting: ${stats.waitingClients}`);
+      logger.debug({ totalConnections: stats.totalConnections, maxConnections: stats.maxConnections, idleConnections: stats.idleConnections, waitingClients: stats.waitingClients }, 'Pool stats');
     }
   }, POOL_STATS_INTERVAL);
 
@@ -381,7 +385,7 @@ export async function closeDatabase(): Promise<void> {
     await pool.end();
     pool = null;
     isConnected = false;
-    console.log('[Database] Connection pool closed');
+    logger.info({ action: 'close' }, 'Connection pool closed');
   }
 }
 
@@ -440,7 +444,7 @@ export async function getConnectionWithRetry(maxRetries = 3, retryDelayMs = 100)
         lastPoolExhaustedAt = new Date();
 
         if (attempt < maxRetries) {
-          console.warn(`[Database] Pool exhausted, retrying (${attempt}/${maxRetries})...`);
+          logger.warn({ attempt, maxRetries }, 'Pool exhausted, retrying');
           await new Promise(resolve => setTimeout(resolve, retryDelayMs * attempt));
           continue;
         }
@@ -451,7 +455,7 @@ export async function getConnectionWithRetry(maxRetries = 3, retryDelayMs = 100)
     }
   }
 
-  console.error('[Database] Failed to get connection after retries:', lastError?.message);
+  logger.error({ error: lastError?.message }, 'Failed to get connection after retries');
   return null;
 }
 

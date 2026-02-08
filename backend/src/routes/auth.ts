@@ -124,7 +124,17 @@ const REFRESH_TOKEN_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 days in seconds
 
 // Feature #438: SECURITY FIX - No hardcoded secret fallback
 // Refresh token secret MUST be set via environment variable
+// Feature #439: Lazy initialization to support ESM module loading order
+// (dotenv.config() in index.ts runs after all imports are resolved)
+let _refreshSecret: string | null = null;
+type SignerFn = (payload: string | Buffer | { [key: string]: any }) => string;
+type VerifierFn = (token: string | Buffer) => any;
+let _signRefreshToken: SignerFn | null = null;
+let _verifyRefreshToken: VerifierFn | null = null;
+
 function getRefreshSecret(): string {
+  if (_refreshSecret) return _refreshSecret;
+
   const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
   if (!secret) {
     // Fail at startup, not at request time - this is a fatal configuration error
@@ -133,9 +143,21 @@ function getRefreshSecret(): string {
       'Never use hardcoded secrets in production. Set these in your .env file.'
     );
   }
+  _refreshSecret = secret;
   return secret;
 }
-const REFRESH_SECRET = getRefreshSecret();
+
+function getSignRefreshToken(): SignerFn {
+  if (_signRefreshToken) return _signRefreshToken;
+  _signRefreshToken = createSigner({ key: getRefreshSecret(), expiresIn: REFRESH_TOKEN_EXPIRY });
+  return _signRefreshToken;
+}
+
+function getVerifyRefreshToken(): VerifierFn {
+  if (_verifyRefreshToken) return _verifyRefreshToken;
+  _verifyRefreshToken = createVerifier({ key: getRefreshSecret() });
+  return _verifyRefreshToken;
+}
 
 /**
  * Feature #438: Typed refresh token payload interface
@@ -150,10 +172,6 @@ interface RefreshTokenPayload {
   exp?: number;         // Expiration (added by fast-jwt)
 }
 
-// Create signer and verifier for refresh tokens
-const signRefreshToken = createSigner({ key: REFRESH_SECRET, expiresIn: REFRESH_TOKEN_EXPIRY });
-const verifyRefreshToken = createVerifier({ key: REFRESH_SECRET });
-
 // Feature #221: Refresh tokens now stored in PostgreSQL (see repositories/auth.ts)
 // Memory fallback removed - DB is primary storage for session persistence across restarts
 
@@ -167,7 +185,7 @@ function generateRefreshToken(userId: string, email: string, organizationId: str
     organization_id: organizationId,
     type: 'refresh',
   };
-  return signRefreshToken(payload);
+  return getSignRefreshToken()(payload);
 }
 
 /**
@@ -557,7 +575,7 @@ export async function authRoutes(app: FastifyInstance) {
     // Feature #438: Use typed payload instead of 'any' for type safety
     let payload: RefreshTokenPayload;
     try {
-      payload = verifyRefreshToken(refresh_token) as RefreshTokenPayload;
+      payload = getVerifyRefreshToken()(refresh_token) as RefreshTokenPayload;
     } catch (err) {
       return reply.status(401).send({
         error: 'Unauthorized',
