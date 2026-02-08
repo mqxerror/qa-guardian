@@ -4,6 +4,7 @@
  */
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { Server as SocketIOServer } from 'socket.io';
 import { isDatabaseConnected, healthCheck as dbHealthCheck } from '../services/database.js';
 import { getCache } from '../services/cache.js';
 import { authenticate } from '../middleware/auth.js';
@@ -22,12 +23,12 @@ import {
 } from '../services/health-checks.js';
 
 // Socket.IO instance reference - set via setHealthSocketIO
-let io: any = null;
+let io: SocketIOServer | null = null;
 
 /**
  * Set the Socket.IO instance for health checks
  */
-export function setHealthSocketIO(socketIO: any): void {
+export function setHealthSocketIO(socketIO: SocketIOServer): void {
   io = socketIO;
 }
 
