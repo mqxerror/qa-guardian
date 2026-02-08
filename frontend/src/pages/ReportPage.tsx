@@ -241,6 +241,62 @@ export function ReportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>('summary');
+  const [exportLoading, setExportLoading] = useState<string | null>(null);
+
+  const handleExport = async (format: 'pdf' | 'csv' | 'html' | 'json') => {
+    if (!reportId || !token) return;
+
+    setExportLoading(format);
+    try {
+      const response = await fetch(`/api/v1/reports/${reportId}/export?format=${format}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export report');
+      }
+
+      // Get the filename from Content-Disposition header or generate one
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `report-${reportId}.${format === 'pdf' ? 'html' : format}`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/);
+        if (match) filename = match[1];
+      }
+
+      if (format === 'pdf') {
+        // For PDF, open in new window for printing
+        const html = await response.text();
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(html);
+          printWindow.document.close();
+          // Trigger print dialog after a short delay to ensure content loads
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        }
+      } else {
+        // For other formats, download as file
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export report. Please try again.');
+    } finally {
+      setExportLoading(null);
+    }
+  };
 
   useEffect(() => {
     if (!reportId || !token) return;
@@ -322,9 +378,75 @@ export function ReportPage() {
                 Period: {new Date(report.period.start).toLocaleDateString()} - {new Date(report.period.end).toLocaleDateString()}
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <ScoreBadge score={report.executiveSummary.overallScore} />
-              <StatusBadge status={report.executiveSummary.overallStatus} />
+            <div className="flex flex-col items-end gap-4">
+              <div className="flex items-center gap-4">
+                <ScoreBadge score={report.executiveSummary.overallScore} />
+                <StatusBadge status={report.executiveSummary.overallStatus} />
+              </div>
+              {/* Export Buttons */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground mr-2">Export:</span>
+                <button
+                  onClick={() => handleExport('pdf')}
+                  disabled={exportLoading !== null}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Print as PDF"
+                >
+                  {exportLoading === 'pdf' ? (
+                    <span className="w-4 h-4 border-2 border-destructive/30 border-t-destructive rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                  PDF
+                </button>
+                <button
+                  onClick={() => handleExport('csv')}
+                  disabled={exportLoading !== null}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-success/10 hover:bg-success/20 text-success rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Download CSV"
+                >
+                  {exportLoading === 'csv' ? (
+                    <span className="w-4 h-4 border-2 border-success/30 border-t-success rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  )}
+                  CSV
+                </button>
+                <button
+                  onClick={() => handleExport('html')}
+                  disabled={exportLoading !== null}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Download HTML"
+                >
+                  {exportLoading === 'html' ? (
+                    <span className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                  )}
+                  HTML
+                </button>
+                <button
+                  onClick={() => handleExport('json')}
+                  disabled={exportLoading !== null}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-warning/10 hover:bg-warning/20 text-warning rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Download JSON"
+                >
+                  {exportLoading === 'json' ? (
+                    <span className="w-4 h-4 border-2 border-warning/30 border-t-warning rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  )}
+                  JSON
+                </button>
+              </div>
             </div>
           </div>
         </div>
