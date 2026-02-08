@@ -43,7 +43,6 @@
     "@socket.io/redis-adapter": "^8.3.0",
     "archiver": "^7.0.1",
     "bcrypt": "^5.1.1",
-    "bcryptjs": "^3.0.3",
     "bullmq": "^5.4.2",
     "dotenv": "^16.4.1",
     "fastify": "^4.26.0",
@@ -64,7 +63,6 @@
   "devDependencies": {
     "@types/archiver": "^7.0.0",
     "@types/bcrypt": "^5.0.2",
-    "@types/bcryptjs": "^2.4.6",
     "@types/license-checker": "^25.0.6",
     "@types/node": "^20.11.16",
     "@types/pg": "^8.11.0",

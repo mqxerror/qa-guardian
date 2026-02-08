@@ -9,7 +9,8 @@
 import { query, isDatabaseConnected } from '../database.js';
 import { getCache } from '../cache.js'; // Feature #216: Redis-backed token blacklist
 import { createHash } from 'node:crypto'; // Feature #216: Fast token hashing for Redis key
-import bcrypt from 'bcryptjs';
+// Feature #455: Use native bcrypt for performance (removed bcryptjs)
+import bcrypt from 'bcrypt';
 // Feature #439: Use structured logger instead of console.*
 import { logger } from '../logger.js';
 

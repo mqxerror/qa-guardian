@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import bcrypt from 'bcryptjs';
+// Feature #455: Use native bcrypt for performance (removed bcryptjs)
+import bcrypt from 'bcrypt';
 // Feature #213: Node.js crypto for hashing refresh tokens
 import { createHash } from 'node:crypto';
 // Feature #213: fast-jwt for refresh token handling (separate from app.jwt)

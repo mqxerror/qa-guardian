@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import bcrypt from 'bcryptjs';
+// Feature #455: Use native bcrypt for performance (removed bcryptjs)
+import bcrypt from 'bcrypt';
 import { authenticate, requireRoles, JwtPayload, getOrganizationId } from '../middleware/auth.js';
 // Feature #2116: Use async DB calls instead of synchronous Map
 import { dbGetUserByEmail } from './auth.js';
