@@ -176,14 +176,7 @@ const PageLoader = () => (
 
 // Feature #1282: AI Action with Pre-filled Parameters
 // AIActionPage extracted to ./pages/AIActionPage.tsx (Feature #1357)
-interface AIActionParams_OLD {
-  suggestionId: string;
-  suggestionTitle: string;
-  actionType: string;
-  targetEntity?: string;
-  targetId?: string;
-  prefilledValues?: Record<string, string>;
-}
+// Interface AIActionParams moved to AIActionPage.tsx
 
 
 // Feature #1421: AISuggestionsSidebar removed - dead code cleanup
@@ -670,7 +663,15 @@ function AICommandPalette() {
   ];
 
   // Feature #1366: Include recent pages in commands
-  const allCommands = [...recentCommands, ...aiCommands, ...navigationCommands, ...actionCommands];
+  // Feature #398: Memoize allCommands to prevent recreating on every render
+  const allCommands = useMemo(() =>
+    [...recentCommands, ...aiCommands, ...navigationCommands, ...actionCommands],
+    // Note: These arrays are recreated each render but contain stable action functions.
+    // We intentionally omit them from deps since the command structure doesn't change
+    // unless recentPages changes. This prevents unnecessary re-filtering.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [recentPages.length]
+  );
 
   // Feature #1507: Use fuzzy matching with scoring and sorting
   const { filteredCommands, matchHighlights } = useMemo(() => {
@@ -1664,49 +1665,8 @@ function App() {
 // - FailureClustersSection function (~3,455 lines)
 
 
-// Visual Review Page for batch approval of visual regression changes
-interface PendingVisualChange {
-  runId: string;
-  testId: string;
-  testName: string;
-  projectId?: string;
-  projectName?: string;
-  suiteId: string;
-  suiteName?: string;
-  diffPercentage?: number;
-  screenshot?: string;
-  baselineScreenshot?: string;
-  diffImage?: string;
-  startedAt?: string;
-  viewport?: string;
-}
-
-// Feature #1251: Visual Change Impact Analysis
-interface VisualChangeImpactAnalysis {
-  severity: 'minor' | 'moderate' | 'major' | 'critical';
-  confidence: number;
-  change_type: {
-    category: string;
-    description: string;
-  };
-  affected_areas: Array<{
-    element: string;
-    change_description: string;
-    location: string;
-  }>;
-  user_impact: {
-    severity: 'low' | 'medium' | 'high';
-    description: string;
-    affected_users: string;
-    accessibility_impact: string;
-  };
-  recommendation: {
-    action: 'approve' | 'investigate' | 'reject';
-    reasoning: string;
-    suggested_tests?: string[];
-  };
-  ai_summary: string;
-}
+// Visual Review Page types moved to ./pages/VisualReviewPage.tsx
+// (PendingVisualChange, VisualChangeImpactAnalysis)
 
 
 // ========== Security Dashboard Page ==========
@@ -1783,22 +1743,7 @@ interface VisualChangeImpactAnalysis {
 //   MCPConnectionsSection, MCPAuditLogSection, MCPAnalyticsDashboard, MCPToolsCatalogSection,
 //   SlackIntegrationSection, OrganizationSettingsPage
 
-interface Invitation {
-  id: string;
-  email: string;
-  role: string;
-  status: string;
-  created_at: string;
-}
-
-interface Member {
-  id: string;
-  user_id: string;
-  organization_id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+// Types Invitation, Member moved to OrganizationMembersPage.tsx
 
 // Feature #1232: MCPToolsPage extracted to pages/MCPToolsPage.tsx
 
@@ -1821,15 +1766,7 @@ interface Member {
 // BillingPage extracted to ./pages/BillingPage.tsx (Feature #1357)
 
 // ApiKeysPage extracted to ./pages/ApiKeysPage.tsx (Feature #1357)
-interface ApiKey_OLD {
-  id: string;
-  name: string;
-  key?: string;  // Only present at creation time
-  key_prefix: string;
-  scopes: string[];
-  expires_at: string | null;
-  created_at: string;
-}
+// Type ApiKey moved to ApiKeysPage.tsx
 
 
 // TestSuitePage EXTRACTED to ./pages/TestSuitePage.tsx (~7,520 lines)
