@@ -110,15 +110,33 @@ jobs:
             docker compose -f docker-compose.yml -f docker-compose.deploy.yml build backend frontend
             docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate backend frontend
 
-            # Wait for services to start
-            sleep 15
+            # Wait for backend to be ready (start_period is 60s in Dockerfile HEALTHCHECK)
+            echo "Waiting for backend to start..."
+            for i in $(seq 1 12); do
+              sleep 10
+              state=$(docker inspect --format='{{.State.Status}}' qa-guardian-backend 2>/dev/null || echo "missing")
+              echo "  Attempt $i/12: container state=$state"
+              if [ "$state" = "running" ]; then
+                # Container is running, try health check
+                if docker exec qa-guardian-backend curl -sf http://localhost:3001/health > /dev/null 2>&1; then
+                  echo "Backend healthy!"
+                  break
+                fi
+              fi
+              if [ $i -eq 12 ]; then
+                echo "ERROR: Backend failed to become healthy after 120s"
+                echo "--- Container logs (last 50 lines) ---"
+                docker logs --tail 50 qa-guardian-backend 2>&1 || true
+                echo "--- Container inspect ---"
+                docker inspect --format='{{.State.Status}} ExitCode={{.State.ExitCode}}' qa-guardian-backend 2>/dev/null || true
+                exit 1
+              fi
+            done
 
             # Run migrations
             docker exec qa-guardian-backend npm run migrate || true
 
-            # Health check - fail deployment if backend is unhealthy
-            docker exec qa-guardian-backend curl -sf http://localhost:3001/health || { echo "ERROR: Backend health check failed"; exit 1; }
-            echo "Backend healthy"
+            echo "Backend deployment complete"
 
       - name: Verify production deployment
         run: |
