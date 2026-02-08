@@ -28,7 +28,7 @@ const features = [
   {
     title: "Visual Regression",
     description: "Detect visual changes with pixel-perfect comparisons. AI-powered baseline management and approval workflows.",
-    icon: <Eye className="h-5 w-5 text-purple-400" />,
+    icon: <Eye className="h-5 w-5 text-accent" />,
   },
   {
     title: "AI-Powered Testing",
@@ -48,7 +48,7 @@ const features = [
   {
     title: "Accessibility Audits",
     description: "WCAG 2.1 compliance scanning with axe-core. Automated accessibility reports and remediation guidance.",
-    icon: <Lock className="h-5 w-5 text-cyan-400" />,
+    icon: <Lock className="h-5 w-5 text-info" />,
   },
 ];
 
@@ -98,7 +98,7 @@ export function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-5xl font-bold tracking-tight text-transparent sm:text-6xl md:text-7xl"
+            className="bg-gradient-to-b from-white to-muted-foreground bg-clip-text text-5xl font-bold tracking-tight text-transparent sm:text-6xl md:text-7xl"
           >
             QA Guardian
           </m.h1>

@@ -573,7 +573,7 @@ function StorageUsageSection() {
  if (percent >= 90) return 'bg-destructive';
  if (percent >= 80) return 'bg-warning';
  if (percent >= 60) return 'bg-warning';
- return 'bg-emerald-500';
+ return 'bg-success';
  };
 
  return (
@@ -1122,7 +1122,7 @@ function MCPToolsCatalogSection() {
  const permissionColors: Record<string, string> = {
  read: 'bg-success/10 text-success',
  write: 'bg-primary/10 text-primary',
- execute: 'bg-orange-100 text-orange-800',
+ execute: 'bg-warning/10 text-warning',
  admin: 'bg-destructive/10 text-destructive',
  };
 

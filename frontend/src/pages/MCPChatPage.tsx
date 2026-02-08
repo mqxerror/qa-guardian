@@ -602,7 +602,7 @@ Just type naturally and I'll help you manage your QA workflows!`,
  </span>
  )}
  {message.aiMetadata?.used_real_ai && (
- <span className="text-xs font-mono px-2 py-1 rounded bg-purple-100 text-purple-700">
+ <span className="text-xs font-mono px-2 py-1 rounded bg-accent/10 text-accent">
  {'\u{1F916}'} {message.aiMetadata.provider || 'AI'}
  {message.aiMetadata.execution_time_ms && ` (${message.aiMetadata.execution_time_ms}ms)`}
  </span>

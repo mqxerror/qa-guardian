@@ -408,7 +408,7 @@ export function PublicStatusPage() {
  <div className="flex items-center gap-2">
  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
  incident.impact === 'critical' ? 'bg-destructive/20 text-destructive' :
- incident.impact === 'major' ? 'bg-orange-500/20 text-orange-400' :
+ incident.impact === 'major' ? 'bg-warning/20 text-warning' :
  incident.impact === 'minor' ? 'bg-warning/20 text-warning' :
  'bg-muted text-muted-foreground'
  }`}>

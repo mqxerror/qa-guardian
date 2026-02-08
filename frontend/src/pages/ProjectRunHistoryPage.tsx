@@ -274,7 +274,7 @@ function ProjectRunHistoryPage() {
  <div className="text-sm text-muted-foreground">Avg Duration</div>
  </div>
  <div className="p-4 bg-card border border-border rounded-lg">
- <div className="text-2xl font-bold text-purple-600">{stats.suiteCount}</div>
+ <div className="text-2xl font-bold text-accent">{stats.suiteCount}</div>
  <div className="text-sm text-muted-foreground">Suites</div>
  </div>
  </div>

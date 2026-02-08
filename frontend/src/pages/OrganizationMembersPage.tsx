@@ -148,7 +148,7 @@ export function OrganizationMembersPage() {
                   <div className="text-muted-foreground">{member.email}</div>
                   <div>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      member.role === 'owner' ? 'bg-purple-500/20 text-purple-400' :
+                      member.role === 'owner' ? 'bg-accent/20 text-accent' :
                       member.role === 'admin' ? 'bg-primary/20 text-primary' :
                       member.role === 'developer' ? 'bg-success/20 text-success' :
                       'bg-muted text-muted-foreground'

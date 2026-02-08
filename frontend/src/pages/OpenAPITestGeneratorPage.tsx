@@ -262,7 +262,7 @@ export function OpenAPITestGeneratorPage() {
  GET: 'bg-success/10 text-success',
  POST: 'bg-primary/10 text-primary',
  PUT: 'bg-warning/10 text-warning',
- PATCH: 'bg-purple-100 text-purple-700',
+ PATCH: 'bg-accent/10 text-accent',
  DELETE: 'bg-destructive/10 text-destructive',
  };
 

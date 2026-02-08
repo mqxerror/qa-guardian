@@ -191,8 +191,8 @@ export function MultiLanguageDependencyPage() {
   const languageColors: Record<string, string> = {
     javascript: 'bg-warning/20 text-warning',
     python: 'bg-primary/20 text-primary',
-    java: 'bg-orange-500/20 text-orange-400',
-    go: 'bg-cyan-500/20 text-cyan-400',
+    java: 'bg-warning/20 text-warning',
+    go: 'bg-info/20 text-info',
     rust: 'bg-destructive/20 text-destructive',
   };
 
@@ -378,7 +378,7 @@ export function MultiLanguageDependencyPage() {
                   <td className="px-4 py-3 font-mono text-sm text-foreground">{dep.current_version}</td>
                   <td className="px-4 py-3 font-mono text-sm">
                     {dep.latest_version !== dep.current_version ? (
-                      <span className="text-orange-400">{dep.latest_version}</span>
+                      <span className="text-warning">{dep.latest_version}</span>
                     ) : (
                       <span className="text-success">{dep.latest_version}</span>
                     )}
@@ -387,7 +387,7 @@ export function MultiLanguageDependencyPage() {
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
                       {dep.is_dev && (
-                        <span className="text-xs px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded">dev</span>
+                        <span className="text-xs px-1.5 py-0.5 bg-accent/20 text-accent rounded">dev</span>
                       )}
                       {dep.is_transitive ? (
                         <span className="text-xs px-1.5 py-0.5 bg-muted text-muted-foreground rounded">transitive</span>

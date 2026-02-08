@@ -297,7 +297,7 @@ export function ProviderHealthPage() {
                 <div className="text-xs text-muted-foreground">Avg Latency</div>
               </div>
               <div className="text-center p-3 bg-muted/50 rounded-lg">
-                <div className="text-2xl font-bold text-orange-400">{provider.error_rate_percent}%</div>
+                <div className="text-2xl font-bold text-warning">{provider.error_rate_percent}%</div>
                 <div className="text-xs text-muted-foreground">Error Rate</div>
               </div>
             </div>
@@ -385,7 +385,7 @@ export function ProviderHealthPage() {
                   title={`Kie.ai: ${point.kie_latency}ms`}
                 ></div>
                 <div
-                  className="w-full bg-purple-400 rounded-b transition-all"
+                  className="w-full bg-accent rounded-b transition-all"
                   style={{ height: `${Math.min(point.anthropic_latency / 4, 100)}px` }}
                   title={`Anthropic: ${point.anthropic_latency}ms`}
                 ></div>
@@ -399,7 +399,7 @@ export function ProviderHealthPage() {
             <span>Kie.ai</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-purple-400 rounded"></div>
+            <div className="w-3 h-3 bg-accent rounded"></div>
             <span>Anthropic</span>
           </div>
         </div>
@@ -619,7 +619,7 @@ export function ProviderHealthPage() {
                     <div className="w-24 text-sm text-muted-foreground capitalize">{type.replace('_', ' ')}</div>
                     <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-purple-500 transition-all"
+                        className="h-full bg-accent transition-all"
                         style={{ width: `${errorDist.anthropic?.total ? ((count as number) / errorDist.anthropic.total) * 100 : 0}%` }}
                       ></div>
                     </div>

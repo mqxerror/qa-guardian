@@ -370,7 +370,7 @@ export function LicenseCompliancePage() {
  case 'permissive': return 'text-success bg-success/10';
  case 'copyleft': return 'text-destructive bg-destructive/10';
  case 'copyleft-weak': return 'text-warning bg-warning/10';
- case 'proprietary': return 'text-purple-600 bg-purple-100';
+ case 'proprietary': return 'text-accent bg-accent/10';
  case 'public-domain': return 'text-primary bg-primary/10';
  default: return 'text-foreground bg-muted';
  }
@@ -708,7 +708,7 @@ export function LicenseCompliancePage() {
  <div className="flex flex-wrap gap-1">
  {dep.license.commercial && <span className="px-1.5 py-0.5 text-xs rounded bg-success/10 text-success">Commercial OK</span>}
  {dep.license.attribution && <span className="px-1.5 py-0.5 text-xs rounded bg-primary/10 text-primary">Attribution Required</span>}
- {dep.license.patentGrant && <span className="px-1.5 py-0.5 text-xs rounded bg-purple-100 text-purple-700">Patent Grant</span>}
+ {dep.license.patentGrant && <span className="px-1.5 py-0.5 text-xs rounded bg-accent/10 text-accent">Patent Grant</span>}
  {dep.license.copyleft && <span className="px-1.5 py-0.5 text-xs rounded bg-destructive/10 text-destructive">Copyleft</span>}
  </div>
  </div>

@@ -356,7 +356,7 @@ export function ProjectsPage() {
                     ) : (
                       <span />
                     )}
-                    <span className={`text-xs ${newProjectName.length > 90 ? 'text-orange-500' : 'text-muted-foreground'}`}>
+                    <span className={`text-xs ${newProjectName.length > 90 ? 'text-warning' : 'text-muted-foreground'}`}>
                       {newProjectName.length}/100
                     </span>
                   </div>

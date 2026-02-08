@@ -258,8 +258,8 @@ export function MCPAnalyticsPage() {
 
  <div className="rounded-lg border border-border bg-card p-6">
  <div className="flex items-center gap-3">
- <div className="p-2 rounded-lg bg-purple-100">
- <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <div className="p-2 rounded-lg bg-accent/10">
+ <svg className="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
  </div>

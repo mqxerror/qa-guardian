@@ -470,7 +470,7 @@ Please provide:
  <div
  key={idx}
  className={`flex-1 rounded-sm ${
- run.result === 'passed' ? 'bg-emerald-500' : 'bg-destructive'
+ run.result === 'passed' ? 'bg-success' : 'bg-destructive'
  }`}
  title={`${run.result === 'passed' ? '✓ Passed' : '✗ Failed'}`}
  />
@@ -482,7 +482,7 @@ Please provide:
  // Get severity badge
  const getSeverityBadge = (score: number) => {
  if (score >= 0.7) return { label: 'High', class: 'bg-destructive/10 text-destructive' };
- if (score >= 0.4) return { label: 'Medium', class: 'bg-orange-100 text-orange-700' };
+ if (score >= 0.4) return { label: 'Medium', class: 'bg-warning/10 text-warning' };
  return { label: 'Low', class: 'bg-warning/10 text-warning' };
  };
 
@@ -947,17 +947,17 @@ Please provide:
  {severity.label}
  </span>
  {test.is_retry_flaky && (
- <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+ <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-accent/10 text-accent">
  🔄 Retry
  </span>
  )}
  {test.has_time_pattern && (
- <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+ <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning">
  ⏰ Time
  </span>
  )}
  {test.has_environment_pattern && (
- <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-700">
+ <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-info/10 text-info">
  🖥️ Env
  </span>
  )}
@@ -975,8 +975,8 @@ Please provide:
  <div className="inline-flex flex-col items-center">
  <span className={`text-lg font-bold ${
  score >= 0.7 ? 'text-destructive' :
- score >= 0.4 ? 'text-orange-600' :
- 'text-warning'
+ score >= 0.4 ? 'text-warning' :
+ 'text-success'
  }`}>
  {score.toFixed(2)}
  </span>
@@ -984,8 +984,8 @@ Please provide:
  <div
  className={`h-full ${
  score >= 0.7 ? 'bg-destructive' :
- score >= 0.4 ? 'bg-orange-500' :
- 'bg-warning'
+ score >= 0.4 ? 'bg-warning' :
+ 'bg-success'
  }`}
  style={{ width: `${score * 100}%` }}
  />
@@ -1029,14 +1029,14 @@ Please provide:
  {/* Feature #1953: AI Flakiness Analysis button */}
  <button
  onClick={() => handleAnalyzeFlakiness(test)}
- className="px-2 py-1 text-xs font-medium rounded border border-indigo-300 bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 hover:from-indigo-100 hover:to-purple-100 transition-colors"
+ className="px-2 py-1 text-xs font-medium rounded border border-accent/30 bg-gradient-to-r from-accent/10 to-accent/5 text-accent hover:from-accent/20 hover:to-accent/10 transition-colors"
  title="AI analysis: why is this test flaky?"
  >
  🤖 Why Flaky?
  </button>
  <button
  onClick={() => handleGetSuggestions(test.test_id)}
- className="px-2 py-1 text-xs font-medium rounded border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+ className="px-2 py-1 text-xs font-medium rounded border border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
  title="Get AI suggestions to fix this flaky test"
  >
  💡 Suggestions
@@ -1072,7 +1072,7 @@ Please provide:
  <div className="text-sm text-muted-foreground">High Severity</div>
  </div>
  <div className="rounded-lg border border-border bg-card p-4">
- <div className="text-3xl font-bold text-orange-600">
+ <div className="text-3xl font-bold text-warning">
  {flakyTests.filter(t => {
  const s = t.flakiness_score || t.flakiness_percentage / 100;
  return s >= 0.4 && s < 0.7;
@@ -1235,8 +1235,8 @@ Please provide:
  <td className="text-center px-4 py-2">
  <span className={`px-2 py-1 rounded text-xs font-medium ${
  test.flakiness_score >= 0.7 ? 'bg-destructive/10 text-destructive' :
- test.flakiness_score >= 0.4 ? 'bg-orange-100 text-orange-800' :
- 'bg-warning/10 text-warning'
+ test.flakiness_score >= 0.4 ? 'bg-warning/10 text-warning' :
+ 'bg-success/10 text-success'
  }`}>
  {(test.flakiness_score * 100).toFixed(0)}%
  </span>
@@ -1265,7 +1265,7 @@ Please provide:
  key={idx}
  className={`rounded-lg border p-3 ${
  rec.priority === 'high' ? 'border-destructive/20 bg-destructive/5' :
- rec.priority === 'medium' ? 'border-orange-200 bg-orange-50' :
+ rec.priority === 'medium' ? 'border-warning/20 bg-warning/5' :
  'border-border bg-muted'
  }`}
  >
@@ -1273,7 +1273,7 @@ Please provide:
  <div className="flex items-center gap-2">
  <span className={`px-2 py-0.5 rounded text-xs font-medium uppercase ${
  rec.priority === 'high' ? 'bg-destructive/20 text-destructive' :
- rec.priority === 'medium' ? 'bg-orange-200 text-orange-800' :
+ rec.priority === 'medium' ? 'bg-warning/20 text-warning' :
  'bg-secondary text-foreground'
  }`}>
  {rec.priority}
@@ -1314,14 +1314,14 @@ Please provide:
  <div className="p-6">
  {isLoadingSuggestions ? (
  <div className="flex flex-col items-center justify-center py-12">
- <div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full mb-4" />
+ <div className="animate-spin h-8 w-8 border-4 border-accent border-t-transparent rounded-full mb-4" />
  <p className="text-muted-foreground">Analyzing failure patterns...</p>
  </div>
  ) : suggestions ? (
  <div className="space-y-6">
  {/* Analysis Summary */}
- <div className="p-4 rounded-lg border border-purple-200 bg-purple-50">
- <h3 className="text-sm font-semibold text-purple-700 mb-3">📊 Analysis Summary</h3>
+ <div className="p-4 rounded-lg border border-accent/20 bg-accent/5">
+ <h3 className="text-sm font-semibold text-accent mb-3">📊 Analysis Summary</h3>
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
  <div>
  <div className="text-2xl font-bold text-foreground">{suggestions.analysis.total_runs}</div>
@@ -1344,7 +1344,7 @@ Please provide:
  <div className="flex flex-wrap gap-2">
  <span className="text-xs text-muted-foreground">Patterns detected:</span>
  {suggestions.analysis.patterns_detected.map((p, i) => (
- <span key={i} className="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700">
+ <span key={i} className="px-2 py-0.5 rounded-full text-xs bg-accent/10 text-accent">
  {p}
  </span>
  ))}
@@ -1365,8 +1365,8 @@ Please provide:
  <div
  key={s.id}
  className={`rounded-lg border p-4 ${
- s.priority === 'high' ? 'border-destructive/20 bg-destructive/5/50' :
- s.priority === 'medium' ? 'border-orange-200 bg-orange-50/50' :
+ s.priority === 'high' ? 'border-destructive/20 bg-destructive/5' :
+ s.priority === 'medium' ? 'border-warning/20 bg-warning/5' :
  'border-border bg-muted/50'
  }`}
  >
@@ -1374,7 +1374,7 @@ Please provide:
  <div className="flex items-center gap-2">
  <span className={`px-2 py-0.5 rounded text-xs font-medium uppercase ${
  s.priority === 'high' ? 'bg-destructive/20 text-destructive' :
- s.priority === 'medium' ? 'bg-orange-200 text-orange-800' :
+ s.priority === 'medium' ? 'bg-warning/20 text-warning' :
  'bg-secondary text-foreground'
  }`}>
  {s.priority}
@@ -1391,7 +1391,7 @@ Please provide:
  <h4 className="font-semibold text-foreground mb-1">{s.title}</h4>
  <p className="text-sm text-muted-foreground mb-2">{s.description}</p>
 
- <div className="text-xs text-purple-600 mb-3">
+ <div className="text-xs text-accent mb-3">
  <strong>Pattern matched:</strong> {s.pattern_matched}
  </div>
 
@@ -1544,10 +1544,10 @@ Please provide:
  {showFlakinessAnalysisModal && selectedTestForAnalysis && (
  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
  <div className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
- <div className="p-4 border-b border-border bg-gradient-to-r from-indigo-600/10 to-purple-600/10">
+ <div className="p-4 border-b border-border bg-gradient-to-r from-accent/10 to-accent/5">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className="h-10 w-10 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center">
+ <div className="h-10 w-10 rounded-full bg-gradient-to-r from-accent to-accent/70 flex items-center justify-center">
  <span className="text-white text-lg">🤖</span>
  </div>
  <div>
@@ -1597,12 +1597,12 @@ Please provide:
  {/* AI Analysis Content */}
  {isLoadingFlakinessAnalysis ? (
  <div className="flex flex-col items-center justify-center py-8">
- <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-600 border-t-transparent mb-3" />
+ <div className="animate-spin rounded-full h-8 w-8 border-2 border-accent border-t-transparent mb-3" />
  <p className="text-sm text-muted-foreground">Analyzing flakiness patterns...</p>
  </div>
  ) : flakinessAnalysis ? (
  <div className="prose prose-sm max-w-none">
- <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
+ <div className="bg-gradient-to-r from-accent/10 to-accent/5 rounded-lg p-4 border border-accent/20">
  <div className="whitespace-pre-wrap text-sm text-foreground">{flakinessAnalysis}</div>
  </div>
  </div>
@@ -1623,7 +1623,7 @@ Please provide:
  });
  handleAnalyzeFlakiness(selectedTestForAnalysis);
  }}
- className="text-indigo-600 hover:text-indigo-700"
+ className="text-accent hover:text-accent/80"
  >
  🔄 Refresh
  </button>
@@ -1634,7 +1634,7 @@ Please provide:
  <div className="p-4 border-t border-border bg-muted/30 flex justify-between">
  <button
  onClick={() => handleGetSuggestions(selectedTestForAnalysis.test_id)}
- className="px-4 py-2 text-sm font-medium rounded-lg border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+ className="px-4 py-2 text-sm font-medium rounded-lg border border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
  >
  💡 Get Fix Suggestions
  </button>

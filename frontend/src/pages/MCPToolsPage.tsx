@@ -151,7 +151,7 @@ export function MCPToolsPage() {
  const permissionColors: Record<string, string> = {
  read: 'bg-success/10 text-success',
  write: 'bg-primary/10 text-primary',
- execute: 'bg-orange-100 text-orange-800',
+ execute: 'bg-warning/10 text-warning',
  admin: 'bg-destructive/10 text-destructive',
  };
 
