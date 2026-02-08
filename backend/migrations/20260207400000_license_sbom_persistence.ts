@@ -145,13 +145,13 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     license_summary: {
       type: 'jsonb',
       notNull: true,
-      default: "'{}'",
+      default: pgm.func("'{}'::jsonb"),
     },
     // Detailed violations as JSONB array
     violations: {
       type: 'jsonb',
       notNull: true,
-      default: "'[]'",
+      default: pgm.func("'[]'::jsonb"),
     },
     // Full package list (optional, for detailed historical tracking)
     packages: {
@@ -247,7 +247,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     license_distribution: {
       type: 'jsonb',
       notNull: true,
-      default: "'{}'",
+      default: pgm.func("'{}'::jsonb"),
     },
     // Storage information
     storage_location: {
@@ -416,11 +416,11 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     // Detailed data as JSONB
     outdated_packages: {
       type: 'jsonb',
-      default: "'[]'",
+      default: pgm.func("'[]'::jsonb"),
     },
     vulnerable_packages: {
       type: 'jsonb',
-      default: "'[]'",
+      default: pgm.func("'[]'::jsonb"),
     },
     // Ecosystem (npm, pip, etc.)
     ecosystem: {
