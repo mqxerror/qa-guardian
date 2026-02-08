@@ -51,7 +51,7 @@ export interface RoutedAIResponse extends AIResponse {
 export interface FailoverEvent {
   timestamp: string;
   primaryProvider: ProviderName;
-  fallbackProvider: ProviderName;
+  fallbackProvider: ProviderName | 'none';
   reason: string;
   errorType: 'timeout' | 'rate_limit' | 'server_error' | 'network_error' | 'other';
   originalError?: string;
@@ -268,7 +268,7 @@ export class AIRouter implements IAIProvider {
     const event: FailoverEvent = {
       timestamp: new Date().toISOString(),
       primaryProvider: this.config.primary,
-      fallbackProvider: this.config.fallback || 'none' as any,
+      fallbackProvider: this.config.fallback || 'none',
       reason,
       errorType,
       originalError,

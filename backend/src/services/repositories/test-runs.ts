@@ -294,7 +294,7 @@ export async function updateTestRun(id: string, updates: Partial<TestRun>): Prom
       for (const [key, dbField] of Object.entries(fieldMappings)) {
         if (key in updates) {
           setClauses.push(`${dbField} = $${paramIndex}`);
-          values.push((updates as any)[key]);
+          values.push(updates[key as keyof TestRun]);
           paramIndex++;
         }
       }

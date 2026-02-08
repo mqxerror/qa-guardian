@@ -16,6 +16,7 @@ import {
   AIRouter,
   ProviderSwitchEvent,
 } from './ai-router.js';
+import type { ProviderName } from './types.js';
 
 async function testHotSwap() {
   console.log('=== Testing Hot-Swap Provider Switching ===\n');
@@ -126,7 +127,7 @@ async function testHotSwap() {
   // Step 11: Test invalid provider switch
   console.log('\nStep 11: Testing invalid provider switch...');
   try {
-    router.setPrimaryProvider('invalid-provider' as any);
+    router.setPrimaryProvider('invalid-provider' as unknown as ProviderName);
     console.log('  - ERROR: Should have thrown an error');
   } catch (error) {
     console.log(`  - Correctly threw error: ${(error as Error).message}`);
