@@ -9,6 +9,8 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+// Feature #439: Use structured logger instead of console.*
+import { logger } from './logger.js';
 import type { TextBlockParam } from '@anthropic-ai/sdk/resources/messages.js';
 import type {
   IAIProvider,
@@ -180,9 +182,9 @@ class AIService implements IAIProvider {
     this.useExternalProvider = provider !== null;
 
     if (provider) {
-      console.log('[AIService] Switched to external provider');
+      logger.info('[AIService] Switched to external provider');
     } else {
-      console.log('[AIService] Using built-in Anthropic provider');
+      logger.info('[AIService] Using built-in Anthropic provider');
     }
   }
 
@@ -202,7 +204,7 @@ class AIService implements IAIProvider {
     const key = apiKey || this.config.apiKey;
 
     if (!key) {
-      console.warn('[AIService] No API key provided - AI features will be disabled');
+      logger.warn('[AIService] No API key provided - AI features will be disabled');
       this.client = null;
       return;
     }
@@ -212,9 +214,9 @@ class AIService implements IAIProvider {
         apiKey: key,
       });
       this.initialized = true;
-      console.log('[AIService] Initialized successfully');
+      logger.info('[AIService] Initialized successfully');
     } catch (error) {
-      console.error('[AIService] Failed to initialize:', error);
+      logger.error({ error }, '[AIService] Failed to initialize');
       this.client = null;
     }
   }
@@ -303,7 +305,7 @@ class AIService implements IAIProvider {
         // Check if error is retryable
         if (this.isRetryableError(error)) {
           const delay = this.config.retryDelayMs * Math.pow(2, attempt);
-          console.warn(`[AIService] Retrying in ${delay}ms (attempt ${attempt + 1}/${this.config.maxRetries}):`, lastError.message);
+          logger.warn({ delay, attempt: attempt + 1, maxRetries: this.config.maxRetries, error: lastError.message }, '[AIService] Retrying request');
           await new Promise(resolve => setTimeout(resolve, delay));
         } else {
           this.usageStats.failedRequests++;

@@ -7,6 +7,8 @@
  */
 
 import { FastifyRequest, FastifyReply, HookHandlerDoneFunction } from 'fastify';
+// Feature #439: Use structured logger instead of console.*
+import { logger } from '../services/logger.js';
 
 // Extend FastifyRequest to include timeout ID
 interface FastifyRequestWithTimeout extends FastifyRequest {
@@ -89,7 +91,7 @@ export function requestTimeoutHook(
       return;
     }
 
-    console.warn(`[Timeout] Request timed out after ${timeout}ms: ${request.method} ${request.url}`);
+    logger.warn({ timeout, method: request.method, url: request.url }, '[Timeout] Request timed out');
 
     // Respond with 504 Gateway Timeout
     reply.status(504).send({

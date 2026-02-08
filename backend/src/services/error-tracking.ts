@@ -9,6 +9,9 @@
  * - Optional webhook alerts (Slack/Discord)
  */
 
+// Feature #439: Use structured logger instead of console.*
+import { logger } from './logger.js';
+
 // Error tracking state
 let uncaughtExceptionCount = 0;
 let unhandledRejectionCount = 0;
@@ -124,9 +127,9 @@ async function sendErrorWebhook(type: string, error: Error | unknown): Promise<v
       body: JSON.stringify(payload),
     });
 
-    console.log('[ErrorTracking] Alert sent to webhook');
+    logger.info('[ErrorTracking] Alert sent to webhook');
   } catch (webhookError) {
-    console.error('[ErrorTracking] Failed to send webhook alert:', webhookError);
+    logger.error({ webhookError }, '[ErrorTracking] Failed to send webhook alert');
   }
 }
 
@@ -137,8 +140,7 @@ async function sendErrorWebhook(type: string, error: Error | unknown): Promise<v
 export function initializeErrorHandlers(gracefulShutdown: () => Promise<void>): void {
   // Handle uncaught exceptions
   process.on('uncaughtException', async (error: Error) => {
-    console.error('[FATAL] Uncaught Exception:');
-    console.error(error.stack || error.message);
+    logger.fatal({ error: error.stack || error.message }, '[FATAL] Uncaught Exception');
 
     recordError('uncaughtException', error);
 
@@ -146,11 +148,11 @@ export function initializeErrorHandlers(gracefulShutdown: () => Promise<void>): 
     sendErrorWebhook('Uncaught Exception', error).catch(() => {});
 
     // Uncaught exceptions are fatal - gracefully shutdown
-    console.log('[ErrorTracking] Initiating graceful shutdown due to uncaught exception...');
+    logger.info('[ErrorTracking] Initiating graceful shutdown due to uncaught exception...');
     try {
       await gracefulShutdown();
     } catch (shutdownError) {
-      console.error('[ErrorTracking] Error during shutdown:', shutdownError);
+      logger.error({ shutdownError }, '[ErrorTracking] Error during shutdown');
     }
 
     // Exit with error code
@@ -159,8 +161,7 @@ export function initializeErrorHandlers(gracefulShutdown: () => Promise<void>): 
 
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
-    console.error('[ERROR] Unhandled Promise Rejection:');
-    console.error('Reason:', reason);
+    logger.error({ reason }, '[ERROR] Unhandled Promise Rejection');
 
     recordError('unhandledRejection', reason);
 
@@ -170,21 +171,18 @@ export function initializeErrorHandlers(gracefulShutdown: () => Promise<void>): 
     // In Node.js 15+, unhandled rejections will cause the process to exit
     // We log but don't force exit - let Node handle it based on --unhandled-rejections flag
     if (process.env.NODE_ENV === 'production') {
-      console.error('[ErrorTracking] Unhandled rejection in production - consider investigating');
+      logger.error('[ErrorTracking] Unhandled rejection in production - consider investigating');
     }
   });
 
   // Handle warning events (for debugging)
   process.on('warning', (warning) => {
-    console.warn('[WARNING]', warning.name, warning.message);
-    if (warning.stack) {
-      console.warn(warning.stack);
-    }
+    logger.warn({ name: warning.name, stack: warning.stack }, `[WARNING] ${warning.message}`);
   });
 
-  console.log('[ErrorTracking] Global error handlers initialized');
+  logger.info('[ErrorTracking] Global error handlers initialized');
   if (process.env.ERROR_WEBHOOK_URL) {
-    console.log('[ErrorTracking] Webhook alerts enabled');
+    logger.info('[ErrorTracking] Webhook alerts enabled');
   }
 }
 

@@ -10,6 +10,8 @@
  */
 
 import { query, isDatabaseConnected } from '../database.js';
+// Feature #439: Use structured logger instead of console.*
+import { logger } from '../logger.js';
 import type {
   TestRun,
   TestRunStatus,
@@ -226,7 +228,7 @@ export async function createTestRun(run: TestRun): Promise<TestRun> {
         return rowToTestRun(result.rows[0]);
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to create test run in database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to create test run in database:');
     }
   }
 
@@ -250,7 +252,7 @@ export async function getTestRun(id: string): Promise<TestRun | undefined> {
         return rowToTestRun(result.rows[0]);
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to get test run from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to get test run from database:');
     }
   }
 
@@ -351,7 +353,7 @@ export async function updateTestRun(id: string, updates: Partial<TestRun>): Prom
         }
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to update test run in database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to update test run in database:');
     }
   }
 
@@ -375,7 +377,7 @@ export async function deleteTestRun(id: string): Promise<boolean> {
       const result = await query('DELETE FROM test_runs WHERE id = $1', [id]);
       return result !== null && result.rowCount !== null && result.rowCount > 0;
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to delete test run from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to delete test run from database:');
     }
   }
 
@@ -404,7 +406,7 @@ export async function listTestRunsBySuite(suiteId: string, orgId?: string): Prom
         return result.rows.map(rowToTestRun);
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to list test runs from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to list test runs from database:');
     }
   }
 
@@ -441,7 +443,7 @@ export async function listTestRunsByProject(projectId: string, orgId?: string): 
         return result.rows.map(rowToTestRun);
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to list test runs from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to list test runs from database:');
     }
   }
 
@@ -510,7 +512,7 @@ export async function listTestRunsByOrg(
         return result.rows.map(rowToTestRun);
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to list test runs from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to list test runs from database:');
     }
   }
 
@@ -547,7 +549,7 @@ export async function listTestRunsBySchedule(scheduleId: string, orgId: string, 
         return result.rows.map(rowToTestRun);
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to list test runs by schedule from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to list test runs by schedule from database:');
     }
   }
 
@@ -602,7 +604,7 @@ export async function listTestRunsByTestId(testId: string, orgId: string, limit:
         return result.rows.map(rowToTestRun);
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to list test runs by test ID from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to list test runs by test ID from database:');
     }
   }
 
@@ -663,7 +665,7 @@ export async function getRecentTestRuns(
 
       return { runs, total };
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to get recent test runs from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to get recent test runs from database:');
     }
   }
 
@@ -771,7 +773,7 @@ export async function listTestRunsPaginated(
         },
       };
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to list test runs paginated from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to list test runs paginated from database:');
     }
   }
 
@@ -835,7 +837,7 @@ export async function upsertSelectorOverride(override: SelectorOverride): Promis
         return rowToSelectorOverride(result.rows[0]);
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to upsert selector override in database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to upsert selector override in database:');
     }
   }
 
@@ -857,7 +859,7 @@ export async function getSelectorOverride(testId: string, stepId: string): Promi
         return rowToSelectorOverride(result.rows[0]);
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to get selector override from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to get selector override from database:');
     }
   }
 
@@ -877,7 +879,7 @@ export async function deleteSelectorOverride(testId: string, stepId: string): Pr
       );
       return result !== null && result.rowCount !== null && result.rowCount > 0;
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to delete selector override from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to delete selector override from database:');
     }
   }
 
@@ -898,7 +900,7 @@ export async function listSelectorOverrides(testId: string): Promise<SelectorOve
         return result.rows.map(rowToSelectorOverride);
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to list selector overrides from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to list selector overrides from database:');
     }
   }
 
@@ -955,7 +957,7 @@ export async function upsertHealedSelectorEntry(entry: HealedSelectorEntry): Pro
         return rowToHealedSelectorEntry(result.rows[0]);
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to upsert healed selector entry in database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to upsert healed selector entry in database:');
     }
   }
 
@@ -977,7 +979,7 @@ export async function getHealedSelectorEntry(testId: string, stepId: string): Pr
         return rowToHealedSelectorEntry(result.rows[0]);
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to get healed selector entry from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to get healed selector entry from database:');
     }
   }
 
@@ -999,7 +1001,7 @@ export async function listHealedSelectorHistory(testId: string): Promise<HealedS
         return result.rows.map(rowToHealedSelectorEntry);
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to list healed selector history from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to list healed selector history from database:');
     }
   }
 
@@ -1071,7 +1073,7 @@ export async function getFlakinessTrendData(
         }));
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to get flakiness trend data from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to get flakiness trend data from database:');
     }
   }
 
@@ -1206,7 +1208,7 @@ export async function getTestRunMetadataForSuite(
         }
       }
     } catch (error) {
-      console.error('[TestRunsRepo] Failed to get test run metadata from database:', error);
+      logger.error({ error }, '[TestRunsRepo] Failed to get test run metadata from database:');
       // Fall through to fallback
     }
   }

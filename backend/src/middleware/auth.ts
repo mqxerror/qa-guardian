@@ -4,6 +4,8 @@ import crypto from 'crypto';
 import { dbIsTokenBlacklisted } from '../routes/auth.js';
 // Feature #202: Use async DB lookup for API key validation (deprecated empty Map removed)
 import { getApiKeyByHash as dbGetApiKeyByHash, updateApiKey as dbUpdateApiKey } from '../services/repositories/api-keys.js';
+// Feature #439: Use structured logger instead of console.*
+import { logger } from '../services/logger.js';
 
 // Internal service token for service-to-service communication (MCP -> Backend)
 const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
@@ -73,7 +75,7 @@ async function validateApiKey(apiKey: string): Promise<ApiKeyPayload | null> {
 
   // Update last_used_at (async, don't wait for it)
   dbUpdateApiKey(key.id, { last_used_at: new Date() }).catch((err) => {
-    console.error('[Auth] Failed to update API key last_used_at:', err);
+    logger.error({ err, keyId: key.id }, '[Auth] Failed to update API key last_used_at');
   });
 
   return {

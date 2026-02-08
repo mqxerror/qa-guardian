@@ -16,6 +16,8 @@ import { Queue, Worker, Job, QueueEvents, JobsOptions } from 'bullmq';
 import { Redis as IORedis } from 'ioredis';
 import * as crypto from 'crypto';
 import { validateWebhookURL, validateWebhookURLWithDNS, generateId } from '../utils/index.js';
+// Feature #439: Use structured logger instead of console.*
+import { logger } from './logger.js';
 
 // ============================================================================
 // Types and Interfaces
@@ -173,7 +175,7 @@ export function generateWebhookSignature(payload: string, secret: string): { sig
  */
 export async function initializeWebhookQueue(): Promise<boolean> {
   if (isInitialized) {
-    console.log('[WebhookQueue] Already initialized');
+    logger.info('[WebhookQueue] Already initialized');
     return true;
   }
 
@@ -207,7 +209,7 @@ export async function initializeWebhookQueue(): Promise<boolean> {
 
     // Test connection
     await connection.ping();
-    console.log('[WebhookQueue] Redis connection established');
+    logger.info('[WebhookQueue] Redis connection established');
 
     // Create queue
     queue = new Queue(QUEUE_NAME, {
@@ -247,32 +249,32 @@ export async function initializeWebhookQueue(): Promise<boolean> {
     // Set up event handlers
     worker.on('completed', (job, result: WebhookDeliveryResult) => {
       lastJobProcessedAt = new Date().toISOString();
-      console.log(`[WebhookQueue] Job ${job.id} completed: ${result.success ? 'success' : 'failed'}`);
+      logger.info({ jobId: job.id, success: result.success }, '[WebhookQueue] Job completed');
     });
 
     worker.on('failed', (job, err) => {
-      console.error(`[WebhookQueue] Job ${job?.id} failed:`, err.message);
+      logger.error({ jobId: job?.id, error: err.message }, '[WebhookQueue] Job failed');
     });
 
     worker.on('error', (err) => {
-      console.error('[WebhookQueue] Worker error:', err);
+      logger.error({ err }, '[WebhookQueue] Worker error');
     });
 
     queueEvents.on('waiting', ({ jobId }) => {
-      console.log(`[WebhookQueue] Job ${jobId} is waiting`);
+      logger.debug({ jobId }, '[WebhookQueue] Job is waiting');
     });
 
     queueEvents.on('active', ({ jobId }) => {
-      console.log(`[WebhookQueue] Job ${jobId} is now active`);
+      logger.debug({ jobId }, '[WebhookQueue] Job is now active');
     });
 
     startedAt = new Date();
     isInitialized = true;
-    console.log(`[WebhookQueue] Initialized - max concurrency: ${MAX_CONCURRENCY}`);
+    logger.info({ maxConcurrency: MAX_CONCURRENCY }, '[WebhookQueue] Initialized');
 
     return true;
   } catch (error) {
-    console.error('[WebhookQueue] Failed to initialize:', error);
+    logger.error({ error }, '[WebhookQueue] Failed to initialize');
     return false;
   }
 }
@@ -285,7 +287,7 @@ export function registerSubscriptionStatsCallback(
   callback: (subscriptionId: string, success: boolean) => Promise<SubscriptionStatsResult | void>
 ): void {
   updateSubscriptionStatsCallback = callback;
-  console.log('[WebhookQueue] Subscription stats callback registered');
+  logger.info('[WebhookQueue] Subscription stats callback registered');
 }
 
 // ============================================================================
@@ -301,14 +303,14 @@ async function processWebhookJob(job: Job<WebhookJobData>): Promise<WebhookDeliv
   const startTime = Date.now();
   const attemptNumber = job.attemptsMade + 1;
 
-  console.log(`[WebhookQueue] Processing job ${job.id} for ${data.subscriptionName} (attempt ${attemptNumber}/${data.maxRetries + 1})`);
+  logger.info({ jobId: job.id, subscription: data.subscriptionName, attempt: attemptNumber, maxRetries: data.maxRetries + 1 }, '[WebhookQueue] Processing job');
 
   // Feature #315 + #400: SSRF protection with DNS resolution check
   // This prevents DNS rebinding attacks where a hostname resolves to a private IP
   const ssrfValidation = await validateWebhookURLWithDNS(data.url);
   if (!ssrfValidation.safe) {
     const error = `SSRF protection: ${ssrfValidation.error}`;
-    console.error(`[WebhookQueue] ${error}`);
+    logger.error({ error, url: data.url }, '[WebhookQueue] SSRF protection blocked request');
 
     await logDelivery({
       id: `${deliveryId}_${attemptNumber}`,
@@ -362,7 +364,7 @@ async function processWebhookJob(job: Job<WebhookJobData>): Promise<WebhookDeliv
     const responseBody = await response.text().catch(() => '');
 
     if (response.ok) {
-      console.log(`[WebhookQueue] Successfully delivered ${data.eventType} to ${data.subscriptionName}`);
+      logger.info({ eventType: data.eventType, subscription: data.subscriptionName }, '[WebhookQueue] Successfully delivered');
 
       // Update subscription stats
       if (updateSubscriptionStatsCallback) {
@@ -419,7 +421,7 @@ async function processWebhookJob(job: Job<WebhookJobData>): Promise<WebhookDeliv
     if (isRetriable) {
       // Calculate backoff delay for retry
       const delay = RETRY_DELAYS[Math.min(attemptNumber - 1, RETRY_DELAYS.length - 1)];
-      console.log(`[WebhookQueue] Retriable error, will retry in ${delay}ms`);
+      logger.info({ delay }, '[WebhookQueue] Retriable error, will retry');
       throw new Error(`Retriable: ${error}`); // Throw to trigger BullMQ retry
     }
 
@@ -442,7 +444,7 @@ async function processWebhookJob(job: Job<WebhookJobData>): Promise<WebhookDeliv
     const durationMs = Date.now() - startTime;
     const isRetriable = data.retryEnabled && attemptNumber <= data.maxRetries;
 
-    console.error(`[WebhookQueue] Error delivering to ${data.subscriptionName}: ${err.message}`);
+    logger.error({ subscription: data.subscriptionName, error: err.message }, '[WebhookQueue] Error delivering');
 
     await logDelivery({
       id: `${deliveryId}_${attemptNumber}`,
@@ -502,7 +504,7 @@ export async function queueWebhookDelivery(
   }
 ): Promise<{ queued: boolean; jobId?: string; error?: string }> {
   if (!queue || !isInitialized) {
-    console.warn('[WebhookQueue] Queue not initialized');
+    logger.warn('[WebhookQueue] Queue not initialized');
     return { queued: false, error: 'Queue not initialized' };
   }
 
@@ -532,11 +534,11 @@ export async function queueWebhookDelivery(
 
   try {
     const job = await queue.add('deliver', jobData, jobOptions);
-    console.log(`[WebhookQueue] Queued webhook for ${subscriptionName} with job ID ${job.id}`);
+    logger.info({ subscription: subscriptionName, jobId: job.id }, '[WebhookQueue] Queued webhook');
     return { queued: true, jobId: job.id };
   } catch (error) {
     const err = error as Error;
-    console.error('[WebhookQueue] Failed to queue webhook:', err);
+    logger.error({ err }, '[WebhookQueue] Failed to queue webhook');
     return { queued: false, error: err.message };
   }
 }
@@ -561,7 +563,7 @@ async function logDelivery(entry: WebhookDeliveryLogEntry): Promise<void> {
     await connection.ltrim(listKey, 0, 999); // Keep last 1000 entries
     await connection.expire(listKey, DELIVERY_LOG_TTL);
   } catch (error) {
-    console.error('[WebhookQueue] Failed to log delivery:', error);
+    logger.error({ error }, '[WebhookQueue] Failed to log delivery');
   }
 }
 
@@ -600,7 +602,7 @@ export async function getWebhookDeliveryLogs(
 
     return { logs, total };
   } catch (error) {
-    console.error('[WebhookQueue] Failed to get delivery logs:', error);
+    logger.error({ error }, '[WebhookQueue] Failed to get delivery logs');
     return { logs: [], total: 0 };
   }
 }
@@ -635,7 +637,7 @@ export async function getWebhookQueueStats(): Promise<WebhookQueueHealth['stats'
       paused: isPaused,
     };
   } catch (error) {
-    console.error('[WebhookQueue] Failed to get stats:', error);
+    logger.error({ error }, '[WebhookQueue] Failed to get stats');
     return null;
   }
 }
@@ -690,7 +692,7 @@ export async function getWebhookQueueHealth(): Promise<WebhookQueueHealth> {
       uptime: startedAt ? Math.floor((Date.now() - startedAt.getTime()) / 1000) : 0,
     };
   } catch (error) {
-    console.error('[WebhookQueue] Failed to get health:', error);
+    logger.error({ error }, '[WebhookQueue] Failed to get health');
     return {
       status: 'unhealthy',
       connected: false,
@@ -723,7 +725,7 @@ export function isWebhookQueueReady(): boolean {
  * Gracefully shutdown the webhook queue
  */
 export async function shutdownWebhookQueue(): Promise<void> {
-  console.log('[WebhookQueue] Shutting down...');
+  logger.info('[WebhookQueue] Shutting down...');
 
   try {
     if (worker) {
@@ -747,8 +749,8 @@ export async function shutdownWebhookQueue(): Promise<void> {
     }
 
     isInitialized = false;
-    console.log('[WebhookQueue] Shutdown complete');
+    logger.info('[WebhookQueue] Shutdown complete');
   } catch (error) {
-    console.error('[WebhookQueue] Error during shutdown:', error);
+    logger.error({ error }, '[WebhookQueue] Error during shutdown');
   }
 }

@@ -10,6 +10,8 @@ import { query, isDatabaseConnected } from '../database.js';
 import { getCache } from '../cache.js'; // Feature #216: Redis-backed token blacklist
 import { createHash } from 'node:crypto'; // Feature #216: Fast token hashing for Redis key
 import bcrypt from 'bcryptjs';
+// Feature #439: Use structured logger instead of console.*
+import { logger } from '../logger.js';
 
 // ============================================================================
 // Type Definitions
@@ -201,7 +203,7 @@ export async function createUser(user: User): Promise<User> {
       return rowToUser(result.rows[0]);
     }
   } catch (error) {
-    console.error('[AuthRepo] Failed to create user in database:', error);
+    logger.error({ error }, '[AuthRepo] Failed to create user in database:');
     throw error;
   }
 
@@ -225,7 +227,7 @@ export async function getUserByEmail(email: string): Promise<User | undefined> {
       return rowToUser(result.rows[0]);
     }
   } catch (error) {
-    console.error('[AuthRepo] Failed to get user from database:', error);
+    logger.error({ error }, '[AuthRepo] Failed to get user from database:');
   }
 
   return undefined;
@@ -249,7 +251,7 @@ export async function getUserById(id: string): Promise<User | undefined> {
       return rowToUser(result.rows[0]);
     }
   } catch (error) {
-    console.error('[AuthRepo] Failed to get user from database:', error);
+    logger.error({ error }, '[AuthRepo] Failed to get user from database:');
   }
 
   return undefined;
@@ -300,7 +302,7 @@ export async function updateUser(email: string, updates: Partial<User>): Promise
       }
     }
   } catch (error) {
-    console.error('[AuthRepo] Failed to update user in database:', error);
+    logger.error({ error }, '[AuthRepo] Failed to update user in database:');
   }
 
   return undefined;
@@ -323,7 +325,7 @@ export async function userExists(email: string): Promise<boolean> {
       return true;
     }
   } catch (error) {
-    console.error('[AuthRepo] Failed to check user existence:', error);
+    logger.error({ error }, '[AuthRepo] Failed to check user existence:');
   }
 
   return false;
@@ -343,7 +345,7 @@ export async function getUserCount(): Promise<number> {
       return parseInt(result.rows[0].count, 10);
     }
   } catch (error) {
-    console.error('[AuthRepo] Failed to get user count:', error);
+    logger.error({ error }, '[AuthRepo] Failed to get user count:');
   }
 
   return 0;
@@ -378,7 +380,7 @@ export async function blacklistToken(token: string, expiresAt?: Date): Promise<v
     try {
       await cache.set(redisKey, { blacklisted: true, createdAt: new Date().toISOString() }, ttlSeconds);
     } catch (error) {
-      console.error('[AuthRepo] Failed to blacklist token in Redis:', error);
+      logger.error({ error }, '[AuthRepo] Failed to blacklist token in Redis:');
     }
   }
 
@@ -394,7 +396,7 @@ export async function blacklistToken(token: string, expiresAt?: Date): Promise<v
         [dbTokenHash, expiry]
       );
     } catch (error) {
-      console.error('[AuthRepo] Failed to blacklist token in database:', error);
+      logger.error({ error }, '[AuthRepo] Failed to blacklist token in database:');
     }
   }
 }
@@ -430,7 +432,7 @@ export async function isTokenBlacklisted(token: string): Promise<boolean> {
         return true;
       }
     } catch (error) {
-      console.error('[AuthRepo] Failed to check token blacklist in Redis:', error);
+      logger.error({ error }, '[AuthRepo] Failed to check token blacklist in Redis:');
     }
   }
 
@@ -471,7 +473,7 @@ export async function createSession(session: Session): Promise<Session> {
       ]
     );
   } catch (error) {
-    console.error('[AuthRepo] Failed to create session in database:', error);
+    logger.error({ error }, '[AuthRepo] Failed to create session in database:');
     throw error;
   }
 
@@ -495,7 +497,7 @@ export async function getUserSessions(userId: string): Promise<Session[]> {
       return result.rows.map(rowToSession);
     }
   } catch (error) {
-    console.error('[AuthRepo] Failed to get sessions from database:', error);
+    logger.error({ error }, '[AuthRepo] Failed to get sessions from database:');
   }
 
   return [];
@@ -520,7 +522,7 @@ export async function updateSessionLastActive(sessionId: string): Promise<void> 
       [sessionId]
     );
   } catch (error) {
-    console.error('[AuthRepo] Failed to update session:', error);
+    logger.error({ error }, '[AuthRepo] Failed to update session:');
   }
 }
 
@@ -545,7 +547,7 @@ export async function deleteSession(sessionId: string, userId: string): Promise<
     );
     return result !== null && result.rowCount !== null && result.rowCount > 0;
   } catch (error) {
-    console.error('[AuthRepo] Failed to delete session:', error);
+    logger.error({ error }, '[AuthRepo] Failed to delete session:');
   }
 
   return false;
@@ -576,7 +578,7 @@ export async function deleteOtherSessions(userId: string, currentSessionId: stri
       return result.rowCount;
     }
   } catch (error) {
-    console.error('[AuthRepo] Failed to delete other sessions:', error);
+    logger.error({ error }, '[AuthRepo] Failed to delete other sessions:');
   }
 
   return 0;
@@ -612,7 +614,7 @@ export async function createResetToken(resetToken: ResetToken): Promise<ResetTok
       ]
     );
   } catch (error) {
-    console.error('[AuthRepo] Failed to create reset token in database:', error);
+    logger.error({ error }, '[AuthRepo] Failed to create reset token in database:');
     throw error;
   }
 
@@ -644,7 +646,7 @@ export async function getResetToken(token: string): Promise<ResetToken | undefin
       };
     }
   } catch (error) {
-    console.error('[AuthRepo] Failed to get reset token from database:', error);
+    logger.error({ error }, '[AuthRepo] Failed to get reset token from database:');
   }
 
   return undefined;
@@ -668,7 +670,7 @@ export async function markResetTokenUsed(token: string): Promise<void> {
       [tokenHash]
     );
   } catch (error) {
-    console.error('[AuthRepo] Failed to mark reset token as used:', error);
+    logger.error({ error }, '[AuthRepo] Failed to mark reset token as used:');
   }
 }
 
@@ -698,7 +700,7 @@ export async function storeRefreshTokenHash(hash: string, userId: string, expire
       [hash, userId, expiresAt]
     );
   } catch (error) {
-    console.error('[AuthRepo] Failed to store refresh token in database:', error);
+    logger.error({ error }, '[AuthRepo] Failed to store refresh token in database:');
     // Memory fallback will be used
   }
 }
@@ -722,7 +724,7 @@ export async function isRefreshTokenHashValid(hash: string): Promise<boolean> {
       return true;
     }
   } catch (error) {
-    console.error('[AuthRepo] Failed to check refresh token validity:', error);
+    logger.error({ error }, '[AuthRepo] Failed to check refresh token validity:');
     // Fall back to memory
     const entry = memoryRefreshTokens.get(hash);
     return entry !== undefined && entry.expiresAt > new Date();
@@ -748,7 +750,7 @@ export async function revokeRefreshTokenHash(hash: string): Promise<void> {
       [hash]
     );
   } catch (error) {
-    console.error('[AuthRepo] Failed to revoke refresh token:', error);
+    logger.error({ error }, '[AuthRepo] Failed to revoke refresh token:');
   }
 }
 
@@ -793,7 +795,7 @@ export async function atomicRevokeRefreshToken(hash: string): Promise<string | n
       return result.rows[0].user_id;
     }
   } catch (error) {
-    console.error('[AuthRepo] Failed to atomically revoke refresh token:', error);
+    logger.error({ error }, '[AuthRepo] Failed to atomically revoke refresh token:');
   }
 
   return null;
@@ -823,7 +825,7 @@ export async function cleanupExpiredRefreshTokens(): Promise<number> {
       return result.rowCount;
     }
   } catch (error) {
-    console.error('[AuthRepo] Failed to cleanup expired refresh tokens:', error);
+    logger.error({ error }, '[AuthRepo] Failed to cleanup expired refresh tokens:');
   }
 
   return 0;
@@ -874,7 +876,7 @@ export async function cleanupExpiredData(): Promise<{ tokens: number; sessions: 
         sessionsDeleted = sessionResult.rowCount;
       }
     } catch (error) {
-      console.error('[AuthRepo] Failed to cleanup expired data:', error);
+      logger.error({ error }, '[AuthRepo] Failed to cleanup expired data:');
     }
   }
 

@@ -11,6 +11,8 @@
  */
 
 import { query, isDatabaseConnected } from '../database.js';
+// Feature #439: Use structured logger instead of console.*
+import { logger } from '../logger.js';
 
 // ============================================================================
 // Types
@@ -163,7 +165,7 @@ export async function createOrganization(org: Organization): Promise<Organizatio
     );
     return org;
   } catch (error) {
-    console.error('[Org Repo] Failed to create organization:', error);
+    logger.error({ error }, '[Org Repo] Failed to create organization:');
     throw error;
   }
 }
@@ -180,7 +182,7 @@ export async function getOrganizationById(id: string): Promise<Organization | nu
       return rowToOrganization(result.rows[0]);
     }
   } catch (error) {
-    console.error('[Org Repo] Failed to get organization:', error);
+    logger.error({ error }, '[Org Repo] Failed to get organization:');
   }
 
   return null;
@@ -203,7 +205,7 @@ export async function getOrganizationBySlug(slug: string): Promise<Organization 
       return rowToOrganization(result.rows[0]);
     }
   } catch (error) {
-    console.error('[Org Repo] Failed to get organization by slug:', error);
+    logger.error({ error }, '[Org Repo] Failed to get organization by slug:');
   }
 
   return null;
@@ -230,7 +232,7 @@ export async function updateOrganization(id: string, updates: Partial<Organizati
     );
     return updated;
   } catch (error) {
-    console.error('[Org Repo] Failed to update organization:', error);
+    logger.error({ error }, '[Org Repo] Failed to update organization:');
     return null;
   }
 }
@@ -246,7 +248,7 @@ export async function deleteOrganization(id: string): Promise<boolean> {
     const result = await query('DELETE FROM organizations WHERE id = $1', [id]);
     return result !== null && (result.rowCount ?? 0) > 0;
   } catch (error) {
-    console.error('[Org Repo] Failed to delete organization:', error);
+    logger.error({ error }, '[Org Repo] Failed to delete organization:');
     return false;
   }
 }
@@ -264,7 +266,7 @@ export async function listOrganizations(): Promise<Organization[]> {
       return result.rows.map(rowToOrganization);
     }
   } catch (error) {
-    console.error('[Org Repo] Failed to list organizations:', error);
+    logger.error({ error }, '[Org Repo] Failed to list organizations:');
   }
 
   return [];
@@ -302,7 +304,7 @@ export async function addOrganizationMember(member: OrganizationMember): Promise
       [member.user_id, member.organization_id, member.role]
     );
   } catch (error) {
-    console.error('[Org Repo] Failed to add organization member:', error);
+    logger.error({ error }, '[Org Repo] Failed to add organization member:');
     throw error;
   }
 }
@@ -324,7 +326,7 @@ export async function removeOrganizationMember(organizationId: string, userId: s
     );
     return result !== null && (result.rowCount ?? 0) > 0;
   } catch (error) {
-    console.error('[Org Repo] Failed to remove organization member:', error);
+    logger.error({ error }, '[Org Repo] Failed to remove organization member:');
     return false;
   }
 }
@@ -341,7 +343,7 @@ export async function getOrganizationMembers(organizationId: string): Promise<Or
       return result.rows;
     }
   } catch (error) {
-    console.error('[Org Repo] Failed to get organization members:', error);
+    logger.error({ error }, '[Org Repo] Failed to get organization members:');
   }
 
   return [];
@@ -368,7 +370,7 @@ export async function updateMemberRole(
     );
     return result !== null && (result.rowCount ?? 0) > 0;
   } catch (error) {
-    console.error('[Org Repo] Failed to update member role:', error);
+    logger.error({ error }, '[Org Repo] Failed to update member role:');
     return false;
   }
 }
@@ -390,7 +392,7 @@ export async function getUserOrganization(userId: string): Promise<string | null
       return result.rows[0].organization_id;
     }
   } catch (error) {
-    console.error('[Org Repo] Failed to get user organization:', error);
+    logger.error({ error }, '[Org Repo] Failed to get user organization:');
   }
 
   return null;
@@ -461,7 +463,7 @@ export async function getUserOrganizations(userId: string): Promise<Array<{
       }));
     }
   } catch (error) {
-    console.error('[Org Repo] Failed to get user organizations:', error);
+    logger.error({ error }, '[Org Repo] Failed to get user organizations:');
   }
 
   return [];
@@ -494,7 +496,7 @@ export async function createInvitation(invitation: Invitation): Promise<Invitati
     );
     return invitation;
   } catch (error) {
-    console.error('[Org Repo] Failed to create invitation:', error);
+    logger.error({ error }, '[Org Repo] Failed to create invitation:');
     throw error;
   }
 }
@@ -518,7 +520,7 @@ export async function getInvitationById(id: string): Promise<Invitation | null> 
       };
     }
   } catch (error) {
-    console.error('[Org Repo] Failed to get invitation:', error);
+    logger.error({ error }, '[Org Repo] Failed to get invitation:');
   }
 
   return null;
@@ -542,7 +544,7 @@ export async function getInvitationsByOrg(organizationId: string): Promise<Invit
       }));
     }
   } catch (error) {
-    console.error('[Org Repo] Failed to get invitations by org:', error);
+    logger.error({ error }, '[Org Repo] Failed to get invitations by org:');
   }
 
   return [];
@@ -571,7 +573,7 @@ export async function updateInvitation(id: string, updates: Partial<Invitation>)
     }
     return updated;
   } catch (error) {
-    console.error('[Org Repo] Failed to update invitation:', error);
+    logger.error({ error }, '[Org Repo] Failed to update invitation:');
     return null;
   }
 }
@@ -586,7 +588,7 @@ export async function deleteInvitation(id: string): Promise<boolean> {
     const result = await query('DELETE FROM invitations WHERE id = $1', [id]);
     return result !== null && (result.rowCount ?? 0) > 0;
   } catch (error) {
-    console.error('[Org Repo] Failed to delete invitation:', error);
+    logger.error({ error }, '[Org Repo] Failed to delete invitation:');
     return false;
   }
 }
@@ -609,7 +611,7 @@ export async function getAutoQuarantineSettings(organizationId: string): Promise
       return { ...DEFAULT_AUTO_QUARANTINE_SETTINGS, ...result.rows[0].auto_quarantine_settings };
     }
   } catch (error) {
-    console.error('[Org Repo] Failed to get auto-quarantine settings:', error);
+    logger.error({ error }, '[Org Repo] Failed to get auto-quarantine settings:');
   }
 
   return { ...DEFAULT_AUTO_QUARANTINE_SETTINGS };
@@ -638,7 +640,7 @@ export async function setAutoQuarantineSettings(
       [organizationId, JSON.stringify(updated)]
     );
   } catch (error) {
-    console.error('[Org Repo] Failed to set auto-quarantine settings:', error);
+    logger.error({ error }, '[Org Repo] Failed to set auto-quarantine settings:');
   }
 
   return updated;
@@ -669,7 +671,7 @@ export async function getRetryStrategySettings(organizationId: string): Promise<
       };
     }
   } catch (error) {
-    console.error('[Org Repo] Failed to get retry strategy settings:', error);
+    logger.error({ error }, '[Org Repo] Failed to get retry strategy settings:');
   }
 
   return {
@@ -705,7 +707,7 @@ export async function setRetryStrategySettings(
       [organizationId, JSON.stringify(updated)]
     );
   } catch (error) {
-    console.error('[Org Repo] Failed to set retry strategy settings:', error);
+    logger.error({ error }, '[Org Repo] Failed to set retry strategy settings:');
   }
 
   return updated;
@@ -760,7 +762,7 @@ export async function seedDefaultOrganizations(): Promise<void> {
         timezone: 'UTC',
         created_at: new Date(),
       });
-      console.log('[Org Repo] Created Default Organization');
+      logger.info('[Org Repo] Created Default Organization');
     }
 
     const otherOrg = await getOrganizationById(OTHER_ORG_ID);
@@ -772,7 +774,7 @@ export async function seedDefaultOrganizations(): Promise<void> {
         timezone: 'UTC',
         created_at: new Date(),
       });
-      console.log('[Org Repo] Created Other Organization');
+      logger.info('[Org Repo] Created Other Organization');
     }
 
     // Seed default members for DEFAULT_ORG - check each user individually
@@ -809,7 +811,7 @@ export async function seedDefaultOrganizations(): Promise<void> {
       }
     }
   } catch (error) {
-    console.error('[Org Repo] Failed to seed organizations:', error);
+    logger.error({ error }, '[Org Repo] Failed to seed organizations:');
   }
 }
 

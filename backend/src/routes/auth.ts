@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 import { createHash } from 'node:crypto';
 // Feature #213: fast-jwt for refresh token handling (separate from app.jwt)
 import { createSigner, createVerifier } from 'fast-jwt';
+// Feature #439: Use structured logger instead of console.*
+import { logger } from '../services/logger.js';
 import { getUserOrganization, DEFAULT_ORG_ID } from './organizations.js';
 import {
   seedDefaultOrganizations,
@@ -236,16 +238,16 @@ let seedingComplete = false;
 // Feature #2083: Initialize test users using repository
 // NOTE: This is now called from index.ts AFTER database is connected
 export async function initTestUsers(): Promise<void> {
-  console.log('[Auth] Starting test user seeding...');
+  logger.info('[Auth] Starting test user seeding...');
   await seedDefaultOrganizations();
   await seedTestUsers();
   // Feature #221: Clean up expired refresh tokens on startup
   const cleanedUp = await cleanupExpiredRefreshTokens();
   if (cleanedUp > 0) {
-    console.log(`[Auth] Cleaned up ${cleanedUp} expired refresh tokens`);
+    logger.info({ cleanedUp }, '[Auth] Cleaned up expired refresh tokens');
   }
   seedingComplete = true;
-  console.log('[Auth] Test user seeding complete');
+  logger.info('[Auth] Test user seeding complete');
 }
 
 // NOTE: Removed auto-call - now called from index.ts after database initialization
@@ -741,13 +743,7 @@ export async function authRoutes(app: FastifyInstance) {
 
       // In development, log the reset link to console
       const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
-      console.log('\n========================================');
-      console.log('PASSWORD RESET LINK (Development Mode)');
-      console.log('========================================');
-      console.log(`Email: ${email}`);
-      console.log(`Reset Link: ${resetLink}`);
-      console.log('Token expires in 1 hour');
-      console.log('========================================\n');
+      logger.info({ email, resetLink }, '[Auth] PASSWORD RESET LINK (Development Mode) - Token expires in 1 hour');
     }
 
     // Always return success to prevent email enumeration
@@ -840,7 +836,7 @@ export async function authRoutes(app: FastifyInstance) {
     // Feature #2116: Mark token as used using async DB call
     await dbMarkResetTokenUsed(token);
 
-    console.log(`\n[PASSWORD RESET] Password successfully reset for: ${user.email}\n`);
+    logger.info({ email: user.email }, '[PASSWORD RESET] Password successfully reset');
 
     return {
       message: 'Password has been reset successfully. You can now login with your new password.',

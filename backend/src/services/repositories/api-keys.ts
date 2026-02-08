@@ -16,6 +16,8 @@ import {
   McpAuditLogEntry
 } from '../../routes/api-keys/types.js';
 import crypto from 'crypto';
+// Feature #439: Use structured logger instead of console.*
+import { logger } from '../logger.js';
 
 // ============================================
 // Column Constants for SELECT queries
@@ -51,25 +53,25 @@ const MCP_AUDIT_LOG_COLUMNS = `
 
 /** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryApiKeys(): Map<string, ApiKey> {
-  console.warn('[DEPRECATED] getMemoryApiKeys() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  logger.warn('[DEPRECATED] getMemoryApiKeys() called - memory stores removed in Feature #2110. Use DB queries instead.');
   return new Map();
 }
 
 /** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryMcpConnections(): Map<string, McpConnection> {
-  console.warn('[DEPRECATED] getMemoryMcpConnections() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  logger.warn('[DEPRECATED] getMemoryMcpConnections() called - memory stores removed in Feature #2110. Use DB queries instead.');
   return new Map();
 }
 
 /** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryMcpToolCalls(): Map<string, McpToolCall[]> {
-  console.warn('[DEPRECATED] getMemoryMcpToolCalls() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  logger.warn('[DEPRECATED] getMemoryMcpToolCalls() called - memory stores removed in Feature #2110. Use DB queries instead.');
   return new Map();
 }
 
 /** @deprecated Feature #2110: Memory stores removed. Returns empty Map. Use DB queries instead. */
 export function getMemoryMcpAuditLogs(): Map<string, McpAuditLogEntry[]> {
-  console.warn('[DEPRECATED] getMemoryMcpAuditLogs() called - memory stores removed in Feature #2110. Use DB queries instead.');
+  logger.warn('[DEPRECATED] getMemoryMcpAuditLogs() called - memory stores removed in Feature #2110. Use DB queries instead.');
   return new Map();
 }
 
@@ -143,7 +145,7 @@ export async function createApiKey(apiKey: ApiKey): Promise<ApiKey> {
         ]
       );
     } catch (error) {
-      console.error('[API Keys Repo] Failed to create API key in database:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to create API key in database:');
     }
   }
 
@@ -161,7 +163,7 @@ export async function getApiKeyById(id: string): Promise<ApiKey | null> {
         return rowToApiKey(result.rows[0]);
       }
     } catch (error) {
-      console.error('[API Keys Repo] Failed to get API key from database:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to get API key from database:');
     }
   }
 
@@ -179,7 +181,7 @@ export async function getApiKeyByHash(keyHash: string): Promise<ApiKey | null> {
         return rowToApiKey(result.rows[0]);
       }
     } catch (error) {
-      console.error('[API Keys Repo] Failed to get API key by hash:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to get API key by hash:');
     }
   }
 
@@ -197,7 +199,7 @@ export async function listApiKeysByOrg(orgId: string): Promise<ApiKey[]> {
         return result.rows.map(rowToApiKey);
       }
     } catch (error) {
-      console.error('[API Keys Repo] Failed to list API keys:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to list API keys:');
     }
   }
 
@@ -233,7 +235,7 @@ export async function updateApiKey(id: string, updates: Partial<ApiKey>): Promis
         ]
       );
     } catch (error) {
-      console.error('[API Keys Repo] Failed to update API key:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to update API key:');
     }
   }
 
@@ -253,7 +255,7 @@ export async function revokeApiKey(id: string): Promise<boolean> {
         [id, revokedAt]
       );
     } catch (error) {
-      console.error('[API Keys Repo] Failed to revoke API key:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to revoke API key:');
     }
   }
 
@@ -308,7 +310,7 @@ export async function createMcpConnection(connection: McpConnection): Promise<Mc
         ]
       );
     } catch (error) {
-      console.error('[API Keys Repo] Failed to create MCP connection:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to create MCP connection:');
     }
   }
 
@@ -326,7 +328,7 @@ export async function getMcpConnection(id: string): Promise<McpConnection | null
         return rowToMcpConnection(result.rows[0]);
       }
     } catch (error) {
-      console.error('[API Keys Repo] Failed to get MCP connection:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to get MCP connection:');
     }
   }
 
@@ -341,7 +343,7 @@ export async function updateMcpConnectionActivity(id: string): Promise<void> {
         [id, new Date()]
       );
     } catch (error) {
-      console.error('[API Keys Repo] Failed to update MCP connection activity:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to update MCP connection activity:');
     }
   }
 }
@@ -351,7 +353,7 @@ export async function deleteMcpConnection(id: string): Promise<void> {
     try {
       await query('DELETE FROM mcp_connections WHERE id = $1', [id]);
     } catch (error) {
-      console.error('[API Keys Repo] Failed to delete MCP connection:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to delete MCP connection:');
     }
   }
 }
@@ -370,7 +372,7 @@ export async function cleanupStaleMcpConnections(staleThresholdMs: number = 30 *
         cleaned = result.rowCount || 0;
       }
     } catch (error) {
-      console.error('[API Keys Repo] Failed to cleanup stale connections:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to cleanup stale connections:');
     }
   }
 
@@ -439,7 +441,7 @@ export async function createMcpToolCall(toolCall: McpToolCall): Promise<McpToolC
         [toolCall.organization_id]
       );
     } catch (error) {
-      console.error('[API Keys Repo] Failed to create MCP tool call:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to create MCP tool call:');
     }
   }
 
@@ -467,7 +469,7 @@ export async function getMcpToolCallsByOrg(
         return result.rows.map(rowToMcpToolCall);
       }
     } catch (error) {
-      console.error('[API Keys Repo] Failed to get MCP tool calls:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to get MCP tool calls:');
     }
   }
 
@@ -570,7 +572,7 @@ export async function createMcpAuditLog(entry: McpAuditLogEntry): Promise<McpAud
         [entry.organization_id]
       );
     } catch (error) {
-      console.error('[API Keys Repo] Failed to create MCP audit log:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to create MCP audit log:');
     }
   }
 
@@ -641,7 +643,7 @@ export async function getMcpAuditLogs(
         };
       }
     } catch (error) {
-      console.error('[API Keys Repo] Failed to get MCP audit logs:', error);
+      logger.error({ error }, '[API Keys Repo] Failed to get MCP audit logs:');
     }
   }
 

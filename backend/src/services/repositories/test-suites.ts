@@ -12,6 +12,8 @@
 
 import { query, isDatabaseConnected } from '../database.js';
 import { TestSuite, Test } from '../../routes/test-suites/types.js';
+// Feature #439: Use structured logger instead of console.*
+import { logger } from '../logger.js';
 
 // In-memory fallback stores for when PostgreSQL is not available
 const memTestSuites = new Map<string, TestSuite>();
@@ -39,7 +41,7 @@ const TEST_COLUMNS = [
 
 export async function createTestSuite(suite: TestSuite): Promise<TestSuite> {
   if (!isDatabaseConnected()) {
-    console.log('[TestSuites] Using in-memory storage for createTestSuite');
+    logger.info('[TestSuites] Using in-memory storage for createTestSuite');
     memTestSuites.set(suite.id, suite);
     return suite;
   }
@@ -233,7 +235,7 @@ export async function listAllTestSuites(organizationId: string, limit: number = 
 
 export async function createTest(test: Test): Promise<Test> {
   if (!isDatabaseConnected()) {
-    console.log('[TestSuites] Using in-memory storage for createTest');
+    logger.info('[TestSuites] Using in-memory storage for createTest');
     memTests.set(test.id, test);
     return test;
   }

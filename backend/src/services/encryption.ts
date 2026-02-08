@@ -13,6 +13,8 @@
  */
 
 import { createCipheriv, createDecipheriv, randomBytes, pbkdf2Sync, createHash } from 'node:crypto';
+// Feature #439: Use structured logger instead of console.*
+import { logger } from './logger.js';
 
 // ============================================================================
 // Configuration
@@ -152,11 +154,11 @@ export function clearKeyCache(): void {
 function getEncryptionKeyFromEnv(): string | null {
   const key = process.env.ENCRYPTION_KEY;
   if (!key) {
-    console.warn('[Encryption] ENCRYPTION_KEY not set - sensitive data will NOT be encrypted');
+    logger.warn('[Encryption] ENCRYPTION_KEY not set - sensitive data will NOT be encrypted');
     return null;
   }
   if (key.length < 32) {
-    console.warn('[Encryption] ENCRYPTION_KEY should be at least 32 characters for security');
+    logger.warn('[Encryption] ENCRYPTION_KEY should be at least 32 characters for security');
   }
   return key;
 }
@@ -295,7 +297,7 @@ export function decrypt(ciphertext: string): string {
       // Derive key using the stored salt
       const key = deriveKeyWithSalt(salt);
       if (!key) {
-        console.error('[Encryption] Cannot decrypt v2 - ENCRYPTION_KEY not set');
+        logger.error('[Encryption] Cannot decrypt v2 - ENCRYPTION_KEY not set');
         throw new Error('Encryption key not configured');
       }
 
@@ -313,7 +315,7 @@ export function decrypt(ciphertext: string): string {
 
       return decrypted.toString('utf8');
     } catch (error) {
-      console.error('[Encryption] v2 decryption failed:', error);
+      logger.error({ error }, '[Encryption] v2 decryption failed');
       throw new Error('Failed to decrypt data - key may have changed');
     }
   }
@@ -326,7 +328,7 @@ export function decrypt(ciphertext: string): string {
 
   const key = deriveKey();
   if (!key) {
-    console.error('[Encryption] Cannot decrypt v1 - ENCRYPTION_KEY not set');
+    logger.error('[Encryption] Cannot decrypt v1 - ENCRYPTION_KEY not set');
     throw new Error('Encryption key not configured');
   }
 
@@ -353,7 +355,7 @@ export function decrypt(ciphertext: string): string {
 
     return decrypted.toString('utf8');
   } catch (error) {
-    console.error('[Encryption] v1 decryption failed:', error);
+    logger.error({ error }, '[Encryption] v1 decryption failed');
     throw new Error('Failed to decrypt data - key may have changed');
   }
 }
@@ -411,7 +413,7 @@ export function migrateV1ToV2(v1Ciphertext: string): string {
     // Re-encrypt using v2 format (which uses random salt)
     return encrypt(plaintext);
   } catch (error) {
-    console.error('[Encryption] Failed to migrate v1 to v2:', error);
+    logger.error({ error }, '[Encryption] Failed to migrate v1 to v2');
     throw error;
   }
 }
