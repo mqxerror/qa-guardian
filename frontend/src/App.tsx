@@ -111,12 +111,9 @@ const RunHistoryPage = lazy(() => import('./pages/RunHistoryPage').then(m => ({ 
 const ServicesPage = lazy(() => import('./pages/ServicesPage').then(m => ({ default: m.ServicesPage })));
 const OpenAPITestGeneratorPage = lazy(() => import('./pages/OpenAPITestGeneratorPage').then(m => ({ default: m.OpenAPITestGeneratorPage }))); // Feature #324
 
-// Loading fallback for lazy-loaded pages
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[60vh]">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-  </div>
-);
+// Feature #432: Loading fallback for lazy-loaded pages using proper skeleton
+import { PageSkeleton } from './components/ui/Skeleton';
+const PageLoader = () => <PageSkeleton />;
 
 // Feature #756: DASTComparisonPage extracted to ./pages/DASTComparisonPage.tsx
 // Feature #758: DASTGraphQLPage extracted to ./pages/DASTGraphQLPage.tsx
