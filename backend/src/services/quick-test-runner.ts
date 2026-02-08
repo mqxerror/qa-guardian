@@ -18,6 +18,17 @@ import { getWebSocketIO } from './websocket-events.js';
 import { aiService } from './ai-service.js';
 import { isPrivateIP, validateURLForSSRF } from '../utils/index.js';
 import { createLogger } from './logger.js';
+// Feature #465: PostgreSQL persistence for Quick Test results
+import {
+  createQuickTestResult,
+  updateQuickTestWaves,
+  completeQuickTestResult,
+  getQuickTestResultById,
+  type QuickTestWaveResult as DbWaveResult,
+  type QuickTestSummary as DbSummary,
+} from './repositories/quick-test.js';
+// Feature #466: Persist screenshots to filesystem
+import { saveScreenshot, type ScreenshotType } from './quick-test-screenshots.js';
 
 // Feature #449: Use structured logger instead of console.*
 const log = createLogger('quick-test-runner');
@@ -133,7 +144,12 @@ interface VisualPerformanceResult {
     ttfb?: number; // Time to First Byte
   };
   screenshots: {
-    desktop?: string; // Base64 encoded
+    desktop?: string; // Base64 encoded (temporary, before saving to disk)
+    mobile?: string;
+  };
+  // Feature #466: URLs for saved screenshots (set after saving to disk)
+  screenshotUrls?: {
+    desktop?: string;
     mobile?: string;
   };
   loadTime: number;
@@ -812,7 +828,7 @@ Respond ONLY with valid JSON, no markdown or explanation.`;
 // ============================================================
 
 export async function runQuickTest(request: QuickTestRequest): Promise<void> {
-  const { url, runId, orgId } = request;
+  const { url, runId, orgId, userId } = request;
 
   // Initialize result
   const testResult: QuickTestResult = {
@@ -828,10 +844,13 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
     ],
   };
 
-  // Feature #446: Use safe setter that enforces max size limit
+  // Feature #446: Use safe setter that enforces max size limit (in-memory cache)
   safeSetQuickTestResult(runId, testResult);
 
-  // Schedule cleanup after TTL
+  // Feature #465: Create initial record in PostgreSQL for persistence
+  await createQuickTestResult(runId, orgId, userId, url, testResult.waves as unknown as DbWaveResult[]);
+
+  // Schedule cleanup after TTL (only for in-memory cache, DB records persist)
   setTimeout(() => {
     quickTestResults.delete(runId);
   }, TTL_MS);
@@ -874,13 +893,40 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       testResult.waves[1].status = 'completed';
       testResult.waves[1].completedAt = new Date();
       testResult.waves[1].duration = Date.now() - wave2Start;
-      // Don't include base64 screenshots in wave data to reduce payload
+
+      // Feature #466: Save screenshots to disk and get URLs
+      const screenshotUrls: { desktop?: string; mobile?: string } = {};
+      if (visualResult.screenshots.desktop) {
+        try {
+          screenshotUrls.desktop = await saveScreenshot(runId, 'desktop', visualResult.screenshots.desktop);
+          log.info({ runId, type: 'desktop' }, 'Saved desktop screenshot');
+        } catch (saveErr) {
+          log.error({ runId, error: saveErr }, 'Failed to save desktop screenshot');
+        }
+      }
+      if (visualResult.screenshots.mobile) {
+        try {
+          screenshotUrls.mobile = await saveScreenshot(runId, 'mobile', visualResult.screenshots.mobile);
+          log.info({ runId, type: 'mobile' }, 'Saved mobile screenshot');
+        } catch (saveErr) {
+          log.error({ runId, error: saveErr }, 'Failed to save mobile screenshot');
+        }
+      }
+
+      // Store URLs in visualResult for later use
+      visualResult.screenshotUrls = screenshotUrls;
+
+      // Include screenshot URLs instead of boolean flags
       const visualDataForEmit = {
         lighthouse: visualResult.lighthouse,
         coreWebVitals: visualResult.coreWebVitals,
         loadTime: visualResult.loadTime,
-        hasDesktopScreenshot: !!visualResult.screenshots.desktop,
-        hasMobileScreenshot: !!visualResult.screenshots.mobile,
+        // Feature #466: Include URLs instead of boolean flags
+        desktopScreenshotUrl: screenshotUrls.desktop || null,
+        mobileScreenshotUrl: screenshotUrls.mobile || null,
+        // Keep legacy flags for backward compatibility
+        hasDesktopScreenshot: !!screenshotUrls.desktop,
+        hasMobileScreenshot: !!screenshotUrls.mobile,
       };
       testResult.waves[1].data = visualDataForEmit;
       emitWaveComplete(orgId, runId, 2, visualDataForEmit);
@@ -952,6 +998,14 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
     testResult.status = 'completed';
     testResult.completedAt = new Date();
 
+    // Feature #465: Persist final result to PostgreSQL
+    await completeQuickTestResult(
+      runId,
+      'completed',
+      testResult.waves as unknown as DbWaveResult[],
+      testResult.summary as DbSummary
+    );
+
     // Emit final completion event
     emitWaveEvent(orgId, runId, 'quick-test:complete', {
       status: 'completed',
@@ -964,6 +1018,14 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
     testResult.status = 'failed';
     testResult.completedAt = new Date();
 
+    // Feature #465: Persist failed result to PostgreSQL
+    await completeQuickTestResult(
+      runId,
+      'failed',
+      testResult.waves as unknown as DbWaveResult[],
+      null
+    );
+
     emitWaveEvent(orgId, runId, 'quick-test:error', {
       error: err instanceof Error ? err.message : 'Quick test failed',
     });
@@ -972,7 +1034,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
     if (browser) {
       await browser.close().catch(() => {});
     }
-    // Feature #446: Use safe setter that enforces max size limit
+    // Feature #446: Use safe setter that enforces max size limit (in-memory cache)
     safeSetQuickTestResult(runId, testResult);
   }
 }
@@ -981,8 +1043,42 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
 // Result Retrieval
 // ============================================================
 
+/**
+ * Get Quick Test result from in-memory cache.
+ * For persistent lookup including historical results, use getQuickTestResultAsync.
+ */
 export function getQuickTestResult(runId: string): QuickTestResult | undefined {
   return quickTestResults.get(runId);
+}
+
+/**
+ * Feature #465: Get Quick Test result with database fallback.
+ * First checks in-memory cache, then falls back to PostgreSQL.
+ * This allows retrieval of results after server restart.
+ */
+export async function getQuickTestResultAsync(runId: string): Promise<QuickTestResult | undefined> {
+  // First check in-memory cache (hot path)
+  const cached = quickTestResults.get(runId);
+  if (cached) {
+    return cached;
+  }
+
+  // Fall back to database for historical/persisted results
+  const dbResult = await getQuickTestResultById(runId);
+  if (dbResult) {
+    // Convert DB format back to QuickTestResult format
+    return {
+      runId: dbResult.id,
+      url: dbResult.url,
+      status: dbResult.status,
+      startedAt: dbResult.startedAt,
+      completedAt: dbResult.completedAt ?? undefined,
+      waves: dbResult.waveResults,
+      summary: dbResult.waveScores ?? undefined,
+    };
+  }
+
+  return undefined;
 }
 
 export function getQuickTestScreenshots(runId: string): { desktop?: string; mobile?: string } | undefined {

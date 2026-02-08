@@ -36,6 +36,10 @@ import {
   Save,
   Download,
   AlertCircle,
+  Monitor,
+  Smartphone,
+  X,
+  Maximize2,
 } from 'lucide-react';
 
 // ============================================================
@@ -171,9 +175,11 @@ function getScoreBgColor(score: number): string {
 interface WaveCardProps {
   wave: WaveData;
   onToggleExpand: () => void;
+  // Feature #466: Screenshot click handler
+  onScreenshotClick?: (url: string, type: 'desktop' | 'mobile') => void;
 }
 
-function WaveCard({ wave, onToggleExpand }: WaveCardProps) {
+function WaveCard({ wave, onToggleExpand, onScreenshotClick }: WaveCardProps) {
   const Icon = wave.icon;
 
   const getStatusStyles = () => {
@@ -267,6 +273,72 @@ function WaveCard({ wave, onToggleExpand }: WaveCardProps) {
               </div>
             </div>
           ))}
+          {/* Feature #466: Screenshot thumbnails for Wave 2 (Visual + Performance) */}
+          {wave.wave === 2 && wave.status === 'completed' && wave.data && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <div className="text-xs font-medium text-muted-foreground mb-2">Screenshots</div>
+              <div className="flex gap-3">
+                {/* Desktop Screenshot */}
+                {(wave.data as { desktopScreenshotUrl?: string }).desktopScreenshotUrl && (
+                  <button
+                    onClick={() => onScreenshotClick?.(
+                      (wave.data as { desktopScreenshotUrl: string }).desktopScreenshotUrl,
+                      'desktop'
+                    )}
+                    className="group relative rounded-lg overflow-hidden border border-border hover:border-primary transition-colors"
+                  >
+                    <img
+                      src={(wave.data as { desktopScreenshotUrl: string }).desktopScreenshotUrl}
+                      alt="Desktop Screenshot"
+                      className="w-32 h-20 object-cover object-top"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Maximize2 className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
+                      <div className="flex items-center gap-1 text-white text-xs">
+                        <Monitor className="w-3 h-3" />
+                        <span>Desktop</span>
+                      </div>
+                    </div>
+                  </button>
+                )}
+                {/* Mobile Screenshot */}
+                {(wave.data as { mobileScreenshotUrl?: string }).mobileScreenshotUrl && (
+                  <button
+                    onClick={() => onScreenshotClick?.(
+                      (wave.data as { mobileScreenshotUrl: string }).mobileScreenshotUrl,
+                      'mobile'
+                    )}
+                    className="group relative rounded-lg overflow-hidden border border-border hover:border-primary transition-colors"
+                  >
+                    <img
+                      src={(wave.data as { mobileScreenshotUrl: string }).mobileScreenshotUrl}
+                      alt="Mobile Screenshot"
+                      className="w-16 h-20 object-cover object-top"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Maximize2 className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
+                      <div className="flex items-center gap-1 text-white text-xs">
+                        <Smartphone className="w-3 h-3" />
+                        <span>Mobile</span>
+                      </div>
+                    </div>
+                  </button>
+                )}
+                {/* No screenshots message */}
+                {!(wave.data as { desktopScreenshotUrl?: string }).desktopScreenshotUrl &&
+                 !(wave.data as { mobileScreenshotUrl?: string }).mobileScreenshotUrl && (
+                  <div className="text-xs text-muted-foreground italic">
+                    No screenshots captured
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {wave.error && (
             <div className="mt-2 p-2 rounded bg-destructive/10 text-destructive text-sm">
               {wave.error}
@@ -274,6 +346,59 @@ function WaveCard({ wave, onToggleExpand }: WaveCardProps) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ============================================================
+// Screenshot Modal Component
+// ============================================================
+
+interface ScreenshotModalProps {
+  isOpen: boolean;
+  url: string | null;
+  type: 'desktop' | 'mobile' | null;
+  onClose: () => void;
+}
+
+function ScreenshotModal({ isOpen, url, type, onClose }: ScreenshotModalProps) {
+  if (!isOpen || !url) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+      onClick={onClose}
+    >
+      <div className="relative max-w-[90vw] max-h-[90vh]">
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute -top-10 right-0 p-2 text-white hover:text-gray-300 transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+        {/* Type label */}
+        <div className="absolute -top-10 left-0 flex items-center gap-2 text-white text-sm">
+          {type === 'desktop' ? (
+            <>
+              <Monitor className="w-4 h-4" />
+              <span>Desktop Screenshot</span>
+            </>
+          ) : (
+            <>
+              <Smartphone className="w-4 h-4" />
+              <span>Mobile Screenshot</span>
+            </>
+          )}
+        </div>
+        {/* Image */}
+        <img
+          src={url}
+          alt={`${type} Screenshot`}
+          className="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
     </div>
   );
 }
@@ -340,6 +465,13 @@ export function QuickTestPage() {
   // History State
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+
+  // Feature #466: Screenshot modal state
+  const [screenshotModal, setScreenshotModal] = useState<{
+    isOpen: boolean;
+    url: string | null;
+    type: 'desktop' | 'mobile' | null;
+  }>({ isOpen: false, url: null, type: null });
 
   // Refs
   const urlInputRef = useRef<HTMLInputElement>(null);
@@ -579,6 +711,7 @@ export function QuickTestPage() {
               key={wave.wave}
               wave={wave}
               onToggleExpand={() => toggleWaveExpand(idx)}
+              onScreenshotClick={(url, type) => setScreenshotModal({ isOpen: true, url, type })}
             />
           ))}
         </div>
@@ -647,6 +780,14 @@ export function QuickTestPage() {
           </AnimatedCard>
         )}
       </div>
+
+      {/* Feature #466: Screenshot Modal */}
+      <ScreenshotModal
+        isOpen={screenshotModal.isOpen}
+        url={screenshotModal.url}
+        type={screenshotModal.type}
+        onClose={() => setScreenshotModal({ isOpen: false, url: null, type: null })}
+      />
     </Layout>
   );
 }
