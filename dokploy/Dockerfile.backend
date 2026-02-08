@@ -55,6 +55,11 @@ COPY . .
 # Build TypeScript to dist/
 RUN npm run build
 
+# Compile migrations separately (they're outside src/)
+# node-pg-migrate needs CommonJS files (.cjs) when running compiled backend
+RUN npx tsc migrations/*.ts --outDir migrations --module CommonJS --moduleResolution Node --esModuleInterop --skipLibCheck \
+    && for f in migrations/*.js; do mv "$f" "${f%.js}.cjs"; done
+
 
 # ==============================================================================
 # Stage 3: Production Runtime
@@ -109,8 +114,8 @@ RUN chown -R nodejs:nodejs /home/nodejs/.cache
 # Copy built application from builder stage
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 
-# Copy migrations
-COPY --chown=nodejs:nodejs migrations ./migrations
+# Copy compiled migrations from builder stage (includes .cjs files)
+COPY --from=builder --chown=nodejs:nodejs /app/migrations ./migrations
 
 # Create directories for runtime data
 RUN mkdir -p /app/uploads /app/logs /app/data /app/screenshots /app/traces /app/videos && \
