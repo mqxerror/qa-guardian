@@ -14,6 +14,8 @@ import {
   useReducedMotion,
   CardContent,
 } from '../components/ui';
+// Feature #468: Quality Health summary card
+import { QualityHealthCard } from '../components/dashboard';
 import {
   FolderKanban,
   TestTube2,
@@ -60,39 +62,57 @@ export function DashboardPage() {
           breadcrumbs={[{ label: 'Home' }, { label: 'Dashboard' }]}
         />
 
-        {/* Feature #336: Stats grid with StatCard components */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Feature #468: Quality Health summary card - prominent first card */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          <QualityHealthCard
+            data={{
+              passRate: displayStats.pass_rate,
+              totalRuns: displayStats.test_runs,
+              passedRuns: displayStats.passed_runs,
+              failedRuns: displayStats.failed_runs,
+              totalTests: displayStats.tests,
+              // Note: Vulnerability and flaky test data would come from additional API calls
+              // For now, we focus on the core pass rate metrics
+            }}
+            isLoading={isLoading}
+            className="lg:col-span-1"
+          />
+          {/* Placeholder for future expansion or additional summary cards */}
+          <div className="lg:col-span-2 grid gap-4 sm:grid-cols-2">
+            <StatCard
+              icon={FolderKanban}
+              value={displayStats.projects}
+              label="Projects"
+              className={!prefersReducedMotion ? 'delay-0' : ''}
+            />
+            <StatCard
+              icon={PlayCircle}
+              value={displayStats.test_runs}
+              label="Test Runs"
+              className={!prefersReducedMotion ? 'delay-1' : ''}
+            />
+          </div>
+        </div>
+
+        {/* Feature #336: Stats grid with StatCard components - remaining metrics */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
           {isLoading ? (
             <>
-              <div className="h-32 bg-muted/50 rounded-lg animate-pulse" />
-              <div className="h-32 bg-muted/50 rounded-lg animate-pulse" />
               <div className="h-32 bg-muted/50 rounded-lg animate-pulse" />
               <div className="h-32 bg-muted/50 rounded-lg animate-pulse" />
             </>
           ) : (
             <>
               <StatCard
-                icon={FolderKanban}
-                value={displayStats.projects}
-                label="Projects"
-                className={!prefersReducedMotion ? 'delay-0' : ''}
-              />
-              <StatCard
                 icon={FlaskConical}
                 value={displayStats.test_suites}
                 label="Test Suites"
-                className={!prefersReducedMotion ? 'delay-1' : ''}
+                className={!prefersReducedMotion ? 'delay-2' : ''}
               />
               <StatCard
                 icon={TestTube2}
                 value={displayStats.tests}
                 label="Total Tests"
-                className={!prefersReducedMotion ? 'delay-2' : ''}
-              />
-              <StatCard
-                icon={PlayCircle}
-                value={displayStats.test_runs}
-                label="Test Runs"
                 className={!prefersReducedMotion ? 'delay-3' : ''}
               />
             </>
