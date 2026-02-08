@@ -197,7 +197,7 @@ export function SecurityDashboardPage() {
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'CRITICAL': return 'bg-destructive text-white';
-      case 'HIGH': return 'bg-orange-500 text-white';
+      case 'HIGH': return 'bg-warning text-white';
       case 'MEDIUM': return 'bg-warning text-black';
       case 'LOW': return 'bg-primary text-white';
       default: return 'bg-muted text-muted-foreground';
@@ -206,10 +206,10 @@ export function SecurityDashboardPage() {
 
   const getSeverityBorderColor = (severity: string) => {
     switch (severity) {
-      case 'CRITICAL': return 'border-l-red-600';
-      case 'HIGH': return 'border-l-orange-500';
-      case 'MEDIUM': return 'border-l-yellow-500';
-      case 'LOW': return 'border-l-blue-500';
+      case 'CRITICAL': return 'border-l-destructive';
+      case 'HIGH': return 'border-l-warning';
+      case 'MEDIUM': return 'border-l-warning';
+      case 'LOW': return 'border-l-primary';
       default: return 'border-l-muted';
     }
   };
@@ -339,7 +339,7 @@ export function SecurityDashboardPage() {
                 </div>
                 <div className="rounded-lg border border-border bg-card p-6">
                   <h3 className="text-sm font-medium text-muted-foreground">High</h3>
-                  <p className="mt-2 text-3xl font-bold text-orange-500">{secretsData.summary.bySeverity.high}</p>
+                  <p className="mt-2 text-3xl font-bold text-warning">{secretsData.summary.bySeverity.high}</p>
                 </div>
                 <div className="rounded-lg border border-border bg-card p-6">
                   <h3 className="text-sm font-medium text-muted-foreground">Medium</h3>
@@ -394,7 +394,7 @@ export function SecurityDashboardPage() {
                     <button
                       onClick={() => scanForSecrets(false, true)}
                       disabled={isScanning}
-                      className="px-4 py-2 text-sm font-medium rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-white hover:bg-accent/80 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isScanning ? 'Scanning...' : 'Scan CI Configs'}
                     </button>
@@ -673,7 +673,7 @@ export function SecurityDashboardPage() {
                 </div>
                 <div className="rounded-lg border border-border bg-card p-6">
                   <h3 className="text-sm font-medium text-muted-foreground">High Findings</h3>
-                  <p className="mt-2 text-3xl font-bold text-orange-500">{trendsData.summary.latestFindings.high}</p>
+                  <p className="mt-2 text-3xl font-bold text-warning">{trendsData.summary.latestFindings.high}</p>
                   <p className={`mt-1 text-xs font-medium ${
                     trendsData.summary.changes.high > 0 ? 'text-destructive' :
                     trendsData.summary.changes.high < 0 ? 'text-success' :
@@ -772,7 +772,7 @@ export function SecurityDashboardPage() {
                     const percentage = Math.round((latest / total) * 100);
                     const colors = {
                       critical: { bar: 'bg-destructive', text: 'text-destructive' },
-                      high: { bar: 'bg-orange-500', text: 'text-orange-500' },
+                      high: { bar: 'bg-warning', text: 'text-warning' },
                       medium: { bar: 'bg-warning', text: 'text-warning' },
                       low: { bar: 'bg-primary', text: 'text-primary' },
                     };
@@ -852,7 +852,7 @@ export function SecurityDashboardPage() {
               </div>
               <div className="rounded-lg border border-border bg-card p-6">
                 <h3 className="text-sm font-medium text-muted-foreground">High</h3>
-                <p className="mt-2 text-3xl font-bold text-orange-500">{data.summary.bySeverity.high}</p>
+                <p className="mt-2 text-3xl font-bold text-warning">{data.summary.bySeverity.high}</p>
               </div>
               <div className="rounded-lg border border-border bg-card p-6">
                 <h3 className="text-sm font-medium text-muted-foreground">Medium</h3>

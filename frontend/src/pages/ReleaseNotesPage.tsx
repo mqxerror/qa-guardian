@@ -467,8 +467,8 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  <span className="text-xs text-muted-foreground">{delta.suiteName}</span>
  <span className={`ml-auto px-2 py-0.5 rounded text-xs ${
  delta.category === 'feature' ? 'bg-primary/10 text-primary' :
- delta.category === 'bugfix' ? 'bg-purple-100 text-purple-700' :
- delta.category === 'improvement' ? 'bg-cyan-100 text-cyan-700' :
+ delta.category === 'bugfix' ? 'bg-accent/10 text-accent' :
+ delta.category === 'improvement' ? 'bg-info/10 text-info' :
  'bg-muted text-foreground'
  }`}>
  {delta.category}
@@ -540,11 +540,11 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
 
  {/* Bug Fixes */}
  {generatedNotes.bugFixes.length > 0 && (
- <div className="p-4 rounded-lg bg-purple-50 border border-purple-200">
- <h4 className="font-medium text-purple-700 mb-2">🐛 Bug Fixes ({generatedNotes.bugFixes.length})</h4>
+ <div className="p-4 rounded-lg bg-accent/10 border border-accent/20">
+ <h4 className="font-medium text-accent mb-2">🐛 Bug Fixes ({generatedNotes.bugFixes.length})</h4>
  <ul className="space-y-2">
  {generatedNotes.bugFixes.map((b, i) => (
- <li key={i} className="text-sm text-purple-600">
+ <li key={i} className="text-sm text-accent">
  <span className="font-medium">{b.title}</span> ({b.severity}): {b.description}
  </li>
  ))}
@@ -554,11 +554,11 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
 
  {/* Improvements */}
  {generatedNotes.improvements.length > 0 && (
- <div className="p-4 rounded-lg bg-cyan-50 border border-cyan-200">
- <h4 className="font-medium text-cyan-700 mb-2">📈 Improvements ({generatedNotes.improvements.length})</h4>
+ <div className="p-4 rounded-lg bg-info/10 border border-info/20">
+ <h4 className="font-medium text-info mb-2">📈 Improvements ({generatedNotes.improvements.length})</h4>
  <ul className="space-y-2">
  {generatedNotes.improvements.map((i, idx) => (
- <li key={idx} className="text-sm text-cyan-600">
+ <li key={idx} className="text-sm text-info">
  <span className="font-medium">{i.title}</span>: {i.description}
  </li>
  ))}

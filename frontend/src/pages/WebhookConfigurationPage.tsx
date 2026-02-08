@@ -88,7 +88,7 @@ export function WebhookConfigurationPage() {
     { value: 'passed', label: 'Passed', color: 'bg-success/10 text-success' },
     { value: 'failed', label: 'Failed', color: 'bg-destructive/10 text-destructive' },
     { value: 'skipped', label: 'Skipped', color: 'bg-warning/10 text-warning' },
-    { value: 'error', label: 'Error', color: 'bg-orange-100 text-orange-700' },
+    { value: 'error', label: 'Error', color: 'bg-warning/10 text-warning' },
   ];
 
   // Fetch webhooks

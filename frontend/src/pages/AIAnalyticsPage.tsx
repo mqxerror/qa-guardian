@@ -356,7 +356,7 @@ export function AIAnalyticsPage() {
           <>
             {/* Savings Banner (always visible) */}
             {analytics && (
-              <div className="bg-gradient-to-r from-success to-emerald-600 text-white rounded-xl p-6 mb-8">
+              <div className="bg-gradient-to-r from-success to-success text-white rounded-xl p-6 mb-8">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div>
                     <h2 className="text-2xl font-bold">💰 You've Saved {formatCurrency(analytics.savings.total_saved)}</h2>

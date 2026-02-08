@@ -182,7 +182,7 @@ function StatusBadge({ status }: { status: 'passing' | 'warning' | 'failing' | '
     pending: 'bg-warning/20 text-warning',
     failing: 'bg-destructive/20 text-destructive',
     failed: 'bg-destructive/20 text-destructive',
-    diff: 'bg-orange-500/20 text-orange-400',
+    diff: 'bg-warning/20 text-warning',
     skipped: 'bg-muted text-muted-foreground',
   };
 
@@ -198,7 +198,7 @@ function ImpactBadge({ impact }: { impact: string }) {
   const colors: Record<string, string> = {
     critical: 'bg-destructive text-white',
     high: 'bg-destructive text-white',
-    serious: 'bg-orange-500 text-white',
+    serious: 'bg-warning text-white',
     medium: 'bg-warning text-white',
     moderate: 'bg-warning text-white',
     low: 'bg-primary text-white',
@@ -467,9 +467,9 @@ export function ReportPage() {
                     <div className="text-2xl font-bold text-success">{report.sections.visual.summary.noChange}</div>
                     <div className="text-sm text-success">No Change</div>
                   </div>
-                  <div className="bg-orange-50 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-orange-700">{report.sections.visual.summary.diffsDetected}</div>
-                    <div className="text-sm text-orange-600">Diffs Detected</div>
+                  <div className="bg-warning/10 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-warning">{report.sections.visual.summary.diffsDetected}</div>
+                    <div className="text-sm text-warning">Diffs Detected</div>
                   </div>
                   <div className="bg-primary/5 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-primary">{report.sections.visual.summary.approved}</div>
@@ -518,9 +518,9 @@ export function ReportPage() {
                     <div className="text-2xl font-bold text-destructive">{report.sections.accessibility.summary.critical}</div>
                     <div className="text-sm text-destructive">Critical</div>
                   </div>
-                  <div className="bg-orange-100 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-orange-700">{report.sections.accessibility.summary.serious}</div>
-                    <div className="text-sm text-orange-600">Serious</div>
+                  <div className="bg-warning/10 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-warning">{report.sections.accessibility.summary.serious}</div>
+                    <div className="text-sm text-warning">Serious</div>
                   </div>
                   <div className="bg-warning/10 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-warning">{report.sections.accessibility.summary.moderate}</div>

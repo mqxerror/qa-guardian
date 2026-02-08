@@ -809,7 +809,7 @@ export default function SharedTestRunPage() {
  <div className="flex items-center gap-1 mt-1">
  <span className={`px-1.5 py-0.5 text-xs rounded ${
  screenshot.testType === 'E2E' ? 'bg-primary/80' :
- screenshot.testType === 'Visual' ? 'bg-purple-500/80' :
+ screenshot.testType === 'Visual' ? 'bg-accent/80' :
  'bg-success/80'
  }`}>
  {screenshot.testType}
@@ -909,7 +909,7 @@ export default function SharedTestRunPage() {
  <div className="flex items-center justify-center gap-3 mt-2">
  <span className={`px-2 py-0.5 text-sm rounded ${
  galleryScreenshots[lightboxIndex].testType === 'E2E' ? 'bg-primary' :
- galleryScreenshots[lightboxIndex].testType === 'Visual' ? 'bg-purple-500' :
+ galleryScreenshots[lightboxIndex].testType === 'Visual' ? 'bg-accent' :
  'bg-success'
  } text-white`}>
  {galleryScreenshots[lightboxIndex].testType}

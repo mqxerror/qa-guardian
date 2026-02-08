@@ -116,15 +116,15 @@ export function TestImprovementAnalyzerPage() {
  const getScoreColor = (score: number) => {
  if (score >= 90) return 'text-success';
  if (score >= 75) return 'text-warning';
- if (score >= 60) return 'text-orange-600';
+ if (score >= 60) return 'text-warning';
  return 'text-destructive';
  };
 
  const getScoreGradient = (score: number) => {
- if (score >= 90) return 'from-success to-emerald-500';
+ if (score >= 90) return 'from-success to-success';
  if (score >= 75) return 'from-warning to-warning';
- if (score >= 60) return 'from-orange-500 to-warning';
- return 'from-destructive to-orange-500';
+ if (score >= 60) return 'from-warning to-warning';
+ return 'from-destructive to-warning';
  };
 
  return (

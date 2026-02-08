@@ -800,7 +800,7 @@ Respond in this JSON format:
  <button
  onClick={() => handleAnalyzeChange(change)}
  disabled={analyzingChangeId === key}
- className="inline-flex items-center gap-1 text-xs text-purple-600 hover:text-purple-700 disabled:opacity-50"
+ className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent/80 disabled:opacity-50"
  >
  {analyzingChangeId === key ? (
  <>
@@ -823,12 +823,12 @@ Respond in this JSON format:
  {changeAnalyses[key] && (
  <div className="mt-4 border-t border-border pt-4">
  <div className="flex items-center gap-2 mb-3">
- <span className="text-purple-500">🤖</span>
+ <span className="text-accent">🤖</span>
  <h4 className="text-sm font-medium text-foreground">AI Visual Impact Analysis</h4>
  <span className={`ml-auto px-2 py-0.5 text-xs font-bold uppercase rounded ${
  changeAnalyses[key].severity === 'minor' ? 'bg-success/10 text-success' :
  changeAnalyses[key].severity === 'moderate' ? 'bg-warning/10 text-warning' :
- changeAnalyses[key].severity === 'major' ? 'bg-orange-100 text-orange-700' :
+ changeAnalyses[key].severity === 'major' ? 'bg-warning/10 text-warning' :
  'bg-destructive/10 text-destructive'
  }`}>
  {changeAnalyses[key].severity}
@@ -840,8 +840,8 @@ Respond in this JSON format:
 
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* Change Type */}
- <div className="rounded-md bg-purple-500/10 border border-purple-500/20 p-3">
- <p className="text-xs font-medium text-purple-400 mb-1">📊 Change Type</p>
+ <div className="rounded-md bg-accent/10 border border-accent/20 p-3">
+ <p className="text-xs font-medium text-accent mb-1">📊 Change Type</p>
  <p className="text-sm font-medium text-foreground">{changeAnalyses[key].change_type.category}</p>
  <p className="text-xs text-muted-foreground">{changeAnalyses[key].change_type.description}</p>
  </div>

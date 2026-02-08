@@ -498,7 +498,7 @@ export default function TestRunResultPage() {
  case 'baseline': return 'bg-success/10 text-success';
  case 'diff': return 'bg-destructive/10 text-destructive';
  case 'step_before': return 'bg-warning/10 text-warning';
- case 'step_after': return 'bg-purple-100 text-purple-700';
+ case 'step_after': return 'bg-accent/10 text-accent';
  default: return 'bg-muted text-foreground';
  }
  };

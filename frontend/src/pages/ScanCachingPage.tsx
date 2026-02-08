@@ -305,7 +305,7 @@ export function ScanCachingPage() {
             <div className="text-sm text-muted-foreground">Valid</div>
           </div>
           <div className="bg-card border border-border rounded-lg shadow p-4 text-center">
-            <div className="text-3xl font-bold text-purple-400">{stats.total_cache_hits}</div>
+            <div className="text-3xl font-bold text-accent">{stats.total_cache_hits}</div>
             <div className="text-sm text-muted-foreground">Cache Hits</div>
           </div>
           <div className="bg-card border border-border rounded-lg shadow p-4 text-center">
@@ -313,7 +313,7 @@ export function ScanCachingPage() {
             <div className="text-sm text-muted-foreground">Hit Rate</div>
           </div>
           <div className="bg-card border border-border rounded-lg shadow p-4 text-center">
-            <div className="text-3xl font-bold text-cyan-400">{formatDuration(stats.total_time_saved_ms)}</div>
+            <div className="text-3xl font-bold text-info">{formatDuration(stats.total_time_saved_ms)}</div>
             <div className="text-sm text-muted-foreground">Time Saved</div>
           </div>
         </div>

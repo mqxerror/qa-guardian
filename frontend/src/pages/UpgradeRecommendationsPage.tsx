@@ -86,7 +86,7 @@ const riskBorderColors = {
 
 const severityColors = {
   critical: 'text-destructive',
-  high: 'text-orange-500',
+  high: 'text-warning',
   medium: 'text-warning',
   low: 'text-primary',
 };

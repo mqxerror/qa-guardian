@@ -188,7 +188,7 @@ function AIRouterPage() {
       </div>
 
       {/* Provider Flow Diagram */}
-      <div className="mb-6 bg-gradient-to-r from-indigo-500 via-accent to-pink-500 rounded-lg p-6 text-white">
+      <div className="mb-6 bg-gradient-to-r from-accent via-accent to-primary rounded-lg p-6 text-white">
         <h2 className="text-lg font-bold mb-4">Request Flow</h2>
         <div className="flex items-center justify-center gap-4">
           <div className="bg-white/20 rounded-lg p-4 text-center"><div className="text-2xl mb-1">📨</div><div className="font-medium">Request</div></div>

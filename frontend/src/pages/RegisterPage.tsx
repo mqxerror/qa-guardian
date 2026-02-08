@@ -161,7 +161,7 @@ export function RegisterPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-gradient-to-b from-white to-gray-400 bg-clip-text text-3xl font-bold text-transparent"
+              className="bg-gradient-to-b from-white to-muted-foreground bg-clip-text text-3xl font-bold text-transparent"
             >
               Create Account
             </m.h2>

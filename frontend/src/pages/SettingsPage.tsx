@@ -238,7 +238,7 @@ function TeamTabContent() {
 
  const getRoleBadgeColor = (role: string) => {
  switch (role) {
- case 'owner': return 'bg-purple-100 text-purple-800';
+ case 'owner': return 'bg-accent/10 text-accent';
  case 'admin': return 'bg-primary/10 text-primary';
  case 'developer': return 'bg-success/10 text-success';
  default: return 'bg-muted text-foreground';
@@ -1704,7 +1704,7 @@ function AIConfigurationTabContent() {
  const getSpeedBadge = (speed: 'fast' | 'medium' | 'slow') => {
  switch (speed) {
  case 'fast': return 'bg-primary/10 text-primary';
- case 'medium': return 'bg-purple-100 text-purple-800';
+ case 'medium': return 'bg-accent/10 text-accent';
  case 'slow': return 'bg-muted text-foreground';
  }
  };

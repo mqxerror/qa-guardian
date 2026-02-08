@@ -668,7 +668,7 @@ export function TestDocumentationPage() {
  version.changeType === 'test_modified' ? 'bg-warning/10 text-warning' :
  version.changeType === 'test_added' ? 'bg-success/10 text-success' :
  version.changeType === 'test_removed' ? 'bg-destructive/10 text-destructive' :
- 'bg-purple-100 text-purple-700'
+ 'bg-accent/10 text-accent'
  }`}>
  {version.changeType === 'initial' ? '🆕 Initial' :
  version.changeType === 'test_modified' ? '✏️ Modified' :
