@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import { devLog } from '../utils/logger';
+// import { devLog } from '../utils/logger'; // Unused
 import { Layout } from '../components/Layout';
 
 // Types for test improvement analysis

@@ -15,7 +15,7 @@ import {
  getSlashCommandHelpText,
  SlashCommandSuggestion,
 } from '../components/mcp-chat';
-import { UnifiedAIService } from '../services/UnifiedAIService';
+// import { UnifiedAIService } from '../services/UnifiedAIService'; // Migrated to React Query hooks
 import { useAIStatus, useChatMutation } from '../hooks/api/useMCPChat';
 import {
  useAIModelPreferencesStore,

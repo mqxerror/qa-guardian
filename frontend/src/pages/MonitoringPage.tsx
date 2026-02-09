@@ -3,7 +3,7 @@
 // Feature #336: Dark-first design system redesign
 // Synthetic monitoring: uptime checks, transaction monitoring, performance testing
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom"; // Unused
 import { Layout } from "../components/Layout";
 import { useAuthStore } from "../stores/authStore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";

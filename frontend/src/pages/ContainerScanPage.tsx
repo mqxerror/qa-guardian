@@ -17,7 +17,7 @@ import {
   RefreshCw,
   ArrowLeft,
   CheckCircle,
-  XCircle
+  // XCircle, // Unused
 } from 'lucide-react';
 
 interface Vulnerability {

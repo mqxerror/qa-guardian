@@ -21,7 +21,7 @@ import {
   useStartRun, useCancelRun, useStartSuiteRun, useDeleteSuite,
 } from '../hooks/api';
 import {
-  TestType, TestStep, DeleteSuiteModal, DeleteTestModal,
+  TestType, DeleteSuiteModal, DeleteTestModal, // TestStep unused - referenced in comment only
   ImportTestsModal, EditSelectorModal, ExpandedScreenshotModal, InsertTemplateModal,
   GeneratedTestPreviewModal, RecordTestModal, ReviewRecordedTestModal,
   ParallelizationPanel, SuiteHeaderActions, HumanReviewPanel, SuiteRunResults,

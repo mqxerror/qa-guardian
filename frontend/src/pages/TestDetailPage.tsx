@@ -14,7 +14,7 @@ import { toast } from '../stores/toastStore';
 import { logger } from '../utils/logger';
 // Feature #337: Design system components
 import {
-  PageHeader,
+  // PageHeader, // Unused
   AnimatedCard,
   StatusPill,
   MetadataRow,

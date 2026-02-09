@@ -12,11 +12,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 // Feature #336: Design system components
 import {
   PageHeader,
-  AnimatedCard,
+  // AnimatedCard, // Unused - using simple divs for performance
   SectionHeader,
-  StatusPill,
-  CardContent,
-  useReducedMotion,
+  // StatusPill, // Unused
+  // CardContent, // Unused
+  // useReducedMotion, // Unused
   Tabs,
   TabsList,
   TabsTrigger,

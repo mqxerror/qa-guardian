@@ -29,7 +29,8 @@ function AIRouterPage() {
   const [config, setConfig] = useState<AIRouterConfig | null>(null);
   const [stats, setStats] = useState<RouterStats | null>(null);
   const [circuitBreakers, setCircuitBreakers] = useState<CircuitBreakerState[]>([]);
-  const [logs, setLogs] = useState<ProviderSwitchLog[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [logs, setLogs] = useState<ProviderSwitchLog[]>([]); // Reserved for logs display panel
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);

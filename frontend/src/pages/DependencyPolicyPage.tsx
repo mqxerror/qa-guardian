@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { toast } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
-import { ArrowLeft, Shield, Plus, Play, AlertTriangle, Check, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Shield, Plus, Play, Check, X, ChevronDown, ChevronRight } from 'lucide-react'; // AlertTriangle unused
 
 // Feature #770: Dependency Policy Enforcement interfaces
 interface DependencyPolicy {

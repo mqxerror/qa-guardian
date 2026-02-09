@@ -6,7 +6,7 @@ import { LazyMotionWrapper, m } from '../components/LazyMotion';
 import { useAuthStore } from '../stores/authStore';
 import { getErrorMessage } from '../utils/errorHandling';
 import { BackgroundBeams, Input } from '../components/aceternity';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react'; // Loader2 unused
 import { useReducedMotion } from '../components/ui';
 
 export function LoginPage() {

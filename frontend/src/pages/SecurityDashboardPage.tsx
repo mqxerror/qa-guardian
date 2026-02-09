@@ -20,7 +20,7 @@ import {
   useScanSecrets,
   useVerifySecret,
   useInvalidateSecurity,
-  DashboardFinding,
+  // DashboardFinding, // Unused
   SecurityDashboardData,
   TrendsData,
   SecretsData,

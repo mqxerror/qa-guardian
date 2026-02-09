@@ -3,7 +3,7 @@
 // Feature #58: Migrated to React Query for parallel data loading
 // Feature #125: Added skeleton loaders for better perceived performance
 // Feature #337: Dark-first design system redesign
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react"; // useCallback unused
 import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { SkeletonProjectDetail } from "../components/ui/Skeleton";

@@ -10,7 +10,7 @@ import {
   AlertTriangle,
   AlertCircle,
   CheckCircle,
-  Shield,
+  // Shield, // Unused
   Package,
   ExternalLink,
   RefreshCw,

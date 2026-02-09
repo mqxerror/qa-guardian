@@ -73,7 +73,8 @@ const TOOL_CATEGORIES = [
 ];
 
 export function AIAgentWorkspacePage() {
- const { token } = useAuthStore();
+ // eslint-disable-next-line @typescript-eslint/no-unused-vars
+ const { token } = useAuthStore(); // Reserved for authenticated API calls
  const [tasks, setTasks] = useState<AgentTask[]>([]);
  const [customPrompt, setCustomPrompt] = useState('');
  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);

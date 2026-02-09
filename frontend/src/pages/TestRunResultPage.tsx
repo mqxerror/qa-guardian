@@ -5,7 +5,7 @@
  */
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // useParams unused
 import { useAuthStore } from '../stores/authStore';
 import { useOrganizationBrandingStore } from '../stores/organizationBrandingStore';
 // Feature #46: Recharts and jsPDF imports removed - now used only in extracted components

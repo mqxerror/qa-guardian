@@ -13,7 +13,7 @@ import {
  useTestSuitesForSchedule,
  useCreateSchedule,
  useToggleSchedule,
- type Schedule,
+ // type Schedule, // Unused - using hook return type inference
  type CreateScheduleInput,
 } from '../hooks/api/useSchedules';
 

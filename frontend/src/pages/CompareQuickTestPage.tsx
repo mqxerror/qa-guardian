@@ -21,7 +21,7 @@ import {
   CardContent,
 } from '../components/ui';
 import {
-  Zap,
+  // Zap, // Unused
   Globe,
   Shield,
   Gauge,

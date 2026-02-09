@@ -4,7 +4,7 @@ import { Layout } from '../components/Layout';
 // Feature #70: Import React Query hooks for dashboard caching
 import { useDashboardStats } from '../hooks/api/useDashboard';
 // Feature #125: Skeleton loaders for better perceived performance
-import { Skeleton, SkeletonCard } from '../components/ui/Skeleton';
+import { SkeletonCard } from '../components/ui/Skeleton'; // Skeleton unused
 // Feature #336: Design system components
 import {
   PageHeader,
