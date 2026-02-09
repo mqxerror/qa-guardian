@@ -3,6 +3,7 @@
 // Includes industry benchmarks, cross-project patterns, personalized insights, team skills, learning stats, releases
 
 import { FastifyInstance } from 'fastify';
+import { safeJsonParseOrPassthrough } from '../../utils/index.js';
 
 // Type definitions for personalized insights
 interface PersonalizedInsight {
@@ -70,9 +71,10 @@ export async function aiInsightsRoutes(app: FastifyInstance) {
     let accessibilityCompliance = 0;
     if (a11yRuns.length > 0) {
       const a11yScores = a11yRuns.map(r => {
-        const results = typeof r.accessibility_results === 'string'
-          ? JSON.parse(r.accessibility_results as string)
-          : r.accessibility_results;
+        const results = safeJsonParseOrPassthrough(
+          r.accessibility_results as string | { score?: number; accessibility_score?: number },
+          {} as { score?: number; accessibility_score?: number }
+        );
         return (results as { score?: number; accessibility_score?: number })?.score ??
                (results as { score?: number; accessibility_score?: number })?.accessibility_score ?? 0;
       }).filter((s: number) => s > 0);

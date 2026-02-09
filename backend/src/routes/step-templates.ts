@@ -9,6 +9,8 @@ import crypto from 'crypto';
 import { TestStep } from './test-suites/types.js';
 // Feature #484: Pino structured logging
 import { createLogger } from '../services/logger.js';
+// Feature #509: Safe JSON parsing
+import { safeJsonParseOrPassthrough } from '../utils/index.js';
 
 const log = createLogger('step-templates');
 
@@ -99,7 +101,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       return reply.send({
         templates: result.rows.map(row => ({
           ...row,
-          steps: typeof row.steps === 'string' ? JSON.parse(row.steps) : row.steps,
+          steps: safeJsonParseOrPassthrough(row.steps, [] as TestStep[]),
           tags: row.tags || [],
         })),
         total: result.rowCount ?? 0,
@@ -131,7 +133,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       return reply.send({
         template: {
           ...row,
-          steps: typeof row.steps === 'string' ? JSON.parse(row.steps) : row.steps,
+          steps: safeJsonParseOrPassthrough(row.steps, [] as TestStep[]),
           tags: row.tags || [],
         },
       });
@@ -176,7 +178,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       return reply.status(201).send({
         template: {
           ...row,
-          steps: typeof row.steps === 'string' ? JSON.parse(row.steps) : row.steps,
+          steps: safeJsonParseOrPassthrough(row.steps, [] as TestStep[]),
           tags: row.tags || [],
         },
       });
@@ -235,7 +237,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       return reply.send({
         template: {
           ...row,
-          steps: typeof row.steps === 'string' ? JSON.parse(row.steps) : row.steps,
+          steps: safeJsonParseOrPassthrough(row.steps, [] as TestStep[]),
           tags: row.tags || [],
         },
       });
@@ -311,7 +313,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       }
 
       // Parse existing config and append steps
-      const config = typeof test.config === 'string' ? JSON.parse(test.config) : (test.config || {});
+      const config = safeJsonParseOrPassthrough(test.config, {} as Record<string, unknown>);
       const existingSteps = config.steps || [];
       const startOrder = existingSteps.length;
 

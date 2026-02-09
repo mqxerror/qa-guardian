@@ -5,6 +5,8 @@ import crypto from 'crypto';
 import { authenticate, requireRoles, JwtPayload } from '../../middleware/auth.js';
 import { McpConnection, OrgParams } from './types.js';
 import { createLogger } from '../../services/logger.js';
+// Feature #509: Safe JSON parsing
+import { safeJsonParseOrPassthrough } from '../../utils/index.js';
 
 const log = createLogger('mcp-routes');
 
@@ -167,7 +169,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
             organization_id: row.organization_id,
             connected_at: new Date(row.connected_at),
             last_activity_at: new Date(row.last_activity_at),
-            client_info: typeof row.client_info === 'string' ? JSON.parse(row.client_info) : row.client_info,
+            client_info: safeJsonParseOrPassthrough(row.client_info, { name: 'unknown', version: '0.0.0' }),
             ip_address: row.ip_address,
           }));
         }

@@ -206,6 +206,53 @@ export function groupBy<T, K extends string | number>(
 }
 
 // ============================================
+// JSON Parsing Utilities
+// Feature #509: Safe JSON.parse wrappers
+// ============================================
+
+/**
+ * Safely parses a JSON string with type safety and fallback.
+ * Returns the fallback value if parsing fails instead of throwing.
+ *
+ * @param input - The JSON string to parse
+ * @param fallback - The fallback value to return on parse failure
+ * @returns The parsed value or the fallback
+ *
+ * @example
+ * safeJsonParse('{"name": "test"}', {}) // { name: 'test' }
+ * safeJsonParse('invalid json', {}) // {}
+ * safeJsonParse('null', []) // null (valid JSON)
+ */
+export function safeJsonParse<T>(input: string, fallback: T): T {
+  try {
+    return JSON.parse(input) as T;
+  } catch {
+    log.warn({ input: input.substring(0, 100) }, 'Failed to parse JSON, using fallback');
+    return fallback;
+  }
+}
+
+/**
+ * Safely parses a JSON string or returns the input if already an object.
+ * Useful for database columns that may be stored as JSON strings or objects.
+ *
+ * @param input - The JSON string or object
+ * @param fallback - The fallback value to return on parse failure
+ * @returns The parsed/original value or the fallback
+ *
+ * @example
+ * safeJsonParseOrPassthrough('{"id": 1}', {}) // { id: 1 }
+ * safeJsonParseOrPassthrough({ id: 1 }, {}) // { id: 1 }
+ * safeJsonParseOrPassthrough('invalid', {}) // {}
+ */
+export function safeJsonParseOrPassthrough<T>(input: string | T, fallback: T): T {
+  if (typeof input !== 'string') {
+    return input;
+  }
+  return safeJsonParse(input, fallback);
+}
+
+// ============================================
 // Validation Utilities
 // ============================================
 
