@@ -1,0 +1,203 @@
+/**
+ * Quick Test Types
+ * Feature #514: Extracted from QuickTestPage.tsx
+ * Shared types used across quick-test components
+ */
+
+import type { QuickTestSummary } from '../../hooks/useQuickTestSocket';
+
+// ============================================================
+// Wave Types
+// ============================================================
+
+export interface WaveStep {
+  name: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  duration?: number;
+  result?: string;
+}
+
+export interface WaveData {
+  wave: number;
+  name: string;
+  icon: React.ElementType;
+  status: 'waiting' | 'running' | 'completed' | 'failed';
+  steps: WaveStep[];
+  startedAt?: Date;
+  completedAt?: Date;
+  duration?: number;
+  data?: Record<string, unknown>;
+  error?: string;
+  expanded: boolean;
+}
+
+// ============================================================
+// Result Types
+// ============================================================
+
+export interface QuickTestResult {
+  runId: string;
+  url: string;
+  timestamp: Date;
+  status: 'running' | 'completed' | 'failed';
+  summary?: {
+    healthScore: number;
+    performanceScore: number;
+    securityScore: number;
+    overallScore: number;
+  };
+}
+
+export interface HistoryEntry {
+  runId: string;
+  url: string;
+  timestamp: Date;
+  score?: number;
+}
+
+// ============================================================
+// AI Analysis Types
+// ============================================================
+
+export interface TestSuggestion {
+  type: string;
+  name: string;
+  description: string;
+  priority: string;
+  source?: 'vision' | 'metrics';
+}
+
+export interface UXIssue {
+  severity: string;
+  issue: string;
+  recommendation: string;
+  source?: 'vision' | 'metrics';
+}
+
+export interface AIAnalysisData {
+  testSuggestions?: TestSuggestion[];
+  uxIssues?: UXIssue[];
+  accessibilityRecommendations?: Array<{
+    recommendation: string;
+    source?: 'vision' | 'metrics';
+  }> | string[];
+  summary?: string;
+  visionAnalysisIncluded?: boolean;
+}
+
+// ============================================================
+// Accessibility Types (Wave 5)
+// ============================================================
+
+export interface AccessibilityViolation {
+  id: string;
+  impact: string;
+  description: string;
+  help: string;
+  helpUrl: string;
+  nodes: Array<{
+    html: string;
+    target: string[];
+    failureSummary: string;
+  }>;
+}
+
+export interface AccessibilityData {
+  violations: AccessibilityViolation[];
+  passes: number;
+  incomplete: number;
+  violationCount: number;
+}
+
+// ============================================================
+// API Discovery Types (Wave 6)
+// ============================================================
+
+export interface APIEndpoint {
+  path: string;
+  method: string;
+  status: number;
+  statusText: string;
+  hasAuth: boolean;
+  authType?: string;
+}
+
+export interface APIDiscoveryData {
+  hasOpenAPI: boolean;
+  openAPIUrl?: string;
+  openAPIVersion?: string;
+  endpoints: APIEndpoint[];
+  totalEndpoints: number;
+  protectedEndpoints: number;
+  publicEndpoints: number;
+}
+
+// ============================================================
+// Modal Types
+// ============================================================
+
+export interface ScreenshotModalState {
+  isOpen: boolean;
+  url: string | null;
+  type: 'desktop' | 'mobile' | null;
+}
+
+export interface ScheduleModalState {
+  isOpen: boolean;
+  frequency: '1h' | '6h' | '12h' | '24h' | 'weekly';
+  notifyOnDrop: boolean;
+  threshold: number;
+  isSubmitting: boolean;
+  error: string | null;
+  success: boolean;
+}
+
+export interface CreateTestSuiteModalState {
+  isOpen: boolean;
+  testSuggestions: TestSuggestion[] | undefined;
+}
+
+// ============================================================
+// Props Types
+// ============================================================
+
+export interface WaveCardProps {
+  wave: WaveData;
+  onToggleExpand: () => void;
+  onScreenshotClick?: (url: string, type: 'desktop' | 'mobile') => void;
+  onCreateTestSuite?: (testSuggestions: TestSuggestion[]) => void;
+}
+
+export interface ScoreDisplayProps {
+  summary: QuickTestSummary | null;
+}
+
+export interface ScreenshotModalProps {
+  isOpen: boolean;
+  url: string | null;
+  type: 'desktop' | 'mobile' | null;
+  onClose: () => void;
+}
+
+export interface ScheduleModalProps {
+  isOpen: boolean;
+  state: ScheduleModalState;
+  onClose: () => void;
+  onSubmit: () => Promise<void>;
+  onUpdateState: (updates: Partial<ScheduleModalState>) => void;
+}
+
+export interface CreateTestSuiteModalProps {
+  isOpen: boolean;
+  testSuggestions: TestSuggestion[] | undefined;
+  onClose: () => void;
+  targetUrl: string;
+  token: string | null;
+}
+
+// ============================================================
+// Helper Function Types
+// ============================================================
+
+export type ScoreColorFn = (score: number) => string;
+export type ScoreBgColorFn = (score: number) => string;

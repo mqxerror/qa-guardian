@@ -60,54 +60,36 @@ import {
   FolderPlus,
   Plus,
 } from 'lucide-react';
+// Feature #514: Import extracted quick-test components and utilities
+import {
+  // Types - Note: AccessibilityData, APIDiscoveryData kept local (different structure)
+  type WaveStep,
+  type WaveData,
+  type QuickTestResult,
+  type HistoryEntry,
+  type AIAnalysisData,
+  // Utilities
+  isValidUrl,
+  getScoreColor,
+  getScoreBgColor,
+  RECENT_URLS_KEY,
+  MAX_RECENT_URLS,
+  HISTORY_KEY,
+  MAX_HISTORY,
+  // Badge components
+  SourceBadge,
+  PriorityBadge,
+  SeverityBadge,
+  ImpactBadge,
+} from '../components/quick-test';
 
 // ============================================================
-// Types
+// Types - Feature #514: Moved to ../components/quick-test/types.ts
+// WaveStep, WaveData, QuickTestResult, HistoryEntry now imported
 // ============================================================
 
-interface WaveStep {
-  name: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  duration?: number;
-  result?: string;
-}
-
-interface WaveData {
-  wave: number;
-  name: string;
-  icon: React.ElementType;
-  status: 'waiting' | 'running' | 'completed' | 'failed';
-  steps: WaveStep[];
-  startedAt?: Date;
-  completedAt?: Date;
-  duration?: number;
-  data?: Record<string, unknown>;
-  error?: string;
-  expanded: boolean;
-}
-
-interface QuickTestResult {
-  runId: string;
-  url: string;
-  timestamp: Date;
-  status: 'running' | 'completed' | 'failed';
-  summary?: {
-    healthScore: number;
-    performanceScore: number;
-    securityScore: number;
-    overallScore: number;
-  };
-}
-
-interface HistoryEntry {
-  runId: string;
-  url: string;
-  timestamp: Date;
-  score?: number;
-}
-
 // ============================================================
-// Constants
+// Constants - Feature #514: Storage keys moved to ../components/quick-test/utils.ts
 // ============================================================
 
 const WAVE_DEFINITIONS = [
@@ -181,35 +163,9 @@ const WAVE_DEFINITIONS = [
   },
 ];
 
-const RECENT_URLS_KEY = 'qa-guardian-quick-test-urls';
-const MAX_RECENT_URLS = 5;
-const HISTORY_KEY = 'qa-guardian-quick-test-history';
-const MAX_HISTORY = 10;
-
-// ============================================================
-// Helper Functions
-// ============================================================
-
-function isValidUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return ['http:', 'https:'].includes(parsed.protocol);
-  } catch {
-    return false;
-  }
-}
-
-function getScoreColor(score: number): string {
-  if (score >= 80) return 'text-success';
-  if (score >= 60) return 'text-warning';
-  return 'text-destructive';
-}
-
-function getScoreBgColor(score: number): string {
-  if (score >= 80) return 'bg-success/20';
-  if (score >= 60) return 'bg-warning/20';
-  return 'bg-destructive/20';
-}
+// Feature #514: Constants and helpers moved to ../components/quick-test/utils.ts
+// RECENT_URLS_KEY, MAX_RECENT_URLS, HISTORY_KEY, MAX_HISTORY - now imported
+// isValidUrl, getScoreColor, getScoreBgColor - now imported
 
 // ============================================================
 // Wave Card Component
@@ -420,72 +376,9 @@ function WaveCard({ wave, onToggleExpand, onScreenshotClick, onCreateTestSuite }
 
 // ============================================================
 // Feature #467: AI Analysis Details Component
+// Feature #514: AIAnalysisData, SourceBadge, PriorityBadge, SeverityBadge
+// moved to ../components/quick-test/
 // ============================================================
-
-interface AIAnalysisData {
-  testSuggestions?: Array<{
-    type: string;
-    name: string;
-    description: string;
-    priority: string;
-    source?: 'vision' | 'metrics';
-  }>;
-  uxIssues?: Array<{
-    severity: string;
-    issue: string;
-    recommendation: string;
-    source?: 'vision' | 'metrics';
-  }>;
-  accessibilityRecommendations?: Array<{
-    recommendation: string;
-    source?: 'vision' | 'metrics';
-  }> | string[];
-  summary?: string;
-  visionAnalysisIncluded?: boolean;
-}
-
-function SourceBadge({ source }: { source?: 'vision' | 'metrics' }) {
-  if (source === 'vision') {
-    return (
-      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-purple-500/20 text-purple-400">
-        <Eye className="w-3 h-3" />
-        Vision
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-blue-500/20 text-blue-400">
-      <BarChart2 className="w-3 h-3" />
-      Metrics
-    </span>
-  );
-}
-
-function PriorityBadge({ priority }: { priority: string }) {
-  const colors: Record<string, string> = {
-    high: 'bg-destructive/20 text-destructive',
-    medium: 'bg-warning/20 text-warning',
-    low: 'bg-success/20 text-success',
-  };
-  return (
-    <span className={`px-1.5 py-0.5 rounded text-xs ${colors[priority] || 'bg-muted text-muted-foreground'}`}>
-      {priority}
-    </span>
-  );
-}
-
-function SeverityBadge({ severity }: { severity: string }) {
-  const colors: Record<string, string> = {
-    critical: 'bg-destructive/20 text-destructive',
-    major: 'bg-warning/20 text-warning',
-    minor: 'bg-muted text-muted-foreground',
-  };
-  return (
-    <span className={`px-1.5 py-0.5 rounded text-xs ${colors[severity] || 'bg-muted text-muted-foreground'}`}>
-      {severity}
-    </span>
-  );
-}
 
 interface AIAnalysisDetailsProps {
   data: AIAnalysisData;
@@ -646,19 +539,7 @@ interface AccessibilityData {
   axeVersion: string;
 }
 
-function ImpactBadge({ impact }: { impact: string }) {
-  const colors: Record<string, string> = {
-    critical: 'bg-red-500/20 text-red-400',
-    serious: 'bg-orange-500/20 text-orange-400',
-    moderate: 'bg-yellow-500/20 text-yellow-400',
-    minor: 'bg-blue-500/20 text-blue-400',
-  };
-  return (
-    <span className={`px-1.5 py-0.5 rounded text-xs ${colors[impact] || 'bg-muted text-muted-foreground'}`}>
-      {impact}
-    </span>
-  );
-}
+// Feature #514: ImpactBadge moved to ../components/quick-test/badges.tsx
 
 function AccessibilityDetails({ data }: { data: AccessibilityData }) {
   const hasViolations = data.violations && data.violations.length > 0;
