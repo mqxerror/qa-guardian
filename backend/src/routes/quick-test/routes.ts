@@ -19,6 +19,9 @@ import { logAuditEntry } from '../audit-logs.js';
 import { validateURLForSSRF } from '../../utils/index.js';
 // Feature #465: PostgreSQL persistence for history endpoint
 import { getQuickTestHistory } from '../../services/repositories/quick-test.js';
+// Feature #532: Save Quick Test as Test Suite
+import { createTestSuite, createTest } from '../../services/repositories/test-suites.js';
+import type { TestSuite, Test } from '../test-suites/types.js';
 // Feature #466: Screenshot serving
 // Feature #478: Add signed URL validation for screenshot auth
 import { readScreenshot, screenshotExists, validateSignedScreenshotToken, type ScreenshotType } from '../../services/quick-test-screenshots.js';
@@ -66,6 +69,13 @@ interface ScreenshotParams {
 // Feature #478: Query params for signed screenshot URLs
 interface ScreenshotQuerystring {
   token?: string;
+}
+
+// Feature #532: Save Quick Test as Test Suite request body
+interface SaveAsSuiteBody {
+  name: string;
+  projectId?: string;
+  description?: string;
 }
 
 const quickTestRoutes: FastifyPluginAsync = async (app) => {
@@ -884,6 +894,293 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
         .send(imageBuffer);
     }
   );
+
+  /**
+   * POST /api/v1/quick-test/:runId/save-as-suite
+   * Feature #532: Convert Quick Test results into a reusable test suite
+   * Creates a test suite with individual test cases per wave/check
+   */
+  app.post<{ Params: QuickTestParams; Body: SaveAsSuiteBody }>(
+    '/api/v1/quick-test/:runId/save-as-suite',
+    {
+      preHandler: [authenticate, requireScopes(['write'])],
+      schema: {
+        tags: ['Quick Test'],
+        summary: 'Save Quick Test results as a test suite',
+        description: 'Converts Quick Test results into a reusable smoke test suite with individual test cases for each wave/check.',
+        params: {
+          type: 'object',
+          required: ['runId'],
+          properties: {
+            runId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'The quick test run ID',
+            },
+          },
+        },
+        body: {
+          type: 'object',
+          required: ['name'],
+          properties: {
+            name: {
+              type: 'string',
+              description: 'Name for the test suite',
+            },
+            projectId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'Optional project ID to link the suite to',
+            },
+            description: {
+              type: 'string',
+              description: 'Optional description for the test suite',
+            },
+          },
+        },
+        response: {
+          201: {
+            type: 'object',
+            properties: {
+              suite: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  project_id: { type: 'string' },
+                  type: { type: 'string' },
+                  created_at: { type: 'string', format: 'date-time' },
+                },
+              },
+              tests: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    name: { type: 'string' },
+                    test_type: { type: 'string' },
+                  },
+                },
+              },
+              message: { type: 'string' },
+            },
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              message: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { runId } = request.params;
+      const { name, projectId, description } = request.body;
+      const user = request.user as JwtPayload;
+      const orgId = getOrganizationId(request);
+
+      // Get the quick test result
+      const result = await getQuickTestResultAsync(runId);
+      if (!result) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Quick test run not found',
+        });
+      }
+
+      // IDOR protection
+      if (result.orgId && result.orgId !== orgId) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Quick test run not found',
+        });
+      }
+
+      // Check if test is complete
+      if (result.status !== 'completed') {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Quick test must be completed before saving as a test suite',
+        });
+      }
+
+      const now = new Date();
+      const suiteId = uuidv4();
+
+      // Create the test suite
+      const suite: TestSuite = {
+        id: suiteId,
+        project_id: projectId || 'default',
+        organization_id: orgId,
+        name,
+        description: description || `Smoke test suite generated from Quick Test of ${result.url}`,
+        type: 'e2e', // Smoke tests are E2E
+        base_url: result.url,
+        browser: 'chromium',
+        timeout: 30,
+        retry_count: 1,
+        created_at: now,
+        updated_at: now,
+      };
+
+      await createTestSuite(suite);
+
+      // Create test cases for each wave
+      const tests: Partial<Test>[] = [];
+      const waveNames = [
+        'Health Check',
+        'Visual + Performance',
+        'Security Scan',
+        'AI Analysis',
+        'Accessibility',
+        'API Discovery',
+        'SEO Analysis',
+      ];
+
+      for (const wave of result.waves || []) {
+        if (wave.status !== 'completed') continue;
+
+        const testId = uuidv4();
+        const waveName = waveNames[wave.wave - 1] || `Wave ${wave.wave}`;
+
+        // Build test steps based on wave type
+        const steps = buildWaveTestSteps(wave.wave, wave.data, result.url);
+
+        const test: Test = {
+          id: testId,
+          suite_id: suiteId,
+          project_id: projectId || 'default',
+          organization_id: orgId,
+          name: `${waveName} - ${result.url}`,
+          description: `Automated smoke test for ${waveName}`,
+          test_type: 'e2e',
+          steps,
+          status: 'active',
+          created_at: now,
+          updated_at: now,
+        };
+
+        await createTest(test);
+        tests.push({ id: testId, name: test.name, test_type: test.test_type });
+      }
+
+      // Log audit entry
+      logAuditEntry(request, 'create', 'test_suite', suiteId, `Test suite created from Quick Test ${runId}`, {
+        quick_test_run_id: runId,
+        url: result.url,
+        test_count: tests.length,
+        user_id: user.id,
+      });
+
+      return reply.status(201).send({
+        suite: {
+          id: suite.id,
+          name: suite.name,
+          project_id: suite.project_id,
+          type: suite.type,
+          created_at: suite.created_at.toISOString(),
+        },
+        tests,
+        message: `Created test suite with ${tests.length} test cases from Quick Test results`,
+      });
+    }
+  );
 };
+
+/**
+ * Feature #532: Build test steps for a wave based on its data
+ * Creates assertion steps that can be replayed
+ */
+function buildWaveTestSteps(
+  waveNumber: number,
+  _data: Record<string, unknown> | undefined,
+  url: string
+): Test['steps'] {
+  const steps: Test['steps'] = [];
+
+  // Common first step: navigate to URL
+  steps.push({
+    id: uuidv4(),
+    action: 'navigate',
+    value: url,
+    order: 0,
+  });
+
+  switch (waveNumber) {
+    case 1: // Health Check
+      steps.push({
+        id: uuidv4(),
+        action: 'assert_visible',
+        selector: 'body',
+        order: 1,
+      });
+      break;
+
+    case 2: // Visual + Performance
+      steps.push({
+        id: uuidv4(),
+        action: 'screenshot',
+        checkpointName: 'homepage',
+        order: 1,
+      });
+      break;
+
+    case 3: // Security Scan
+      steps.push({
+        id: uuidv4(),
+        action: 'assert_response_header',
+        value: 'X-Frame-Options',
+        order: 1,
+      });
+      break;
+
+    case 4: // AI Analysis
+      steps.push({
+        id: uuidv4(),
+        action: 'wait_for_load_state',
+        value: 'networkidle',
+        order: 1,
+      });
+      break;
+
+    case 5: // Accessibility
+      steps.push({
+        id: uuidv4(),
+        action: 'accessibility_check',
+        a11y_wcag_level: 'AA',
+        order: 1,
+      });
+      break;
+
+    case 6: // API Discovery
+      steps.push({
+        id: uuidv4(),
+        action: 'wait_for_load_state',
+        value: 'networkidle',
+        order: 1,
+      });
+      break;
+
+    case 7: // SEO Analysis
+      steps.push({
+        id: uuidv4(),
+        action: 'assert_element_exists',
+        selector: 'title',
+        order: 1,
+      });
+      steps.push({
+        id: uuidv4(),
+        action: 'assert_element_exists',
+        selector: 'meta[name="description"]',
+        order: 2,
+      });
+      break;
+  }
+
+  return steps;
+}
 
 export default quickTestRoutes;
