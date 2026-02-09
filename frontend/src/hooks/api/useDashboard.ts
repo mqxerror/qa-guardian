@@ -84,7 +84,7 @@ export function useRecentRuns(limit: number = 10) {
 
   return useQuery({
     queryKey: dashboardKeys.recentRuns(limit),
-    queryFn: () => fetchWithAuth(`/api/test-runs?limit=${limit}&sort=created_at:desc`, token) as Promise<{ runs: RecentRun[] }>,
+    queryFn: () => fetchWithAuth(`/api/v1/test-runs?limit=${limit}&sort=created_at:desc`, token) as Promise<{ runs: RecentRun[] }>,
     enabled: !!token,
     staleTime: 15 * 1000, // 15 seconds - runs can change more frequently
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes

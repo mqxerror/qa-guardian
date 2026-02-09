@@ -98,7 +98,7 @@ export function useRunsPaginated(params: RunsQueryParams = {}) {
       if (params.suite_id) searchParams.set('suite_id', params.suite_id);
       if (params.project_id) searchParams.set('project_id', params.project_id);
 
-      const url = `/api/test-runs?${searchParams.toString()}`;
+      const url = `/api/v1/test-runs?${searchParams.toString()}`;
       return fetchWithAuth(url, token) as Promise<PaginatedRunsResponse>;
     },
     enabled: !!token,
@@ -131,7 +131,7 @@ export function useRunsInfinite(params: Omit<RunsQueryParams, 'page'> = {}) {
       if (params.suite_id) searchParams.set('suite_id', params.suite_id);
       if (params.project_id) searchParams.set('project_id', params.project_id);
 
-      const url = `/api/test-runs?${searchParams.toString()}`;
+      const url = `/api/v1/test-runs?${searchParams.toString()}`;
       return fetchWithAuth(url, token) as Promise<PaginatedRunsResponse>;
     },
     getNextPageParam: (lastPage) => {

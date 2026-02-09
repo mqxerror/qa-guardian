@@ -86,7 +86,7 @@ function ProjectRunHistoryPage() {
 
  try {
  // Fetch runs filtered by project_id with a high limit
- const response = await fetch(`/api/test-runs?project_id=${projectId}&limit=1000`, {
+ const response = await fetch(`/api/v1/test-runs?project_id=${projectId}&limit=1000`, {
  headers: { Authorization: `Bearer ${token}` },
  });
 

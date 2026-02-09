@@ -436,7 +436,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
   // Feature #53: Server-side pagination support
   // Feature: MCP tool list_recent_runs support
   // Feature #61: Cached for 1 minute (runs change frequently)
-  app.get<{ Querystring: { page?: number; limit?: number; offset?: number; status?: string; suite_id?: string; project_id?: string } }>('/api/test-runs', {
+  app.get<{ Querystring: { page?: number; limit?: number; offset?: number; status?: string; suite_id?: string; project_id?: string } }>('/api/v1/test-runs', {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { page = 1, limit = 50, offset, status, suite_id, project_id } = request.query;
