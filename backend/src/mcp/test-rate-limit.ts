@@ -9,12 +9,15 @@
 
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
+import {
+  testStart, testStep, testPass, testFail, testResult, testExit, testLog, testError
+} from './test-logger.js';
 
 // Accept API key via command line or environment variable - never hardcode secrets
 function getApiKey(): string {
   const key = process.argv[2] || process.env.MCP_API_KEY || process.env.QA_GUARDIAN_API_KEY;
   if (!key) {
-    console.error('Error: API key not set. Provide via argument or set MCP_API_KEY/QA_GUARDIAN_API_KEY environment variable.');
+    testError('API key not set. Provide via argument or set MCP_API_KEY/QA_GUARDIAN_API_KEY environment variable.');
     process.exit(1);
   }
   return key;
@@ -84,18 +87,14 @@ async function sendMcpRequest(
 }
 
 async function runTest() {
-  console.log('='.repeat(60));
-  console.log('  Feature #385: MCP Rate Limiting Test');
-  console.log('='.repeat(60));
-  console.log('');
-  console.log(`Rate Limit: ${RATE_LIMIT} requests per ${RATE_LIMIT_WINDOW} seconds`);
-  console.log('');
+  testStart('Feature #385: MCP Rate Limiting Test');
+  testLog(`Rate Limit: ${RATE_LIMIT} requests per ${RATE_LIMIT_WINDOW} seconds`);
 
   let passed = 0;
   let failed = 0;
 
   // Start MCP server with rate limiting configured
-  console.log('Starting MCP server with rate limiting...');
+  testLog('Starting MCP server with rate limiting...');
   const server = spawn('npx', [
     'tsx', serverPath,
     '--rate-limit', String(RATE_LIMIT),
@@ -110,7 +109,7 @@ async function runTest() {
   server.stderr?.on('data', (data) => {
     const msg = data.toString().trim();
     if (msg) {
-      console.log(`  [MCP Server] ${msg}`);
+      testLog(`  [MCP Server] ${msg}`);
     }
   });
 
@@ -119,7 +118,7 @@ async function runTest() {
 
   try {
     // Initialize the server
-    console.log('\n--- Step 1: Initialize MCP server ---');
+    testStep(1, 'Initialize MCP server');
     const initResponse = await sendMcpRequest(server, 'initialize', {
       protocolVersion: '2024-11-05',
       capabilities: {},
@@ -127,10 +126,10 @@ async function runTest() {
     }, 1);
 
     if (initResponse.result) {
-      console.log('  ✓ Server initialized');
+      testPass('Server initialized');
       passed++;
     } else {
-      console.log('  ✗ Server initialization failed');
+      testFail('Server initialization failed');
       failed++;
     }
 
@@ -139,7 +138,7 @@ async function runTest() {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     // Test 2: Make rapid requests up to the rate limit
-    console.log(`\n--- Step 2: Make ${RATE_LIMIT} rapid tool calls (should succeed) ---`);
+    testStep(2, `Make ${RATE_LIMIT} rapid tool calls (should succeed)`);
     let successCount = 0;
     let requestId = 2;
 
@@ -151,87 +150,83 @@ async function runTest() {
         }, requestId++);
 
         if (response.error?.code === -32004) {
-          console.log(`  Request ${i + 1}: Rate limited (unexpected)`);
+          testLog(`  Request ${i + 1}: Rate limited (unexpected)`);
         } else {
           successCount++;
         }
       } catch (error) {
-        console.log(`  Request ${i + 1}: Error - ${error}`);
+        testLog(`  Request ${i + 1}: Error - ${error}`);
       }
     }
 
     if (successCount === RATE_LIMIT) {
-      console.log(`  ✓ PASS - All ${RATE_LIMIT} requests succeeded within rate limit`);
+      testPass(`All ${RATE_LIMIT} requests succeeded within rate limit`);
       passed++;
     } else {
-      console.log(`  ✗ FAIL - Only ${successCount}/${RATE_LIMIT} requests succeeded`);
+      testFail(`Only ${successCount}/${RATE_LIMIT} requests succeeded`);
       failed++;
     }
 
     // Test 3: Make one more request (should be rate limited)
-    console.log('\n--- Step 3: Make one more request (should be rate limited) ---');
+    testStep(3, 'Make one more request (should be rate limited)');
     const rateLimitedResponse = await sendMcpRequest(server, 'tools/call', {
       name: 'list_projects',
       arguments: {}
     }, requestId++);
 
     if (rateLimitedResponse.error?.code === -32004) {
-      console.log('  ✓ PASS - Request was rate limited as expected');
-      console.log(`    Error: ${rateLimitedResponse.error.message}`);
+      testPass('Request was rate limited as expected');
+      testLog(`    Error: ${rateLimitedResponse.error.message}`);
       if (rateLimitedResponse.error.data) {
-        console.log(`    Limit: ${rateLimitedResponse.error.data.limit}`);
-        console.log(`    Remaining: ${rateLimitedResponse.error.data.remaining}`);
-        console.log(`    Retry After: ${rateLimitedResponse.error.data.retryAfter}s`);
+        testLog(`    Limit: ${rateLimitedResponse.error.data.limit}`);
+        testLog(`    Remaining: ${rateLimitedResponse.error.data.remaining}`);
+        testLog(`    Retry After: ${rateLimitedResponse.error.data.retryAfter}s`);
       }
       passed++;
     } else {
-      console.log('  ✗ FAIL - Request should have been rate limited');
-      console.log(`    Response: ${JSON.stringify(rateLimitedResponse)}`);
+      testFail('Request should have been rate limited');
+      testLog(`    Response: ${JSON.stringify(rateLimitedResponse)}`);
       failed++;
     }
 
     // Test 4: Wait for rate limit window to reset
-    console.log(`\n--- Step 4: Wait ${RATE_LIMIT_WINDOW + 1} seconds for rate limit reset ---`);
+    testStep(4, `Wait ${RATE_LIMIT_WINDOW + 1} seconds for rate limit reset`);
     await new Promise(resolve => setTimeout(resolve, (RATE_LIMIT_WINDOW + 1) * 1000));
 
     // Test 5: Verify requests succeed again after reset
-    console.log('\n--- Step 5: Verify requests succeed after reset ---');
+    testStep(5, 'Verify requests succeed after reset');
     const afterResetResponse = await sendMcpRequest(server, 'tools/call', {
       name: 'list_projects',
       arguments: {}
     }, requestId++);
 
     if (afterResetResponse.error?.code === -32004) {
-      console.log('  ✗ FAIL - Request should succeed after rate limit reset');
-      console.log(`    Error: ${afterResetResponse.error.message}`);
+      testFail('Request should succeed after rate limit reset');
+      testLog(`    Error: ${afterResetResponse.error.message}`);
       failed++;
     } else {
-      console.log('  ✓ PASS - Request succeeded after rate limit reset');
+      testPass('Request succeeded after rate limit reset');
       passed++;
     }
 
   } catch (error) {
-    console.log(`\n  ERROR: ${error}`);
+    testError(`Test error: ${error}`);
     failed++;
   } finally {
     // Kill the server
     server.kill('SIGTERM');
   }
 
-  console.log('\n' + '='.repeat(60));
-  console.log(`  Results: ${passed} passed, ${failed} failed`);
-  console.log('='.repeat(60));
+  testResult(passed, passed + failed);
 
   if (passed >= 4 && failed === 0) {
-    console.log('\n✓ Feature #385 PASSED: MCP rate limiting enforced');
-    process.exit(0);
-  } else {
-    console.log('\n✗ Feature #385 FAILED');
-    process.exit(1);
+    testLog('Feature #385 PASSED: MCP rate limiting enforced');
   }
+
+  testExit(passed >= 4 && failed === 0 ? passed + failed : passed, passed + failed);
 }
 
 runTest().catch((error) => {
-  console.error('Test error:', error);
+  testError(`Test error: ${error}`);
   process.exit(1);
 });

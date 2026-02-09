@@ -12,6 +12,9 @@
  */
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
 import * as path from 'path';
+import {
+  testStart, testStep, testData, testPass, testFail, testResult, testExit, testLog, testSection
+} from './test-logger.js';
 
 const serverPath = path.join(__dirname, 'index.ts');
 
@@ -96,15 +99,12 @@ function sendRequest(server: ChildProcessWithoutNullStreams, request: object): P
 }
 
 async function runTests(): Promise<void> {
-  console.log('='.repeat(60));
-  console.log('Feature #625: MCP handles invalid API key');
-  console.log('='.repeat(60));
-  console.log();
+  testStart('Feature #625: MCP handles invalid API key');
 
   const testResults: TestResult[] = [];
 
   // Test 1: Send MCP request with invalid API key
-  console.log('Step 1: Send MCP request with invalid API key...');
+  testStep(1, 'Send MCP request with invalid API key...');
   const { server: server1, logs: logs1 } = await startMCPServer('invalid-api-key-that-does-not-exist', true);
 
   // Initialize first
@@ -129,36 +129,36 @@ async function runTests(): Promise<void> {
   };
   const response1 = await sendRequest(server1, toolRequest);
 
-  console.log('  Response received:', JSON.stringify(response1, null, 2));
-  console.log('  Captured logs:');
-  logs1.forEach(log => console.log('    ', log));
+  testData('Response received', response1);
+  testLog('  Captured logs:');
+  logs1.forEach(log => testLog('    ', log));
 
   // Test 2: Verify response code is -32001 (401 equivalent)
-  console.log('\nStep 2: Verify response code is -32001 (401 Unauthorized)...');
+  testStep(2, 'Verify response code is -32001 (401 Unauthorized)...');
   const codeTest: TestResult = {
     passed: response1?.error?.code === -32001,
     message: response1?.error?.code === -32001
-      ? `✓ Error code is -32001 as expected`
-      : `✗ Error code is ${response1?.error?.code}, expected -32001`,
+      ? 'Error code is -32001 as expected'
+      : `Error code is ${response1?.error?.code}, expected -32001`,
     response: response1 ?? undefined,
   };
   testResults.push(codeTest);
-  console.log('  ' + codeTest.message);
+  if (codeTest.passed) testPass(codeTest.message); else testFail(codeTest.message);
 
   // Test 3: Verify error message 'Invalid or expired API key'
-  console.log('\nStep 3: Verify error message is \'Invalid or expired API key\'...');
+  testStep(3, 'Verify error message is \'Invalid or expired API key\'...');
   const messageTest: TestResult = {
     passed: response1?.error?.message === 'Invalid or expired API key',
     message: response1?.error?.message === 'Invalid or expired API key'
-      ? `✓ Error message is correct`
-      : `✗ Error message is "${response1?.error?.message}", expected "Invalid or expired API key"`,
+      ? 'Error message is correct'
+      : `Error message is "${response1?.error?.message}", expected "Invalid or expired API key"`,
     response: response1 ?? undefined,
   };
   testResults.push(messageTest);
-  console.log('  ' + messageTest.message);
+  if (messageTest.passed) testPass(messageTest.message); else testFail(messageTest.message);
 
   // Test 4: Verify no sensitive data is leaked in error response
-  console.log('\nStep 4: Verify no sensitive data is leaked in error response...');
+  testStep(4, 'Verify no sensitive data is leaked in error response...');
   const errorResponse = response1?.error;
   const sensitivePatterns = [
     'invalid-api-key-that-does-not-exist', // The actual key should not appear
@@ -180,29 +180,29 @@ async function runTests(): Promise<void> {
   const noLeakTest: TestResult = {
     passed: leakedData.length === 0,
     message: leakedData.length === 0
-      ? '✓ No sensitive data leaked in error response'
-      : `✗ Sensitive data found in response: ${leakedData.join(', ')}`,
+      ? 'No sensitive data leaked in error response'
+      : `Sensitive data found in response: ${leakedData.join(', ')}`,
   };
   testResults.push(noLeakTest);
-  console.log('  ' + noLeakTest.message);
-  console.log('  Error response:', JSON.stringify(errorResponse, null, 2));
+  if (noLeakTest.passed) testPass(noLeakTest.message); else testFail(noLeakTest.message);
+  testData('Error response', errorResponse);
 
   // Test 5: Verify failed attempt is logged for security auditing
-  console.log('\nStep 5: Verify failed attempt is logged for security auditing...');
+  testStep(5, 'Verify failed attempt is logged for security auditing...');
   const allLogs = logs1.join('\n');
   const hasSecurityLog = allLogs.includes('[SECURITY]') && allLogs.includes('Failed authentication');
   const logsTest: TestResult = {
     passed: hasSecurityLog,
     message: hasSecurityLog
-      ? '✓ Security log entry found for failed authentication'
-      : '✗ No security log entry found for failed authentication',
+      ? 'Security log entry found for failed authentication'
+      : 'No security log entry found for failed authentication',
     logs: logs1.filter(l => l.includes('[SECURITY]')),
   };
   testResults.push(logsTest);
-  console.log('  ' + logsTest.message);
+  if (logsTest.passed) testPass(logsTest.message); else testFail(logsTest.message);
   if (logsTest.logs && logsTest.logs.length > 0) {
-    console.log('  Security logs:');
-    logsTest.logs.forEach(log => console.log('    ', log));
+    testLog('  Security logs:');
+    logsTest.logs.forEach(log => testLog('    ', log));
   }
 
   // Verify the API key is masked in logs (not showing full key)
@@ -210,43 +210,42 @@ async function runTests(): Promise<void> {
   const keyMaskedTest: TestResult = {
     passed: !hasFullKey,
     message: hasFullKey
-      ? '✗ Full API key appears in logs (security risk!)'
-      : '✓ API key is properly masked in logs',
+      ? 'Full API key appears in logs (security risk!)'
+      : 'API key is properly masked in logs',
   };
   testResults.push(keyMaskedTest);
-  console.log('  ' + keyMaskedTest.message);
+  if (keyMaskedTest.passed) testPass(keyMaskedTest.message); else testFail(keyMaskedTest.message);
 
   // Cleanup
   server1.kill('SIGTERM');
 
   // Summary
-  console.log('\n' + '='.repeat(60));
-  console.log('Test Summary');
-  console.log('='.repeat(60));
+  testSection('Test Summary');
 
   const passed = testResults.filter(t => t.passed).length;
   const total = testResults.length;
 
   testResults.forEach((result, i) => {
-    console.log(`  Test ${i + 1}: ${result.passed ? '✓ PASS' : '✗ FAIL'} - ${result.message.substring(2)}`);
+    if (result.passed) {
+      testPass(`Test ${i + 1}: ${result.message}`);
+    } else {
+      testFail(`Test ${i + 1}: ${result.message}`);
+    }
   });
 
-  console.log('\n  Results: ' + passed + '/' + total + ' tests passed');
+  testResult(passed, total);
 
   if (passed === total) {
-    console.log('\n✓ Feature #625 verification PASSED!');
-    console.log('  - Invalid API keys return proper 401 errors');
-    console.log('  - Error message is "Invalid or expired API key"');
-    console.log('  - No sensitive data leaked in error responses');
-    console.log('  - Failed attempts are logged for security auditing');
-    process.exit(0);
-  } else {
-    console.log('\n✗ Feature #625 verification FAILED');
-    process.exit(1);
+    testLog('  - Invalid API keys return proper 401 errors');
+    testLog('  - Error message is "Invalid or expired API key"');
+    testLog('  - No sensitive data leaked in error responses');
+    testLog('  - Failed attempts are logged for security auditing');
   }
+
+  testExit(passed, total);
 }
 
 runTests().catch(err => {
-  console.error('Test error:', err);
+  testFail(`Test error: ${err}`);
   process.exit(1);
 });

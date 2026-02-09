@@ -3,67 +3,59 @@
  */
 import { spawn } from 'child_process';
 import * as path from 'path';
+import {
+  testStart, testStep, testData, testPass, testFail, testResult, testExit
+} from './test-logger.js';
 
 const serverPath = path.join(__dirname, 'index.ts');
 
 async function testAuth() {
-  console.log('Testing MCP Server API key authentication...\n');
+  testStart('MCP Server API Key Authentication');
 
   let testsPassed = 0;
   let testsTotal = 0;
 
   // Test 1: Connection without API key when auth is required
-  console.log('Step 1: Attempting MCP connection without API key (auth required)...');
+  testStep(1, 'Attempting MCP connection without API key (auth required)...');
   testsTotal++;
   const noAuthResult = await testServerWithAuth(false, true);
-  console.log('  Result:', JSON.stringify(noAuthResult, null, 2));
+  testData('Result', noAuthResult);
   if (noAuthResult.authErrorReceived) {
-    console.log('✓ Step 2: Connection rejected with auth error');
-    console.log(`  Error: ${noAuthResult.authError}`);
+    testPass('Connection rejected with auth error');
     testsPassed++;
   } else {
-    console.log('✗ Step 2: Connection should have been rejected');
+    testFail('Connection should have been rejected');
   }
 
   // Test 2: Connection with valid API key
-  console.log('\nStep 3: Providing valid API key...');
+  testStep(2, 'Providing valid API key...');
   testsTotal++;
   const withAuthResult = await testServerWithAuth(true, true);
-  console.log('  Result:', JSON.stringify(withAuthResult, null, 2));
+  testData('Result', withAuthResult);
   // When auth is provided, we should NOT get an auth error
   // We might get other errors (like network), but not auth error
   if (!withAuthResult.authErrorReceived) {
-    console.log('✓ Step 4: No auth error - connection proceeds with valid API key');
+    testPass('No auth error - connection proceeds with valid API key');
     testsPassed++;
   } else {
-    console.log('✗ Step 4: Should not have auth error with valid key');
+    testFail('Should not have auth error with valid key');
   }
 
   // Test 3: Connection without auth required (backwards compatibility)
-  console.log('\nBonus: Testing without requireAuth flag (should work without key)...');
+  testStep(3, 'Testing without requireAuth flag (should work without key)...');
   testsTotal++;
   const noRequireAuthResult = await testServerWithAuth(false, false);
-  console.log('  Result:', JSON.stringify(noRequireAuthResult, null, 2));
+  testData('Result', noRequireAuthResult);
   // When auth not required, tool calls should proceed without auth error
   if (!noRequireAuthResult.authErrorReceived) {
-    console.log('✓ No auth error when auth not required');
+    testPass('No auth error when auth not required');
     testsPassed++;
   } else {
-    console.log('✗ Should not get auth error when auth not required');
+    testFail('Should not get auth error when auth not required');
   }
 
-  console.log('\n--- Test Results ---');
-  console.log(`Tests passed: ${testsPassed}/${testsTotal}`);
-
-  if (testsPassed >= 2) {
-    console.log('\n✓ MCP API key authentication working correctly!');
-    console.log('✓ Without key and requireAuth=true: rejected with auth error');
-    console.log('✓ With key and requireAuth=true: no auth error');
-    process.exit(0);
-  } else {
-    console.log('\n✗ Authentication tests failed');
-    process.exit(1);
-  }
+  testResult(testsPassed, testsTotal);
+  testExit(testsPassed >= 2 ? testsTotal : testsPassed, testsTotal);
 }
 
 interface TestResult {
