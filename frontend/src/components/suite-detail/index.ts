@@ -45,8 +45,6 @@ export {
 } from './modals';
 export type { EditSelectorModalState, StepTemplate as TemplateType } from './modals';
 
-// Feature #533: Removed ParallelizationPanel export (simulated AI parallel run)
-
 // Header Components
 export { SuiteHeaderActions } from './SuiteHeaderActions';
 

@@ -159,9 +159,6 @@ function TestSuitePage() {
   const [suiteRun, setSuiteRun] = useState<SuiteRunLocal | null>(null);
   const [suiteRunPolling, setSuiteRunPolling] = useState(false);
 
-  // Feature #533: Removed simulated AI Parallelization state (Feature #1257)
-  // Will be replaced with real session-sharing parallel executor in R23
-
   const [showDeleteSuiteModal, setShowDeleteSuiteModal] = useState(false);
   const [isDeletingSuite, setIsDeletingSuite] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -490,10 +487,6 @@ function TestSuitePage() {
       setIsDeletingTest(false);
     }
   };
-
-  // Feature #1257: Trigger large test run with AI parallelization
-  // Feature #533: Removed handleRunWithParallelization (simulated AI parallel run)
-  // Will be replaced with real session-sharing parallel executor in R23
 
   // Feature #143: Converted to React Query mutation
   const handleCancelSuiteRun = async () => {
@@ -1052,9 +1045,6 @@ function TestSuitePage() {
           onReviewTest={handleReviewTest}
           onBatchReview={handleBatchReview}
         />
-
-        {/* Feature #533: Removed ParallelizationPanel (simulated AI parallel run) */}
-        {/* Will be replaced with real session-sharing parallel executor in R23 */}
 
         {/* Delete Suite Confirmation Modal - Feature #50: Extracted to component */}
         {showDeleteSuiteModal && (

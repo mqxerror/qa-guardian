@@ -20,9 +20,6 @@ export interface RecordingStep {
   optionalReason?: 'cookie_consent' | 'popup_dismiss' | 'notification_close' | 'user_marked';
 }
 
-// Feature #533: Removed ParallelizationWorker and ParallelizationPlan types
-// (simulated AI parallel run - will be replaced with real session-sharing executor in R23)
-
 // Review stats type
 export interface ReviewStats {
   total_tests: number;
@@ -88,9 +85,6 @@ export function useSuiteState() {
   const [showReviewPanel, setShowReviewPanel] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [selectedForReview, setSelectedForReview] = useState<Set<string>>(new Set());
-
-  // Feature #533: Removed parallelization state (simulated AI parallel run)
-  // Will be replaced with real session-sharing parallel executor in R23
 
   // Accessibility filter state
   const [a11ySeverityFilter, setA11ySeverityFilter] = useState<Record<string, 'all' | 'critical' | 'serious' | 'moderate' | 'minor'>>({});
@@ -242,8 +236,6 @@ export function useSuiteState() {
     selectedForReview, setSelectedForReview,
     toggleTestSelection,
     toggleAllTestsSelection,
-
-    // Feature #533: Removed parallelization state from return
 
     // Accessibility filters
     a11ySeverityFilter, setA11ySeverityFilter,
