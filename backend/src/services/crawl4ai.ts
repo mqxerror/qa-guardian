@@ -620,7 +620,7 @@ export async function crawlSite(
 }
 
 /** Normalize URL for consistent deduplication */
-function normalizeUrl(url: string, baseHost: string): string {
+function normalizeUrl(url: string, _baseHost: string): string {
   try {
     const parsed = new URL(url);
     // Remove trailing slash, lowercase, remove fragments

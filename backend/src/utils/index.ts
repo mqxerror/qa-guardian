@@ -5,7 +5,8 @@
  * Feature #1360: Code duplication detection and elimination
  */
 
-import { randomUUID, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
+// randomUUID available from node:crypto if needed
 import dns from 'node:dns/promises'; // Feature #391: DNS resolution for SSRF protection
 // Feature #449: Use structured logger instead of console.*
 import { createLogger } from '../services/logger.js';

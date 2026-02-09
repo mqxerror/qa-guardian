@@ -294,10 +294,10 @@ export async function scanContainerImage(
       });
 
       let stderr = '';
-      let stdout = '';
+      let _stdout = ''; // Collected for potential future debugging
 
       trivyProcess.stdout?.on('data', (data) => {
-        stdout += data.toString();
+        _stdout += data.toString();
       });
 
       trivyProcess.stderr?.on('data', (data) => {

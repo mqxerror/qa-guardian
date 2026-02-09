@@ -15,7 +15,8 @@
 import { Queue, Worker, Job, QueueEvents, JobsOptions } from 'bullmq';
 import { Redis as IORedis } from 'ioredis';
 import * as crypto from 'crypto';
-import { validateWebhookURL, validateWebhookURLWithDNS, generateId } from '../utils/index.js';
+import { validateWebhookURLWithDNS, generateId } from '../utils/index.js';
+// validateWebhookURL available from utils if needed
 // Feature #439: Use structured logger instead of console.*
 import { logger } from './logger.js';
 
@@ -110,7 +111,8 @@ const QUEUE_NAME = 'webhook-delivery';
 const MAX_CONCURRENCY = parseInt(process.env.WEBHOOK_MAX_CONCURRENCY || '5', 10);
 const JOB_TIMEOUT = parseInt(process.env.WEBHOOK_JOB_TIMEOUT || '30000', 10); // 30 seconds default
 const RETRY_DELAYS = [1000, 2000, 4000, 8000, 16000]; // Exponential backoff delays
-const WEBHOOK_SIGNATURE_TOLERANCE_SECONDS = 300; // 5 minutes for replay protection
+// Replay protection tolerance - reserved for signature timestamp validation
+const _WEBHOOK_SIGNATURE_TOLERANCE_SECONDS = 300; // 5 minutes
 const DELIVERY_LOG_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
 const DELIVERY_LOG_PREFIX = 'webhook:log:';
 // Feature #321: Auto-disable threshold - disable webhook after N consecutive failures

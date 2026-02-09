@@ -9,7 +9,8 @@
  */
 
 import { AIRouter, FailoverEvent, CostSavings } from './ai-router.js';
-import { BudgetManager, BudgetStatus, BudgetAlert } from './budget-manager.js';
+import { BudgetManager, BudgetStatus } from './budget-manager.js';
+// BudgetAlert available from budget-manager.js if needed
 import { CircuitBreaker, CircuitState, CircuitBreakerConfig } from './circuit-breaker.js';
 import type { ProviderName, AIRouterConfig, HealthMetrics } from './types.js';
 // Feature #449: Use structured logger instead of console.*
