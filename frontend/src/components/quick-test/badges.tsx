@@ -22,7 +22,7 @@ export function SourceBadge({ source }: { source?: 'vision' | 'metrics' }) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-blue-500/20 text-blue-400">
+    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-info/20 text-info">
       <BarChart2 className="w-3 h-3" />
       Metrics
     </span>
@@ -36,7 +36,7 @@ export function PriorityBadge({ priority }: { priority: string }) {
   const colors = {
     critical: 'bg-destructive/20 text-destructive',
     high: 'bg-warning/20 text-warning',
-    medium: 'bg-blue-500/20 text-blue-400',
+    medium: 'bg-info/20 text-info',
     low: 'bg-muted text-muted-foreground',
   };
   return (
@@ -53,12 +53,12 @@ export function SeverityBadge({ severity }: { severity: string }) {
   const colors = {
     critical: 'bg-destructive/20 text-destructive',
     serious: 'bg-warning/20 text-warning',
-    moderate: 'bg-blue-500/20 text-blue-400',
+    moderate: 'bg-info/20 text-info',
     minor: 'bg-muted text-muted-foreground',
     // Also handle non-a11y severity levels
     high: 'bg-destructive/20 text-destructive',
     medium: 'bg-warning/20 text-warning',
-    low: 'bg-blue-500/20 text-blue-400',
+    low: 'bg-info/20 text-info',
   };
   return (
     <span className={`px-1.5 py-0.5 rounded text-xs ${colors[severity.toLowerCase() as keyof typeof colors] || colors.medium}`}>
@@ -74,7 +74,7 @@ export function ImpactBadge({ impact }: { impact: string }) {
   const colors = {
     critical: 'bg-destructive/20 text-destructive',
     serious: 'bg-warning/20 text-warning',
-    moderate: 'bg-blue-500/20 text-blue-400',
+    moderate: 'bg-info/20 text-info',
     minor: 'bg-muted text-muted-foreground',
   };
   return (

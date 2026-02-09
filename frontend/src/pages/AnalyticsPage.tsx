@@ -1094,13 +1094,13 @@ export function AnalyticsPage() {
                   </div>
                   <div className="text-xs text-muted-foreground">Total Runs</div>
                 </div>
-                <div className="text-center p-3 bg-blue-500/15 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-500">
+                <div className="text-center p-3 bg-info/15 rounded-lg">
+                  <div className="text-2xl font-bold text-info">
                     {durationTrendSummary.overall_p50_ms !== null
                       ? `${(durationTrendSummary.overall_p50_ms / 1000).toFixed(1)}s`
                       : 'N/A'}
                   </div>
-                  <div className="text-xs text-blue-500">p50</div>
+                  <div className="text-xs text-info">p50</div>
                 </div>
                 <div className="text-center p-3 bg-amber-500/15 rounded-lg">
                   <div className="text-2xl font-bold text-amber-500">
@@ -1110,13 +1110,13 @@ export function AnalyticsPage() {
                   </div>
                   <div className="text-xs text-amber-500">p95</div>
                 </div>
-                <div className="text-center p-3 bg-orange-500/15 rounded-lg">
-                  <div className="text-2xl font-bold text-orange-500">
+                <div className="text-center p-3 bg-warning/15 rounded-lg">
+                  <div className="text-2xl font-bold text-warning">
                     {durationTrendSummary.overall_p99_ms !== null
                       ? `${(durationTrendSummary.overall_p99_ms / 1000).toFixed(1)}s`
                       : 'N/A'}
                   </div>
-                  <div className="text-xs text-orange-500">p99</div>
+                  <div className="text-xs text-warning">p99</div>
                 </div>
                 <div className="text-center p-3 bg-muted/30 rounded-lg">
                   <div className="text-2xl font-bold text-foreground">

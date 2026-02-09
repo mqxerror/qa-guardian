@@ -569,20 +569,20 @@ function AccessibilityDetails({ data }: { data: AccessibilityData }) {
 
       {/* Violation Counts */}
       <div className="grid grid-cols-4 gap-2">
-        <div className="text-center p-2 rounded bg-red-500/10">
-          <div className="text-lg font-bold text-red-400">{data.violationCounts.critical}</div>
+        <div className="text-center p-2 rounded bg-destructive/10">
+          <div className="text-lg font-bold text-destructive">{data.violationCounts.critical}</div>
           <div className="text-xs text-muted-foreground">Critical</div>
         </div>
-        <div className="text-center p-2 rounded bg-orange-500/10">
-          <div className="text-lg font-bold text-orange-400">{data.violationCounts.serious}</div>
+        <div className="text-center p-2 rounded bg-warning/10">
+          <div className="text-lg font-bold text-warning">{data.violationCounts.serious}</div>
           <div className="text-xs text-muted-foreground">Serious</div>
         </div>
-        <div className="text-center p-2 rounded bg-yellow-500/10">
-          <div className="text-lg font-bold text-yellow-400">{data.violationCounts.moderate}</div>
+        <div className="text-center p-2 rounded bg-warning/10">
+          <div className="text-lg font-bold text-warning">{data.violationCounts.moderate}</div>
           <div className="text-xs text-muted-foreground">Moderate</div>
         </div>
-        <div className="text-center p-2 rounded bg-blue-500/10">
-          <div className="text-lg font-bold text-blue-400">{data.violationCounts.minor}</div>
+        <div className="text-center p-2 rounded bg-info/10">
+          <div className="text-lg font-bold text-info">{data.violationCounts.minor}</div>
           <div className="text-xs text-muted-foreground">Minor</div>
         </div>
       </div>
@@ -725,8 +725,8 @@ function APIDiscoveryDetails({ data }: { data: APIDiscoveryData }) {
             <div className="text-lg font-bold text-destructive">{data.summary.unhealthy}</div>
             <div className="text-xs text-muted-foreground">Unhealthy</div>
           </div>
-          <div className="text-center p-2 rounded bg-blue-500/10">
-            <div className="text-lg font-bold text-blue-400">{data.summary.protected}</div>
+          <div className="text-center p-2 rounded bg-info/10">
+            <div className="text-lg font-bold text-info">{data.summary.protected}</div>
             <div className="text-xs text-muted-foreground">Protected</div>
           </div>
           <div className="text-center p-2 rounded bg-warning/10">
@@ -749,9 +749,9 @@ function APIDiscoveryDetails({ data }: { data: APIDiscoveryData }) {
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-foreground">{concern.path}</span>
                   <span className={`px-1.5 py-0.5 rounded text-xs ${
-                    concern.severity === 'high' ? 'bg-red-500/20 text-red-400' :
-                    concern.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                    'bg-blue-500/20 text-blue-400'
+                    concern.severity === 'high' ? 'bg-destructive/20 text-destructive' :
+                    concern.severity === 'medium' ? 'bg-warning/20 text-warning' :
+                    'bg-info/20 text-info'
                   }`}>
                     {concern.severity}
                   </span>
@@ -780,10 +780,10 @@ function APIDiscoveryDetails({ data }: { data: APIDiscoveryData }) {
               <div key={idx} className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
                 <div className="flex items-center gap-2">
                   <span className={`px-1.5 py-0.5 rounded text-xs font-mono ${
-                    endpoint.method === 'GET' ? 'bg-blue-500/20 text-blue-400' :
-                    endpoint.method === 'POST' ? 'bg-green-500/20 text-green-400' :
-                    endpoint.method === 'PUT' ? 'bg-yellow-500/20 text-yellow-400' :
-                    endpoint.method === 'DELETE' ? 'bg-red-500/20 text-red-400' :
+                    endpoint.method === 'GET' ? 'bg-info/20 text-info' :
+                    endpoint.method === 'POST' ? 'bg-success/20 text-success' :
+                    endpoint.method === 'PUT' ? 'bg-warning/20 text-warning' :
+                    endpoint.method === 'DELETE' ? 'bg-destructive/20 text-destructive' :
                     'bg-muted text-muted-foreground'
                   }`}>
                     {endpoint.method}
@@ -795,7 +795,7 @@ function APIDiscoveryDetails({ data }: { data: APIDiscoveryData }) {
                 <div className="flex items-center gap-2">
                   {endpoint.authRequired ? (
                     <span title="Auth Required">
-                      <Lock className="w-3.5 h-3.5 text-blue-400" />
+                      <Lock className="w-3.5 h-3.5 text-info" />
                     </span>
                   ) : (
                     <span title="No Auth">
