@@ -29,15 +29,25 @@ const RATE_LIMIT_WINDOW_MS = RATE_LIMIT_WINDOW_SECONDS * 1000;
 
 // Different limits for different endpoint categories
 const RATE_LIMITS = {
-  QUICK_TEST: 5,  // Feature #437: Quick Test: 5 requests per minute (amplification prevention)
-  AUTH: 10,       // Feature #437: Auth endpoints: 10 requests per minute (brute-force prevention)
+  QUICK_TEST: 5,   // Feature #437: Quick Test: 5 requests per minute (amplification prevention)
+  AUTH_LOGIN: 10,   // Login/register: 10 requests per minute (brute-force prevention)
+  AUTH_GENERAL: 60, // Auth reads (/me, /refresh, /sessions): 60/min (normal navigation traffic)
   ERROR_REPORT: 10, // Feature #389: Error reporting: 10 requests per minute (tighter limit)
-  DEFAULT: 100,   // Feature #437: Default limit: 100 requests per minute (global safety net)
-  READ_ONLY: 300, // Read-only endpoints: 300 requests per minute (higher but safer)
+  DEFAULT: 100,     // Feature #437: Default limit: 100 requests per minute (global safety net)
+  READ_ONLY: 300,   // Read-only endpoints: 300 requests per minute (higher but safer)
 };
 
 // Patterns for endpoint classification
-const AUTH_ENDPOINT_PATTERNS = ['/api/v1/auth'];
+// Brute-force targets: login, register, forgot-password, reset-password (strict limit)
+const AUTH_LOGIN_PATTERNS = [
+  '/api/v1/auth/login',
+  '/api/v1/auth/login-short',
+  '/api/v1/auth/register',
+  '/api/v1/auth/forgot-password',
+  '/api/v1/auth/reset-password',
+];
+// General auth: /me, /refresh, /sessions, /logout (higher limit - normal navigation traffic)
+const AUTH_GENERAL_PATTERNS = ['/api/v1/auth'];
 // Feature #437: Quick Test endpoints make outbound HTTP requests - strict limit to prevent amplification
 const QUICK_TEST_PATTERNS = ['/api/v1/quick-test'];
 // Feature #389: Tighter rate limit for unauthenticated error reporting endpoint
@@ -51,28 +61,40 @@ const rateLimitStore: Map<string, RateLimitEntry> = new Map();
 let rateLimitCleanupInterval: NodeJS.Timeout | null = null;
 
 /**
- * Feature #214: Get rate limit for a given request
- * Feature #437: Added Quick Test and stricter auth limits
+ * Get the rate limit bucket name for a request.
+ * Each bucket has its own independent counter, so /auth/me traffic
+ * doesn't eat into the login attempt budget.
  */
-export function getRateLimitForRequest(url: string, method: string): number {
-  // Feature #437: Quick Test endpoints are amplification vectors - strictest limit
-  // POST /api/v1/quick-test makes outbound HTTP requests on behalf of the user
+export function getRateLimitBucket(url: string, method: string): string {
   if (method === 'POST' && QUICK_TEST_PATTERNS.some(pattern => url.startsWith(pattern))) {
-    return RATE_LIMITS.QUICK_TEST;
+    return 'quick_test';
   }
-  // Feature #437: Auth endpoints get stricter limits to prevent brute-force attacks
-  if (AUTH_ENDPOINT_PATTERNS.some(pattern => url.startsWith(pattern))) {
-    return RATE_LIMITS.AUTH;
+  if (AUTH_LOGIN_PATTERNS.some(pattern => url.startsWith(pattern))) {
+    return 'auth_login';
   }
-  // Feature #389: Error reporting endpoints get tighter limits (POST only)
+  if (AUTH_GENERAL_PATTERNS.some(pattern => url.startsWith(pattern))) {
+    return 'auth_general';
+  }
   if (method === 'POST' && ERROR_REPORT_PATTERNS.some(pattern => url === pattern)) {
-    return RATE_LIMITS.ERROR_REPORT;
+    return 'error_report';
   }
-  // Read-only requests get higher limits
   if (READ_ONLY_METHODS.includes(method)) {
-    return RATE_LIMITS.READ_ONLY;
+    return 'read_only';
   }
-  return RATE_LIMITS.DEFAULT;
+  return 'default';
+}
+
+const BUCKET_LIMITS: Record<string, number> = {
+  quick_test: RATE_LIMITS.QUICK_TEST,
+  auth_login: RATE_LIMITS.AUTH_LOGIN,
+  auth_general: RATE_LIMITS.AUTH_GENERAL,
+  error_report: RATE_LIMITS.ERROR_REPORT,
+  read_only: RATE_LIMITS.READ_ONLY,
+  default: RATE_LIMITS.DEFAULT,
+};
+
+export function getRateLimitForRequest(url: string, method: string): number {
+  return BUCKET_LIMITS[getRateLimitBucket(url, method)] ?? RATE_LIMITS.DEFAULT;
 }
 
 /**
@@ -122,12 +144,13 @@ export function registerRateLimiting(app: FastifyInstance): void {
     const clientIp = request.ip || request.headers['x-forwarded-for'] || 'unknown';
     const identifier = userId ? `user:${userId}` : `ip:${clientIp}`;
 
-    // Determine rate limit based on endpoint
-    const rateLimit = getRateLimitForRequest(request.url, request.method);
+    // Determine rate limit based on endpoint — each bucket has independent counters
+    const bucket = getRateLimitBucket(request.url, request.method);
+    const rateLimit = BUCKET_LIMITS[bucket] ?? RATE_LIMITS.DEFAULT;
 
     // Feature #390: Use atomic incr() to prevent race conditions under concurrent load
     const cache = getCache();
-    const redisKey = `rate_limit:${identifier}`;
+    const redisKey = `rate_limit:${bucket}:${identifier}`;
     let count = 0;
     let resetAt = Date.now() + RATE_LIMIT_WINDOW_MS;
 
@@ -136,14 +159,16 @@ export function registerRateLimiting(app: FastifyInstance): void {
     count = await cache.incr(redisKey, RATE_LIMIT_WINDOW_SECONDS);
 
     // For in-memory fallback, we still need to track resetAt for headers
+    // Use bucket-scoped key so each category has independent counters
     if (!cache.isRedisConnected()) {
-      const entry = rateLimitStore.get(identifier);
+      const memKey = `${bucket}:${identifier}`;
+      const entry = rateLimitStore.get(memKey);
       if (entry && entry.resetAt > Date.now()) {
         resetAt = entry.resetAt;
         entry.count = count;
       } else {
         resetAt = Date.now() + RATE_LIMIT_WINDOW_MS;
-        rateLimitStore.set(identifier, { count, resetAt });
+        rateLimitStore.set(memKey, { count, resetAt });
       }
     }
 
