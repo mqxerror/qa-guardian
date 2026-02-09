@@ -2576,31 +2576,45 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       browser = null;
     }
 
-    // Calculate summary scores
-    const healthScore = healthResult?.dns.resolved && healthResult?.http.status >= 200 && healthResult?.http.status < 400 ? 100 : 50;
-    const performanceScore = visualResult?.lighthouse?.performance || 50;
-    const securityScore = securityResult?.overallScore || 50;
-    const accessibilityScore = accessibilityResult?.score ?? 50;
-    const apiScore = apiDiscoveryResult?.score ?? 50;
-    const seoScore = seoResult?.score ?? 50; // Feature #527
+    // Feature #538: Calculate summary scores - use 0 for failed/missing waves (no fake fallbacks)
+    const healthScore = healthResult?.dns.resolved && healthResult?.http.status >= 200 && healthResult?.http.status < 400 ? 100 : 0;
+    const performanceScore = visualResult?.lighthouse?.performance || 0;
+    const securityScore = securityResult?.overallScore || 0;
+    const accessibilityScore = accessibilityResult?.score ?? 0;
+    const apiScore = apiDiscoveryResult?.score ?? 0;
+    const seoScore = seoResult?.score ?? 0;
 
-    // Feature #527: Updated overall score to include SEO Analysis
-    // Weights: 12% health, 18% perf, 18% security, 22% a11y, 10% API, 10% SEO, 10% AI implicit
+    // Feature #538: When AI is skipped/not configured, redistribute its 10% weight
+    // proportionally across the other 6 scores instead of using a hardcoded placeholder.
+    // Base weights: 12% health, 18% perf, 18% security, 22% a11y, 10% API, 10% SEO, 10% AI
+    const aiWave = testResult.waves[3];
+    const aiSkipped = aiWave.status === 'skipped' || aiWave.status === 'failed';
+    const aiWeight = aiSkipped ? 0 : 0.10;
+    const aiScore = aiSkipped ? 0 : 50; // AI wave has no numeric score; neutral when it runs
+    // Redistribute AI's 10% proportionally when skipped
+    const redistributionFactor = aiSkipped ? (1 / 0.90) : 1; // scale remaining 90% up to 100%
+    const hw = 0.12 * redistributionFactor;
+    const pw = 0.18 * redistributionFactor;
+    const sw = 0.18 * redistributionFactor;
+    const aw = 0.22 * redistributionFactor;
+    const apw = 0.10 * redistributionFactor;
+    const seow = 0.10 * redistributionFactor;
+
     testResult.summary = {
       healthScore,
       performanceScore,
       securityScore,
       accessibilityScore,
       apiScore,
-      seoScore, // Feature #527
+      seoScore,
       overallScore: Math.round(
-        (healthScore * 0.12) +
-        (performanceScore * 0.18) +
-        (securityScore * 0.18) +
-        (accessibilityScore * 0.22) +
-        (apiScore * 0.10) +
-        (seoScore * 0.10) +
-        (50 * 0.10) // AI implicit score placeholder
+        (healthScore * hw) +
+        (performanceScore * pw) +
+        (securityScore * sw) +
+        (accessibilityScore * aw) +
+        (apiScore * apw) +
+        (seoScore * seow) +
+        (aiScore * aiWeight)
       ),
     };
 
