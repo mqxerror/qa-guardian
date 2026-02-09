@@ -22,7 +22,7 @@ import {
   AnimatedCard,
   CardContent,
 } from '../components/ui';
-import { ScoreCardGrid } from '../components/ui/score-card';
+import { getScoreTextColor } from '../components/ui/score-card';
 import {
   Zap,
   Globe,
@@ -179,18 +179,86 @@ interface ScoreDisplayProps {
   summary: QuickTestResult['summary'];
 }
 
+/** Feature #536: Weight definitions for each score category */
+const SCORE_WEIGHTS: Array<{
+  key: keyof NonNullable<QuickTestResult['summary']>;
+  label: string;
+  weight: number;
+  icon: React.ElementType;
+}> = [
+  { key: 'healthScore', label: 'Health', weight: 12, icon: Globe },
+  { key: 'performanceScore', label: 'Performance', weight: 18, icon: Gauge },
+  { key: 'securityScore', label: 'Security', weight: 18, icon: Shield },
+  { key: 'accessibilityScore', label: 'Accessibility', weight: 22, icon: Accessibility },
+  { key: 'apiScore', label: 'API', weight: 10, icon: Network },
+  { key: 'seoScore', label: 'SEO', weight: 10, icon: Search },
+];
+
+/**
+ * Feature #536: Redesigned score display with all 7 scores and weight breakdowns.
+ * Shows the overall score prominently, followed by a grid of 6 category scores
+ * with their weight contributions.
+ */
 function ScoreDisplay({ summary }: ScoreDisplayProps) {
   if (!summary) return null;
 
+  const overallColor = getScoreTextColor(summary.overallScore);
+
   return (
-    <ScoreCardGrid
-      items={[
-        { label: 'Health', score: summary.healthScore },
-        { label: 'Performance', score: summary.performanceScore },
-        { label: 'Security', score: summary.securityScore },
-        { label: 'Overall', score: summary.overallScore },
-      ]}
-    />
+    <div className="space-y-6">
+      {/* Overall Score - Prominent Display */}
+      <div className="flex items-center justify-center gap-4 py-4">
+        <div className="text-center">
+          <div className={`text-5xl font-bold ${overallColor}`}>
+            {summary.overallScore}
+          </div>
+          <div className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5 justify-center">
+            <BarChart2 className="w-4 h-4" />
+            Overall Score
+          </div>
+        </div>
+      </div>
+
+      {/* Category Scores Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {SCORE_WEIGHTS.map(({ key, label, weight, icon: Icon }) => {
+          const score = summary[key];
+          if (score === undefined || score === null) return null;
+
+          const scoreNum = typeof score === 'number' ? score : 0;
+          const textColor = getScoreTextColor(scoreNum);
+          const contribution = Math.round((scoreNum * weight) / 100);
+
+          return (
+            <div
+              key={key}
+              className="rounded-lg bg-muted/50 p-3 hover:bg-muted/70 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Icon className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">{label}</span>
+              </div>
+              <div className={`text-2xl font-bold ${textColor}`}>{scoreNum}</div>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-xs text-muted-foreground">{weight}% weight</span>
+                <span className="text-xs text-muted-foreground">+{contribution} pts</span>
+              </div>
+              {/* Mini progress bar */}
+              <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    scoreNum >= 80 ? 'bg-success' :
+                    scoreNum >= 60 ? 'bg-warning' :
+                    'bg-destructive'
+                  }`}
+                  style={{ width: `${Math.min(scoreNum, 100)}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

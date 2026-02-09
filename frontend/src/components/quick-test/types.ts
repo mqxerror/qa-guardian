@@ -44,6 +44,9 @@ export interface QuickTestResult {
     healthScore: number;
     performanceScore: number;
     securityScore: number;
+    accessibilityScore?: number;
+    apiScore?: number;
+    seoScore?: number;
     overallScore: number;
   };
 }
