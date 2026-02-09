@@ -102,7 +102,7 @@ export async function setActiveIncident(checkId: string, incident: Incident): Pr
   // No memory fallback
 }
 
-export async function clearActiveIncident(checkId: string): Promise<void> {
+export async function clearActiveIncident(_checkId: string): Promise<void> {
   if (isDatabaseConnected()) {
     // In DB, we resolve incidents by setting ended_at
     // The incident should already be resolved before calling this

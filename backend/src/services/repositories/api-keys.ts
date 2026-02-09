@@ -15,7 +15,7 @@ import {
   McpToolCall,
   McpAuditLogEntry
 } from '../../routes/api-keys/types.js';
-import crypto from 'crypto';
+// crypto removed - direct hashing no longer used in repository layer
 // Feature #439: Use structured logger instead of console.*
 import { logger } from '../logger.js';
 

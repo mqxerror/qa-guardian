@@ -24,16 +24,15 @@ import { createLogger } from './logger.js';
 // Feature #465: PostgreSQL persistence for Quick Test results
 import {
   createQuickTestResult,
-  updateQuickTestWaves,
   completeQuickTestResult,
   getQuickTestResultById,
   type QuickTestWaveResult as DbWaveResult,
   type QuickTestSummary as DbSummary,
 } from './repositories/quick-test.js';
 // Feature #466: Persist screenshots to filesystem
-import { saveScreenshot, type ScreenshotType } from './quick-test-screenshots.js';
+import { saveScreenshot } from './quick-test-screenshots.js';
 // Feature #472: OpenAPI spec parsing for API discovery
-import { parseOpenAPISpec, type OpenAPISpec } from './openapi-parser.js';
+import { parseOpenAPISpec } from './openapi-parser.js';
 
 // Feature #449: Use structured logger instead of console.*
 const log = createLogger('quick-test-runner');

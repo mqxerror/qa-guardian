@@ -8,7 +8,7 @@
  * Feature #1471: Connect AI Router UI to real provider switching
  */
 
-import { AIRouter, FailoverEvent, RouterStats, CostSavings } from './ai-router.js';
+import { AIRouter, FailoverEvent, CostSavings } from './ai-router.js';
 import { BudgetManager, BudgetStatus, BudgetAlert } from './budget-manager.js';
 import { CircuitBreaker, CircuitState, CircuitBreakerConfig } from './circuit-breaker.js';
 import type { ProviderName, AIRouterConfig, HealthMetrics } from './types.js';

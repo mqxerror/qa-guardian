@@ -78,7 +78,7 @@ export function endRequest(
   requestId: string,
   method: string,
   path: string,
-  statusCode: number
+  _statusCode: number
 ): number {
   const startTime = requestTimings.get(requestId);
   requestTimings.delete(requestId);

@@ -44,7 +44,6 @@ async function testTokenCosts() {
     const kiePrice = kiePricing[model];
     if (kiePrice) {
       const inputSavings = ((anthPrice.input - kiePrice.input) / anthPrice.input * 100).toFixed(0);
-      const outputSavings = ((anthPrice.output - kiePrice.output) / anthPrice.output * 100).toFixed(0);
       console.log(`  ${model.padEnd(28)} | ${anthPrice.input.toFixed(2)}/${anthPrice.output.toFixed(2)}        | ${kiePrice.input.toFixed(3)}/${kiePrice.output.toFixed(3)}    | ${inputSavings}%`);
     }
   }

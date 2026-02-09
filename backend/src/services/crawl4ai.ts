@@ -109,7 +109,7 @@ export async function crawlWithPlaywright(url: string): Promise<CrawlResponse> {
 
     // Extract rendered HTML
     const html = await page.content();
-    const title = await page.title();
+    // Page title available via: await page.title()
 
     // Extract links
     const links = await page.evaluate(() => {

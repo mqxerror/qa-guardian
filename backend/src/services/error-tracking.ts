@@ -160,7 +160,7 @@ export function initializeErrorHandlers(gracefulShutdown: () => Promise<void>): 
   });
 
   // Handle unhandled promise rejections
-  process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
+  process.on('unhandledRejection', (reason: unknown, _promise: Promise<unknown>) => {
     logger.error({ reason }, '[ERROR] Unhandled Promise Rejection');
 
     recordError('unhandledRejection', reason);

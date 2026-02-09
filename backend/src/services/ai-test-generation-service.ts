@@ -181,7 +181,7 @@ export interface HealWithVisionRequest {
  */
 function createHandlerContext(apiKey?: string): HandlerContext {
   return {
-    callApi: async (endpoint: string, options?: { method?: string; body?: Record<string, unknown> }) => {
+    callApi: async (endpoint: string, _options?: { method?: string; body?: Record<string, unknown> }) => {
       // For REST API usage, we don't need to call the API again
       // The handlers work directly with AI providers
       log.debug({ endpoint }, 'API call (not needed for direct handler invocation)');

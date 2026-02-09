@@ -11,7 +11,7 @@
 import { query, isDatabaseConnected } from '../database.js';
 import type { WebhookSubscription, WebhookEventType, WebhookDeliveryLog } from '../../routes/test-runs/webhooks.js';
 import { MAX_WEBHOOK_RETRIES } from '../../routes/test-runs/webhooks.js';
-import { encrypt, decrypt, encryptIfNeeded } from '../encryption.js'; // Feature #391: Encrypt webhook secrets at rest
+import { decrypt, encryptIfNeeded } from '../encryption.js'; // Feature #391: Encrypt webhook secrets at rest
 // Feature #449: Use structured logger instead of console.*
 import { createLogger } from '../logger.js';
 

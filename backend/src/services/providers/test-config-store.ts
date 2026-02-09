@@ -11,7 +11,7 @@
  * Run with: npx tsx src/services/providers/test-config-store.ts
  */
 
-import { aiConfigStore, AIProviderConfig } from './config-store.js';
+import { aiConfigStore } from './config-store.js';
 import * as fs from 'fs';
 import * as path from 'path';
 

@@ -15,10 +15,7 @@ import {
   ModelSelector,
   modelSelector,
   AIFeatureCategory,
-  FeatureModelConfig,
   DEFAULT_FEATURE_MODELS,
-  AVAILABLE_MODELS,
-  MODEL_TIERS,
 } from './model-selector.js';
 
 function testModelSelector() {

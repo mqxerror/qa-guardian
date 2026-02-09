@@ -80,7 +80,6 @@ async function testAIRouterService() {
   // Step 6: Test circuit breaker reset
   console.log('\nStep 6: Testing circuit breaker reset...');
   aiRouterService.resetCircuitBreaker('kie');
-  const kieState = cbStates.find(s => s.provider === 'kie');
   console.log(`  - Reset kie circuit breaker`);
   console.log(`  - State after reset: ${aiRouterService.getCircuitBreakerStates().find(s => s.provider === 'kie')?.state}`);
 

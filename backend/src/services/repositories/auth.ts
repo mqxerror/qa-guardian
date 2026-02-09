@@ -509,7 +509,7 @@ export async function getUserSessions(userId: string): Promise<Session[]> {
  */
 export async function updateSessionLastActive(sessionId: string): Promise<void> {
   // Update in memory
-  for (const [userId, sessions] of memoryUserSessions.entries()) {
+  for (const [, sessions] of memoryUserSessions.entries()) {
     const session = sessions.find(s => s.id === sessionId);
     if (session) { session.last_active = new Date(); break; }
   }

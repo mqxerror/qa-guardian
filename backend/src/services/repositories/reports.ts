@@ -132,7 +132,8 @@ function parseReportRow(row: ReportRow): ComprehensiveReport {
   };
 }
 
-function createSummaryFromReport(report: ComprehensiveReport): ReportSummary {
+// Helper function for future use
+function _createSummaryFromReport(report: ComprehensiveReport): ReportSummary {
   return {
     id: report.id,
     projectId: report.projectId,

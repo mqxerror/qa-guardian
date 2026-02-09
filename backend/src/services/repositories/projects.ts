@@ -10,7 +10,7 @@
  * - DELETE: return false
  */
 
-import { query, isDatabaseConnected, transaction } from '../database.js';
+import { query, isDatabaseConnected } from '../database.js';
 import { encrypt, decrypt } from '../encryption.js'; // Feature #217: Encrypt sensitive data
 import { Project, ProjectMember, EnvironmentVariable, ProjectVisualSettings, ProjectHealingSettings } from '../../routes/projects/types.js';
 // Feature #449: Use structured logger instead of console.*

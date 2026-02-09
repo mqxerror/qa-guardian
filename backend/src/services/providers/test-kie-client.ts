@@ -72,13 +72,11 @@ async function testKieClient() {
 
   console.log('\nStep 4: Testing streaming API...');
   try {
-    let streamedContent = '';
-    const response = await client.sendMessageStream(
+    await client.sendMessageStream(
       [{ role: 'user', content: 'Count from 1 to 5, one number per line.' }],
       { model: 'deepseek-chat', maxTokens: 50 },
       {
         onText: (text) => {
-          streamedContent += text;
           process.stdout.write(text);
         },
         onComplete: (result) => {

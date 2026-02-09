@@ -14,7 +14,6 @@
 
 import {
   AIRouter,
-  ProviderSwitchEvent,
 } from './ai-router.js';
 import type { ProviderName } from './types.js';
 

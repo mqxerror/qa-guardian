@@ -21,10 +21,6 @@ import type {
   ProviderConfig,
   AIRouterConfig,
   ProviderName,
-  AIMessageContent,
-  AIImageSource,
-  AIImageContent,
-  AITextContent,
 } from './types.js';
 
 import { KieAIProvider } from './kie-ai-provider.js';

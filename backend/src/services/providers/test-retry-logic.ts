@@ -13,7 +13,7 @@
  */
 
 import { KieAIClient, KieAPIError } from './kie-ai-client.js';
-import { AnthropicProvider, AnthropicAPIError } from './anthropic-provider.js';
+import { AnthropicProvider } from './anthropic-provider.js';
 
 async function testRetryLogic() {
   console.log('=== Testing Exponential Backoff Retry Logic ===\n');
