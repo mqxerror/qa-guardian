@@ -501,15 +501,98 @@ export function ProjectModals({
  </div>
  )}
 
- {/* Create Suite Modal */}
+ {/* Create Suite Modal - Feature #491: Added Quick Start templates */}
  {showCreateSuiteModal && (
  <div
  className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
  onClick={(e) => e.target === e.currentTarget && setShowCreateSuiteModal(false)}
  >
- <div role="dialog" aria-modal="true" aria-labelledby="create-suite-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
+ <div role="dialog" aria-modal="true" aria-labelledby="create-suite-title" className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
  <h3 id="create-suite-title" className="text-lg font-semibold text-foreground">Create Test Suite</h3>
- <form onSubmit={handleCreateSuite} className="mt-4 space-y-4">
+
+ {/* Feature #491: Quick Start Templates */}
+ <div className="mt-4">
+ <p className="text-sm font-medium text-muted-foreground mb-3">Quick Start Templates</p>
+ <div className="grid grid-cols-3 gap-3">
+ {/* Login Flow Template */}
+ <button
+ type="button"
+ onClick={() => {
+ setNewSuiteName('Login Flow Tests');
+ setNewSuiteDescription('Authentication and login functionality tests');
+ setNewSuiteBrowser('chromium');
+ handleDevicePresetChange('desktop');
+ setNewSuiteTimeout(30000);
+ setNewSuiteRetryCount(2);
+ }}
+ className="flex flex-col items-center gap-2 p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 hover:border-primary/50 transition-colors group"
+ >
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+ <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+ <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+ </svg>
+ </div>
+ <span className="text-xs font-medium text-foreground text-center">Login Flow</span>
+ <span className="text-[10px] text-muted-foreground">Desktop • 30s timeout</span>
+ </button>
+
+ {/* E-commerce Checkout Template */}
+ <button
+ type="button"
+ onClick={() => {
+ setNewSuiteName('Checkout Flow Tests');
+ setNewSuiteDescription('E-commerce checkout and payment flow tests');
+ setNewSuiteBrowser('chromium');
+ handleDevicePresetChange('desktop');
+ setNewSuiteTimeout(60000);
+ setNewSuiteRetryCount(1);
+ }}
+ className="flex flex-col items-center gap-2 p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 hover:border-primary/50 transition-colors group"
+ >
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10 group-hover:bg-success/20 transition-colors">
+ <svg className="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+ <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+ </svg>
+ </div>
+ <span className="text-xs font-medium text-foreground text-center">E-commerce</span>
+ <span className="text-[10px] text-muted-foreground">Desktop • 60s timeout</span>
+ </button>
+
+ {/* API Health Check Template */}
+ <button
+ type="button"
+ onClick={() => {
+ setNewSuiteName('API Health Checks');
+ setNewSuiteDescription('API endpoint health and response validation tests');
+ setNewSuiteBrowser('chromium');
+ handleDevicePresetChange('desktop');
+ setNewSuiteTimeout(15000);
+ setNewSuiteRetryCount(3);
+ }}
+ className="flex flex-col items-center gap-2 p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 hover:border-primary/50 transition-colors group"
+ >
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10 group-hover:bg-accent/20 transition-colors">
+ <svg className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+ <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+ </svg>
+ </div>
+ <span className="text-xs font-medium text-foreground text-center">API Health</span>
+ <span className="text-[10px] text-muted-foreground">Fast • 3 retries</span>
+ </button>
+ </div>
+ </div>
+
+ {/* Divider */}
+ <div className="relative my-4">
+ <div className="absolute inset-0 flex items-center">
+ <div className="w-full border-t border-border"></div>
+ </div>
+ <div className="relative flex justify-center text-xs">
+ <span className="bg-card px-2 text-muted-foreground">or customize manually</span>
+ </div>
+ </div>
+
+ <form onSubmit={handleCreateSuite} className="space-y-4">
  {createSuiteError && (
  <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
  {createSuiteError}
