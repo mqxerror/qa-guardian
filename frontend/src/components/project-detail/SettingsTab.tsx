@@ -8,7 +8,7 @@ import { toast } from '../../stores/toastStore';
 import {
  Project,
  ViewportProfile,
- ProjectMember,
+ // ProjectMember, // Unused
  OrgMember,
  AlertChannel,
  AlertHistoryEntry,

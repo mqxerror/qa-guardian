@@ -75,7 +75,8 @@ export function ConnectionStatusIndicator({
 
   const {
     connectionStatus,
-    isConnected,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    isConnected, // Reserved for future connection status display
     reconnectAttempt,
     getConnectionHealth,
     reconnectionEvents,

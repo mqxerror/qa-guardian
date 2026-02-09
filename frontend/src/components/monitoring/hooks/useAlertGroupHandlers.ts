@@ -8,7 +8,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from '../../../stores/toastStore';
 import { devLog } from '../../../utils/logger';
-import type { AlertGroupingRule, AlertGroup, GroupedAlert } from '../types';
+import type { AlertGroupingRule, AlertGroup } from '../types'; // GroupedAlert unused
 
 export interface UseAlertGroupHandlersReturn {
   // State

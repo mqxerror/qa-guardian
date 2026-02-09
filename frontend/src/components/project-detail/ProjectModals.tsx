@@ -13,7 +13,7 @@
 import React from 'react';
 import {
  OrgMember,
- SlackChannel,
+ // SlackChannel, // Unused
  EditSelectorModalState,
  VisionHealingResult,
  SettingsState,

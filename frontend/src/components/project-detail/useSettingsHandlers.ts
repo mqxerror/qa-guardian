@@ -10,7 +10,7 @@ import {
   ProjectMember,
   OrgMember,
   AlertChannel,
-  AlertChannelType,
+  // AlertChannelType, // Unused
   AlertCondition,
   AlertHistoryEntry,
   EnvironmentVariable,

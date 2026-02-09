@@ -7,7 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from '../../../stores/toastStore';
-import type { TransactionCheck, TransactionResult, TransactionStepInput, TransactionStepAssertion } from '../types';
+import type { TransactionCheck, TransactionResult, TransactionStepAssertion } from '../types'; // TransactionStepInput unused
 
 export interface UseTransactionHandlersReturn {
   // State

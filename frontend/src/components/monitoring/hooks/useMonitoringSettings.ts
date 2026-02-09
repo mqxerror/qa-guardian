@@ -17,7 +17,7 @@
  * - Alert history
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react'; // useEffect unused
 import { toast } from '../../../stores/toastStore';
 import {
   MonitoringSettings,
