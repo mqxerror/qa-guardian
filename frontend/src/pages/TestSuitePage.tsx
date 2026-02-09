@@ -14,7 +14,7 @@ import { io } from 'socket.io-client';
 import { UnifiedAIService } from '../services/UnifiedAIService';
 import { CreateTestModal } from '../components/create-test';
 import { logger } from '../utils/logger';
-import { ScoreCardGrid } from '../components/ui/score-card';
+import { ScoreCard } from '../components/ui/score-card';
 // Feature #59: React Query hooks for paginated test loading
 // Feature #143: Added mutation hooks for operations
 import {
@@ -1126,16 +1126,12 @@ function TestSuitePage() {
             ? Math.round((passedTests / testsWithResults.length) * 100)
             : 0;
           return testsWithResults.length > 0 ? (
-            <ScoreCardGrid
-              items={[
-                { score: passRate, label: 'Pass Rate' },
-                { score: tests.length, label: 'Total Tests' },
-                { score: passedTests, label: 'Passed' },
-                { score: failedTests, label: 'Failed' },
-              ]}
-              size="sm"
-              thresholds={{ good: 80, warning: 60 }}
-            />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <ScoreCard score={passRate} label="Pass Rate" size="sm" thresholds={{ good: 80, warning: 60 }} />
+              <ScoreCard score={tests.length} label="Total Tests" size="sm" thresholds={{ good: 0, warning: 0 }} />
+              <ScoreCard score={passedTests} label="Passed" size="sm" thresholds={{ good: 0, warning: 0 }} />
+              <ScoreCard score={failedTests} label="Failed" size="sm" thresholds={{ good: 0, warning: 0 }} />
+            </div>
           ) : null;
         })()}
 
