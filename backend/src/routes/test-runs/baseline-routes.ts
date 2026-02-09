@@ -18,6 +18,10 @@ import * as path from 'path';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { getTest } from '../test-suites.js';
 import { testRuns } from './execution.js';
+// Feature #484: Pino structured logging
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('baseline-routes');
 import {
   getBaselinePath,
   getBaselineMetadata,
@@ -476,7 +480,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
       approvedAt: now,
     }, currentBaselineBuffer);
 
-    console.log(`[Visual] Baseline restored from history ${historyId} for test ${testId} by ${user.email} (version ${newEntry.version})`);
+    log.info({ historyId, testId, userEmail: user.email, version: newEntry.version, code: 'BASELINE_RESTORED' }, 'Baseline restored from history');
 
     return {
       success: true,
@@ -541,7 +545,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
-    console.log(`[Visual] Manual retry requested for failed upload ${uploadId}`);
+    log.info({ uploadId, code: 'VISUAL_RETRY_REQUESTED' }, 'Manual retry requested for failed upload');
 
     // Attempt to save the screenshot again with retry logic
     const result = await saveScreenshotWithRetry(
@@ -553,7 +557,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     if (result.success) {
       // Remove from failed uploads
       failedUploads.delete(uploadId);
-      console.log(`[Visual] Manual retry successful for upload ${uploadId}`);
+      log.info({ uploadId, code: 'VISUAL_RETRY_SUCCESS' }, 'Manual retry successful for failed upload');
 
       return {
         success: true,
@@ -640,7 +644,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
 
     fs.unlinkSync(baselinePath);
 
-    console.log(`[Visual] Baseline deleted for test ${testId} (viewport: ${viewport}, branch: ${branch}) by ${user.email}`);
+    log.info({ testId, viewport, branch, userEmail: user.email, code: 'BASELINE_DELETED' }, 'Baseline deleted');
 
     return {
       success: true,

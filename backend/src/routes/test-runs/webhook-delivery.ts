@@ -11,6 +11,10 @@ import { validateWebhookURL, validateWebhookURLWithDNS, generateId } from '../..
 import { webhookLog } from './alerts.js';
 import { logWebhookDelivery, flattenObject } from './webhook-crud.js';
 import * as webhookRepo from '../../services/repositories/webhooks.js';
+// Feature #484: Pino structured logging
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('webhook-delivery');
 
 // ============================================================================
 // Route Registration
@@ -340,7 +344,7 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
       triggered_by: user.email,
     };
 
-    console.log(`[WEBHOOK] Testing subscription "${subscription.name}" (${subscriptionId})`);
+    log.info({ subscriptionId, subscriptionName: subscription.name, code: 'WEBHOOK_TEST' }, 'Testing webhook subscription');
 
     const startTime = Date.now();
     const deliveryId = generateId('test', 7); // Feature #357: Use shared ID generator
@@ -950,7 +954,7 @@ def verify_webhook_signature(body: bytes, signature_header: str, secret: str, to
         source: 'database', // Indicates data comes from persistent storage
       };
     } catch (error: unknown) {
-      console.error('[WEBHOOK] Failed to get delivery history from database:', error);
+      log.error({ err: error, code: 'WEBHOOK_DELIVERY_HISTORY_FAILED' }, 'Failed to get delivery history from database');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve delivery history',
@@ -1006,7 +1010,7 @@ def verify_webhook_signature(body: bytes, signature_header: str, secret: str, to
         source: 'database',
       };
     } catch (error: unknown) {
-      console.error('[WEBHOOK] Failed to get delivery history from database:', error);
+      log.error({ err: error, code: 'WEBHOOK_DELIVERY_HISTORY_FAILED' }, 'Failed to get delivery history from database');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve delivery history',

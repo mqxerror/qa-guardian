@@ -7,6 +7,10 @@ import { query } from '../services/database.js';
 import { QueryResult, QueryResultRow } from 'pg';
 import crypto from 'crypto';
 import { TestStep } from './test-suites/types.js';
+// Feature #484: Pino structured logging
+import { createLogger } from '../services/logger.js';
+
+const log = createLogger('step-templates');
 
 // ============================================
 // Column Constants for SELECT queries
@@ -101,7 +105,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
         total: result.rowCount ?? 0,
       });
     } catch (error) {
-      console.error('[StepTemplates] Failed to list templates:', error);
+      log.error({ err: error, orgId, code: 'TEMPLATE_LIST_FAILED' }, 'Failed to list step templates');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to list step templates' });
     }
   });
@@ -132,7 +136,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
         },
       });
     } catch (error) {
-      console.error('[StepTemplates] Failed to get template:', error);
+      log.error({ err: error, templateId, orgId, code: 'TEMPLATE_GET_FAILED' }, 'Failed to get step template');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to get step template' });
     }
   });
@@ -177,7 +181,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
         },
       });
     } catch (error) {
-      console.error('[StepTemplates] Failed to create template:', error);
+      log.error({ err: error, orgId, name, code: 'TEMPLATE_CREATE_FAILED' }, 'Failed to create step template');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to create step template' });
     }
   });
@@ -236,7 +240,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
         },
       });
     } catch (error) {
-      console.error('[StepTemplates] Failed to update template:', error);
+      log.error({ err: error, templateId, orgId, code: 'TEMPLATE_UPDATE_FAILED' }, 'Failed to update step template');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to update step template' });
     }
   });
@@ -268,7 +272,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
         id: templateId,
       });
     } catch (error) {
-      console.error('[StepTemplates] Failed to delete template:', error);
+      log.error({ err: error, templateId, orgId, code: 'TEMPLATE_DELETE_FAILED' }, 'Failed to delete step template');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to delete step template' });
     }
   });
@@ -331,7 +335,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
         total_steps: config.steps.length,
       });
     } catch (error) {
-      console.error('[StepTemplates] Failed to append steps:', error);
+      log.error({ err: error, testId, orgId, code: 'STEPS_APPEND_FAILED' }, 'Failed to append steps to test');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to append steps' });
     }
   });
@@ -380,7 +384,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
         test: result.rows[0],
       });
     } catch (error) {
-      console.error('[StepTemplates] Failed to duplicate test:', error);
+      log.error({ err: error, testId, orgId, code: 'TEST_DUPLICATE_FAILED' }, 'Failed to duplicate test');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to duplicate test' });
     }
   });

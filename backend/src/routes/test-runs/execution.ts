@@ -11,6 +11,10 @@
  */
 
 import { Browser, chromium, firefox, webkit } from 'playwright';
+// Feature #484: Pino structured logging
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('execution');
 
 // ============================================================================
 // Type Definitions
@@ -546,7 +550,7 @@ export function cleanupExpiredRuns(): number {
   }
 
   if (cleaned > 0) {
-    console.log(`[Execution] TTL cleanup: removed ${cleaned} expired run(s) from memory. Active: ${testRuns.size}`);
+    log.debug({ cleaned, active: testRuns.size, code: 'TTL_CLEANUP' }, 'TTL cleanup: removed expired runs from memory');
   }
 
   return cleaned;
@@ -561,7 +565,7 @@ let cleanupInterval: ReturnType<typeof setInterval> | null = null;
 export function startRunCleanup(): void {
   if (cleanupInterval) return;
   cleanupInterval = setInterval(cleanupExpiredRuns, CLEANUP_INTERVAL_MS);
-  console.log('[Execution] Started TTL cleanup interval (every 60s)');
+  log.info({ interval: '60s', code: 'TTL_CLEANUP_STARTED' }, 'Started TTL cleanup interval');
 }
 
 /**
@@ -571,7 +575,7 @@ export function stopRunCleanup(): void {
   if (cleanupInterval) {
     clearInterval(cleanupInterval);
     cleanupInterval = null;
-    console.log('[Execution] Stopped TTL cleanup interval');
+    log.info({ code: 'TTL_CLEANUP_STOPPED' }, 'Stopped TTL cleanup interval');
   }
 }
 
@@ -697,7 +701,7 @@ export function resolveViewport(name: string): { width: number; height: number; 
     }
   }
 
-  console.warn(`[Viewport] Unknown viewport preset "${name}", falling back to desktop-hd (1920x1080)`);
+  log.warn({ preset: name, fallback: 'desktop-hd', code: 'UNKNOWN_VIEWPORT_PRESET' }, 'Unknown viewport preset, falling back to desktop-hd (1920x1080)');
   return { width: 1920, height: 1080, label: `Unknown (${name})` };
 }
 

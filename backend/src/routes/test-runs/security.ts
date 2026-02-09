@@ -18,6 +18,10 @@ import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/au
 import { getProject as dbGetProject } from '../projects/stores.js';
 // Feature #123: Import cache service for read-heavy endpoints
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
+// Feature #484: Pino structured logging
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('security');
 // Feature #268: Import SBOM generator service
 import {
   generateSbom,
@@ -373,7 +377,7 @@ export async function securityRoutes(app: FastifyInstance) {
           await cache.invalidate(CacheKeys.security.pattern);
         } catch (e) {
           // Cache invalidation failure is non-critical
-          console.warn('Failed to invalidate security cache:', e);
+          log.warn({ err: e, code: 'SECURITY_CACHE_INVALIDATION_FAILED' }, 'Failed to invalidate security cache');
         }
       }
     }, 2000);
@@ -1244,7 +1248,7 @@ export async function securityRoutes(app: FastifyInstance) {
 
       return response;
     } catch (error) {
-      console.error('[LicenseCompliance] Error scanning licenses:', error);
+      log.error({ err: error, code: 'LICENSE_SCAN_FAILED' }, 'Error scanning licenses');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to scan license compliance',
@@ -1490,7 +1494,7 @@ export async function securityRoutes(app: FastifyInstance) {
       const result = await generateSbom(options);
       return result;
     } catch (error: unknown) {
-      console.error('[SBOM] Generation failed:', error);
+      log.error({ err: error, code: 'SBOM_GENERATION_FAILED' }, 'SBOM generation failed');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: `Failed to generate SBOM: ${error instanceof Error ? error.message : String(error)}`,

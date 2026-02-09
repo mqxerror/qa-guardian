@@ -394,6 +394,10 @@ import {
   isQueueReady,
 } from '../services/execution-queue.js';
 
+// Feature #484: Pino structured logging
+import { createLogger } from '../services/logger.js';
+const log = createLogger('test-runs');
+
 // Re-export healing types for external use
 export {
   PendingHealingApproval,
@@ -496,7 +500,7 @@ export async function testRunRoutes(app: FastifyInstance) {
   // Feature #155: Register the execution callback for the queue worker
   // This allows the queue to execute test runs with proper concurrency limits
   registerExecutionCallback(runTestsForRun);
-  console.log('[TestRuns] Execution callback registered with queue');
+  log.info({ code: 'EXECUTION_CALLBACK_REGISTERED' }, 'Execution callback registered with queue');
 
   // Register all extracted route modules
   await securityRoutes(app);

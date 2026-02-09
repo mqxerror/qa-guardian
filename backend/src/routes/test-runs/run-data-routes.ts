@@ -12,6 +12,10 @@ import { EnvironmentVariable } from '../projects/types.js';
 import { testRuns, TestRun, ConsoleLog, NetworkRequest, StepResult } from './execution.js';
 import { getTestRun as dbGetTestRun } from '../../services/repositories/test-runs.js';
 import { TestSuite, Test } from '../test-suites/types.js';
+// Feature #484: Pino structured logging
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('run-data-routes');
 
 // Helper: get test run from Map first, then fall back to DB
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
@@ -623,7 +627,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     }
 
     testRuns.set(runId, run);
-    console.log(`[ENV] Set ${Object.keys(env_vars).length} environment variables for run ${runId} (merge=${merge})`);
+    log.info({ runId, count: Object.keys(env_vars).length, merge, code: 'ENV_VARS_SET' }, 'Environment variables set for run');
 
     // Get the suite and project env vars for the response
     const suite = await getTestSuite(run.suite_id) as TestSuite | null;
@@ -771,7 +775,7 @@ export async function runDataRoutes(app: FastifyInstance) {
     }
 
     testRuns.set(runId, run);
-    console.log(`[ENV] Deleted ${deletedCount} environment variables from run ${runId}`);
+    log.info({ runId, deletedCount, code: 'ENV_VARS_DELETED' }, 'Environment variables deleted from run');
 
     return {
       run_id: runId,
@@ -1011,7 +1015,7 @@ export async function runDataRoutes(app: FastifyInstance) {
       );
     }
 
-    console.log(`[K6 COMPARE] Compared runs ${baseRunId} vs ${compareRunId}: ${comparison.overall.performance}`);
+    log.info({ baseRunId, compareRunId, performance: comparison.overall.performance, code: 'K6_COMPARE' }, 'K6 runs compared');
 
     return {
       comparison,

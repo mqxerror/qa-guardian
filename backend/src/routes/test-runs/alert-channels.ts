@@ -17,6 +17,10 @@ import {
   webhookLog,
   slackConnections,
 } from './alerts.js';
+// Feature #484: Pino structured logging
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('alert-channels');
 
 // ============================================================================
 // Route Registration
@@ -180,7 +184,7 @@ export async function alertChannelRoutes(app: FastifyInstance) {
 
     alertChannels.set(id, channel);
 
-    console.log(`[ALERT] Created ${type} alert channel "${name}" for project ${projectId} by ${user.email}`);
+    log.info({ type, name, projectId, userEmail: user.email, code: 'ALERT_CHANNEL_CREATED' }, 'Alert channel created');
 
     return reply.status(201).send({
       channel: {
@@ -256,7 +260,7 @@ export async function alertChannelRoutes(app: FastifyInstance) {
     channel.updated_at = new Date();
     alertChannels.set(channelId, channel);
 
-    console.log(`[ALERT] Updated alert channel "${channel.name}" (${channelId}) by ${user.email}`);
+    log.info({ channelId, channelName: channel.name, userEmail: user.email, code: 'ALERT_CHANNEL_UPDATED' }, 'Alert channel updated');
 
     return {
       channel: {
@@ -307,7 +311,7 @@ export async function alertChannelRoutes(app: FastifyInstance) {
 
       alertChannels.delete(channelId);
 
-      console.log(`[ALERT] Deleted alert channel "${channel.name}" (${channelId}) by ${user.email}`);
+      log.info({ channelId, channelName: channel.name, userEmail: user.email, code: 'ALERT_CHANNEL_DELETED' }, 'Alert channel deleted');
 
       return {
         message: 'Alert channel deleted successfully',

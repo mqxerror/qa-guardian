@@ -7,6 +7,10 @@ import { sendScheduleTriggeredWebhook } from './test-runs/webhook-events.js';
 // Feature #145: Cache invalidation for schedule mutations
 import { getCache } from '../services/cache.js';
 import { CacheKeys } from '../services/cache-keys.js';
+// Feature #484: Pino structured logging
+import { createLogger } from '../services/logger.js';
+
+const log = createLogger('schedules');
 
 // Feature #2117: Import only async repository functions (no getMemory* calls)
 import {
@@ -383,7 +387,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
     // Feature #169: Route execution through the queue (worker container handles actual execution)
     const { enqueueOrExecute } = await import('../services/execution-queue.js');
     enqueueOrExecute(runId, 'e2e', { triggeredBy: 'schedule' }).catch(err => {
-      console.error(`[Schedules] Failed to enqueue test run ${runId}:`, err);
+      log.error({ err, runId, scheduleId: id, code: 'SCHEDULE_ENQUEUE_FAILED' }, 'Failed to enqueue test run');
     });
 
     // Feature #1312: Emit schedule.triggered webhook
@@ -412,7 +416,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
         run_count: schedule.run_count,
         triggered_by: user.email,
       }).catch((err) => {
-        console.error('[WEBHOOK] Failed to emit schedule.triggered webhook:', err);
+        log.error({ err, scheduleId: id, runId, code: 'SCHEDULE_WEBHOOK_FAILED' }, 'Failed to emit schedule.triggered webhook');
       });
     }
 
