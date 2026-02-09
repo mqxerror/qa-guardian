@@ -22,6 +22,7 @@ import {
   AnimatedCard,
   CardContent,
 } from '../components/ui';
+import { ScoreCardGrid } from '../components/ui/score-card';
 import {
   Zap,
   Globe,
@@ -257,7 +258,7 @@ function WaveCard({ wave, onToggleExpand, onScreenshotClick, onCreateTestSuite }
       {/* Expanded Content */}
       {wave.expanded && (
         <div className="px-4 pb-4 space-y-2">
-          {wave.steps.map((step, idx) => (
+          {wave.steps?.map((step, idx) => (
             <div
               key={idx}
               className="flex items-center justify-between py-1.5 px-2 rounded bg-background/50"
@@ -565,6 +566,7 @@ interface AccessibilityData {
 // Feature #514: ImpactBadge moved to ../components/quick-test/badges.tsx
 
 function AccessibilityDetails({ data }: { data: AccessibilityData }) {
+  if (!data || !data.violationCounts) return null;
   const hasViolations = data.violations && data.violations.length > 0;
 
   return (
@@ -700,6 +702,7 @@ interface APIDiscoveryData {
 }
 
 function APIDiscoveryDetails({ data }: { data: APIDiscoveryData }) {
+  if (!data || !data.summary) return null;
   const hasEndpoints = data.endpoints && data.endpoints.length > 0;
   const hasConcerns = data.securityConcerns && data.securityConcerns.length > 0;
 
@@ -913,6 +916,7 @@ function ScreenshotModal({ isOpen, url, type, onClose }: ScreenshotModalProps) {
 
 // ============================================================
 // Score Display Component
+// Feature #522: Uses ScoreCardGrid from ../components/ui/score-card
 // ============================================================
 
 interface ScoreDisplayProps {
@@ -923,24 +927,14 @@ function ScoreDisplay({ summary }: ScoreDisplayProps) {
   if (!summary) return null;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {[
+    <ScoreCardGrid
+      items={[
         { label: 'Health', score: summary.healthScore },
         { label: 'Performance', score: summary.performanceScore },
         { label: 'Security', score: summary.securityScore },
         { label: 'Overall', score: summary.overallScore },
-      ].map((item, idx) => (
-        <div
-          key={idx}
-          className={`p-4 rounded-lg ${getScoreBgColor(item.score)} text-center`}
-        >
-          <div className={`text-3xl font-bold ${getScoreColor(item.score)}`}>
-            {item.score}
-          </div>
-          <div className="text-sm text-muted-foreground mt-1">{item.label}</div>
-        </div>
-      ))}
-    </div>
+      ]}
+    />
   );
 }
 

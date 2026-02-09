@@ -125,6 +125,18 @@ export { StatusPill, getStatusFromString } from './status-pill';
 export { SectionHeader } from './section-header';
 export { MetadataRow, MetadataList } from './metadata-row';
 
+// Feature #522: Score display components
+export {
+  ScoreCard,
+  ScoreCardGrid,
+  getScoreTextColor,
+  getScoreBgColor,
+  type ScoreCardProps,
+  type ScoreCardSize,
+  type ScoreThresholds,
+  type ScoreCardGridProps,
+} from './score-card';
+
 // Animation utilities
 export {
   useReducedMotion,
