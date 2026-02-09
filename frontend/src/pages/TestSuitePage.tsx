@@ -3,18 +3,19 @@
 // Feature #125: Added skeleton loaders for better perceived performance
 // Feature #337: Dark-first design system redesign
 // Feature #525: Added suite health metrics with unified ScoreCard component
-import { useState, useEffect, useRef } from 'react';
+// Feature #546: Replaced HTTP polling with WebSocket live streaming via useSuiteRunSocket
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { SkeletonTestSuitePage } from '../components/ui/Skeleton';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { getErrorMessage } from '../utils/errorHandling';
-import { io } from 'socket.io-client';
 import { UnifiedAIService } from '../services/UnifiedAIService';
 import { CreateTestModal } from '../components/create-test';
-import { logger } from '../utils/logger';
 import { ScoreCard } from '../components/ui/score-card';
+// Feature #546: WebSocket-based suite run tracking (replaces HTTP polling + separate socket)
+import { useSuiteRunSocket, type LiveScreenshot, type ScreenshotHistoryEntry, type SuiteRun as SuiteRunSocket } from '../hooks/useSuiteRunSocket';
 // Feature #59: React Query hooks for paginated test loading
 // Feature #143: Added mutation hooks for operations
 import {
@@ -157,7 +158,8 @@ function TestSuitePage() {
   const [isRunningSuite, setIsRunningSuite] = useState(false);
   const [isCancellingSuite, setIsCancellingSuite] = useState(false);
   const [suiteRun, setSuiteRun] = useState<SuiteRunLocal | null>(null);
-  const [suiteRunPolling, setSuiteRunPolling] = useState(false);
+  // Feature #546: suiteRunPolling replaced by WebSocket - kept for backwards compat with run start
+  const [suiteRunActive, setSuiteRunActive] = useState(false);
 
   const [showDeleteSuiteModal, setShowDeleteSuiteModal] = useState(false);
   const [isDeletingSuite, setIsDeletingSuite] = useState(false);
@@ -194,6 +196,56 @@ function TestSuitePage() {
     timestamp: number;
   }>>([]);
   const [expandedScreenshot, setExpandedScreenshot] = useState<string | null>(null);
+
+  // Feature #546: WebSocket callbacks for suite run tracking (replaces HTTP polling + separate socket)
+  const handleSuiteRunUpdate = useCallback((update: Partial<SuiteRunSocket>) => {
+    setSuiteRun(prev => prev ? { ...prev, ...update } as SuiteRunLocal : null);
+  }, []);
+
+  const handleSuiteRunComplete = useCallback(async (completedRun: SuiteRunSocket) => {
+    // Set status immediately from WebSocket event
+    setSuiteRun(prev => prev ? {
+      ...prev,
+      status: completedRun.status,
+      duration_ms: completedRun.duration_ms,
+    } : null);
+    setSuiteRunActive(false);
+    setIsRunningSuite(false);
+
+    // Fetch full run results from API (WebSocket event doesn't include per-test results)
+    if (completedRun.id) {
+      try {
+        const response = await fetch(`/api/v1/runs/${completedRun.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setSuiteRun(data.run);
+        }
+      } catch (err) {
+        console.error('Failed to fetch final run results:', err);
+      }
+    }
+  }, [token]);
+
+  const handleSuiteRunScreenshot = useCallback((screenshot: LiveScreenshot) => {
+    setLiveScreenshot(screenshot);
+  }, []);
+
+  const handleSuiteRunScreenshotHistory = useCallback((entry: ScreenshotHistoryEntry) => {
+    setScreenshotHistory(prev => [...prev, entry].slice(-3)); // Keep last 3
+  }, []);
+
+  // Feature #546: Use WebSocket for live suite run updates (replaces polling + separate socket)
+  useSuiteRunSocket({
+    runId: suiteRun?.id,
+    token,
+    onRunUpdate: handleSuiteRunUpdate,
+    onRunComplete: handleSuiteRunComplete,
+    onScreenshot: handleSuiteRunScreenshot,
+    onScreenshotHistory: handleSuiteRunScreenshotHistory,
+    enabled: suiteRunActive,
+  });
 
   const canCreateTest = user?.role !== 'viewer';
   const canDeleteSuite = user?.role === 'owner' || user?.role === 'admin';
@@ -421,12 +473,16 @@ function TestSuitePage() {
 
     setIsRunningSuite(true);
     setSuiteRun(null);
+    // Feature #546: Clear screenshot state for new run
+    setLiveScreenshot(null);
+    setScreenshotHistory([]);
 
     try {
       // Feature #143: Converted to React Query mutation
       const data = await startSuiteRunMutation.mutateAsync({ suiteId: suiteId || '' });
       setSuiteRun(data.run);
-      setSuiteRunPolling(true);
+      // Feature #546: Enable WebSocket tracking instead of polling
+      setSuiteRunActive(true);
     } catch (err) {
       console.error('Failed to run suite:', err);
       toast.error(getErrorMessage(err, 'Failed to start test run'));
@@ -497,7 +553,8 @@ function TestSuitePage() {
     try {
       await cancelRunMutation.mutateAsync(suiteRun.id);
       setSuiteRun((prev) => prev ? { ...prev, status: 'cancelled' as const } : null);
-      setSuiteRunPolling(false);
+      // Feature #546: Disable WebSocket tracking on cancel
+      setSuiteRunActive(false);
       setIsRunningSuite(false);
       toast.success('Test run cancelled');
     } catch (err) {
@@ -819,119 +876,9 @@ function TestSuitePage() {
     toast.success(`Exported ${tests.length} test(s) to file`);
   };
 
-  // Poll for suite run status
-  useEffect(() => {
-    if (!suiteRunPolling || !suiteRun?.id) return;
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/v1/runs/${suiteRun.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setSuiteRun(data.run);
-
-          if (data.run.status !== 'pending' && data.run.status !== 'running') {
-            setSuiteRunPolling(false);
-            setIsRunningSuite(false);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to poll run status:', err);
-      }
-    }, 1000);
-
-    return () => clearInterval(pollInterval);
-  }, [suiteRunPolling, suiteRun?.id, token]);
-
-  // Feature #35: Live screenshot streaming - connect to Socket.IO when run is active
-  useEffect(() => {
-    if (!suiteRunPolling || !suiteRun?.id) {
-      // Clear screenshots when no run is active
-      setLiveScreenshot(null);
-      setScreenshotHistory([]);
-      return;
-    }
-
-    // Connect to Socket.IO for live screenshot updates
-    // Use backend URL (port 3001) for Socket.IO, not frontend port
-    const socketUrl = import.meta.env.VITE_API_URL
-      ? import.meta.env.VITE_API_URL.replace('/api/v1', '')
-      : window.location.hostname === 'localhost'
-        ? 'http://localhost:3001'
-        : window.location.origin;
-
-    const screenshotSocket = io(socketUrl, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 3,
-    });
-
-    screenshotSocket.on('connect', () => {
-      logger.websocket.debug('LiveScreenshot connected, joining run room:', suiteRun.id);
-      screenshotSocket.emit('join-run', suiteRun.id);
-    });
-
-    // Listen for step screenshots
-    screenshotSocket.on('step:screenshot', (data: {
-      runId: string;
-      testId: string;
-      testName: string;
-      stepIndex: number;
-      stepAction: string;
-      stepSelector?: string;
-      stepValue?: string;
-      base64: string;
-      width: number;
-      height: number;
-      timestamp: number;
-    }) => {
-      logger.websocket.debug(`LiveScreenshot received screenshot for step ${data.stepIndex + 1}: ${data.stepAction}`);
-
-      // Update current live screenshot
-      setLiveScreenshot({
-        base64: data.base64,
-        testId: data.testId,
-        testName: data.testName,
-        stepIndex: data.stepIndex,
-        stepAction: data.stepAction,
-        stepSelector: data.stepSelector,
-        timestamp: data.timestamp,
-      });
-
-      // Add to history (keep last 3)
-      setScreenshotHistory(prev => {
-        const newHistory = [
-          ...prev,
-          {
-            base64: data.base64,
-            stepIndex: data.stepIndex,
-            stepAction: data.stepAction,
-            timestamp: data.timestamp,
-          }
-        ].slice(-3); // Keep only last 3
-        return newHistory;
-      });
-    });
-
-    screenshotSocket.on('disconnect', () => {
-      logger.websocket.debug('LiveScreenshot disconnected');
-    });
-
-    screenshotSocket.on('connect_error', (err: Error) => {
-      console.warn('[LiveScreenshot] Connection error:', err.message);
-    });
-
-    return () => {
-      logger.websocket.debug('LiveScreenshot cleaning up socket connection');
-      screenshotSocket.emit('leave-run', suiteRun.id);
-      screenshotSocket.disconnect();
-    };
-  }, [suiteRunPolling, suiteRun?.id]);
+  // Feature #546: Polling and separate Socket.IO connection replaced by useSuiteRunSocket hook
+  // The hook handles: run-start, run-progress, step-start, step-complete, step:screenshot, run-complete
+  // See useSuiteRunSocket initialization above (after screenshot state declarations)
 
   // Feature #125: Skeleton loader for better perceived performance
   if (isLoading) {
