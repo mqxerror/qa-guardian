@@ -232,6 +232,20 @@ export interface SeoAnalysisData {
     hasStructuredData: boolean;
     issues: string[];
   };
+  // Feature #529: Navigation Visibility Check
+  navigation?: {
+    hasNavElement: boolean;
+    hasHeader: boolean;
+    hasFooter: boolean;
+    hasBreadcrumbs: boolean;
+    hasMobileMenuToggle: boolean;
+    navElements: Array<{
+      type: 'nav' | 'role-navigation' | 'header' | 'footer' | 'breadcrumb';
+      visible: boolean;
+      ariaLabel?: string;
+    }>;
+    issues: string[];
+  };
   issues: string[];
   recommendations: string[];
 }

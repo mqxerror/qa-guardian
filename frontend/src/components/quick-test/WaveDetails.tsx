@@ -25,6 +25,8 @@ import {
   FileText,
   Map,
   Code2,
+  Navigation,
+  Menu,
 } from 'lucide-react';
 import { SourceBadge, PriorityBadge, SeverityBadge, ImpactBadge } from './badges';
 import type { AIAnalysisData, AccessibilityData, APIDiscoveryData, SeoAnalysisData } from './types';
@@ -621,6 +623,61 @@ export function SeoAnalysisDetails({ data }: { data: SeoAnalysisData }) {
           </div>
         </div>
       </div>
+
+      {/* Feature #529: Navigation */}
+      {data.navigation && (
+        <div>
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+            <Navigation className="w-3.5 h-3.5" />
+            Navigation Elements
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
+              <span className="text-foreground">&lt;nav&gt;</span>
+              {data.navigation.hasNavElement ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+              ) : (
+                <XCircle className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
+              <span className="text-foreground">&lt;header&gt;</span>
+              {data.navigation.hasHeader ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+              ) : (
+                <XCircle className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
+              <span className="text-foreground">&lt;footer&gt;</span>
+              {data.navigation.hasFooter ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+              ) : (
+                <XCircle className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
+              <span className="text-foreground">Breadcrumbs</span>
+              {data.navigation.hasBreadcrumbs ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+              ) : (
+                <XCircle className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+            </div>
+          </div>
+          {data.navigation.hasMobileMenuToggle && (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Menu className="w-3 h-3" />
+              Mobile menu toggle detected
+            </div>
+          )}
+          {data.navigation.issues.length > 0 && (
+            <div className="mt-2 text-xs text-warning">
+              {data.navigation.issues.length} issue{data.navigation.issues.length !== 1 ? 's' : ''} found
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Feature #528: Schema Markup */}
       {data.schemaMarkup && (

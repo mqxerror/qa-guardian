@@ -316,6 +316,20 @@ interface SeoAnalysisResult {
     hasStructuredData: boolean;
     issues: string[];
   };
+  // Feature #529: Navigation Visibility Check
+  navigation: {
+    hasNavElement: boolean;
+    hasHeader: boolean;
+    hasFooter: boolean;
+    hasBreadcrumbs: boolean;
+    hasMobileMenuToggle: boolean;
+    navElements: Array<{
+      type: 'nav' | 'role-navigation' | 'header' | 'footer' | 'breadcrumb';
+      visible: boolean;
+      ariaLabel?: string;
+    }>;
+    issues: string[];
+  };
   issues: string[];
   recommendations: string[];
 }
@@ -1510,6 +1524,16 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       hasStructuredData: false,
       issues: [],
     },
+    // Feature #529: Navigation Visibility Check
+    navigation: {
+      hasNavElement: false,
+      hasHeader: false,
+      hasFooter: false,
+      hasBreadcrumbs: false,
+      hasMobileMenuToggle: false,
+      navElements: [],
+      issues: [],
+    },
     issues: [],
     recommendations: [],
   };
@@ -1527,31 +1551,20 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
     // Extract all SEO-relevant data from the DOM
+    // NOTE: page.evaluate runs in browser context. Avoid named function declarations
+    // inside the callback because tsx/esbuild adds __name() wrappers that don't exist
+    // in the browser. Use inline expressions instead.
     const seoData = await page.evaluate(() => {
       // Get title
       const titleEl = document.querySelector('title');
       const title = titleEl?.textContent?.trim() || null;
 
-      // Get meta tags
-      const getMeta = (selector: string) => {
-        const el = document.querySelector(selector);
-        return el?.getAttribute('content')?.trim() || null;
-      };
+      // Inline meta tag getter (no named function to avoid tsx __name issue)
+      const _meta = (sel: string) => document.querySelector(sel)?.getAttribute('content')?.trim() || null;
 
       // Get canonical
       const canonicalEl = document.querySelector('link[rel="canonical"]');
       const canonical = canonicalEl?.getAttribute('href') || null;
-
-      // Get all headings
-      const headings: Array<{ level: number; text: string }> = [];
-      for (let i = 1; i <= 6; i++) {
-        document.querySelectorAll(`h${i}`).forEach(h => {
-          const text = h.textContent?.trim() || '';
-          if (text) {
-            headings.push({ level: i, text: text.substring(0, 100) });
-          }
-        });
-      }
 
       // Sort headings by their position in DOM
       const allHeadingEls = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
@@ -1578,7 +1591,7 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       document.querySelectorAll('script[type="application/ld+json"]').forEach(script => {
         const content = script.textContent?.trim();
         if (content) {
-          jsonLdScripts.push({ raw: content.substring(0, 5000) }); // Limit size
+          jsonLdScripts.push({ raw: content.substring(0, 5000) });
         }
       });
 
@@ -1589,7 +1602,6 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       itemscopeElements.forEach(el => {
         const itemtype = el.getAttribute('itemtype');
         if (itemtype) {
-          // Extract schema type from URL like "https://schema.org/Product"
           const typeName = itemtype.split('/').pop() || itemtype;
           typeCount[typeName] = (typeCount[typeName] || 0) + 1;
         }
@@ -1598,24 +1610,93 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
         microdataItems.push({ type, count });
       }
 
+      // Feature #529: Navigation Visibility Check
+      // Inline visibility check (avoid named function for tsx compat)
+      const _vis = (el: Element) => {
+        const s = window.getComputedStyle(el);
+        return s.display !== 'none' && s.visibility !== 'hidden' && (el as HTMLElement).offsetParent !== null;
+      };
+
+      // Check for nav elements
+      const navElements: Array<{ type: string; visible: boolean; ariaLabel?: string }> = [];
+
+      document.querySelectorAll('nav').forEach(nav => {
+        navElements.push({
+          type: 'nav',
+          visible: _vis(nav),
+          ariaLabel: nav.getAttribute('aria-label') || undefined,
+        });
+      });
+
+      document.querySelectorAll('[role="navigation"]').forEach(el => {
+        if (el.tagName.toLowerCase() !== 'nav') {
+          navElements.push({
+            type: 'role-navigation',
+            visible: _vis(el),
+            ariaLabel: el.getAttribute('aria-label') || undefined,
+          });
+        }
+      });
+
+      // Check for header/footer
+      const hasHeader = document.querySelector('header') !== null;
+      const hasFooter = document.querySelector('footer') !== null;
+
+      if (hasHeader) {
+        const header = document.querySelector('header');
+        navElements.push({
+          type: 'header',
+          visible: header ? _vis(header) : false,
+        });
+      }
+      if (hasFooter) {
+        const footer = document.querySelector('footer');
+        navElements.push({
+          type: 'footer',
+          visible: footer ? _vis(footer) : false,
+        });
+      }
+
+      // Check for breadcrumbs
+      const hasBreadcrumbs = document.querySelector('[aria-label*="breadcrumb" i], [aria-label*="Breadcrumb" i], nav.breadcrumb, .breadcrumbs, .breadcrumb') !== null ||
+        jsonLdScripts.some(s => s.raw.includes('BreadcrumbList'));
+
+      // Check for mobile menu toggle (hamburger button)
+      const mobileMenuSelectors = [
+        'button[aria-label*="menu" i]',
+        'button[aria-label*="Menu" i]',
+        'button.hamburger',
+        'button.mobile-menu',
+        '.menu-toggle',
+        '[class*="hamburger"]',
+        '[class*="mobile-nav"]',
+      ];
+      const hasMobileMenuToggle = mobileMenuSelectors.some(sel => document.querySelector(sel) !== null);
+
       return {
         title,
-        description: getMeta('meta[name="description"]'),
+        description: _meta('meta[name="description"]'),
         canonical,
-        ogTitle: getMeta('meta[property="og:title"]'),
-        ogDescription: getMeta('meta[property="og:description"]'),
-        ogImage: getMeta('meta[property="og:image"]'),
-        twitterCard: getMeta('meta[name="twitter:card"]'),
-        twitterTitle: getMeta('meta[name="twitter:title"]'),
-        twitterDescription: getMeta('meta[name="twitter:description"]'),
-        viewport: getMeta('meta[name="viewport"]'),
-        robots: getMeta('meta[name="robots"]'),
+        ogTitle: _meta('meta[property="og:title"]'),
+        ogDescription: _meta('meta[property="og:description"]'),
+        ogImage: _meta('meta[property="og:image"]'),
+        twitterCard: _meta('meta[name="twitter:card"]'),
+        twitterTitle: _meta('meta[name="twitter:title"]'),
+        twitterDescription: _meta('meta[name="twitter:description"]'),
+        viewport: _meta('meta[name="viewport"]'),
+        robots: _meta('meta[name="robots"]'),
         h1Count: h1Elements.length,
         h1Texts,
         headingHierarchy: orderedHeadings,
         // Feature #528: Schema data
         jsonLdScripts,
         microdataItems,
+        // Feature #529: Navigation data
+        navElements,
+        hasHeader,
+        hasFooter,
+        hasBreadcrumbs,
+        hasMobileMenuToggle,
       };
     });
 
@@ -1814,6 +1895,39 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       }
     }
 
+    // Feature #529: Process Navigation data
+    result.navigation.hasNavElement = seoData.navElements.some(n => n.type === 'nav' || n.type === 'role-navigation');
+    result.navigation.hasHeader = seoData.hasHeader;
+    result.navigation.hasFooter = seoData.hasFooter;
+    result.navigation.hasBreadcrumbs = seoData.hasBreadcrumbs;
+    result.navigation.hasMobileMenuToggle = seoData.hasMobileMenuToggle;
+    result.navigation.navElements = seoData.navElements.map(n => ({
+      type: n.type as 'nav' | 'role-navigation' | 'header' | 'footer' | 'breadcrumb',
+      visible: n.visible,
+      ariaLabel: n.ariaLabel,
+    }));
+
+    // Check navigation issues
+    if (!result.navigation.hasNavElement) {
+      result.navigation.issues.push('No <nav> or role="navigation" element found');
+      result.recommendations.push('Add semantic <nav> elements for better accessibility');
+    }
+    if (!result.navigation.hasHeader) {
+      result.navigation.issues.push('No <header> element found');
+    }
+    if (!result.navigation.hasFooter) {
+      result.navigation.issues.push('No <footer> element found');
+    }
+    if (!result.navigation.hasBreadcrumbs) {
+      result.recommendations.push('Consider adding breadcrumb navigation for better UX');
+    }
+
+    // Check for hidden nav elements
+    const hiddenNavs = seoData.navElements.filter(n => !n.visible && (n.type === 'nav' || n.type === 'role-navigation'));
+    if (hiddenNavs.length > 0) {
+      result.navigation.issues.push(`${hiddenNavs.length} navigation element(s) are hidden from view`);
+    }
+
     // Step 2: Check robots.txt
     try {
       const robotsUrl = `${baseUrl}/robots.txt`;
@@ -1908,6 +2022,11 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
     if (!result.schemaMarkup.hasStructuredData) score -= 5;
     if (result.schemaMarkup.issues.length > 0) score -= 3; // Invalid JSON-LD penalty
 
+    // Feature #529: Navigation (moderate impact)
+    if (!result.navigation.hasNavElement) score -= 4;
+    if (!result.navigation.hasHeader) score -= 2;
+    if (!result.navigation.hasFooter) score -= 2;
+
     result.score = Math.max(0, Math.min(100, score));
 
     log.info({
@@ -1918,6 +2037,7 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       robotsTxt: result.crawlability.robotsTxt.present,
       sitemap: result.crawlability.sitemap.present,
       schemaTypes: result.schemaMarkup.detectedTypes.length,
+      hasNav: result.navigation.hasNavElement,
     }, 'SEO Analysis complete');
 
   } catch (err) {
