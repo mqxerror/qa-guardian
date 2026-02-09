@@ -44,6 +44,7 @@ export { LiveExecutionPanel, type LiveExecutionPanelProps } from './LiveExecutio
 export { TestHeader, type TestHeaderProps } from './TestHeader';
 export { CurrentRunStatusSection, type CurrentRunStatusSectionProps } from './CurrentRunStatusSection';
 export { TestResultCard, type TestResultCardProps, type TestResult } from './TestResultCard';
+export { TestAISummary, type TestAISummaryProps } from './TestAISummary';
 
 // Modals
 export * from './modals';

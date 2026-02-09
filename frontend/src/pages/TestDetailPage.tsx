@@ -71,6 +71,7 @@ import {
   BaselineTab,
   TestHeader,
   CurrentRunStatusSection,
+  TestAISummary,
   // Feature #48: Code generation utilities
   generatePlaywrightCode,
   generateK6Script,
@@ -1105,6 +1106,17 @@ function TestDetailPage() {
           runError={runError}
           duplicateError={duplicateError}
         />
+
+        {/* Feature #489: AI Summary Card for instant failure diagnosis */}
+        {test && (
+          <TestAISummary
+            testId={test.id}
+            testName={test.name}
+            runs={runs}
+            token={token}
+            formatDateTime={formatDateTime}
+          />
+        )}
 
         {/* Delete Confirmation Modal - Feature #48: Extracted to component */}
         {showDeleteModal && (
