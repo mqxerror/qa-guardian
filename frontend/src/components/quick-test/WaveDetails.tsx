@@ -585,61 +585,116 @@ export function SeoAnalysisDetails({ data }: { data: SeoAnalysisData }) {
         )}
       </div>
 
-      {/* Crawlability */}
+      {/* Feature #544: Enhanced Crawlability with detailed findings */}
       <div>
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
           <Map className="w-3.5 h-3.5" />
           Crawlability
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
-            <span className="text-foreground">robots.txt</span>
-            <div className="flex items-center gap-1">
-              {data.crawlability.robotsTxt.present ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-                  {!data.crawlability.robotsTxt.allowsCrawling && (
-                    <span className="text-xs text-warning">(blocks)</span>
-                  )}
-                </>
-              ) : (
-                <XCircle className="w-3.5 h-3.5 text-muted-foreground" />
-              )}
+        <div className="space-y-2">
+          {/* robots.txt */}
+          <div className="p-2 rounded bg-background/50">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-foreground font-medium">robots.txt</span>
+              <div className="flex items-center gap-1">
+                {data.crawlability.robotsTxt.present ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                    {!data.crawlability.robotsTxt.allowsCrawling && (
+                      <span className="text-xs text-warning">(blocks crawling)</span>
+                    )}
+                  </>
+                ) : (
+                  <XCircle className="w-3.5 h-3.5 text-muted-foreground" />
+                )}
+              </div>
             </div>
+            {data.crawlability.robotsTxt.present && data.crawlability.robotsTxt.content && (
+              <div className="mt-2">
+                {/* Show disallow rules */}
+                {(() => {
+                  const content = data.crawlability.robotsTxt.content || '';
+                  const disallowRules = content.split('\n')
+                    .filter(l => l.trim().toLowerCase().startsWith('disallow:'))
+                    .map(l => l.trim().split(':').slice(1).join(':').trim())
+                    .filter(Boolean);
+                  const hasCrawlDelay = content.toLowerCase().includes('crawl-delay');
+                  return (
+                    <>
+                      {disallowRules.length > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          <span className="font-medium">Disallow rules:</span>
+                          <div className="mt-1 font-mono space-y-0.5">
+                            {disallowRules.slice(0, 5).map((rule, i) => (
+                              <div key={i} className="text-warning/80">{rule}</div>
+                            ))}
+                            {disallowRules.length > 5 && (
+                              <div className="text-muted-foreground">+{disallowRules.length - 5} more</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {hasCrawlDelay && (
+                        <div className="mt-1 text-xs text-warning">Crawl-delay directive detected</div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
           </div>
-          <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
-            <span className="text-foreground">sitemap.xml</span>
-            <div className="flex items-center gap-1">
-              {data.crawlability.sitemap.present ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-                  {data.crawlability.sitemap.urlCount && (
-                    <span className="text-xs text-muted-foreground">({data.crawlability.sitemap.urlCount})</span>
-                  )}
-                </>
-              ) : (
-                <XCircle className="w-3.5 h-3.5 text-muted-foreground" />
-              )}
+
+          {/* sitemap.xml */}
+          <div className="p-2 rounded bg-background/50">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-foreground font-medium">sitemap.xml</span>
+              <div className="flex items-center gap-1">
+                {data.crawlability.sitemap.present ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                    {data.crawlability.sitemap.urlCount !== undefined && data.crawlability.sitemap.urlCount > 0 && (
+                      <span className="text-xs text-muted-foreground font-medium">{data.crawlability.sitemap.urlCount} URLs</span>
+                    )}
+                  </>
+                ) : (
+                  <XCircle className="w-3.5 h-3.5 text-muted-foreground" />
+                )}
+              </div>
             </div>
+            {data.crawlability.sitemap.present && data.crawlability.sitemap.url && (
+              <div className="mt-1 text-xs text-muted-foreground font-mono truncate" title={data.crawlability.sitemap.url}>
+                {data.crawlability.sitemap.url}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Feature #529: Navigation */}
+      {/* Feature #529 + #544: Enhanced Navigation Details */}
       {data.navigation && (
         <div>
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
             <Navigation className="w-3.5 h-3.5" />
             Navigation Elements
+            {data.navigation.navElements.length > 0 && (
+              <span className="text-xs text-muted-foreground">({data.navigation.navElements.length} elements)</span>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
               <span className="text-foreground">&lt;nav&gt;</span>
-              {data.navigation.hasNavElement ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-              ) : (
-                <XCircle className="w-3.5 h-3.5 text-muted-foreground" />
-              )}
+              <div className="flex items-center gap-1">
+                {data.navigation.hasNavElement ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                ) : (
+                  <XCircle className="w-3.5 h-3.5 text-muted-foreground" />
+                )}
+                {data.navigation.navElements.filter(n => n.type === 'nav' || n.type === 'role-navigation').length > 1 && (
+                  <span className="text-xs text-muted-foreground">
+                    ({data.navigation.navElements.filter(n => n.type === 'nav' || n.type === 'role-navigation').length})
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
               <span className="text-foreground">&lt;header&gt;</span>
@@ -666,6 +721,18 @@ export function SeoAnalysisDetails({ data }: { data: SeoAnalysisData }) {
               )}
             </div>
           </div>
+          {/* Feature #544: Detailed nav element listing with aria-labels and visibility */}
+          {data.navigation.navElements.filter(n => n.ariaLabel || !n.visible).length > 0 && (
+            <div className="mt-2 space-y-1">
+              {data.navigation.navElements.map((nav, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="font-mono">{nav.type}</span>
+                  {nav.ariaLabel && <span className="text-primary/80">aria: &quot;{nav.ariaLabel}&quot;</span>}
+                  {!nav.visible && <span className="text-warning">(hidden)</span>}
+                </div>
+              ))}
+            </div>
+          )}
           {data.navigation.hasMobileMenuToggle && (
             <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
               <Menu className="w-3 h-3" />
@@ -673,14 +740,16 @@ export function SeoAnalysisDetails({ data }: { data: SeoAnalysisData }) {
             </div>
           )}
           {data.navigation.issues.length > 0 && (
-            <div className="mt-2 text-xs text-warning">
-              {data.navigation.issues.length} issue{data.navigation.issues.length !== 1 ? 's' : ''} found
+            <div className="mt-2 space-y-1">
+              {data.navigation.issues.map((issue, idx) => (
+                <div key={idx} className="text-xs text-warning">{issue}</div>
+              ))}
             </div>
           )}
         </div>
       )}
 
-      {/* Feature #528: Schema Markup */}
+      {/* Feature #528 + #544: Enhanced Schema Markup with detailed findings */}
       {data.schemaMarkup && (
         <div>
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
@@ -710,17 +779,45 @@ export function SeoAnalysisDetails({ data }: { data: SeoAnalysisData }) {
                 ))}
               </div>
             )}
+            {/* Feature #544: JSON-LD script details with content preview */}
             {data.schemaMarkup.jsonLdScripts.length > 0 && (
-              <div className="mt-2 text-xs text-muted-foreground">
-                {data.schemaMarkup.jsonLdScripts.length} JSON-LD script{data.schemaMarkup.jsonLdScripts.length !== 1 ? 's' : ''}
-                {data.schemaMarkup.issues.length > 0 && (
-                  <span className="text-warning ml-2">({data.schemaMarkup.issues.length} issues)</span>
-                )}
+              <div className="mt-2 space-y-2">
+                <div className="text-xs text-muted-foreground font-medium">
+                  {data.schemaMarkup.jsonLdScripts.length} JSON-LD script{data.schemaMarkup.jsonLdScripts.length !== 1 ? 's' : ''}
+                  {data.schemaMarkup.issues.length > 0 && (
+                    <span className="text-warning ml-2">({data.schemaMarkup.issues.length} issues)</span>
+                  )}
+                </div>
+                {data.schemaMarkup.jsonLdScripts.map((script, idx) => (
+                  <div key={idx} className="p-2 rounded bg-muted/30 border border-border/50">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-foreground">{script.type}</span>
+                      <span className={`text-xs ${script.valid ? 'text-success' : 'text-destructive'}`}>
+                        {script.valid ? 'Valid' : 'Invalid'}
+                      </span>
+                    </div>
+                    {script.error && (
+                      <div className="text-xs text-destructive mb-1">{script.error}</div>
+                    )}
+                    <pre className="text-[10px] text-muted-foreground font-mono overflow-x-auto max-h-16 whitespace-pre-wrap break-all">
+                      {script.raw.substring(0, 200)}{script.raw.length > 200 ? '...' : ''}
+                    </pre>
+                  </div>
+                ))}
               </div>
             )}
+            {/* Feature #544: Microdata item details */}
             {data.schemaMarkup.microdataItems.length > 0 && (
-              <div className="mt-1 text-xs text-muted-foreground">
-                {data.schemaMarkup.microdataItems.length} Microdata type{data.schemaMarkup.microdataItems.length !== 1 ? 's' : ''}
+              <div className="mt-2">
+                <div className="text-xs text-muted-foreground font-medium mb-1">Microdata</div>
+                <div className="space-y-1">
+                  {data.schemaMarkup.microdataItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs">
+                      <span className="text-foreground/80">{item.type}</span>
+                      <span className="text-muted-foreground">{item.itemCount} instance{item.itemCount !== 1 ? 's' : ''}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
