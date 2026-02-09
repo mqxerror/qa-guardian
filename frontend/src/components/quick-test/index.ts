@@ -12,3 +12,7 @@ export * from './utils';
 
 // Badge components
 export { SourceBadge, PriorityBadge, SeverityBadge, ImpactBadge } from './badges';
+
+// Modal components
+export { CreateTestSuiteModal } from './CreateTestSuiteModal';
+export { ScheduleModal } from './ScheduleModal';
