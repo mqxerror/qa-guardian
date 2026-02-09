@@ -22,6 +22,10 @@ import { getQuickTestHistory } from '../../services/repositories/quick-test.js';
 // Feature #466: Screenshot serving
 // Feature #478: Add signed URL validation for screenshot auth
 import { readScreenshot, screenshotExists, validateSignedScreenshotToken, type ScreenshotType } from '../../services/quick-test-screenshots.js';
+// Feature #481: Structured Pino logging
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('quick-test-routes');
 
 // Request body type
 interface QuickTestBody {
@@ -151,7 +155,8 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
         orgId,
         userId: user.id,
       }).catch((err) => {
-        console.error('[Quick Test] Unhandled error:', err);
+        // Feature #481: Use structured Pino logging
+        log.error({ runId, url, error: err }, 'Unhandled error in quick test');
       });
 
       // Log audit entry
@@ -289,7 +294,8 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
           userId: user.id,
         }),
       ]).catch((err) => {
-        console.error('[Quick Test Compare] Unhandled error:', err);
+        // Feature #481: Use structured Pino logging
+        log.error({ compareId, urlA, urlB, error: err }, 'Unhandled error in quick test compare');
       });
 
       // Log audit entry
