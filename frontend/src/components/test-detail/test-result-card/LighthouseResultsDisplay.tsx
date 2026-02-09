@@ -1,9 +1,11 @@
 // Feature #48: LighthouseResultsDisplay - Extracted from TestResultCard.tsx
 // Feature #67: Device-specific scores with mobile + desktop side-by-side comparison
+// Feature #524: Updated to use unified ScoreCard component
 // Displays Lighthouse performance audit results with Core Web Vitals
 
 import React from 'react';
-import { LighthouseResults, DeviceLighthouseMetrics, getScoreColor, getScoreBgColor } from './types';
+import { LighthouseResults, DeviceLighthouseMetrics } from './types';
+import { ScoreCard } from '../../ui/score-card';
 
 interface DeviceScoreCardProps {
  device: 'mobile' | 'desktop';
@@ -30,32 +32,12 @@ export function DeviceScoreCard({ device, results }: DeviceScoreCardProps) {
  <h5 className="text-sm font-semibold text-foreground">{label}</h5>
  </div>
 
- {/* Scores */}
+ {/* Feature #524: Updated to use unified ScoreCard component */}
  <div className="grid grid-cols-2 gap-2 mb-3">
- <div className={`p-2 rounded-lg ${getScoreBgColor(results.performance_score)}`}>
- <div className="text-xs text-muted-foreground">Performance</div>
- <div className={`text-xl font-bold ${getScoreColor(results.performance_score)}`}>
- {results.performance_score}
- </div>
- </div>
- <div className={`p-2 rounded-lg ${getScoreBgColor(results.accessibility_score)}`}>
- <div className="text-xs text-muted-foreground">Accessibility</div>
- <div className={`text-xl font-bold ${getScoreColor(results.accessibility_score)}`}>
- {results.accessibility_score}
- </div>
- </div>
- <div className={`p-2 rounded-lg ${getScoreBgColor(results.best_practices_score)}`}>
- <div className="text-xs text-muted-foreground">Best Practices</div>
- <div className={`text-xl font-bold ${getScoreColor(results.best_practices_score)}`}>
- {results.best_practices_score}
- </div>
- </div>
- <div className={`p-2 rounded-lg ${getScoreBgColor(results.seo_score)}`}>
- <div className="text-xs text-muted-foreground">SEO</div>
- <div className={`text-xl font-bold ${getScoreColor(results.seo_score)}`}>
- {results.seo_score}
- </div>
- </div>
+   <ScoreCard score={results.performance_score} label="Performance" size="sm" />
+   <ScoreCard score={results.accessibility_score} label="Accessibility" size="sm" />
+   <ScoreCard score={results.best_practices_score} label="Best Practices" size="sm" />
+   <ScoreCard score={results.seo_score} label="SEO" size="sm" />
  </div>
 
  {/* Core Web Vitals */}
@@ -164,32 +146,12 @@ export function LighthouseResultsDisplay({
  </div>
  ) : (
  <>
- {/* Fallback: Original single-device display */}
+ {/* Feature #524: Fallback single-device display using unified ScoreCard */}
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
- <div className={`p-3 rounded-lg ${getScoreBgColor(lighthouse.performance)}`}>
- <div className="text-xs text-muted-foreground">Performance</div>
- <div className={`text-2xl font-bold ${getScoreColor(lighthouse.performance)}`}>
- {lighthouse.performance}
- </div>
- </div>
- <div className={`p-3 rounded-lg ${getScoreBgColor(lighthouse.accessibility)}`}>
- <div className="text-xs text-muted-foreground">Accessibility</div>
- <div className={`text-2xl font-bold ${getScoreColor(lighthouse.accessibility)}`}>
- {lighthouse.accessibility}
- </div>
- </div>
- <div className={`p-3 rounded-lg ${getScoreBgColor(lighthouse.bestPractices)}`}>
- <div className="text-xs text-muted-foreground">Best Practices</div>
- <div className={`text-2xl font-bold ${getScoreColor(lighthouse.bestPractices)}`}>
- {lighthouse.bestPractices}
- </div>
- </div>
- <div className={`p-3 rounded-lg ${getScoreBgColor(lighthouse.seo)}`}>
- <div className="text-xs text-muted-foreground">SEO</div>
- <div className={`text-2xl font-bold ${getScoreColor(lighthouse.seo)}`}>
- {lighthouse.seo}
- </div>
- </div>
+   <ScoreCard score={lighthouse.performance} label="Performance" size="sm" />
+   <ScoreCard score={lighthouse.accessibility} label="Accessibility" size="sm" />
+   <ScoreCard score={lighthouse.bestPractices} label="Best Practices" size="sm" />
+   <ScoreCard score={lighthouse.seo} label="SEO" size="sm" />
  </div>
 
  {/* Core Web Vitals */}
