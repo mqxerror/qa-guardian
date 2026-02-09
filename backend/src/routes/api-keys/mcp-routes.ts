@@ -4,6 +4,9 @@ import { FastifyInstance } from 'fastify';
 import crypto from 'crypto';
 import { authenticate, requireRoles, JwtPayload } from '../../middleware/auth.js';
 import { ApiKey, McpConnection, OrgParams } from './types.js';
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('mcp-routes');
 
 // Database row interface for MCP connections
 interface McpConnectionRow {
@@ -169,7 +172,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
           }));
         }
       } catch (error) {
-        console.error('[MCP] Failed to list connections:', error);
+        log.error({ err: error, code: 'MCP_LIST_CONNECTIONS_FAILED' }, 'Failed to list MCP connections');
       }
     }
 

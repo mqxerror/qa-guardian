@@ -4,6 +4,9 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
 import { getProject, getProjectMembers, addProjectMember, removeProjectMember } from './stores.js';
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('projects-members');
 
 export async function memberRoutes(app: FastifyInstance) {
   // Get project members
@@ -111,7 +114,7 @@ export async function memberRoutes(app: FastifyInstance) {
         added_by: user.id,
       });
 
-      console.log(`\n[PROJECT MEMBER ADDED] User ${user_id} added to project ${project.name} with role ${role}\n`);
+      log.info({ userId: user_id, projectName: project.name, role }, 'Project member added');
 
       return reply.status(201).send({
         member: newMember,
@@ -168,7 +171,7 @@ export async function memberRoutes(app: FastifyInstance) {
       // Remove the member
       await removeProjectMember(projectId, memberId);
 
-      console.log(`\n[PROJECT MEMBER REMOVED] User ${memberId} removed from project ${project.name}\n`);
+      log.info({ userId: memberId, projectName: project.name }, 'Project member removed');
 
       return { message: 'Member removed from project successfully' };
     }
@@ -236,7 +239,7 @@ export async function memberRoutes(app: FastifyInstance) {
       });
       member.role = role;
 
-      console.log(`\n[PROJECT MEMBER ROLE UPDATED] User ${memberId} role changed from ${oldRole} to ${role} on project ${project.name}\n`);
+      log.info({ userId: memberId, oldRole, newRole: role, projectName: project.name }, 'Project member role updated');
 
       return {
         member,

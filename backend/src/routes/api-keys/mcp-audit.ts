@@ -6,6 +6,9 @@ import {
   dbCreateMcpAuditLog,
   dbGetMcpAuditLogs,
 } from './stores.js';
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('mcp-audit');
 
 // Track an MCP audit log entry (async)
 export async function logMcpAuditEntry(entry: Omit<McpAuditLogEntry, 'id' | 'timestamp'>): Promise<void> {
@@ -17,7 +20,7 @@ export async function logMcpAuditEntry(entry: Omit<McpAuditLogEntry, 'id' | 'tim
 
   await dbCreateMcpAuditLog(logEntry);
 
-  console.log(`[MCP Audit] ${logEntry.method} ${logEntry.tool_name || logEntry.resource_uri || 'unknown'} - ${logEntry.response_type} (${logEntry.api_key_name})`);
+  log.debug({ method: logEntry.method, tool: logEntry.tool_name || logEntry.resource_uri || 'unknown', responseType: logEntry.response_type, apiKeyName: logEntry.api_key_name }, 'MCP audit entry logged');
 }
 
 // Get MCP audit logs for an organization (async)

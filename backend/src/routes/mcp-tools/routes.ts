@@ -15,11 +15,13 @@ import type {
   AIStatusResponse,
   AvailableToolsResponse,
 } from './types.js';
+import { createLogger } from '../../services/logger.js';
 
-// Simple logger that works consistently
+// Use structured Pino logger with convenience wrappers
+const pinoLog = createLogger('mcp-rest');
 const logger = {
-  info: (msg: string) => console.log(`[MCP-REST] ${msg}`),
-  error: (msg: string, err?: unknown) => console.error(`[MCP-REST] ${msg}`, err || ''),
+  info: (msg: string) => pinoLog.info(msg),
+  error: (msg: string, err?: unknown) => err ? pinoLog.error({ err }, msg) : pinoLog.error(msg),
 };
 
 /**

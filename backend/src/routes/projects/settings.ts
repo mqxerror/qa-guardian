@@ -13,6 +13,9 @@ import {
   hasProjectAccess,
   getProjectRole,
 } from './utils.js';
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('projects-settings');
 
 // Settings routes use :projectId param
 interface ProjectIdParams {
@@ -138,7 +141,7 @@ export async function settingsRoutes(app: FastifyInstance) {
 
     const updatedSettings = await setProjectVisualSettings(projectId, updates);
 
-    console.log(`[PROJECT VISUAL SETTINGS] Project ${project.name} visual settings updated by ${user.email}`);
+    log.info({ projectName: project.name, updatedBy: user.email }, 'Project visual settings updated');
 
     return {
       project_id: projectId,
@@ -270,8 +273,13 @@ export async function settingsRoutes(app: FastifyInstance) {
 
     const updatedSettings = await setProjectHealingSettings(projectId, updates);
 
-    console.log(`[PROJECT HEALING SETTINGS] Project ${project.name} healing settings updated by ${user.email}`);
-    console.log(`[PROJECT HEALING SETTINGS] New timeout: ${updatedSettings.healing_timeout}s, Max attempts: ${updatedSettings.max_healing_attempts}, Threshold: ${updatedSettings.auto_heal_confidence_threshold}`);
+    log.info({
+      projectName: project.name,
+      updatedBy: user.email,
+      timeout: updatedSettings.healing_timeout,
+      maxAttempts: updatedSettings.max_healing_attempts,
+      threshold: updatedSettings.auto_heal_confidence_threshold
+    }, 'Project healing settings updated');
 
     return {
       project_id: projectId,

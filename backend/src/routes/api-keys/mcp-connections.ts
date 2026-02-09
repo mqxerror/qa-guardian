@@ -9,6 +9,9 @@ import {
   dbDeleteMcpConnection,
   dbCleanupStaleMcpConnections,
 } from './stores.js';
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('mcp-connections');
 
 // Helper to register an MCP connection (async)
 export async function registerMcpConnection(
@@ -32,7 +35,7 @@ export async function registerMcpConnection(
   };
 
   await dbCreateMcpConnection(connection);
-  console.log(`[MCP] Connection registered: ${connectionId} for API key ${apiKeyName}`);
+  log.info({ connectionId, apiKeyName }, 'MCP connection registered');
 
   return connectionId;
 }
@@ -45,14 +48,14 @@ export async function updateMcpActivity(connectionId: string): Promise<void> {
 // Helper to unregister an MCP connection (async)
 export async function unregisterMcpConnection(connectionId: string): Promise<void> {
   await dbDeleteMcpConnection(connectionId);
-  console.log(`[MCP] Connection unregistered: ${connectionId}`);
+  log.info({ connectionId }, 'MCP connection unregistered');
 }
 
 // Clean up stale connections (no activity for 30 minutes) (async)
 export async function cleanupStaleConnections(): Promise<void> {
   const cleaned = await dbCleanupStaleMcpConnections();
   if (cleaned > 0) {
-    console.log(`[MCP] Cleaned up ${cleaned} stale connection(s)`);
+    log.info({ cleanedCount: cleaned }, 'Cleaned up stale MCP connections');
   }
 }
 
@@ -61,7 +64,7 @@ let cleanupIntervalStarted = false;
 
 export function startConnectionCleanup(): void {
   if (!cleanupIntervalStarted) {
-    setInterval(() => { cleanupStaleConnections().catch(console.error); }, 5 * 60 * 1000);
+    setInterval(() => { cleanupStaleConnections().catch(err => log.error({ err }, 'Cleanup failed')); }, 5 * 60 * 1000);
     cleanupIntervalStarted = true;
   }
 }

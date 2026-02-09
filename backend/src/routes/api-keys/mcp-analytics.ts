@@ -8,6 +8,9 @@ import {
   dbGetMcpToolCallsByOrg,
   dbGetApiKeyById,
 } from './stores.js';
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('mcp-analytics');
 
 // Track a tool call (async)
 export async function trackMcpToolCall(
@@ -19,7 +22,7 @@ export async function trackMcpToolCall(
 ): Promise<void> {
   const connection = await dbGetMcpConnection(connectionId);
   if (!connection) {
-    console.warn(`[MCP Analytics] Cannot track tool call - connection ${connectionId} not found`);
+    log.warn({ connectionId }, 'Cannot track tool call - connection not found');
     return;
   }
 
@@ -37,7 +40,7 @@ export async function trackMcpToolCall(
 
   await dbCreateMcpToolCall(toolCall);
 
-  console.log(`[MCP Analytics] Tracked tool call: ${toolName} for connection ${connectionId}`);
+  log.debug({ toolName, connectionId }, 'Tracked MCP tool call');
 }
 
 // Feature #848: Enhanced MCP analytics for dashboard (async)

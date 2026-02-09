@@ -1,5 +1,8 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../middleware/auth.js';
+import { createLogger } from '../services/logger.js';
+
+const log = createLogger('audit-logs');
 
 // Feature #2119: Import only async repository functions (no getMemory* calls)
 import {
@@ -70,7 +73,7 @@ export async function logAuditEntry(
   const cache = getCache();
   await cache.invalidate(CacheKeys.auditLogs.byOrg(orgId));
 
-  console.log(`[AUDIT] ${entry.user_email} ${action} ${resourceType} ${resourceId} (${resourceName || 'unnamed'}) from ${entry.ip_address}`);
+  log.info({ userEmail: entry.user_email, action, resourceType, resourceId, resourceName: resourceName || 'unnamed', ipAddress: entry.ip_address }, 'Audit entry created');
 }
 
 export async function auditLogRoutes(app: FastifyInstance) {

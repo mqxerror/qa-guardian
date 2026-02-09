@@ -13,6 +13,9 @@ import {
   dbRevokeApiKey,
 } from './stores.js';
 import { generateApiKey } from './utils.js';
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('api-keys');
 
 export async function registerApiKeyRoutes(app: FastifyInstance) {
   // List API keys for organization (only shows prefix, not full key)
@@ -105,16 +108,7 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
 
     await dbCreateApiKey(apiKey);
 
-    console.log(`
-====================================
-  API Key Created
-====================================
-  Name: ${apiKey.name}
-  ID: ${apiKey.id}
-  Scopes: ${apiKey.scopes.join(', ')}
-  Created by: ${user.email}
-====================================
-    `);
+    log.info({ keyName: apiKey.name, keyId: apiKey.id, scopes: apiKey.scopes, createdBy: user.email }, 'API key created');
 
     return reply.status(201).send({
       api_key: {
@@ -160,7 +154,7 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
 
     await dbRevokeApiKey(id);
 
-    console.log(`[API KEY REVOKED] Key ${apiKey.key_prefix} revoked by ${user.email}`);
+    log.info({ keyPrefix: apiKey.key_prefix, revokedBy: user.email }, 'API key revoked');
 
     return { message: 'API key revoked successfully' };
   });
@@ -207,7 +201,7 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
 
     await dbCreateApiKey(newApiKey);
 
-    console.log(`[API KEY ROTATED] Key ${oldKey.key_prefix} -> ${newApiKey.key_prefix} by ${user.email}`);
+    log.info({ oldKeyPrefix: oldKey.key_prefix, newKeyPrefix: newApiKey.key_prefix, rotatedBy: user.email }, 'API key rotated');
 
     return {
       api_key: {

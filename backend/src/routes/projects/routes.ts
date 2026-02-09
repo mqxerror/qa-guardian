@@ -6,6 +6,9 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, JwtPayload, ApiKeyPayload, getOrganizationId } from '../../middleware/auth.js';
+import { createLogger } from '../../services/logger.js';
+
+const log = createLogger('projects');
 import { validateBody } from '../../validation/middleware.js';
 import { createProjectSchema, updateProjectSchema, projectIdParamsSchema, CreateProjectInput, UpdateProjectInput } from '../../validation/schemas.js';
 import { TestSuite, Test } from '../test-suites.js';
@@ -198,7 +201,7 @@ export async function coreRoutes(app: FastifyInstance) {
           added_at: new Date(),
           added_by: jwtUser.id,
         });
-        console.log(`[PROJECT CREATED] User ${jwtUser.id} automatically added as admin to their new project ${project.name}`);
+        log.info({ userId: jwtUser.id, projectName: project.name }, 'User automatically added as admin to their new project');
       }
     }
 
@@ -733,7 +736,7 @@ export async function coreRoutes(app: FastifyInstance) {
       const { enqueueOrExecute } = await import('../../services/execution-queue.js');
       await enqueueOrExecute(runId, 'e2e', { triggeredBy: 'quick-smoke-test' });
     } catch (err) {
-      console.error('[Quick Smoke Test] Failed to enqueue test execution:', err);
+      log.error({ err, code: 'QUICK_SMOKE_TEST_ENQUEUE_FAILED' }, 'Failed to enqueue test execution');
     }
 
     // Log audit entry
