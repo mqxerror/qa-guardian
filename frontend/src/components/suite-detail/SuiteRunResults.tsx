@@ -2,6 +2,7 @@
  * SuiteRunResults Component
  * Feature #50: Extract suite run results display from TestSuitePage.tsx
  * Feature #35: Live screenshot panel during test execution
+ * Feature #525: Added ScoreCard for suite pass rate metrics
  * Feature #1065: Healed selector indicator
  * Feature #1072: Selector diff visualization
  * Feature #1073: Confidence meter visualization
@@ -10,6 +11,7 @@
 
 import React from 'react';
 import type { EditSelectorModalState } from './modals';
+import { ScoreCard } from '../ui/score-card';
 
 export interface LiveScreenshot {
  base64: string;
@@ -196,26 +198,55 @@ export function SuiteRunResults({
  </div>
  )}
 
- {/* Completion indicator */}
- {(suiteRun.status === 'passed' || suiteRun.status === 'failed') && (
- <div className="mb-4 flex items-center gap-2 text-sm">
- {suiteRun.status === 'passed' ? (
- <>
- <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-success" viewBox="0 0 20 20" fill="currentColor">
- <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
- </svg>
- <span className="text-success font-medium">All tests passed!</span>
- </>
- ) : (
- <>
- <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-destructive" viewBox="0 0 20 20" fill="currentColor">
- <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
- </svg>
- <span className="text-destructive font-medium">
- {suiteRun.results?.filter(r => r.status === 'failed').length || 0} test(s) failed
- </span>
- </>
- )}
+ {/* Feature #525: Suite Pass Rate ScoreCard on completion */}
+ {(suiteRun.status === 'passed' || suiteRun.status === 'failed') && suiteRun.results && (
+ <div className="mb-4">
+   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+     <ScoreCard
+       score={Math.round(
+         (suiteRun.results.filter(r => r.status === 'passed').length / suiteRun.results.length) * 100
+       )}
+       label="Pass Rate"
+       size="sm"
+     />
+     <div className="p-3 rounded-lg bg-success/20 text-center">
+       <div className="text-xl font-bold text-success">
+         {suiteRun.results.filter(r => r.status === 'passed').length}
+       </div>
+       <div className="text-xs text-muted-foreground mt-0.5">Passed</div>
+     </div>
+     <div className="p-3 rounded-lg bg-destructive/20 text-center">
+       <div className="text-xl font-bold text-destructive">
+         {suiteRun.results.filter(r => r.status === 'failed').length}
+       </div>
+       <div className="text-xs text-muted-foreground mt-0.5">Failed</div>
+     </div>
+     <div className="p-3 rounded-lg bg-muted text-center">
+       <div className="text-xl font-bold text-foreground">
+         {suiteRun.results.length}
+       </div>
+       <div className="text-xs text-muted-foreground mt-0.5">Total</div>
+     </div>
+   </div>
+   <div className="flex items-center gap-2 text-sm">
+     {suiteRun.status === 'passed' ? (
+       <>
+         <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-success" viewBox="0 0 20 20" fill="currentColor">
+           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+         </svg>
+         <span className="text-success font-medium">All tests passed!</span>
+       </>
+     ) : (
+       <>
+         <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-destructive" viewBox="0 0 20 20" fill="currentColor">
+           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+         </svg>
+         <span className="text-destructive font-medium">
+           {suiteRun.results?.filter(r => r.status === 'failed').length || 0} test(s) failed
+         </span>
+       </>
+     )}
+   </div>
  </div>
  )}
 
