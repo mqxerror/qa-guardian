@@ -504,9 +504,9 @@ function parsePRDependencyScanRow(row: PRDependencyScanRow): PRDependencyScanRes
     status: row.status as PRDependencyScanResult['status'],
     started_at: new Date(row.started_at),
     completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
-    changed_files: safeJsonParseOrPassthrough(row.changed_files, []) as any,
-    vulnerabilities: safeJsonParseOrPassthrough(row.vulnerabilities, []) as any,
-    summary: safeJsonParseOrPassthrough(row.summary, {}) as any,
+    changed_files: safeJsonParseOrPassthrough(row.changed_files, []) as PRDependencyScanResult['changed_files'],
+    vulnerabilities: safeJsonParseOrPassthrough(row.vulnerabilities, []) as PRDependencyScanResult['vulnerabilities'],
+    summary: safeJsonParseOrPassthrough(row.summary, {}) as PRDependencyScanResult['summary'],
   };
 }
 

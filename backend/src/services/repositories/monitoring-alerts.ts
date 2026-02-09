@@ -215,7 +215,7 @@ function parseStatusPageRow(row: StatusPageRow): StatusPage {
     favicon_url: row.favicon_url ?? undefined,
     primary_color: row.primary_color ?? undefined,
     show_history_days: row.show_history_days,
-    checks: safeJsonParseOrPassthrough(row.checks, []) as any,
+    checks: safeJsonParseOrPassthrough(row.checks, []) as unknown as StatusPage['checks'],
     custom_domain: row.custom_domain ?? undefined,
     is_public: row.is_public,
     show_uptime_percentage: row.show_uptime_percentage,
