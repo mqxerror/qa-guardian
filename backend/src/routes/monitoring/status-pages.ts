@@ -13,6 +13,10 @@
 import { FastifyInstance } from 'fastify';
 import { randomBytes } from 'node:crypto';
 import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
+import { createLogger } from '../../services/logger.js';
+
+// Create logger for this module
+const log = createLogger('route:status-pages');
 import { logAuditEntry } from '../audit-logs.js';
 import { generateId, generateSimpleId } from '../../utils/index.js';
 import {
@@ -72,12 +76,28 @@ function generateSlug(name: string): string {
 /**
  * Get check name and status information
  */
+// Generic check interface for status page lookups
+interface CheckBase {
+  name: string;
+}
+
+// Generic result interface with optional response_time
+interface ResultBase {
+  success?: boolean;
+  status?: string;
+  response_time?: number;
+  port_open?: boolean;
+  checked_at?: Date;
+  received_at?: Date;
+  total_time?: number;
+}
+
 async function getCheckInfo(
   checkId: string,
   checkType: string
 ): Promise<{ name: string; status: 'up' | 'down' | 'degraded' | 'unknown'; uptime?: number; avgResponseTime?: number } | null> {
-  let check: any = null;
-  let results: any[] = [];
+  let check: CheckBase | undefined = undefined;
+  let results: ResultBase[] = [];
 
   switch (checkType) {
     case 'uptime':
@@ -115,14 +135,17 @@ async function getCheckInfo(
     } else if (checkType === 'tcp') {
       status = latestResult.port_open ? 'up' : 'down';
     } else {
-      status = latestResult.status || 'unknown';
+      const s = latestResult.status;
+      status = s === 'up' || s === 'down' || s === 'degraded' ? s : 'unknown';
     }
   }
 
   // Calculate uptime percentage (last 30 days)
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const recentResults = results.filter(r => {
-    const date = new Date(r.checked_at || r.received_at);
+    const dateValue = r.checked_at || r.received_at;
+    if (!dateValue) return false;
+    const date = new Date(dateValue);
     return date >= thirtyDaysAgo;
   });
 
@@ -140,7 +163,7 @@ async function getCheckInfo(
 
     const responseTimes = recentResults
       .filter(r => r.response_time || r.total_time)
-      .map(r => r.response_time || r.total_time);
+      .map(r => r.response_time || r.total_time || 0);
     if (responseTimes.length > 0) {
       avgResponseTime = Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length);
     }
@@ -176,17 +199,17 @@ async function notifyStatusPageSubscribers(
   if (verifiedSubscribers.length === 0) return;
 
   // In development, log the notification instead of sending emails
-  console.log(`[STATUS PAGE NOTIFICATION] Sending to ${verifiedSubscribers.length} subscribers:`);
-  console.log(`  Status Page: ${statusPage.name}`);
-  console.log(`  Type: ${notification.type}`);
-  console.log(`  Title: ${notification.title}`);
-  console.log(`  Message: ${notification.message}`);
-  if (notification.impact) console.log(`  Impact: ${notification.impact}`);
-  if (notification.status) console.log(`  Status: ${notification.status}`);
-  console.log(`  Subscribers:`);
-  verifiedSubscribers.forEach(s => {
-    console.log(`    - ${s.email} (unsubscribe: /api/v1/status/${statusPage.slug}/unsubscribe?token=${s.unsubscribe_token})`);
-  });
+  log.info({
+    statusPageId,
+    statusPageName: statusPage.name,
+    notificationType: notification.type,
+    title: notification.title,
+    message: notification.message.substring(0, 100),
+    impact: notification.impact,
+    status: notification.status,
+    subscriberCount: verifiedSubscribers.length,
+    subscribers: verifiedSubscribers.map(s => s.email),
+  }, 'Sending status page notification to subscribers');
 }
 
 // ================================
@@ -729,7 +752,20 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       const overallStatus = hasDown ? 'down' : hasDegraded ? 'degraded' : 'up';
 
       // Get incidents if enabled
-      let incidents: any[] = [];
+      interface IncidentWithCheckInfo {
+        id: string;
+        check_id: string;
+        status: string;
+        started_at: Date;
+        ended_at?: Date;
+        duration_seconds?: number;
+        error?: string;
+        affected_locations?: string[];
+        check_name: string;
+        check_type: string;
+        type: string;
+      }
+      let incidents: IncidentWithCheckInfo[] = [];
       let manualIncidents: StatusPageIncident[] = [];
       if (statusPage.show_incidents) {
         const historyStart = new Date(Date.now() - statusPage.show_history_days * 24 * 60 * 60 * 1000);
@@ -742,6 +778,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
             .map(async (i) => ({
               ...i,
               check_name: (await getCheckInfo(spCheck.check_id, spCheck.check_type))?.name || 'Unknown',
+              check_type: spCheck.check_type,
               type: 'automatic',
             })));
           incidents.push(...recentIncidents);
@@ -825,10 +862,11 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
           existingSub.verification_token = verificationToken;
 
           // Log verification link (in production, this would send an email)
-          console.log(`[STATUS PAGE SUBSCRIPTION] Verification email resent:`);
-          console.log(`  Email: ${email}`);
-          console.log(`  Status Page: ${statusPage.name}`);
-          console.log(`  Verify URL: /api/v1/status/${slug}/verify?token=${verificationToken}`);
+          log.info({
+            email,
+            statusPage: statusPage.name,
+            verifyUrl: `/api/v1/status/${slug}/verify?token=${verificationToken}`,
+          }, 'Verification email resent');
 
           return reply.status(200).send({
             success: true,
@@ -858,10 +896,11 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       statusPageSubscriptions.get(pageId)!.push(subscription);
 
       // Log verification link (in production, this would send an email)
-      console.log(`[STATUS PAGE SUBSCRIPTION] New subscription:`);
-      console.log(`  Email: ${email}`);
-      console.log(`  Status Page: ${statusPage.name}`);
-      console.log(`  Verify URL: /api/v1/status/${slug}/verify?token=${verificationToken}`);
+      log.info({
+        email,
+        statusPage: statusPage.name,
+        verifyUrl: `/api/v1/status/${slug}/verify?token=${verificationToken}`,
+      }, 'New status page subscription');
 
       return {
         success: true,
@@ -909,9 +948,10 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       subscription.verified = true;
       subscription.verified_at = new Date();
       subscription.verification_token = undefined;
-      console.log(`[STATUS PAGE SUBSCRIPTION] Subscription verified:`);
-      console.log(`  Email: ${subscription.email}`);
-      console.log(`  Status Page: ${statusPage?.name}`);
+      log.info({
+        email: subscription.email,
+        statusPage: statusPage?.name,
+      }, 'Subscription verified');
 
       return {
         success: true,
@@ -947,9 +987,10 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
 
       const subscription = subscriptions[subscriptionIndex];
       subscriptions.splice(subscriptionIndex, 1);
-      console.log(`[STATUS PAGE SUBSCRIPTION] Unsubscribed:`);
-      console.log(`  Email: ${subscription.email}`);
-      console.log(`  Status Page: ${statusPage?.name}`);
+      log.info({
+        email: subscription.email,
+        statusPage: statusPage?.name,
+      }, 'Unsubscribed from status page');
 
       return {
         success: true,

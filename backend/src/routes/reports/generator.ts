@@ -22,6 +22,222 @@ import { query, isDatabaseConnected } from '../../services/database.js';
 import { getProject } from '../../services/repositories/projects.js';
 
 // ============================================================================
+// Row interfaces for database query results
+// ============================================================================
+
+interface E2ERunRow {
+  id: string;
+  status: string;
+  duration_ms: number | null;
+  results: unknown[] | null;
+  error_message: string | null;
+  started_at: string | Date;
+}
+
+interface VisualRunRow {
+  id: string;
+  status: string;
+  results: unknown[] | null;
+  metrics: Record<string, unknown> | null;
+}
+
+interface AccessibilityRunRow {
+  id: string;
+  accessibility_results: {
+    violations?: AccessibilityViolation[];
+    results?: AccessibilityViolation[];
+  } | null;
+  results: unknown[] | null;
+  status: string;
+}
+
+interface AccessibilityViolation {
+  id?: string;
+  impact?: string;
+  severity?: string;
+  rule?: string;
+  ruleId?: string;
+  description?: string;
+  message?: string;
+  help?: string;
+  wcagLevel?: string;
+  wcag_level?: string;
+  nodes?: number;
+  node_count?: number;
+  helpUrl?: string;
+  help_url?: string;
+}
+
+interface PerformanceResultRow {
+  metrics: PerformanceMetrics | null;
+  lighthouse_score: number | null;
+  status: string;
+  checked_at: string | Date;
+}
+
+interface PerformanceMetrics {
+  score?: number;
+  lighthouse_score?: number;
+  lcp?: number;
+  largest_contentful_paint?: number;
+  fid?: number;
+  first_input_delay?: number;
+  cls?: number;
+  cumulative_layout_shift?: number;
+  ttfb?: number;
+  time_to_first_byte?: number;
+  fcp?: number;
+  first_contentful_paint?: number;
+  tti?: number;
+  time_to_interactive?: number;
+  speedIndex?: number;
+  speed_index?: number;
+  audits?: PerformanceAudit[];
+}
+
+interface PerformanceAudit {
+  id?: string;
+  title?: string;
+  name?: string;
+  score?: number;
+  category?: string;
+  displayValue?: string;
+  display_value?: string;
+  description?: string;
+}
+
+interface PerformanceRunRow {
+  metrics: PerformanceMetrics | null;
+  results: unknown[] | null;
+  status: string;
+}
+
+interface LoadRunRow {
+  metrics: LoadMetrics | null;
+  results: unknown[] | null;
+  duration_ms: number | null;
+  status: string;
+}
+
+interface LoadMetrics {
+  vus?: number;
+  virtual_users?: number;
+  duration?: number;
+  requestsTotal?: number;
+  requests_total?: number;
+  http_reqs?: number;
+  requestsFailed?: number;
+  requests_failed?: number;
+  http_req_failed?: number;
+  rps?: number;
+  requests_per_second?: number;
+  p50?: number;
+  latency_p50?: number;
+  http_req_duration_p50?: number;
+  p95?: number;
+  latency_p95?: number;
+  http_req_duration_p95?: number;
+  p99?: number;
+  latency_p99?: number;
+  http_req_duration_p99?: number;
+  avg?: number;
+  latency_avg?: number;
+  http_req_duration_avg?: number;
+  min?: number;
+  latency_min?: number;
+  http_req_duration_min?: number;
+  max?: number;
+  latency_max?: number;
+  http_req_duration_max?: number;
+  thresholds?: LoadThreshold[];
+  scenarios?: LoadScenario[];
+}
+
+interface LoadThreshold {
+  name?: string;
+  passed?: boolean;
+  value?: string | number;
+  threshold?: string | number;
+}
+
+interface LoadScenario {
+  name?: string;
+  vus?: number;
+  duration?: string;
+  rps?: number;
+  errorRate?: number;
+  error_rate?: number;
+}
+
+interface DASTScanRow {
+  alerts: DASTAlertData[] | null;
+  summary: {
+    headers?: {
+      present?: string[];
+      missing?: string[];
+      misconfigured?: string[];
+    };
+  } | null;
+  statistics: Record<string, unknown> | null;
+}
+
+interface DASTAlertData {
+  id?: string;
+  pluginId?: string;
+  name?: string;
+  alert?: string;
+  risk?: string;
+  severity?: string;
+  category?: string;
+  cweid?: string;
+  cwe?: string;
+  description?: string;
+  desc?: string;
+  url?: string;
+  uri?: string;
+  solution?: string;
+  remediation?: string;
+}
+
+interface SASTScanRow {
+  findings: SASTFindingData[] | null;
+  summary: Record<string, unknown> | null;
+}
+
+interface SASTFindingData {
+  id?: string;
+  ruleId?: string;
+  name?: string;
+  rule?: string;
+  severity?: string;
+  category?: string;
+  description?: string;
+  message?: string;
+  file?: string;
+  line?: number;
+  cwe?: string;
+  cweid?: string;
+  remediation?: string;
+  fix?: string;
+}
+
+interface TestResultData {
+  id?: string;
+  test_id?: string;
+  name?: string;
+  test_name?: string;
+  status?: string;
+  state?: string;
+  duration_ms?: number;
+  duration?: number;
+  error?: string;
+  error_message?: string;
+  diffPercentage?: number;
+  diff_percentage?: number;
+  viewport?: string;
+}
+
+// ============================================================================
 // Database-backed section generators
 // ============================================================================
 
@@ -44,7 +260,7 @@ async function generateE2ESection(
 
   try {
     // Aggregate pass/fail/skip counts from test run results within the period
-    const runsResult = await query<any>(
+    const runsResult = await query<E2ERunRow>(
       `SELECT id, status, duration_ms, results, error_message, started_at
        FROM test_runs
        WHERE project_id = $1
@@ -68,7 +284,7 @@ async function generateE2ESection(
     const testEntries: E2EReportSection['tests'] = [];
 
     for (const row of runsResult.rows) {
-      const results: any[] = Array.isArray(row.results) ? row.results : [];
+      const results: TestResultData[] = Array.isArray(row.results) ? row.results as TestResultData[] : [];
 
       if (results.length > 0) {
         // Each test run can contain multiple individual test results
@@ -154,7 +370,7 @@ async function generateVisualSection(
   if (!isDatabaseConnected()) return emptySection;
 
   try {
-    const runsResult = await query<any>(
+    const runsResult = await query<VisualRunRow>(
       `SELECT id, status, results, metrics
        FROM test_runs
        WHERE project_id = $1
@@ -175,7 +391,7 @@ async function generateVisualSection(
     const comparisons: VisualReportSection['comparisons'] = [];
 
     for (const row of runsResult.rows) {
-      const results: any[] = Array.isArray(row.results) ? row.results : [];
+      const results: TestResultData[] = Array.isArray(row.results) ? row.results as TestResultData[] : [];
 
       if (results.length > 0) {
         for (const result of results) {
@@ -241,7 +457,7 @@ async function generateAccessibilitySection(
 
   try {
     // Query the most recent accessibility test run to get up-to-date results
-    const runsResult = await query<any>(
+    const runsResult = await query<AccessibilityRunRow>(
       `SELECT id, accessibility_results, results, status
        FROM test_runs
        WHERE project_id = $1
@@ -267,7 +483,7 @@ async function generateAccessibilitySection(
       if (!a11yResults) continue;
 
       // accessibility_results may contain a violations array
-      const violationList: any[] = a11yResults.violations || a11yResults.results || [];
+      const violationList: AccessibilityViolation[] = a11yResults.violations || a11yResults.results || [];
 
       for (const v of violationList) {
         const impact = v.impact || v.severity || 'minor';
@@ -334,7 +550,7 @@ async function generatePerformanceSection(
 
   try {
     // Try performance_results table first (linked via performance_checks for this project)
-    const perfResult = await query<any>(
+    const perfResult = await query<PerformanceResultRow>(
       `SELECT pr.metrics, pr.lighthouse_score, pr.status, pr.checked_at
        FROM performance_results pr
        INNER JOIN performance_checks pc ON pr.check_id = pc.id
@@ -346,7 +562,7 @@ async function generatePerformanceSection(
       [projectId, periodStart, periodEnd],
     );
 
-    let metrics: any = null;
+    let metrics: PerformanceMetrics | null = null;
     let lighthouseScore: number | null = null;
 
     if (perfResult && perfResult.rows.length > 0) {
@@ -354,7 +570,7 @@ async function generatePerformanceSection(
       lighthouseScore = perfResult.rows[0].lighthouse_score;
     } else {
       // Fall back to test_runs with performance/lighthouse type
-      const runResult = await query<any>(
+      const runResult = await query<PerformanceRunRow>(
         `SELECT metrics, results, status
          FROM test_runs
          WHERE project_id = $1
@@ -414,7 +630,7 @@ async function generatePerformanceSection(
     }
 
     // Include any extra audits stored in metrics
-    const extraAudits: any[] = m.audits || [];
+    const extraAudits: PerformanceAudit[] = m.audits || [];
     for (const a of extraAudits) {
       audits.push({
         id: a.id || `audit-${audits.length}`,
@@ -471,7 +687,7 @@ async function generateLoadSection(
   if (!isDatabaseConnected()) return emptySection;
 
   try {
-    const runsResult = await query<any>(
+    const runsResult = await query<LoadRunRow>(
       `SELECT metrics, results, duration_ms, status
        FROM test_runs
        WHERE project_id = $1
@@ -505,7 +721,7 @@ async function generateLoadSection(
 
     // Extract thresholds if stored in metrics
     const thresholds: LoadReportSection['thresholds'] = [];
-    const storedThresholds: any[] = m.thresholds || [];
+    const storedThresholds: LoadThreshold[] = m.thresholds || [];
     for (const t of storedThresholds) {
       thresholds.push({
         name: t.name || '',
@@ -517,7 +733,7 @@ async function generateLoadSection(
 
     // Extract scenarios if stored in metrics
     const scenarios: LoadReportSection['scenarios'] = [];
-    const storedScenarios: any[] = m.scenarios || [];
+    const storedScenarios: LoadScenario[] = m.scenarios || [];
     for (const s of storedScenarios) {
       scenarios.push({
         name: s.name || '',
@@ -571,7 +787,7 @@ async function generateSecuritySection(
     let headersMisconfigured: string[] = [];
 
     // Query DAST scans for this project within the period
-    const dastResult = await query<any>(
+    const dastResult = await query<DASTScanRow>(
       `SELECT alerts, summary, statistics
        FROM dast_scans
        WHERE project_id = $1
@@ -583,7 +799,7 @@ async function generateSecuritySection(
 
     if (dastResult && dastResult.rows.length > 0) {
       for (const row of dastResult.rows) {
-        const alerts: any[] = row.alerts || [];
+        const alerts: DASTAlertData[] = row.alerts || [];
         for (const alert of alerts) {
           const severity = (alert.risk || alert.severity || 'info').toLowerCase();
           if (severity === 'critical') critical++;
@@ -617,7 +833,7 @@ async function generateSecuritySection(
     }
 
     // Query SAST scans for this project within the period
-    const sastResult = await query<any>(
+    const sastResult = await query<SASTScanRow>(
       `SELECT findings, summary
        FROM sast_scans
        WHERE project_id = $1
@@ -629,7 +845,7 @@ async function generateSecuritySection(
 
     if (sastResult && sastResult.rows.length > 0) {
       for (const row of sastResult.rows) {
-        const findings: any[] = row.findings || [];
+        const findings: SASTFindingData[] = row.findings || [];
         for (const finding of findings) {
           const severity = (finding.severity || 'info').toLowerCase();
           if (severity === 'critical') critical++;

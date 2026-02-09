@@ -495,7 +495,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
     // Feature #198: includeResults needed because this handler accesses accessibility_results
     const relevantRuns = (await listTestRunsByOrg(orgId, { includeResults: true }))
       .filter(r => suiteIds.includes(r.suite_id))
-      .filter((r: any) => r.test_type === 'accessibility')
+      .filter(r => r.test_type === 'accessibility')
       .filter(r => r.status !== 'pending' && r.status !== 'running')
       .filter(r => {
         const runDate = r.completed_at || r.created_at;
@@ -661,7 +661,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
       relevantRuns = relevantRuns.filter(r => r.browser === browserFilter);
     }
     if (testTypeFilter) {
-      relevantRuns = relevantRuns.filter((r: any) => r.test_type === testTypeFilter);
+      relevantRuns = relevantRuns.filter(r => r.test_type === testTypeFilter);
     }
 
     // Group runs by day
@@ -759,7 +759,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
 
     // Get unique browsers and test types for filter options
     const browsers = [...new Set(relevantRuns.map(r => r.browser).filter(Boolean))];
-    const testTypes = [...new Set(relevantRuns.map((r: any) => r.test_type).filter(Boolean))];
+    const testTypes = [...new Set(relevantRuns.map(r => r.test_type).filter(Boolean))];
 
     return {
       trends,

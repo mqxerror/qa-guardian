@@ -12,6 +12,41 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { pool } from '../../services/database.js';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
 
+// Row interfaces for typed database queries
+interface ErrorRow {
+  id: string;
+  organization_id: string;
+  user_id: string | null;
+  error_message: string;
+  error_stack: string | null;
+  component_stack: string | null;
+  url: string;
+  user_agent: string | null;
+  browser: string | null;
+  os: string | null;
+  screen_resolution: string | null;
+  metadata: Record<string, unknown> | null;
+  resolved: boolean;
+  resolved_at: string | Date | null;
+  resolved_by: string | null;
+  created_at: string | Date;
+}
+
+interface ResolvedCountRow {
+  resolved: boolean;
+  count: string;
+}
+
+interface UrlCountRow {
+  url: string;
+  count: string;
+}
+
+interface BrowserCountRow {
+  browser: string;
+  count: string;
+}
+
 /**
  * Parse user agent string to extract browser and OS
  */
@@ -222,7 +257,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
         );
 
         return reply.send({
-          errors: result.rows.map((row: any) => ({
+          errors: result.rows.map((row: ErrorRow) => ({
             id: row.id,
             organizationId: row.organization_id,
             userId: row.user_id,
@@ -402,19 +437,21 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
           [organizationId]
         );
 
-        const resolved = countResult.rows.find((r: any) => r.resolved)?.count || '0';
-        const unresolved = countResult.rows.find((r: any) => !r.resolved)?.count || '0';
+        const resolvedRow = (countResult.rows as ResolvedCountRow[]).find((r) => r.resolved);
+        const unresolvedRow = (countResult.rows as ResolvedCountRow[]).find((r) => !r.resolved);
+        const resolved = resolvedRow?.count || '0';
+        const unresolved = unresolvedRow?.count || '0';
 
         return reply.send({
           total: parseInt(resolved, 10) + parseInt(unresolved, 10),
           resolved: parseInt(resolved, 10),
           unresolved: parseInt(unresolved, 10),
           last24Hours: parseInt(recentResult.rows[0].count, 10),
-          topUrls: urlResult.rows.map((r: any) => ({
+          topUrls: (urlResult.rows as UrlCountRow[]).map((r) => ({
             url: r.url,
             count: parseInt(r.count, 10),
           })),
-          byBrowser: browserResult.rows.map((r: any) => ({
+          byBrowser: (browserResult.rows as BrowserCountRow[]).map((r) => ({
             browser: r.browser,
             count: parseInt(r.count, 10),
           })),

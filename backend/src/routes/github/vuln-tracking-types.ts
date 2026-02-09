@@ -202,6 +202,64 @@ export const scanCacheStore = new Map<string, ScanCacheEntry>();
 export const projectCacheConfigs = new Map<string, CacheConfig>();
 
 // =====================================================
+// NPM Command Output Interfaces
+// =====================================================
+
+interface NpmLsOutput {
+  name?: string;
+  version?: string;
+  dependencies?: Record<string, NpmDependencyInfo>;
+}
+
+interface NpmDependencyInfo {
+  version?: string;
+  dev?: boolean;
+  resolved?: string;
+}
+
+interface NpmAuditOutput {
+  metadata?: {
+    vulnerabilities?: {
+      total?: number;
+      info?: number;
+      low?: number;
+      moderate?: number;
+      high?: number;
+      critical?: number;
+    };
+    dependencies?: {
+      prod?: number;
+      dev?: number;
+      total?: number;
+    };
+  };
+  vulnerabilities?: Record<string, NpmVulnerability>;
+}
+
+interface NpmVulnerability {
+  severity?: string;
+  fixAvailable?: {
+    version?: string;
+    [key: string]: unknown;
+  } | boolean;
+  via?: (string | NpmVulnerabilityVia)[];
+}
+
+interface NpmVulnerabilityVia {
+  title?: string;
+  url?: string;
+  severity?: string;
+}
+
+interface VulnMapEntry {
+  id: string;
+  severity: string;
+  title: string;
+  fixAvailable?: { version?: string };
+  via: (string | NpmVulnerabilityVia)[];
+}
+
+// =====================================================
 // Helper Functions
 // =====================================================
 
@@ -250,36 +308,36 @@ export async function runNpmAudit(targetDir: string): Promise<{
   let depMeta = { prod: 0, dev: 0, total: 0 };
 
   // 1. Run npm ls --json --depth=0 to get direct dependencies
-  let lsData: any = {};
+  let lsData: NpmLsOutput = {};
   try {
     const { stdout } = await execFileAsync('npm', ['ls', '--json', '--depth=0'], {
       cwd: targetDir,
       timeout: 30000,
       maxBuffer: 10 * 1024 * 1024,
     });
-    lsData = JSON.parse(stdout);
+    lsData = JSON.parse(stdout) as NpmLsOutput;
   } catch (err: unknown) {
     // npm ls exits with non-zero when there are peer dep issues; parse stdout anyway
     const execErr = err as { stdout?: string };
     if (execErr.stdout) {
-      try { lsData = JSON.parse(execErr.stdout); } catch { /* ignore */ }
+      try { lsData = JSON.parse(execErr.stdout) as NpmLsOutput; } catch { /* ignore */ }
     }
   }
 
   // 2. Run npm audit --json to get vulnerabilities
-  let auditData: any = {};
+  let auditData: NpmAuditOutput = {};
   try {
     const { stdout } = await execFileAsync('npm', ['audit', '--json'], {
       cwd: targetDir,
       timeout: 60000,
       maxBuffer: 10 * 1024 * 1024,
     });
-    auditData = JSON.parse(stdout);
+    auditData = JSON.parse(stdout) as NpmAuditOutput;
   } catch (err: unknown) {
     // npm audit exits non-zero when vulns found; parse stdout anyway
     const execErr = err as { stdout?: string };
     if (execErr.stdout) {
-      try { auditData = JSON.parse(execErr.stdout); } catch { /* ignore */ }
+      try { auditData = JSON.parse(execErr.stdout) as NpmAuditOutput; } catch { /* ignore */ }
     }
   }
 
@@ -302,15 +360,16 @@ export async function runNpmAudit(targetDir: string): Promise<{
   }
 
   // Build vulnerability lookup from audit data
-  const vulnMap = new Map<string, Array<{ id: string; severity: string; title: string; fixAvailable: any; via: any[] }>>();
+  const vulnMap = new Map<string, VulnMapEntry[]>();
   if (auditData.vulnerabilities) {
-    for (const [name, vuln] of Object.entries<any>(auditData.vulnerabilities)) {
-      const vias = (vuln.via || []).filter((v: any) => typeof v === 'object');
+    for (const [name, vuln] of Object.entries(auditData.vulnerabilities)) {
+      const vias = (vuln.via || []).filter((v): v is NpmVulnerabilityVia => typeof v === 'object');
+      const fixAvailable = typeof vuln.fixAvailable === 'object' ? vuln.fixAvailable : undefined;
       vulnMap.set(name, [{
         id: `npm-${name}-${vuln.severity}`,
-        severity: mapNpmSeverity(vuln.severity),
+        severity: mapNpmSeverity(vuln.severity || 'low'),
         title: vias.length > 0 ? (vias[0].title || `Vulnerability in ${name}`) : `Vulnerability in ${name} (via ${(vuln.via || []).join(', ')})`,
-        fixAvailable: vuln.fixAvailable,
+        fixAvailable,
         via: vuln.via || [],
       }]);
     }
@@ -319,7 +378,7 @@ export async function runNpmAudit(targetDir: string): Promise<{
   // Build dependency list from npm ls output
   const allDeps = lsData.dependencies || {};
   let depIndex = 0;
-  for (const [name, info] of Object.entries<any>(allDeps)) {
+  for (const [name, info] of Object.entries(allDeps)) {
     const vulns = vulnMap.get(name) || [];
     const dep: LanguageDependency = {
       id: `dep-js-${depIndex++}`,
@@ -513,13 +572,13 @@ export function generateCacheKey(projectId: string, scanType: string, packageHas
 /**
  * Return empty cached dependencies - real caching not yet integrated.
  */
-export function generateMockCacheDependencies(_count: number): any[] {
+export function generateMockCacheDependencies(_count: number): LanguageDependency[] {
   return [];
 }
 
 /**
  * Return empty vulnerabilities list - real scanning not yet integrated.
  */
-export function generateMockVulnerabilities(_count: number): any[] {
+export function generateMockVulnerabilities(_count: number): VulnerabilityHistory[] {
   return [];
 }

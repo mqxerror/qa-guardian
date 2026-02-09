@@ -695,9 +695,10 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
           // Apply template variables to custom payload template
           const processedTemplate = applyTemplateVariables(config.payload_template, templateVariables);
           alertData = JSON.parse(processedTemplate);
-        } catch (parseError: any) {
+        } catch (parseError: unknown) {
+          const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown error';
           return reply.status(400).send({
-            error: `Invalid payload template: ${parseError.message}`,
+            error: `Invalid payload template: ${errorMessage}`,
             hint: 'Ensure your template is valid JSON with {{variable}} placeholders',
           });
         }
@@ -717,7 +718,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
       try {
         let webhookUrl: string | undefined;
-        let result: any;
+        let result: Response;
 
         switch (destination_type) {
           case 'pagerduty': {

@@ -3,6 +3,18 @@
 // Includes industry benchmarks, cross-project patterns, personalized insights, team skills, learning stats, releases
 
 import { FastifyInstance } from 'fastify';
+
+// Type definitions for personalized insights
+interface PersonalizedInsight {
+  id: string;
+  type: string;
+  priority: 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  data: Record<string, unknown>;
+  timestamp: string;
+  forRoles: string[];
+}
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { getTestSuite, listAllTestSuites, listAllTests } from '../../services/repositories/test-suites.js';
 import { listTestRunsByOrg } from '../../services/repositories/test-runs.js';
@@ -54,14 +66,15 @@ export async function aiInsightsRoutes(app: FastifyInstance) {
     const yourAutomationRate = Math.min(95, 50 + totalTests * 0.15);
 
     // Compute accessibility compliance from real test run data
-    const a11yRuns = orgRuns.filter((r: any) => r.accessibility_results);
+    const a11yRuns = orgRuns.filter(r => r.accessibility_results);
     let accessibilityCompliance = 0;
     if (a11yRuns.length > 0) {
-      const a11yScores = a11yRuns.map((r: any) => {
+      const a11yScores = a11yRuns.map(r => {
         const results = typeof r.accessibility_results === 'string'
-          ? JSON.parse(r.accessibility_results)
+          ? JSON.parse(r.accessibility_results as string)
           : r.accessibility_results;
-        return results?.score ?? results?.accessibility_score ?? 0;
+        return (results as { score?: number; accessibility_score?: number })?.score ??
+               (results as { score?: number; accessibility_score?: number })?.accessibility_score ?? 0;
       }).filter((s: number) => s > 0);
       accessibilityCompliance = a11yScores.length > 0
         ? Math.round(a11yScores.reduce((sum: number, s: number) => sum + s, 0) / a11yScores.length)
@@ -69,7 +82,7 @@ export async function aiInsightsRoutes(app: FastifyInstance) {
     }
 
     // Compute security scan coverage: percentage of projects that have had any test run
-    const projectsWithRuns = new Set(orgRuns.map((r: any) => r.project_id)).size;
+    const projectsWithRuns = new Set(orgRuns.map(r => r.project_id)).size;
     const securityScanCoverage = orgProjects.length > 0
       ? Math.round((projectsWithRuns / orgProjects.length) * 100)
       : 0;
@@ -454,7 +467,7 @@ export async function aiInsightsRoutes(app: FastifyInstance) {
       return runDate >= timeFilter;
     });
 
-    const insights: any[] = [];
+    const insights: PersonalizedInsight[] = [];
     const timestamp = new Date().toISOString();
 
     // Developer insights: Your tests status

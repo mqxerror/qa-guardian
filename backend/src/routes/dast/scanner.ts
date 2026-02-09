@@ -8,6 +8,71 @@ import {
   OpenAPISpec,
   OpenAPIEndpoint,
 } from './types.js';
+
+// ZAP API response types
+interface ZAPAlertResponse {
+  alerts?: ZAPAlert[];
+}
+
+interface ZAPAlert {
+  id?: string;
+  pluginid?: string;
+  alert?: string;
+  name?: string;
+  risk?: string;
+  confidence?: string;
+  description?: string;
+  url?: string;
+  method?: string;
+  param?: string;
+  attack?: string;
+  evidence?: string;
+  solution?: string;
+  reference?: string;
+  cweid?: string;
+  wascid?: string;
+}
+
+// OpenAPI spec types
+interface OpenAPIPathItem {
+  get?: OpenAPIOperation;
+  post?: OpenAPIOperation;
+  put?: OpenAPIOperation;
+  patch?: OpenAPIOperation;
+  delete?: OpenAPIOperation;
+  options?: OpenAPIOperation;
+  head?: OpenAPIOperation;
+  parameters?: OpenAPIParameter[];
+}
+
+interface OpenAPIOperation {
+  operationId?: string;
+  summary?: string;
+  description?: string;
+  parameters?: OpenAPIParameter[];
+  requestBody?: {
+    content?: Record<string, { schema?: unknown }>;
+  };
+  responses?: Record<string, { description?: string }>;
+}
+
+interface OpenAPIParameter {
+  name: string;
+  in: 'path' | 'query' | 'cookie' | 'header';
+  required?: boolean;
+  schema?: { type?: string };
+  type?: string;
+}
+
+interface OpenAPIDocument {
+  openapi?: string;
+  swagger?: string;
+  info?: {
+    title?: string;
+    version?: string;
+  };
+  paths?: Record<string, OpenAPIPathItem>;
+}
 import {
   createDastScan,
   updateDastScan,
@@ -97,8 +162,8 @@ export async function getOpenAPISpec(projectId: string): Promise<OpenAPISpec | u
 }
 
 /** Parse an OpenAPI JSON document and extract endpoint definitions. */
-export function parseOpenAPISpec(content: string): { info: any; endpoints: OpenAPIEndpoint[] } {
-  const spec = JSON.parse(content);
+export function parseOpenAPISpec(content: string): { info: OpenAPIDocument['info']; endpoints: OpenAPIEndpoint[] } {
+  const spec = JSON.parse(content) as OpenAPIDocument;
 
   if (!spec.openapi && !spec.swagger) {
     throw new Error('Invalid OpenAPI specification format');
@@ -106,14 +171,14 @@ export function parseOpenAPISpec(content: string): { info: any; endpoints: OpenA
 
   const endpoints: OpenAPIEndpoint[] = [];
   const paths = spec.paths || {};
-  const methods = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'];
+  const methods = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'] as const;
 
   for (const [path, pathItem] of Object.entries(paths)) {
     if (!pathItem) continue;
-    const pathItemObj = pathItem as Record<string, any>;
+    const pathItemObj = pathItem as OpenAPIPathItem;
 
     for (const method of methods) {
-      const operation: any = pathItemObj[method];
+      const operation = pathItemObj[method];
       if (!operation) continue;
 
       const endpoint: OpenAPIEndpoint = {
@@ -126,8 +191,8 @@ export function parseOpenAPISpec(content: string): { info: any; endpoints: OpenA
       };
 
       // Extract parameters
-      const allParams = [...(operation.parameters || []), ...(pathItemObj.parameters || [])];
-      endpoint.parameters = allParams.map((p: any) => ({
+      const allParams: OpenAPIParameter[] = [...(operation.parameters || []), ...(pathItemObj.parameters || [])];
+      endpoint.parameters = allParams.map((p) => ({
         name: p.name,
         in: p.in,
         required: p.required || false,
@@ -140,7 +205,7 @@ export function parseOpenAPISpec(content: string): { info: any; endpoints: OpenA
         const firstContentType = contentTypes[0] || 'application/json';
         endpoint.requestBody = {
           contentType: firstContentType,
-          schema: operation.requestBody.content?.[firstContentType]?.schema,
+          schema: operation.requestBody.content?.[firstContentType]?.schema as object | undefined,
         };
       }
 
@@ -385,14 +450,14 @@ async function executeZAPScan(
 
   const alertsResult = await zapGet(
     `/JSON/alert/view/alerts/?baseurl=${encodeURIComponent(targetUrl)}&start=0&count=500`
-  );
+  ) as ZAPAlertResponse;
 
-  const rawAlerts: DASTAlert[] = (alertsResult.alerts || []).map((a: any) => ({
+  const rawAlerts: DASTAlert[] = (alertsResult.alerts || []).map((a: ZAPAlert) => ({
     id: a.id || generateId(),
     pluginId: a.pluginid || '',
     name: a.alert || a.name || 'Unknown Alert',
-    risk: mapZAPRisk(a.risk),
-    confidence: mapZAPConfidence(a.confidence),
+    risk: mapZAPRisk(a.risk || ''),
+    confidence: mapZAPConfidence(a.confidence || ''),
     description: a.description || '',
     url: a.url || targetUrl,
     method: a.method || 'GET',

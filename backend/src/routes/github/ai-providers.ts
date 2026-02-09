@@ -5,6 +5,23 @@
  */
 
 import { FastifyInstance } from 'fastify';
+
+// Provider response type for router calls
+interface ProviderResponse {
+  id: string;
+  provider: string;
+  model: string;
+  content: string;
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+  };
+  cost: {
+    input_cost: number;
+    output_cost: number;
+  };
+}
 import { authenticate } from '../../middleware/auth.js';
 
 // Import types and helpers from extracted module
@@ -810,14 +827,14 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
-    let response: any = null;
+    let response: ProviderResponse | null = null;
     let providerUsed = useFallback ? config.fallback_provider : config.primary_provider;
     let fallbackAttempted = false;
 
     if (!useFallback) {
       const primaryResult = await callProvider(config.primary_provider, messages, config.timeout_ms);
 
-      if (primaryResult.success) {
+      if (primaryResult.success && primaryResult.response) {
         response = primaryResult.response;
         updateCircuitBreaker(cbKey, true, config.circuit_breaker);
       } else {
@@ -846,7 +863,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
       providerUsed = config.fallback_provider;
       const fallbackResult = await callProvider(config.fallback_provider, messages, config.timeout_ms);
 
-      if (fallbackResult.success) {
+      if (fallbackResult.success && fallbackResult.response) {
         response = fallbackResult.response;
 
         logProviderSwitch(orgId, {
@@ -1037,7 +1054,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
     provider: string,
     messages: Array<{ role: string; content: string }>,
     _timeoutMs: number
-  ): Promise<{ success: boolean; response?: any; reason?: string; error?: string }> {
+  ): Promise<{ success: boolean; response?: ProviderResponse; reason?: string; error?: string }> {
     const orgId = 'org-001';
 
     if (provider === 'kie') {

@@ -130,8 +130,8 @@ const REFRESH_TOKEN_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 days in seconds
 // Feature #439: Lazy initialization to support ESM module loading order
 // (dotenv.config() in index.ts runs after all imports are resolved)
 let _refreshSecret: string | null = null;
-type SignerFn = (payload: string | Buffer | { [key: string]: any }) => string;
-type VerifierFn = (token: string | Buffer) => any;
+type SignerFn = (payload: string | Buffer | object) => string;
+type VerifierFn = (token: string | Buffer) => object;
 let _signRefreshToken: SignerFn | null = null;
 let _verifyRefreshToken: VerifierFn | null = null;
 

@@ -23,6 +23,25 @@ import {
   SASTPRCheck,
   SASTPRComment,
 } from './types.js';
+
+// Semgrep result type
+interface SemgrepResult {
+  check_id: string;
+  path: string;
+  start?: { line?: number; col?: number };
+  end?: { line?: number; col?: number };
+  extra?: {
+    severity?: string;
+    message?: string;
+    lines?: string;
+    fix?: string;
+    metadata?: {
+      category?: string;
+      cwe?: string | string[];
+      owasp?: string | string[];
+    };
+  };
+}
 import {
   createSastScan,
   createSastPRCheck,
@@ -54,8 +73,8 @@ type RunSemgrepScanFn = (
 const defaultSemgrepScan: RunSemgrepScanFn = async (_projectId, repoPath, _config) => {
 
   function parseOutput(stdout: string): SASTFinding[] {
-    const results = JSON.parse(stdout);
-    return (results.results || []).map((r: any) => ({
+    const results = JSON.parse(stdout) as { results?: SemgrepResult[] };
+    return (results.results || []).map((r: SemgrepResult) => ({
       id: `finding_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       ruleId: r.check_id,
       ruleName: r.check_id.split('.').pop() || r.check_id,
@@ -63,10 +82,10 @@ const defaultSemgrepScan: RunSemgrepScanFn = async (_projectId, repoPath, _confi
       category: r.extra?.metadata?.category || 'security',
       message: r.extra?.message || r.check_id,
       filePath: r.path,
-      line: r.start?.line,
-      column: r.start?.col,
-      endLine: r.end?.line,
-      endColumn: r.end?.col,
+      line: r.start?.line ?? 0,
+      column: r.start?.col ?? 0,
+      endLine: r.end?.line ?? 0,
+      endColumn: r.end?.col ?? 0,
       snippet: r.extra?.lines || '',
       cweId: Array.isArray(r.extra?.metadata?.cwe) ? r.extra.metadata.cwe[0] : r.extra?.metadata?.cwe,
       owaspCategory: Array.isArray(r.extra?.metadata?.owasp) ? r.extra.metadata.owasp[0] : r.extra?.metadata?.owasp,

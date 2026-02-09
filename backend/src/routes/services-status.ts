@@ -18,10 +18,20 @@ import * as http from 'http';
 // Feature #392: Use execFile instead of exec to prevent command injection
 const execFileAsync = promisify(execFile);
 
-// Module-level Socket.IO reference (set from index.ts after server starts)
-let socketIORef: any = null;
+// Socket.IO Server interface (minimal type for health checking)
+interface SocketIOServer {
+  engine?: {
+    clientsCount?: number;
+  };
+  sockets?: {
+    sockets?: Map<string, unknown>;
+  };
+}
 
-export function setServicesSocketIO(io: any) {
+// Module-level Socket.IO reference (set from index.ts after server starts)
+let socketIORef: SocketIOServer | null = null;
+
+export function setServicesSocketIO(io: SocketIOServer | null) {
   socketIORef = io;
 }
 
@@ -213,8 +223,8 @@ async function checkMinIO(): Promise<ServiceInfo> {
   try {
     const start = Date.now();
     const reachable = await new Promise<boolean>((resolve) => {
-      const req = http.get(`http://${endpoint}:${port || 9000}/minio/health/live`, { timeout: 3000 }, (res: any) => {
-        resolve(res.statusCode < 500);
+      const req = http.get(`http://${endpoint}:${port || 9000}/minio/health/live`, { timeout: 3000 }, (res: http.IncomingMessage) => {
+        resolve((res.statusCode ?? 500) < 500);
       });
       req.on('error', () => resolve(false));
       req.on('timeout', () => { req.destroy(); resolve(false); });
@@ -618,7 +628,7 @@ function checkMCPServer(): ServiceInfo {
   };
 }
 
-function checkSocketIO(io: any): ServiceInfo {
+function checkSocketIO(io: SocketIOServer | null): ServiceInfo {
   const last_checked = new Date().toISOString();
   const active = !!io;
   return {

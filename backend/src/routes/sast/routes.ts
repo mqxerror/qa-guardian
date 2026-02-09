@@ -24,6 +24,25 @@ import * as crypto from 'crypto';
 
 const execFileAsync = promisify(execFile);
 
+// Semgrep result type
+interface SemgrepResult {
+  check_id: string;
+  path: string;
+  start?: { line?: number; col?: number };
+  end?: { line?: number; col?: number };
+  extra?: {
+    severity?: string;
+    message?: string;
+    lines?: string;
+    fix?: string;
+    metadata?: {
+      category?: string;
+      cwe?: string | string[];
+      owasp?: string | string[];
+    };
+  };
+}
+
 import {
   SASTSeverity,
   SASTConfig,
@@ -93,8 +112,8 @@ async function runSemgrepScan(
    * Parse Semgrep JSON stdout into SASTFinding array
    */
   function parseSemgrepOutput(stdout: string): SASTFinding[] {
-    const results = JSON.parse(stdout);
-    return (results.results || []).map((r: any) => ({
+    const results = JSON.parse(stdout) as { results?: SemgrepResult[] };
+    return (results.results || []).map((r: SemgrepResult) => ({
       id: generateId(),
       ruleId: r.check_id,
       ruleName: r.check_id.split('.').pop() || r.check_id,
@@ -102,10 +121,10 @@ async function runSemgrepScan(
       category: r.extra?.metadata?.category || 'security',
       message: r.extra?.message || r.check_id,
       filePath: r.path,
-      line: r.start?.line,
-      column: r.start?.col,
-      endLine: r.end?.line,
-      endColumn: r.end?.col,
+      line: r.start?.line ?? 0,
+      column: r.start?.col ?? 0,
+      endLine: r.end?.line ?? 0,
+      endColumn: r.end?.col ?? 0,
       snippet: r.extra?.lines || '',
       cweId: Array.isArray(r.extra?.metadata?.cwe) ? r.extra.metadata.cwe[0] : r.extra?.metadata?.cwe,
       owaspCategory: Array.isArray(r.extra?.metadata?.owasp) ? r.extra.metadata.owasp[0] : r.extra?.metadata?.owasp,

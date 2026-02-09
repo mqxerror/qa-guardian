@@ -116,9 +116,11 @@ export async function dependencyListsRoutes(app: FastifyInstance): Promise<void>
   // ============================================================
 
   // Get all dependency list entries (allowlist and blocklist)
-  app.get('/api/v1/organization/dependency-lists', {
+  app.get<{
+    Querystring: { includeExpired?: boolean; listType?: 'allowlist' | 'blocklist' };
+  }>('/api/v1/organization/dependency-lists', {
     preHandler: [authenticate],
-  }, async (request: any) => {
+  }, async (request) => {
     const user = request.user as JwtPayload;
     const orgId = user.organization_id;
 

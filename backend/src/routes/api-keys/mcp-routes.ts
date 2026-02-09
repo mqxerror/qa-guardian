@@ -4,6 +4,18 @@ import { FastifyInstance } from 'fastify';
 import crypto from 'crypto';
 import { authenticate, requireRoles, JwtPayload } from '../../middleware/auth.js';
 import { ApiKey, McpConnection, OrgParams } from './types.js';
+
+// Database row interface for MCP connections
+interface McpConnectionRow {
+  id: string;
+  api_key_id: string;
+  api_key_name: string;
+  organization_id: string;
+  connected_at: string | Date;
+  last_activity_at: string | Date;
+  client_info: string | { name?: string; version?: string };
+  ip_address: string;
+}
 import {
   dbGetApiKeyByHash,
   dbUpdateApiKey,
@@ -145,7 +157,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
           [orgId]
         );
         if (result && result.rows) {
-          orgConnections = result.rows.map((row: any) => ({
+          orgConnections = (result.rows as McpConnectionRow[]).map((row) => ({
             id: row.id,
             api_key_id: row.api_key_id,
             api_key_name: row.api_key_name,
