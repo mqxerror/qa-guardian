@@ -1062,7 +1062,11 @@ async function runAPIDiscovery(url: string): Promise<APIDiscoveryResult> {
     '/api/health',
   ];
 
+  // Feature #480: Body size limit for API Discovery responses (prevent memory exhaustion)
+  const API_DISCOVERY_BODY_LIMIT = 10240; // 10KB
+
   // Helper: Make HTTP request and return response info
+  // Feature #480: Added SSRF re-validation before each request
   async function probeEndpoint(endpointUrl: string, method: 'GET' | 'HEAD' = 'HEAD'): Promise<{
     status: number;
     statusText: string;
@@ -1073,6 +1077,23 @@ async function runAPIDiscovery(url: string): Promise<APIDiscoveryResult> {
   }> {
     const start = Date.now();
     try {
+      // Feature #480: Re-validate constructed URL against SSRF rules
+      // This is critical because the URL may be constructed from user input + paths
+      const ssrfValidation = validateURLForSSRF(endpointUrl, {
+        requireHttps: false,
+        allowLocalhost: process.env.NODE_ENV !== 'production',
+      });
+
+      if (!ssrfValidation.safe) {
+        log.warn({ url: endpointUrl, error: ssrfValidation.error }, 'SSRF validation failed for probe URL');
+        return {
+          status: 0,
+          statusText: '',
+          responseTimeMs: Date.now() - start,
+          error: `SSRF protection: ${ssrfValidation.error}`,
+        };
+      }
+
       const probeUrl = new URL(endpointUrl);
       const isHttps = probeUrl.protocol === 'https:';
       const client = isHttps ? https : http;
@@ -1080,21 +1101,30 @@ async function runAPIDiscovery(url: string): Promise<APIDiscoveryResult> {
       return await new Promise((resolve) => {
         const req = client.request(endpointUrl, {
           method,
-          timeout: 5000,
+          timeout: 5000, // 5 second timeout
           headers: {
             'User-Agent': 'QA-Guardian-API-Discovery/1.0',
             'Accept': 'application/json, application/yaml, */*',
           },
         }, (res) => {
           let body = '';
-          res.on('data', (chunk) => { body += chunk; });
+          let bodySize = 0;
+
+          res.on('data', (chunk) => {
+            // Feature #480: Enforce body size limit to prevent memory exhaustion
+            bodySize += chunk.length;
+            if (bodySize <= API_DISCOVERY_BODY_LIMIT) {
+              body += chunk;
+            }
+          });
+
           res.on('end', () => {
             resolve({
               status: res.statusCode || 0,
               statusText: res.statusMessage || '',
               responseTimeMs: Date.now() - start,
               contentType: res.headers['content-type'],
-              body: method === 'GET' ? body.slice(0, 50000) : undefined, // Limit body size
+              body: method === 'GET' ? body.slice(0, API_DISCOVERY_BODY_LIMIT) : undefined,
             });
           });
         });
