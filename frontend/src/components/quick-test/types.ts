@@ -216,6 +216,22 @@ export interface SeoAnalysisData {
       urlCount?: number;
     };
   };
+  // Feature #528: Schema Markup Detection
+  schemaMarkup?: {
+    jsonLdScripts: Array<{
+      type: string;
+      raw: string;
+      valid: boolean;
+      error?: string;
+    }>;
+    microdataItems: Array<{
+      type: string;
+      itemCount: number;
+    }>;
+    detectedTypes: string[];
+    hasStructuredData: boolean;
+    issues: string[];
+  };
   issues: string[];
   recommendations: string[];
 }

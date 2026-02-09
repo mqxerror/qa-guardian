@@ -300,6 +300,22 @@ interface SeoAnalysisResult {
       urlCount?: number;
     };
   };
+  // Feature #528: Schema Markup Detection
+  schemaMarkup: {
+    jsonLdScripts: Array<{
+      type: string;
+      raw: string;
+      valid: boolean;
+      error?: string;
+    }>;
+    microdataItems: Array<{
+      type: string;
+      itemCount: number;
+    }>;
+    detectedTypes: string[];
+    hasStructuredData: boolean;
+    issues: string[];
+  };
   issues: string[];
   recommendations: string[];
 }
@@ -1486,6 +1502,14 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       robotsTxt: { present: false, url: '', allowsCrawling: true },
       sitemap: { present: false, url: '' },
     },
+    // Feature #528: Schema Markup Detection
+    schemaMarkup: {
+      jsonLdScripts: [],
+      microdataItems: [],
+      detectedTypes: [],
+      hasStructuredData: false,
+      issues: [],
+    },
     issues: [],
     recommendations: [],
   };
@@ -1548,6 +1572,32 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
         if (text) h1Texts.push(text.substring(0, 100));
       });
 
+      // Feature #528: Schema Markup Detection
+      // Find all JSON-LD scripts
+      const jsonLdScripts: Array<{ raw: string }> = [];
+      document.querySelectorAll('script[type="application/ld+json"]').forEach(script => {
+        const content = script.textContent?.trim();
+        if (content) {
+          jsonLdScripts.push({ raw: content.substring(0, 5000) }); // Limit size
+        }
+      });
+
+      // Find Microdata items
+      const microdataItems: Array<{ type: string; count: number }> = [];
+      const itemscopeElements = document.querySelectorAll('[itemscope]');
+      const typeCount: Record<string, number> = {};
+      itemscopeElements.forEach(el => {
+        const itemtype = el.getAttribute('itemtype');
+        if (itemtype) {
+          // Extract schema type from URL like "https://schema.org/Product"
+          const typeName = itemtype.split('/').pop() || itemtype;
+          typeCount[typeName] = (typeCount[typeName] || 0) + 1;
+        }
+      });
+      for (const [type, count] of Object.entries(typeCount)) {
+        microdataItems.push({ type, count });
+      }
+
       return {
         title,
         description: getMeta('meta[name="description"]'),
@@ -1563,6 +1613,9 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
         h1Count: h1Elements.length,
         h1Texts,
         headingHierarchy: orderedHeadings,
+        // Feature #528: Schema data
+        jsonLdScripts,
+        microdataItems,
       };
     });
 
@@ -1689,6 +1742,78 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       result.recommendations.push('Use heading levels in order (H1 → H2 → H3)');
     }
 
+    // Feature #528: Process Schema Markup
+    const detectedTypes: string[] = [];
+    const commonSchemaTypes = ['Organization', 'LocalBusiness', 'Product', 'BreadcrumbList', 'FAQ', 'Article', 'WebSite', 'WebPage', 'Person', 'Event', 'Recipe'];
+
+    // Process JSON-LD scripts
+    for (const script of seoData.jsonLdScripts) {
+      try {
+        const parsed = JSON.parse(script.raw);
+        // Extract @type from JSON-LD
+        const extractTypes = (obj: unknown): string[] => {
+          const types: string[] = [];
+          if (typeof obj === 'object' && obj !== null) {
+            const o = obj as Record<string, unknown>;
+            if (o['@type']) {
+              const t = Array.isArray(o['@type']) ? o['@type'] : [o['@type']];
+              types.push(...t.map(String));
+            }
+            // Check for @graph array
+            if (Array.isArray(o['@graph'])) {
+              for (const item of o['@graph']) {
+                types.push(...extractTypes(item));
+              }
+            }
+          }
+          return types;
+        };
+        const types = extractTypes(parsed);
+        result.schemaMarkup.jsonLdScripts.push({
+          type: types[0] || 'Unknown',
+          raw: script.raw.substring(0, 500), // Truncate for storage
+          valid: true,
+        });
+        detectedTypes.push(...types);
+      } catch (parseError) {
+        result.schemaMarkup.jsonLdScripts.push({
+          type: 'Invalid',
+          raw: script.raw.substring(0, 200),
+          valid: false,
+          error: 'Invalid JSON syntax',
+        });
+        result.schemaMarkup.issues.push('Invalid JSON-LD syntax detected');
+      }
+    }
+
+    // Process Microdata
+    for (const item of seoData.microdataItems) {
+      result.schemaMarkup.microdataItems.push({
+        type: item.type,
+        itemCount: item.count,
+      });
+      detectedTypes.push(item.type);
+    }
+
+    // Deduplicate and store detected types
+    result.schemaMarkup.detectedTypes = [...new Set(detectedTypes)];
+    result.schemaMarkup.hasStructuredData = detectedTypes.length > 0;
+
+    // Check for common schema types
+    if (!result.schemaMarkup.hasStructuredData) {
+      result.recommendations.push('Add structured data (JSON-LD or Microdata) for better search engine visibility');
+    } else {
+      // Check if important types are present
+      const hasOrg = detectedTypes.some(t => t === 'Organization' || t === 'LocalBusiness');
+      const hasBreadcrumbs = detectedTypes.includes('BreadcrumbList');
+      if (!hasOrg) {
+        result.recommendations.push('Consider adding Organization or LocalBusiness schema');
+      }
+      if (!hasBreadcrumbs) {
+        result.recommendations.push('Consider adding BreadcrumbList schema for navigation');
+      }
+    }
+
     // Step 2: Check robots.txt
     try {
       const robotsUrl = `${baseUrl}/robots.txt`;
@@ -1779,6 +1904,10 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
     if (!result.crawlability.sitemap.present) score -= 5;
     if (!result.crawlability.robotsTxt.allowsCrawling) score -= 10;
 
+    // Feature #528: Schema markup (moderate impact)
+    if (!result.schemaMarkup.hasStructuredData) score -= 5;
+    if (result.schemaMarkup.issues.length > 0) score -= 3; // Invalid JSON-LD penalty
+
     result.score = Math.max(0, Math.min(100, score));
 
     log.info({
@@ -1788,6 +1917,7 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       issueCount: result.issues.length,
       robotsTxt: result.crawlability.robotsTxt.present,
       sitemap: result.crawlability.sitemap.present,
+      schemaTypes: result.schemaMarkup.detectedTypes.length,
     }, 'SEO Analysis complete');
 
   } catch (err) {

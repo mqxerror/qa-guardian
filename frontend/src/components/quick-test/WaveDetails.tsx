@@ -24,6 +24,7 @@ import {
   Heading1,
   FileText,
   Map,
+  Code2,
 } from 'lucide-react';
 import { SourceBadge, PriorityBadge, SeverityBadge, ImpactBadge } from './badges';
 import type { AIAnalysisData, AccessibilityData, APIDiscoveryData, SeoAnalysisData } from './types';
@@ -620,6 +621,53 @@ export function SeoAnalysisDetails({ data }: { data: SeoAnalysisData }) {
           </div>
         </div>
       </div>
+
+      {/* Feature #528: Schema Markup */}
+      {data.schemaMarkup && (
+        <div>
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+            <Code2 className="w-3.5 h-3.5" />
+            Structured Data
+          </div>
+          <div className="p-2 rounded bg-background/50">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-foreground">
+                {data.schemaMarkup.hasStructuredData ? 'Schema Detected' : 'No Schema Found'}
+              </span>
+              {data.schemaMarkup.hasStructuredData ? (
+                <CheckCircle2 className="w-4 h-4 text-success" />
+              ) : (
+                <XCircle className="w-4 h-4 text-muted-foreground" />
+              )}
+            </div>
+            {data.schemaMarkup.detectedTypes.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {data.schemaMarkup.detectedTypes.map((type, idx) => (
+                  <span
+                    key={idx}
+                    className="px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded"
+                  >
+                    {type}
+                  </span>
+                ))}
+              </div>
+            )}
+            {data.schemaMarkup.jsonLdScripts.length > 0 && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                {data.schemaMarkup.jsonLdScripts.length} JSON-LD script{data.schemaMarkup.jsonLdScripts.length !== 1 ? 's' : ''}
+                {data.schemaMarkup.issues.length > 0 && (
+                  <span className="text-warning ml-2">({data.schemaMarkup.issues.length} issues)</span>
+                )}
+              </div>
+            )}
+            {data.schemaMarkup.microdataItems.length > 0 && (
+              <div className="mt-1 text-xs text-muted-foreground">
+                {data.schemaMarkup.microdataItems.length} Microdata type{data.schemaMarkup.microdataItems.length !== 1 ? 's' : ''}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Recommendations */}
       {recCount > 0 && (
