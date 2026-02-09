@@ -1,9 +1,11 @@
 /**
  * FlakinessPanel - Feature #48: Extracted from TestDetailPage.tsx
+ * Feature #524: Updated to use unified ScoreCard for pass rate metric
  * Displays flakiness trend data and analysis for a test
  */
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { FlakinessTrend, TestRunType } from './types';
+import { ScoreCard } from '../ui/score-card';
 
 export interface FlakinessPanelProps {
  isLoading: boolean;
@@ -73,10 +75,7 @@ export function FlakinessPanel({
  </div>
  <div className="text-xs text-muted-foreground">Flakiness Score</div>
  </div>
- <div className="rounded-lg border border-border bg-muted/30 p-3">
- <div className="text-2xl font-bold text-success">{flakinessTrend.summary.overall_pass_rate}%</div>
- <div className="text-xs text-muted-foreground">Pass Rate</div>
- </div>
+ <ScoreCard score={flakinessTrend.summary.overall_pass_rate} label="Pass Rate" size="sm" />
  <div className="rounded-lg border border-border bg-muted/30 p-3">
  <div className="text-sm font-medium text-foreground">
  {flakinessTrend.summary.flakiness_started
