@@ -4,7 +4,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
 import { logAuditEntry } from '../audit-logs.js';
-import { Test, TestStep } from './types.js';
+import { Test } from './types.js';
 import { getTestSuite, createTest } from './stores.js';
 import { generatePlaywrightCode } from './utils.js';
 
@@ -282,9 +282,8 @@ export async function aiGenerationRoutes(app: FastifyInstance) {
   app.post<{ Body: AIGenerateTestBody }>('/api/v1/ai/generate-test', {
     preHandler: [authenticate],
   }, async (request, reply) => {
-    const { description, suite_id, test_name, base_url, generate_options } = request.body;
+    const { description, suite_id, test_name, base_url } = request.body;
     const orgId = getOrganizationId(request);
-    const user = request.user as JwtPayload;
 
     if (!description || description.trim().length < 10) {
       return reply.status(400).send({

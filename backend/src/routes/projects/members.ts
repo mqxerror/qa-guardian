@@ -2,7 +2,7 @@
 // Handles project-level permissions and member management
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
+import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { getProject, getProjectMembers, addProjectMember, removeProjectMember } from './stores.js';
 import { createLogger } from '../../services/logger.js';
 

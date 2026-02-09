@@ -618,8 +618,8 @@ export function explainAnomaly(
 // ============================================================================
 
 export function getDetectedAnomalies(
-  projectId?: string,
-  period: string = '7d',
+  _projectId?: string,
+  _period: string = '7d',
   severity?: string
 ): Array<{
   id: string;

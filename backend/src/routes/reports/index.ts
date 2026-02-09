@@ -4,7 +4,7 @@
  * Feature #469: PDF/CSV/HTML export functionality
  */
 
-import { FastifyInstance, FastifyRequest } from 'fastify';
+import { FastifyInstance } from 'fastify';
 import { getReport, listReports, deleteReport } from './stores.js';
 import { generateReport } from './generator.js';
 import { GenerateReportRequest, ComprehensiveReport } from './types.js';

@@ -4,7 +4,6 @@ import crypto from 'crypto';
 import { McpConnection } from './types.js';
 import {
   dbCreateMcpConnection,
-  dbGetMcpConnection,
   dbUpdateMcpConnectionActivity,
   dbDeleteMcpConnection,
   dbCleanupStaleMcpConnections,

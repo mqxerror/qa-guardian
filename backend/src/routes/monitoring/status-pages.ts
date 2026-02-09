@@ -18,7 +18,7 @@ import { createLogger } from '../../services/logger.js';
 // Create logger for this module
 const log = createLogger('route:status-pages');
 import { logAuditEntry } from '../audit-logs.js';
-import { generateId, generateSimpleId } from '../../utils/index.js';
+// generateId, generateSimpleId - imported but not used after refactoring
 import {
   StatusPage,
   StatusPageCheck,

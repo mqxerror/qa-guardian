@@ -46,7 +46,6 @@ import {
   createSastScan,
   createSastPRCheck,
   getSastPRChecks,
-  updateSastPRCheck,
   createSastPRComment,
   getSastPRComments,
   getSASTConfig,

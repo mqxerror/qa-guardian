@@ -3,7 +3,7 @@
 import { FastifyInstance } from 'fastify';
 import crypto from 'crypto';
 import { authenticate, requireRoles, JwtPayload } from '../../middleware/auth.js';
-import { ApiKey, McpConnection, OrgParams } from './types.js';
+import { McpConnection, OrgParams } from './types.js';
 import { createLogger } from '../../services/logger.js';
 
 const log = createLogger('mcp-routes');

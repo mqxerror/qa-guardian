@@ -32,7 +32,6 @@ import { getSecretPatterns } from './stores.js';
 import * as gitleaksRepo from '../../services/repositories/gitleaks.js';
 import { generateId } from '../../utils/index.js';
 
-const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
 
 // ============================================================
@@ -115,8 +114,8 @@ export interface GitleaksScan {
 // Feature #360: Removed deprecated gitleaksConfigs and gitleaksScans Maps
 // In-memory stores removed in #2121 - routes now use async DB calls via gitleaksRepo.
 
-// Default Gitleaks configuration
-const DEFAULT_GITLEAKS_CONFIG: GitleaksConfig = {
+// Default Gitleaks configuration - kept for reference but not used after DB migration
+const _DEFAULT_GITLEAKS_CONFIG: GitleaksConfig = {
   enabled: false,
   scan_on_push: false,
   scan_on_pr: false,

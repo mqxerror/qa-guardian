@@ -22,7 +22,6 @@ import {
   deleteDastFalsePositive,
   saveOpenApiSpec,
   getOpenApiSpec,
-  getOpenApiSpecsByProject,
   deleteOpenApiSpec,
   ZAP_SCAN_PROFILES,
   SCHEDULE_FREQUENCIES,
@@ -31,10 +30,8 @@ import {
   generateId,
   getDASTConfig,
   updateDASTConfig,
-  generateCronExpression,
-  calculateDASTNextRun,
 } from './utils.js';
-import { runZAPScan, parseOpenAPISpec, getOpenAPISpec } from './scanner.js';
+import { runZAPScan, parseOpenAPISpec } from './scanner.js';
 import { runLightweightScan, isZAPAvailable } from './lightweight-scanner.js';
 import { generateHTMLReport, generateJSONReport, generatePDFReport } from './reports.js';
 import {

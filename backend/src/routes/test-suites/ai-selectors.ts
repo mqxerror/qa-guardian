@@ -283,7 +283,7 @@ export async function aiSelectorsRoutes(app: FastifyInstance) {
   app.post<{ Body: AISuggestSelectorsBody }>('/api/v1/ai/suggest-selectors', {
     preHandler: [authenticate],
   }, async (request, reply) => {
-    const { url, html, element_descriptions, include_all_interactive = true, max_results = 50 } = request.body;
+    const { url, html, element_descriptions, max_results = 50 } = request.body;
 
     if (!url && !html) {
       return reply.status(400).send({

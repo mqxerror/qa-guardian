@@ -94,7 +94,7 @@ export function generateCronExpression(
 }
 
 // Parse cron expression and calculate next run time
-export function calculateDASTNextRun(cronExpression: string, timezone: string): Date | undefined {
+export function calculateDASTNextRun(cronExpression: string, _timezone: string): Date | undefined {
   // Simple cron parsing for common patterns
   // Format: minute hour day-of-month month day-of-week
   const parts = cronExpression.split(' ');

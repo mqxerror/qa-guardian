@@ -436,7 +436,7 @@ export default async function mcpToolsRoutes(fastify: FastifyInstance) {
     const startTime = Date.now();
 
     try {
-      const { message, context = {}, complexity = 'complex', provider, model } = request.body;
+      const { message, context = {}, complexity = 'complex', model } = request.body;
 
       // Feature #2074: User-specified model takes precedence
       // Feature #1941: Fallback to complexity-based model routing
@@ -1006,7 +1006,6 @@ Tool fails → Continue anyway → Report "completed successfully" ❌`;
 
         // Build result message to send back to Claude
         const hasFailures = turnResults.some(r => !r.success);
-        const hasSuccesses = turnResults.some(r => r.success);
 
         let toolResultMessage = 'Tool execution results:\n\n';
         for (const exec of turnResults) {

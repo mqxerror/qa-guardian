@@ -3,7 +3,6 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
-import { ProjectVisualSettings, ProjectHealingSettings } from './types.js';
 import { getProject } from './stores.js';
 import {
   getProjectVisualSettings,

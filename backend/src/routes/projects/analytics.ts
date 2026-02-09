@@ -2,8 +2,8 @@
 // Includes dashboard stats, browser stats, project comparison, and pass rate trends
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
-import { getTest, getTestSuite, listAllTestSuites, listAllTests, listTestSuites as dbListTestSuites } from '../../services/repositories/test-suites.js';
+import { authenticate, getOrganizationId } from '../../middleware/auth.js';
+import { getTest, getTestSuite, listAllTestSuites, listAllTests } from '../../services/repositories/test-suites.js';
 import { listTestRunsByOrg } from '../../services/repositories/test-runs.js';
 import { listProjects as dbListProjects } from '../../services/repositories/projects.js';
 import { Project } from './types.js';

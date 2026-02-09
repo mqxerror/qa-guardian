@@ -12,7 +12,7 @@
  * - Review queue for pending tests
  */
 
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyInstance, FastifyRequest } from 'fastify';
 import { authenticate, JwtPayload, ApiKeyPayload, InternalServicePayload } from '../../middleware/auth.js';
 import {
   AIGeneratedTest,
@@ -25,7 +25,6 @@ import {
   ApprovalStatus,
 } from './types.js';
 import {
-  createAiGeneratedTest,
   getAiGeneratedTest,
   updateAiGeneratedTest,
   deleteAiGeneratedTest,
@@ -37,8 +36,6 @@ import {
   getLatestVersion,
   updateApprovalStatusIndex,
   getTestsByApprovalStatus,
-  approveTest,
-  rejectTest,
 } from './stores.js';
 
 // Helper to get user info from authenticated request
@@ -525,7 +522,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
     preHandler: [authenticate],
   }, async (request, reply) => {
     try {
-      const { text, context } = request.body;
+      const { text } = request.body;
 
       if (!text || typeof text !== 'string') {
         return reply.status(400).send({

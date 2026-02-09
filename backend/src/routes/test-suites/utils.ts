@@ -11,7 +11,8 @@ export function generatePlaywrightCode(
   format: 'typescript' | 'javascript'
 ): string {
   const lines: string[] = [];
-  const isTs = format === 'typescript';
+  // TypeScript format flag for potential future type annotations
+  const _isTs = format === 'typescript';
 
   // Import statement
   lines.push(`import { test, expect } from '@playwright/test';`);

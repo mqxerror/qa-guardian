@@ -24,7 +24,6 @@ import { AITestGenerationService } from '../../services/ai-test-generation-servi
 // Import types from extracted module
 import type {
   NLTestGenerationRequest,
-  GeneratedTest,
   UserStoryTestSuiteRequest,
   GherkinToPlaywrightRequest,
   GherkinStep,
@@ -1057,7 +1056,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
   app.post<{ Body: ExplainAnomalyRequest }>('/api/v1/ai/explain-anomaly', {
     preHandler: [authenticate],
   }, async (request, reply) => {
-    const { anomaly_type, anomaly_data, context } = request.body;
+    const { anomaly_type, anomaly_data } = request.body;
 
     if (!anomaly_type || !anomaly_data) {
       return reply.status(400).send({ error: 'Missing required fields', message: 'Please provide anomaly_type and anomaly_data.' });

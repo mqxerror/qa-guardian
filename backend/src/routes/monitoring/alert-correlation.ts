@@ -121,7 +121,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
       const maxResults = parseInt(limit || '50');
 
       const correlations: AlertCorrelation[] = [];
-      for (const [_, corr] of alertCorrelations) {
+      for (const [, corr] of alertCorrelations) {
         if (corr.organization_id !== orgId) continue;
         if (status && corr.status !== status) continue;
         correlations.push(corr);
@@ -389,7 +389,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
       const orgId = getOrganizationId(request);
       const runbooks: AlertRunbook[] = [];
 
-      for (const [_, runbook] of alertRunbooks) {
+      for (const [, runbook] of alertRunbooks) {
         if (runbook.organization_id === orgId) {
           runbooks.push(runbook);
         }

@@ -7,7 +7,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
+import { authenticate, requireRoles, getOrganizationId } from '../../middleware/auth.js';
 import {
   UptimeCheck,
   ManagedIncident,

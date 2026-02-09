@@ -177,7 +177,7 @@ export async function reviewRoutes(app: FastifyInstance) {
   // Feature #89: Add caching (5 min TTL), proper error handling, and default values
   app.get<{ Params: { suiteId: string } }>('/api/v1/suites/:suiteId/review-settings', {
     preHandler: [authenticate],
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { suiteId } = request.params;
     const cache = getCache();
 

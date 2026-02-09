@@ -23,7 +23,7 @@ import {
 } from '../services/repositories/schedules.js';
 
 // Calculate next run time from cron expression (simplified implementation)
-function calculateNextRun(cronExpression: string, timezone: string): Date | undefined {
+function calculateNextRun(cronExpression: string, _timezone: string): Date | undefined {
   // Simple cron parsing for common patterns
   // Format: minute hour day-of-month month day-of-week
   const parts = cronExpression.split(' ');

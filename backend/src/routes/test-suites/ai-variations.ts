@@ -77,7 +77,7 @@ function detectTestType(description: string): string {
 }
 
 // Feature #1146: Generate variations based on test type
-function generateVariationsForType(description: string, testType: string, testName?: string): TestVariationSuggestion[] {
+function generateVariationsForType(description: string, testType: string, _testName?: string): TestVariationSuggestion[] {
   const variations: TestVariationSuggestion[] = [];
   let variationCount = 0;
 

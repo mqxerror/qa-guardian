@@ -9,8 +9,6 @@ import {
   updateProjectHealingSettings as dbUpdateProjectHealingSettings,
   getProjectMembers as dbGetProjectMembers,
   isProjectMember as dbIsProjectMember,
-  DEFAULT_PROJECT_VISUAL_SETTINGS,
-  DEFAULT_PROJECT_HEALING_SETTINGS,
 } from './stores.js';
 
 // Helper to get project visual settings with defaults (async DB call)

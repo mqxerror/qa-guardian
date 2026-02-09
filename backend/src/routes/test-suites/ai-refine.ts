@@ -239,7 +239,7 @@ export async function aiRefineRoutes(app: FastifyInstance) {
 // Feature #1141: Analyze description for ambiguity
 function analyzeDescriptionForAmbiguity(
   description: string,
-  context?: { application_type?: string; has_authentication?: boolean; known_pages?: string[] }
+  _context?: { application_type?: string; has_authentication?: boolean; known_pages?: string[] }
 ): AmbiguityAnalysis {
   const desc = description.toLowerCase().trim();
   const questions: ClarifyingQuestion[] = [];
@@ -275,7 +275,7 @@ function analyzeDescriptionForAmbiguity(
     { pattern: /^(?:it\s+)?should\s+\w+$/i, type: 'incomplete_should', score: 30 },
   ];
 
-  for (const { pattern, type, score } of vaguePatterns) {
+  for (const { pattern, score } of vaguePatterns) {
     if (pattern.test(desc)) {
       ambiguityScore += score;
     }

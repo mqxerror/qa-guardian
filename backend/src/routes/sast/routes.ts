@@ -710,7 +710,7 @@ export async function coreRoutes(app: FastifyInstance) {
     };
   }>('/api/v1/sast/dashboard', {
     preHandler: [authenticate],
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const user = request.user as JwtPayload;
     const {
       severity,

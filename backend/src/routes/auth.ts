@@ -23,7 +23,6 @@ import {
   createUser as dbCreateUser,
   updateUser as dbUpdateUser,
   userExists as dbUserExists,
-  getUserCount as dbGetUserCount,
   blacklistToken as dbBlacklistToken,
   isTokenBlacklisted as dbIsTokenBlacklisted,
   createSession as dbCreateSession,
@@ -208,13 +207,12 @@ async function revokeRefreshToken(token: string): Promise<void> {
   await revokeRefreshTokenHash(hash);
 }
 
-/**
- * Feature #221: Check if a refresh token is valid (DB lookup)
- */
-async function isRefreshTokenValid(token: string): Promise<boolean> {
-  const hash = createHash('sha256').update(token).digest('hex');
-  return await isRefreshTokenHashValid(hash);
-}
+// Feature #221: Check if a refresh token is valid (DB lookup)
+// Unused: Using isRefreshTokenHashValid directly instead
+// async function _isRefreshTokenValid(token: string): Promise<boolean> {
+//   const hash = createHash('sha256').update(token).digest('hex');
+//   return await isRefreshTokenHashValid(hash);
+// }
 
 /**
  * Feature #233: Atomically revoke a refresh token and return the user_id if successful
@@ -535,7 +533,7 @@ export async function authRoutes(app: FastifyInstance) {
   // Logout endpoint - invalidates the token by adding to blacklist
   app.post<{ Body: { refresh_token?: string } }>('/api/v1/auth/logout', {
     preHandler: [
-      async (request: FastifyRequest, reply: FastifyReply) => {
+      async (request: FastifyRequest, _reply: FastifyReply) => {
         try {
           await request.jwtVerify();
         } catch {

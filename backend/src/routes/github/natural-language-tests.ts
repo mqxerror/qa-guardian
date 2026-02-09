@@ -8,19 +8,12 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate } from '../../middleware/auth.js';
 
 // =============================================================================
 // Interfaces
 // =============================================================================
 
-interface NLTestGenerationRequest {
-  description: string;
-  base_url?: string;
-  test_type?: 'e2e' | 'visual_regression' | 'accessibility' | 'load';
-  include_assertions?: boolean;
-  include_screenshot?: boolean;
-}
+// NLTestGenerationRequest - defined but not directly used as endpoint uses inline typing
 
 interface GeneratedTest {
   code: string;

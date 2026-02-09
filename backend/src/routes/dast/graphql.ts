@@ -6,7 +6,6 @@ import {
   GraphQLFinding,
   GraphQLScan,
   GraphQLScanConfig,
-  DASTRisk,
 } from './types.js';
 import {
   createGraphqlScan,
@@ -16,7 +15,7 @@ import {
 } from './stores.js';
 
 // Simulate GraphQL introspection
-export function performGraphQLIntrospection(endpoint: string, authHeader?: string): GraphQLSchema {
+export function performGraphQLIntrospection(_endpoint: string, _authHeader?: string): GraphQLSchema {
   // In a real implementation, this would send an introspection query to the endpoint
   // For now, return a simulated schema based on the endpoint
   return {
@@ -49,7 +48,7 @@ export function performGraphQLIntrospection(endpoint: string, authHeader?: strin
 }
 
 // Analyze GraphQL operation for security vulnerabilities
-export function analyzeGraphQLOperation(operation: GraphQLOperation, schema: GraphQLSchema): GraphQLFinding[] {
+export function analyzeGraphQLOperation(operation: GraphQLOperation, _schema: GraphQLSchema): GraphQLFinding[] {
   const findings: GraphQLFinding[] = [];
   const opName = operation.name;
   const opType = operation.type as 'query' | 'mutation';

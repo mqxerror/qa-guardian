@@ -617,7 +617,6 @@ export async function aiFeedbackRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const {
       description,
-      original_code,
       feedback,
       base_url = '',
       test_name,

@@ -19,10 +19,8 @@ import {
   CheckResult,
   MaintenanceWindow,
   Incident,
-  AlertCorrelationConfig,
   CorrelatedAlert,
   AlertCorrelation,
-  AlertRateLimitConfig,
   AlertRateLimitState,
   AlertRunbook,
 } from './types.js';

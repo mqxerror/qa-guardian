@@ -40,7 +40,7 @@ export function analyzeElementWithVision(
     bounding_box?: { x: number; y: number; width: number; height: number };
   },
   pageUrl?: string,
-  testName?: string
+  _testName?: string
 ): {
   found: boolean;
   confidence: number;
@@ -221,7 +221,7 @@ export function analyzeElementWithVision(
 // Feature #1347: Get healing suggestions for a test's fragile selectors
 // ============================================================================
 
-export function getHealingSuggestions(testId: string): Array<{
+export function getHealingSuggestions(_testId: string): Array<{
   step_index: number;
   current_selector: string;
   selector_type: string;

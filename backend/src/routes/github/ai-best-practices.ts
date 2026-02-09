@@ -10,7 +10,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
+import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { aiService } from '../../services/ai-service.js';
 
 // ============================================================================
@@ -126,7 +126,7 @@ export async function aiBestPracticesRoutes(app: FastifyInstance): Promise<void>
  * Generate project metrics based on organization data
  * In a production system, this would query actual test results from the database
  */
-async function generateProjectMetrics(orgId: string): Promise<ProjectMetrics[]> {
+async function generateProjectMetrics(_orgId: string): Promise<ProjectMetrics[]> {
   // Generate realistic metrics based on common project patterns
   // In production, this would fetch from test_runs, test_suites, etc.
   const timestamp = Date.now();

@@ -14,7 +14,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticate, requireScopes, getOrganizationId, type JwtPayload } from '../../middleware/auth.js';
-import { runQuickTest, getQuickTestResult, getQuickTestResultAsync } from '../../services/quick-test-runner.js';
+import { runQuickTest, getQuickTestResultAsync } from '../../services/quick-test-runner.js';
 import { logAuditEntry } from '../audit-logs.js';
 import { validateURLForSSRF } from '../../utils/index.js';
 // Feature #465: PostgreSQL persistence for history endpoint

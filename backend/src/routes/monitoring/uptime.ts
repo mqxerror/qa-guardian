@@ -32,7 +32,7 @@ import {
 } from './stores.js';
 import { MONITORING_LOCATIONS, runCheckFromAllLocations, startCheckInterval, stopCheckInterval, formatDuration } from './helpers.js';
 // Feature #123: Import cache service for read-heavy endpoints
-import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
+import { getCache, CacheKeys } from '../../services/cache.js';
 
 export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
   // Get available monitoring locations

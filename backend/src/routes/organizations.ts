@@ -22,12 +22,9 @@ import {
   getTest as dbGetTestAsync,
 } from './test-suites/stores.js';
 import { getProject as dbGetProjectAsync, listProjects as dbListProjectsAsync, deleteProject as dbDeleteProjectAsync } from './projects/stores.js';
-import { listTestRunsByOrg as dbListTestRunsByOrg } from '../services/repositories/test-runs.js';
-
 // Feature #2109: Fully migrated to async DB calls - no more in-memory Maps
 import {
   Organization,
-  OrganizationMember,
   Invitation,
   AutoQuarantineSettings,
   RetryStrategySettings,

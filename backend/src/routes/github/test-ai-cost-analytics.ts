@@ -12,8 +12,8 @@
  * Run with: npx tsx src/routes/github/test-ai-cost-analytics.ts
  */
 
-// Mock authenticate middleware
-const mockAuthenticate = async () => {};
+// Mock authenticate middleware (kept for test setup reference)
+// const mockAuthenticate = async () => {};
 
 // Import types and test the route handler logic directly
 interface DailyCostEntry {
@@ -24,7 +24,8 @@ interface DailyCostEntry {
   savingsUsd: number;
 }
 
-interface BudgetConfig {
+// BudgetConfig interface (defined but not directly used in tests)
+interface _BudgetConfig {
   monthlyLimitUsd: number;
   alertThreshold: number;
   currentSpendUsd: number;

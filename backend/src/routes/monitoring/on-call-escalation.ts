@@ -11,8 +11,6 @@ import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayloa
 import { logAuditEntry } from '../audit-logs.js';
 import {
   OnCallSchedule,
-  OnCallMember,
-  EscalationLevel,
   EscalationTarget,
   EscalationPolicy,
 } from './types.js';

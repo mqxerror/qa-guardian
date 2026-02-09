@@ -355,7 +355,7 @@ export async function aiInsightsRoutes(app: FastifyInstance) {
     });
 
     // Generate project health insights
-    const projectInsights = await Promise.all(orgProjects.map(async (project, idx) => {
+    const projectInsights = await Promise.all(orgProjects.map(async (project) => {
       // Filter runs by project - pre-fetch suite data
       const projectRunsList: typeof orgRuns = [];
       for (const r of orgRuns) {

@@ -26,7 +26,6 @@ import {
 } from './types.js';
 // Import async database functions
 import {
-  listTestSuites as dbListTestSuites,
   listTestSuitesPaginated as dbListTestSuitesPaginated,
   getTestSuite as dbGetTestSuite,
   createTestSuite as dbCreateTestSuite,
@@ -40,8 +39,7 @@ import {
   deleteTest as dbDeleteTest,
 } from './stores.js';
 import { generatePlaywrightCode } from './utils.js';
-// Feature #1958: Import testRuns for run metadata on test list
-import { testRuns } from '../test-runs/execution.js';
+// Feature #1958: testRuns import removed - now using getTestRunMetadataForSuite
 // Feature #87: Use optimized aggregated query instead of loading all runs
 import { getTestRunMetadataForSuite } from '../../services/repositories/test-runs.js';
 
@@ -53,7 +51,7 @@ export async function coreRoutes(app: FastifyInstance) {
   // Feature #99: Database-level pagination - no longer loads ALL suites into memory
   app.get<{ Params: ProjectParams; Querystring: { page?: number; limit?: number } }>('/api/v1/projects/:projectId/suites', {
     preHandler: [authenticate],
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { projectId } = request.params;
     const { page = 1, limit = 20 } = request.query;
     const orgId = getOrganizationId(request);

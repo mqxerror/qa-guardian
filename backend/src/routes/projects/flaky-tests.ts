@@ -637,8 +637,8 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     // Feature #198: includeResults needed because impact report iterates over individual test results
     const recentRuns = await listTestRunsByOrg(orgId, { since: thirtyDaysAgo, limit: 1000, includeResults: true });
 
-    // Get all tests to determine flaky ones (async DB call)
-    const orgTests = await listAllTests(orgId);
+    // Flakiness now derived from recentRuns results directly
+    // Previously loaded orgTests but that's no longer needed
 
     // Calculate flakiness data for each test
     const testFlakiness: Map<string, {

@@ -97,7 +97,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     pluginId: '10038',
     name: 'Content Security Policy (CSP) Header Not Set',
     category: 'Security Headers',
-    check: (res, targetUrl) => {
+    check: (res, _targetUrl) => {
       const csp = res.headers['content-security-policy'] || res.headers['content-security-policy-report-only'];
       if (!csp) {
         return {
@@ -123,7 +123,7 @@ const SECURITY_CHECKS: SecurityCheck[] = [
     pluginId: '10021',
     name: 'X-Frame-Options Header Not Set',
     category: 'Security Headers',
-    check: (res, targetUrl) => {
+    check: (res, _targetUrl) => {
       const xfo = res.headers['x-frame-options'];
       const csp = (res.headers['content-security-policy'] as string) || '';
       // If CSP has frame-ancestors, X-Frame-Options is not needed
