@@ -20,11 +20,12 @@ export { CreateTestSuiteModal } from './CreateTestSuiteModal';
 export { ScheduleModal } from './ScheduleModal';
 
 // Wave detail components - Feature #514: Extracted from QuickTestPage
-// Note: AccessibilityData, APIDiscoveryData types are exported via './types'
+// Note: AccessibilityData, APIDiscoveryData, SeoAnalysisData types are exported via './types'
 export {
   AIAnalysisDetails,
   AccessibilityDetails,
   APIDiscoveryDetails,
+  SeoAnalysisDetails, // Feature #527
 } from './WaveDetails';
 
 // WaveCard component - Feature #514: Extracted from QuickTestPage

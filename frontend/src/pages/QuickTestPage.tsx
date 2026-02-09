@@ -40,6 +40,7 @@ import {
   Network,
   ArrowLeftRight,
   CalendarClock,
+  Search,
 } from 'lucide-react';
 // Feature #514: Import extracted quick-test components and utilities
 import {
@@ -139,6 +140,18 @@ const WAVE_DEFINITIONS = [
       { name: 'Common API Paths', status: 'pending' as const },
       { name: 'Endpoint Health', status: 'pending' as const },
       { name: 'Auth Protection', status: 'pending' as const },
+    ],
+  },
+  // Feature #527: Wave 7 - SEO Analysis
+  {
+    wave: 7,
+    name: 'SEO Analysis',
+    icon: Search,
+    steps: [
+      { name: 'Meta Tags', status: 'pending' as const },
+      { name: 'Heading Structure', status: 'pending' as const },
+      { name: 'robots.txt', status: 'pending' as const },
+      { name: 'sitemap.xml', status: 'pending' as const },
     ],
   },
 ];
@@ -446,7 +459,7 @@ export function QuickTestPage() {
         {/* Header */}
         <PageHeader
           title="Quick Test"
-          description="Instant URL analysis with 6 parallel test waves"
+          description="Instant URL analysis with 7 parallel test waves"
           breadcrumbs={[{ label: 'Home', href: '/dashboard' }, { label: 'Quick Test' }]}
         />
 

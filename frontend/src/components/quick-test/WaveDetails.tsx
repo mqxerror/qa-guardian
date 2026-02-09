@@ -19,9 +19,14 @@ import {
   Lock,
   Unlock,
   Wand2,
+  XCircle,
+  Search,
+  Heading1,
+  FileText,
+  Map,
 } from 'lucide-react';
 import { SourceBadge, PriorityBadge, SeverityBadge, ImpactBadge } from './badges';
-import type { AIAnalysisData, AccessibilityData, APIDiscoveryData } from './types';
+import type { AIAnalysisData, AccessibilityData, APIDiscoveryData, SeoAnalysisData } from './types';
 
 // ============================================================
 // Feature #467: AI Analysis Details Component
@@ -412,6 +417,229 @@ export function APIDiscoveryDetails({ data }: { data: APIDiscoveryData }) {
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <Network className="w-4 h-4" />
           No API endpoints discovered
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Feature #527: SEO Analysis Details Component
+// ============================================================
+
+export function SeoAnalysisDetails({ data }: { data: SeoAnalysisData }) {
+  if (!data || !data.metaTags) return null;
+
+  // Count issues and recommendations
+  const issueCount = data.issues?.length || 0;
+  const recCount = data.recommendations?.length || 0;
+
+  // Helper for meta tag status
+  const MetaTagStatus = ({ tag }: { tag: typeof data.metaTags.title }) => {
+    if (!tag.present) {
+      return <XCircle className="w-3.5 h-3.5 text-destructive" />;
+    }
+    if (!tag.valid) {
+      return <AlertTriangle className="w-3.5 h-3.5 text-warning" />;
+    }
+    return <CheckCircle2 className="w-3.5 h-3.5 text-success" />;
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border space-y-4">
+      {/* Score and Summary */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`text-2xl font-bold ${
+            data.score >= 80 ? 'text-success' :
+            data.score >= 60 ? 'text-warning' :
+            'text-destructive'
+          }`}>
+            {data.score}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            <div>SEO Score</div>
+            <div>{issueCount} issues found</div>
+          </div>
+        </div>
+        <div className="text-right text-xs text-muted-foreground">
+          <div>{data.headingStructure.h1Count} H1 tag{data.headingStructure.h1Count !== 1 ? 's' : ''}</div>
+          <div>{recCount} recommendations</div>
+        </div>
+      </div>
+
+      {/* Essential Meta Tags */}
+      <div>
+        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+          <FileText className="w-3.5 h-3.5" />
+          Essential Meta Tags
+        </div>
+        <div className="space-y-1.5">
+          {/* Title */}
+          <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
+            <div className="flex items-center gap-2">
+              <MetaTagStatus tag={data.metaTags.title} />
+              <span className="text-foreground">Title</span>
+            </div>
+            <span className="text-xs text-muted-foreground truncate max-w-[200px]" title={data.metaTags.title.content || ''}>
+              {data.metaTags.title.content || '(missing)'}
+            </span>
+          </div>
+          {/* Description */}
+          <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
+            <div className="flex items-center gap-2">
+              <MetaTagStatus tag={data.metaTags.description} />
+              <span className="text-foreground">Meta Description</span>
+            </div>
+            <span className="text-xs text-muted-foreground truncate max-w-[200px]" title={data.metaTags.description.content || ''}>
+              {data.metaTags.description.content ? `${data.metaTags.description.content.substring(0, 40)}...` : '(missing)'}
+            </span>
+          </div>
+          {/* Canonical */}
+          <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
+            <div className="flex items-center gap-2">
+              <MetaTagStatus tag={data.metaTags.canonical} />
+              <span className="text-foreground">Canonical URL</span>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {data.metaTags.canonical.present ? 'present' : '(missing)'}
+            </span>
+          </div>
+          {/* Viewport */}
+          <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
+            <div className="flex items-center gap-2">
+              <MetaTagStatus tag={data.metaTags.viewport} />
+              <span className="text-foreground">Viewport</span>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {data.metaTags.viewport.present ? 'present' : '(missing)'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Social Tags */}
+      <div>
+        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+          <Search className="w-3.5 h-3.5" />
+          Social Media Tags
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <div className="flex items-center gap-1.5 p-1.5 rounded bg-background/50 text-xs">
+            <MetaTagStatus tag={data.metaTags.ogTitle} />
+            <span>og:title</span>
+          </div>
+          <div className="flex items-center gap-1.5 p-1.5 rounded bg-background/50 text-xs">
+            <MetaTagStatus tag={data.metaTags.ogDescription} />
+            <span>og:description</span>
+          </div>
+          <div className="flex items-center gap-1.5 p-1.5 rounded bg-background/50 text-xs">
+            <MetaTagStatus tag={data.metaTags.ogImage} />
+            <span>og:image</span>
+          </div>
+          <div className="flex items-center gap-1.5 p-1.5 rounded bg-background/50 text-xs">
+            <MetaTagStatus tag={data.metaTags.twitterCard} />
+            <span>twitter:card</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Heading Structure */}
+      <div>
+        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+          <Heading1 className="w-3.5 h-3.5" />
+          Heading Structure
+        </div>
+        <div className="flex items-center gap-4 p-2 rounded bg-background/50">
+          <div className="text-center">
+            <div className={`text-lg font-bold ${
+              data.headingStructure.h1Count === 1 ? 'text-success' :
+              data.headingStructure.h1Count === 0 ? 'text-destructive' :
+              'text-warning'
+            }`}>
+              {data.headingStructure.h1Count}
+            </div>
+            <div className="text-xs text-muted-foreground">H1 Tags</div>
+          </div>
+          <div className="flex-1 text-xs text-muted-foreground">
+            {data.headingStructure.h1Count === 1 ? (
+              <span className="text-success">Perfect - exactly one H1 tag</span>
+            ) : data.headingStructure.h1Count === 0 ? (
+              <span className="text-destructive">Missing H1 tag</span>
+            ) : (
+              <span className="text-warning">Multiple H1 tags found</span>
+            )}
+            {!data.headingStructure.hierarchyValid && (
+              <div className="text-warning mt-1">Heading hierarchy has issues</div>
+            )}
+          </div>
+        </div>
+        {data.headingStructure.h1Texts.length > 0 && (
+          <div className="mt-1 text-xs text-muted-foreground truncate" title={data.headingStructure.h1Texts[0]}>
+            H1: &ldquo;{data.headingStructure.h1Texts[0]}&rdquo;
+          </div>
+        )}
+      </div>
+
+      {/* Crawlability */}
+      <div>
+        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+          <Map className="w-3.5 h-3.5" />
+          Crawlability
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
+            <span className="text-foreground">robots.txt</span>
+            <div className="flex items-center gap-1">
+              {data.crawlability.robotsTxt.present ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                  {!data.crawlability.robotsTxt.allowsCrawling && (
+                    <span className="text-xs text-warning">(blocks)</span>
+                  )}
+                </>
+              ) : (
+                <XCircle className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+            </div>
+          </div>
+          <div className="flex items-center justify-between p-2 rounded bg-background/50 text-sm">
+            <span className="text-foreground">sitemap.xml</span>
+            <div className="flex items-center gap-1">
+              {data.crawlability.sitemap.present ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                  {data.crawlability.sitemap.urlCount && (
+                    <span className="text-xs text-muted-foreground">({data.crawlability.sitemap.urlCount})</span>
+                  )}
+                </>
+              ) : (
+                <XCircle className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recommendations */}
+      {recCount > 0 && (
+        <div>
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+            <Lightbulb className="w-3.5 h-3.5" />
+            Recommendations
+          </div>
+          <div className="space-y-1.5">
+            {data.recommendations.slice(0, 4).map((rec, idx) => (
+              <div key={idx} className="p-2 rounded bg-warning/10 text-sm text-foreground/80">
+                {rec}
+              </div>
+            ))}
+            {data.recommendations.length > 4 && (
+              <div className="text-xs text-muted-foreground text-center">
+                +{data.recommendations.length - 4} more recommendations
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -41,6 +41,7 @@ export interface QuickTestSummary {
   securityScore: number;
   accessibilityScore?: number; // Feature #471
   apiScore?: number; // Feature #472
+  seoScore?: number; // Feature #527
   overallScore: number;
 }
 
@@ -122,6 +123,18 @@ const INITIAL_WAVES: WaveState[] = [
       { name: 'Common API Paths', status: 'pending' },
       { name: 'Endpoint Health', status: 'pending' },
       { name: 'Auth Protection', status: 'pending' },
+    ],
+  },
+  // Feature #527: Wave 7 - SEO Analysis
+  {
+    wave: 7,
+    name: 'SEO Analysis',
+    status: 'waiting',
+    steps: [
+      { name: 'Meta Tags', status: 'pending' },
+      { name: 'Heading Structure', status: 'pending' },
+      { name: 'robots.txt', status: 'pending' },
+      { name: 'sitemap.xml', status: 'pending' },
     ],
   },
 ];

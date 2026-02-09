@@ -99,6 +99,7 @@ export interface QuickTestResult {
     securityScore: number;
     accessibilityScore: number; // Feature #471
     apiScore: number; // Feature #472
+    seoScore: number; // Feature #527
     overallScore: number;
   };
 }
@@ -252,6 +253,55 @@ interface APIEndpoint {
   isHealthy: boolean;
   contentType?: string;
   errorMessage?: string;
+}
+
+// Feature #527: SEO Analysis result types
+interface SeoMetaTag {
+  name: string;
+  content: string | null;
+  present: boolean;
+  valid: boolean;
+  issue?: string;
+}
+
+interface SeoAnalysisResult {
+  score: number;
+  metaTags: {
+    title: SeoMetaTag;
+    description: SeoMetaTag;
+    canonical: SeoMetaTag;
+    ogTitle: SeoMetaTag;
+    ogDescription: SeoMetaTag;
+    ogImage: SeoMetaTag;
+    twitterCard: SeoMetaTag;
+    twitterTitle: SeoMetaTag;
+    twitterDescription: SeoMetaTag;
+    viewport: SeoMetaTag;
+    robots: SeoMetaTag;
+  };
+  headingStructure: {
+    h1Count: number;
+    h1Texts: string[];
+    hasMultipleH1: boolean;
+    headingHierarchy: Array<{ level: number; text: string }>;
+    hierarchyValid: boolean;
+    issues: string[];
+  };
+  crawlability: {
+    robotsTxt: {
+      present: boolean;
+      url: string;
+      content?: string;
+      allowsCrawling: boolean;
+    };
+    sitemap: {
+      present: boolean;
+      url: string;
+      urlCount?: number;
+    };
+  };
+  issues: string[];
+  recommendations: string[];
 }
 
 interface APIDiscoveryResult {
@@ -1401,6 +1451,357 @@ async function runAPIDiscovery(url: string): Promise<APIDiscoveryResult> {
 }
 
 // ============================================================
+// Wave 7: SEO Analysis
+// ============================================================
+
+/**
+ * Feature #527: SEO Analysis check
+ * Checks meta tags, heading hierarchy, robots.txt, sitemap.xml
+ */
+async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysisResult> {
+  const result: SeoAnalysisResult = {
+    score: 0,
+    metaTags: {
+      title: { name: 'title', content: null, present: false, valid: false },
+      description: { name: 'meta description', content: null, present: false, valid: false },
+      canonical: { name: 'canonical', content: null, present: false, valid: false },
+      ogTitle: { name: 'og:title', content: null, present: false, valid: false },
+      ogDescription: { name: 'og:description', content: null, present: false, valid: false },
+      ogImage: { name: 'og:image', content: null, present: false, valid: false },
+      twitterCard: { name: 'twitter:card', content: null, present: false, valid: false },
+      twitterTitle: { name: 'twitter:title', content: null, present: false, valid: false },
+      twitterDescription: { name: 'twitter:description', content: null, present: false, valid: false },
+      viewport: { name: 'viewport', content: null, present: false, valid: false },
+      robots: { name: 'robots', content: null, present: false, valid: false },
+    },
+    headingStructure: {
+      h1Count: 0,
+      h1Texts: [],
+      hasMultipleH1: false,
+      headingHierarchy: [],
+      hierarchyValid: true,
+      issues: [],
+    },
+    crawlability: {
+      robotsTxt: { present: false, url: '', allowsCrawling: true },
+      sitemap: { present: false, url: '' },
+    },
+    issues: [],
+    recommendations: [],
+  };
+
+  const parsedUrl = new URL(url);
+  const baseUrl = parsedUrl.origin;
+
+  let page: Page | null = null;
+  let context: BrowserContext | null = null;
+
+  try {
+    // Step 1: Navigate to page and extract meta tags
+    context = await browser.newContext();
+    page = await context.newPage();
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+    // Extract all SEO-relevant data from the DOM
+    const seoData = await page.evaluate(() => {
+      // Get title
+      const titleEl = document.querySelector('title');
+      const title = titleEl?.textContent?.trim() || null;
+
+      // Get meta tags
+      const getMeta = (selector: string) => {
+        const el = document.querySelector(selector);
+        return el?.getAttribute('content')?.trim() || null;
+      };
+
+      // Get canonical
+      const canonicalEl = document.querySelector('link[rel="canonical"]');
+      const canonical = canonicalEl?.getAttribute('href') || null;
+
+      // Get all headings
+      const headings: Array<{ level: number; text: string }> = [];
+      for (let i = 1; i <= 6; i++) {
+        document.querySelectorAll(`h${i}`).forEach(h => {
+          const text = h.textContent?.trim() || '';
+          if (text) {
+            headings.push({ level: i, text: text.substring(0, 100) });
+          }
+        });
+      }
+
+      // Sort headings by their position in DOM
+      const allHeadingEls = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      const orderedHeadings: Array<{ level: number; text: string }> = [];
+      allHeadingEls.forEach(h => {
+        const level = parseInt(h.tagName.substring(1));
+        const text = h.textContent?.trim() || '';
+        if (text) {
+          orderedHeadings.push({ level, text: text.substring(0, 100) });
+        }
+      });
+
+      // Count H1s
+      const h1Elements = document.querySelectorAll('h1');
+      const h1Texts: string[] = [];
+      h1Elements.forEach(h => {
+        const text = h.textContent?.trim();
+        if (text) h1Texts.push(text.substring(0, 100));
+      });
+
+      return {
+        title,
+        description: getMeta('meta[name="description"]'),
+        canonical,
+        ogTitle: getMeta('meta[property="og:title"]'),
+        ogDescription: getMeta('meta[property="og:description"]'),
+        ogImage: getMeta('meta[property="og:image"]'),
+        twitterCard: getMeta('meta[name="twitter:card"]'),
+        twitterTitle: getMeta('meta[name="twitter:title"]'),
+        twitterDescription: getMeta('meta[name="twitter:description"]'),
+        viewport: getMeta('meta[name="viewport"]'),
+        robots: getMeta('meta[name="robots"]'),
+        h1Count: h1Elements.length,
+        h1Texts,
+        headingHierarchy: orderedHeadings,
+      };
+    });
+
+    // Close page context
+    await context.close();
+    context = null;
+    page = null;
+
+    // Process title
+    if (seoData.title) {
+      result.metaTags.title = {
+        name: 'title',
+        content: seoData.title,
+        present: true,
+        valid: seoData.title.length >= 10 && seoData.title.length <= 70,
+        issue: seoData.title.length < 10 ? 'Title too short (min 10 chars)' :
+               seoData.title.length > 70 ? 'Title too long (max 70 chars)' : undefined,
+      };
+    } else {
+      result.issues.push('Missing page title');
+      result.recommendations.push('Add a descriptive <title> tag (10-70 characters)');
+    }
+
+    // Process meta description
+    if (seoData.description) {
+      result.metaTags.description = {
+        name: 'meta description',
+        content: seoData.description,
+        present: true,
+        valid: seoData.description.length >= 50 && seoData.description.length <= 160,
+        issue: seoData.description.length < 50 ? 'Description too short (min 50 chars)' :
+               seoData.description.length > 160 ? 'Description too long (max 160 chars)' : undefined,
+      };
+    } else {
+      result.issues.push('Missing meta description');
+      result.recommendations.push('Add a meta description (50-160 characters)');
+    }
+
+    // Process canonical
+    if (seoData.canonical) {
+      result.metaTags.canonical = {
+        name: 'canonical',
+        content: seoData.canonical,
+        present: true,
+        valid: seoData.canonical.startsWith('http'),
+      };
+    } else {
+      result.issues.push('Missing canonical URL');
+      result.recommendations.push('Add a canonical link to prevent duplicate content issues');
+    }
+
+    // Process Open Graph tags
+    if (seoData.ogTitle) {
+      result.metaTags.ogTitle = { name: 'og:title', content: seoData.ogTitle, present: true, valid: true };
+    } else {
+      result.issues.push('Missing og:title');
+    }
+
+    if (seoData.ogDescription) {
+      result.metaTags.ogDescription = { name: 'og:description', content: seoData.ogDescription, present: true, valid: true };
+    } else {
+      result.issues.push('Missing og:description');
+    }
+
+    if (seoData.ogImage) {
+      result.metaTags.ogImage = { name: 'og:image', content: seoData.ogImage, present: true, valid: true };
+    } else {
+      result.issues.push('Missing og:image for social sharing');
+      result.recommendations.push('Add og:image for better social media sharing previews');
+    }
+
+    // Process Twitter Card tags
+    if (seoData.twitterCard) {
+      result.metaTags.twitterCard = { name: 'twitter:card', content: seoData.twitterCard, present: true, valid: true };
+    }
+    if (seoData.twitterTitle) {
+      result.metaTags.twitterTitle = { name: 'twitter:title', content: seoData.twitterTitle, present: true, valid: true };
+    }
+    if (seoData.twitterDescription) {
+      result.metaTags.twitterDescription = { name: 'twitter:description', content: seoData.twitterDescription, present: true, valid: true };
+    }
+
+    // Process viewport
+    if (seoData.viewport) {
+      result.metaTags.viewport = { name: 'viewport', content: seoData.viewport, present: true, valid: true };
+    } else {
+      result.issues.push('Missing viewport meta tag');
+      result.recommendations.push('Add viewport meta tag for mobile responsiveness');
+    }
+
+    // Process robots
+    if (seoData.robots) {
+      result.metaTags.robots = { name: 'robots', content: seoData.robots, present: true, valid: true };
+    }
+
+    // Process heading structure
+    result.headingStructure.h1Count = seoData.h1Count;
+    result.headingStructure.h1Texts = seoData.h1Texts;
+    result.headingStructure.hasMultipleH1 = seoData.h1Count > 1;
+    result.headingStructure.headingHierarchy = seoData.headingHierarchy;
+
+    if (seoData.h1Count === 0) {
+      result.headingStructure.issues.push('No H1 tag found');
+      result.issues.push('Missing H1 tag');
+      result.recommendations.push('Add exactly one H1 tag for the main page heading');
+    } else if (seoData.h1Count > 1) {
+      result.headingStructure.issues.push(`Multiple H1 tags found (${seoData.h1Count})`);
+      result.issues.push(`Multiple H1 tags (${seoData.h1Count} found, should be 1)`);
+      result.recommendations.push('Use only one H1 tag per page');
+    }
+
+    // Check heading hierarchy (H1 should come before H2, etc.)
+    let lastLevel = 0;
+    for (const heading of seoData.headingHierarchy) {
+      if (heading.level > lastLevel + 1 && lastLevel > 0) {
+        result.headingStructure.hierarchyValid = false;
+        result.headingStructure.issues.push(`Heading level skipped: H${lastLevel} → H${heading.level}`);
+      }
+      lastLevel = heading.level;
+    }
+
+    if (!result.headingStructure.hierarchyValid) {
+      result.issues.push('Heading hierarchy has skipped levels');
+      result.recommendations.push('Use heading levels in order (H1 → H2 → H3)');
+    }
+
+    // Step 2: Check robots.txt
+    try {
+      const robotsUrl = `${baseUrl}/robots.txt`;
+      result.crawlability.robotsTxt.url = robotsUrl;
+
+      const robotsResponse = await new Promise<{ status: number; body: string }>((resolve) => {
+        const client = parsedUrl.protocol === 'https:' ? https : http;
+        const req = client.request(robotsUrl, { method: 'GET', timeout: 5000 }, (res) => {
+          let body = '';
+          res.on('data', chunk => { body += chunk; });
+          res.on('end', () => resolve({ status: res.statusCode || 0, body }));
+        });
+        req.on('error', () => resolve({ status: 0, body: '' }));
+        req.on('timeout', () => { req.destroy(); resolve({ status: 0, body: '' }); });
+        req.end();
+      });
+
+      if (robotsResponse.status === 200) {
+        result.crawlability.robotsTxt.present = true;
+        result.crawlability.robotsTxt.content = robotsResponse.body.substring(0, 1000);
+        // Check if it blocks crawling
+        const lowerBody = robotsResponse.body.toLowerCase();
+        if (lowerBody.includes('disallow: /') && !lowerBody.includes('disallow: /\n')) {
+          result.crawlability.robotsTxt.allowsCrawling = false;
+          result.issues.push('robots.txt may block crawling');
+        }
+      } else {
+        result.recommendations.push('Consider adding a robots.txt file');
+      }
+    } catch {
+      // robots.txt check failed, non-critical
+    }
+
+    // Step 3: Check sitemap.xml
+    try {
+      const sitemapUrl = `${baseUrl}/sitemap.xml`;
+      result.crawlability.sitemap.url = sitemapUrl;
+
+      const sitemapResponse = await new Promise<{ status: number; body: string }>((resolve) => {
+        const client = parsedUrl.protocol === 'https:' ? https : http;
+        const req = client.request(sitemapUrl, { method: 'GET', timeout: 5000 }, (res) => {
+          let body = '';
+          res.on('data', chunk => { body += chunk.toString().substring(0, 5000); }); // Limit body size
+          res.on('end', () => resolve({ status: res.statusCode || 0, body }));
+        });
+        req.on('error', () => resolve({ status: 0, body: '' }));
+        req.on('timeout', () => { req.destroy(); resolve({ status: 0, body: '' }); });
+        req.end();
+      });
+
+      if (sitemapResponse.status === 200 && sitemapResponse.body.includes('<urlset')) {
+        result.crawlability.sitemap.present = true;
+        // Count URLs in sitemap (rough estimate)
+        const urlMatches = sitemapResponse.body.match(/<loc>/g);
+        result.crawlability.sitemap.urlCount = urlMatches?.length || 0;
+      } else {
+        result.recommendations.push('Consider adding a sitemap.xml for better indexing');
+      }
+    } catch {
+      // sitemap check failed, non-critical
+    }
+
+    // Calculate SEO score
+    let score = 100;
+
+    // Essential tags (high impact)
+    if (!result.metaTags.title.present) score -= 15;
+    else if (!result.metaTags.title.valid) score -= 5;
+
+    if (!result.metaTags.description.present) score -= 12;
+    else if (!result.metaTags.description.valid) score -= 4;
+
+    if (!result.metaTags.canonical.present) score -= 8;
+    if (!result.metaTags.viewport.present) score -= 10;
+
+    // Heading structure
+    if (result.headingStructure.h1Count === 0) score -= 10;
+    else if (result.headingStructure.h1Count > 1) score -= 5;
+    if (!result.headingStructure.hierarchyValid) score -= 5;
+
+    // Social tags (moderate impact)
+    if (!result.metaTags.ogTitle.present) score -= 4;
+    if (!result.metaTags.ogDescription.present) score -= 4;
+    if (!result.metaTags.ogImage.present) score -= 5;
+
+    // Crawlability (moderate impact)
+    if (!result.crawlability.robotsTxt.present) score -= 3;
+    if (!result.crawlability.sitemap.present) score -= 5;
+    if (!result.crawlability.robotsTxt.allowsCrawling) score -= 10;
+
+    result.score = Math.max(0, Math.min(100, score));
+
+    log.info({
+      url,
+      score: result.score,
+      h1Count: result.headingStructure.h1Count,
+      issueCount: result.issues.length,
+      robotsTxt: result.crawlability.robotsTxt.present,
+      sitemap: result.crawlability.sitemap.present,
+    }, 'SEO Analysis complete');
+
+  } catch (err) {
+    log.error({ error: err }, 'SEO Analysis wave error');
+    if (context) {
+      await context.close().catch(() => {});
+    }
+    throw err;
+  }
+
+  return result;
+}
+
+// ============================================================
 // Main Runner
 // ============================================================
 
@@ -1422,6 +1823,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       { wave: 4, name: 'AI Analysis', status: 'pending' },
       { wave: 5, name: 'Accessibility', status: 'pending' }, // Feature #471
       { wave: 6, name: 'API Discovery', status: 'pending' }, // Feature #472
+      { wave: 7, name: 'SEO Analysis', status: 'pending' }, // Feature #527
     ],
   };
 
@@ -1701,6 +2103,46 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       emitWaveError(orgId, runId, 6, testResult.waves[5].error);
     }
 
+    // Feature #527: Wave 7 - SEO Analysis (requires browser)
+    let seoResult: SeoAnalysisResult | undefined;
+    emitWaveStart(orgId, runId, 7, 'SEO Analysis');
+    testResult.waves[6].status = 'running';
+    testResult.waves[6].startedAt = new Date();
+
+    try {
+      const wave7Start = Date.now();
+      emitWaveProgress(orgId, runId, 7, 10, 'Analyzing meta tags...');
+
+      // Reuse or create browser for SEO analysis
+      let seoBrowser: Browser | null = browser;
+      let ownsBrowser = false;
+      if (!seoBrowser) {
+        seoBrowser = await chromium.launch({ headless: true });
+        ownsBrowser = true;
+      }
+
+      try {
+        emitWaveProgress(orgId, runId, 7, 30, 'Checking heading structure...');
+        seoResult = await runSeoAnalysis(url, seoBrowser);
+        emitWaveProgress(orgId, runId, 7, 80, 'Checking robots.txt and sitemap...');
+
+        testResult.waves[6].status = 'completed';
+        testResult.waves[6].completedAt = new Date();
+        testResult.waves[6].duration = Date.now() - wave7Start;
+        testResult.waves[6].data = seoResult as unknown as Record<string, unknown>;
+        emitWaveComplete(orgId, runId, 7, seoResult as unknown as Record<string, unknown>);
+      } finally {
+        // Only close browser if we created it
+        if (ownsBrowser && seoBrowser) {
+          await seoBrowser.close().catch(() => {});
+        }
+      }
+    } catch (err) {
+      testResult.waves[6].status = 'failed';
+      testResult.waves[6].error = err instanceof Error ? err.message : 'SEO Analysis failed';
+      emitWaveError(orgId, runId, 7, testResult.waves[6].error);
+    }
+
     // Close any remaining browser from earlier waves
     if (browser) {
       await browser.close();
@@ -1713,21 +2155,24 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
     const securityScore = securityResult?.overallScore || 50;
     const accessibilityScore = accessibilityResult?.score ?? 50;
     const apiScore = apiDiscoveryResult?.score ?? 50;
+    const seoScore = seoResult?.score ?? 50; // Feature #527
 
-    // Feature #472: Updated overall score to include API Discovery
-    // Weights: 15% health, 20% perf, 20% security, 25% a11y, 10% API, 10% AI implicit
+    // Feature #527: Updated overall score to include SEO Analysis
+    // Weights: 12% health, 18% perf, 18% security, 22% a11y, 10% API, 10% SEO, 10% AI implicit
     testResult.summary = {
       healthScore,
       performanceScore,
       securityScore,
       accessibilityScore,
       apiScore,
+      seoScore, // Feature #527
       overallScore: Math.round(
-        (healthScore * 0.15) +
-        (performanceScore * 0.20) +
-        (securityScore * 0.20) +
-        (accessibilityScore * 0.25) +
+        (healthScore * 0.12) +
+        (performanceScore * 0.18) +
+        (securityScore * 0.18) +
+        (accessibilityScore * 0.22) +
         (apiScore * 0.10) +
+        (seoScore * 0.10) +
         (50 * 0.10) // AI implicit score placeholder
       ),
     };

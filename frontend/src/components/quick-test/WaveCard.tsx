@@ -21,8 +21,9 @@ import {
   AIAnalysisDetails,
   AccessibilityDetails,
   APIDiscoveryDetails,
+  SeoAnalysisDetails,
 } from './WaveDetails';
-import type { WaveData, AIAnalysisData, AccessibilityData, APIDiscoveryData } from './types';
+import type { WaveData, AIAnalysisData, AccessibilityData, APIDiscoveryData, SeoAnalysisData } from './types';
 
 // ============================================================
 // Props
@@ -222,6 +223,11 @@ export function WaveCard({
       {/* Feature #472: API Discovery details for Wave 6 */}
       {wave.wave === 6 && wave.status === 'completed' && wave.data && (
         <APIDiscoveryDetails data={wave.data as unknown as APIDiscoveryData} />
+      )}
+
+      {/* Feature #527: SEO Analysis details for Wave 7 */}
+      {wave.wave === 7 && wave.status === 'completed' && wave.data && (
+        <SeoAnalysisDetails data={wave.data as unknown as SeoAnalysisData} />
       )}
 
       {/* Error Message */}

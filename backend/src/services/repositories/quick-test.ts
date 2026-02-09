@@ -31,6 +31,7 @@ export interface QuickTestSummary {
   securityScore: number;
   accessibilityScore: number; // Feature #471
   apiScore: number; // Feature #472
+  seoScore: number; // Feature #527
   overallScore: number;
 }
 

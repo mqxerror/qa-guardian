@@ -169,6 +169,58 @@ export interface APIDiscoveryData {
 }
 
 // ============================================================
+// SEO Analysis Types (Wave 7)
+// ============================================================
+
+export interface SeoMetaTag {
+  name: string;
+  content: string | null;
+  present: boolean;
+  valid: boolean;
+  issue?: string;
+}
+
+export interface SeoAnalysisData {
+  score: number;
+  metaTags: {
+    title: SeoMetaTag;
+    description: SeoMetaTag;
+    canonical: SeoMetaTag;
+    ogTitle: SeoMetaTag;
+    ogDescription: SeoMetaTag;
+    ogImage: SeoMetaTag;
+    twitterCard: SeoMetaTag;
+    twitterTitle: SeoMetaTag;
+    twitterDescription: SeoMetaTag;
+    viewport: SeoMetaTag;
+    robots: SeoMetaTag;
+  };
+  headingStructure: {
+    h1Count: number;
+    h1Texts: string[];
+    hasMultipleH1: boolean;
+    headingHierarchy: Array<{ level: number; text: string }>;
+    hierarchyValid: boolean;
+    issues: string[];
+  };
+  crawlability: {
+    robotsTxt: {
+      present: boolean;
+      url: string;
+      content?: string;
+      allowsCrawling: boolean;
+    };
+    sitemap: {
+      present: boolean;
+      url: string;
+      urlCount?: number;
+    };
+  };
+  issues: string[];
+  recommendations: string[];
+}
+
+// ============================================================
 // Modal Types
 // ============================================================
 
