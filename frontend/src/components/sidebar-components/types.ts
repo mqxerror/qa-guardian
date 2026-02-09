@@ -33,7 +33,7 @@ export interface MenuItemConfig {
  * Feature #260: Role-based navigation visibility
  * - Viewer: Dashboard, Projects, Testing group only (visibility='all')
  * - QA: + Security group + AI Chat (visibility='qa')
- * - Developer: + AI Insights Hub + MCP Hub + Developer Tools (visibility='developer')
+ * - Developer: + AI Insights + MCP Hub + Developer Tools (visibility='developer')
  * - Admin/Owner: all items visible (visibility='admin' or 'owner')
  */
 export function hasAccess(userRole: UserRole | undefined, visibility: MenuVisibility): boolean {
