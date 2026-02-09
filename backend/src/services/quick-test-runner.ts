@@ -15,7 +15,7 @@ import tls from 'tls';
 import https from 'https';
 import http from 'http';
 import { URL } from 'url';
-import { chromium, Browser, Page } from 'playwright';
+import { chromium, Browser, BrowserContext, Page } from 'playwright';
 import { AxeBuilder } from '@axe-core/playwright';
 import { getWebSocketIO } from './websocket-events.js';
 import { aiService } from './ai-service.js';
@@ -536,12 +536,14 @@ async function runVisualPerformance(url: string, browser: Browser): Promise<Visu
   };
 
   let page: Page | null = null;
+  let context: BrowserContext | null = null;
 
   try {
     // Desktop screenshot and metrics
-    page = await browser.newPage({
+    context = await browser.newContext({
       viewport: { width: 1280, height: 720 },
     });
+    page = await context.newPage();
 
     const loadStart = Date.now();
     await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
@@ -596,18 +598,24 @@ async function runVisualPerformance(url: string, browser: Browser): Promise<Visu
     const desktopScreenshot = await page.screenshot({ type: 'png', fullPage: false });
     result.screenshots.desktop = desktopScreenshot.toString('base64');
 
-    await page.close();
+    // Close desktop context (also closes page)
+    await context.close();
+    context = null;
+    page = null;
 
     // Mobile screenshot
-    page = await browser.newPage({
+    context = await browser.newContext({
       viewport: { width: 375, height: 812 },
       isMobile: true,
     });
+    page = await context.newPage();
     await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
     const mobileScreenshot = await page.screenshot({ type: 'png', fullPage: false });
     result.screenshots.mobile = mobileScreenshot.toString('base64');
 
-    await page.close();
+    // Close mobile context
+    await context.close();
+    context = null;
     page = null;
 
     // Simplified Lighthouse-like scores based on metrics
@@ -621,7 +629,9 @@ async function runVisualPerformance(url: string, browser: Browser): Promise<Visu
 
   } catch (err) {
     log.error({ error: err }, 'Visual/Performance wave error');
-    if (page) {
+    if (context) {
+      await context.close().catch(() => {});
+    } else if (page) {
       await page.close().catch(() => {});
     }
     throw err;
@@ -685,9 +695,11 @@ async function runSecurityScan(url: string, browser: Browser): Promise<SecurityS
   };
 
   let page: Page | null = null;
+  let context: BrowserContext | null = null;
 
   try {
-    page = await browser.newPage();
+    context = await browser.newContext();
+    page = await context.newPage();
     const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
 
     if (response) {
@@ -764,7 +776,13 @@ async function runSecurityScan(url: string, browser: Browser): Promise<SecurityS
       result.mixedContent.resources = mixedResources.slice(0, 10); // Limit to 10
     }
 
-    await page.close();
+    // Close page and its context before checking exposed paths
+    if (context) {
+      await context.close();
+      context = null;
+    } else {
+      await page.close();
+    }
     page = null;
 
     // Check exposed paths
@@ -772,9 +790,11 @@ async function runSecurityScan(url: string, browser: Browser): Promise<SecurityS
     const parsedUrl = new URL(url);
 
     for (const path of exposedPaths) {
+      let checkContext: BrowserContext | null = null;
       try {
         const checkUrl = `${parsedUrl.origin}${path}`;
-        const checkPage = await browser.newPage();
+        checkContext = await browser.newContext();
+        const checkPage = await checkContext.newPage();
         const resp = await checkPage.goto(checkUrl, { timeout: 5000, waitUntil: 'domcontentloaded' }).catch(() => null);
         const status = resp?.status() || 0;
         result.exposedPaths.push({
@@ -782,13 +802,17 @@ async function runSecurityScan(url: string, browser: Browser): Promise<SecurityS
           accessible: status >= 200 && status < 400,
           status,
         });
-        await checkPage.close();
+        await checkContext.close();
+        checkContext = null;
       } catch {
         result.exposedPaths.push({
           path,
           accessible: false,
           status: 0,
         });
+        if (checkContext) {
+          await checkContext.close().catch(() => {});
+        }
       }
     }
 
@@ -810,7 +834,9 @@ async function runSecurityScan(url: string, browser: Browser): Promise<SecurityS
 
   } catch (err) {
     log.error({ error: err }, 'Security scan wave error');
-    if (page) {
+    if (context) {
+      await context.close().catch(() => {});
+    } else if (page) {
       await page.close().catch(() => {});
     }
     throw err;
@@ -1532,8 +1558,11 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
         ownsBrowser = true;
       }
 
+      // Use browser.newContext() for proper isolation - AxeBuilder requires context-based pages
+      let a11yContext: BrowserContext | null = null;
       try {
-        a11yPage = await a11yBrowser.newPage();
+        a11yContext = await a11yBrowser.newContext();
+        a11yPage = await a11yContext.newPage();
         emitWaveProgress(orgId, runId, 5, 10, 'Loading page for accessibility scan...');
 
         await a11yPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -1596,9 +1625,9 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
         emitWaveComplete(orgId, runId, 5, accessibilityResult as unknown as Record<string, unknown>);
 
       } finally {
-        // Close the page
-        if (a11yPage) {
-          await a11yPage.close().catch(() => {});
+        // Close context (which also closes the page)
+        if (a11yContext) {
+          await a11yContext.close().catch(() => {});
         }
         // Only close browser if we created it
         if (ownsBrowser && a11yBrowser) {
