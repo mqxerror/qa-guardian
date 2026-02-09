@@ -20,7 +20,8 @@ import { validateURLForSSRF } from '../../utils/index.js';
 // Feature #465: PostgreSQL persistence for history endpoint
 import { getQuickTestHistory } from '../../services/repositories/quick-test.js';
 // Feature #466: Screenshot serving
-import { readScreenshot, screenshotExists, type ScreenshotType } from '../../services/quick-test-screenshots.js';
+// Feature #478: Add signed URL validation for screenshot auth
+import { readScreenshot, screenshotExists, validateSignedScreenshotToken, type ScreenshotType } from '../../services/quick-test-screenshots.js';
 
 // Request body type
 interface QuickTestBody {
@@ -56,6 +57,11 @@ interface QuickTestScheduleBody {
 interface ScreenshotParams {
   runId: string;
   type: 'desktop' | 'mobile';
+}
+
+// Feature #478: Query params for signed screenshot URLs
+interface ScreenshotQuerystring {
+  token?: string;
 }
 
 const quickTestRoutes: FastifyPluginAsync = async (app) => {
@@ -735,17 +741,21 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
   /**
    * GET /api/v1/quick-test/:runId/screenshots/:type
    * Feature #466: Serve screenshots for a quick test run
-   * Note: No authentication required - runId (UUID) provides security through obscurity
-   * This allows <img> tags to load screenshots without auth headers
+   * Feature #478: SECURITY FIX - Add authentication and org-scoping
+   *
+   * Authentication methods (either one works):
+   * 1. Authorization header (JWT token) - for API clients
+   * 2. Signed URL token query param - for <img> tags
    */
-  app.get<{ Params: ScreenshotParams }>(
+  app.get<{ Params: ScreenshotParams; Querystring: ScreenshotQuerystring }>(
     '/api/v1/quick-test/:runId/screenshots/:type',
     {
-      // No preHandler - public endpoint for image loading
+      // Feature #478: No preHandler - we do soft auth in the handler
+      // This allows both JWT auth and signed token auth without returning 401 early
       schema: {
         tags: ['Quick Test'],
         summary: 'Get screenshot from a quick test run',
-        description: 'Returns the desktop or mobile screenshot captured during the Visual + Performance wave',
+        description: 'Returns the desktop or mobile screenshot captured during the Visual + Performance wave. Requires authentication via JWT header or signed URL token.',
         params: {
           type: 'object',
           required: ['runId', 'type'],
@@ -759,6 +769,15 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
               type: 'string',
               enum: ['desktop', 'mobile'],
               description: 'The screenshot type',
+            },
+          },
+        },
+        querystring: {
+          type: 'object',
+          properties: {
+            token: {
+              type: 'string',
+              description: 'Signed URL token for authentication (alternative to JWT header)',
             },
           },
         },
@@ -780,12 +799,59 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const { runId, type } = request.params;
+      const { token } = request.query;
 
       // Validate type
       if (type !== 'desktop' && type !== 'mobile') {
         return reply.status(400).send({
           error: 'Bad Request',
           message: 'Screenshot type must be "desktop" or "mobile"',
+        });
+      }
+
+      // Feature #478: Determine authenticated orgId using soft auth
+      // (doesn't return 401 on failure - just checks if auth is present)
+      let authenticatedOrgId: string | null = null;
+
+      // Method 1: Try JWT authentication (soft - catch any failures silently)
+      try {
+        await request.jwtVerify();
+        // If verification succeeded, request.user is populated
+        if (request.user) {
+          authenticatedOrgId = getOrganizationId(request);
+        }
+      } catch {
+        // JWT verification failed - that's okay, we'll check signed token
+      }
+
+      // Method 2: Check signed URL token (fallback for <img> tags)
+      if (!authenticatedOrgId && token) {
+        authenticatedOrgId = validateSignedScreenshotToken(token, runId, type as ScreenshotType);
+      }
+
+      // If neither authentication method succeeded, return 404 (avoid leaking resource existence)
+      if (!authenticatedOrgId) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Quick test run not found',
+        });
+      }
+
+      // Feature #478: Get the run to verify org-scoping
+      const result = await getQuickTestResultAsync(runId);
+      if (!result) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Quick test run not found',
+        });
+      }
+
+      // Feature #478: IDOR protection - verify org-scoping
+      // Return 404 (not 403) to avoid information disclosure
+      if (result.orgId && result.orgId !== authenticatedOrgId) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Quick test run not found',
         });
       }
 
@@ -808,7 +874,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
 
       return reply
         .header('Content-Type', 'image/png')
-        .header('Cache-Control', 'public, max-age=86400') // Cache for 24 hours
+        .header('Cache-Control', 'private, max-age=3600') // Private cache for 1 hour (reduced due to auth)
         .send(imageBuffer);
     }
   );

@@ -1399,10 +1399,11 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       testResult.waves[1].duration = Date.now() - wave2Start;
 
       // Feature #466: Save screenshots to disk and get URLs
+      // Feature #478: Pass orgId to generate signed URLs for security
       const screenshotUrls: { desktop?: string; mobile?: string } = {};
       if (visualResult.screenshots.desktop) {
         try {
-          screenshotUrls.desktop = await saveScreenshot(runId, 'desktop', visualResult.screenshots.desktop);
+          screenshotUrls.desktop = await saveScreenshot(runId, 'desktop', visualResult.screenshots.desktop, orgId);
           log.info({ runId, type: 'desktop' }, 'Saved desktop screenshot');
         } catch (saveErr) {
           log.error({ runId, error: saveErr }, 'Failed to save desktop screenshot');
@@ -1410,7 +1411,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       }
       if (visualResult.screenshots.mobile) {
         try {
-          screenshotUrls.mobile = await saveScreenshot(runId, 'mobile', visualResult.screenshots.mobile);
+          screenshotUrls.mobile = await saveScreenshot(runId, 'mobile', visualResult.screenshots.mobile, orgId);
           log.info({ runId, type: 'mobile' }, 'Saved mobile screenshot');
         } catch (saveErr) {
           log.error({ runId, error: saveErr }, 'Failed to save mobile screenshot');

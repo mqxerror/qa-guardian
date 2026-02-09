@@ -10,9 +10,15 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { createLogger } from './logger.js';
 
 const log = createLogger('quick-test-screenshots');
+
+// Signed URL configuration
+// Feature #478: Authentication for screenshot endpoint
+const SIGNED_URL_SECRET = process.env.JWT_SECRET || 'qa-guardian-development-secret';
+const SIGNED_URL_EXPIRY_SECONDS = 3600; // 1 hour
 
 // Directory for quick test screenshots
 // Uses process.cwd() to ensure consistent path resolution
@@ -43,15 +49,18 @@ export function getScreenshotPath(runId: string, type: ScreenshotType): string {
 
 /**
  * Save a screenshot to disk
+ * Feature #478: Updated to generate signed URLs for security
  * @param runId - The quick test run ID
  * @param type - The screenshot type ('desktop' or 'mobile')
  * @param base64Data - The base64-encoded PNG data
- * @returns The relative URL path for accessing the screenshot via API
+ * @param orgId - The organization ID (for generating signed URL)
+ * @returns The signed URL path for accessing the screenshot via API
  */
 export async function saveScreenshot(
   runId: string,
   type: ScreenshotType,
-  base64Data: string
+  base64Data: string,
+  orgId?: string
 ): Promise<string> {
   const runDir = getRunScreenshotDir(runId);
 
@@ -68,7 +77,13 @@ export async function saveScreenshot(
 
   log.info({ runId, type, path: filePath, size: buffer.length }, 'Saved screenshot');
 
-  // Return the API URL for accessing this screenshot
+  // Feature #478: Return signed URL if orgId provided, otherwise plain URL
+  // The plain URL will require JWT auth; signed URL allows <img> tag loading
+  if (orgId) {
+    return generateSignedScreenshotUrl(runId, type, orgId);
+  }
+
+  // Fallback for backward compatibility (though this should always have orgId)
   return `/api/v1/quick-test/${runId}/screenshots/${type}`;
 }
 
@@ -142,4 +157,109 @@ export async function getScreenshotsDiskUsage(): Promise<{
   }
 
   return { totalBytes, runCount };
+}
+
+/**
+ * Feature #478: Generate a signed URL token for screenshot access
+ * This allows <img> tags to load screenshots without auth headers
+ * @param runId - The quick test run ID
+ * @param type - The screenshot type
+ * @param orgId - The organization ID (for scoping)
+ * @returns Signed token that can be used as query parameter
+ */
+export function generateSignedScreenshotToken(
+  runId: string,
+  type: ScreenshotType,
+  orgId: string
+): string {
+  const expiresAt = Math.floor(Date.now() / 1000) + SIGNED_URL_EXPIRY_SECONDS;
+  const payload = `${runId}:${type}:${orgId}:${expiresAt}`;
+  const signature = crypto
+    .createHmac('sha256', SIGNED_URL_SECRET)
+    .update(payload)
+    .digest('hex');
+
+  // Return base64-encoded token containing payload and signature
+  const token = Buffer.from(`${payload}:${signature}`).toString('base64url');
+  log.debug({ runId, type, orgId, expiresAt }, 'Generated signed screenshot token');
+  return token;
+}
+
+/**
+ * Feature #478: Generate a signed URL for screenshot access
+ * @param runId - The quick test run ID
+ * @param type - The screenshot type
+ * @param orgId - The organization ID
+ * @returns Full URL with signed token query parameter
+ */
+export function generateSignedScreenshotUrl(
+  runId: string,
+  type: ScreenshotType,
+  orgId: string
+): string {
+  const token = generateSignedScreenshotToken(runId, type, orgId);
+  return `/api/v1/quick-test/${runId}/screenshots/${type}?token=${token}`;
+}
+
+/**
+ * Feature #478: Validate a signed URL token for screenshot access
+ * @param token - The signed token from query parameter
+ * @param runId - The runId from the URL path (for verification)
+ * @param type - The screenshot type from URL path (for verification)
+ * @returns The orgId if valid, null if invalid or expired
+ */
+export function validateSignedScreenshotToken(
+  token: string,
+  runId: string,
+  type: ScreenshotType
+): string | null {
+  try {
+    // Decode the token
+    const decoded = Buffer.from(token, 'base64url').toString('utf8');
+    const parts = decoded.split(':');
+
+    if (parts.length !== 5) {
+      log.warn({ token: token.substring(0, 20) + '...' }, 'Invalid token format');
+      return null;
+    }
+
+    const [tokenRunId, tokenType, orgId, expiresAtStr, signature] = parts;
+    const expiresAt = parseInt(expiresAtStr, 10);
+
+    // Verify runId and type match
+    if (tokenRunId !== runId || tokenType !== type) {
+      log.warn({ tokenRunId, runId, tokenType, type }, 'Token path mismatch');
+      return null;
+    }
+
+    // Check expiration
+    const now = Math.floor(Date.now() / 1000);
+    if (now > expiresAt) {
+      log.warn({ runId, expiresAt, now }, 'Token expired');
+      return null;
+    }
+
+    // Verify signature
+    const payload = `${tokenRunId}:${tokenType}:${orgId}:${expiresAtStr}`;
+    const expectedSignature = crypto
+      .createHmac('sha256', SIGNED_URL_SECRET)
+      .update(payload)
+      .digest('hex');
+
+    // Use timing-safe comparison to prevent timing attacks
+    const signatureBuffer = Buffer.from(signature, 'hex');
+    const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+
+    if (signatureBuffer.length !== expectedBuffer.length ||
+        !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) {
+      log.warn({ runId }, 'Invalid token signature');
+      return null;
+    }
+
+    log.debug({ runId, type, orgId }, 'Validated signed screenshot token');
+    return orgId;
+  } catch (err) {
+    log.warn({ error: err }, 'Error validating signed token');
+    return null;
+  }
 }
