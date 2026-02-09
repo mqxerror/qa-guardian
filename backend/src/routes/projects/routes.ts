@@ -10,7 +10,8 @@ import { createLogger } from '../../services/logger.js';
 
 const log = createLogger('projects');
 import { validateBody } from '../../validation/middleware.js';
-import { createProjectSchema, CreateProjectInput, UpdateProjectInput } from '../../validation/schemas.js';
+import { createProjectSchema, CreateProjectInput } from '../../validation/schemas.js';
+// UpdateProjectInput available from schemas if needed
 import { TestSuite, Test } from '../test-suites.js';
 import {
   listTestSuites as dbListTestSuitesByProject,

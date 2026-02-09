@@ -10,8 +10,7 @@ import { FastifyInstance } from 'fastify';
 // Note: Some functions have enhanced local versions with quota checking etc.
 // Importing types and baseline metadata/history functions from the module
 import {
-  // Types - re-exported from module
-  VisualComparisonResult,
+  // Types - re-exported from module (VisualComparisonResult available if needed)
   BaselineMetadata,
   BaselineHistoryEntry,
   LoadBaselineResult as LoadBaselineResultType,

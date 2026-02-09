@@ -111,7 +111,7 @@ export type StepActionType = 'navigation' | 'interaction' | 'assertion' | 'wait'
 export function analyzeTestForImprovements(
   testCode: string,
   testName?: string,
-  testType: 'e2e' | 'unit' | 'integration' | 'visual' | 'api' = 'e2e',
+  _testType: 'e2e' | 'unit' | 'integration' | 'visual' | 'api' = 'e2e',
   framework: 'playwright' | 'cypress' | 'selenium' | 'jest' | 'mocha' = 'playwright',
   options: {
     include_best_practices?: boolean;

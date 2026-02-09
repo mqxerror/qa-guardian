@@ -7,7 +7,8 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { testRuns, runningBrowsers, TestRun } from './execution.js';
-import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg, updateTestRun as dbUpdateTestRun } from '../../services/repositories/test-runs.js';
+import { getTestRun as dbGetTestRun, updateTestRun as dbUpdateTestRun } from '../../services/repositories/test-runs.js';
+// listTestRunsByOrg available from test-runs repository if needed
 import { createLogger } from '../../services/logger.js';
 
 const logger = createLogger('route:test-runs:run-control');

@@ -74,7 +74,7 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     Querystring: { project_id?: string; suite_id?: string; days?: string; min_cluster_size?: string };
   }>('/api/v1/ai/failure-clusters', {
     preHandler: [authenticate],
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { project_id, suite_id, days = '7', min_cluster_size = '2' } = request.query;
     const orgId = getOrganizationId(request);
     const dayLimit = parseInt(days, 10);

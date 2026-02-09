@@ -45,8 +45,9 @@ export interface SecretVerificationRequest {
 /**
  * Verify AWS Access Key by calling STS GetCallerIdentity
  * This is a safe read-only call that doesn't modify anything
+ * Reserved for future AWS key verification feature
  */
-async function verifyAwsKey(accessKeyId: string, secretAccessKey: string): Promise<VerificationResult> {
+async function _verifyAwsKey(accessKeyId: string, secretAccessKey: string): Promise<VerificationResult> {
   try {
     // AWS STS GetCallerIdentity endpoint - read-only, no side effects
     const region = 'us-east-1';

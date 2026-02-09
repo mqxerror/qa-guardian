@@ -15,7 +15,7 @@ import { Browser, BrowserContext, Page, chromium, firefox, webkit } from 'playwr
 import { AxeBuilder } from '@axe-core/playwright';
 import * as fs from 'fs';
 import * as path from 'path';
-import { PNG } from 'pngjs';
+// PNG available from pngjs if needed for visual comparison
 
 // Import types and stores from sibling modules
 import {

@@ -8,7 +8,8 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites.js';
-import { testRuns, runningBrowsers, TestRun, BrowserType, TestRunResult, TestRunStatus } from './execution.js';
+import { testRuns, runningBrowsers, TestRun, TestRunResult, TestRunStatus } from './execution.js';
+// BrowserType available from execution.js if needed
 
 // Feature #414: Valid TestRunStatus values for validation
 const validStatuses: TestRunStatus[] = ['pending', 'running', 'paused', 'passed', 'failed', 'warning', 'error', 'cancelled', 'cancelling', 'visual_approved', 'visual_rejected'];

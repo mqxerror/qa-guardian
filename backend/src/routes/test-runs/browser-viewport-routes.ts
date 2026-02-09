@@ -9,7 +9,8 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate } from '../../middleware/auth.js';
-import { DEVICE_PRESETS, getDevicePresetsForApi, getDevicePresetsByCategory } from './device-presets.js';
+import { getDevicePresetsForApi, getDevicePresetsByCategory } from './device-presets.js';
+// DEVICE_PRESETS available from device-presets.js if needed
 
 // Browser type definitions
 interface BrowserInfo {

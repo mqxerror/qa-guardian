@@ -133,8 +133,8 @@ export function detectCircularImports(script: string): CircularImportCheckResult
   // Extract all import statements from the script
   const importRegex = /import\s+(?:(?:\{[^}]*\}|[*\s]+as\s+\w+|\w+)(?:\s*,\s*(?:\{[^}]*\}|[*\s]+as\s+\w+|\w+))*\s+from\s+)?['"]([^'"]+)['"]/g;
 
-  // Build a map of module name to its imports
-  const moduleImports: Map<string, string[]> = new Map();
+  // Build a map of module name to its imports - reserved for cross-file import analysis
+  const _moduleImports: Map<string, string[]> = new Map();
 
   // Parse the main script for imports
   const mainImports: string[] = [];

@@ -34,7 +34,7 @@ import {
   AnthropicChatResponse,
   AIRouterConfig,
   ProviderSwitchLog,
-  RouterStats,
+  // RouterStats - type available but updateRouterStats uses inline type
   kieAIConfigs,
   kieAIUsageStats,
   kieAIChatHistory,

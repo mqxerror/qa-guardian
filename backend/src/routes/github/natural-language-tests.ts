@@ -29,7 +29,8 @@ interface GeneratedTest {
   warnings?: string[];
 }
 
-interface UserStoryTestSuiteRequest {
+// Interface for future user story to test suite conversion feature
+interface _UserStoryTestSuiteRequest {
   user_story: string;
   base_url?: string;
   include_edge_cases?: boolean;

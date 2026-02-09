@@ -62,7 +62,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { runId, testId } = request.params;
-    const user = getUser(request);
+    const _user = getUser(request); // Reserved for audit logging
     const orgId = getOrganizationId(request);
 
     // Get the test run

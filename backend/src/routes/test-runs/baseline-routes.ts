@@ -17,7 +17,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { getTest } from '../test-suites.js';
-import { testRuns } from './execution.js';
+// testRuns available from execution.js if needed
 // Feature #484: Pino structured logging
 import { createLogger } from '../../services/logger.js';
 

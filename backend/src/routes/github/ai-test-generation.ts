@@ -1100,7 +1100,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
   app.post<{ Body: GenerateReleaseNotesRequest }>('/api/v1/ai/generate-release-notes', {
     preHandler: [authenticate],
   }, async (request, reply) => {
-    const { from_version, to_version, project_name, test_changes, format = 'all' } = request.body;
+    const { from_version, to_version, project_name: _project_name, test_changes, format = 'all' } = request.body;
 
     if (!from_version || !to_version) {
       return reply.status(400).send({ error: 'Missing required fields', message: 'Please provide from_version and to_version.' });

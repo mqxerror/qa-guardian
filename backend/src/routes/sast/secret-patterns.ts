@@ -32,7 +32,7 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
   // Get common rule templates
   app.get('/api/v1/sast/patterns/templates', {
     preHandler: [authenticate],
-  }, async (request, reply) => {
+  }, async (_request, _reply) => {
     return {
       templates: SECRET_PATTERN_TEMPLATES,
       count: SECRET_PATTERN_TEMPLATES.length,

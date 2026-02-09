@@ -35,7 +35,7 @@ import {
   seedTestUsers,
   // Feature #221: Refresh token persistence
   storeRefreshTokenHash,
-  isRefreshTokenHashValid,
+  // isRefreshTokenHashValid - available but unused (validation done in verify)
   revokeRefreshTokenHash,
   cleanupExpiredRefreshTokens,
   // Feature #233: Atomic refresh token rotation

@@ -434,7 +434,7 @@ export async function securityRoutes(app: FastifyInstance) {
   // List vulnerabilities across scans
   app.get<{ Querystring: { project_id?: string; severity?: string; scan_type?: string; status?: string; limit?: string } }>('/api/v1/security/vulnerabilities', {
     preHandler: [authenticate],
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { project_id, severity, scan_type, limit } = request.query;
     const orgId = getOrganizationId(request);
 

@@ -322,7 +322,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const orgId = getOrganizationId(request);
       const { groupId } = request.params as { groupId: string };
-      const { note } = request.body as { note?: string };
+      const { note: _note } = request.body as { note?: string };
       const user = getUser(request);
 
       const group = alertGroups.get(groupId);

@@ -22,7 +22,7 @@ import {
   ArtifactToDelete,
   DownloadArtifactInfo,
 } from './artifact-types.js';
-import { TestRunResult } from './execution.js';
+// TestRunResult available from execution.js if needed
 import { AddressInfo } from 'net';
 
 // Feature #414: Type-safe server port extraction

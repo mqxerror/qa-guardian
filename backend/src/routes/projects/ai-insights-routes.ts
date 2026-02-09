@@ -42,9 +42,9 @@ export async function aiInsightsRoutes(app: FastifyInstance) {
 
     // Feature #140: Run all 4 independent queries in parallel
     // Feature #198: includeResults needed because this handler accesses accessibility_results
-    const [allProjects, orgSuites, orgTests, orgRuns] = await Promise.all([
+    const [allProjects, _orgSuites, orgTests, orgRuns] = await Promise.all([
       dbListProjects(orgId),
-      listAllTestSuites(orgId),
+      listAllTestSuites(orgId), // Suite count used for future features
       listAllTests(orgId),
       listTestRunsByOrg(orgId, { includeResults: true }),
     ]);

@@ -8,7 +8,7 @@
  */
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { authenticate, JwtPayload, getOrganizationId } from '../middleware/auth.js';
+import { authenticate, getOrganizationId } from '../middleware/auth.js';
 import { isDatabaseConnected, healthCheck as dbHealthCheck } from '../services/database.js';
 import { execFile } from 'child_process';
 import { promisify } from 'util';

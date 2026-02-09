@@ -322,7 +322,7 @@ export async function alertChannelRoutes(app: FastifyInstance) {
   // Get recent email logs (development only - for testing)
   app.get('/api/v1/email-logs', {
     preHandler: [authenticate],
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const orgId = getOrganizationId(request);
 
     // Filter logs by organization (via project)

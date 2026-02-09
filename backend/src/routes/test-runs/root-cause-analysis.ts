@@ -43,7 +43,7 @@ export type {
 // Feature #1078: Generate comprehensive root cause analysis with confidence scoring
 export function generateRootCauseAnalysis(
   errorMessage: string,
-  testResult: { test_name: string; status: string; error?: string; steps?: Array<{ action?: string; selector?: string; error?: string }> },
+  _testResult: { test_name: string; status: string; error?: string; steps?: Array<{ action?: string; selector?: string; error?: string }> },
   run: { browser?: string; environment?: string }
 ): RootCauseAnalysisResult {
   const causes: RootCause[] = [];

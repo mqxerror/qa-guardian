@@ -60,9 +60,9 @@ type RunTestsForRunFn = (runId: string) => Promise<void>;
 
 /**
  * Create run trigger routes factory
- * @param runTestsForRun Function to execute tests for a run (injected dependency)
+ * @param runTestsForRun Function to execute tests for a run (injected dependency) - reserved for parallel execution
  */
-export function createRunTriggerRoutes(runTestsForRun: RunTestsForRunFn) {
+export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
   return async function runTriggerRoutes(app: FastifyInstance) {
     // Trigger test run for a suite
     app.post<{ Params: RunParams; Body: RunBody }>('/api/v1/suites/:suiteId/runs', {

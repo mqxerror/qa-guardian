@@ -198,7 +198,7 @@ export async function slackIntegrationRoutes(app: FastifyInstance) {
   // Get recent Slack alert logs (development only)
   app.get('/api/v1/slack-logs', {
     preHandler: [authenticate],
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const orgId = getOrganizationId(request);
 
     // Filter logs by organization (via project)

@@ -9,7 +9,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores.js';
 import { runGitleaksScan, checkGitleaksAvailability } from '../sast/gitleaks.js';
-import type { GitleaksFinding } from '../sast/gitleaks.js';
+// GitleaksFinding type available from sast/gitleaks.js
 import { scanContainerImage, checkTrivyAvailability, type TrivyScanResult } from '../../services/trivy-scanner.js';
 
 // Import types and helpers from extracted module

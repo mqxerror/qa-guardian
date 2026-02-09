@@ -64,7 +64,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
   // Search across all test results
   app.get<{ Querystring: { query?: string; status?: string; project_id?: string; suite_id?: string; from_date?: string; to_date?: string; limit?: string } }>('/api/v1/results/search', {
     preHandler: [authenticate],
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { query, status, project_id, suite_id, from_date, to_date, limit: limitStr } = request.query;
     const orgId = getOrganizationId(request);
 

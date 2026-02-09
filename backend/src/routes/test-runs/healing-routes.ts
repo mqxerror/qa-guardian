@@ -49,8 +49,8 @@ async function getTestRunWithFallback(runId: string): Promise<TestRun | undefine
 const healingEventHistory = new Map<string, HealingEventEntry[]>();
 export { healingEventHistory };
 
-// Initialize from healing module's getHealingHistory function
-function getHealingHistoryForTest(testId: string): HealingEventEntry[] {
+// Initialize from healing module's getHealingHistory function - reserved for future use
+function _getHealingHistoryForTest(testId: string): HealingEventEntry[] {
   return healingEventHistory.get(testId) || [];
 }
 

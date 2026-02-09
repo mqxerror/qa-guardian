@@ -23,7 +23,7 @@ import {
 } from './execution.js';
 
 import {
-  simulatedK6RuntimeError,
+  // simulatedK6RuntimeError - available from test-simulation.js
   simulatedK6ServerUnavailable,
   simulatedK6ResourceExhaustion,
 } from './test-simulation.js';

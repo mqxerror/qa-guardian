@@ -19,7 +19,7 @@ import {
 
 import {
   simulatedLighthouseError,
-  simulatedAuthRedirect,
+  // simulatedAuthRedirect - available from test-simulation.js
   simulatedAuditTimeout,
   simulatedLighthouseBrowserCrash,
   simulatedLighthouseNonHtmlResponse,

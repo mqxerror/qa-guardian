@@ -330,7 +330,7 @@ export function calculateConfidenceFactors(
  */
 export function findSimilarFailures(
   cacheKey: string,
-  currentTestName: string
+  _currentTestName: string
 ): LLMRootCauseAnalysis['similar_failures'] {
   const similar: LLMRootCauseAnalysis['similar_failures'] = [];
 

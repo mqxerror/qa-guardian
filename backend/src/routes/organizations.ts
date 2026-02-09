@@ -39,7 +39,7 @@ import {
   getOrganizationBySlug as repoGetOrganizationBySlug,
   updateOrganization as repoUpdateOrganization,
   deleteOrganization as repoDeleteOrganization,
-  listOrganizations as repoListOrganizations,
+  // listOrganizations as repoListOrganizations - available if needed
   addOrganizationMember as repoAddOrganizationMember,
   removeOrganizationMember as repoRemoveOrganizationMember,
   getOrganizationMembers as repoGetOrganizationMembers,

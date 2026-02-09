@@ -25,7 +25,7 @@ import {
   StatusPageIncident,
   StatusPageIncidentUpdate,
   StatusPageSubscription,
-  UptimeCheck,
+  // UptimeCheck - type available from types.js if needed
   CheckResult,
 } from './types.js';
 import {

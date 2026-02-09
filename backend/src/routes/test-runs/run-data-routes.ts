@@ -9,7 +9,8 @@ import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { getTest, getTestSuite, getTestsMap } from '../test-suites.js';
 import { getProjectEnvVars } from '../projects.js';
 import { EnvironmentVariable } from '../projects/types.js';
-import { testRuns, TestRun, ConsoleLog, NetworkRequest, StepResult } from './execution.js';
+import { testRuns, TestRun, ConsoleLog, NetworkRequest } from './execution.js';
+// StepResult available from execution.js if needed
 import { getTestRun as dbGetTestRun } from '../../services/repositories/test-runs.js';
 import { TestSuite, Test } from '../test-suites/types.js';
 // Feature #484: Pino structured logging

@@ -34,7 +34,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer', 'viewer'])],
     },
-    async (request, reply) => {
+    async (request, _reply) => {
       const orgId = getOrganizationId(request);
 
       const schedules = Array.from(onCallSchedules.values())

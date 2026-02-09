@@ -294,7 +294,7 @@ export async function failurePatternsRoutes(app: FastifyInstance) {
     {
       preHandler: [authenticate],
     },
-    async (request, reply) => {
+    async (request, _reply) => {
       const projectId = request.query.project_id;
       const suiteId = request.query.suite_id;
       const days = parseInt(request.query.days || '30', 10);

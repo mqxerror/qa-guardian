@@ -22,7 +22,7 @@ import { createLogger } from '../../services/logger.js';
 
 // Create logger for this module
 const log = createLogger('route:gitleaks');
-import { exec, execFile, execFileSync, spawn } from 'child_process';
+import { execFile, execFileSync, spawn } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';

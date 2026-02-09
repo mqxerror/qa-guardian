@@ -22,7 +22,8 @@ const STEP_TEMPLATE_COLUMNS = `
   id, organization_id, suite_id, name, description, steps, tags, created_by, created_at, updated_at
 `;
 
-const TEST_COLUMNS = `
+// TEST_COLUMNS reserved for future test template import feature
+const _TEST_COLUMNS = `
   id, suite_id, project_id, name, description, type, config, code, enabled, priority, tags, created_at, updated_at
 `;
 
