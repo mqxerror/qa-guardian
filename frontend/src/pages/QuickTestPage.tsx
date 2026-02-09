@@ -142,7 +142,7 @@ const WAVE_DEFINITIONS = [
       { name: 'Auth Protection', status: 'pending' as const },
     ],
   },
-  // Feature #527: Wave 7 - SEO Analysis
+  // Feature #527: Wave 7 - SEO Analysis (Smoke Test)
   {
     wave: 7,
     name: 'SEO Analysis',
@@ -150,8 +150,10 @@ const WAVE_DEFINITIONS = [
     steps: [
       { name: 'Meta Tags', status: 'pending' as const },
       { name: 'Heading Structure', status: 'pending' as const },
-      { name: 'robots.txt', status: 'pending' as const },
-      { name: 'sitemap.xml', status: 'pending' as const },
+      { name: 'Schema Markup', status: 'pending' as const },
+      { name: 'Navigation', status: 'pending' as const },
+      { name: 'Tracking Scripts', status: 'pending' as const },
+      { name: 'Crawlability', status: 'pending' as const },
     ],
   },
 ];

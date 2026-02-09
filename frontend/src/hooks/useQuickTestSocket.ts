@@ -125,7 +125,7 @@ const INITIAL_WAVES: WaveState[] = [
       { name: 'Auth Protection', status: 'pending' },
     ],
   },
-  // Feature #527: Wave 7 - SEO Analysis
+  // Feature #527: Wave 7 - SEO Analysis (Smoke Test)
   {
     wave: 7,
     name: 'SEO Analysis',
@@ -133,8 +133,10 @@ const INITIAL_WAVES: WaveState[] = [
     steps: [
       { name: 'Meta Tags', status: 'pending' },
       { name: 'Heading Structure', status: 'pending' },
-      { name: 'robots.txt', status: 'pending' },
-      { name: 'sitemap.xml', status: 'pending' },
+      { name: 'Schema Markup', status: 'pending' },
+      { name: 'Navigation', status: 'pending' },
+      { name: 'Tracking Scripts', status: 'pending' },
+      { name: 'Crawlability', status: 'pending' },
     ],
   },
 ];

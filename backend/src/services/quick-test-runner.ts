@@ -2473,7 +2473,8 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       emitWaveError(orgId, runId, 6, testResult.waves[5].error);
     }
 
-    // Feature #527: Wave 7 - SEO Analysis (requires browser)
+    // Feature #527: Wave 7 - SEO Analysis (Smoke Test with sub-checks)
+    // Feature #531: Unified smoke test wave with all SEO sub-checks
     let seoResult: SeoAnalysisResult | undefined;
     emitWaveStart(orgId, runId, 7, 'SEO Analysis');
     testResult.waves[6].status = 'running';
@@ -2481,7 +2482,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
 
     try {
       const wave7Start = Date.now();
-      emitWaveProgress(orgId, runId, 7, 10, 'Analyzing meta tags...');
+      emitWaveProgress(orgId, runId, 7, 5, 'Analyzing meta tags...');
 
       // Reuse or create browser for SEO analysis
       let seoBrowser: Browser | null = browser;
@@ -2492,9 +2493,12 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       }
 
       try {
-        emitWaveProgress(orgId, runId, 7, 30, 'Checking heading structure...');
+        emitWaveProgress(orgId, runId, 7, 15, 'Checking heading structure...');
+        emitWaveProgress(orgId, runId, 7, 30, 'Detecting schema markup...');
+        emitWaveProgress(orgId, runId, 7, 45, 'Checking navigation elements...');
+        emitWaveProgress(orgId, runId, 7, 60, 'Detecting tracking scripts...');
         seoResult = await runSeoAnalysis(url, seoBrowser);
-        emitWaveProgress(orgId, runId, 7, 80, 'Checking robots.txt and sitemap...');
+        emitWaveProgress(orgId, runId, 7, 85, 'Checking crawlability (robots.txt, sitemap)...');
 
         testResult.waves[6].status = 'completed';
         testResult.waves[6].completedAt = new Date();
