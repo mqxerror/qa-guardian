@@ -12,7 +12,7 @@ import type { QuickTestSummary } from '../../hooks/useQuickTestSocket';
 
 export interface WaveStep {
   name: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
   duration?: number;
   result?: string;
 }
@@ -21,7 +21,7 @@ export interface WaveData {
   wave: number;
   name: string;
   icon: React.ElementType;
-  status: 'waiting' | 'running' | 'completed' | 'failed';
+  status: 'waiting' | 'running' | 'completed' | 'failed' | 'skipped';
   steps: WaveStep[];
   startedAt?: Date;
   completedAt?: Date;

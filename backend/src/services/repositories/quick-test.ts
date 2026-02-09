@@ -17,7 +17,7 @@ import { logger } from '../logger.js';
 export interface QuickTestWaveResult {
   wave: number;
   name: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
   startedAt?: Date;
   completedAt?: Date;
   duration?: number;

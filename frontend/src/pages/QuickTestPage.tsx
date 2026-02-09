@@ -196,6 +196,8 @@ function WaveCard({ wave, onToggleExpand, onScreenshotClick, onCreateTestSuite }
         return 'border-success bg-success/10';
       case 'failed':
         return 'border-destructive bg-destructive/10';
+      case 'skipped':
+        return 'border-warning bg-warning/10';
       default:
         return 'border-muted bg-muted/10';
     }
@@ -211,6 +213,8 @@ function WaveCard({ wave, onToggleExpand, onScreenshotClick, onCreateTestSuite }
         return <CheckCircle2 className="w-4 h-4 text-success" />;
       case 'failed':
         return <XCircle className="w-4 h-4 text-destructive" />;
+      case 'skipped':
+        return <AlertTriangle className="w-4 h-4 text-warning" />;
       default:
         return null;
     }
@@ -236,6 +240,7 @@ function WaveCard({ wave, onToggleExpand, onScreenshotClick, onCreateTestSuite }
               {wave.status === 'running' && 'In progress...'}
               {wave.status === 'completed' && `Completed in ${wave.duration || 0}ms`}
               {wave.status === 'failed' && 'Failed'}
+              {wave.status === 'skipped' && 'Skipped - not configured'}
             </p>
           </div>
         </div>
@@ -356,6 +361,21 @@ function WaveCard({ wave, onToggleExpand, onScreenshotClick, onCreateTestSuite }
             />
           )}
 
+          {/* Feature #520: Friendly skip message for AI Analysis when not configured */}
+          {wave.wave === 4 && wave.status === 'skipped' && (
+            <div className="mt-2 p-4 rounded-lg bg-warning/5 border border-warning/20">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">AI Analysis Not Available</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {(wave.data as Record<string, unknown>)?.summary as string || 'AI provider not configured. Add an AI API key in Settings → AI Configuration to enable AI-powered analysis.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Feature #471: Accessibility details for Wave 5 */}
           {wave.wave === 5 && wave.status === 'completed' && wave.data && (
             <AccessibilityDetails data={wave.data as unknown as AccessibilityData} />
@@ -366,7 +386,7 @@ function WaveCard({ wave, onToggleExpand, onScreenshotClick, onCreateTestSuite }
             <APIDiscoveryDetails data={wave.data as unknown as APIDiscoveryData} />
           )}
 
-          {wave.error && (
+          {wave.error && wave.status !== 'skipped' && (
             <div className="mt-2 p-2 rounded bg-destructive/10 text-destructive text-sm">
               {wave.error}
             </div>

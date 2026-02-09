@@ -18,7 +18,7 @@ import { useAuthStore } from '../stores/authStore';
 
 export interface WaveStep {
   name: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
   duration?: number;
   result?: string;
 }
@@ -26,7 +26,7 @@ export interface WaveStep {
 export interface WaveState {
   wave: number;
   name: string;
-  status: 'waiting' | 'running' | 'completed' | 'failed';
+  status: 'waiting' | 'running' | 'completed' | 'failed' | 'skipped';
   steps: WaveStep[];
   startedAt?: Date;
   completedAt?: Date;
@@ -308,9 +308,13 @@ export function useQuickTestSocket() {
       }));
     };
 
-    // Wave completed
+    // Wave completed (or skipped)
     const handleWaveComplete = (data: { runId: string; wave: number; data?: Record<string, unknown>; completedAt?: string }) => {
       if (data.runId !== currentRunIdRef.current) return;
+
+      // Feature #520: Check if wave was skipped (e.g., AI provider not configured)
+      const isSkipped = data.data?.skipped === true;
+      const waveStatus = isSkipped ? 'skipped' as const : 'completed' as const;
 
       setState(prev => ({
         ...prev,
@@ -318,11 +322,12 @@ export function useQuickTestSocket() {
           w.wave === data.wave
             ? {
                 ...w,
-                status: 'completed',
+                status: waveStatus,
                 completedAt: data.completedAt ? new Date(data.completedAt) : new Date(),
                 duration: w.startedAt ? Date.now() - w.startedAt.getTime() : undefined,
                 data: data.data,
-                steps: w.steps.map(s => ({ ...s, status: 'completed' as const })),
+                error: isSkipped ? (data.data?.summary as string) || 'Skipped' : w.error,
+                steps: w.steps.map(s => ({ ...s, status: waveStatus })),
               }
             : w
         ),

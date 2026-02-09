@@ -77,7 +77,7 @@ export interface QuickTestRequest {
 export interface WaveResult {
   wave: number;
   name: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
   startedAt?: Date;
   completedAt?: Date;
   duration?: number;
@@ -869,8 +869,20 @@ async function runAIAnalysis(
   };
 
   try {
+    // Feature #520: Graceful degradation when AI provider not configured
+    if (!aiService.isConfigured()) {
+      log.info('AI provider not configured - skipping AI analysis wave');
+      result.summary = 'AI provider not configured. Add an AI API key in Settings → AI Configuration to enable AI-powered analysis.';
+      (result as unknown as Record<string, unknown>).skipped = true;
+      (result as unknown as Record<string, unknown>).skipReason = 'no_api_key';
+      return result;
+    }
+
     if (!aiService.isInitialized()) {
-      result.summary = 'AI analysis unavailable - no AI service configured';
+      log.warn('AI service not initialized despite having config - skipping AI analysis wave');
+      result.summary = 'AI service could not initialize. Check your API key configuration in Settings → AI Configuration.';
+      (result as unknown as Record<string, unknown>).skipped = true;
+      (result as unknown as Record<string, unknown>).skipReason = 'initialization_failed';
       return result;
     }
 
@@ -1014,8 +1026,18 @@ ${outputFormat}`;
     }
 
   } catch (err) {
+    const errMsg = err instanceof Error ? err.message : 'Unknown error';
     log.error({ error: err }, 'AI analysis wave error');
-    result.summary = 'AI analysis failed - see logs for details';
+    // Feature #520: User-friendly error messages
+    if (errMsg.includes('401') || errMsg.includes('unauthorized') || errMsg.includes('invalid_api_key')) {
+      result.summary = 'AI API key is invalid or expired. Update your key in Settings → AI Configuration.';
+    } else if (errMsg.includes('429') || errMsg.includes('rate_limit')) {
+      result.summary = 'AI provider rate limit reached. Please wait a moment and try again.';
+    } else if (errMsg.includes('timeout') || errMsg.includes('ETIMEDOUT')) {
+      result.summary = 'AI provider timed out. The service may be temporarily slow.';
+    } else {
+      result.summary = `AI analysis encountered an error: ${errMsg.substring(0, 100)}`;
+    }
   }
 
   return result;
@@ -1528,11 +1550,24 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
         visualResult || { screenshots: {}, loadTime: 0 },
         securityResult || { headers: { score: 0, missing: [], present: {}, recommendations: [] }, cookies: [], mixedContent: { detected: false, resources: [] }, exposedPaths: [], overallScore: 0 }
       );
-      testResult.waves[3].status = 'completed';
-      testResult.waves[3].completedAt = new Date();
-      testResult.waves[3].duration = Date.now() - wave4Start;
-      testResult.waves[3].data = aiResult as unknown as Record<string, unknown>;
-      emitWaveComplete(orgId, runId, 4, aiResult as unknown as Record<string, unknown>);
+
+      // Feature #520: Show "skipped" status when AI provider not configured
+      const aiResultData = aiResult as unknown as Record<string, unknown>;
+      if (aiResultData.skipped) {
+        testResult.waves[3].status = 'skipped';
+        testResult.waves[3].completedAt = new Date();
+        testResult.waves[3].duration = Date.now() - wave4Start;
+        testResult.waves[3].data = aiResultData;
+        testResult.waves[3].error = aiResult.summary;
+        emitWaveComplete(orgId, runId, 4, aiResultData);
+        log.info({ reason: aiResultData.skipReason }, 'AI Analysis wave skipped');
+      } else {
+        testResult.waves[3].status = 'completed';
+        testResult.waves[3].completedAt = new Date();
+        testResult.waves[3].duration = Date.now() - wave4Start;
+        testResult.waves[3].data = aiResultData;
+        emitWaveComplete(orgId, runId, 4, aiResultData);
+      }
     } catch (err) {
       testResult.waves[3].status = 'failed';
       testResult.waves[3].error = err instanceof Error ? err.message : 'AI analysis failed';

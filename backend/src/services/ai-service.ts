@@ -234,6 +234,17 @@ class AIService implements IAIProvider {
   }
 
   /**
+   * Feature #520: Check if AI provider is configured (has API key).
+   * Used by Quick Test to show friendly skip message instead of cryptic error.
+   */
+  isConfigured(): boolean {
+    if (this.useExternalProvider && this.externalProvider) {
+      return this.externalProvider.isInitialized();
+    }
+    return !!this.config.apiKey;
+  }
+
+  /**
    * Send a message to the AI provider and get a response
    */
   async sendMessage(
