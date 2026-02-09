@@ -2,6 +2,7 @@
 // Feature #59: Migrated to React Query for paginated test loading
 // Feature #125: Added skeleton loaders for better perceived performance
 // Feature #337: Dark-first design system redesign
+// Feature #525: Added suite health metrics with unified ScoreCard component
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
@@ -13,6 +14,7 @@ import { io } from 'socket.io-client';
 import { UnifiedAIService } from '../services/UnifiedAIService';
 import { CreateTestModal } from '../components/create-test';
 import { logger } from '../utils/logger';
+import { ScoreCardGrid } from '../components/ui/score-card';
 // Feature #59: React Query hooks for paginated test loading
 // Feature #143: Added mutation hooks for operations
 import {
@@ -1114,6 +1116,28 @@ function TestSuitePage() {
             onShowDeleteSuiteModal={() => setShowDeleteSuiteModal(true)}
           />
         </div>
+
+        {/* Feature #525: Suite Health Metrics - unified ScoreCard display */}
+        {tests.length > 0 && (() => {
+          const testsWithResults = tests.filter(t => t.last_result);
+          const passedTests = tests.filter(t => t.last_result === 'passed').length;
+          const failedTests = tests.filter(t => t.last_result === 'failed' || t.last_result === 'error').length;
+          const passRate = testsWithResults.length > 0
+            ? Math.round((passedTests / testsWithResults.length) * 100)
+            : 0;
+          return testsWithResults.length > 0 ? (
+            <ScoreCardGrid
+              items={[
+                { score: passRate, label: 'Pass Rate' },
+                { score: tests.length, label: 'Total Tests' },
+                { score: passedTests, label: 'Passed' },
+                { score: failedTests, label: 'Failed' },
+              ]}
+              size="sm"
+              thresholds={{ good: 80, warning: 60 }}
+            />
+          ) : null;
+        })()}
 
         {/* Feature #1151: Human Review Panel - Feature #50: Extracted to component */}
         <HumanReviewPanel

@@ -8,6 +8,7 @@ import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom"
 import { Layout } from "../components/Layout";
 import { SkeletonProjectDetail } from "../components/ui/Skeleton";
 // Feature #337: Design system components
+// Feature #526: Added ScoreCard for project health overview
 import {
   PageHeader,
   AnimatedCard,
@@ -21,6 +22,7 @@ import {
   TabsTrigger,
   TabsContent,
   useReducedMotion,
+  ScoreCard,
 } from "../components/ui";
 import { Flame, Plus, Settings, Loader2, FolderKanban, TestTube2, Calendar, User, MoreHorizontal, Github, Shield, ChevronDown } from "lucide-react";
 import {
@@ -703,6 +705,48 @@ function ProjectDetailPage() {
             </div>
           }
         />
+
+        {/* Feature #526: Project Health Overview with ScoreCards */}
+        {suites.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <ScoreCard
+              score={suites.length}
+              label="Test Suites"
+              maxScore={suites.length}
+              thresholds={{ good: 1, warning: 0 }}
+              size="sm"
+            />
+            <ScoreCard
+              score={suites.reduce((total, s) => total + ((s as TestSuite).test_count || 0), 0)}
+              label="Total Tests"
+              maxScore={suites.reduce((total, s) => total + ((s as TestSuite).test_count || 0), 0) || 1}
+              thresholds={{ good: 1, warning: 0 }}
+              size="sm"
+            />
+            <ScoreCard
+              score={
+                sastScans.length > 0 && sastScans[0]?.summary?.total === 0 &&
+                dastScans.length > 0 && dastScans[0]?.summary?.total === 0
+                  ? 100
+                  : sastScans.length === 0 && dastScans.length === 0
+                    ? 50
+                    : Math.max(0, 100 - (
+                        (sastScans[0]?.summary?.bySeverity?.critical || 0) * 20 +
+                        (sastScans[0]?.summary?.bySeverity?.high || 0) * 10 +
+                        (dastScans[0]?.summary?.byRisk?.high || 0) * 10
+                      ))
+              }
+              label="Security Score"
+              size="sm"
+            />
+            <div className="p-3 rounded-lg bg-muted text-center">
+              <div className="text-xl font-bold text-foreground">
+                {githubConnected ? '✓' : '—'}
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">GitHub</div>
+            </div>
+          </div>
+        )}
 
         {/* Tab Navigation - Feature #490: Progressive disclosure with badges */}
         <div className="mt-6 border-b border-border">
