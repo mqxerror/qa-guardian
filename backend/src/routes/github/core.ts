@@ -9,10 +9,15 @@
  * - PR comments
  *
  * Extracted from github.ts (Feature #1375)
+ * Feature #506: Replaced console.* with structured Pino logger
  */
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
+import { createLogger } from '../../services/logger.js';
+
+// Create logger for this module
+const logger = createLogger('route:github:core');
 import { getProject as dbGetProject } from '../projects/stores.js';
 import { createTestSuite as dbCreateTestSuite, createTest as dbCreateTest } from '../test-suites/stores.js';
 
@@ -58,14 +63,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     // Simulate successful OAuth connection
     userGithubTokens.set(user.id, `ghp_simulated_token_${Date.now()}`);
 
-    console.log(`
-====================================
-  GitHub OAuth Connected (Simulated)
-====================================
-  User: ${user.email}
-  Note: In production, this would redirect to GitHub OAuth
-====================================
-    `);
+    logger.info({ userEmail: user.email }, 'GitHub OAuth connected (simulated)');
 
     return {
       success: true,
@@ -273,17 +271,13 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
-    console.log(`
-====================================
-  GitHub Repository Connected
-====================================
-  Project: ${project.name}
-  Repository: ${fullName}
-  Branch: ${connection.github_branch}
-  Test Path: ${test_path}
-  Tests Imported: ${importedCount}
-====================================
-    `);
+    logger.info({
+      projectName: project.name,
+      repository: fullName,
+      branch: connection.github_branch,
+      testPath: test_path,
+      testsImported: importedCount,
+    }, 'GitHub repository connected');
 
     return reply.status(201).send({
       connection: {
@@ -388,14 +382,10 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     // Remove the connection
     githubConnections.delete(projectId);
 
-    console.log(`
-====================================
-  GitHub Repository Disconnected
-====================================
-  Project: ${project.name}
-  Repository: ${connection.github_owner}/${connection.github_repo}
-====================================
-    `);
+    logger.info({
+      projectName: project.name,
+      repository: `${connection.github_owner}/${connection.github_repo}`,
+    }, 'GitHub repository disconnected');
 
     return {
       message: 'GitHub repository disconnected successfully',
@@ -441,15 +431,11 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const fullName = `${connection.github_owner}/${connection.github_repo}`;
     const testFiles = getTestFilesForBranch(fullName, connection.github_branch);
 
-    console.log(`
-====================================
-  GitHub Repository Synced
-====================================
-  Project: ${project.name}
-  Repository: ${fullName}
-  Test Files Found: ${testFiles.length}
-====================================
-    `);
+    logger.info({
+      projectName: project.name,
+      repository: fullName,
+      testFilesFound: testFiles.length,
+    }, 'GitHub repository synced');
 
     return {
       message: 'Repository synced successfully',
@@ -516,17 +502,13 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     // Get test files for new branch
     const testFiles = getTestFilesForBranch(fullName, branch);
 
-    console.log(`
-====================================
-  GitHub Branch Changed
-====================================
-  Project: ${project.name}
-  Repository: ${fullName}
-  Old Branch: ${oldBranch}
-  New Branch: ${branch}
-  Test Files Found: ${testFiles.length}
-====================================
-    `);
+    logger.info({
+      projectName: project.name,
+      repository: fullName,
+      oldBranch,
+      newBranch: branch,
+      testFilesFound: testFiles.length,
+    }, 'GitHub branch changed');
 
     return {
       message: `Branch changed from '${oldBranch}' to '${branch}' successfully`,
@@ -577,14 +559,11 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     connection.pr_checks_enabled = pr_checks_enabled;
     githubConnections.set(projectId, connection);
 
-    console.log(`
-====================================
-  PR Status Checks ${pr_checks_enabled ? 'Enabled' : 'Disabled'}
-====================================
-  Project: ${project.name}
-  Repository: ${connection.github_owner}/${connection.github_repo}
-====================================
-    `);
+    logger.info({
+      projectName: project.name,
+      repository: `${connection.github_owner}/${connection.github_repo}`,
+      prChecksEnabled: pr_checks_enabled,
+    }, `PR status checks ${pr_checks_enabled ? 'enabled' : 'disabled'}`);
 
     return {
       message: `PR status checks ${pr_checks_enabled ? 'enabled' : 'disabled'} successfully`,
@@ -725,17 +704,14 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     }
     prStatusChecks.get(projectId)!.push(statusCheck);
 
-    console.log(`
-====================================
-  PR Status Check Posted
-====================================
-  Repository: ${fullName}
-  PR #${pr.number}: ${pr.title}
-  Status: ${status}
-  Description: ${statusCheck.description}
-  SHA: ${pr.head_sha}
-====================================
-    `);
+    logger.info({
+      repository: fullName,
+      prNumber: pr.number,
+      prTitle: pr.title,
+      status,
+      description: statusCheck.description,
+      sha: pr.head_sha,
+    }, 'PR status check posted');
 
     return reply.status(201).send({
       message: 'Status check posted successfully',
@@ -819,14 +795,11 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     connection.pr_comments_enabled = pr_comments_enabled;
     githubConnections.set(projectId, connection);
 
-    console.log(`
-====================================
-  PR Comments ${pr_comments_enabled ? 'Enabled' : 'Disabled'}
-====================================
-  Project: ${project.name}
-  Repository: ${connection.github_owner}/${connection.github_repo}
-====================================
-    `);
+    logger.info({
+      projectName: project.name,
+      repository: `${connection.github_owner}/${connection.github_repo}`,
+      prCommentsEnabled: pr_comments_enabled,
+    }, `PR comments ${pr_comments_enabled ? 'enabled' : 'disabled'}`);
 
     return {
       message: `PR comments ${pr_comments_enabled ? 'enabled' : 'disabled'} successfully`,
@@ -926,16 +899,15 @@ ${status}
     }
     prComments.get(projectId)!.push(comment);
 
-    console.log(`
-====================================
-  PR Comment Posted
-====================================
-  Repository: ${fullName}
-  PR #${pr.number}: ${pr.title}
-  Results: ${passed} passed, ${failed} failed, ${skipped} skipped
-  Pass Rate: ${passRate}%
-====================================
-    `);
+    logger.info({
+      repository: fullName,
+      prNumber: pr.number,
+      prTitle: pr.title,
+      passed,
+      failed,
+      skipped,
+      passRate: `${passRate}%`,
+    }, 'PR comment posted');
 
     return reply.status(201).send({
       message: 'Comment posted to PR successfully',

@@ -9,10 +9,15 @@
  * Note: Incident management routes moved to incidents.ts
  *
  * Feature #1375: Split alert management routes from monitoring.ts
+ * Feature #506: Replaced console.* with structured Pino logger
  */
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
+import { createLogger } from '../../services/logger.js';
+
+// Create logger for this module
+const logger = createLogger('route:monitoring:alert-correlation');
 
 import {
   AlertCorrelationConfig,
@@ -98,7 +103,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
       alertCorrelationConfigs.set(orgId, config);
 
-      console.log(`[CORRELATION] Config saved for org ${orgId}:`, config);
+      logger.info({ orgId, config }, 'Correlation config saved');
 
       return { success: true, config };
     }
@@ -366,7 +371,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
       }
       toDelete.forEach(id => alertCorrelations.delete(id));
 
-      console.log(`[CORRELATION] State reset for org ${orgId}, removed ${toDelete.length} correlations`);
+      logger.info({ orgId, correlationsRemoved: toDelete.length }, 'Correlation state reset');
 
       return {
         success: true,
@@ -448,7 +453,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
       alertRunbooks.set(runbookId, runbook);
 
-      console.log(`[RUNBOOK] Created runbook ${runbookId} for ${body.check_type}/${body.severity || 'all'}`);
+      logger.info({ runbookId, checkType: body.check_type, severity: body.severity || 'all' }, 'Runbook created');
 
       return { success: true, runbook };
     }
@@ -535,7 +540,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
       alertRunbooks.delete(runbookId);
 
-      console.log(`[RUNBOOK] Deleted runbook ${runbookId}`);
+      logger.info({ runbookId }, 'Runbook deleted');
 
       return { success: true, message: 'Runbook deleted' };
     }
@@ -769,7 +774,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
             if (!result.ok) {
               const errorData = await result.json().catch(() => ({}));
-              console.error('PagerDuty API error:', errorData);
+              logger.error({ errorData }, 'PagerDuty API error');
               return {
                 success: false,
                 destination_type,
@@ -779,7 +784,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
             }
 
             const pdResponse = await result.json().catch(() => ({}));
-            console.log(`Test alert sent to PagerDuty, dedup_key: ${alertId}`);
+            logger.info({ dedupKey: alertId }, 'Test alert sent to PagerDuty');
             return {
               success: true,
               destination_type,
@@ -830,7 +835,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
             if (!result.ok) {
               const errorData = await result.json().catch(() => ({}));
-              console.error('OpsGenie API error:', errorData);
+              logger.error({ errorData }, 'OpsGenie API error');
               return {
                 success: false,
                 destination_type,
@@ -840,7 +845,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
             }
 
             const ogResponse = await result.json().catch(() => ({}));
-            console.log(`Test alert sent to OpsGenie, alias: ${alertId}`);
+            logger.info({ alias: alertId }, 'Test alert sent to OpsGenie');
             return {
               success: true,
               destination_type,
@@ -920,7 +925,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
             const teamsResponseText = await result.text().catch(() => '');
 
             if (!result.ok) {
-              console.error('Teams Webhook error:', teamsResponseText);
+              logger.error({ error: teamsResponseText }, 'Teams Webhook error');
               return {
                 success: false,
                 destination_type,
@@ -929,7 +934,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
               };
             }
 
-            console.log(`Test alert sent to Microsoft Teams`);
+            logger.info('Test alert sent to Microsoft Teams');
             return {
               success: true,
               destination_type,
@@ -962,7 +967,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
               if (!result.ok) {
                 const errorData = await result.json().catch(() => ({}));
-                console.error('Telegram API error:', errorData);
+                logger.error({ errorData }, 'Telegram API error');
                 return {
                   success: false,
                   destination_type,
@@ -971,7 +976,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
                 };
               }
 
-              console.log(`Test alert sent to Telegram chat ${config.telegram_chat_id}`);
+              logger.info({ chatId: config.telegram_chat_id }, 'Test alert sent to Telegram');
               return {
                 success: true,
                 destination_type,
@@ -1009,7 +1014,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
         if (!result.ok) {
           const errorText = await result.text().catch(() => 'Unknown error');
-          console.error(`Webhook error (${destination_type}):`, errorText);
+          logger.error({ destinationType: destination_type, error: errorText }, 'Webhook error');
           return {
             success: false,
             destination_type,
@@ -1018,7 +1023,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
           };
         }
 
-        console.log(`Test alert sent via ${destination_type} to ${webhookUrl}`);
+        logger.info({ destinationType: destination_type, webhookUrl }, 'Test alert sent via webhook');
         return {
           success: true,
           destination_type,
@@ -1026,7 +1031,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
           alert_payload: alertData,
         };
       } catch (error: unknown) {
-        console.error(`Failed to send test alert to ${destination_type}:`, error);
+        logger.error({ destinationType: destination_type, error }, 'Failed to send test alert');
         return {
           success: false,
           destination_type,
