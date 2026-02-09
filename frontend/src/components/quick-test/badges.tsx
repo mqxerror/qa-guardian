@@ -1,31 +1,28 @@
 /**
  * Quick Test Badge Components
  * Feature #514: Extracted from QuickTestPage.tsx
- * Small badge components for displaying status, priority, severity, etc.
+ * Feature #521: Consolidated as thin wrappers around unified Badge component
+ * Standardized opacity to /15 via unified Badge system
  */
 
 import {
   Eye,
   BarChart2,
 } from 'lucide-react';
+import { Badge } from '../ui/Badge';
+import type { SourceType, PriorityType, ImpactType } from '../ui/Badge';
 
 /**
  * Badge showing whether data came from vision AI or metrics
  */
 export function SourceBadge({ source }: { source?: 'vision' | 'metrics' }) {
-  if (source === 'vision') {
-    return (
-      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-purple-500/20 text-purple-400">
-        <Eye className="w-3 h-3" />
-        Vision
-      </span>
-    );
-  }
+  const value: SourceType = source === 'vision' ? 'vision' : 'metrics';
   return (
-    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-info/20 text-info">
-      <BarChart2 className="w-3 h-3" />
-      Metrics
-    </span>
+    <Badge variant="source" value={value} size="xs" shape="rounded"
+      icon={source === 'vision' ? <Eye className="w-3 h-3" /> : <BarChart2 className="w-3 h-3" />}
+    >
+      {source === 'vision' ? 'Vision' : 'Metrics'}
+    </Badge>
   );
 }
 
@@ -33,37 +30,35 @@ export function SourceBadge({ source }: { source?: 'vision' | 'metrics' }) {
  * Badge showing test priority level
  */
 export function PriorityBadge({ priority }: { priority: string }) {
-  const colors = {
-    critical: 'bg-destructive/20 text-destructive',
-    high: 'bg-warning/20 text-warning',
-    medium: 'bg-info/20 text-info',
-    low: 'bg-muted text-muted-foreground',
-  };
+  const validPriorities = ['critical', 'high', 'medium', 'low'];
+  const value = validPriorities.includes(priority) ? priority as PriorityType : 'medium' as PriorityType;
   return (
-    <span className={`px-1.5 py-0.5 rounded text-xs ${colors[priority as keyof typeof colors] || colors.medium}`}>
+    <Badge variant="priority" value={value} size="xs" shape="rounded">
       {priority}
-    </span>
+    </Badge>
   );
 }
 
 /**
  * Badge showing issue severity level
+ * Handles both accessibility severity (critical/serious/moderate/minor) and
+ * general severity (high/medium/low) by mapping to impact variant
  */
 export function SeverityBadge({ severity }: { severity: string }) {
-  const colors = {
-    critical: 'bg-destructive/20 text-destructive',
-    serious: 'bg-warning/20 text-warning',
-    moderate: 'bg-info/20 text-info',
-    minor: 'bg-muted text-muted-foreground',
-    // Also handle non-a11y severity levels
-    high: 'bg-destructive/20 text-destructive',
-    medium: 'bg-warning/20 text-warning',
-    low: 'bg-info/20 text-info',
+  const severityMap: Record<string, ImpactType> = {
+    critical: 'critical',
+    serious: 'serious',
+    high: 'critical',
+    moderate: 'moderate',
+    medium: 'moderate',
+    minor: 'minor',
+    low: 'minor',
   };
+  const value = severityMap[severity.toLowerCase()] || 'moderate';
   return (
-    <span className={`px-1.5 py-0.5 rounded text-xs ${colors[severity.toLowerCase() as keyof typeof colors] || colors.medium}`}>
+    <Badge variant="impact" value={value} size="xs" shape="rounded">
       {severity}
-    </span>
+    </Badge>
   );
 }
 
@@ -71,15 +66,11 @@ export function SeverityBadge({ severity }: { severity: string }) {
  * Badge showing accessibility impact level
  */
 export function ImpactBadge({ impact }: { impact: string }) {
-  const colors = {
-    critical: 'bg-destructive/20 text-destructive',
-    serious: 'bg-warning/20 text-warning',
-    moderate: 'bg-info/20 text-info',
-    minor: 'bg-muted text-muted-foreground',
-  };
+  const validImpacts = ['critical', 'serious', 'moderate', 'minor'];
+  const value = validImpacts.includes(impact.toLowerCase()) ? impact.toLowerCase() as ImpactType : 'moderate' as ImpactType;
   return (
-    <span className={`px-1.5 py-0.5 rounded text-xs ${colors[impact.toLowerCase() as keyof typeof colors] || colors.moderate}`}>
+    <Badge variant="impact" value={value} size="xs" shape="rounded">
       {impact}
-    </span>
+    </Badge>
   );
 }

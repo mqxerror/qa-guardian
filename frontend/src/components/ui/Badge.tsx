@@ -1,10 +1,15 @@
 /**
  * Feature #131: Unified Badge Component
+ * Feature #521: Extended with source, priority, and impact variants
+ *
  * A flexible badge component that supports multiple variants:
  * - severity: critical, high, medium, low, info
  * - status: passed, failed, running, pending, cancelled, skipped, error
  * - type: e2e, visual, performance, load, accessibility
  * - ai: ai-generated, ai-powered, mcp-ready, healing
+ * - source: vision, metrics (for Quick Test data origin)
+ * - priority: critical, high, medium, low
+ * - impact: critical, serious, moderate, minor (accessibility)
  * - custom: any custom color scheme
  *
  * Usage:
@@ -13,11 +18,15 @@
  * <Badge variant="status" value="passed">Passed</Badge>
  * <Badge variant="type" value="e2e" icon="🧪" />
  * <Badge variant="ai" value="ai-generated">AI Generated</Badge>
+ * <Badge variant="source" value="vision">Vision</Badge>
+ * <Badge variant="priority" value="high">High</Badge>
+ * <Badge variant="impact" value="serious">Serious</Badge>
  * <Badge color="purple">Custom</Badge>
  * ```
  */
 
 import React, { memo } from 'react';
+import { Eye, BarChart2 } from 'lucide-react';
 import { getSeverityColor, getStatusColor, type SeverityLevel, type StatusType } from '../../constants/colors';
 
 // =============================================================================
@@ -25,7 +34,7 @@ import { getSeverityColor, getStatusColor, type SeverityLevel, type StatusType }
 // =============================================================================
 
 export type BadgeSize = 'xs' | 'sm' | 'md' | 'lg';
-export type BadgeVariant = 'severity' | 'status' | 'type' | 'ai' | 'custom';
+export type BadgeVariant = 'severity' | 'status' | 'type' | 'ai' | 'source' | 'priority' | 'impact' | 'custom';
 export type BadgeShape = 'rounded' | 'pill';
 
 // Pre-defined color names for custom variant
@@ -38,6 +47,15 @@ export type TestType = 'e2e' | 'visual_regression' | 'lighthouse' | 'load' | 'ac
 
 // AI badge types
 export type AIBadgeType = 'ai-generated' | 'ai-powered' | 'mcp-ready' | 'ai-ready' | 'healing';
+
+// Source badge types (for Quick Test)
+export type SourceType = 'vision' | 'metrics';
+
+// Priority badge types
+export type PriorityType = 'critical' | 'high' | 'medium' | 'low';
+
+// Impact badge types (accessibility)
+export type ImpactType = 'critical' | 'serious' | 'moderate' | 'minor';
 
 // =============================================================================
 // BADGE STYLES
@@ -57,19 +75,20 @@ const shapeClasses: Record<BadgeShape, string> = {
 
 // Custom color palettes
 // Feature #454: Pink kept as intentional design variant (no semantic equivalent)
+// Feature #521: Standardized opacity to /15 across all badges
 const colorClasses: Record<BadgeColor, string> = {
- red: 'bg-destructive/10 text-destructive',
- orange: 'bg-warning/10 text-warning',
- yellow: 'bg-warning/10 text-warning',
- green: 'bg-success/10 text-success',
- blue: 'bg-primary/10 text-primary',
- indigo: 'bg-accent/10 text-accent',
- purple: 'bg-accent/10 text-accent',
- pink: 'bg-pink-100 text-pink-700', // Intentional: no semantic equivalent, used for visual variety
+ red: 'bg-destructive/15 text-destructive',
+ orange: 'bg-warning/15 text-warning',
+ yellow: 'bg-warning/15 text-warning',
+ green: 'bg-success/15 text-success',
+ blue: 'bg-primary/15 text-primary',
+ indigo: 'bg-accent/15 text-accent',
+ purple: 'bg-purple-500/15 text-purple-400',
+ pink: 'bg-pink-500/15 text-pink-400', // Intentional: no semantic equivalent, used for visual variety
  gray: 'bg-muted text-foreground',
- teal: 'bg-info/10 text-info',
- emerald: 'bg-success/10 text-success',
- amber: 'bg-warning/10 text-warning',
+ teal: 'bg-info/15 text-info',
+ emerald: 'bg-success/15 text-success',
+ amber: 'bg-warning/15 text-warning',
 };
 
 // Test type configurations
@@ -82,31 +101,32 @@ const testTypeConfig: Record<TestType, { icon: string; label: string; color: Bad
 };
 
 // AI badge configurations
+// Feature #521: Standardized opacity to /15
 const aiBadgeConfig: Record<AIBadgeType, { icon?: string; label: string; className: string }> = {
  'ai-generated': {
  icon: '🤖',
  label: 'AI Generated',
- className: 'bg-accent/10 text-accent',
+ className: 'bg-accent/15 text-accent',
  },
  'ai-powered': {
  icon: undefined,
  label: 'AI Powered',
- className: 'bg-gradient-to-r from-accent/10 to-primary/10 border border-accent/30 text-accent',
+ className: 'bg-gradient-to-r from-accent/15 to-primary/15 border border-accent/30 text-accent',
  },
  'mcp-ready': {
  icon: undefined,
  label: 'MCP Ready',
- className: 'bg-gradient-to-r from-success/10 to-info/10 border border-success/30 text-success',
+ className: 'bg-gradient-to-r from-success/15 to-info/15 border border-success/30 text-success',
  },
  'ai-ready': {
  icon: undefined,
  label: 'AI Ready',
- className: 'bg-gradient-to-r from-warning/10 via-warning/10 to-destructive/10 border border-warning/30 text-warning',
+ className: 'bg-gradient-to-r from-warning/15 via-warning/15 to-destructive/15 border border-warning/30 text-warning',
  },
  'healing': {
  icon: '🔧',
  label: 'Healed',
- className: 'bg-primary/10 text-primary',
+ className: 'bg-primary/15 text-primary',
  },
 };
 
@@ -151,6 +171,21 @@ interface AIBadgeProps extends BaseBadgeProps {
  value: AIBadgeType;
 }
 
+interface SourceBadgeProps extends BaseBadgeProps {
+ variant: 'source';
+ value: SourceType;
+}
+
+interface PriorityBadgeProps extends BaseBadgeProps {
+ variant: 'priority';
+ value: PriorityType;
+}
+
+interface ImpactBadgeProps extends BaseBadgeProps {
+ variant: 'impact';
+ value: ImpactType;
+}
+
 interface CustomBadgeProps extends BaseBadgeProps {
  variant?: 'custom';
  /** Pre-defined color name */
@@ -164,11 +199,36 @@ export type BadgeProps =
  | StatusBadgeProps
  | TypeBadgeProps
  | AIBadgeProps
+ | SourceBadgeProps
+ | PriorityBadgeProps
+ | ImpactBadgeProps
  | CustomBadgeProps;
 
 // =============================================================================
 // BADGE COMPONENT
 // =============================================================================
+
+// Feature #521: Source badge color mapping
+const sourceColors: Record<SourceType, string> = {
+ vision: 'bg-purple-500/15 text-purple-400',
+ metrics: 'bg-info/15 text-info',
+};
+
+// Feature #521: Priority badge color mapping
+const priorityColors: Record<PriorityType, string> = {
+ critical: 'bg-destructive/15 text-destructive',
+ high: 'bg-warning/15 text-warning',
+ medium: 'bg-info/15 text-info',
+ low: 'bg-muted text-muted-foreground',
+};
+
+// Feature #521: Impact badge color mapping (accessibility)
+const impactColors: Record<ImpactType, string> = {
+ critical: 'bg-destructive/15 text-destructive',
+ serious: 'bg-warning/15 text-warning',
+ moderate: 'bg-info/15 text-info',
+ minor: 'bg-muted text-muted-foreground',
+};
 
 function getColorClass(props: BadgeProps): string {
  if (props.variant === 'severity') {
@@ -183,6 +243,15 @@ function getColorClass(props: BadgeProps): string {
  }
  if (props.variant === 'ai') {
  return aiBadgeConfig[props.value].className;
+ }
+ if (props.variant === 'source') {
+ return sourceColors[props.value] || colorClasses.gray;
+ }
+ if (props.variant === 'priority') {
+ return priorityColors[props.value] || colorClasses.gray;
+ }
+ if (props.variant === 'impact') {
+ return impactColors[props.value] || colorClasses.gray;
  }
  // Custom variant
  const customProps = props as CustomBadgeProps;
@@ -203,6 +272,12 @@ function getIcon(props: BadgeProps): React.ReactNode {
  }
  if (props.variant === 'ai') {
  return aiBadgeConfig[props.value].icon;
+ }
+ // Feature #521: Source badge icons
+ if (props.variant === 'source') {
+ return props.value === 'vision'
+ ? <Eye className="w-3 h-3" />
+ : <BarChart2 className="w-3 h-3" />;
  }
  return null;
 }
@@ -347,6 +422,68 @@ export const HealingBadge = memo(function HealingBadge({
  {count > 1 ? count : null}
  </Badge>
  );
+});
+
+/**
+ * Feature #521: Source badge for vision/metrics data origin
+ * Accepts string for backwards compatibility, normalizes to SourceType
+ */
+export const SourceBadgeCmp = memo(function SourceBadgeCmp({
+ source,
+ ...props
+}: Omit<SourceBadgeProps, 'variant' | 'value'> & { source?: string }) {
+ const normalizedSource = (source?.toLowerCase() || 'metrics') as SourceType;
+ return <Badge variant="source" value={normalizedSource} {...props}>{normalizedSource === 'vision' ? 'Vision' : 'Metrics'}</Badge>;
+});
+
+/**
+ * Feature #521: Priority badge for critical/high/medium/low
+ * Accepts string for backwards compatibility, normalizes to PriorityType
+ */
+export const PriorityBadgeCmp = memo(function PriorityBadgeCmp({
+ priority,
+ ...props
+}: Omit<PriorityBadgeProps, 'variant' | 'value'> & { priority: string }) {
+ const normalizedPriority = (priority?.toLowerCase() || 'medium') as PriorityType;
+ const label = normalizedPriority.charAt(0).toUpperCase() + normalizedPriority.slice(1);
+ return <Badge variant="priority" value={normalizedPriority} {...props}>{label}</Badge>;
+});
+
+/**
+ * Feature #521: Impact badge for accessibility violation impacts
+ * Accepts string for backwards compatibility, normalizes to ImpactType
+ */
+export const ImpactBadgeCmp = memo(function ImpactBadgeCmp({
+ impact,
+ ...props
+}: Omit<ImpactBadgeProps, 'variant' | 'value'> & { impact: string }) {
+ const normalizedImpact = (impact?.toLowerCase() || 'moderate') as ImpactType;
+ const label = normalizedImpact.charAt(0).toUpperCase() + normalizedImpact.slice(1);
+ return <Badge variant="impact" value={normalizedImpact} {...props}>{label}</Badge>;
+});
+
+/**
+ * Feature #521: Accessibility Severity badge
+ * For accessibility violations that use serious/moderate/minor (different from SeverityLevel)
+ * Maps: serious->warning, moderate->info, minor->muted, critical->destructive
+ */
+export const AccessibilitySeverityBadge = memo(function AccessibilitySeverityBadge({
+ severity,
+ ...props
+}: Omit<ImpactBadgeProps, 'variant' | 'value'> & { severity: string }) {
+ // Map accessibility severity to ImpactType
+ const severityMap: Record<string, ImpactType> = {
+ critical: 'critical',
+ serious: 'serious',
+ moderate: 'moderate',
+ minor: 'minor',
+ high: 'serious',
+ medium: 'moderate',
+ low: 'minor',
+ };
+ const normalizedSeverity = severityMap[severity?.toLowerCase()] || 'moderate';
+ const label = severity ? severity.charAt(0).toUpperCase() + severity.slice(1).toLowerCase() : 'Moderate';
+ return <Badge variant="impact" value={normalizedSeverity} {...props}>{label}</Badge>;
 });
 
 export default Badge;
