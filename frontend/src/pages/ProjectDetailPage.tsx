@@ -22,7 +22,13 @@ import {
   TabsContent,
   useReducedMotion,
 } from "../components/ui";
-import { Flame, Plus, Settings, Loader2, FolderKanban, TestTube2, Calendar, User } from "lucide-react";
+import { Flame, Plus, Settings, Loader2, FolderKanban, TestTube2, Calendar, User, MoreHorizontal, Github, Shield, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 import { useAuthStore } from "../stores/authStore";
 import { useTimezoneStore } from "../stores/timezoneStore";
 import { useTestDefaultsStore } from "../stores/testDefaultsStore";
@@ -698,58 +704,101 @@ function ProjectDetailPage() {
           }
         />
 
-        {/* Tab Navigation */}
+        {/* Tab Navigation - Feature #490: Progressive disclosure with badges */}
         <div className="mt-6 border-b border-border">
-          <nav className="-mb-px flex gap-4" aria-label="Project tabs">
+          <nav className="-mb-px flex items-center gap-4" aria-label="Project tabs">
+            {/* Primary Tab: Suites with test count badge */}
             <button
               onClick={() => setActiveTab('suites')}
-              className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+              className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
                 activeTab === 'suites'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
               }`}
               aria-current={activeTab === 'suites' ? 'page' : undefined}
             >
+              <FolderKanban className="h-4 w-4" />
               Suites
+              {suites.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full bg-primary/10 text-primary">
+                  {suites.length}
+                </span>
+              )}
             </button>
+
+            {/* Primary Tab: Settings */}
             <button
               onClick={() => setActiveTab('settings')}
-              className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+              className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
                 activeTab === 'settings'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
               }`}
               aria-current={activeTab === 'settings' ? 'page' : undefined}
             >
+              <Settings className="h-4 w-4" />
               Settings
             </button>
-            <button
-              onClick={() => setActiveTab('github')}
-              className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'github'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-              }`}
-              aria-current={activeTab === 'github' ? 'page' : undefined}
-            >
-              GitHub
-            </button>
+
+            {/* Primary Tab: Security with vulnerability count badge */}
             <button
               onClick={() => setActiveTab('security')}
-              className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+              className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
                 activeTab === 'security'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
               }`}
               aria-current={activeTab === 'security' ? 'page' : undefined}
             >
+              <Shield className="h-4 w-4" />
               Security
+              {(() => {
+                // Calculate total vulnerabilities from SAST and DAST scans
+                const sastFindingCount = sastScans.reduce((total, scan) =>
+                  total + (scan.findings?.length || 0), 0
+                );
+                const dastFindingCount = dastScans.reduce((total, scan) =>
+                  total + (scan.alerts?.length || 0), 0
+                );
+                const totalVulnerabilities = sastFindingCount + dastFindingCount;
+                if (totalVulnerabilities > 0) {
+                  return (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full bg-destructive/10 text-destructive">
+                      {totalVulnerabilities}
+                    </span>
+                  );
+                }
+                return null;
+              })()}
             </button>
-            {/* Feature #1535: Autopilot Tab removed - enterprise bloat */}
-            {/* Feature #1539: Maintenance Tab removed - uses dummy data with no real API */}
-            {/* Feature #1540: Discovery Tab removed - uses dummy data with no real AI API */}
-            {/* Feature #1536: Predictions Tab removed - simple flaky test detection is sufficient */}
-            {/* Feature #1541: Code Quality Tab removed - uses dummy data with no real API */}
+
+            {/* More Dropdown for overflow tabs */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-1 ${
+                    activeTab === 'github'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                  }`}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                  More
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-40">
+                <DropdownMenuItem
+                  onClick={() => setActiveTab('github')}
+                  className={`flex items-center gap-2 cursor-pointer ${
+                    activeTab === 'github' ? 'bg-accent' : ''
+                  }`}
+                >
+                  <Github className="h-4 w-4" />
+                  GitHub
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
         </div>
 
