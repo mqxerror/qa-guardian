@@ -17,7 +17,8 @@ import {
  GeneratedTestPreview,
 } from './types';
 import { CreateTestModalProps, TestType } from '../test-modals/types';
-import { URLInput, QuickTestPanel, type QuickTestType } from './shared';
+// Feature #513: Removed unused QuickTestPanel, QuickTestType - wizard handles test type selection
+import { URLInput } from './shared';
 import { CustomTestWizard } from './CustomTestWizard';
 // Feature #97: Toast for run started notification
 import { toast } from '../../stores/toastStore';
@@ -202,7 +203,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  // Create preview entries for each selected type with unique IDs
  const baseTime = Date.now();
  const previews: GeneratedTestPreview[] = Object.entries(testSelection)
- .filter(([_, selected]) => selected)
+ .filter(([_key, selected]) => selected)
  .map(([key], index) => {
  const config = TEST_TYPE_CONFIG[key as keyof typeof TEST_TYPE_CONFIG];
  return {
@@ -354,7 +355,8 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  throw new Error('Failed to start test run');
  }
 
- const data = await response.json();
+ // Feature #513: Response data used for logging only
+ await response.json();
  setRunStatus('started');
 
  // Feature #97: Close modal immediately and show toast

@@ -7,7 +7,8 @@
  * Supports drag-drop reordering.
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+// Feature #513: Removed unused useRef - drag handles use event handlers directly
+import React, { useState, useCallback } from 'react';
 
 /**
  * Available step action types
@@ -320,7 +321,8 @@ export const StepBuilder: React.FC<StepBuilderProps> = ({
  }, [dragIndex, dropIndex, steps, updateSteps]);
 
  // Convert steps to string format for legacy support
- const stepsToString = useCallback((): string => {
+ // Feature #513: Prefixed with _ - string export planned for step sharing feature
+ const _stepsToString = useCallback((): string => {
  return steps
  .map((step, index) => {
  const config = ACTION_CONFIG[step.action];

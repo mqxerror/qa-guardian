@@ -26,7 +26,8 @@
  */
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Pin, LogOut, Bell, RefreshCw, Eye, EyeOff, Building2, Check, Users, Key, CreditCard, FileCode, ClipboardList, Bot, Zap } from 'lucide-react'; // PanelLeft unused
+// Feature #513: Removed unused Bell import
+import { ChevronDown, ChevronRight, Pin, LogOut, RefreshCw, Eye, EyeOff, Building2, Check, Users, Key, CreditCard, FileCode, ClipboardList, Bot, Zap } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useSidebarStore, SidebarSection } from '../stores/sidebarStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
@@ -56,11 +57,12 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+// Feature #513: Tooltip, TooltipContent, TooltipTrigger - currently unused (collapsed mode tooltips planned)
+// import {
+//   Tooltip,
+//   TooltipContent,
+//   TooltipTrigger,
+// } from '@/components/ui/tooltip';
 
 import {
   DropdownMenu,
@@ -72,19 +74,18 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 // Import existing icons
+// Feature #513: Removed unused LogoutIcon, ServicesIcon - using lucide-react LogOut instead
 import {
   DashboardIcon,
   ProjectsIcon,
   SchedulesIcon,
   AnalyticsIcon,
   SettingsIcon,
-  LogoutIcon,
   VisualReviewIcon,
   SecurityIcon,
   SecurityGroupIcon,
   DASTIcon,
   MonitoringIcon,
-  ServicesIcon,
   AIInsightsIcon,
   AIGroupIcon,
   AITestGeneratorIcon,

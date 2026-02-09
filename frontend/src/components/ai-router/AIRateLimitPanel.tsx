@@ -1,9 +1,8 @@
 // AIRateLimitPanel - Extracted from AIRouterPage.tsx (Feature #405)
 // Provider-specific rate limiting configuration and monitoring
 
-import { useState } from 'react';
+// Feature #513: Removed unused useState, AIFeatureType - using props instead
 import type {
-  AIFeatureType,
   ProviderRateLimitConfig,
   ProviderRateLimitStatus,
   RateLimitEvent,

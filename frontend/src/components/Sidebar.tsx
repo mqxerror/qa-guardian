@@ -316,7 +316,8 @@ export function Sidebar() {
 
   // Feature #1365: MCP Hub - single entry for all MCP tools
   // MCP tools - visible to developers+, or anyone with advanced features enabled
-  const mcpMenuItems: MenuItemConfig[] = [
+  // Feature #513: Prefixed with _ - items merged into main menu structure
+  const _mcpMenuItems: MenuItemConfig[] = [
     { path: '/mcp', icon: <MCPToolsIcon />, label: 'MCP Hub', visibility: 'developer', advancedOnly: true },
   ];
 

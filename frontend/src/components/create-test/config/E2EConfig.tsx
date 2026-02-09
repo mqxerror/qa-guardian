@@ -13,7 +13,8 @@
 import React, { useState, useCallback } from 'react';
 import { StepBuilder, type Step } from './StepBuilder';
 import { DeviceSelect } from '../shared/DeviceSelect';
-import { DeviceConfig, DEVICE_PRESETS } from '../../test-modals/types';
+// Feature #513: Removed unused DEVICE_PRESETS - DeviceSelect handles presets internally
+import { DeviceConfig } from '../../test-modals/types';
 
 /**
  * E2E test configuration state

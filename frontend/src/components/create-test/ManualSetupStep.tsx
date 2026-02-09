@@ -19,7 +19,8 @@
 import React, { useState, useCallback } from 'react';
 import { TestTypeCards, type TestTypeOption } from './shared';
 import { StepBuilder, type Step } from './config/StepBuilder';
-import { VisualConfig, type VisualConfigState, type CaptureMode, type ViewportConfig } from './config/VisualConfig';
+// Feature #513: Removed unused CaptureMode, ViewportConfig - using VisualConfigState instead
+import { VisualConfig, type VisualConfigState } from './config/VisualConfig';
 
 /**
  * Form state for all test types
@@ -149,7 +150,7 @@ interface FormErrors {
 const URL_REGEX = /^https?:\/\/[^\s<>"']+$/i;
 
 export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
- onContinue,
+ onContinue: _onContinue, // Feature #513: prefixed - continuation handled via onChange callback
  onChange,
  projectBaseUrl,
 }) => {
@@ -188,7 +189,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  // Clear error for this field when user types
  if (errors[field as keyof FormErrors]) {
  setErrors(prevErrors => {
- const { [field as keyof FormErrors]: _, ...rest } = prevErrors;
+ const { [field as keyof FormErrors]: _removed, ...rest } = prevErrors;
  return rest;
  });
  }
@@ -279,8 +280,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  visualConfig: visualConfig, // Store full config
  }));
  }}
- onValidationChange={(isValid) => {
- // Visual config has its own validation
+ onValidationChange={(_isValid) => {
+ // Feature #513: prefixed - visual config validation handled separately
  }}
  projectBaseUrl={projectBaseUrl}
  className="visual-config-embedded"

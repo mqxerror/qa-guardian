@@ -2,9 +2,8 @@
 // Feature #1441: Split App.tsx into logical modules
 // Feature #68: Added React Query caching for faster loading
 // Feature #337: Dark-first design system redesign
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
@@ -12,21 +11,9 @@ import { useSocketStore } from '../stores/socketStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { toast } from '../stores/toastStore';
 import { logger } from '../utils/logger';
-// Feature #337: Design system components
-import {
-  // PageHeader, // Unused
-  AnimatedCard,
-  StatusPill,
-  MetadataRow,
-  SectionHeader,
-  CardContent,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-  useReducedMotion,
-} from '../components/ui';
-import { Play, Clock, Calendar, Tag } from 'lucide-react';
+// Feature #337: Design system components - Feature #513: Removed unused imports
+// AnimatedCard, StatusPill, MetadataRow, SectionHeader, CardContent, Tabs, TabsList, TabsTrigger, TabsContent, useReducedMotion - moved to test-detail components
+// lucide-react icons: Play, Clock, Calendar, Tag - moved to test-detail components
 // Feature #68: Import React Query hooks for caching
 import { useTest, useInvalidateTests } from '../hooks/api/useTests';
 import { useRunsByTest, useInvalidateRuns } from '../hooks/api/useRuns';
@@ -34,18 +21,11 @@ import { useSuite } from '../hooks/api/useSuites';
 import { useProject } from '../hooks/api/useProjects';
 // Feature #48: Import modular types and utilities
 import {
-  TestSuite,
+  // Feature #513: Removed unused type imports - now used only in test-detail components
+  // TestSuite, ConsoleLog, NetworkRequest, TestRunResult, StepResult, TestStatus,
+  // RunStatus, ResultStatus, StepStatus, TestCategory - used in sub-components
   TestType,
   TestRunType,
-  ConsoleLog,
-  NetworkRequest,
-  TestRunResult,
-  StepResult,
-  TestStatus,
-  RunStatus,
-  ResultStatus,
-  StepStatus,
-  TestCategory,
   // Feature #48: Import extracted components
   DeleteTestModal,
   ApproveBaselineModal,
@@ -100,11 +80,11 @@ function TestDetailPage() {
   const { addNotification } = useNotificationStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryClient = useQueryClient();
 
   // Feature #68: React Query hooks for caching - data loads instantly on second visit
-  const { data: testData, isLoading: testLoading, error: testError, refetch: refetchTest } = useTest(testId);
-  const { data: runsData, isLoading: runsLoading, refetch: refetchRuns } = useRunsByTest(testId);
+  // Feature #513: Removed unused refetchTest, runsLoading
+  const { data: testData, isLoading: testLoading, error: testError } = useTest(testId);
+  const { data: runsData, refetch: refetchRuns } = useRunsByTest(testId);
 
   // Feature #137: Eliminated 3-level waterfall by using enriched test data
   // OLD: useTest(id) -> wait -> useSuite(suiteId) -> wait -> useProject(projectId)
@@ -116,8 +96,7 @@ function TestDetailPage() {
   // but don't wait on them for rendering - use enriched test data instead
   const { data: suiteData } = useSuite(suiteId);
   const { data: projectData } = useProject(projectId);
-  const suiteLoading = false; // No longer blocking on suite load
-  const projectLoading = false; // No longer blocking on project load
+  // Feature #513: Removed unused suiteLoading, projectLoading - no longer needed
 
   // Feature #68: Invalidation helpers for cache updates
   const { invalidateTest } = useInvalidateTests();

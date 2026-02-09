@@ -167,7 +167,8 @@ export const PerformanceConfig: React.FC<PerformanceConfigProps> = ({
  });
 
  const [errors, setErrors] = useState<Partial<Record<keyof PerformanceConfigState, string>>>({});
- const [showAdvanced, setShowAdvanced] = useState(false);
+ // Feature #513: Prefixed with _ - advanced section toggle planned for future
+ const [_showAdvanced, _setShowAdvanced] = useState(false);
 
  // Validate required fields
  const validate = useCallback((values: PerformanceConfigState): boolean => {

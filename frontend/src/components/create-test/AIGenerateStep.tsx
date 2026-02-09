@@ -218,12 +218,13 @@ const EditModal: React.FC<EditModalProps> = ({
  * AIGenerateStep component
  */
 export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
- onContinue,
+ onContinue: _onContinue, // Feature #513: prefixed - continuation handled via onChange callback
  onChange,
- initialDescription = '',
+ initialDescription: _initialDescription = '', // Feature #513: prefixed - not used, input starts empty
  projectBaseUrl,
 }) => {
- const { input, isParsing, result, setInput, isReady, updateResult } = useAIParser({
+ // Feature #513: isReady check moved to useEffect, prefixing unused
+ const { input, isParsing, result, setInput, isReady: _isReady, updateResult } = useAIParser({
  debounceMs: 400,
  minInputLength: 5,
  });

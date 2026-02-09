@@ -3,8 +3,8 @@ import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 // Feature #70: Import React Query hooks for dashboard caching
 import { useDashboardStats } from '../hooks/api/useDashboard';
-// Feature #125: Skeleton loaders for better perceived performance
-import { SkeletonCard } from '../components/ui/Skeleton'; // Skeleton unused
+// Feature #125: SkeletonCard removed - using custom pulse animations
+// Feature #513: import { SkeletonCard } from '../components/ui/Skeleton';
 // Feature #336: Design system components
 import {
   PageHeader,

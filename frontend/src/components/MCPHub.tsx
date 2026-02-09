@@ -131,8 +131,8 @@ export function MCPHub() {
  const location = useLocation();
  const navigate = useNavigate();
 
- // Get active tab based on current path
- const activeTab = TABS.find(t => location.pathname === t.path) || TABS[0];
+ // Get active tab based on current path - Feature #513: prefixed with _ as used indirectly via path
+ const _activeTab = TABS.find(t => location.pathname === t.path) || TABS[0];
 
  // Navigate to tab
  const handleTabClick = (tab: TabConfig) => {

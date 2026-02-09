@@ -1,7 +1,7 @@
 // AIModelConfigPanel - Extracted from AIRouterPage.tsx (Feature #405)
 // Per-feature model configuration with cost optimization suggestions
 
-import { useState } from 'react';
+// Feature #513: Removed unused useState import - using props instead
 import type {
   AIFeatureType,
   AIModelType,

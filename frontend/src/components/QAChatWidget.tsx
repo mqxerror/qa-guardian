@@ -16,7 +16,8 @@ import {
 } from './qa-chat';
 
 function QAChatWidget() {
-  const { user, token } = useAuthStore();
+  // Feature #513: token unused directly but user contains auth state
+  const { user } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');

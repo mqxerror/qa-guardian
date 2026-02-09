@@ -29,14 +29,16 @@ const AcceptInvitationPage = lazy(() => import('./pages/AcceptInvitationPage').t
 const SchedulesPage = lazy(() => import('./pages/SchedulesPage').then(m => ({ default: m.SchedulesPage })));
 const ScheduleDetailsPage = lazy(() => import('./pages/ScheduleDetailsPage').then(m => ({ default: m.ScheduleDetailsPage })));
 // Feature #411: AIActionPage removed - dead demo page with mock data
-const BillingPage = lazy(() => import('./pages/BillingPage').then(m => ({ default: m.BillingPage })));
-const ApiKeysPage = lazy(() => import('./pages/ApiKeysPage').then(m => ({ default: m.ApiKeysPage })));
+// Feature #513: Prefixed with underscore - pages exist but routes moved to SettingsPage tabs
+const _BillingPage = lazy(() => import('./pages/BillingPage').then(m => ({ default: m.BillingPage })));
+const _ApiKeysPage = lazy(() => import('./pages/ApiKeysPage').then(m => ({ default: m.ApiKeysPage })));
 const MCPToolsPage = lazy(() => import('./pages/MCPToolsPage').then(m => ({ default: m.MCPToolsPage })));
 const PublicStatusPage = lazy(() => import('./pages/PublicStatusPage').then(m => ({ default: m.PublicStatusPage })));
 const SharedTestRunPage = lazy(() => import('./pages/SharedTestRunPage'));
-const OrganizationMembersPage = lazy(() => import('./pages/OrganizationMembersPage').then(m => ({ default: m.OrganizationMembersPage })));
-const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })));
-const WebhookConfigurationPage = lazy(() => import('./pages/WebhookConfigurationPage').then(m => ({ default: m.WebhookConfigurationPage })));
+// Feature #513: Prefixed with underscore - pages exist but routes moved to SettingsPage tabs
+const _OrganizationMembersPage = lazy(() => import('./pages/OrganizationMembersPage').then(m => ({ default: m.OrganizationMembersPage })));
+const _AuditLogsPage = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })));
+const _WebhookConfigurationPage = lazy(() => import('./pages/WebhookConfigurationPage').then(m => ({ default: m.WebhookConfigurationPage })));
 const WebhookIntegrationGuidesPage = lazy(() => import('./pages/WebhookIntegrationGuidesPage').then(m => ({ default: m.WebhookIntegrationGuidesPage }))); // Feature #323
 const DASTComparisonPage = lazy(() => import('./pages/DASTComparisonPage').then(m => ({ default: m.DASTComparisonPage })));
 const DASTGraphQLPage = lazy(() => import('./pages/DASTGraphQLPage').then(m => ({ default: m.DASTGraphQLPage })));
@@ -87,7 +89,8 @@ const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then(m => ({ de
 const MonitoringPage = lazy(() => import('./pages/MonitoringPage').then(m => ({ default: m.MonitoringPage })));
 const AIRouterPage = lazy(() => import('./pages/AIRouterPage').then(m => ({ default: m.AIRouterPage })));
 const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage').then(m => ({ default: m.ProjectDetailPage })));
-const OrganizationSettingsPage = lazy(() => import('./pages/OrganizationSettingsPage'));
+// Feature #513: Prefixed with underscore - page exists but route moved to SettingsPage
+const _OrganizationSettingsPage = lazy(() => import('./pages/OrganizationSettingsPage'));
 const TestSuitePage = lazy(() => import('./pages/TestSuitePage').then(m => ({ default: m.TestSuitePage })));
 const TestDetailPage = lazy(() => import('./pages/TestDetailPage').then(m => ({ default: m.TestDetailPage })));
 const TestRunResultPage = lazy(() => import('./pages/TestRunResultPage'));
