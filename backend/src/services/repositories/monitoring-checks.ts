@@ -27,6 +27,8 @@ import {
   TcpCheck,
   TcpCheckResult,
 } from '../../routes/monitoring/types.js';
+// Feature #510: Safe JSON parsing for DB row columns
+import { safeJsonParseOrPassthrough } from '../../utils/index.js';
 
 // =============================
 // Feature #363: Typed Database Row Interfaces
@@ -422,13 +424,13 @@ function parseUptimeCheckRow(row: UptimeCheckRow): UptimeCheck {
     interval: row.interval_seconds,
     timeout: row.timeout_ms,
     expected_status: row.expected_status,
-    headers: typeof row.headers === 'string' ? JSON.parse(row.headers) : row.headers,
+    headers: safeJsonParseOrPassthrough(row.headers, {} as Record<string, string>),
     body: row.body ?? undefined,
-    locations: typeof row.locations === 'string' ? JSON.parse(row.locations) : row.locations,
-    assertions: typeof row.assertions === 'string' ? JSON.parse(row.assertions) : row.assertions,
+    locations: safeJsonParseOrPassthrough(row.locations, []) as any,
+    assertions: safeJsonParseOrPassthrough(row.assertions, []) as any,
     ssl_expiry_warning_days: row.ssl_expiry_warning_days ?? undefined,
     consecutive_failures_threshold: row.consecutive_failures_threshold ?? undefined,
-    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags,
+    tags: safeJsonParseOrPassthrough(row.tags, [] as string[]),
     group: row.group_name ?? undefined,
     enabled: row.enabled,
     paused_at: row.paused_at ? new Date(row.paused_at) : undefined,
@@ -521,10 +523,10 @@ function parseCheckResultRow(row: CheckResultRow): CheckResult {
     response_time: row.response_time_ms,
     status_code: row.status_code ?? 0,
     error: row.error ?? undefined,
-    assertion_results: typeof row.assertion_results === 'string' ? JSON.parse(row.assertion_results) : row.assertion_results,
+    assertion_results: safeJsonParseOrPassthrough(row.assertion_results, []) as any,
     assertions_passed: row.assertions_passed,
     assertions_failed: row.assertions_failed,
-    ssl_info: typeof row.ssl_info === 'string' ? JSON.parse(row.ssl_info) : row.ssl_info,
+    ssl_info: safeJsonParseOrPassthrough(row.ssl_info, undefined) as any,
     checked_at: new Date(row.checked_at),
   };
 }
@@ -612,7 +614,7 @@ function parseTransactionCheckRow(row: TransactionCheckRow): TransactionCheck {
     organization_id: row.organization_id,
     name: row.name,
     description: row.description ?? undefined,
-    steps: typeof row.steps === 'string' ? JSON.parse(row.steps) : row.steps,
+    steps: safeJsonParseOrPassthrough(row.steps, []) as any,
     interval: row.interval_seconds,
     enabled: row.enabled,
     created_by: row.created_by,
@@ -659,7 +661,7 @@ function parseTransactionResultRow(row: TransactionResultRow): TransactionResult
     transaction_id: row.transaction_id,
     status: row.status as TransactionResult['status'],
     total_time: row.total_time_ms,
-    step_results: typeof row.step_results === 'string' ? JSON.parse(row.step_results) : row.step_results,
+    step_results: safeJsonParseOrPassthrough(row.step_results, []) as any,
     checked_at: new Date(row.checked_at),
   };
 }
@@ -783,7 +785,7 @@ function parsePerformanceResultRow(row: PerformanceResultRow): PerformanceResult
     id: row.id,
     check_id: row.check_id,
     status: row.status as PerformanceResult['status'],
-    metrics: typeof row.metrics === 'string' ? JSON.parse(row.metrics) : row.metrics,
+    metrics: safeJsonParseOrPassthrough(row.metrics, {}) as any,
     lighthouse_score: row.lighthouse_score ?? 0,
     checked_at: new Date(row.checked_at),
   };
@@ -886,7 +888,7 @@ function parseWebhookCheckRow(row: WebhookCheckRow): WebhookCheck {
     webhook_url: row.webhook_url,
     webhook_secret: row.webhook_secret ?? undefined,
     expected_interval: row.expected_interval_seconds ?? 0,
-    expected_payload: typeof row.expected_payload === 'string' ? JSON.parse(row.expected_payload) : row.expected_payload,
+    expected_payload: safeJsonParseOrPassthrough(row.expected_payload, undefined) as any,
     enabled: row.enabled,
     created_by: row.created_by,
     created_at: new Date(row.created_at),
@@ -939,10 +941,10 @@ function parseWebhookEventRow(row: WebhookEventRow): WebhookEvent {
     check_id: row.check_id,
     received_at: new Date(row.received_at),
     source_ip: row.source_ip,
-    headers: typeof row.headers === 'string' ? JSON.parse(row.headers) : row.headers,
-    payload: typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload,
+    headers: safeJsonParseOrPassthrough(row.headers, {} as Record<string, string>),
+    payload: safeJsonParseOrPassthrough(row.payload, {} as Record<string, unknown>),
     payload_valid: row.payload_valid,
-    validation_errors: typeof row.validation_errors === 'string' ? JSON.parse(row.validation_errors) : row.validation_errors,
+    validation_errors: safeJsonParseOrPassthrough(row.validation_errors, [] as string[]),
     signature_valid: row.signature_valid ?? undefined,
   };
 }
@@ -1027,8 +1029,8 @@ function parseDnsCheckRow(row: DnsCheckRow): DnsCheck {
     name: row.name,
     domain: row.domain,
     record_type: row.record_type as DnsCheck['record_type'],
-    expected_values: typeof row.expected_values === 'string' ? JSON.parse(row.expected_values) : row.expected_values,
-    nameservers: typeof row.nameservers === 'string' ? JSON.parse(row.nameservers) : row.nameservers,
+    expected_values: safeJsonParseOrPassthrough(row.expected_values, [] as string[]),
+    nameservers: safeJsonParseOrPassthrough(row.nameservers, [] as string[]),
     interval: row.interval_seconds,
     timeout: row.timeout_ms,
     enabled: row.enabled,
@@ -1079,14 +1081,14 @@ function parseDnsResultRow(row: DnsResultRow): DnsCheckResult {
     id: row.id,
     check_id: row.check_id,
     status: row.status as DnsCheckResult['status'],
-    resolved_values: typeof row.resolved_values === 'string' ? JSON.parse(row.resolved_values) : row.resolved_values,
-    expected_values: typeof row.expected_values === 'string' ? JSON.parse(row.expected_values) : row.expected_values,
+    resolved_values: safeJsonParseOrPassthrough(row.resolved_values, [] as string[]),
+    expected_values: safeJsonParseOrPassthrough(row.expected_values, [] as string[]),
     response_time: row.response_time_ms,
     nameserver_used: row.nameserver_used ?? '',
     error: row.error ?? undefined,
     ttl: row.ttl ?? undefined,
     all_expected_found: row.all_expected_found,
-    unexpected_values: typeof row.unexpected_values === 'string' ? JSON.parse(row.unexpected_values) : row.unexpected_values,
+    unexpected_values: safeJsonParseOrPassthrough(row.unexpected_values, [] as string[]),
     checked_at: new Date(row.checked_at),
   };
 }

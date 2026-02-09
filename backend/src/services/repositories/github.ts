@@ -24,6 +24,8 @@ import {
 } from '../../routes/github/types.js';
 // Feature #449: Use structured logger instead of console.*
 import { createLogger } from '../logger.js';
+// Feature #510: Safe JSON parsing for DB row columns
+import { safeJsonParseOrPassthrough } from '../../utils/index.js';
 
 const log = createLogger('repo:github');
 
@@ -244,9 +246,7 @@ function parseGithubConnectionRow(row: GitHubConnectionRow): GitHubConnection {
     pr_checks_enabled: row.pr_checks_enabled,
     pr_comments_enabled: row.pr_comments_enabled,
     pr_dependency_scan_enabled: row.pr_dependency_scan_enabled,
-    pr_dependency_scan_files: typeof row.pr_dependency_scan_files === 'string'
-      ? JSON.parse(row.pr_dependency_scan_files)
-      : row.pr_dependency_scan_files,
+    pr_dependency_scan_files: safeJsonParseOrPassthrough(row.pr_dependency_scan_files, [] as string[]),
     pr_dependency_scan_severity: row.pr_dependency_scan_severity as GitHubConnection['pr_dependency_scan_severity'],
     pr_dependency_scan_block_on_critical: row.pr_dependency_scan_block_on_critical,
   };
@@ -504,9 +504,9 @@ function parsePRDependencyScanRow(row: PRDependencyScanRow): PRDependencyScanRes
     status: row.status as PRDependencyScanResult['status'],
     started_at: new Date(row.started_at),
     completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
-    changed_files: typeof row.changed_files === 'string' ? JSON.parse(row.changed_files) : row.changed_files,
-    vulnerabilities: typeof row.vulnerabilities === 'string' ? JSON.parse(row.vulnerabilities) : row.vulnerabilities,
-    summary: typeof row.summary === 'string' ? JSON.parse(row.summary) : row.summary,
+    changed_files: safeJsonParseOrPassthrough(row.changed_files, []) as any,
+    vulnerabilities: safeJsonParseOrPassthrough(row.vulnerabilities, []) as any,
+    summary: safeJsonParseOrPassthrough(row.summary, {}) as any,
   };
 }
 

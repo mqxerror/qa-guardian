@@ -44,6 +44,8 @@ import {
   TcpCheck,
   TcpCheckResult,
 } from '../../routes/monitoring/types.js';
+// Feature #510: Safe JSON parsing for DB row columns
+import { safeJsonParseOrPassthrough } from '../../utils/index.js';
 
 // ============================================
 // Column Constants for SELECT queries
@@ -213,7 +215,7 @@ function parseStatusPageRow(row: StatusPageRow): StatusPage {
     favicon_url: row.favicon_url ?? undefined,
     primary_color: row.primary_color ?? undefined,
     show_history_days: row.show_history_days,
-    checks: typeof row.checks === 'string' ? JSON.parse(row.checks) : row.checks,
+    checks: safeJsonParseOrPassthrough(row.checks, []) as any,
     custom_domain: row.custom_domain ?? undefined,
     is_public: row.is_public,
     show_uptime_percentage: row.show_uptime_percentage,
@@ -306,7 +308,7 @@ export async function getDeletedCheckHistory(checkId: string): Promise<DeletedCh
         organization_id: row.organization_id,
         deleted_by: row.deleted_by,
         deleted_at: new Date(row.deleted_at),
-        check_config: typeof row.check_config === 'string' ? JSON.parse(row.check_config) : row.check_config,
+        check_config: safeJsonParseOrPassthrough(row.check_config, {} as Record<string, unknown>),
         historical_results_count: row.historical_results_count,
         last_status: row.last_status as DeletedCheckHistory['last_status'],
       };
@@ -331,7 +333,7 @@ export async function listDeletedCheckHistory(organizationId: string, limit: num
         organization_id: row.organization_id,
         deleted_by: row.deleted_by,
         deleted_at: new Date(row.deleted_at),
-        check_config: typeof row.check_config === 'string' ? JSON.parse(row.check_config) : row.check_config,
+        check_config: safeJsonParseOrPassthrough(row.check_config, {} as Record<string, unknown>),
         historical_results_count: row.historical_results_count,
         last_status: row.last_status as DeletedCheckHistory['last_status'],
       }));

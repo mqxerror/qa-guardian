@@ -14,6 +14,8 @@ import {
   Incident,
   MaintenanceWindow,
 } from '../../routes/monitoring/types.js';
+// Feature #510: Safe JSON parsing for DB row columns
+import { safeJsonParseOrPassthrough } from '../../utils/index.js';
 
 // =============================
 // Feature #210: Explicit Column Lists (Replace SELECT *)
@@ -159,7 +161,7 @@ function parseIncidentRow(row: IncidentRow): Incident {
     ended_at: row.ended_at ? new Date(row.ended_at) : undefined,
     duration_seconds: row.duration_seconds ?? undefined,
     error: row.error ?? undefined,
-    affected_locations: typeof row.affected_locations === 'string' ? JSON.parse(row.affected_locations) : row.affected_locations,
+    affected_locations: safeJsonParseOrPassthrough(row.affected_locations, [] as string[]),
   };
 }
 

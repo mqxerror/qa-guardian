@@ -16,6 +16,8 @@ import * as crypto from 'crypto';
 import { Client as MinioClient } from 'minio';
 // Feature #449: Use structured logger instead of console.*
 import { createLogger } from './logger.js';
+// Feature #510: Safe JSON parsing
+import { safeJsonParse } from '../utils/index.js';
 
 const log = createLogger('sbom-generator');
 
@@ -311,11 +313,20 @@ async function generateCycloneDxFromPackageJson(projectPath: string, includeDevD
     throw new Error('package.json not found');
   }
 
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-  let lockFile: any = null;
+  // Feature #510: Safe JSON parsing with descriptive error
+  const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf-8');
+  const packageJson = safeJsonParse<Record<string, any>>(packageJsonContent, {});
+  if (Object.keys(packageJson).length === 0 && packageJsonContent.trim().length > 2) {
+    throw new Error('package.json contains invalid JSON');
+  }
+
+  let lockFile: Record<string, any> | null = null;
 
   if (fs.existsSync(packageLockPath)) {
-    lockFile = JSON.parse(fs.readFileSync(packageLockPath, 'utf-8'));
+    // Feature #510: Safe JSON parsing for lock file (null fallback if invalid)
+    const lockContent = fs.readFileSync(packageLockPath, 'utf-8');
+    const parsed = safeJsonParse<Record<string, any>>(lockContent, {});
+    lockFile = Object.keys(parsed).length > 0 ? parsed : null;
   }
 
   const sbomId = `urn:uuid:${crypto.randomUUID()}`;

@@ -14,6 +14,8 @@ import { query, isDatabaseConnected } from '../database.js';
 import { TestSuite, Test } from '../../routes/test-suites/types.js';
 // Feature #439: Use structured logger instead of console.*
 import { logger } from '../logger.js';
+// Feature #510: Safe JSON parsing for DB row columns
+import { safeJsonParseOrPassthrough } from '../../utils/index.js';
 
 // In-memory fallback stores for when PostgreSQL is not available
 const memTestSuites = new Map<string, TestSuite>();
@@ -340,9 +342,7 @@ export async function getTest(id: string): Promise<Test | undefined> {
   if (result && result.rows[0]) {
     const row = result.rows[0];
     // Extract organization_id from suite config
-    const suiteConfig = typeof row.suite_config === 'string'
-      ? JSON.parse(row.suite_config)
-      : row.suite_config;
+    const suiteConfig = safeJsonParseOrPassthrough(row.suite_config, {} as Record<string, unknown>);
     const orgId = (suiteConfig?.organization_id as string) || '';
     const test = rowToTest(row, orgId);
     // Add the enriched fields (suite_name, project_id, project_name)
@@ -489,9 +489,7 @@ export async function listAllTests(organizationId: string, limit: number = 1000)
   );
   if (result) {
     return result.rows.map(row => {
-      const suiteConfig = typeof row.suite_config === 'string'
-        ? JSON.parse(row.suite_config)
-        : row.suite_config;
+      const suiteConfig = safeJsonParseOrPassthrough(row.suite_config, {} as Record<string, unknown>);
       const orgId = (suiteConfig?.organization_id as string) || organizationId;
       return rowToTest(row, orgId);
     });
@@ -538,9 +536,7 @@ export async function batchGetTests(ids: string[]): Promise<Map<string, Test>> {
 
   if (queryResult) {
     for (const row of queryResult.rows) {
-      const suiteConfig = typeof row.suite_config === 'string'
-        ? JSON.parse(row.suite_config)
-        : row.suite_config;
+      const suiteConfig = safeJsonParseOrPassthrough(row.suite_config, {} as Record<string, unknown>);
       const orgId = (suiteConfig?.organization_id as string) || '';
       const test = rowToTest(row, orgId);
       test.suite_name = row.suite_name;
@@ -594,7 +590,8 @@ export async function batchGetTestSuites(ids: string[]): Promise<Map<string, Tes
  * Convert a database row to a TestSuite object
  */
 function rowToTestSuite(row: TestSuiteRow): TestSuite {
-  const config = typeof row.config === 'string' ? JSON.parse(row.config) : (row.config || {});
+  // Feature #510: Safe JSON parsing with explicit any cast to preserve original behavior
+  const config = safeJsonParseOrPassthrough<Record<string, any>>(row.config as string | Record<string, any>, {});
   return {
     id: row.id,
     project_id: row.project_id,
@@ -619,7 +616,8 @@ function rowToTestSuite(row: TestSuiteRow): TestSuite {
  * Convert a database row to a Test object
  */
 function rowToTest(row: TestRow, organizationId: string): Test {
-  const config = typeof row.config === 'string' ? JSON.parse(row.config) : (row.config || {});
+  // Feature #510: Safe JSON parsing with explicit any cast to preserve original behavior
+  const config = safeJsonParseOrPassthrough<Record<string, any>>(row.config as string | Record<string, any>, {});
   return {
     id: row.id,
     suite_id: row.suite_id,
@@ -818,9 +816,7 @@ export async function getTestsMap(): Promise<Map<string, Test>> {
   );
   if (result) {
     for (const row of result.rows) {
-      const suiteConfig = typeof row.suite_config === 'string'
-        ? JSON.parse(row.suite_config)
-        : row.suite_config;
+      const suiteConfig = safeJsonParseOrPassthrough(row.suite_config, {} as Record<string, unknown>);
       const orgId = (suiteConfig?.organization_id as string) || '';
       const test = rowToTest(row, orgId);
       map.set(row.id, test);

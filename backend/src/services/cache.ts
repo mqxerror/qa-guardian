@@ -9,6 +9,8 @@
 import { Redis } from 'ioredis';
 import { CacheTTL } from './cache-keys.js';
 import { createLogger } from './logger.js';
+// Feature #510: Safe JSON parsing
+import { safeJsonParse } from '../utils/index.js';
 
 // Feature #439: Structured logging for cache service
 const logger = createLogger('cache');
@@ -133,7 +135,9 @@ export class CacheService {
     if (this.enableFallback) {
       const entry = this.memoryCache.get(fullKey);
       if (entry && entry.expiresAt > Date.now()) {
-        return JSON.parse(entry.value) as T;
+        // Feature #510: Use safe JSON parsing for memory cache fallback
+        const parsed = safeJsonParse<T | null>(entry.value, null);
+        if (parsed !== null) return parsed;
       }
       // Remove expired entry
       if (entry) {
