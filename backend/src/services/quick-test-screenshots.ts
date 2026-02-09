@@ -33,18 +33,78 @@ if (!fs.existsSync(QUICK_TEST_SCREENSHOTS_DIR)) {
 // Screenshot types
 export type ScreenshotType = 'desktop' | 'mobile';
 
+// Feature #479: Strict UUID validation regex for path traversal protection
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Feature #479: Validate runId to prevent path traversal attacks
+ * @param runId - The run ID to validate
+ * @throws Error if runId is invalid
+ */
+function validateRunId(runId: string): void {
+  // Check for null/undefined/empty
+  if (!runId || typeof runId !== 'string') {
+    throw new Error('Invalid runId: must be a non-empty string');
+  }
+
+  // Check for path traversal sequences
+  if (runId.includes('..') || runId.includes('/') || runId.includes('\\')) {
+    log.warn({ runId: runId.substring(0, 50) }, 'Path traversal attempt detected in runId');
+    throw new Error('Invalid runId: contains forbidden characters');
+  }
+
+  // Validate UUID format
+  if (!UUID_REGEX.test(runId)) {
+    log.warn({ runId: runId.substring(0, 50) }, 'Invalid UUID format in runId');
+    throw new Error('Invalid runId: must be a valid UUID');
+  }
+}
+
+/**
+ * Feature #479: Validate that the resolved path is within the base directory
+ * @param resolvedPath - The resolved file path
+ * @param baseDir - The allowed base directory
+ * @throws Error if path is outside the base directory
+ */
+function validatePathWithinBase(resolvedPath: string, baseDir: string): void {
+  const normalizedPath = path.resolve(resolvedPath);
+  const normalizedBase = path.resolve(baseDir);
+
+  if (!normalizedPath.startsWith(normalizedBase + path.sep) && normalizedPath !== normalizedBase) {
+    log.warn({ path: normalizedPath, base: normalizedBase }, 'Path traversal attempt detected');
+    throw new Error('Invalid path: outside allowed directory');
+  }
+}
+
 /**
  * Get the directory path for a specific run's screenshots
+ * Feature #479: Added path traversal protection
  */
 export function getRunScreenshotDir(runId: string): string {
-  return path.join(QUICK_TEST_SCREENSHOTS_DIR, runId);
+  // Validate runId to prevent path traversal
+  validateRunId(runId);
+
+  const runDir = path.join(QUICK_TEST_SCREENSHOTS_DIR, runId);
+
+  // Verify the path is within the base directory
+  validatePathWithinBase(runDir, QUICK_TEST_SCREENSHOTS_DIR);
+
+  return runDir;
 }
 
 /**
  * Get the file path for a specific screenshot
+ * Feature #479: Added path traversal protection
  */
 export function getScreenshotPath(runId: string, type: ScreenshotType): string {
-  return path.join(getRunScreenshotDir(runId), `${type}.png`);
+  // getRunScreenshotDir already validates runId
+  const runDir = getRunScreenshotDir(runId);
+  const filePath = path.join(runDir, `${type}.png`);
+
+  // Double-check the final path is still within base directory
+  validatePathWithinBase(filePath, QUICK_TEST_SCREENSHOTS_DIR);
+
+  return filePath;
 }
 
 /**
