@@ -33,6 +33,9 @@ export {
 export { WaveCard } from './WaveCard';
 export type { WaveCardProps } from './WaveCard';
 
+// Feature #537: Detailed Report component
+export { DetailedReport } from './DetailedReport';
+
 // ScreenshotModal component - Feature #514: Extracted from QuickTestPage
 export { ScreenshotModal } from './ScreenshotModal';
 export type { ScreenshotModalProps } from './ScreenshotModal';

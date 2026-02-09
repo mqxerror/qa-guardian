@@ -63,6 +63,8 @@ import {
   // Feature #514: Extracted components
   WaveCard,
   ScreenshotModal,
+  // Feature #537: Detailed report
+  DetailedReport,
 } from '../components/quick-test';
 
 // ============================================================
@@ -663,6 +665,9 @@ export function QuickTestPage() {
             <CardContent className="p-6 space-y-6">
               <h2 className="text-xl font-semibold text-foreground">Results</h2>
               <ScoreDisplay summary={result.summary} />
+
+              {/* Feature #537: Detailed Report Section */}
+              <DetailedReport waves={waves} />
 
               {/* Action Buttons */}
               <div className="flex gap-3 justify-end">
