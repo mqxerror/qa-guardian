@@ -24,7 +24,7 @@ import { createTestSuite, createTest } from '../../services/repositories/test-su
 import type { TestSuite, Test } from '../test-suites/types.js';
 // Feature #466: Screenshot serving
 // Feature #478: Add signed URL validation for screenshot auth
-import { readScreenshot, screenshotExists, validateSignedScreenshotToken, type ScreenshotType } from '../../services/quick-test-screenshots.js';
+import { readScreenshot, screenshotExists, validateSignedScreenshotToken, generateSignedScreenshotUrl, type ScreenshotType } from '../../services/quick-test-screenshots.js';
 // Feature #481: Structured Pino logging
 import { createLogger } from '../../services/logger.js';
 
@@ -49,6 +49,28 @@ interface QuickTestParams {
 // Feature #473: Route params for compare results
 interface QuickTestCompareParams {
   compareId: string;
+}
+
+// Feature #535: In-memory mapping of compareId -> { runIdA, runIdB }
+const compareRunMap = new Map<string, { runIdA: string; runIdB: string }>();
+
+/**
+ * Feature #535: Refresh signed screenshot URLs in a quick test result
+ * Signed tokens expire after 1 hour, so regenerate on every serve
+ */
+function refreshScreenshotUrls(result: { runId: string; orgId?: string; waves?: Array<{ data?: unknown }> }): void {
+  if (!result.waves || !result.orgId) return;
+  for (const wave of result.waves) {
+    if (wave.data && typeof wave.data === 'object') {
+      const data = wave.data as Record<string, unknown>;
+      if (data.desktopScreenshotUrl && typeof data.desktopScreenshotUrl === 'string') {
+        data.desktopScreenshotUrl = generateSignedScreenshotUrl(result.runId, 'desktop', result.orgId);
+      }
+      if (data.mobileScreenshotUrl && typeof data.mobileScreenshotUrl === 'string') {
+        data.mobileScreenshotUrl = generateSignedScreenshotUrl(result.runId, 'mobile', result.orgId);
+      }
+    }
+  }
 }
 
 // Feature #474: Quick Test schedule request body
@@ -285,9 +307,15 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       }
 
       // Generate compare ID and individual run IDs
+      // Feature #535: Use proper UUIDs for run IDs (DB column is UUID type)
       const compareId = uuidv4();
-      const runIdA = `${compareId}-a`;
-      const runIdB = `${compareId}-b`;
+      const runIdA = uuidv4();
+      const runIdB = uuidv4();
+
+      // Feature #535: Store compare mapping for later retrieval
+      compareRunMap.set(compareId, { runIdA, runIdB });
+      // Clean up mapping after 24 hours
+      setTimeout(() => compareRunMap.delete(compareId), 24 * 60 * 60 * 1000);
 
       // Start both quick tests in parallel
       Promise.all([
@@ -390,9 +418,18 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       const { compareId } = request.params;
       const orgId = getOrganizationId(request);
 
-      // Get both results
-      const resultA = await getQuickTestResultAsync(`${compareId}-a`);
-      const resultB = await getQuickTestResultAsync(`${compareId}-b`);
+      // Feature #535: Look up the actual run UUIDs from the compare mapping
+      const mapping = compareRunMap.get(compareId);
+      if (!mapping) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Comparison not found or has expired',
+        });
+      }
+
+      // Get both results using proper UUIDs
+      const resultA = await getQuickTestResultAsync(mapping.runIdA);
+      const resultB = await getQuickTestResultAsync(mapping.runIdB);
 
       if (!resultA && !resultB) {
         return reply.status(404).send({
@@ -423,6 +460,10 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
           overallDelta: (resultA.summary.overallScore ?? 0) - (resultB.summary.overallScore ?? 0),
         };
       }
+
+      // Feature #535: Refresh screenshot URLs for both results
+      if (resultA) refreshScreenshotUrls(resultA);
+      if (resultB) refreshScreenshotUrls(resultB);
 
       return {
         compareId,
@@ -749,6 +790,9 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
           message: 'Quick test run not found',
         });
       }
+
+      // Feature #535: Regenerate fresh signed URLs for screenshots
+      refreshScreenshotUrls(result);
 
       return result;
     }
