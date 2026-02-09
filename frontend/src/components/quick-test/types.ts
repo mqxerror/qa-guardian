@@ -246,6 +246,21 @@ export interface SeoAnalysisData {
     }>;
     issues: string[];
   };
+  // Feature #530: Tracking Scripts Detection
+  tracking?: {
+    scripts: Array<{
+      name: string;
+      type: 'gtm' | 'ga4' | 'fb_pixel' | 'hotjar' | 'linkedin' | 'other';
+      id?: string;
+      source: 'script_src' | 'window_global' | 'inline';
+    }>;
+    hasGTM: boolean;
+    hasGA4: boolean;
+    hasFBPixel: boolean;
+    hasHotjar: boolean;
+    hasLinkedIn: boolean;
+    summary: string;
+  };
   issues: string[];
   recommendations: string[];
 }

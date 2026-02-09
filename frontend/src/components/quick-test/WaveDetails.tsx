@@ -27,6 +27,7 @@ import {
   Code2,
   Navigation,
   Menu,
+  Activity,
 } from 'lucide-react';
 import { SourceBadge, PriorityBadge, SeverityBadge, ImpactBadge } from './badges';
 import type { AIAnalysisData, AccessibilityData, APIDiscoveryData, SeoAnalysisData } from './types';
@@ -723,6 +724,45 @@ export function SeoAnalysisDetails({ data }: { data: SeoAnalysisData }) {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Feature #530: Tracking Scripts */}
+      {data.tracking && (
+        <div>
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+            <Activity className="w-3.5 h-3.5" />
+            Tracking & Analytics
+          </div>
+          {data.tracking.scripts.length === 0 ? (
+            <div className="p-2 rounded bg-background/50 text-sm text-muted-foreground">
+              No tracking scripts detected
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {data.tracking.scripts.map((script, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2 rounded bg-background/50"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-foreground">{script.name}</span>
+                    {script.id && (
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {script.id}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground capitalize">
+                    {script.source.replace('_', ' ')}
+                  </span>
+                </div>
+              ))}
+              <div className="mt-2 text-xs text-muted-foreground">
+                {data.tracking.summary}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

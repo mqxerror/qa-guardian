@@ -330,6 +330,21 @@ interface SeoAnalysisResult {
     }>;
     issues: string[];
   };
+  // Feature #530: Tracking Scripts Detection
+  tracking: {
+    scripts: Array<{
+      name: string;
+      type: 'gtm' | 'ga4' | 'fb_pixel' | 'hotjar' | 'linkedin' | 'other';
+      id?: string;
+      source: 'script_src' | 'window_global' | 'inline';
+    }>;
+    hasGTM: boolean;
+    hasGA4: boolean;
+    hasFBPixel: boolean;
+    hasHotjar: boolean;
+    hasLinkedIn: boolean;
+    summary: string;
+  };
   issues: string[];
   recommendations: string[];
 }
@@ -1534,6 +1549,16 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       navElements: [],
       issues: [],
     },
+    // Feature #530: Tracking Scripts Detection
+    tracking: {
+      scripts: [],
+      hasGTM: false,
+      hasGA4: false,
+      hasFBPixel: false,
+      hasHotjar: false,
+      hasLinkedIn: false,
+      summary: 'No tracking scripts detected',
+    },
     issues: [],
     recommendations: [],
   };
@@ -1559,12 +1584,8 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       const titleEl = document.querySelector('title');
       const title = titleEl?.textContent?.trim() || null;
 
-      // Inline meta tag getter (no named function to avoid tsx __name issue)
-      const _meta = (sel: string) => document.querySelector(sel)?.getAttribute('content')?.trim() || null;
-
       // Get canonical
-      const canonicalEl = document.querySelector('link[rel="canonical"]');
-      const canonical = canonicalEl?.getAttribute('href') || null;
+      const canonical = document.querySelector('link[rel="canonical"]')?.getAttribute('href') || null;
 
       // Sort headings by their position in DOM
       const allHeadingEls = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
@@ -1611,28 +1632,24 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       }
 
       // Feature #529: Navigation Visibility Check
-      // Inline visibility check (avoid named function for tsx compat)
-      const _vis = (el: Element) => {
-        const s = window.getComputedStyle(el);
-        return s.display !== 'none' && s.visibility !== 'hidden' && (el as HTMLElement).offsetParent !== null;
-      };
-
-      // Check for nav elements
+      // All visibility checks inlined to avoid tsx __name issue in page.evaluate
       const navElements: Array<{ type: string; visible: boolean; ariaLabel?: string }> = [];
 
       document.querySelectorAll('nav').forEach(nav => {
+        const cs = window.getComputedStyle(nav);
         navElements.push({
           type: 'nav',
-          visible: _vis(nav),
+          visible: cs.display !== 'none' && cs.visibility !== 'hidden' && (nav as HTMLElement).offsetParent !== null,
           ariaLabel: nav.getAttribute('aria-label') || undefined,
         });
       });
 
       document.querySelectorAll('[role="navigation"]').forEach(el => {
         if (el.tagName.toLowerCase() !== 'nav') {
+          const cs = window.getComputedStyle(el);
           navElements.push({
             type: 'role-navigation',
-            visible: _vis(el),
+            visible: cs.display !== 'none' && cs.visibility !== 'hidden' && (el as HTMLElement).offsetParent !== null,
             ariaLabel: el.getAttribute('aria-label') || undefined,
           });
         }
@@ -1643,17 +1660,19 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       const hasFooter = document.querySelector('footer') !== null;
 
       if (hasHeader) {
-        const header = document.querySelector('header');
+        const header = document.querySelector('header')!;
+        const cs = window.getComputedStyle(header);
         navElements.push({
           type: 'header',
-          visible: header ? _vis(header) : false,
+          visible: cs.display !== 'none' && cs.visibility !== 'hidden' && (header as HTMLElement).offsetParent !== null,
         });
       }
       if (hasFooter) {
-        const footer = document.querySelector('footer');
+        const footer = document.querySelector('footer')!;
+        const cs = window.getComputedStyle(footer);
         navElements.push({
           type: 'footer',
-          visible: footer ? _vis(footer) : false,
+          visible: cs.display !== 'none' && cs.visibility !== 'hidden' && (footer as HTMLElement).offsetParent !== null,
         });
       }
 
@@ -1673,19 +1692,96 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       ];
       const hasMobileMenuToggle = mobileMenuSelectors.some(sel => document.querySelector(sel) !== null);
 
+      // Feature #530: Tracking Scripts Detection
+      const trackingScripts: Array<{ name: string; type: string; id?: string; source: string }> = [];
+
+      // Check script src attributes for tracking scripts
+      document.querySelectorAll('script[src]').forEach(script => {
+        const src = script.getAttribute('src') || '';
+
+        // Google Tag Manager
+        const gtmMatch = src.match(/gtm\.js\?id=(GTM-[A-Z0-9]+)/);
+        if (gtmMatch) {
+          trackingScripts.push({ name: 'Google Tag Manager', type: 'gtm', id: gtmMatch[1], source: 'script_src' });
+        }
+
+        // Google Analytics GA4
+        const ga4Match = src.match(/gtag\/js\?id=(G-[A-Z0-9]+)/);
+        if (ga4Match) {
+          trackingScripts.push({ name: 'Google Analytics 4', type: 'ga4', id: ga4Match[1], source: 'script_src' });
+        }
+
+        // Facebook Pixel
+        if (src.includes('connect.facebook.net') && src.includes('fbevents.js')) {
+          trackingScripts.push({ name: 'Facebook Pixel', type: 'fb_pixel', source: 'script_src' });
+        }
+
+        // Hotjar
+        const hotjarMatch = src.match(/static\.hotjar\.com\/c\/hotjar-(\d+)\.js/);
+        if (hotjarMatch) {
+          trackingScripts.push({ name: 'Hotjar', type: 'hotjar', id: hotjarMatch[1], source: 'script_src' });
+        }
+
+        // LinkedIn Insight Tag
+        if (src.includes('snap.licdn.com') || src.includes('linkedin.com/insight')) {
+          trackingScripts.push({ name: 'LinkedIn Insight Tag', type: 'linkedin', source: 'script_src' });
+        }
+      });
+
+      // Check window globals for tracking scripts (cast window to any for tracking globals)
+      const win = window as unknown as Record<string, unknown>;
+
+      // GTM dataLayer check
+      if (Array.isArray(win.dataLayer)) {
+        const hasGtmEntry = (win.dataLayer as Array<Record<string, unknown>>).some(
+          (entry: Record<string, unknown>) => entry['gtm.start'] !== undefined
+        );
+        if (hasGtmEntry && !trackingScripts.some(s => s.type === 'gtm')) {
+          trackingScripts.push({ name: 'Google Tag Manager', type: 'gtm', source: 'window_global' });
+        }
+      }
+
+      // GA4 gtag check
+      if (typeof win.gtag === 'function') {
+        if (!trackingScripts.some(s => s.type === 'ga4')) {
+          trackingScripts.push({ name: 'Google Analytics 4', type: 'ga4', source: 'window_global' });
+        }
+      }
+
+      // Facebook Pixel fbq check
+      if (typeof win.fbq === 'function') {
+        if (!trackingScripts.some(s => s.type === 'fb_pixel')) {
+          trackingScripts.push({ name: 'Facebook Pixel', type: 'fb_pixel', source: 'window_global' });
+        }
+      }
+
+      // Hotjar hj check
+      if (typeof win.hj === 'function') {
+        if (!trackingScripts.some(s => s.type === 'hotjar')) {
+          trackingScripts.push({ name: 'Hotjar', type: 'hotjar', source: 'window_global' });
+        }
+      }
+
+      // LinkedIn _linkedin_partner_id check
+      if (win._linkedin_partner_id) {
+        if (!trackingScripts.some(s => s.type === 'linkedin')) {
+          trackingScripts.push({ name: 'LinkedIn Insight Tag', type: 'linkedin', id: String(win._linkedin_partner_id), source: 'window_global' });
+        }
+      }
+
       return {
         title,
-        description: _meta('meta[name="description"]'),
+        description: document.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() || null,
         canonical,
-        ogTitle: _meta('meta[property="og:title"]'),
-        ogDescription: _meta('meta[property="og:description"]'),
-        ogImage: _meta('meta[property="og:image"]'),
-        twitterCard: _meta('meta[name="twitter:card"]'),
-        twitterTitle: _meta('meta[name="twitter:title"]'),
-        twitterDescription: _meta('meta[name="twitter:description"]'),
-        viewport: _meta('meta[name="viewport"]'),
-        robots: _meta('meta[name="robots"]'),
-        h1Count: h1Elements.length,
+        ogTitle: document.querySelector('meta[property="og:title"]')?.getAttribute('content')?.trim() || null,
+        ogDescription: document.querySelector('meta[property="og:description"]')?.getAttribute('content')?.trim() || null,
+        ogImage: document.querySelector('meta[property="og:image"]')?.getAttribute('content')?.trim() || null,
+        twitterCard: document.querySelector('meta[name="twitter:card"]')?.getAttribute('content')?.trim() || null,
+        twitterTitle: document.querySelector('meta[name="twitter:title"]')?.getAttribute('content')?.trim() || null,
+        twitterDescription: document.querySelector('meta[name="twitter:description"]')?.getAttribute('content')?.trim() || null,
+        viewport: document.querySelector('meta[name="viewport"]')?.getAttribute('content')?.trim() || null,
+        robots: document.querySelector('meta[name="robots"]')?.getAttribute('content')?.trim() || null,
+        h1Count: document.querySelectorAll('h1').length,
         h1Texts,
         headingHierarchy: orderedHeadings,
         // Feature #528: Schema data
@@ -1697,6 +1793,8 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
         hasFooter,
         hasBreadcrumbs,
         hasMobileMenuToggle,
+        // Feature #530: Tracking scripts data
+        trackingScripts,
       };
     });
 
@@ -1928,6 +2026,27 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       result.navigation.issues.push(`${hiddenNavs.length} navigation element(s) are hidden from view`);
     }
 
+    // Feature #530: Process Tracking Scripts data
+    result.tracking.scripts = seoData.trackingScripts.map(s => ({
+      name: s.name,
+      type: s.type as 'gtm' | 'ga4' | 'fb_pixel' | 'hotjar' | 'linkedin' | 'other',
+      id: s.id,
+      source: s.source as 'script_src' | 'window_global' | 'inline',
+    }));
+    result.tracking.hasGTM = seoData.trackingScripts.some(s => s.type === 'gtm');
+    result.tracking.hasGA4 = seoData.trackingScripts.some(s => s.type === 'ga4');
+    result.tracking.hasFBPixel = seoData.trackingScripts.some(s => s.type === 'fb_pixel');
+    result.tracking.hasHotjar = seoData.trackingScripts.some(s => s.type === 'hotjar');
+    result.tracking.hasLinkedIn = seoData.trackingScripts.some(s => s.type === 'linkedin');
+
+    // Generate tracking summary
+    if (seoData.trackingScripts.length === 0) {
+      result.tracking.summary = 'No tracking scripts detected';
+    } else {
+      const trackerNames = [...new Set(seoData.trackingScripts.map(s => s.name))];
+      result.tracking.summary = `${trackerNames.length} tracker${trackerNames.length !== 1 ? 's' : ''}: ${trackerNames.join(', ')}`;
+    }
+
     // Step 2: Check robots.txt
     try {
       const robotsUrl = `${baseUrl}/robots.txt`;
@@ -2038,6 +2157,7 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       sitemap: result.crawlability.sitemap.present,
       schemaTypes: result.schemaMarkup.detectedTypes.length,
       hasNav: result.navigation.hasNavElement,
+      trackingScriptsCount: result.tracking.scripts.length,
     }, 'SEO Analysis complete');
 
   } catch (err) {
