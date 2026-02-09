@@ -10,10 +10,8 @@ interface SuiteHeaderActionsProps {
   suiteId: string;
   testsCount: number;
   isRunningSuite: boolean;
-  isAnalyzingParallel: boolean;
   canCreateTest: boolean;
   canDeleteSuite: boolean;
-  onRunWithParallelization: () => void;
   onRunSuite: () => void;
   onExportTests: () => void;
   onShowImportModal: () => void;
@@ -26,10 +24,8 @@ export function SuiteHeaderActions({
   suiteId,
   testsCount,
   isRunningSuite,
-  isAnalyzingParallel,
   canCreateTest,
   canDeleteSuite,
-  onRunWithParallelization,
   onRunSuite,
   onExportTests,
   onShowImportModal,
@@ -39,15 +35,6 @@ export function SuiteHeaderActions({
 }: SuiteHeaderActionsProps) {
   return (
     <div className="flex gap-2">
-      {testsCount > 0 && (
-        <button
-          onClick={onRunWithParallelization}
-          disabled={isRunningSuite || isAnalyzingParallel}
-          className="rounded-md bg-gradient-to-r from-accent to-primary px-4 py-2 text-sm font-medium text-white hover:from-accent/90 hover:to-primary disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isAnalyzingParallel ? '🤖 Analyzing...' : '🤖 AI Parallel Run'}
-        </button>
-      )}
       {testsCount > 0 && (
         <button
           onClick={onRunSuite}

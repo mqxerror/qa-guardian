@@ -26,7 +26,7 @@ import {
   TestType, DeleteSuiteModal, DeleteTestModal, // TestStep unused - referenced in comment only
   ImportTestsModal, EditSelectorModal, ExpandedScreenshotModal, InsertTemplateModal,
   GeneratedTestPreviewModal, RecordTestModal, ReviewRecordedTestModal,
-  ParallelizationPanel, SuiteHeaderActions, HumanReviewPanel, SuiteRunResults,
+  SuiteHeaderActions, HumanReviewPanel, SuiteRunResults,
   TestListSection, useRecordingState, EditSelectorModalState,
 } from '../components/suite-detail';
 
@@ -159,30 +159,9 @@ function TestSuitePage() {
   const [suiteRun, setSuiteRun] = useState<SuiteRunLocal | null>(null);
   const [suiteRunPolling, setSuiteRunPolling] = useState(false);
 
-  // Feature #1257: Dynamic Test Parallelization state
-  const [showParallelization, setShowParallelization] = useState(false);
-  const [isAnalyzingParallel, setIsAnalyzingParallel] = useState(false);
-  const [parallelizationPlan, setParallelizationPlan] = useState<{
-    totalTests: number;
-    workers: Array<{
-      id: number;
-      name: string;
-      tests: Array<{ name: string; duration: number }>;
-      totalDuration: number;
-      utilizationPercent: number;
-    }>;
-    optimization: {
-      sequentialTime: number;
-      parallelTime: number;
-      timeSaved: number;
-      speedup: string;
-    };
-    resourceBalance: {
-      avgUtilization: number;
-      maxDifference: number;
-      balanceScore: string;
-    };
-  } | null>(null);
+  // Feature #533: Removed simulated AI Parallelization state (Feature #1257)
+  // Will be replaced with real session-sharing parallel executor in R23
+
   const [showDeleteSuiteModal, setShowDeleteSuiteModal] = useState(false);
   const [isDeletingSuite, setIsDeletingSuite] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -513,84 +492,8 @@ function TestSuitePage() {
   };
 
   // Feature #1257: Trigger large test run with AI parallelization
-  const handleRunWithParallelization = async () => {
-    if (tests.length === 0) return;
-
-    setShowParallelization(true);
-    setIsAnalyzingParallel(true);
-
-    // Simulate AI analysis delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Step 2: AI analyzes test durations
-    // Generate simulated test durations (in a real app, this would come from historical data)
-    const testDurations = tests.map(t => ({
-      name: t.name,
-      duration: Math.floor(Math.random() * 50) + 10 // 10-60 seconds
-    }));
-
-    // Step 3: AI distributes tests optimally across workers using bin-packing algorithm
-    const numWorkers = 4;
-    const workers: Array<{
-      id: number;
-      name: string;
-      tests: Array<{ name: string; duration: number }>;
-      totalDuration: number;
-      utilizationPercent: number;
-    }> = Array.from({ length: numWorkers }, (_, i) => ({
-      id: i + 1,
-      name: `Worker ${i + 1}`,
-      tests: [],
-      totalDuration: 0,
-      utilizationPercent: 0
-    }));
-
-    // Sort tests by duration (longest first) for better distribution
-    const sortedTests = [...testDurations].sort((a, b) => b.duration - a.duration);
-
-    // Distribute tests using "Longest Processing Time" algorithm
-    for (const test of sortedTests) {
-      // Find worker with minimum load
-      const minWorker = workers.reduce((min, w) =>
-        w.totalDuration < min.totalDuration ? w : min
-      );
-      minWorker.tests.push(test);
-      minWorker.totalDuration += test.duration;
-    }
-
-    // Step 4: Calculate optimization metrics
-    const sequentialTime = testDurations.reduce((sum, t) => sum + t.duration, 0);
-    const parallelTime = Math.max(...workers.map(w => w.totalDuration));
-    const timeSaved = sequentialTime - parallelTime;
-    const speedup = (sequentialTime / parallelTime).toFixed(2);
-
-    // Step 5: Calculate resource balance
-    const avgDuration = sequentialTime / numWorkers;
-    workers.forEach(w => {
-      w.utilizationPercent = Math.round((w.totalDuration / parallelTime) * 100);
-    });
-    const maxDifference = Math.max(...workers.map(w => w.totalDuration)) - Math.min(...workers.map(w => w.totalDuration));
-    const avgUtilization = Math.round(workers.reduce((sum, w) => sum + w.utilizationPercent, 0) / numWorkers);
-    const balanceScore = maxDifference < 30 ? 'Excellent' : maxDifference < 60 ? 'Good' : 'Fair';
-
-    setParallelizationPlan({
-      totalTests: tests.length,
-      workers,
-      optimization: {
-        sequentialTime,
-        parallelTime,
-        timeSaved,
-        speedup
-      },
-      resourceBalance: {
-        avgUtilization,
-        maxDifference,
-        balanceScore
-      }
-    });
-
-    setIsAnalyzingParallel(false);
-  };
+  // Feature #533: Removed handleRunWithParallelization (simulated AI parallel run)
+  // Will be replaced with real session-sharing parallel executor in R23
 
   // Feature #143: Converted to React Query mutation
   const handleCancelSuiteRun = async () => {
@@ -1100,14 +1003,13 @@ function TestSuitePage() {
             </div>
           </div>
           {/* Feature #50: Extracted to SuiteHeaderActions component */}
+          {/* Feature #533: Removed AI Parallel Run button (simulated) */}
           <SuiteHeaderActions
             suiteId={suiteId!}
             testsCount={tests.length}
             isRunningSuite={isRunningSuite}
-            isAnalyzingParallel={isAnalyzingParallel}
             canCreateTest={canCreateTest}
             canDeleteSuite={canDeleteSuite}
-            onRunWithParallelization={handleRunWithParallelization}
             onRunSuite={handleRunSuite}
             onExportTests={handleExportTests}
             onShowImportModal={() => setShowImportModal(true)}
@@ -1151,16 +1053,8 @@ function TestSuitePage() {
           onBatchReview={handleBatchReview}
         />
 
-        {/* Feature #1257: AI Parallelization Panel - Feature #50: Extracted to component */}
-        {showParallelization && (
-          <ParallelizationPanel
-            isAnalyzing={isAnalyzingParallel}
-            plan={parallelizationPlan}
-            isRunningSuite={isRunningSuite}
-            onClose={() => setShowParallelization(false)}
-            onRunSuite={handleRunSuite}
-          />
-        )}
+        {/* Feature #533: Removed ParallelizationPanel (simulated AI parallel run) */}
+        {/* Will be replaced with real session-sharing parallel executor in R23 */}
 
         {/* Delete Suite Confirmation Modal - Feature #50: Extracted to component */}
         {showDeleteSuiteModal && (
