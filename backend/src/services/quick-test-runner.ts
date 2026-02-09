@@ -1571,9 +1571,45 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
 
   try {
     // Step 1: Navigate to page and extract meta tags
+    // Feature #541: Optimized page load timing for dynamic/SPA sites
+    const pageLoadStart = Date.now();
     context = await browser.newContext();
     page = await context.newPage();
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+
+    // Feature #541: Try networkidle first with 30s timeout.
+    // If it times out (slow sites), fall back to domcontentloaded so we at least get the DOM.
+    let loadWarning: string | undefined;
+    try {
+      await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    } catch (navError) {
+      const isTimeout = navError instanceof Error && navError.message.includes('Timeout');
+      if (isTimeout) {
+        loadWarning = 'Page load timed out waiting for networkidle; used domcontentloaded fallback';
+        log.warn({ url, elapsed: Date.now() - pageLoadStart }, 'SEO: networkidle timeout, falling back to domcontentloaded');
+        try {
+          await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        } catch {
+          // If even domcontentloaded fails, proceed with whatever DOM we have
+          log.warn({ url }, 'SEO: domcontentloaded fallback also failed, proceeding with current DOM state');
+          loadWarning = 'Page load failed; analysis based on partial DOM state';
+        }
+      } else {
+        throw navError; // Re-throw non-timeout errors
+      }
+    }
+
+    // Feature #541: Post-load delay (2s) for SPA hydration - allows
+    // frameworks like React/Vue/Angular to finish client-side rendering
+    await page.waitForTimeout(2000);
+    const pageLoadMs = Date.now() - pageLoadStart;
+    log.info({ url, pageLoadMs, loadWarning }, 'SEO: Page loaded for analysis');
+
+    if (loadWarning) {
+      result.issues.push(loadWarning);
+    }
+
+    // Feature #541: Time the DOM extraction sub-check
+    const domExtractStart = Date.now();
 
     // Extract all SEO-relevant data from the DOM
     // NOTE: page.evaluate runs in browser context. Avoid named function declarations
@@ -1856,6 +1892,12 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
     context = null;
     page = null;
 
+    const domExtractMs = Date.now() - domExtractStart;
+    log.info({ url, domExtractMs }, 'SEO: DOM extraction completed');
+
+    // Feature #541: Time the meta tags + headings + schema + nav + tracking processing
+    const processingStart = Date.now();
+
     // Process title
     if (seoData.title) {
       result.metaTags.title = {
@@ -2100,6 +2142,12 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       result.tracking.summary = `${trackerNames.length} tracker${trackerNames.length !== 1 ? 's' : ''}: ${trackerNames.join(', ')}`;
     }
 
+    const processingMs = Date.now() - processingStart;
+    log.info({ url, processingMs }, 'SEO: Meta/heading/schema/nav/tracking processing completed');
+
+    // Feature #541: Time crawlability checks (robots.txt + sitemap.xml)
+    const crawlCheckStart = Date.now();
+
     // Step 2: Check robots.txt
     try {
       const robotsUrl = `${baseUrl}/robots.txt`;
@@ -2162,6 +2210,9 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       // sitemap check failed, non-critical
     }
 
+    const crawlCheckMs = Date.now() - crawlCheckStart;
+    log.info({ url, crawlCheckMs, robotsTxt: result.crawlability.robotsTxt.present, sitemap: result.crawlability.sitemap.present }, 'SEO: Crawlability checks completed');
+
     // Calculate SEO score
     let score = 100;
 
@@ -2201,6 +2252,7 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
 
     result.score = Math.max(0, Math.min(100, score));
 
+    const totalMs = Date.now() - pageLoadStart;
     log.info({
       url,
       score: result.score,
@@ -2211,6 +2263,8 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       schemaTypes: result.schemaMarkup.detectedTypes.length,
       hasNav: result.navigation.hasNavElement,
       trackingScriptsCount: result.tracking.scripts.length,
+      // Feature #541: Timing breakdown for debugging
+      timing: { pageLoadMs, domExtractMs, processingMs, crawlCheckMs, totalMs },
     }, 'SEO Analysis complete');
 
   } catch (err) {
