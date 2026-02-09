@@ -145,3 +145,12 @@ export {
   getStaggerDelay,
   animationTiming,
 } from './animations';
+
+// Feature #523: Wave progress card component
+export {
+  WaveProgressCard,
+  type WaveProgressCardProps,
+  type WaveProgressStatus,
+  type WaveProgressStep,
+  type StepStatus,
+} from './wave-progress-card';
