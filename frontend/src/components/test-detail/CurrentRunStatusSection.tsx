@@ -1,10 +1,14 @@
 // Feature #48: CurrentRunStatusSection - Extracted from TestDetailPage.tsx
+// Feature #539: Integrated WaveProgressCard + ScoreCardGrid for richer run display
 // Displays current run header, status badge, live execution, and test results
 
-import { RefObject, Dispatch, SetStateAction } from 'react';
+import { useState, useMemo, RefObject, Dispatch, SetStateAction } from 'react';
+import { Play, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
 import { LiveExecutionPanel } from './LiveExecutionPanel';
 import { TestResultCard, TestResult } from './TestResultCard';
 import { TestRunType, TestType } from './types';
+import { WaveProgressCard, type WaveProgressStatus, type WaveProgressStep } from '../ui/wave-progress-card';
+import { ScoreCardGrid } from '../ui/score-card';
 
 interface LiveProgress {
   totalTests: number;
@@ -108,6 +112,78 @@ export function CurrentRunStatusSection({
 }: CurrentRunStatusSectionProps) {
   const hasResults = currentRun.results && currentRun.results.length > 0;
   const isCompleted = currentRun.status === 'passed' || currentRun.status === 'failed' || currentRun.status === 'error';
+  const [waveExpanded, setWaveExpanded] = useState(true);
+
+  // Feature #539: Map run status to WaveProgressCard status
+  const waveStatus: WaveProgressStatus = useMemo(() => {
+    switch (currentRun.status) {
+      case 'passed': return 'completed';
+      case 'failed':
+      case 'error': return 'failed';
+      case 'running': return 'running';
+      case 'pending': return 'waiting';
+      case 'warning': return 'completed'; // warning is a completed state
+      default: return 'waiting';
+    }
+  }, [currentRun.status]);
+
+  // Feature #539: Build steps from test results for WaveProgressCard
+  const waveSteps: WaveProgressStep[] = useMemo(() => {
+    if (!hasResults || !currentRun.results) return [];
+    // Flatten all result steps into WaveProgressStep format
+    const steps: WaveProgressStep[] = [];
+    for (const result of currentRun.results) {
+      if (result.steps && result.steps.length > 0) {
+        for (const step of result.steps) {
+          steps.push({
+            name: step.action || `Step ${steps.length + 1}`,
+            status: step.status === 'passed' ? 'completed' :
+                    step.status === 'failed' ? 'failed' : 'pending',
+            duration: step.duration_ms,
+          });
+        }
+      }
+    }
+    return steps;
+  }, [hasResults, currentRun.results]);
+
+  // Feature #539: Build score items from result data for ScoreCardGrid
+  const scoreItems = useMemo(() => {
+    if (!hasResults || !currentRun.results) return [];
+    const items: Array<{ score: number; label: string }> = [];
+    const result = currentRun.results[0];
+    if (!result) return items;
+
+    // Calculate step pass rate
+    if (result.steps && result.steps.length > 0) {
+      const passedSteps = result.steps.filter(s => s.status === 'passed').length;
+      const passRate = Math.round((passedSteps / result.steps.length) * 100);
+      items.push({ score: passRate, label: 'Steps Passed' });
+    }
+
+    // Lighthouse scores if available
+    const lighthouse = (result as unknown as Record<string, unknown>).lighthouse as Record<string, unknown> | undefined;
+    if (lighthouse) {
+      if (typeof lighthouse.performance === 'number') items.push({ score: lighthouse.performance, label: 'Performance' });
+      if (typeof lighthouse.accessibility === 'number') items.push({ score: lighthouse.accessibility, label: 'Accessibility' });
+      if (typeof lighthouse.bestPractices === 'number') items.push({ score: lighthouse.bestPractices, label: 'Best Practices' });
+      if (typeof lighthouse.seo === 'number') items.push({ score: lighthouse.seo, label: 'SEO' });
+    }
+
+    return items;
+  }, [hasResults, currentRun.results]);
+
+  // Feature #539: Determine wave icon based on status
+  const waveIcon = useMemo(() => {
+    switch (currentRun.status) {
+      case 'passed': return CheckCircle2;
+      case 'failed':
+      case 'error': return XCircle;
+      case 'running': return Play;
+      case 'warning': return AlertTriangle;
+      default: return Clock;
+    }
+  }, [currentRun.status]);
 
   return (
     <div className="mt-8 rounded-lg border border-border bg-card p-6">
@@ -135,24 +211,25 @@ export function CurrentRunStatusSection({
         )}
       </div>
       <div>
-        <div className="flex items-center gap-4">
-          {/* Feature #1979: Added 'warning' status styling for accessibility tests */}
-          <span className={`rounded-full px-3 py-1 text-sm font-medium ${
-            currentRun.status === 'passed' ? 'bg-success/10 text-success' :
-            currentRun.status === 'failed' ? 'bg-destructive/10 text-destructive' :
-            currentRun.status === 'warning' ? 'bg-warning/10 text-warning' :
-            currentRun.status === 'running' ? 'bg-primary/10 text-primary' :
-            currentRun.status === 'pending' ? 'bg-warning/10 text-warning' :
-            'bg-muted text-foreground'
-          }`}>
-            {currentRun.status}
-          </span>
-          {currentRun.duration_ms !== undefined && (
-            <span className="text-sm text-muted-foreground">
-              Duration: {currentRun.duration_ms}ms
-            </span>
+        {/* Feature #539: WaveProgressCard replaces plain status badge */}
+        <WaveProgressCard
+          status={waveStatus}
+          icon={waveIcon}
+          title={`Test Run: ${currentRun.status.charAt(0).toUpperCase() + currentRun.status.slice(1)}`}
+          subtitle={currentRun.duration_ms !== undefined ? `Completed in ${currentRun.duration_ms}ms` : undefined}
+          duration={currentRun.duration_ms}
+          expanded={waveExpanded}
+          onToggle={() => setWaveExpanded(!waveExpanded)}
+          steps={waveSteps.length > 0 ? waveSteps : undefined}
+          animate={currentRun.status === 'running'}
+        >
+          {/* Feature #539: ScoreCardGrid for run metrics when results available */}
+          {scoreItems.length > 0 && isCompleted && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <ScoreCardGrid items={scoreItems} size="sm" showIcon />
+            </div>
           )}
-        </div>
+        </WaveProgressCard>
 
         {/* Live Execution Panel */}
         <LiveExecutionPanel
