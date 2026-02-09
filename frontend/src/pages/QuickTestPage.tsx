@@ -41,6 +41,8 @@ import {
   ArrowLeftRight,
   CalendarClock,
   Search,
+  FileJson,
+  FileText,
 } from 'lucide-react';
 // Feature #514: Import extracted quick-test components and utilities
 import {
@@ -337,8 +339,12 @@ export function QuickTestPage() {
   // Feature #532: Save as Suite modal state
   const [saveAsSuiteModal, setSaveAsSuiteModal] = useState(false);
 
+  // Feature #543: Export dropdown state
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
   // Refs
   const urlInputRef = useRef<HTMLInputElement>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null); // Feature #543
 
   // Derive running state from hook
   const isRunning = testStatus === 'running';
@@ -427,6 +433,18 @@ export function QuickTestPage() {
     }
   }, [testStatus, currentRunId, testingUrl, summary]);
 
+  // Feature #543: Close export menu when clicking outside
+  useEffect(() => {
+    if (!showExportMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showExportMenu]);
+
   // Start test using the hook
   const startTest = useCallback(async () => {
     // Validate URL
@@ -500,6 +518,149 @@ export function QuickTestPage() {
       setUrlError('Could not load historical results. Try running the test again.');
     }
   }, [loadResult]);
+
+  // Feature #543: Export as JSON
+  const handleExportJSON = useCallback(() => {
+    if (!result || !summary) return;
+    setShowExportMenu(false);
+
+    const exportData = {
+      runId: result.runId,
+      url: result.url,
+      timestamp: result.timestamp,
+      status: result.status,
+      summary: result.summary,
+      waves: waves.map(w => ({
+        wave: w.wave,
+        name: w.name,
+        status: w.status,
+        duration: w.duration,
+        data: w.data,
+        error: w.error,
+      })),
+      exportedAt: new Date().toISOString(),
+      exportedBy: 'QA Guardian',
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    let hostname = 'unknown';
+    try { hostname = new URL(result.url).hostname; } catch { /* keep default */ }
+    a.download = `quick-test-${hostname}-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [result, summary, waves]);
+
+  // Feature #543: Export as PDF via window.print() with print-specific CSS
+  const handleExportPDF = useCallback(() => {
+    if (!result || !summary) return;
+    setShowExportMenu(false);
+
+    // Create a print-friendly window with the report
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    let hostname = 'unknown';
+    try { hostname = new URL(result.url).hostname; } catch { /* keep default */ }
+
+    const scoreColor = (s: number) => s >= 80 ? '#22c55e' : s >= 60 ? '#f59e0b' : '#ef4444';
+    const overall = summary.overallScore;
+
+    // Build wave results HTML
+    const waveRows = waves
+      .filter(w => w.status === 'completed' || w.status === 'failed' || w.status === 'skipped')
+      .map(w => {
+        const statusIcon = w.status === 'completed' ? '✅' : w.status === 'failed' ? '❌' : '⏭️';
+        const dur = w.duration ? `${(w.duration / 1000).toFixed(1)}s` : '—';
+        return `<tr>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${statusIcon} ${w.name}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${w.status}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${dur}</td>
+        </tr>`;
+      }).join('');
+
+    // Build scores section
+    const scores = [
+      { label: 'Health', score: summary.healthScore, weight: '12%' },
+      { label: 'Performance', score: summary.performanceScore, weight: '18%' },
+      { label: 'Security', score: summary.securityScore, weight: '18%' },
+      { label: 'Accessibility', score: summary.accessibilityScore ?? 0, weight: '22%' },
+      { label: 'API', score: summary.apiScore ?? 0, weight: '10%' },
+      { label: 'SEO', score: summary.seoScore ?? 0, weight: '10%' },
+    ];
+    const scoreCards = scores.map(s =>
+      `<div style="background: #f9fafb; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 24px; font-weight: bold; color: ${scoreColor(s.score)};">${s.score}</div>
+        <div style="font-size: 12px; color: #6b7280;">${s.label} (${s.weight})</div>
+      </div>`
+    ).join('');
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>QA Guardian Report - ${hostname}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 24px; color: #111827; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3b82f6; padding-bottom: 16px; margin-bottom: 24px; }
+    .brand { font-size: 18px; font-weight: 700; color: #3b82f6; }
+    .subtitle { font-size: 12px; color: #6b7280; }
+    .overall { text-align: center; margin: 24px 0; }
+    .overall-score { font-size: 48px; font-weight: bold; }
+    .score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 24px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    th { text-align: left; padding: 8px; border-bottom: 2px solid #e5e7eb; font-size: 13px; color: #6b7280; }
+    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; text-align: center; }
+    @media print { body { padding: 16px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="brand">QA Guardian</div>
+      <div class="subtitle">Quick Test Report</div>
+    </div>
+    <div style="text-align: right;">
+      <div style="font-weight: 600;">${hostname}</div>
+      <div class="subtitle">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+    </div>
+  </div>
+
+  <div class="overall">
+    <div style="font-size: 13px; color: #6b7280; margin-bottom: 4px;">Overall Score</div>
+    <div class="overall-score" style="color: ${scoreColor(overall)};">${overall}</div>
+    <div style="font-size: 13px; color: #6b7280;">${result.url}</div>
+  </div>
+
+  <h3 style="font-size: 16px; color: #374151; margin-top: 24px;">Category Scores</h3>
+  <div class="score-grid">${scoreCards}</div>
+
+  <h3 style="font-size: 16px; color: #374151; margin-top: 24px;">Wave Results</h3>
+  <table>
+    <thead><tr>
+      <th>Wave</th>
+      <th style="text-align: center;">Status</th>
+      <th style="text-align: right;">Duration</th>
+    </tr></thead>
+    <tbody>${waveRows}</tbody>
+  </table>
+
+  <div class="footer">
+    Generated by QA Guardian &middot; ${new Date().toISOString()} &middot; ${result.url}
+  </div>
+</body>
+</html>`;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    // Wait for content to render then trigger print
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  }, [result, summary, waves]);
 
   // Feature #474: Schedule Quick Test handlers
   const openScheduleModal = () => {
@@ -710,13 +871,35 @@ export function QuickTestPage() {
 
               {/* Action Buttons */}
               <div className="flex gap-3 justify-end">
-                <button
-                  className="px-4 py-2 bg-muted text-muted-foreground rounded-lg
-                    hover:bg-muted/80 transition-colors flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Export
-                </button>
+                {/* Feature #543: Export dropdown with JSON and PDF options */}
+                <div className="relative" ref={exportMenuRef}>
+                  <button
+                    onClick={() => setShowExportMenu(!showExportMenu)}
+                    className="px-4 py-2 bg-muted text-muted-foreground rounded-lg
+                      hover:bg-muted/80 transition-colors flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export
+                  </button>
+                  {showExportMenu && (
+                    <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+                      <button
+                        onClick={handleExportJSON}
+                        className="w-full px-4 py-2.5 text-sm text-left hover:bg-muted flex items-center gap-2 transition-colors"
+                      >
+                        <FileJson className="w-4 h-4 text-blue-500" />
+                        Export as JSON
+                      </button>
+                      <button
+                        onClick={handleExportPDF}
+                        className="w-full px-4 py-2.5 text-sm text-left hover:bg-muted flex items-center gap-2 transition-colors"
+                      >
+                        <FileText className="w-4 h-4 text-red-500" />
+                        Export as PDF
+                      </button>
+                    </div>
+                  )}
+                </div>
                 {/* Feature #532: Save as Suite button */}
                 <button
                   onClick={() => setSaveAsSuiteModal(true)}
