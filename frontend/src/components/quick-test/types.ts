@@ -91,14 +91,15 @@ export interface AIAnalysisData {
 
 export interface AccessibilityViolation {
   id: string;
-  impact: string;
+  impact: 'critical' | 'serious' | 'moderate' | 'minor';
   description: string;
   help: string;
   helpUrl: string;
+  wcagTags: string[];
   nodes: Array<{
     html: string;
     target: string[];
-    failureSummary: string;
+    failureSummary?: string;
   }>;
 }
 
@@ -131,13 +132,40 @@ export interface APIEndpoint {
 }
 
 export interface APIDiscoveryData {
-  hasOpenAPI: boolean;
-  openAPIUrl?: string;
-  openAPIVersion?: string;
-  endpoints: APIEndpoint[];
-  totalEndpoints: number;
-  protectedEndpoints: number;
-  publicEndpoints: number;
+  score: number;
+  discoveredPaths: string[];
+  openAPISpec?: {
+    found: boolean;
+    url?: string;
+    title?: string;
+    version?: string;
+    endpointCount?: number;
+  };
+  endpoints: Array<{
+    path: string;
+    method: string;
+    status: number;
+    statusText: string;
+    responseTimeMs: number;
+    authRequired: boolean;
+    isHealthy: boolean;
+    contentType?: string;
+    errorMessage?: string;
+  }>;
+  summary: {
+    total: number;
+    healthy: number;
+    unhealthy: number;
+    protected: number;
+    unprotected: number;
+    byMethod: Record<string, number>;
+  };
+  securityConcerns: Array<{
+    type: string;
+    path: string;
+    description: string;
+    severity: 'high' | 'medium' | 'low';
+  }>;
 }
 
 // ============================================================

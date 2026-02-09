@@ -18,3 +18,19 @@ export type { SourceType, PriorityType, ImpactType } from '../ui/Badge';
 // Modal components
 export { CreateTestSuiteModal } from './CreateTestSuiteModal';
 export { ScheduleModal } from './ScheduleModal';
+
+// Wave detail components - Feature #514: Extracted from QuickTestPage
+// Note: AccessibilityData, APIDiscoveryData types are exported via './types'
+export {
+  AIAnalysisDetails,
+  AccessibilityDetails,
+  APIDiscoveryDetails,
+} from './WaveDetails';
+
+// WaveCard component - Feature #514: Extracted from QuickTestPage
+export { WaveCard } from './WaveCard';
+export type { WaveCardProps } from './WaveCard';
+
+// ScreenshotModal component - Feature #514: Extracted from QuickTestPage
+export { ScreenshotModal } from './ScreenshotModal';
+export type { ScreenshotModalProps } from './ScreenshotModal';
