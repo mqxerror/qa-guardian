@@ -1573,7 +1573,7 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
     // Step 1: Navigate to page and extract meta tags
     context = await browser.newContext();
     page = await context.newPage();
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
 
     // Extract all SEO-relevant data from the DOM
     // NOTE: page.evaluate runs in browser context. Avoid named function declarations
@@ -1725,6 +1725,59 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
         // LinkedIn Insight Tag
         if (src.includes('snap.licdn.com') || src.includes('linkedin.com/insight')) {
           trackingScripts.push({ name: 'LinkedIn Insight Tag', type: 'linkedin', source: 'script_src' });
+        }
+      });
+
+      // Feature #534: Check inline script content for tracking patterns
+      document.querySelectorAll('script:not([src])').forEach(script => {
+        const content = script.textContent || '';
+        if (!content.trim()) return;
+
+        // GTM bootstrap pattern: (window,document,'script','dataLayer','GTM-XXXXXX')
+        const gtmInlineMatch = content.match(/['"]GTM-([A-Z0-9]+)['"]/);
+        if (gtmInlineMatch && !trackingScripts.some(s => s.type === 'gtm')) {
+          trackingScripts.push({ name: 'Google Tag Manager', type: 'gtm', id: 'GTM-' + gtmInlineMatch[1], source: 'inline' });
+        }
+
+        // GA4 gtag inline: gtag('config', 'G-XXXXXX')
+        const ga4InlineMatch = content.match(/gtag\s*\(\s*['"]config['"]\s*,\s*['"](G-[A-Z0-9]+)['"]/);
+        if (ga4InlineMatch && !trackingScripts.some(s => s.type === 'ga4')) {
+          trackingScripts.push({ name: 'Google Analytics 4', type: 'ga4', id: ga4InlineMatch[1], source: 'inline' });
+        }
+        // Also check for GoogleAnalyticsObject or ga() calls (Universal Analytics)
+        if ((content.includes('GoogleAnalyticsObject') || content.match(/\bga\s*\(\s*['"]create['"]/)) && !trackingScripts.some(s => s.type === 'ga4')) {
+          trackingScripts.push({ name: 'Google Analytics', type: 'ga4', source: 'inline' });
+        }
+
+        // Facebook Pixel: fbq('init', ...) or fbevents.js reference
+        if ((content.includes('fbq(') || content.includes('fbevents.js')) && !trackingScripts.some(s => s.type === 'fb_pixel')) {
+          const fbIdMatch = content.match(/fbq\s*\(\s*['"]init['"]\s*,\s*['"](\d+)['"]/);
+          trackingScripts.push({ name: 'Facebook Pixel', type: 'fb_pixel', id: fbIdMatch ? fbIdMatch[1] : undefined, source: 'inline' });
+        }
+
+        // Hotjar inline: (function(h,o,t,j,a,r){ h.hj=...
+        if (content.includes('hotjar') || content.match(/h\.hj\s*=/) || content.match(/hj\s*\(\s*['"]/)) {
+          if (!trackingScripts.some(s => s.type === 'hotjar')) {
+            const hjIdMatch = content.match(/hjid\s*:\s*(\d+)/i) || content.match(/hotjar-(\d+)/);
+            trackingScripts.push({ name: 'Hotjar', type: 'hotjar', id: hjIdMatch ? hjIdMatch[1] : undefined, source: 'inline' });
+          }
+        }
+
+        // LinkedIn Insight: _linkedin_partner_id or snap.licdn.com
+        if ((content.includes('_linkedin_partner_id') || content.includes('snap.licdn.com')) && !trackingScripts.some(s => s.type === 'linkedin')) {
+          const liIdMatch = content.match(/_linkedin_partner_id\s*=\s*["']?(\d+)["']?/);
+          trackingScripts.push({ name: 'LinkedIn Insight Tag', type: 'linkedin', id: liIdMatch ? liIdMatch[1] : undefined, source: 'inline' });
+        }
+      });
+
+      // Feature #534: Check noscript iframes for GTM
+      document.querySelectorAll('noscript').forEach(noscript => {
+        const html = noscript.innerHTML || '';
+        if (html.includes('googletagmanager.com/ns.html')) {
+          const gtmNoscriptMatch = html.match(/id=(GTM-[A-Z0-9]+)/);
+          if (gtmNoscriptMatch && !trackingScripts.some(s => s.type === 'gtm')) {
+            trackingScripts.push({ name: 'Google Tag Manager', type: 'gtm', id: gtmNoscriptMatch[1], source: 'inline' });
+          }
         }
       });
 
