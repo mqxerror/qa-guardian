@@ -65,13 +65,59 @@ const DELETED_CHECK_HISTORY_COLUMNS = `
   check_config, historical_results_count, last_status
 `;
 
+// ============================================
+// Feature #462: Row interfaces to eliminate : any types
+// ============================================
+
+interface StatusPageRow {
+  id: string;
+  organization_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  logo_url: string | null;
+  favicon_url: string | null;
+  primary_color: string | null;
+  show_history_days: number;
+  checks: string | string[];
+  custom_domain: string | null;
+  is_public: boolean;
+  show_uptime_percentage: boolean;
+  show_response_time: boolean;
+  show_incidents: boolean;
+  created_by: string;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+interface MonitoringSettingsRow {
+  organization_id: string;
+  retention_days: number;
+  auto_cleanup_enabled: boolean;
+  last_cleanup_at: string | Date | null;
+  updated_by: string;
+  updated_at: string | Date;
+}
+
+interface DeletedCheckHistoryRow {
+  check_id: string;
+  check_name: string;
+  check_type: string;
+  organization_id: string;
+  deleted_by: string;
+  deleted_at: string | Date;
+  check_config: string | Record<string, unknown>;
+  historical_results_count: number;
+  last_status: string;
+}
+
 // =============================
 // STATUS PAGES CRUD
 // =============================
 
 export async function createStatusPage(page: StatusPage): Promise<StatusPage> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<StatusPageRow>(
       `INSERT INTO status_pages (
         id, organization_id, name, slug, description, logo_url, favicon_url,
         primary_color, show_history_days, checks, custom_domain, is_public,
@@ -94,7 +140,7 @@ export async function createStatusPage(page: StatusPage): Promise<StatusPage> {
 
 export async function getStatusPage(id: string): Promise<StatusPage | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(`SELECT ${STATUS_PAGE_COLUMNS} FROM status_pages WHERE id = $1`, [id]);
+    const result = await query<StatusPageRow>(`SELECT ${STATUS_PAGE_COLUMNS} FROM status_pages WHERE id = $1`, [id]);
     if (result && result.rows[0]) return parseStatusPageRow(result.rows[0]);
     return undefined;
   }
@@ -103,7 +149,7 @@ export async function getStatusPage(id: string): Promise<StatusPage | undefined>
 
 export async function getStatusPageBySlug(slug: string): Promise<StatusPage | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(`SELECT ${STATUS_PAGE_COLUMNS} FROM status_pages WHERE slug = $1`, [slug]);
+    const result = await query<StatusPageRow>(`SELECT ${STATUS_PAGE_COLUMNS} FROM status_pages WHERE slug = $1`, [slug]);
     if (result && result.rows[0]) return parseStatusPageRow(result.rows[0]);
     return undefined;
   }
@@ -117,7 +163,7 @@ export async function updateStatusPage(id: string, updates: Partial<StatusPage>)
   const updated: StatusPage = { ...existing, ...updates, updated_at: new Date() };
 
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<StatusPageRow>(
       `UPDATE status_pages SET
         name = $2, slug = $3, description = $4, logo_url = $5, favicon_url = $6,
         primary_color = $7, show_history_days = $8, checks = $9, custom_domain = $10, is_public = $11,
@@ -146,7 +192,7 @@ export async function deleteStatusPage(id: string): Promise<boolean> {
 
 export async function listStatusPages(organizationId: string, limit: number = 100): Promise<StatusPage[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<StatusPageRow>(
       `SELECT ${STATUS_PAGE_COLUMNS} FROM status_pages WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [organizationId, limit]
     );
@@ -156,19 +202,19 @@ export async function listStatusPages(organizationId: string, limit: number = 10
   return [];
 }
 
-function parseStatusPageRow(row: any): StatusPage {
+function parseStatusPageRow(row: StatusPageRow): StatusPage {
   return {
     id: row.id,
     organization_id: row.organization_id,
     name: row.name,
     slug: row.slug,
-    description: row.description,
-    logo_url: row.logo_url,
-    favicon_url: row.favicon_url,
-    primary_color: row.primary_color,
+    description: row.description ?? undefined,
+    logo_url: row.logo_url ?? undefined,
+    favicon_url: row.favicon_url ?? undefined,
+    primary_color: row.primary_color ?? undefined,
     show_history_days: row.show_history_days,
     checks: typeof row.checks === 'string' ? JSON.parse(row.checks) : row.checks,
-    custom_domain: row.custom_domain,
+    custom_domain: row.custom_domain ?? undefined,
     is_public: row.is_public,
     show_uptime_percentage: row.show_uptime_percentage,
     show_response_time: row.show_response_time,
@@ -186,7 +232,7 @@ function parseStatusPageRow(row: any): StatusPage {
 
 export async function getMonitoringSettings(orgId: string): Promise<MonitoringSettings | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<MonitoringSettingsRow>(
       `SELECT ${MONITORING_SETTINGS_COLUMNS} FROM monitoring_settings WHERE organization_id = $1`,
       [orgId]
     );
@@ -198,7 +244,7 @@ export async function getMonitoringSettings(orgId: string): Promise<MonitoringSe
 
 export async function setMonitoringSettings(settings: MonitoringSettings): Promise<MonitoringSettings> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<MonitoringSettingsRow>(
       `INSERT INTO monitoring_settings (organization_id, retention_days, auto_cleanup_enabled, last_cleanup_at, updated_by, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (organization_id) DO UPDATE SET
@@ -211,10 +257,10 @@ export async function setMonitoringSettings(settings: MonitoringSettings): Promi
   return settings;
 }
 
-function parseMonitoringSettingsRow(row: any): MonitoringSettings {
+function parseMonitoringSettingsRow(row: MonitoringSettingsRow): MonitoringSettings {
   return {
     organization_id: row.organization_id,
-    retention_days: row.retention_days,
+    retention_days: row.retention_days as MonitoringSettings['retention_days'],
     auto_cleanup_enabled: row.auto_cleanup_enabled,
     last_cleanup_at: row.last_cleanup_at ? new Date(row.last_cleanup_at) : undefined,
     updated_by: row.updated_by,
@@ -247,21 +293,22 @@ export async function addDeletedCheckHistory(history: DeletedCheckHistory): Prom
 
 export async function getDeletedCheckHistory(checkId: string): Promise<DeletedCheckHistory | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DeletedCheckHistoryRow>(
       `SELECT ${DELETED_CHECK_HISTORY_COLUMNS} FROM deleted_check_history WHERE check_id = $1`,
       [checkId]
     );
     if (result && result.rows[0]) {
+      const row = result.rows[0];
       return {
-        check_id: result.rows[0].check_id,
-        check_name: result.rows[0].check_name,
-        check_type: result.rows[0].check_type,
-        organization_id: result.rows[0].organization_id,
-        deleted_by: result.rows[0].deleted_by,
-        deleted_at: new Date(result.rows[0].deleted_at),
-        check_config: typeof result.rows[0].check_config === 'string' ? JSON.parse(result.rows[0].check_config) : result.rows[0].check_config,
-        historical_results_count: result.rows[0].historical_results_count,
-        last_status: result.rows[0].last_status,
+        check_id: row.check_id,
+        check_name: row.check_name,
+        check_type: row.check_type as DeletedCheckHistory['check_type'],
+        organization_id: row.organization_id,
+        deleted_by: row.deleted_by,
+        deleted_at: new Date(row.deleted_at),
+        check_config: typeof row.check_config === 'string' ? JSON.parse(row.check_config) : row.check_config,
+        historical_results_count: row.historical_results_count,
+        last_status: row.last_status as DeletedCheckHistory['last_status'],
       };
     }
     return undefined;
@@ -272,21 +319,21 @@ export async function getDeletedCheckHistory(checkId: string): Promise<DeletedCh
 
 export async function listDeletedCheckHistory(organizationId: string, limit: number = 100): Promise<DeletedCheckHistory[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<DeletedCheckHistoryRow>(
       `SELECT ${DELETED_CHECK_HISTORY_COLUMNS} FROM deleted_check_history WHERE organization_id = $1 ORDER BY deleted_at DESC LIMIT $2`,
       [organizationId, limit]
     );
     if (result) {
-      return result.rows.map((row: any) => ({
+      return result.rows.map((row: DeletedCheckHistoryRow) => ({
         check_id: row.check_id,
         check_name: row.check_name,
-        check_type: row.check_type,
+        check_type: row.check_type as DeletedCheckHistory['check_type'],
         organization_id: row.organization_id,
         deleted_by: row.deleted_by,
         deleted_at: new Date(row.deleted_at),
         check_config: typeof row.check_config === 'string' ? JSON.parse(row.check_config) : row.check_config,
         historical_results_count: row.historical_results_count,
-        last_status: row.last_status,
+        last_status: row.last_status as DeletedCheckHistory['last_status'],
       }));
     }
     return [];

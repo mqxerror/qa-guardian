@@ -27,6 +27,43 @@ const GITLEAKS_SCAN_COLUMNS = `
   findings, summary, error_message, created_at
 `;
 
+// ============================================
+// Feature #462: Row interfaces to eliminate : any types
+// ============================================
+
+interface GitleaksConfigRow {
+  project_id: string;
+  enabled: boolean;
+  scan_on_push: boolean;
+  scan_on_pr: boolean;
+  scan_full_history: boolean;
+  exclude_paths: string[] | null;
+  allowlist_patterns: string[] | null;
+  custom_rules: unknown[] | null;
+  severity_threshold: string;
+  fail_on_leak: boolean;
+  notification_channels: string[] | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+interface GitleaksScanRow {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  repository: string;
+  branch: string;
+  status: string;
+  started_at: string | Date;
+  completed_at: string | Date | null;
+  trigger: string;
+  commits_scanned: number;
+  findings: unknown[] | null;
+  summary: Record<string, unknown> | null;
+  error_message: string | null;
+  created_at: string | Date;
+}
+
 // Default Gitleaks configuration
 const DEFAULT_GITLEAKS_CONFIG: GitleaksConfig = {
   enabled: false,
@@ -47,7 +84,7 @@ const DEFAULT_GITLEAKS_CONFIG: GitleaksConfig = {
 
 export async function getGitleaksConfig(projectId: string): Promise<GitleaksConfig | null> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<GitleaksConfigRow>(
       `SELECT ${GITLEAKS_CONFIG_COLUMNS} FROM gitleaks_configs WHERE project_id = $1`,
       [projectId]
     );
@@ -66,7 +103,7 @@ export async function getGitleaksConfigOrDefault(projectId: string): Promise<Git
 
 export async function upsertGitleaksConfig(projectId: string, config: GitleaksConfig): Promise<GitleaksConfig> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<GitleaksConfigRow>(
       `INSERT INTO gitleaks_configs (
         project_id, enabled, scan_on_push, scan_on_pr, scan_full_history,
         exclude_paths, allowlist_patterns, custom_rules, severity_threshold,
@@ -106,7 +143,7 @@ export async function upsertGitleaksConfig(projectId: string, config: GitleaksCo
   return config;
 }
 
-function parseGitleaksConfigRow(row: any): GitleaksConfig {
+function parseGitleaksConfigRow(row: GitleaksConfigRow): GitleaksConfig {
   return {
     enabled: row.enabled,
     scan_on_push: row.scan_on_push,
@@ -114,10 +151,10 @@ function parseGitleaksConfigRow(row: any): GitleaksConfig {
     scan_full_history: row.scan_full_history,
     exclude_paths: row.exclude_paths || [],
     allowlist_patterns: row.allowlist_patterns || [],
-    custom_rules: row.custom_rules || [],
-    severity_threshold: row.severity_threshold || 'all',
+    custom_rules: (row.custom_rules as GitleaksConfig['custom_rules']) || [],
+    severity_threshold: (row.severity_threshold as GitleaksConfig['severity_threshold']) || 'all',
     fail_on_leak: row.fail_on_leak,
-    notification_channels: row.notification_channels || [],
+    notification_channels: (row.notification_channels as GitleaksConfig['notification_channels']) || [],
   };
 }
 
@@ -127,7 +164,7 @@ function parseGitleaksConfigRow(row: any): GitleaksConfig {
 
 export async function createGitleaksScan(scan: GitleaksScan): Promise<GitleaksScan> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<GitleaksScanRow>(
       `INSERT INTO gitleaks_scans (
         id, organization_id, project_id, repository, branch, status,
         started_at, completed_at, trigger, commits_scanned,
@@ -159,7 +196,7 @@ export async function createGitleaksScan(scan: GitleaksScan): Promise<GitleaksSc
 
 export async function getGitleaksScans(projectId: string, limit: number = 10): Promise<GitleaksScan[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<GitleaksScanRow>(
       `SELECT ${GITLEAKS_SCAN_COLUMNS} FROM gitleaks_scans WHERE project_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [projectId, limit]
     );
@@ -173,7 +210,7 @@ export async function getGitleaksScans(projectId: string, limit: number = 10): P
 
 export async function getGitleaksScan(projectId: string, scanId: string): Promise<GitleaksScan | null> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<GitleaksScanRow>(
       `SELECT ${GITLEAKS_SCAN_COLUMNS} FROM gitleaks_scans WHERE project_id = $1 AND id = $2`,
       [projectId, scanId]
     );
@@ -185,20 +222,20 @@ export async function getGitleaksScan(projectId: string, scanId: string): Promis
   return null;
 }
 
-function parseGitleaksScanRow(row: any): GitleaksScan {
+function parseGitleaksScanRow(row: GitleaksScanRow): GitleaksScan {
   return {
     id: row.id,
     organization_id: row.organization_id,
     project_id: row.project_id,
     repository: row.repository,
     branch: row.branch,
-    status: row.status,
+    status: row.status as GitleaksScan['status'],
     started_at: row.started_at instanceof Date ? row.started_at : new Date(row.started_at),
     completed_at: row.completed_at ? (row.completed_at instanceof Date ? row.completed_at : new Date(row.completed_at)) : undefined,
-    trigger: row.trigger,
+    trigger: row.trigger as GitleaksScan['trigger'],
     commits_scanned: row.commits_scanned,
-    findings: row.findings || [],
-    summary: row.summary || { total: 0, critical: 0, high: 0, medium: 0, low: 0, by_type: {} },
-    error_message: row.error_message,
+    findings: (row.findings as GitleaksScan['findings']) || [],
+    summary: (row.summary as GitleaksScan['summary']) || { total: 0, critical: 0, high: 0, medium: 0, low: 0, by_type: {} },
+    error_message: row.error_message ?? undefined,
   };
 }

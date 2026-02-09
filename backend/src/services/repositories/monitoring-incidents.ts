@@ -24,13 +24,43 @@ const CHECK_INCIDENT_COLUMNS = `
   id, check_id, status, started_at, ended_at, duration_seconds, error, affected_locations
 `.trim().replace(/\s+/g, ' ');
 
+// ============================================
+// Feature #462: Row interfaces to eliminate : any types
+// ============================================
+
+interface IncidentRow {
+  id: string;
+  check_id: string;
+  status: string;
+  started_at: string | Date;
+  ended_at: string | Date | null;
+  duration_seconds: number | null;
+  error: string | null;
+  affected_locations: string | string[];
+}
+
+interface MaintenanceWindowRow {
+  id: string;
+  check_id: string;
+  name: string;
+  start_time: string | Date;
+  end_time: string | Date;
+  reason: string | null;
+  created_by: string;
+  created_at: string | Date;
+}
+
+interface ConsecutiveFailuresRow {
+  consecutive_failures: number;
+}
+
 // =============================
 // INCIDENTS CRUD
 // =============================
 
 export async function createIncident(incident: Incident): Promise<Incident> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<IncidentRow>(
       `INSERT INTO check_incidents (
         id, check_id, status, started_at, ended_at, duration_seconds, error, affected_locations
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -51,7 +81,7 @@ export async function createIncident(incident: Incident): Promise<Incident> {
 
 export async function getActiveIncident(checkId: string): Promise<Incident | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<IncidentRow>(
       `SELECT ${CHECK_INCIDENT_COLUMNS} FROM check_incidents WHERE check_id = $1 AND ended_at IS NULL ORDER BY started_at DESC LIMIT 1`,
       [checkId]
     );
@@ -84,7 +114,7 @@ export async function clearActiveIncident(checkId: string): Promise<void> {
 export async function resolveIncident(incidentId: string, endedAt: Date): Promise<Incident | undefined> {
   if (isDatabaseConnected()) {
     // Calculate duration
-    const existing = await query<any>(
+    const existing = await query<IncidentRow>(
       `SELECT ${CHECK_INCIDENT_COLUMNS} FROM check_incidents WHERE id = $1`,
       [incidentId]
     );
@@ -93,7 +123,7 @@ export async function resolveIncident(incidentId: string, endedAt: Date): Promis
     const startedAt = new Date(existing.rows[0].started_at);
     const durationSeconds = Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000);
 
-    const result = await query<any>(
+    const result = await query<IncidentRow>(
       `UPDATE check_incidents SET ended_at = $2, duration_seconds = $3 WHERE id = $1 RETURNING *`,
       [incidentId, endedAt, durationSeconds]
     );
@@ -108,7 +138,7 @@ export async function resolveIncident(incidentId: string, endedAt: Date): Promis
 
 export async function getCheckIncidents(checkId: string): Promise<Incident[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<IncidentRow>(
       `SELECT ${CHECK_INCIDENT_COLUMNS} FROM check_incidents WHERE check_id = $1 ORDER BY started_at DESC`,
       [checkId]
     );
@@ -120,15 +150,15 @@ export async function getCheckIncidents(checkId: string): Promise<Incident[]> {
   return [];
 }
 
-function parseIncidentRow(row: any): Incident {
+function parseIncidentRow(row: IncidentRow): Incident {
   return {
     id: row.id,
     check_id: row.check_id,
-    status: row.status,
+    status: row.status as Incident['status'],
     started_at: new Date(row.started_at),
     ended_at: row.ended_at ? new Date(row.ended_at) : undefined,
-    duration_seconds: row.duration_seconds,
-    error: row.error,
+    duration_seconds: row.duration_seconds ?? undefined,
+    error: row.error ?? undefined,
     affected_locations: typeof row.affected_locations === 'string' ? JSON.parse(row.affected_locations) : row.affected_locations,
   };
 }
@@ -140,7 +170,7 @@ function parseIncidentRow(row: any): Incident {
 
 export async function getConsecutiveFailures(checkId: string): Promise<number> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<ConsecutiveFailuresRow>(
       `SELECT consecutive_failures FROM uptime_check_state WHERE check_id = $1`,
       [checkId]
     );
@@ -172,7 +202,7 @@ export async function setConsecutiveFailures(checkId: string, count: number): Pr
 
 export async function createMaintenanceWindow(window: MaintenanceWindow): Promise<MaintenanceWindow> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<MaintenanceWindowRow>(
       `INSERT INTO maintenance_windows (id, check_id, name, start_time, end_time, reason, created_by, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
@@ -188,7 +218,7 @@ export async function createMaintenanceWindow(window: MaintenanceWindow): Promis
 
 export async function getMaintenanceWindows(checkId: string): Promise<MaintenanceWindow[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<MaintenanceWindowRow>(
       `SELECT * FROM maintenance_windows WHERE check_id = $1 ORDER BY start_time DESC`,
       [checkId]
     );
@@ -211,14 +241,14 @@ export async function deleteMaintenanceWindow(windowId: string): Promise<boolean
   return false;
 }
 
-function parseMaintenanceWindowRow(row: any): MaintenanceWindow {
+function parseMaintenanceWindowRow(row: MaintenanceWindowRow): MaintenanceWindow {
   return {
     id: row.id,
     check_id: row.check_id,
     name: row.name,
     start_time: new Date(row.start_time),
     end_time: new Date(row.end_time),
-    reason: row.reason,
+    reason: row.reason ?? undefined,
     created_by: row.created_by,
     created_at: new Date(row.created_at),
   };

@@ -59,27 +59,55 @@ const SCHEDULE_COLUMNS = [
 ].join(', ');
 
 // ============================================
+// Feature #462: Row interface to eliminate : any types
+// ============================================
+
+interface ScheduleRow {
+  id: string;
+  organization_id: string;
+  suite_id: string;
+  name: string;
+  description: string | null;
+  cron_expression: string | null;
+  run_at: string | Date | null;
+  timezone: string | null;
+  enabled: boolean;
+  browsers: string[] | null;
+  notify_on_failure: boolean | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+  created_by: string;
+  next_run_at: string | Date | null;
+  last_run_id: string | null;
+  run_count: number | null;
+}
+
+interface CountRow {
+  count: string;
+}
+
+// ============================================
 // Helper Functions
 // ============================================
 
-function parseScheduleRow(row: any): Schedule {
+function parseScheduleRow(row: ScheduleRow): Schedule {
   return {
     id: row.id,
     organization_id: row.organization_id,
     suite_id: row.suite_id,
     name: row.name,
-    description: row.description,
-    cron_expression: row.cron_expression,
+    description: row.description ?? undefined,
+    cron_expression: row.cron_expression ?? undefined,
     run_at: row.run_at ? new Date(row.run_at) : undefined,
     timezone: row.timezone || 'UTC',
     enabled: row.enabled,
-    browsers: row.browsers || ['chromium'],
+    browsers: (row.browsers as Schedule['browsers']) || ['chromium'],
     notify_on_failure: row.notify_on_failure ?? true,
     created_at: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
     updated_at: row.updated_at instanceof Date ? row.updated_at : new Date(row.updated_at),
     created_by: row.created_by,
     next_run_at: row.next_run_at ? new Date(row.next_run_at) : undefined,
-    last_run_id: row.last_run_id,
+    last_run_id: row.last_run_id ?? undefined,
     run_count: row.run_count || 0,
   };
 }
@@ -93,7 +121,7 @@ function parseScheduleRow(row: any): Schedule {
  */
 export async function createSchedule(schedule: Schedule): Promise<Schedule> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<ScheduleRow>(
       `INSERT INTO schedules (
         id, organization_id, suite_id, name, description,
         cron_expression, run_at, timezone, enabled, browsers,
@@ -134,7 +162,7 @@ export async function createSchedule(schedule: Schedule): Promise<Schedule> {
  */
 export async function getSchedule(scheduleId: string): Promise<Schedule | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<ScheduleRow>(
       `SELECT ${SCHEDULE_COLUMNS} FROM schedules WHERE id = $1`,
       [scheduleId]
     );
@@ -155,7 +183,7 @@ export async function updateSchedule(
 ): Promise<Schedule | undefined> {
   if (isDatabaseConnected()) {
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: unknown[] = [];
     let paramIndex = 1;
 
     if (updates.name !== undefined) {
@@ -212,7 +240,7 @@ export async function updateSchedule(
     values.push(new Date());
 
     values.push(scheduleId);
-    const result = await query<any>(
+    const result = await query<ScheduleRow>(
       `UPDATE schedules SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
       values
     );
@@ -245,7 +273,7 @@ export async function deleteSchedule(scheduleId: string): Promise<boolean> {
  */
 export async function listSchedules(organizationId: string): Promise<Schedule[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<ScheduleRow>(
       `SELECT ${SCHEDULE_COLUMNS} FROM schedules WHERE organization_id = $1 ORDER BY created_at DESC`,
       [organizationId]
     );
@@ -264,7 +292,7 @@ export async function listSchedules(organizationId: string): Promise<Schedule[]>
  */
 export async function getEnabledSchedules(): Promise<Schedule[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<ScheduleRow>(
       `SELECT ${SCHEDULE_COLUMNS} FROM schedules WHERE enabled = true ORDER BY next_run_at ASC NULLS LAST`,
       []
     );
@@ -283,7 +311,7 @@ export async function getEnabledSchedules(): Promise<Schedule[]> {
  */
 export async function getSchedulesBySuiteId(suiteId: string): Promise<Schedule[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<ScheduleRow>(
       `SELECT ${SCHEDULE_COLUMNS} FROM schedules WHERE suite_id = $1 ORDER BY created_at DESC`,
       [suiteId]
     );
@@ -303,14 +331,14 @@ export async function getSchedulesBySuiteId(suiteId: string): Promise<Schedule[]
 export async function getScheduleCount(organizationId?: string): Promise<number> {
   if (isDatabaseConnected()) {
     let sql = 'SELECT COUNT(*) as count FROM schedules';
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     if (organizationId) {
       sql += ' WHERE organization_id = $1';
       params.push(organizationId);
     }
 
-    const result = await query<any>(sql, params);
+    const result = await query<CountRow>(sql, params);
     if (result && result.rows[0]) {
       return parseInt(result.rows[0].count, 10);
     }
@@ -328,7 +356,7 @@ export async function getSchedulesDueToRun(): Promise<Schedule[]> {
   const now = new Date();
 
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<ScheduleRow>(
       `SELECT ${SCHEDULE_COLUMNS} FROM schedules
        WHERE enabled = true
        AND next_run_at IS NOT NULL

@@ -455,7 +455,7 @@ export async function getMcpToolCallsByOrg(
   if (isDatabaseConnected()) {
     try {
       let sql = `SELECT ${MCP_TOOL_CALL_COLUMNS} FROM mcp_tool_calls WHERE organization_id = $1`;
-      const params: any[] = [orgId];
+      const params: unknown[] = [orgId];
 
       if (since) {
         sql += ' AND timestamp >= $2';
@@ -597,7 +597,7 @@ export async function getMcpAuditLogs(
   if (isDatabaseConnected()) {
     try {
       const whereClauses = ['organization_id = $1'];
-      const params: any[] = [orgId];
+      const params: unknown[] = [orgId];
       let paramIndex = 2;
 
       if (options.method) {

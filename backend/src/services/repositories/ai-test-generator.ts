@@ -36,6 +36,42 @@ const AI_GENERATED_TEST_COLUMNS = `
 `;
 
 // ============================================
+// Feature #462: Row interface to eliminate : any types
+// ============================================
+
+interface AiGeneratedTestRow {
+  id: string;
+  user_id: string;
+  organization_id: string | null;
+  project_id: string | null;
+  description: string;
+  generated_code: string;
+  test_name: string;
+  language: string;
+  confidence_score: number;
+  confidence_level: string;
+  version: number;
+  parent_version_id: string | null;
+  feedback: string | null;
+  ai_metadata: Record<string, unknown> | null;
+  options: Record<string, unknown> | null;
+  suggested_variations: unknown[] | null;
+  improvement_suggestions: unknown[] | null;
+  approval: Record<string, unknown> | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+interface MaxVersionRow {
+  max_version: number | null;
+}
+
+interface CountRow {
+  count: string;
+  total?: string;
+}
+
+// ============================================
 // Deprecated Memory Store Accessors
 // These return empty Maps for backward compatibility.
 // Callers should migrate to the async DB functions.
@@ -96,34 +132,34 @@ export function getVersionChainKey(userId: string, description: string): string 
   return `${userId}:${normalized}`;
 }
 
-function parseAiGeneratedTestRow(row: any): AIGeneratedTest {
+function parseAiGeneratedTestRow(row: AiGeneratedTestRow): AIGeneratedTest {
   return {
     id: row.id,
     user_id: row.user_id,
-    organization_id: row.organization_id,
-    project_id: row.project_id,
+    organization_id: row.organization_id ?? undefined,
+    project_id: row.project_id ?? undefined,
     description: row.description,
     generated_code: row.generated_code,
     test_name: row.test_name,
-    language: row.language,
+    language: row.language as AIGeneratedTest['language'],
     confidence_score: row.confidence_score,
-    confidence_level: row.confidence_level,
+    confidence_level: row.confidence_level as AIGeneratedTest['confidence_level'],
     version: row.version,
-    parent_version_id: row.parent_version_id,
-    feedback: row.feedback,
-    ai_metadata: row.ai_metadata || {
+    parent_version_id: row.parent_version_id ?? undefined,
+    feedback: row.feedback ?? undefined,
+    ai_metadata: (row.ai_metadata as AIGeneratedTest['ai_metadata']) || {
       provider: 'unknown',
       model: 'unknown',
       used_real_ai: false,
     },
-    options: row.options || {
+    options: (row.options as AIGeneratedTest['options']) || {
       include_comments: true,
       include_assertions: true,
       test_framework: 'playwright',
     },
-    suggested_variations: row.suggested_variations || [],
-    improvement_suggestions: row.improvement_suggestions || [],
-    approval: row.approval || { status: 'pending' },
+    suggested_variations: (row.suggested_variations as string[]) || [],
+    improvement_suggestions: (row.improvement_suggestions as string[]) || [],
+    approval: (row.approval as unknown as ApprovalInfo) || { status: 'pending' },
     created_at: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
     updated_at: row.updated_at instanceof Date ? row.updated_at : new Date(row.updated_at),
   };
@@ -135,7 +171,7 @@ function parseAiGeneratedTestRow(row: any): AIGeneratedTest {
 
 export async function createAiGeneratedTest(test: AIGeneratedTest): Promise<AIGeneratedTest> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<AiGeneratedTestRow>(
       `INSERT INTO ai_generated_tests (
         id, user_id, organization_id, project_id, description, generated_code,
         test_name, language, confidence_score, confidence_level, version,
@@ -176,7 +212,7 @@ export async function createAiGeneratedTest(test: AIGeneratedTest): Promise<AIGe
 
 export async function getAiGeneratedTest(testId: string): Promise<AIGeneratedTest | null> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<AiGeneratedTestRow>(
       `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests WHERE id = $1`,
       [testId]
     );
@@ -194,7 +230,7 @@ export async function updateAiGeneratedTest(
 ): Promise<AIGeneratedTest | null> {
   if (isDatabaseConnected()) {
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: unknown[] = [];
     let paramIndex = 1;
 
     if (updates.description !== undefined) {
@@ -239,7 +275,7 @@ export async function updateAiGeneratedTest(
     }
 
     values.push(testId);
-    const result = await query<any>(
+    const result = await query<AiGeneratedTestRow>(
       `UPDATE ai_generated_tests SET ${setClauses.join(', ')}, updated_at = NOW() WHERE id = $${paramIndex} RETURNING *`,
       values
     );
@@ -271,7 +307,7 @@ export async function deleteAiGeneratedTest(testId: string): Promise<boolean> {
 
 export async function getTestsByUser(userId: string): Promise<AIGeneratedTest[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<AiGeneratedTestRow>(
       `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests WHERE user_id = $1 ORDER BY created_at DESC`,
       [userId]
     );
@@ -286,7 +322,7 @@ export async function getTestsByUser(userId: string): Promise<AIGeneratedTest[]>
 
 export async function getTestsByOrganization(organizationId: string): Promise<AIGeneratedTest[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<AiGeneratedTestRow>(
       `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests WHERE organization_id = $1 ORDER BY created_at DESC`,
       [organizationId]
     );
@@ -301,7 +337,7 @@ export async function getTestsByOrganization(organizationId: string): Promise<AI
 
 export async function getTestsByProjectId(projectId: string): Promise<AIGeneratedTest[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<AiGeneratedTestRow>(
       `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests WHERE project_id = $1 ORDER BY created_at DESC`,
       [projectId]
     );
@@ -316,7 +352,7 @@ export async function getTestsByProjectId(projectId: string): Promise<AIGenerate
 
 export async function getTestsByApprovalStatus(status: ApprovalStatus): Promise<AIGeneratedTest[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<AiGeneratedTestRow>(
       `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests WHERE approval->>'status' = $1 ORDER BY created_at DESC`,
       [status]
     );
@@ -336,7 +372,7 @@ export async function getTestsByApprovalStatus(status: ApprovalStatus): Promise<
 export async function getVersionChain(userId: string, description: string): Promise<AIGeneratedTest[]> {
   if (isDatabaseConnected()) {
     // Use LOWER() and TRIM() for case-insensitive matching like memory store
-    const result = await query<any>(
+    const result = await query<AiGeneratedTestRow>(
       `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests
        WHERE user_id = $1 AND LOWER(TRIM(description)) = LOWER(TRIM($2))
        ORDER BY version ASC`,
@@ -353,7 +389,7 @@ export async function getVersionChain(userId: string, description: string): Prom
 
 export async function getLatestVersion(userId: string, description: string): Promise<number> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<MaxVersionRow>(
       `SELECT MAX(version) as max_version FROM ai_generated_tests
        WHERE user_id = $1 AND LOWER(TRIM(description)) = LOWER(TRIM($2))`,
       [userId, description]
@@ -386,7 +422,7 @@ export async function getGenerationHistory(
   if (isDatabaseConnected()) {
     // Build dynamic WHERE clause
     const conditions: string[] = ['user_id = $1'];
-    const params: any[] = [userId];
+    const params: unknown[] = [userId];
     let paramIndex = 2;
 
     if (project_id) {
@@ -405,7 +441,7 @@ export async function getGenerationHistory(
     const whereClause = conditions.join(' AND ');
 
     // Get total count
-    const countResult = await query<any>(
+    const countResult = await query<CountRow>(
       `SELECT COUNT(*) as total FROM ai_generated_tests WHERE ${whereClause}`,
       params
     );
@@ -413,7 +449,7 @@ export async function getGenerationHistory(
 
     // Get paginated results
     const dataParams = [...params, limit, offset];
-    const result = await query<any>(
+    const result = await query<AiGeneratedTestRow>(
       `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests WHERE ${whereClause}
        ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
       dataParams
@@ -433,7 +469,7 @@ export async function getGenerationHistory(
 
 export async function getPendingReviewCount(): Promise<number> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<CountRow>(
       `SELECT COUNT(*) as count FROM ai_generated_tests WHERE approval->>'status' = 'pending'`
     );
     return parseInt(result?.rows[0]?.count || '0', 10);
@@ -444,7 +480,7 @@ export async function getPendingReviewCount(): Promise<number> {
 
 export async function getRecentlyReviewed(limit: number = 10): Promise<AIGeneratedTest[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<AiGeneratedTestRow>(
       `SELECT ${AI_GENERATED_TEST_COLUMNS} FROM ai_generated_tests
        WHERE approval->>'status' IN ('approved', 'rejected')
        ORDER BY (approval->>'reviewed_at')::timestamp DESC NULLS LAST

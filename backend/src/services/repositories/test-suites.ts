@@ -37,6 +37,50 @@ const TEST_COLUMNS = [
   'code', 'enabled', 'priority', 'tags', 'created_at', 'updated_at'
 ].join(', ');
 
+// ============================================
+// Feature #462: Row interfaces to eliminate : any types
+// ============================================
+
+interface TestSuiteRow {
+  id: string;
+  project_id: string;
+  name: string;
+  description: string | null;
+  type: string;
+  config: string | Record<string, unknown>;
+  tags: string[] | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+interface TestRow {
+  id: string;
+  suite_id: string;
+  project_id: string;
+  name: string;
+  description: string | null;
+  type: string;
+  config: string | Record<string, unknown>;
+  code: string | null;
+  enabled: boolean;
+  priority: number | null;
+  tags: string[] | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+// Extended row types for JOIN queries
+interface TestWithSuiteRow extends TestRow {
+  suite_config?: string | Record<string, unknown>;
+  suite_name?: string;
+  project_name?: string;
+  total_count?: string;
+}
+
+interface TestSuiteWithCountRow extends TestSuiteRow {
+  total_count?: string;
+}
+
 // ===== TEST SUITES =====
 
 export async function createTestSuite(suite: TestSuite): Promise<TestSuite> {
@@ -46,7 +90,7 @@ export async function createTestSuite(suite: TestSuite): Promise<TestSuite> {
     return suite;
   }
 
-  const result = await query<TestSuite>(
+  const result = await query<TestSuiteRow>(
     `INSERT INTO test_suites (id, project_id, name, description, type, config, tags, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
@@ -83,7 +127,7 @@ export async function getTestSuite(id: string): Promise<TestSuite | undefined> {
     return memTestSuites.get(id);
   }
 
-  const result = await query<any>(
+  const result = await query<TestSuiteRow>(
     `SELECT ${TEST_SUITE_COLUMNS} FROM test_suites WHERE id = $1`,
     [id]
   );
@@ -111,7 +155,7 @@ export async function updateTestSuite(id: string, updates: Partial<TestSuite>): 
     updated_at: new Date(),
   };
 
-  const result = await query<any>(
+  const result = await query<TestSuiteRow>(
     `UPDATE test_suites SET
       name = $2, description = $3, type = $4, config = $5, tags = $6, updated_at = $7
      WHERE id = $1
@@ -165,7 +209,7 @@ export async function listTestSuites(projectId: string, organizationId: string):
     return Array.from(memTestSuites.values()).filter(s => s.project_id === projectId && s.organization_id === organizationId);
   }
 
-  const result = await query<any>(
+  const result = await query<TestSuiteRow>(
     `SELECT ${TEST_SUITE_COLUMNS} FROM test_suites WHERE project_id = $1 ORDER BY created_at DESC`,
     [projectId]
   );
@@ -199,7 +243,7 @@ export async function listTestSuitesPaginated(
   }
 
   // Feature #124: Single query with window function instead of separate COUNT + SELECT
-  const result = await query<any>(
+  const result = await query<TestSuiteWithCountRow>(
     `SELECT ${TEST_SUITE_COLUMNS}, COUNT(*) OVER() as total_count
      FROM test_suites
      WHERE project_id = $1 AND organization_id = $2
@@ -221,7 +265,7 @@ export async function listAllTestSuites(organizationId: string, limit: number = 
   }
 
   // Feature #215: Move org filtering to SQL WHERE clause instead of JS filter
-  const result = await query<any>(
+  const result = await query<TestSuiteRow>(
     `SELECT ${TEST_SUITE_COLUMNS} FROM test_suites WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
     [organizationId, limit]
   );
@@ -244,7 +288,7 @@ export async function createTest(test: Test): Promise<Test> {
   const suite = await getTestSuite(test.suite_id);
   const projectId = suite?.project_id || null;
 
-  const result = await query<Test>(
+  const result = await query<TestRow>(
     `INSERT INTO tests (id, suite_id, project_id, name, description, type, config, code, enabled, priority, tags, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      RETURNING *`,
@@ -281,7 +325,7 @@ export async function getTest(id: string): Promise<Test | undefined> {
   }
 
   // JOIN test_suites AND projects to get suite_name, project_id, project_name in single query
-  const result = await query<any>(
+  const result = await query<TestWithSuiteRow>(
     `SELECT t.*,
             ts.config as suite_config,
             ts.name as suite_name,
@@ -296,8 +340,10 @@ export async function getTest(id: string): Promise<Test | undefined> {
   if (result && result.rows[0]) {
     const row = result.rows[0];
     // Extract organization_id from suite config
-    const suiteConfig = row.suite_config;
-    const orgId = suiteConfig?.organization_id || '';
+    const suiteConfig = typeof row.suite_config === 'string'
+      ? JSON.parse(row.suite_config)
+      : row.suite_config;
+    const orgId = (suiteConfig?.organization_id as string) || '';
     const test = rowToTest(row, orgId);
     // Add the enriched fields (suite_name, project_id, project_name)
     test.suite_name = row.suite_name;
@@ -326,7 +372,7 @@ export async function updateTest(id: string, updates: Partial<Test>): Promise<Te
     updated_at: new Date(),
   };
 
-  const result = await query<any>(
+  const result = await query<TestRow>(
     `UPDATE tests SET
       name = $2, description = $3, type = $4, config = $5, code = $6,
       enabled = $7, priority = $8, tags = $9, updated_at = $10
@@ -372,7 +418,7 @@ export async function listTests(suiteId: string): Promise<Test[]> {
   const suite = await getTestSuite(suiteId);
   const orgId = suite?.organization_id || '';
 
-  const result = await query<any>(
+  const result = await query<TestRow>(
     `SELECT ${TEST_COLUMNS} FROM tests WHERE suite_id = $1 ORDER BY priority ASC, created_at ASC`,
     [suiteId]
   );
@@ -406,7 +452,7 @@ export async function listTestsPaginated(
   }
 
   // Feature #124: Single query with window function instead of separate COUNT + SELECT
-  const result = await query<any>(
+  const result = await query<TestWithSuiteRow>(
     `SELECT ${TEST_COLUMNS}, COUNT(*) OVER() as total_count
      FROM tests
      WHERE suite_id = $1
@@ -433,7 +479,7 @@ export async function listAllTests(organizationId: string, limit: number = 1000)
   // SECURITY FIX: Filter by organization_id at database level, not in JavaScript
   // PERFORMANCE FIX: Use WHERE clause instead of full table scan + JS filter
   // The organization_id is stored in test_suites.config JSONB column
-  const result = await query<any>(
+  const result = await query<TestWithSuiteRow>(
     `SELECT t.*, ts.config as suite_config FROM tests t
      INNER JOIN test_suites ts ON t.suite_id = ts.id
      WHERE ts.organization_id = $1
@@ -443,8 +489,10 @@ export async function listAllTests(organizationId: string, limit: number = 1000)
   );
   if (result) {
     return result.rows.map(row => {
-      const suiteConfig = row.suite_config;
-      const orgId = suiteConfig?.organization_id || organizationId;
+      const suiteConfig = typeof row.suite_config === 'string'
+        ? JSON.parse(row.suite_config)
+        : row.suite_config;
+      const orgId = (suiteConfig?.organization_id as string) || organizationId;
       return rowToTest(row, orgId);
     });
   }
@@ -475,7 +523,7 @@ export async function batchGetTests(ids: string[]): Promise<Map<string, Test>> {
   }
 
   // Single query using ANY($1) instead of N separate queries
-  const queryResult = await query<any>(
+  const queryResult = await query<TestWithSuiteRow>(
     `SELECT t.*,
             ts.config as suite_config,
             ts.name as suite_name,
@@ -490,8 +538,10 @@ export async function batchGetTests(ids: string[]): Promise<Map<string, Test>> {
 
   if (queryResult) {
     for (const row of queryResult.rows) {
-      const suiteConfig = row.suite_config;
-      const orgId = suiteConfig?.organization_id || '';
+      const suiteConfig = typeof row.suite_config === 'string'
+        ? JSON.parse(row.suite_config)
+        : row.suite_config;
+      const orgId = (suiteConfig?.organization_id as string) || '';
       const test = rowToTest(row, orgId);
       test.suite_name = row.suite_name;
       test.project_id = row.project_id;
@@ -524,7 +574,7 @@ export async function batchGetTestSuites(ids: string[]): Promise<Map<string, Tes
   }
 
   // Single query using ANY($1) instead of N separate queries
-  const queryResult = await query<any>(
+  const queryResult = await query<TestSuiteRow>(
     `SELECT ${TEST_SUITE_COLUMNS} FROM test_suites WHERE id = ANY($1)`,
     [uniqueIds]
   );
@@ -543,7 +593,7 @@ export async function batchGetTestSuites(ids: string[]): Promise<Map<string, Tes
 /**
  * Convert a database row to a TestSuite object
  */
-function rowToTestSuite(row: any): TestSuite {
+function rowToTestSuite(row: TestSuiteRow): TestSuite {
   const config = typeof row.config === 'string' ? JSON.parse(row.config) : (row.config || {});
   return {
     id: row.id,
@@ -568,7 +618,7 @@ function rowToTestSuite(row: any): TestSuite {
 /**
  * Convert a database row to a Test object
  */
-function rowToTest(row: any, organizationId: string): Test {
+function rowToTest(row: TestRow, organizationId: string): Test {
   const config = typeof row.config === 'string' ? JSON.parse(row.config) : (row.config || {});
   return {
     id: row.id,
@@ -741,7 +791,7 @@ export async function getTestSuitesMap(): Promise<Map<string, TestSuite>> {
     return new Map(memTestSuites);
   }
 
-  const result = await query<any>(`SELECT ${TEST_SUITE_COLUMNS} FROM test_suites ORDER BY created_at DESC`);
+  const result = await query<TestSuiteRow>(`SELECT ${TEST_SUITE_COLUMNS} FROM test_suites ORDER BY created_at DESC`);
   if (result) {
     for (const row of result.rows) {
       const suite = rowToTestSuite(row);
@@ -761,15 +811,17 @@ export async function getTestsMap(): Promise<Map<string, Test>> {
     return new Map(memTests);
   }
 
-  const result = await query<any>(
+  const result = await query<TestWithSuiteRow>(
     `SELECT t.*, ts.config as suite_config FROM tests t
      LEFT JOIN test_suites ts ON t.suite_id = ts.id
      ORDER BY t.created_at DESC`
   );
   if (result) {
     for (const row of result.rows) {
-      const suiteConfig = row.suite_config;
-      const orgId = suiteConfig?.organization_id || '';
+      const suiteConfig = typeof row.suite_config === 'string'
+        ? JSON.parse(row.suite_config)
+        : row.suite_config;
+      const orgId = (suiteConfig?.organization_id as string) || '';
       const test = rowToTest(row, orgId);
       map.set(row.id, test);
     }
