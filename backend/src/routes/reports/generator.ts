@@ -20,6 +20,10 @@ import {
 import { generateReportId, storeReport } from './stores.js';
 import { query, isDatabaseConnected } from '../../services/database.js';
 import { getProject } from '../../services/repositories/projects.js';
+import { createLogger } from '../../services/logger.js';
+
+// Create a child logger for the reports generator
+const log = createLogger('reports');
 
 // ============================================================================
 // Row interfaces for database query results
@@ -347,7 +351,7 @@ async function generateE2ESection(
       tests: testEntries,
     };
   } catch (error) {
-    console.error('[ReportGenerator] Failed to generate E2E section:', error);
+    log.error({ err: error, section: 'e2e', code: 'REPORT_E2E_GENERATION_FAILED' }, 'Failed to generate E2E section');
     return emptySection;
   }
 }
@@ -433,7 +437,7 @@ async function generateVisualSection(
       comparisons,
     };
   } catch (error) {
-    console.error('[ReportGenerator] Failed to generate Visual section:', error);
+    log.error({ err: error, section: 'visual', code: 'REPORT_VISUAL_GENERATION_FAILED' }, 'Failed to generate Visual section');
     return emptySection;
   }
 }
@@ -520,7 +524,7 @@ async function generateAccessibilitySection(
       violations,
     };
   } catch (error) {
-    console.error('[ReportGenerator] Failed to generate Accessibility section:', error);
+    log.error({ err: error, section: 'accessibility', code: 'REPORT_A11Y_GENERATION_FAILED' }, 'Failed to generate Accessibility section');
     return emptySection;
   }
 }
@@ -662,7 +666,7 @@ async function generatePerformanceSection(
       },
     };
   } catch (error) {
-    console.error('[ReportGenerator] Failed to generate Performance section:', error);
+    log.error({ err: error, section: 'performance', code: 'REPORT_PERF_GENERATION_FAILED' }, 'Failed to generate Performance section');
     return emptySection;
   }
 }
@@ -752,7 +756,7 @@ async function generateLoadSection(
       scenarios,
     };
   } catch (error) {
-    console.error('[ReportGenerator] Failed to generate Load section:', error);
+    log.error({ err: error, section: 'load', code: 'REPORT_LOAD_GENERATION_FAILED' }, 'Failed to generate Load section');
     return emptySection;
   }
 }
@@ -887,7 +891,7 @@ async function generateSecuritySection(
       },
     };
   } catch (error) {
-    console.error('[ReportGenerator] Failed to generate Security section:', error);
+    log.error({ err: error, section: 'security', code: 'REPORT_SECURITY_GENERATION_FAILED' }, 'Failed to generate Security section');
     return emptySection;
   }
 }
