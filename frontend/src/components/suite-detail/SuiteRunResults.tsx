@@ -3,15 +3,19 @@
  * Feature #50: Extract suite run results display from TestSuitePage.tsx
  * Feature #35: Live screenshot panel during test execution
  * Feature #525: Added ScoreCard for suite pass rate metrics
+ * Feature #547: WaveProgressCard grid for running tests with animated status borders
  * Feature #1065: Healed selector indicator
  * Feature #1072: Selector diff visualization
  * Feature #1073: Confidence meter visualization
  * Feature #1074: Quick link to healing options
  */
 
-import React from 'react';
+import React, { useState } from 'react';
+import { FlaskConical } from 'lucide-react';
 import type { EditSelectorModalState } from './modals';
 import { ScoreCard } from '../ui/score-card';
+import { WaveProgressCard, type WaveProgressStatus, type StepStatus } from '../ui/wave-progress-card';
+import type { TestRunStatus, CurrentStepProgress } from '../../hooks/useSuiteRunSocket';
 
 export interface LiveScreenshot {
  base64: string;
@@ -74,13 +78,23 @@ interface SuiteRunStep {
  };
 }
 
+// Feature #547: Test info for WaveProgressCard grid
+interface TestInfo {
+ id: string;
+ name: string;
+ steps?: { action: string; selector?: string }[];
+}
+
 interface SuiteRunResultsProps {
  suiteRun: SuiteRun | null;
  suite: { project_id: string } | null;
- tests: { id: string }[];
+ tests: TestInfo[];
  isCancellingSuite: boolean;
  liveScreenshot: LiveScreenshot | null;
  screenshotHistory: ScreenshotHistoryItem[];
+ // Feature #547: Per-test status from useSuiteRunSocket
+ perTestStatus?: Map<string, TestRunStatus>;
+ currentStep?: CurrentStepProgress | null;
  onCancelSuiteRun: () => void;
  onExpandScreenshot: (base64: string) => void;
  onEditSelector: (state: EditSelectorModalState) => void;
@@ -94,16 +108,74 @@ export function SuiteRunResults({
  isCancellingSuite,
  liveScreenshot,
  screenshotHistory,
+ perTestStatus,
+ currentStep,
  onCancelSuiteRun,
  onExpandScreenshot,
  onEditSelector,
  onNavigate,
 }: SuiteRunResultsProps) {
+ // Feature #547: Track which test cards are expanded
+ const [expandedTestIds, setExpandedTestIds] = useState<Set<string>>(new Set());
+
  if (!suiteRun) return null;
 
  const completedCount = suiteRun.results?.length || 0;
  const totalCount = tests.length;
  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+ // Feature #547: Convert TestRunStatus to WaveProgressStatus
+ const getWaveStatus = (testId: string): WaveProgressStatus => {
+  const status = perTestStatus?.get(testId);
+  if (!status || status === 'waiting') return 'waiting';
+  if (status === 'running') return 'running';
+  if (status === 'passed') return 'completed';
+  if (status === 'failed' || status === 'error') return 'failed';
+  if (status === 'skipped') return 'skipped';
+  return 'waiting';
+ };
+
+ // Feature #547: Get step status based on current step progress
+ const getStepProgress = (test: TestInfo): { name: string; status: StepStatus; duration?: number }[] => {
+  if (!test.steps || test.steps.length === 0) return [];
+
+  const isCurrentTest = currentStep?.testId === test.id;
+  const currentStepIndex = isCurrentTest ? currentStep?.stepIndex || 0 : -1;
+  const testStatus = perTestStatus?.get(test.id);
+
+  return test.steps.map((step, idx) => {
+   let status: StepStatus = 'pending';
+
+   if (testStatus === 'passed') {
+    status = 'completed';
+   } else if (testStatus === 'failed' || testStatus === 'error') {
+    // If failed, mark steps up to failure point as completed, failure step as failed
+    status = idx < currentStepIndex ? 'completed' : idx === currentStepIndex ? 'failed' : 'pending';
+   } else if (testStatus === 'running' && isCurrentTest) {
+    status = idx < currentStepIndex ? 'completed' : idx === currentStepIndex ? 'running' : 'pending';
+   } else if (testStatus === 'waiting' || !testStatus) {
+    status = 'pending';
+   }
+
+   return {
+    name: step.action + (step.selector ? ` ${step.selector.slice(0, 30)}...` : ''),
+    status,
+   };
+  });
+ };
+
+ // Feature #547: Toggle test card expansion
+ const toggleTestExpanded = (testId: string) => {
+  setExpandedTestIds(prev => {
+   const next = new Set(prev);
+   if (next.has(testId)) {
+    next.delete(testId);
+   } else {
+    next.add(testId);
+   }
+   return next;
+  });
+ };
 
  return (
  <div className="mt-6 rounded-lg border border-border bg-card p-6">
@@ -165,6 +237,39 @@ export function SuiteRunResults({
  </div>
  )}
 
+ {/* Feature #547: WaveProgressCard grid for running tests */}
+ {tests.length > 0 && perTestStatus && (
+ <div className="mt-4">
+  <h4 className="text-sm font-medium text-foreground mb-3">Test Progress</h4>
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+   {tests.map((test) => {
+    const waveStatus = getWaveStatus(test.id);
+    const steps = getStepProgress(test);
+    const isCurrentTest = currentStep?.testId === test.id;
+
+    return (
+     <WaveProgressCard
+      key={test.id}
+      status={waveStatus}
+      icon={FlaskConical}
+      title={test.name}
+      subtitle={
+       isCurrentTest && currentStep
+        ? `Step ${currentStep.stepIndex + 1}/${currentStep.totalSteps}: ${currentStep.action}`
+        : undefined
+      }
+      expanded={expandedTestIds.has(test.id)}
+      onToggle={() => toggleTestExpanded(test.id)}
+      steps={steps}
+      animate={waveStatus === 'running'}
+      className="min-h-[80px]"
+     />
+    );
+   })}
+  </div>
+ </div>
+ )}
+
  {/* Feature #35: Live Screenshot Panel */}
  {liveScreenshot && (
  <LiveScreenshotPanel
@@ -175,7 +280,7 @@ export function SuiteRunResults({
  )}
 
  {/* Placeholder when no live screenshot yet */}
- {!liveScreenshot && (
+ {!liveScreenshot && !perTestStatus && (
  <div className="mt-4 rounded-lg border border-dashed border-border bg-muted p-4">
  <div className="flex items-center gap-2 text-sm text-muted-foreground">
  <svg className="h-5 w-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
