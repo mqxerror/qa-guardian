@@ -103,10 +103,18 @@ export interface AccessibilityViolation {
 }
 
 export interface AccessibilityData {
+  score: number;
   violations: AccessibilityViolation[];
-  passes: number;
-  incomplete: number;
-  violationCount: number;
+  violationCounts: {
+    critical: number;
+    serious: number;
+    moderate: number;
+    minor: number;
+    total: number;
+  };
+  passesCount: number;
+  wcagLevel: string;
+  axeVersion: string;
 }
 
 // ============================================================

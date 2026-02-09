@@ -327,7 +327,7 @@ export function useQuickTestSocket() {
                 duration: w.startedAt ? Date.now() - w.startedAt.getTime() : undefined,
                 data: data.data,
                 error: isSkipped ? (data.data?.summary as string) || 'Skipped' : w.error,
-                steps: w.steps.map(s => ({ ...s, status: waveStatus })),
+                steps: (w.steps || []).map(s => ({ ...s, status: waveStatus })),
               }
             : w
         ),
