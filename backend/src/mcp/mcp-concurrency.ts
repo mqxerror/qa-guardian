@@ -7,6 +7,11 @@
  * @module mcp-concurrency
  */
 
+import { createLogger } from '../services/logger.js';
+
+// Create logger for MCP concurrency manager
+const mcpLog = createLogger('mcp:concurrency');
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -88,7 +93,7 @@ export class ConcurrencyManager {
   constructor(
     maxConcurrent: number = 5,
     queueTimeout: number = 30000,
-    log: LogFunction = (msg) => console.error(`[Concurrency] ${msg}`)
+    log: LogFunction = (msg) => mcpLog.error(msg)
   ) {
     this.maxConcurrentRequests = maxConcurrent;
     this.queueTimeout = queueTimeout;

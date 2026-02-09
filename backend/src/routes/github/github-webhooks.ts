@@ -13,6 +13,7 @@
 import { FastifyInstance } from 'fastify';
 import crypto from 'crypto';
 import { authenticate, requireScopes } from '../../middleware/auth.js'; // Feature #389: Add authentication
+import { createLogger } from '../../services/logger.js';
 import {
   prStatusChecks,
   prComments,
@@ -26,6 +27,9 @@ import {
   GitleaksConfig,
 } from '../sast/gitleaks.js';
 import * as gitleaksRepo from '../../services/repositories/gitleaks.js';
+
+// Create logger for this module
+const log = createLogger('route:github-webhooks');
 
 // Webhook secret for verifying GitHub signatures (in production, use env var)
 const WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'qa-guardian-webhook-secret';
@@ -300,7 +304,7 @@ async function runPRDependencyScan(
   commitSha: string,
   _branch: string
 ): Promise<ScanResult> {
-  console.log(`[GitHub Webhook] Running dependency scan for ${repoFullName} PR #${prNumber} (${commitSha})`);
+  log.info({ repoFullName, prNumber, commitSha }, 'Running dependency scan for PR');
 
   // Simulate scanning package.json for vulnerabilities
   // In production, this would clone the repo and run actual scanners
@@ -396,7 +400,7 @@ async function createGitHubStatusCheck(
   }
   prStatusChecks.get(projectId)!.push(status);
 
-  console.log(`[GitHub Webhook] Created status check for PR #${prNumber}: ${status.status}`);
+  log.info({ prNumber, status: status.status, checkId: status.id }, 'Created status check for PR');
 
   return status;
 }
@@ -464,7 +468,7 @@ async function createPRComment(
   }
   prComments.get(projectId)!.push(comment);
 
-  console.log(`[GitHub Webhook] Posted comment on PR #${prNumber}`);
+  log.info({ prNumber, commentId: comment.id }, 'Posted comment on PR');
 
   return comment;
 }
@@ -490,17 +494,13 @@ async function runPushGitleaksScan(
   const scanId = `gitleaks_push_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const startedAt = new Date();
 
-  console.log(`
-====================================
-  Feature #334: Gitleaks Push Scan
-====================================
-  Repository: ${repoFullName}
-  Branch: ${branch}
-  Commit Range: ${beforeSha.substring(0, 7)}..${afterSha.substring(0, 7)}
-  Pusher: ${pusher}
-  Scan ID: ${scanId}
-====================================
-  `);
+  log.info({
+    repository: repoFullName,
+    branch,
+    commitRange: `${beforeSha.substring(0, 7)}..${afterSha.substring(0, 7)}`,
+    pusher,
+    scanId,
+  }, 'Starting Gitleaks push scan');
 
   try {
     // In a real implementation, this would:
@@ -571,20 +571,16 @@ async function runPushGitleaksScan(
       pushScanRecord.scan_id = scanId;
     }
 
-    console.log(`
-====================================
-  Gitleaks Push Scan Completed
-====================================
-  Repository: ${repoFullName}
-  Branch: ${branch}
-  Method: ${gitleaksInfo.available ? `CLI v${gitleaksInfo.version}` : 'Pattern Matching'}
-  Secrets Found: ${scan.summary.total}
-    - Critical: ${scan.summary.critical}
-    - High: ${scan.summary.high}
-    - Medium: ${scan.summary.medium}
-    - Low: ${scan.summary.low}
-====================================
-    `);
+    log.info({
+      repository: repoFullName,
+      branch,
+      method: gitleaksInfo.available ? `CLI v${gitleaksInfo.version}` : 'Pattern Matching',
+      secretsFound: scan.summary.total,
+      critical: scan.summary.critical,
+      high: scan.summary.high,
+      medium: scan.summary.medium,
+      low: scan.summary.low,
+    }, 'Gitleaks push scan completed');
 
     // Create alert/notification if secrets found (Feature #334 step 6)
     if (filteredFindings.length > 0 && config.notification_channels.length > 0) {
@@ -601,7 +597,7 @@ async function runPushGitleaksScan(
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`[GitHub Webhook] Gitleaks push scan failed:`, error);
+    log.error({ err: error, repository: repoFullName, branch }, 'Gitleaks push scan failed');
 
     // Update in-memory record with error
     const pushScanRecord = pushSecretScans.get(pushScanKey);
@@ -659,8 +655,7 @@ async function sendSecretDetectedNotification(
 
 Please review and remediate immediately. Secrets in code are a security risk.`;
 
-  console.log(`[GitHub Webhook] Sending secret detection notification to channels:`, channels);
-  console.log(message);
+  log.info({ channels, secretsCount, repository, branch, commitSha }, 'Sending secret detection notification');
 
   // TODO: Implement actual notification channels
   // For now, we just log the notification
@@ -669,15 +664,15 @@ Please review and remediate immediately. Secrets in code are a security risk.`;
   for (const channel of channels) {
     switch (channel) {
       case 'slack':
-        console.log(`[Notification] Would send to Slack: ${secretsCount} secrets found`);
+        log.info({ channel: 'slack', secretsCount }, 'Would send to Slack');
         // await sendSlackNotification(message);
         break;
       case 'email':
-        console.log(`[Notification] Would send email: ${secretsCount} secrets found`);
+        log.info({ channel: 'email', secretsCount }, 'Would send email');
         // await sendEmailNotification(message);
         break;
       case 'webhook':
-        console.log(`[Notification] Would call webhook: ${secretsCount} secrets found`);
+        log.info({ channel: 'webhook', secretsCount }, 'Would call webhook');
         // await sendWebhookNotification(message);
         break;
     }
@@ -702,13 +697,13 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
     const signature = request.headers['x-hub-signature-256'];
     const deliveryId = request.headers['x-github-delivery'] || `local-${Date.now()}`;
 
-    console.log(`[GitHub Webhook] Received event: ${event} (delivery: ${deliveryId})`);
+    log.info({ event, deliveryId }, 'Received GitHub webhook event');
 
     // Verify signature in production (skip for local testing)
     if (process.env.NODE_ENV === 'production' && WEBHOOK_SECRET !== 'qa-guardian-webhook-secret') {
       const payload = JSON.stringify(request.body);
       if (!verifyWebhookSignature(payload, signature, WEBHOOK_SECRET)) {
-        console.log('[GitHub Webhook] Invalid signature');
+        log.warn({ deliveryId }, 'Invalid webhook signature');
         return reply.status(401).send({
           error: 'Unauthorized',
           message: 'Invalid webhook signature',
@@ -720,7 +715,7 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
     if (event === 'pull_request') {
       const { action, number, pull_request, repository } = request.body;
 
-      console.log(`[GitHub Webhook] PR ${action}: ${repository.full_name}#${number}`);
+      log.info({ action, repository: repository.full_name, prNumber: number }, 'Processing PR event');
 
       // Only scan on opened or synchronize (new commits pushed)
       if (action === 'opened' || action === 'synchronize') {
@@ -732,7 +727,7 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
         // Check if scanning is enabled for this repo
         const config = prScanConfigs.get(repoFullName) || DEFAULT_PR_SCAN_CONFIG;
         if (!config.enabled) {
-          console.log(`[GitHub Webhook] Scanning disabled for ${repoFullName}`);
+          log.info({ repoFullName }, 'Scanning disabled for repository');
           return {
             success: true,
             message: 'Scanning disabled for this repository',
@@ -799,7 +794,7 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
 
       // PR closed - cleanup (optional)
       if (action === 'closed') {
-        console.log(`[GitHub Webhook] PR #${number} closed`);
+        log.info({ prNumber: number }, 'PR closed');
         return {
           success: true,
           message: 'PR closed event received',
@@ -818,12 +813,17 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
       // Extract branch name from ref (refs/heads/main -> main)
       const branch = ref.replace('refs/heads/', '');
 
-      console.log(`[GitHub Webhook] Push to ${repository.full_name}/${branch} by ${pusher.name}`);
-      console.log(`[GitHub Webhook] Commits: ${before.substring(0, 7)}..${after.substring(0, 7)} (${commits?.length || 0} commits)`);
+      log.info({
+        repository: repository.full_name,
+        branch,
+        pusher: pusher.name,
+        commitRange: `${before.substring(0, 7)}..${after.substring(0, 7)}`,
+        commitsCount: commits?.length || 0,
+      }, 'Received push event');
 
       // Don't scan on branch deletion
       if (deleted) {
-        console.log(`[GitHub Webhook] Branch ${branch} deleted, skipping scan`);
+        log.info({ branch }, 'Branch deleted, skipping scan');
         return {
           success: true,
           message: 'Branch deleted, no scan needed',
@@ -837,7 +837,7 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
       const gitleaksConfig = await gitleaksRepo.getGitleaksConfigOrDefault(projectId);
 
       if (!gitleaksConfig.enabled || !gitleaksConfig.scan_on_push) {
-        console.log(`[GitHub Webhook] Gitleaks scan_on_push disabled for ${repository.full_name}`);
+        log.info({ repository: repository.full_name }, 'Gitleaks scan_on_push disabled');
         return {
           success: true,
           message: 'Gitleaks scan on push disabled for this repository',
@@ -874,7 +874,7 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
         gitleaksConfig,
         pushScanKey
       ).catch(err => {
-        console.error(`[GitHub Webhook] Async Gitleaks scan error:`, err);
+        log.error({ err, repository: repository.full_name, branch }, 'Async Gitleaks scan error');
         // Update scan record with error
         const record = pushSecretScans.get(pushScanKey);
         if (record) {
@@ -943,7 +943,7 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
     const newConfig = { ...currentConfig, ...updates };
     prScanConfigs.set(repoFullName, newConfig);
 
-    console.log(`[GitHub Webhook] Updated config for ${repoFullName}:`, newConfig);
+    log.info({ repoFullName, config: newConfig }, 'Updated PR scan config');
 
     return {
       repository: repoFullName,
@@ -1125,11 +1125,12 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
     const newConfig: GitleaksConfig = { ...currentConfig, ...updates };
     await gitleaksRepo.upsertGitleaksConfig(projectId, newConfig);
 
-    console.log(`[GitHub Webhook] Updated Gitleaks config for project ${projectId}:`, {
+    log.info({
+      projectId,
       enabled: newConfig.enabled,
       scan_on_push: newConfig.scan_on_push,
       scan_on_pr: newConfig.scan_on_pr,
-    });
+    }, 'Updated Gitleaks config');
 
     return {
       project_id: projectId,
@@ -1243,7 +1244,7 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
       config,
       pushScanKey
     ).catch(err => {
-      console.error(`[GitHub Webhook] Test Gitleaks scan error:`, err);
+      log.error({ err, repository: repoFullName, branch }, 'Test Gitleaks scan error');
     });
 
     return {

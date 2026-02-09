@@ -16,6 +16,10 @@ import {
   SSE_CONNECTION_TIMEOUT,
   SSE_EVENT_BUFFER_MAX,
 } from './mcp-types.js';
+import { createLogger } from '../services/logger.js';
+
+// Create logger for MCP SSE manager
+const mcpLog = createLogger('mcp:sse-manager');
 
 // ============================================================================
 // Server Info (used in welcome messages)
@@ -67,7 +71,7 @@ export class SSEClientManager {
   /** Logger function */
   private readonly log: LogFunction;
 
-  constructor(log: LogFunction = (msg) => console.error(`[SSEManager] ${msg}`)) {
+  constructor(log: LogFunction = (msg) => mcpLog.error(msg)) {
     this.log = log;
   }
 

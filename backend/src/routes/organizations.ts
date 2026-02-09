@@ -2,6 +2,10 @@ import { FastifyInstance } from 'fastify';
 // Feature #455: Use native bcrypt for performance (removed bcryptjs)
 import bcrypt from 'bcrypt';
 import { authenticate, requireRoles, JwtPayload, getOrganizationId } from '../middleware/auth.js';
+import { createLogger } from '../services/logger.js';
+
+// Create logger for this module
+const log = createLogger('route:organizations');
 // Feature #2116: Use async DB calls instead of synchronous Map
 import { dbGetUserByEmail } from './auth.js';
 import { getUserById as dbGetUserById } from '../services/repositories/auth.js';
@@ -335,17 +339,13 @@ export async function organizationRoutes(app: FastifyInstance) {
 
     await repoCreateInvitation(invitation);
 
-    // Log to console (email would be sent in production)
-    console.log(`
-====================================
-  Invitation Created
-====================================
-  To: ${email}
-  Role: ${role}
-  Organization: ${id}
-  Invited by: ${user.email}
-====================================
-    `);
+    // Log invitation (email would be sent in production)
+    log.info({
+      email,
+      role,
+      organizationId: id,
+      invitedBy: user.email,
+    }, 'Invitation created');
 
     return reply.status(201).send({
       invitation: {
@@ -503,15 +503,11 @@ export async function organizationRoutes(app: FastifyInstance) {
       accepted_by: user.id,
     });
 
-    console.log(`
-====================================
-  Invitation Accepted
-====================================
-  User: ${user.email}
-  Organization: ${org.name}
-  Role: ${invitation.role}
-====================================
-    `);
+    log.info({
+      userEmail: user.email,
+      organizationName: org.name,
+      role: invitation.role,
+    }, 'Invitation accepted');
 
     return {
       message: 'Invitation accepted successfully',
@@ -637,8 +633,15 @@ export async function organizationRoutes(app: FastifyInstance) {
     const memberCount = membersList.length;
     await repoDeleteOrganization(id);
 
-    console.log(`\n[ORGANIZATION DELETED] Organization ${id} was deleted by ${jwtUser.email}`);
-    console.log(`  Cascade deleted: ${deletedProjects} projects, ${orgSuites.length} suites, ${orgTests.length} tests, ${deletedRuns} runs, ${memberCount} members\n`);
+    log.info({
+      organizationId: id,
+      deletedBy: jwtUser.email,
+      deletedProjects,
+      deletedSuites: orgSuites.length,
+      deletedTests: orgTests.length,
+      deletedRuns,
+      deletedMembers: memberCount,
+    }, 'Organization deleted with cascade');
 
     return { message: 'Organization deleted successfully' };
   });
@@ -690,7 +693,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     // Remove the member
     await repoRemoveOrganizationMember(id, memberId);
 
-    console.log(`\n[MEMBER REMOVED] User ${memberId} removed from organization ${id} by ${jwtUser.email}\n`);
+    log.info({ memberId, organizationId: id, removedBy: jwtUser.email }, 'Member removed from organization');
 
     return { message: 'Member removed successfully' };
   });
@@ -755,7 +758,7 @@ export async function organizationRoutes(app: FastifyInstance) {
       const oldRole = memberToUpdate.role;
       await repoUpdateMemberRole(id, memberId, role);
 
-      console.log(`\n[ROLE UPDATED] User ${memberId} role changed from ${oldRole} to ${role} by ${jwtUser.email}\n`);
+      log.info({ memberId, organizationId: id, oldRole, newRole: role, updatedBy: jwtUser.email }, 'Member role updated');
 
       return {
         message: 'Member role updated successfully',
@@ -851,7 +854,11 @@ export async function organizationRoutes(app: FastifyInstance) {
       const newOwnerUser = await dbGetUserById(new_owner_id);
       const newOwnerEmail = newOwnerUser?.email || '';
 
-      console.log(`\n[OWNERSHIP TRANSFERRED] Organization ${id} ownership transferred from ${oldOwnerEmail} to ${newOwnerEmail}\n`);
+      log.info({
+        organizationId: id,
+        previousOwner: oldOwnerEmail,
+        newOwner: newOwnerEmail,
+      }, 'Organization ownership transferred');
 
       return {
         message: 'Ownership transferred successfully',

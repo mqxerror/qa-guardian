@@ -13,6 +13,10 @@ import {
   PerKeyRateLimitConfig,
   MCPResponse,
 } from './mcp-types.js';
+import { createLogger } from '../services/logger.js';
+
+// Create logger for MCP rate limiter
+const mcpLog = createLogger('mcp:rate-limiter');
 
 // ============================================================================
 // Types
@@ -89,7 +93,7 @@ export class RateLimiter {
 
   constructor(
     config: RateLimitConfig,
-    log: (message: string) => void = (msg) => console.error(`[RateLimiter] ${msg}`)
+    log: (message: string) => void = (msg) => mcpLog.error(msg)
   ) {
     this.defaultConfig = config;
     this.log = log;

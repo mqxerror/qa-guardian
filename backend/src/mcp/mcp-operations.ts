@@ -7,6 +7,11 @@
  * @module mcp-operations
  */
 
+import { createLogger } from '../services/logger.js';
+
+// Create logger for MCP operations tracker
+const mcpLog = createLogger('mcp:operations');
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -46,7 +51,7 @@ export class OperationsTracker {
   /** Logger function */
   private readonly log: LogFunction;
 
-  constructor(log: LogFunction = (msg) => console.error(`[Operations] ${msg}`)) {
+  constructor(log: LogFunction = (msg) => mcpLog.info(msg)) {
     this.log = log;
   }
 

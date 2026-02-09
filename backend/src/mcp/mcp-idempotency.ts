@@ -8,6 +8,10 @@
  */
 
 import { IdempotencyEntry, MCPResponse } from './mcp-types.js';
+import { createLogger } from '../services/logger.js';
+
+// Create logger for MCP idempotency cache
+const mcpLog = createLogger('mcp:idempotency');
 
 // ============================================================================
 // Types
@@ -54,7 +58,7 @@ export class IdempotencyCache {
 
   constructor(
     defaultTTL: number = 3600000, // 1 hour
-    log: LogFunction = (msg) => console.error(`[Idempotency] ${msg}`)
+    log: LogFunction = (msg) => mcpLog.info(msg)
   ) {
     this.defaultTTL = defaultTTL;
     this.log = log;

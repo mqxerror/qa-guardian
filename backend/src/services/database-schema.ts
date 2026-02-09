@@ -1067,6 +1067,25 @@ export function getDatabaseSchemaSQL(): string {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
+
+    -- Quick Test Results table (Feature #465: Persist Quick Test results to PostgreSQL)
+    CREATE TABLE IF NOT EXISTS quick_test_results (
+      id UUID PRIMARY KEY,
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      url TEXT NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'running',
+      overall_score INTEGER,
+      health_score INTEGER,
+      performance_score INTEGER,
+      security_score INTEGER,
+      wave_scores JSONB DEFAULT '{}',
+      wave_results JSONB DEFAULT '[]',
+      started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      completed_at TIMESTAMP WITH TIME ZONE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
   `;
 }
 
@@ -1235,6 +1254,13 @@ export function getDatabaseIndexSQL(): string {
     CREATE INDEX IF NOT EXISTS idx_step_templates_suite ON step_templates(suite_id);
     CREATE INDEX IF NOT EXISTS idx_step_templates_created ON step_templates(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_step_templates_name ON step_templates(name);
+
+    -- Quick Test Results indexes (Feature #465)
+    CREATE INDEX IF NOT EXISTS idx_quick_test_results_org ON quick_test_results(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_quick_test_results_user ON quick_test_results(user_id);
+    CREATE INDEX IF NOT EXISTS idx_quick_test_results_created ON quick_test_results(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_quick_test_results_status ON quick_test_results(status);
+    CREATE INDEX IF NOT EXISTS idx_quick_test_results_org_created ON quick_test_results(organization_id, created_at DESC);
 
     -- Feature #98: Missing indexes for foreign keys and filter columns
     CREATE INDEX IF NOT EXISTS idx_organization_members_organization ON organization_members(organization_id);

@@ -18,6 +18,10 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { getProject } from '../../services/repositories/projects.js';
+import { createLogger } from '../../services/logger.js';
+
+// Create logger for this module
+const log = createLogger('route:gitleaks');
 import { exec, execFile, execFileSync, spawn } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
@@ -261,7 +265,7 @@ function createTempGitleaksConfig(patterns: SecretPattern[]): string | null {
   const tempConfigPath = path.join(os.tmpdir(), `gitleaks-config-${Date.now()}.toml`);
   fs.writeFileSync(tempConfigPath, configContent, 'utf-8');
 
-  console.log(`[Gitleaks] Generated custom config with ${enabledPatterns.length} patterns: ${tempConfigPath}`);
+  log.info({ patternCount: enabledPatterns.length, configPath: tempConfigPath }, 'Generated custom Gitleaks config');
 
   return tempConfigPath;
 }
@@ -295,7 +299,7 @@ export function checkGitleaksAvailability(): GitleaksVersionInfo {
           path: gitleaksPath,
         };
 
-        console.log(`[Gitleaks] Found at ${gitleaksPath}, version ${version}`);
+        log.info({ path: gitleaksPath, version }, 'Found Gitleaks CLI');
         return gitleaksVersionCache;
       } catch {
         // Try next path
@@ -303,7 +307,7 @@ export function checkGitleaksAvailability(): GitleaksVersionInfo {
     }
 
     gitleaksVersionCache = { available: false };
-    console.log('[Gitleaks] CLI not found on system, falling back to pattern matching');
+    log.info('Gitleaks CLI not found on system, falling back to pattern matching');
     return gitleaksVersionCache;
   } catch (error) {
     gitleaksVersionCache = { available: false };
@@ -354,7 +358,7 @@ export async function runGitleaksScan(
     // Feature #1558: Add custom config file if we have custom patterns
     if (tempConfigFile) {
       args.push('--config', tempConfigFile);
-      console.log(`[Gitleaks] Using custom config file: ${tempConfigFile}`);
+      log.debug({ configFile: tempConfigFile }, 'Using custom Gitleaks config file');
     }
 
     // Add history scanning option (v8+ syntax)
@@ -382,12 +386,11 @@ ${pathPatterns}
 `;
       fs.writeFileSync(tempExcludeConfig, excludeConfig, 'utf-8');
       args.push('--config', tempExcludeConfig);
-      console.log(`[Gitleaks] Using exclude config: ${tempExcludeConfig} with ${excludePaths.length} patterns`);
+      log.debug({ configFile: tempExcludeConfig, excludePathsCount: excludePaths.length }, 'Using exclude config');
     }
 
     // Run gitleaks with timeout
-    console.log(`[Gitleaks] Running: ${gitleaksPath} ${args.join(' ')}`);
-    console.log(`[Gitleaks] Output file: ${tempOutputFile}`);
+    log.info({ command: gitleaksPath, args, outputFile: tempOutputFile }, 'Running Gitleaks scan');
 
     await new Promise<void>((resolve, reject) => {
       const gitleaksProcess = spawn(gitleaksPath, args, {
@@ -407,9 +410,7 @@ ${pathPatterns}
       });
 
       gitleaksProcess.on('close', (code) => {
-        console.log(`[Gitleaks] Process exited with code ${code}`);
-        if (stderr) console.log(`[Gitleaks] stderr: ${stderr.substring(0, 500)}`);
-        if (stdout) console.log(`[Gitleaks] stdout: ${stdout.substring(0, 200)}`);
+        log.debug({ exitCode: code, stderr: stderr.substring(0, 500), stdout: stdout.substring(0, 200) }, 'Gitleaks process exited');
         resolve();
       });
 
@@ -426,11 +427,11 @@ ${pathPatterns}
 
     // Parse JSON output
     const fileExists = fs.existsSync(tempOutputFile);
-    console.log(`[Gitleaks] Output file exists: ${fileExists}`);
+    log.debug({ fileExists, outputFile: tempOutputFile }, 'Checking Gitleaks output file');
 
     if (fileExists) {
       const rawOutput = fs.readFileSync(tempOutputFile, 'utf-8');
-      console.log(`[Gitleaks] Output file size: ${rawOutput.length} bytes`);
+      log.debug({ outputSize: rawOutput.length }, 'Reading Gitleaks output file');
 
       // Clean up temp files
       fs.unlinkSync(tempOutputFile);
@@ -442,12 +443,12 @@ ${pathPatterns}
       }
 
       if (!rawOutput.trim()) {
-        console.log('[Gitleaks] Output file is empty - no findings');
+        log.info('Gitleaks output file is empty - no findings');
         return { success: true, findings: [], commitsScanned: 0 };
       }
 
       const rawFindings: GitleaksRawFinding[] = JSON.parse(rawOutput);
-      console.log(`[Gitleaks] Found ${rawFindings.length} raw findings`);
+      log.info({ findingsCount: rawFindings.length }, 'Parsed Gitleaks findings');
 
       // Convert to our format
       const findings = rawFindings.map((raw, index) => convertGitleaksFinding(raw, `finding_${Date.now()}_${index}`));
@@ -467,7 +468,7 @@ ${pathPatterns}
       fs.unlinkSync(tempExcludeConfig);
     }
 
-    console.log('[Gitleaks] No output file found - no findings');
+    log.info('No Gitleaks output file found - no findings');
     return { success: true, findings: [], commitsScanned: 0 };
   } catch (error: unknown) {
     // Clean up temp files on error
@@ -639,7 +640,7 @@ async function runPatternMatchingScan(
         tags: [custom.category, 'custom'],
       });
     } catch (e) {
-      console.warn(`[Gitleaks] Invalid custom pattern regex: ${custom.pattern}`);
+      log.warn({ pattern: custom.pattern, patternId: custom.id }, 'Invalid custom pattern regex');
     }
   }
 
@@ -823,17 +824,13 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
       const config = { ...existingConfig, ...updates };
       await gitleaksRepo.upsertGitleaksConfig(projectId, config);
 
-      console.log(`
-====================================
-  Gitleaks Configuration Updated
-====================================
-  Project: ${project.name}
-  Enabled: ${config.enabled}
-  Scan on Push: ${config.scan_on_push}
-  Scan on PR: ${config.scan_on_pr}
-  Full History Scan: ${config.scan_full_history}
-====================================
-      `);
+      log.info({
+        projectName: project.name,
+        enabled: config.enabled,
+        scanOnPush: config.scan_on_push,
+        scanOnPr: config.scan_on_pr,
+        fullHistoryScan: config.scan_full_history,
+      }, 'Gitleaks configuration updated');
 
       return {
         success: true,
@@ -889,19 +886,15 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
       const customPatterns = await getSecretPatterns(projectId);
       const enabledPatternsCount = customPatterns.filter(p => p.enabled).length;
 
-      console.log(`
-====================================
-  Gitleaks Scan Starting
-====================================
-  Project: ${project.name}
-  Branch: ${branch}
-  Full History: ${full_history}
-  Gitleaks Available: ${gitleaksInfo.available}
-  Gitleaks Version: ${gitleaksInfo.version || 'N/A'}
-  Scan Path: ${repoPath}
-  Custom Patterns: ${enabledPatternsCount}
-====================================
-      `);
+      log.info({
+        projectName: project.name,
+        branch,
+        fullHistory: full_history,
+        gitleaksAvailable: gitleaksInfo.available,
+        gitleaksVersion: gitleaksInfo.version || 'N/A',
+        scanPath: repoPath,
+        customPatterns: enabledPatternsCount,
+      }, 'Starting Gitleaks scan');
 
       // Run the scan (with 5 minute timeout for large repos)
       // Feature #1558: Pass custom patterns for config generation
@@ -953,22 +946,18 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
       // Store scan in database
       await gitleaksRepo.createGitleaksScan(scan);
 
-      console.log(`
-====================================
-  Gitleaks Scan Completed
-====================================
-  Project: ${project.name}
-  Branch: ${branch}
-  Method: ${gitleaksInfo.available ? `CLI v${gitleaksInfo.version}` : 'Pattern Matching (fallback)'}
-  Commits Scanned: ${scan.commits_scanned}
-  Secrets Found: ${scan.summary.total}
-    - Critical: ${scan.summary.critical}
-    - High: ${scan.summary.high}
-    - Medium: ${scan.summary.medium}
-    - Low: ${scan.summary.low}
-  ${scan.error_message ? `Error: ${scan.error_message}` : ''}
-====================================
-      `);
+      log.info({
+        projectName: project.name,
+        branch,
+        method: gitleaksInfo.available ? `CLI v${gitleaksInfo.version}` : 'Pattern Matching (fallback)',
+        commitsScanned: scan.commits_scanned,
+        secretsFound: scan.summary.total,
+        critical: scan.summary.critical,
+        high: scan.summary.high,
+        medium: scan.summary.medium,
+        low: scan.summary.low,
+        error: scan.error_message || null,
+      }, 'Gitleaks scan completed');
 
       return {
         success: true,
