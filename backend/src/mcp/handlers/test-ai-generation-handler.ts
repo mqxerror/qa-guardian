@@ -13,9 +13,23 @@
 
 import { handlers as _handlers } from './ai-generation.js';
 import { HandlerContext } from './types.js';
+import type {
+  GenerateTestResult,
+  GenerateTestSuiteResult,
+  ConvertGherkinResult,
+  GetCoverageGapsResult,
+  ParseTestDescriptionResult,
+  GenerateSelectorsResult,
+  GenerateAssertionsResult,
+  GenerateUserFlowResult,
+  AssessTestConfidenceResult,
+  AnalyzeScreenshotResult,
+  GenerateAnnotatedTestResult,
+  BaseHandlerResult,
+} from './ai-generation-types.js';
 
-// Cast handlers to any for test usage (handler return types are unknown, tests need .success)
-const handlers = _handlers as Record<string, (args: Record<string, unknown>, ctx: HandlerContext) => Promise<any>>;
+// Type-safe handlers using specific result types
+const handlers = _handlers as Record<string, (args: Record<string, unknown>, ctx: HandlerContext) => Promise<BaseHandlerResult>>;
 
 // Mock context for testing
 const mockContext: HandlerContext = {
@@ -37,14 +51,14 @@ async function testAiGenerationHandler() {
     include_assertions: true,
     include_comments: true,
     language: 'typescript',
-  }, mockContext);
+  }, mockContext) as GenerateTestResult;
 
   console.log(`  - success: ${result1.success}`);
   if (result1.success) {
-    console.log(`  - test_name: ${(result1 as any).test_name}`);
-    console.log(`  - data_source: ${(result1 as any).data_source}`);
-    console.log(`  - ai_metadata.used_real_ai: ${(result1 as any).ai_metadata?.used_real_ai}`);
-    console.log(`  - ai_metadata.provider: ${(result1 as any).ai_metadata?.provider}`);
+    console.log(`  - test_name: ${result1.test_name}`);
+    console.log(`  - data_source: ${result1.data_source}`);
+    console.log(`  - ai_metadata.used_real_ai: ${result1.ai_metadata?.used_real_ai}`);
+    console.log(`  - ai_metadata.provider: ${result1.ai_metadata?.provider}`);
   }
 
   // Step 2: Test generate_test
@@ -52,16 +66,16 @@ async function testAiGenerationHandler() {
   const result2 = await handlers.generate_test({
     description: 'Test user login with valid credentials',
     target_url: 'https://example.com',
-  }, mockContext);
+  }, mockContext) as GenerateTestResult;
 
   console.log(`  - success: ${result2.success}`);
   if (result2.success) {
-    console.log(`  - test_name: ${(result2 as any).test_name}`);
-    console.log(`  - data_source: ${(result2 as any).data_source}`);
-    console.log(`  - ai_provider: ${(result2 as any).ai_provider}`);
-    console.log(`  - ai_metadata.used_real_ai: ${(result2 as any).ai_metadata?.used_real_ai}`);
-    console.log(`  - confidence_score: ${(result2 as any).confidence_score}`);
-    console.log(`  - suggested_variations count: ${(result2 as any).suggested_variations?.length}`);
+    console.log(`  - test_name: ${result2.test_name}`);
+    console.log(`  - data_source: ${result2.data_source}`);
+    console.log(`  - ai_provider: ${result2.ai_provider}`);
+    console.log(`  - ai_metadata.used_real_ai: ${result2.ai_metadata?.used_real_ai}`);
+    console.log(`  - confidence_score: ${result2.confidence_score}`);
+    console.log(`  - suggested_variations count: ${result2.suggested_variations?.length}`);
   }
 
   // Step 3: Test generate_test with use_real_ai=false
@@ -70,12 +84,12 @@ async function testAiGenerationHandler() {
     description: 'Test shopping cart functionality',
     target_url: 'https://shop.example.com',
     use_real_ai: false,
-  }, mockContext);
+  }, mockContext) as GenerateTestResult;
 
   console.log(`  - success: ${result3.success}`);
   if (result3.success) {
-    console.log(`  - data_source: ${(result3 as any).data_source}`);
-    console.log(`  - ai_metadata.used_real_ai: ${(result3 as any).ai_metadata?.used_real_ai}`);
+    console.log(`  - data_source: ${result3.data_source}`);
+    console.log(`  - ai_metadata.used_real_ai: ${result3.ai_metadata?.used_real_ai}`);
   }
 
   // Step 4: Test generate_test_suite
@@ -86,16 +100,16 @@ async function testAiGenerationHandler() {
     include_edge_cases: true,
     include_negative_tests: true,
     max_tests: 5,
-  }, mockContext);
+  }, mockContext) as GenerateTestSuiteResult;
 
   console.log(`  - success: ${result4.success}`);
   if (result4.success) {
-    console.log(`  - suite_name: ${(result4 as any).suite_name}`);
-    console.log(`  - data_source: ${(result4 as any).data_source}`);
-    console.log(`  - tests count: ${(result4 as any).tests?.length}`);
-    console.log(`  - ai_metadata.used_real_ai: ${(result4 as any).ai_metadata?.used_real_ai}`);
-    console.log(`  - test_summary.positive_tests: ${(result4 as any).test_summary?.positive_tests}`);
-    console.log(`  - test_summary.negative_tests: ${(result4 as any).test_summary?.negative_tests}`);
+    console.log(`  - suite_name: ${result4.suite_name}`);
+    console.log(`  - data_source: ${result4.data_source}`);
+    console.log(`  - tests count: ${result4.tests?.length}`);
+    console.log(`  - ai_metadata.used_real_ai: ${result4.ai_metadata?.used_real_ai}`);
+    console.log(`  - test_summary.positive_tests: ${result4.test_summary?.positive_tests}`);
+    console.log(`  - test_summary.negative_tests: ${result4.test_summary?.negative_tests}`);
   }
 
   // Step 5: Test convert_gherkin
@@ -109,18 +123,18 @@ Scenario: Successful login with valid credentials
   Then I should see the dashboard`,
     target_url: 'https://example.com',
     include_page_objects: true,
-  }, mockContext);
+  }, mockContext) as ConvertGherkinResult;
 
   console.log(`  - success: ${result5.success}`);
   if (result5.success) {
-    console.log(`  - feature_name: ${(result5 as any).feature_name}`);
-    console.log(`  - scenario_name: ${(result5 as any).scenario_name}`);
-    console.log(`  - data_source: ${(result5 as any).data_source}`);
-    console.log(`  - ai_metadata.used_real_ai: ${(result5 as any).ai_metadata?.used_real_ai}`);
-    console.log(`  - parsed_steps.given: ${(result5 as any).parsed_steps?.given?.length} steps`);
-    console.log(`  - parsed_steps.when: ${(result5 as any).parsed_steps?.when?.length} steps`);
-    console.log(`  - parsed_steps.then: ${(result5 as any).parsed_steps?.then?.length} steps`);
-    console.log(`  - has page_object_code: ${!!(result5 as any).page_object_code}`);
+    console.log(`  - feature_name: ${result5.feature_name}`);
+    console.log(`  - scenario_name: ${result5.scenario_name}`);
+    console.log(`  - data_source: ${result5.data_source}`);
+    console.log(`  - ai_metadata.used_real_ai: ${result5.ai_metadata?.used_real_ai}`);
+    console.log(`  - parsed_steps.given: ${result5.parsed_steps?.given?.length} steps`);
+    console.log(`  - parsed_steps.when: ${result5.parsed_steps?.when?.length} steps`);
+    console.log(`  - parsed_steps.then: ${result5.parsed_steps?.then?.length} steps`);
+    console.log(`  - has page_object_code: ${!!result5.page_object_code}`);
   }
 
   // Step 5b: Test convert_gherkin with Scenario Outline (Feature #1492)
@@ -139,21 +153,21 @@ Examples:
   | phone       | 25             |
   | tablet      | 10             |`,
     target_url: 'https://shop.example.com',
-  }, mockContext);
+  }, mockContext) as ConvertGherkinResult;
 
   console.log(`  - success: ${result5b.success}`);
   if (result5b.success) {
-    console.log(`  - scenario_type: ${(result5b as any).scenario_type}`);
-    console.log(`  - is_parameterized: ${(result5b as any).is_parameterized}`);
-    const examples = (result5b as any).examples;
+    console.log(`  - scenario_type: ${result5b.scenario_type}`);
+    console.log(`  - is_parameterized: ${result5b.is_parameterized}`);
+    const examples = result5b.examples;
     if (examples) {
       console.log(`  - examples.headers: ${examples.headers?.join(', ')}`);
       console.log(`  - examples.row_count: ${examples.row_count}`);
       console.log(`  - examples.rows[0]: ${JSON.stringify(examples.rows?.[0])}`);
     }
     // Check if the generated code has test data array
-    const hasTestData = (result5b as any).generated_code?.includes('testData');
-    const hasForLoop = (result5b as any).generated_code?.includes('for (const data');
+    const hasTestData = result5b.generated_code?.includes('testData');
+    const hasForLoop = result5b.generated_code?.includes('for (const data');
     console.log(`  - generated_code has testData array: ${hasTestData}`);
     console.log(`  - generated_code has for loop: ${hasForLoop}`);
   }
@@ -173,19 +187,19 @@ Scenario: Remove item from cart
   Then the item should be removed from the cart
   And the cart total should be updated`,
     target_url: 'https://shop.example.com',
-  }, mockContext);
+  }, mockContext) as ConvertGherkinResult;
 
   console.log(`  - success: ${result5c.success}`);
   if (result5c.success) {
-    console.log(`  - has_background: ${(result5c as any).has_background}`);
-    const parsedSteps = (result5c as any).parsed_steps;
+    console.log(`  - has_background: ${result5c.has_background}`);
+    const parsedSteps = result5c.parsed_steps;
     if (parsedSteps?.background) {
       console.log(`  - background steps: ${parsedSteps.background.length}`);
       console.log(`  - background[0]: ${parsedSteps.background[0]}`);
     }
     // Check if beforeEach hook was generated
-    const hasBeforeEach = (result5c as any).generated_code?.includes('test.beforeEach');
-    const hasBackgroundComment = (result5c as any).generated_code?.includes('BACKGROUND');
+    const hasBeforeEach = result5c.generated_code?.includes('test.beforeEach');
+    const hasBackgroundComment = result5c.generated_code?.includes('BACKGROUND');
     console.log(`  - generated_code has beforeEach: ${hasBeforeEach}`);
     console.log(`  - generated_code has BACKGROUND comment: ${hasBackgroundComment}`);
   }
@@ -196,19 +210,19 @@ Scenario: Remove item from cart
     project_id: 'proj-123',
     include_suggestions: true,
     min_priority: 60,
-  }, mockContext);
+  }, mockContext) as GetCoverageGapsResult;
 
   console.log(`  - success: ${result6.success}`);
   if (result6.success) {
-    console.log(`  - overall_coverage: ${(result6 as any).overall_coverage}%`);
-    console.log(`  - untested_areas count: ${(result6 as any).untested_areas?.length}`);
-    console.log(`  - suggested_tests count: ${(result6 as any).suggested_tests?.length}`);
-    console.log(`  - summary.critical_gaps: ${(result6 as any).summary?.critical_gaps}`);
+    console.log(`  - overall_coverage: ${result6.overall_coverage}%`);
+    console.log(`  - untested_areas count: ${result6.untested_areas?.length}`);
+    console.log(`  - suggested_tests count: ${result6.suggested_tests?.length}`);
+    console.log(`  - summary.critical_gaps: ${result6.summary?.critical_gaps}`);
   }
 
   // Step 7: Verify all handlers have data_source field
   console.log('\nStep 7: Verifying data_source field across handlers...');
-  const results = [
+  const results: Array<{ name: string; result: BaseHandlerResult }> = [
     { name: 'generate_test_from_description', result: result1 },
     { name: 'generate_test', result: result2 },
     { name: 'generate_test_suite', result: result4 },
@@ -217,7 +231,7 @@ Scenario: Remove item from cart
 
   for (const { name, result } of results) {
     const hasDataSource = 'data_source' in result;
-    console.log(`  ${hasDataSource ? '✓' : '✗'} ${name}: ${hasDataSource ? (result as any).data_source : 'MISSING'}`);
+    console.log(`  ${hasDataSource ? '✓' : '✗'} ${name}: ${hasDataSource ? result.data_source : 'MISSING'}`);
   }
 
   // Step 8: Verify ai_metadata fields
@@ -225,7 +239,7 @@ Scenario: Remove item from cart
   const requiredMetaFields = ['provider', 'used_real_ai'];
   for (const { name, result } of results) {
     if (result.success) {
-      const meta = (result as any).ai_metadata;
+      const meta = result.ai_metadata;
       const hasAll = requiredMetaFields.every(f => f in (meta || {}));
       console.log(`  ${hasAll ? '✓' : '✗'} ${name}: ai_metadata ${hasAll ? 'complete' : 'incomplete'}`);
     }
@@ -237,15 +251,15 @@ Scenario: Remove item from cart
     description: 'Test that a user can login with valid credentials, enter their email and password, click the login button, and verify they are redirected to the dashboard',
     target_url: 'https://example.com',
     application_context: 'E-commerce web application',
-  }, mockContext);
+  }, mockContext) as ParseTestDescriptionResult;
 
   console.log(`  - success: ${result7.success}`);
   if (result7.success) {
-    console.log(`  - data_source: ${(result7 as any).data_source}`);
-    console.log(`  - ai_metadata.used_real_ai: ${(result7 as any).ai_metadata?.used_real_ai}`);
-    console.log(`  - ai_metadata.confidence_score: ${(result7 as any).ai_metadata?.confidence_score}`);
+    console.log(`  - data_source: ${result7.data_source}`);
+    console.log(`  - ai_metadata.used_real_ai: ${result7.ai_metadata?.used_real_ai}`);
+    console.log(`  - ai_metadata.confidence_score: ${result7.ai_metadata?.confidence_score}`);
 
-    const parsed = (result7 as any).parsed_structure;
+    const parsed = result7.parsed_structure;
     if (parsed) {
       console.log(`  Parsed structure:`);
       console.log(`    - test_name: ${parsed.test_name}`);
@@ -255,7 +269,7 @@ Scenario: Remove item from cart
       console.log(`    - ambiguities count: ${parsed.ambiguities?.length}`);
     }
 
-    const summary = (result7 as any).summary;
+    const summary = result7.summary;
     if (summary) {
       console.log(`  Summary:`);
       console.log(`    - step_count: ${summary.step_count}`);
@@ -268,13 +282,13 @@ Scenario: Remove item from cart
   console.log('\nStep 10: Testing parse_test_description with ambiguous input...');
   const result8 = await handlers.parse_test_description({
     description: 'Test the feature',
-  }, mockContext);
+  }, mockContext) as ParseTestDescriptionResult;
 
   console.log(`  - success: ${result8.success}`);
   if (result8.success) {
-    console.log(`  - ambiguity_count: ${(result8 as any).summary?.ambiguity_count}`);
-    console.log(`  - high_severity_ambiguities: ${(result8 as any).summary?.high_severity_ambiguities}`);
-    console.log(`  - confidence_score: ${(result8 as any).ai_metadata?.confidence_score}`);
+    console.log(`  - ambiguity_count: ${result8.summary?.ambiguity_count}`);
+    console.log(`  - high_severity_ambiguities: ${result8.summary?.high_severity_ambiguities}`);
+    console.log(`  - confidence_score: ${result8.ai_metadata?.confidence_score}`);
   }
 
   // Step 11: Test generate_selectors for button
@@ -283,14 +297,14 @@ Scenario: Remove item from cart
     element_description: 'Submit button with text "Save Changes"',
     element_type: 'button',
     page_context: 'User profile settings form',
-  }, mockContext);
+  }, mockContext) as GenerateSelectorsResult;
 
   console.log(`  - success: ${result9.success}`);
   if (result9.success) {
-    console.log(`  - data_source: ${(result9 as any).data_source}`);
-    console.log(`  - selector_count: ${(result9 as any).selector_count}`);
+    console.log(`  - data_source: ${result9.data_source}`);
+    console.log(`  - selector_count: ${result9.selector_count}`);
 
-    const primary = (result9 as any).primary_selector;
+    const primary = result9.primary_selector;
     if (primary) {
       console.log(`  Primary selector:`);
       console.log(`    - type: ${primary.type}`);
@@ -299,7 +313,7 @@ Scenario: Remove item from cart
       console.log(`    - confidence_score: ${primary.confidence_score}`);
     }
 
-    const summary = (result9 as any).summary;
+    const summary = result9.summary;
     if (summary) {
       console.log(`  Summary:`);
       console.log(`    - recommended_type: ${summary.recommended_type}`);
@@ -313,12 +327,12 @@ Scenario: Remove item from cart
   const result10 = await handlers.generate_selectors({
     element_description: 'Email input field with label "Your Email"',
     element_type: 'input',
-  }, mockContext);
+  }, mockContext) as GenerateSelectorsResult;
 
   console.log(`  - success: ${result10.success}`);
   if (result10.success) {
-    console.log(`  - selector_count: ${(result10 as any).selector_count}`);
-    const primary = (result10 as any).primary_selector;
+    console.log(`  - selector_count: ${result10.selector_count}`);
+    const primary = result10.primary_selector;
     console.log(`  - primary type: ${primary?.type}`);
     console.log(`  - primary code: ${primary?.playwright_code}`);
   }
@@ -327,13 +341,13 @@ Scenario: Remove item from cart
   console.log('\nStep 13: Testing generate_selectors for generic element...');
   const result11 = await handlers.generate_selectors({
     element_description: 'The main navigation menu',
-  }, mockContext);
+  }, mockContext) as GenerateSelectorsResult;
 
   console.log(`  - success: ${result11.success}`);
   if (result11.success) {
-    console.log(`  - selector_count: ${(result11 as any).selector_count}`);
-    console.log(`  - primary type: ${(result11 as any).primary_selector?.type}`);
-    console.log(`  - confidence_score: ${(result11 as any).ai_metadata?.confidence_score}`);
+    console.log(`  - selector_count: ${result11.selector_count}`);
+    console.log(`  - primary type: ${result11.primary_selector?.type}`);
+    console.log(`  - confidence_score: ${result11.ai_metadata?.confidence_score}`);
   }
 
   // Step 14: Test generate_assertions for login
@@ -342,14 +356,14 @@ Scenario: Remove item from cart
     test_purpose: 'Verify user can successfully login with valid credentials and is redirected to dashboard',
     test_context: 'User authentication flow for e-commerce application',
     include_error_assertions: true,
-  }, mockContext);
+  }, mockContext) as GenerateAssertionsResult;
 
   console.log(`  - success: ${result12.success}`);
   if (result12.success) {
-    console.log(`  - data_source: ${(result12 as any).data_source}`);
-    console.log(`  - assertion_count: ${(result12 as any).assertion_count}`);
+    console.log(`  - data_source: ${result12.data_source}`);
+    console.log(`  - assertion_count: ${result12.assertion_count}`);
 
-    const byCategory = (result12 as any).by_category;
+    const byCategory = result12.by_category;
     if (byCategory) {
       console.log(`  By category:`);
       console.log(`    - positive: ${byCategory.positive}`);
@@ -357,7 +371,7 @@ Scenario: Remove item from cart
       console.log(`    - error_handling: ${byCategory.error_handling}`);
     }
 
-    const byPriority = (result12 as any).by_priority;
+    const byPriority = result12.by_priority;
     if (byPriority) {
       console.log(`  By priority:`);
       console.log(`    - high: ${byPriority.high}`);
@@ -365,7 +379,7 @@ Scenario: Remove item from cart
       console.log(`    - low: ${byPriority.low}`);
     }
 
-    console.log(`  - code_snippet length: ${(result12 as any).code_snippet?.length} chars`);
+    console.log(`  - code_snippet length: ${result12.code_snippet?.length} chars`);
   }
 
   // Step 15: Test generate_assertions for search
@@ -373,15 +387,15 @@ Scenario: Remove item from cart
   const result13 = await handlers.generate_assertions({
     test_purpose: 'Verify search functionality returns relevant results',
     expected_outcomes: ['Results list is displayed', 'Result count is shown', 'Each result has title and description'],
-  }, mockContext);
+  }, mockContext) as GenerateAssertionsResult;
 
   console.log(`  - success: ${result13.success}`);
   if (result13.success) {
-    console.log(`  - assertion_count: ${(result13 as any).assertion_count}`);
-    console.log(`  - high priority: ${(result13 as any).by_priority?.high}`);
+    console.log(`  - assertion_count: ${result13.assertion_count}`);
+    console.log(`  - high priority: ${result13.by_priority?.high}`);
 
     // Show first assertion
-    const first = (result13 as any).assertions?.[0];
+    const first = result13.assertions?.[0];
     if (first) {
       console.log(`  First assertion:`);
       console.log(`    - type: ${first.type}`);
@@ -396,13 +410,13 @@ Scenario: Remove item from cart
     test_purpose: 'Verify form submission works correctly',
     include_error_assertions: true,
     include_accessibility_checks: true,
-  }, mockContext);
+  }, mockContext) as GenerateAssertionsResult;
 
   console.log(`  - success: ${result14.success}`);
   if (result14.success) {
-    console.log(`  - assertion_count: ${(result14 as any).assertion_count}`);
-    console.log(`  - accessibility assertions: ${(result14 as any).by_category?.accessibility}`);
-    console.log(`  - error handling assertions: ${(result14 as any).by_category?.error_handling}`);
+    console.log(`  - assertion_count: ${result14.assertion_count}`);
+    console.log(`  - accessibility assertions: ${result14.by_category?.accessibility}`);
+    console.log(`  - error handling assertions: ${result14.by_category?.error_handling}`);
   }
 
   // Step 17: Test generate_user_flow for login flow
@@ -414,15 +428,15 @@ Scenario: Remove item from cart
     include_setup: true,
     include_teardown: true,
     include_screenshots: true,
-  }, mockContext);
+  }, mockContext) as GenerateUserFlowResult;
 
   console.log(`  - success: ${result15.success}`);
   if (result15.success) {
-    console.log(`  - data_source: ${(result15 as any).data_source}`);
-    console.log(`  - test_name: ${(result15 as any).test_name}`);
-    console.log(`  - step_count: ${(result15 as any).step_count}`);
+    console.log(`  - data_source: ${result15.data_source}`);
+    console.log(`  - test_name: ${result15.test_name}`);
+    console.log(`  - step_count: ${result15.step_count}`);
 
-    const summary = (result15 as any).flow_summary;
+    const summary = result15.flow_summary;
     if (summary) {
       console.log(`  Flow summary:`);
       console.log(`    - total_steps: ${summary.total_steps}`);
@@ -432,7 +446,7 @@ Scenario: Remove item from cart
       console.log(`    - has_teardown: ${summary.has_teardown}`);
     }
 
-    console.log(`  - complete_test_code length: ${(result15 as any).complete_test_code?.length} chars`);
+    console.log(`  - complete_test_code length: ${result15.complete_test_code?.length} chars`);
   }
 
   // Step 18: Test generate_user_flow for e-commerce
@@ -440,16 +454,16 @@ Scenario: Remove item from cart
   const result16 = await handlers.generate_user_flow({
     flow_description: 'User logs in, browses products, adds item to cart, and completes purchase',
     target_url: 'https://shop.example.com',
-  }, mockContext);
+  }, mockContext) as GenerateUserFlowResult;
 
   console.log(`  - success: ${result16.success}`);
   if (result16.success) {
-    console.log(`  - step_count: ${(result16 as any).step_count}`);
-    console.log(`  - navigation_steps: ${(result16 as any).flow_summary?.navigation_steps}`);
+    console.log(`  - step_count: ${result16.step_count}`);
+    console.log(`  - navigation_steps: ${result16.flow_summary?.navigation_steps}`);
 
     // Show first and last step
-    const steps = (result16 as any).steps;
-    if (steps?.length > 0) {
+    const steps = result16.steps;
+    if (steps?.length && steps.length > 0) {
       console.log(`  First step: ${steps[0].name}`);
       console.log(`  Last step: ${steps[steps.length - 1].name}`);
     }
@@ -461,15 +475,15 @@ Scenario: Remove item from cart
     description: 'Verify that a user can login by clicking the login button, entering their email in the email field, entering their password, clicking submit, and verify they are redirected to the dashboard page',
     target_url: 'https://example.com',
     test_context: 'User authentication flow',
-  }, mockContext);
+  }, mockContext) as AssessTestConfidenceResult;
 
   console.log(`  - success: ${result17.success}`);
   if (result17.success) {
-    console.log(`  - data_source: ${(result17 as any).data_source}`);
-    console.log(`  - confidence_score: ${(result17 as any).confidence_score?.toFixed(2)}`);
-    console.log(`  - confidence_level: ${(result17 as any).confidence_level}`);
+    console.log(`  - data_source: ${result17.data_source}`);
+    console.log(`  - confidence_score: ${result17.confidence_score?.toFixed(2)}`);
+    console.log(`  - confidence_level: ${result17.confidence_level}`);
 
-    const scores = (result17 as any).scores;
+    const scores = result17.scores;
     if (scores) {
       console.log(`  Scores:`);
       console.log(`    - clarity: ${scores.clarity?.toFixed(2)}`);
@@ -478,34 +492,34 @@ Scenario: Remove item from cart
       console.log(`    - testability: ${scores.testability?.toFixed(2)}`);
     }
 
-    console.log(`  - ambiguity_count: ${(result17 as any).ambiguity_count}`);
-    console.log(`  - strengths: ${(result17 as any).strengths?.length} items`);
-    console.log(`  - generation_recommendation: ${(result17 as any).generation_recommendation}`);
+    console.log(`  - ambiguity_count: ${result17.ambiguity_count}`);
+    console.log(`  - strengths: ${result17.strengths?.length} items`);
+    console.log(`  - generation_recommendation: ${result17.generation_recommendation}`);
   }
 
   // Step 20: Test assess_test_confidence for vague description
   console.log('\nStep 20: Testing assess_test_confidence for vague description...');
   const result18 = await handlers.assess_test_confidence({
     description: 'Test the feature',
-  }, mockContext);
+  }, mockContext) as AssessTestConfidenceResult;
 
   console.log(`  - success: ${result18.success}`);
   if (result18.success) {
-    console.log(`  - confidence_score: ${(result18 as any).confidence_score?.toFixed(2)}`);
-    console.log(`  - confidence_level: ${(result18 as any).confidence_level}`);
-    console.log(`  - ambiguity_count: ${(result18 as any).ambiguity_count}`);
-    console.log(`  - high_severity_issues: ${(result18 as any).high_severity_issues}`);
-    console.log(`  - clarifying_questions: ${(result18 as any).clarifying_questions?.length} questions`);
-    console.log(`  - generation_recommendation: ${(result18 as any).generation_recommendation}`);
+    console.log(`  - confidence_score: ${result18.confidence_score?.toFixed(2)}`);
+    console.log(`  - confidence_level: ${result18.confidence_level}`);
+    console.log(`  - ambiguity_count: ${result18.ambiguity_count}`);
+    console.log(`  - high_severity_issues: ${result18.high_severity_issues}`);
+    console.log(`  - clarifying_questions: ${result18.clarifying_questions?.length} questions`);
+    console.log(`  - generation_recommendation: ${result18.generation_recommendation}`);
   }
 
   // Step 21: Test analyze_screenshot without image (should fail)
   console.log('\nStep 21: Testing analyze_screenshot without image (should fail)...');
-  const result19 = await handlers.analyze_screenshot({}, mockContext);
+  const result19 = await handlers.analyze_screenshot({}, mockContext) as AnalyzeScreenshotResult;
 
   console.log(`  - success: ${result19.success}`);
   if (!result19.success) {
-    console.log(`  - error: ${(result19 as any).error}`);
+    console.log(`  - error: ${result19.error}`);
   }
 
   // Step 22: Test analyze_screenshot with mock base64 image
@@ -521,17 +535,17 @@ Scenario: Remove item from cart
     focus_area: 'all',
     max_elements: 20,
     generate_code: true,
-  }, mockContext);
+  }, mockContext) as AnalyzeScreenshotResult;
 
   console.log(`  - success: ${result20.success}`);
   if (result20.success) {
-    console.log(`  - data_source: ${(result20 as any).data_source}`);
-    console.log(`  - page_type: ${(result20 as any).page_type}`);
-    console.log(`  - element_count: ${(result20 as any).element_count}`);
-    console.log(`  - interactive_count: ${(result20 as any).interactive_count}`);
-    console.log(`  - overall_confidence: ${(result20 as any).overall_confidence}`);
+    console.log(`  - data_source: ${result20.data_source}`);
+    console.log(`  - page_type: ${result20.page_type}`);
+    console.log(`  - element_count: ${result20.element_count}`);
+    console.log(`  - interactive_count: ${result20.interactive_count}`);
+    console.log(`  - overall_confidence: ${result20.overall_confidence}`);
 
-    const aiMeta = (result20 as any).ai_metadata;
+    const aiMeta = result20.ai_metadata;
     if (aiMeta) {
       console.log(`  AI metadata:`);
       console.log(`    - provider: ${aiMeta.provider}`);
@@ -540,7 +554,7 @@ Scenario: Remove item from cart
       console.log(`    - analysis_time_ms: ${aiMeta.analysis_time_ms}ms`);
     }
 
-    const summary = (result20 as any).element_summary;
+    const summary = result20.element_summary;
     if (summary) {
       console.log(`  Element summary:`);
       console.log(`    - buttons: ${summary.buttons}`);
@@ -548,12 +562,12 @@ Scenario: Remove item from cart
       console.log(`    - inputs: ${summary.inputs}`);
     }
 
-    if ((result20 as any).code_snippets) {
-      const snippetCount = Object.keys((result20 as any).code_snippets).length;
+    if (result20.code_snippets) {
+      const snippetCount = Object.keys(result20.code_snippets).length;
       console.log(`  - code_snippets generated: ${snippetCount}`);
     }
   } else {
-    console.log(`  - error: ${(result20 as any).error}`);
+    console.log(`  - error: ${result20.error}`);
   }
 
   // Step 23: Test analyze_screenshot response fields
@@ -567,11 +581,11 @@ Scenario: Remove item from cart
 
   // Step 24: Test generate_test_from_annotated_screenshot without image
   console.log('\nStep 24: Testing generate_test_from_annotated_screenshot without image...');
-  const result21 = await handlers.generate_test_from_annotated_screenshot({}, mockContext);
+  const result21 = await handlers.generate_test_from_annotated_screenshot({}, mockContext) as GenerateAnnotatedTestResult;
 
   console.log(`  - success: ${result21.success}`);
   if (!result21.success) {
-    console.log(`  - error: ${(result21 as any).error}`);
+    console.log(`  - error: ${result21.error}`);
   }
 
   // Step 25: Test generate_test_from_annotated_screenshot with mock image
@@ -590,16 +604,16 @@ Scenario: Remove item from cart
       { marker_id: '2', action: 'fill', value: 'test@example.com', description: 'Fill email field' },
       { marker_id: '3', action: 'click', description: 'Click checkout button' },
     ],
-  }, mockContext);
+  }, mockContext) as GenerateAnnotatedTestResult;
 
   console.log(`  - success: ${result22.success}`);
   if (result22.success) {
-    console.log(`  - test_name: ${(result22 as any).test_name}`);
-    console.log(`  - data_source: ${(result22 as any).data_source}`);
-    console.log(`  - step_count: ${(result22 as any).step_count}`);
-    console.log(`  - has test_code: ${!!(result22 as any).test_code}`);
+    console.log(`  - test_name: ${result22.test_name}`);
+    console.log(`  - data_source: ${result22.data_source}`);
+    console.log(`  - step_count: ${result22.step_count}`);
+    console.log(`  - has test_code: ${!!result22.test_code}`);
 
-    const aiMeta = (result22 as any).ai_metadata;
+    const aiMeta = result22.ai_metadata;
     if (aiMeta) {
       console.log(`  AI metadata:`);
       console.log(`    - provider: ${aiMeta.provider}`);
@@ -607,21 +621,21 @@ Scenario: Remove item from cart
       console.log(`    - generation_time_ms: ${aiMeta.generation_time_ms}ms`);
     }
 
-    if ((result22 as any).step_summary) {
-      const summary = (result22 as any).step_summary;
+    if (result22.step_summary) {
+      const stepSummary = result22.step_summary;
       console.log(`  Step summary:`);
-      console.log(`    - click_actions: ${summary.click_actions}`);
-      console.log(`    - fill_actions: ${summary.fill_actions}`);
-      console.log(`    - verify_actions: ${summary.verify_actions}`);
+      console.log(`    - click_actions: ${stepSummary.click_actions}`);
+      console.log(`    - fill_actions: ${stepSummary.fill_actions}`);
+      console.log(`    - verify_actions: ${stepSummary.verify_actions}`);
     }
 
     // Show test code preview
-    if ((result22 as any).test_code) {
-      const codePreview = (result22 as any).test_code.substring(0, 200);
+    if (result22.test_code) {
+      const codePreview = result22.test_code.substring(0, 200);
       console.log(`  - test_code preview: ${codePreview}...`);
     }
   } else {
-    console.log(`  - error: ${(result22 as any).error}`);
+    console.log(`  - error: ${result22.error}`);
   }
 
   // Step 26: Verify generate_test_from_annotated_screenshot response fields
@@ -651,15 +665,15 @@ test('User Login Test', async ({ page }) => {
     feedback: 'Add error handling and use data-testid selectors instead of CSS selectors',
     previous_code: previousCode,
     version: 1,
-  }, mockContext);
+  }, mockContext) as GenerateTestResult;
 
   console.log(`  - success: ${result27.success}`);
   if (result27.success) {
-    console.log(`  - test_name: ${(result27 as any).test_name}`);
-    console.log(`  - data_source: ${(result27 as any).data_source}`);
-    console.log(`  - ai_metadata.used_real_ai: ${(result27 as any).ai_metadata?.used_real_ai}`);
+    console.log(`  - test_name: ${result27.test_name}`);
+    console.log(`  - data_source: ${result27.data_source}`);
+    console.log(`  - ai_metadata.used_real_ai: ${result27.ai_metadata?.used_real_ai}`);
     // Check if the regenerated code is different from the previous code
-    const regeneratedCode = (result27 as any).generated_code;
+    const regeneratedCode = result27.generated_code;
     const isDifferent = regeneratedCode !== previousCode;
     console.log(`  - code changed from previous: ${isDifferent}`);
   }

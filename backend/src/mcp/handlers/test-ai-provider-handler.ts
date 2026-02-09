@@ -13,6 +13,11 @@
 
 import { getAiProviderStatus, getAiCostReport, switchAiProvider } from './ai-provider.js';
 import { HandlerContext } from './types.js';
+import type {
+  AiProviderStatusResult,
+  AiCostReportResult,
+  SwitchAiProviderResult,
+} from './ai-generation-types.js';
 
 // Mock context for testing
 const mockContext: HandlerContext = {
@@ -28,17 +33,17 @@ async function testAiProviderHandler() {
 
   // Step 1: Test getAiProviderStatus with default options
   console.log('Step 1: Testing getAiProviderStatus (default options)...');
-  const statusResult = await getAiProviderStatus({}, mockContext) as any;
+  const statusResult = await getAiProviderStatus({}, mockContext) as AiProviderStatusResult;
 
   console.log(`  - success: ${statusResult.success}`);
   if (statusResult.success) {
-    console.log(`  - data_source: ${(statusResult as any).data_source}`);
-    console.log(`  - overall_status: ${(statusResult as any).overall_status}`);
-    console.log(`  - router_enabled: ${(statusResult as any).router_enabled}`);
-    console.log(`  - ai_service_initialized: ${(statusResult as any).ai_service_initialized}`);
+    console.log(`  - data_source: ${statusResult.data_source}`);
+    console.log(`  - overall_status: ${statusResult.overall_status}`);
+    console.log(`  - router_enabled: ${statusResult.router_enabled}`);
+    console.log(`  - ai_service_initialized: ${statusResult.ai_service_initialized}`);
 
     // Check primary provider
-    const primary = (statusResult as any).primary_provider;
+    const primary = statusResult.primary_provider;
     if (primary) {
       console.log(`  Primary provider:`);
       console.log(`    - name: ${primary.name}`);
@@ -49,7 +54,7 @@ async function testAiProviderHandler() {
     }
 
     // Check fallback provider
-    const fallback = (statusResult as any).fallback_provider;
+    const fallback = statusResult.fallback_provider;
     if (fallback) {
       console.log(`  Fallback provider:`);
       console.log(`    - name: ${fallback.name}`);
@@ -59,7 +64,7 @@ async function testAiProviderHandler() {
     }
 
     // Check circuit breakers
-    const cbs = (statusResult as any).circuit_breakers;
+    const cbs = statusResult.circuit_breakers;
     if (cbs && cbs.length > 0) {
       console.log(`  Circuit breakers (${cbs.length}):`);
       for (const cb of cbs) {
@@ -68,7 +73,7 @@ async function testAiProviderHandler() {
     }
 
     // Check router config
-    const routerConfig = (statusResult as any).router_config;
+    const routerConfig = statusResult.router_config;
     if (routerConfig) {
       console.log(`  Router config:`);
       console.log(`    - enabled: ${routerConfig.enabled}`);
@@ -82,10 +87,10 @@ async function testAiProviderHandler() {
   console.log('\nStep 2: Testing getAiProviderStatus (with health metrics)...');
   const healthResult = await getAiProviderStatus({
     include_health_metrics: true,
-  }, mockContext) as any;
+  }, mockContext) as AiProviderStatusResult;
 
   if (healthResult.success) {
-    const metrics = (healthResult as any).health_metrics;
+    const metrics = healthResult.health_metrics;
     if (metrics) {
       console.log(`  Health metrics:`);
       console.log(`    - avg_latency_ms: ${metrics.avg_latency_ms}`);
@@ -105,17 +110,17 @@ async function testAiProviderHandler() {
     include_savings: true,
     include_budget_status: true,
     include_token_breakdown: true,
-  }, mockContext) as any;
+  }, mockContext) as AiCostReportResult;
 
   console.log(`  - success: ${costResult.success}`);
   if (costResult.success) {
-    console.log(`  - data_source: ${(costResult as any).data_source}`);
-    console.log(`  - total_cost_usd: $${(costResult as any).total_cost_usd}`);
-    console.log(`  - total_requests: ${(costResult as any).total_requests}`);
-    console.log(`  - total_tokens: ${(costResult as any).total_tokens}`);
+    console.log(`  - data_source: ${costResult.data_source}`);
+    console.log(`  - total_cost_usd: $${costResult.total_cost_usd}`);
+    console.log(`  - total_requests: ${costResult.total_requests}`);
+    console.log(`  - total_tokens: ${costResult.total_tokens}`);
 
     // Check provider breakdown
-    const byProvider = (costResult as any).by_provider;
+    const byProvider = costResult.by_provider;
     if (byProvider && byProvider.length > 0) {
       console.log(`  Provider breakdown (${byProvider.length} providers):`);
       for (const provider of byProvider) {
@@ -124,7 +129,7 @@ async function testAiProviderHandler() {
     }
 
     // Check real savings data
-    const savings = (costResult as any).savings;
+    const savings = costResult.savings;
     if (savings) {
       console.log(`  Real savings data:`);
       console.log(`    - total_savings_usd: $${savings.total_savings_usd}`);
@@ -139,7 +144,7 @@ async function testAiProviderHandler() {
     }
 
     // Check budget status
-    const budget = (costResult as any).budget_status;
+    const budget = costResult.budget_status;
     if (budget) {
       console.log(`  Real budget status:`);
       console.log(`    - current_month: ${budget.current_month}`);
@@ -158,17 +163,17 @@ async function testAiProviderHandler() {
     provider: 'anthropic',
     reason: 'Testing MCP handler',
     reset_circuit_breaker: true,
-  }, mockContext) as any;
+  }, mockContext) as SwitchAiProviderResult;
 
   console.log(`  - success: ${switchResult.success}`);
   if (switchResult.success) {
-    console.log(`  - data_source: ${(switchResult as any).data_source}`);
-    console.log(`  - previous_provider: ${(switchResult as any).previous_provider}`);
-    console.log(`  - new_provider: ${(switchResult as any).new_provider}`);
-    console.log(`  - new_fallback: ${(switchResult as any).new_fallback}`);
-    console.log(`  - in_flight_requests: ${(switchResult as any).in_flight_requests}`);
-    console.log(`  - circuit_breaker_reset: ${(switchResult as any).circuit_breaker_reset}`);
-    console.log(`  - message: ${(switchResult as any).message}`);
+    console.log(`  - data_source: ${switchResult.data_source}`);
+    console.log(`  - previous_provider: ${switchResult.previous_provider}`);
+    console.log(`  - new_provider: ${switchResult.new_provider}`);
+    console.log(`  - new_fallback: ${switchResult.new_fallback}`);
+    console.log(`  - in_flight_requests: ${switchResult.in_flight_requests}`);
+    console.log(`  - circuit_breaker_reset: ${switchResult.circuit_breaker_reset}`);
+    console.log(`  - message: ${switchResult.message}`);
   }
 
   // Step 5: Switch back to kie
@@ -176,22 +181,22 @@ async function testAiProviderHandler() {
   const switchBackResult = await switchAiProvider({
     provider: 'kie',
     reason: 'Switching back for testing',
-  }, mockContext) as any;
+  }, mockContext) as SwitchAiProviderResult;
 
   console.log(`  - success: ${switchBackResult.success}`);
   if (switchBackResult.success) {
-    console.log(`  - previous_provider: ${(switchBackResult as any).previous_provider}`);
-    console.log(`  - new_provider: ${(switchBackResult as any).new_provider}`);
+    console.log(`  - previous_provider: ${switchBackResult.previous_provider}`);
+    console.log(`  - new_provider: ${switchBackResult.new_provider}`);
   }
 
   // Step 6: Test invalid provider
   console.log('\nStep 6: Testing switchAiProvider (invalid provider)...');
   const invalidResult = await switchAiProvider({
     provider: 'invalid-provider',
-  }, mockContext) as any;
+  }, mockContext) as SwitchAiProviderResult;
 
   console.log(`  - success: ${invalidResult.success}`);
-  console.log(`  - error: ${(invalidResult as any).error}`);
+  console.log(`  - error: ${invalidResult.error}`);
 
   // Step 7: Verify interface fields
   console.log('\nStep 7: Verifying response interface fields...');
