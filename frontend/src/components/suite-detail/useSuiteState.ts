@@ -20,30 +20,8 @@ export interface RecordingStep {
   optionalReason?: 'cookie_consent' | 'popup_dismiss' | 'notification_close' | 'user_marked';
 }
 
-// Parallelization plan types
-export interface ParallelizationWorker {
-  id: number;
-  name: string;
-  tests: Array<{ name: string; duration: number }>;
-  totalDuration: number;
-  utilizationPercent: number;
-}
-
-export interface ParallelizationPlan {
-  totalTests: number;
-  workers: ParallelizationWorker[];
-  optimization: {
-    sequentialTime: number;
-    parallelTime: number;
-    timeSaved: number;
-    speedup: string;
-  };
-  resourceBalance: {
-    avgUtilization: number;
-    maxDifference: number;
-    balanceScore: string;
-  };
-}
+// Feature #533: Removed ParallelizationWorker and ParallelizationPlan types
+// (simulated AI parallel run - will be replaced with real session-sharing executor in R23)
 
 // Review stats type
 export interface ReviewStats {
@@ -111,10 +89,8 @@ export function useSuiteState() {
   const [isApproving, setIsApproving] = useState(false);
   const [selectedForReview, setSelectedForReview] = useState<Set<string>>(new Set());
 
-  // Parallelization state
-  const [showParallelization, setShowParallelization] = useState(false);
-  const [isAnalyzingParallel, setIsAnalyzingParallel] = useState(false);
-  const [parallelizationPlan, setParallelizationPlan] = useState<ParallelizationPlan | null>(null);
+  // Feature #533: Removed parallelization state (simulated AI parallel run)
+  // Will be replaced with real session-sharing parallel executor in R23
 
   // Accessibility filter state
   const [a11ySeverityFilter, setA11ySeverityFilter] = useState<Record<string, 'all' | 'critical' | 'serious' | 'moderate' | 'minor'>>({});
@@ -267,10 +243,7 @@ export function useSuiteState() {
     toggleTestSelection,
     toggleAllTestsSelection,
 
-    // Parallelization
-    showParallelization, setShowParallelization,
-    isAnalyzingParallel, setIsAnalyzingParallel,
-    parallelizationPlan, setParallelizationPlan,
+    // Feature #533: Removed parallelization state from return
 
     // Accessibility filters
     a11ySeverityFilter, setA11ySeverityFilter,
