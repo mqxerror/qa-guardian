@@ -5,6 +5,7 @@
  */
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import * as http from 'http';
 import * as crypto from 'crypto';
 
@@ -28,6 +29,7 @@ const testApiKeys: {
   mcpRead: generateTestApiKey(),
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function testMcpScope() {
   console.log('Testing MCP API key scope validation...\n');
 

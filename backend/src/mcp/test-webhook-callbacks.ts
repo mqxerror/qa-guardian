@@ -180,6 +180,7 @@ async function runTests(): Promise<void> {
     crlfDelay: Infinity,
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let initializeResponseReceived = false;
 
   rl.on('line', (line) => {

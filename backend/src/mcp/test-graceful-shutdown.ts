@@ -211,6 +211,7 @@ async function testOperationTracking(): Promise<TestResult> {
   try {
     // Make a request that will be tracked
     const startTime = Date.now();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const request = await httpRequest({
       host: MCP_HOST,
       port: MCP_PORT,
@@ -327,6 +328,7 @@ async function testShutdownNotificationFormat(): Promise<TestResult> {
   const testName = 'Server-shutdown notification includes required fields';
 
   // This test verifies the expected format of the shutdown notification
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const expectedFormat = {
     type: 'server-shutdown',
     timestamp: 'number',

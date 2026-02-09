@@ -57,6 +57,7 @@ async function mcpCall(sessionId: string, toolName: string, args: Record<string,
   return response.json();
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getSessionId(): Promise<string> {
   // Connect to SSE and get session ID
   const response = await fetch(`${MCP_URL}/sse`);

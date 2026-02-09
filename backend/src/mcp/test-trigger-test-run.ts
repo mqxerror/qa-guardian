@@ -18,6 +18,7 @@ function getApiKey(): string {
   }
   return key;
 }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const MCP_API_KEY = getApiKey();
 const serverPath = path.join(__dirname, 'index.ts');
 

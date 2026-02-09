@@ -107,6 +107,7 @@ async function testGetRunMetrics() {
     const hasTestResults = metricsData.test_results !== undefined;
     const hasBrowser = metricsData.browser !== undefined;
     const hasPassRate = metricsData.test_results?.pass_rate !== undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const hasTotalDuration = metricsData.duration?.total_ms !== undefined;
 
     console.log('\n--- Verification ---');

@@ -117,6 +117,7 @@ async function runTests(): Promise<void> {
 
   // Step 1: Configure and start server with 10 requests/minute limit
   console.log('Step 1: Configure API key with 10 requests/5-second limit...');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { server, logs } = await startMCPServer();
   console.log('  ✓ MCP server started with rate limit configuration');
 

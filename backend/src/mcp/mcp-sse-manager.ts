@@ -202,7 +202,8 @@ export class SSEClientManager {
   /**
    * Start keep-alive ping for a client.
    */
-  private startKeepAlive(clientId: string, client: SSEClient): void {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private startKeepAlive(clientId: string, _client: SSEClient): void {
     const keepAlive = setInterval(() => {
       const currentClient = this.clients.get(clientId);
       if (currentClient && !currentClient.disconnectedAt) {

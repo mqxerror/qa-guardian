@@ -4,7 +4,7 @@
  */
 
 import { ToolHandler, HandlerModule } from './types.js';
-import { analyzeSite, crawlSite, type SiteAnalysis, type SiteMap } from '../../services/crawl4ai.js';
+import { analyzeSite, crawlSite } from '../../services/crawl4ai.js';
 
 /**
  * Analyze a website to understand its structure for test generation

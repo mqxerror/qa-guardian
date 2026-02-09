@@ -102,7 +102,8 @@ export const generateTestFromDescription: ToolHandler = async (args, context) =>
     let inputTokens = 0;
     let outputTokens = 0;
     let confidenceScore = 0.85;
-    // eslint-disable-next-line prefer-const
+    // Variable reserved for AI-generated suggestions
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, prefer-const
     let suggestedVariations: string[] = [];
     let usedRealAi = false;
 

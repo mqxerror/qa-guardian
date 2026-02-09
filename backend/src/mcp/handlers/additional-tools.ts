@@ -411,7 +411,7 @@ export const approveVisualBaseline: ToolHandler = async (args, context) => {
  * Validate API response (Feature #1677)
  * Validate an API response against a schema or expected values
  */
-export const validateApiResponse: ToolHandler = async (args, context) => {
+export const validateApiResponse: ToolHandler = async (args, _context) => {
   const url = args.url as string;
   const method = (args.method as string) || 'GET';
   const expectedStatus = args.expected_status as number || 200;

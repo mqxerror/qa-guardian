@@ -343,7 +343,8 @@ const analyzeScreenshot: ToolHandler = async (args, context) => {
     }
     const targetUrl = args.target_url as string | undefined;
     const focusArea = (args.focus_area as string) || 'all'; // all, forms, navigation, interactive
-    const includePositions = args.include_positions !== false; // Default true
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const includePositions = args.include_positions !== false; // Default true - reserved for future position data
     const maxElements = (args.max_elements as number) || 50;
     const generateCode = args.generate_code === true; // Generate Playwright code snippets
 

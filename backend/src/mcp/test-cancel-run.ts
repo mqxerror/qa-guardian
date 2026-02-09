@@ -90,6 +90,7 @@ async function testEnhancedCancelRun() {
       const suiteData = (await createSuiteResp.json()) as { suite: { id: string; name: string } };
 
       // Create a test with steps
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const createTestResp = await fetch(`${API_URL}/api/v1/suites/${suiteData.suite.id}/tests`, {
         method: 'POST',
         headers: {

@@ -351,7 +351,8 @@ export const getAiCostReport: ToolHandler = async (args, context) => {
     // Default pricing for unknown models
     const DEFAULT_PRICING = { input: 3.00, output: 15.00 };
 
-    // Build REAL model breakdown from tracked data
+    // Build REAL model breakdown from tracked data (reserved for future by_model response field)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const modelBreakdown = Object.entries(usageData.requestsByModel).map(([model, requests]) => {
       // Estimate tokens per model proportionally
       const proportion = usageData.totalRequests > 0 ? requests / usageData.totalRequests : 0;

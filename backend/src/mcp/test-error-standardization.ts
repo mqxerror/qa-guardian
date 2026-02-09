@@ -5,7 +5,8 @@
  * used across the MCP server implementation.
  */
 
-// Standard error codes used in the MCP server
+// Standard error codes used in the MCP server (documentation reference)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ERROR_CODES = {
   // JSON-RPC 2.0 Standard Errors
   PARSE_ERROR: -32700,       // Invalid JSON was received

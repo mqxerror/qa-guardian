@@ -78,6 +78,7 @@ async function validateKey(apiKey: string, requiredScope: string = 'mcp'): Promi
 }
 
 // Helper to send MCP request via stdio simulation
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function simulateMcpRequest(apiKey: string, method: string, params: Record<string, unknown> = {}): Promise<{ error?: { code: number; message: string }; result?: unknown }> {
   // This simulates the MCP server behavior for testing
   // We'll directly test the scope validation logic
@@ -101,6 +102,7 @@ async function runTests() {
   createdTestKeyIds.push('test-read-only-test');
   const mcpReadKey = await createTestApiKey('mcp-read-test', ['mcp:read']);
   createdTestKeyIds.push('test-mcp-read-test');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const mcpWriteKey = await createTestApiKey('mcp-write-test', ['mcp:write']);
   createdTestKeyIds.push('test-mcp-write-test');
   const mcpExecuteKey = await createTestApiKey('mcp-execute-test', ['mcp:execute']);

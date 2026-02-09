@@ -43,6 +43,7 @@ async function main() {
 
   // Step 2: Create MCP server with the API key
   console.log('\n2. Creating MCP server with API key...');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const server = new MCPServer({
     transport: 'stdio',
     apiUrl: 'http://localhost:3001',

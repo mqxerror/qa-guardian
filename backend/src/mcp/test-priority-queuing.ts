@@ -13,6 +13,7 @@ import { ChildProcess, spawn } from 'child_process';
 const MCP_PORT = 3458;
 
 // Helper to make SSE client requests
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function sendMCPRequest(
   id: number,
   method: string,
@@ -56,6 +57,7 @@ async function sendMCPRequest(
 }
 
 // Start MCP server for testing
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function startMCPServer(): Promise<ChildProcess> {
   return new Promise((resolve, reject) => {
     const server = spawn('npx', [

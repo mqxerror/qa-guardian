@@ -19,6 +19,7 @@ async function main() {
 
   // Step 1: Create MCP server and make a tool call
   console.log('\n1. Making MCP tool call...');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const server = new MCPServer({
     transport: 'stdio',
     apiUrl: 'http://localhost:3001',

@@ -27,8 +27,8 @@ import {
   IdempotencyEntry,
   SSEClient,
   MCP_PROTOCOL_VERSION,
-  SSE_PING_INTERVAL,
-  SSE_CONNECTION_TIMEOUT,
+  // SSE_PING_INTERVAL, // Removed - using DEFAULT_PING_INTERVAL in mcp-sse-manager.ts
+  // SSE_CONNECTION_TIMEOUT, // Removed - using constant directly where needed
   AlertSubscription,
   Workflow,
   WorkflowSchedule,
@@ -42,6 +42,8 @@ import { RESOURCES } from './resource-definitions.js';
 import { hasHandler, executeHandler, HandlerContext } from './handlers/index.js';
 
 // Feature #1356: Import tool permissions from extracted module
+// TOOL_SCOPE_MAP is documented in tool-permissions.ts for reference
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { TOOL_SCOPE_MAP } from './tool-permissions.js';
 
 // Feature #1356: Import string utilities from extracted module
@@ -68,7 +70,7 @@ import {
   WebhookCallbackPayload,
   sendWebhookCallback,
   parseWebhookCallback,
-  createSuccessPayload,
+  // createSuccessPayload, // Unused - using createErrorPayload only
   createErrorPayload,
 } from './webhook-callbacks.js';
 

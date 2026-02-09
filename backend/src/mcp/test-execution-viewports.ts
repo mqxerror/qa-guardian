@@ -72,8 +72,11 @@ async function testGetExecutionViewports() {
     // Verify response structure
     const hasViewports = data.viewports !== undefined;
     const hasSummary = data.summary !== undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const hasDesktop = Array.isArray(data.viewports?.desktop);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const hasTablet = Array.isArray(data.viewports?.tablet);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const hasMobile = Array.isArray(data.viewports?.mobile);
 
     console.log(`\nResponse structure valid: ${hasViewports && hasSummary ? '✅' : '❌'}`);

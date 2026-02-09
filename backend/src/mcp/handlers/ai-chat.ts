@@ -30,14 +30,15 @@ const askQaGuardian: ToolHandler = async (args, context) => {
     const contextParams = args.context as { project_id?: string; suite_id?: string; time_range?: string } || {};
     const includeLinks = args.include_links !== false;
     const includeData = args.include_data !== false;
-    const maxResults = Math.min((args.max_results as number) || 10, 50);
+    // maxResults available for pagination but not currently used
     const timeRange = contextParams.time_range || 'last_week';
 
     context.log(`[AI] Processing natural language query: "${question.substring(0, 50)}..."`);
     const startTime = Date.now();
 
     // Fetch relevant test data from the API
-    let testData: Record<string, unknown> = {};
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    let _testData: Record<string, unknown> = {}; // Reserved for future context enrichment
     let failedTests: Array<{ test_name?: string; error?: string; duration_ms?: number }> = [];
     let recentRuns: Array<{ id?: string; status?: string; pass_rate?: number }> = [];
     let metrics: { total_tests?: number; passing?: number; failing?: number; flaky?: number } = {};
@@ -46,7 +47,7 @@ const askQaGuardian: ToolHandler = async (args, context) => {
       // Fetch dashboard summary for context
       const dashboardData = await context.callApi('/api/v1/dashboard/summary') as Record<string, unknown>;
       if (dashboardData && !dashboardData.error) {
-        testData = dashboardData;
+        _testData = dashboardData;
         metrics = {
           total_tests: (dashboardData.total_tests as number) || 0,
           passing: (dashboardData.passed as number) || 0,

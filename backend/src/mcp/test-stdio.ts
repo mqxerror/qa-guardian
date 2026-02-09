@@ -93,7 +93,8 @@ async function testStdioTransport() {
       server.kill('SIGTERM');
     }, 3000);
 
-    server.on('close', (code) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    server.on('close', (_code) => {
       console.log('\n--- Server Logs ---');
       const logLines = stderrData.split('\n').filter(l => l.includes('[QA Guardian MCP]'));
       logLines.forEach(l => console.log(l));

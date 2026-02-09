@@ -28,6 +28,7 @@ async function testStreaming(): Promise<void> {
   // Collect all responses and notifications
   const responses: unknown[] = [];
   const notifications: unknown[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let initializeResponseReceived = false;
 
   rl.on('line', (line) => {

@@ -105,6 +105,7 @@ async function runTests(): Promise<void> {
 
   // Start the MCP server
   console.log('Starting MCP server...');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { server, logs } = await startMCPServer();
   console.log('  ✓ MCP server started');
 

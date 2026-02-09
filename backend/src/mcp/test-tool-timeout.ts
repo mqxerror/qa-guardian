@@ -7,9 +7,12 @@
  * 3. Timeout error returns code -32007 with proper data
  */
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import * as http from 'http';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import * as readline from 'readline';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PORT = 3456;
 const API_URL = 'http://localhost:3001';
 

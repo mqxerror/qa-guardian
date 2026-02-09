@@ -395,7 +395,8 @@ export const getBrowserAnalytics: ToolHandler = async (args, context) => {
   const period = (args.period as string) || '30d';
   const browsers = (args.browsers as string[]) || ['chromium', 'firefox', 'webkit'];
   const includeViewports = args.include_viewports !== false;
-  const includePerformance = args.include_performance !== false;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const includePerformance = args.include_performance !== false; // Reserved for future performance metrics
 
   if (!projectId) {
     return { error: 'project_id is required' };
