@@ -2025,7 +2025,10 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
       try {
         const parsed = JSON.parse(script.raw);
         // Extract @type from JSON-LD
-        const extractTypes = (obj: unknown): string[] => {
+        // Feature #545: Added depth limit (max 10) to prevent stack overflow on malicious nested @graph
+        const MAX_JSONLD_DEPTH = 10;
+        const extractTypes = (obj: unknown, depth = 0): string[] => {
+          if (depth > MAX_JSONLD_DEPTH) return [];
           const types: string[] = [];
           if (typeof obj === 'object' && obj !== null) {
             const o = obj as Record<string, unknown>;
@@ -2036,7 +2039,7 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
             // Check for @graph array
             if (Array.isArray(o['@graph'])) {
               for (const item of o['@graph']) {
-                types.push(...extractTypes(item));
+                types.push(...extractTypes(item, depth + 1));
               }
             }
           }
