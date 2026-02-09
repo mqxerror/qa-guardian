@@ -257,6 +257,58 @@ export function useQuickTestSocket() {
     }
   }, [token]);
 
+  // Feature #542: Load a completed test result for re-viewing history
+  const loadResult = useCallback(async (runId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/v1/quick-test/${runId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) return false;
+
+      const data = await response.json();
+
+      // Map the API waves into our WaveState format
+      const apiWaves: WaveState[] = INITIAL_WAVES.map((initialWave, idx) => {
+        const apiWave = data.waves?.[idx];
+        if (!apiWave) return { ...initialWave, steps: initialWave.steps.map(s => ({ ...s })) };
+        return {
+          ...initialWave,
+          status: apiWave.status || initialWave.status,
+          startedAt: apiWave.startedAt ? new Date(apiWave.startedAt) : undefined,
+          completedAt: apiWave.completedAt ? new Date(apiWave.completedAt) : undefined,
+          duration: apiWave.duration,
+          data: apiWave.data,
+          error: apiWave.error,
+          steps: apiWave.steps || initialWave.steps.map((s: WaveStep) => ({
+            ...s,
+            status: apiWave.status === 'completed' ? 'completed' as const :
+                    apiWave.status === 'failed' ? 'failed' as const :
+                    apiWave.status === 'skipped' ? 'skipped' as const : s.status,
+          })),
+        };
+      });
+
+      setState({
+        runId: data.runId,
+        url: data.url,
+        status: data.status || 'completed',
+        waves: apiWaves,
+        summary: data.summary || null,
+        startedAt: data.startedAt ? new Date(data.startedAt) : null,
+        completedAt: data.completedAt ? new Date(data.completedAt) : null,
+      });
+
+      currentRunIdRef.current = null; // Don't join socket room for historical result
+
+      return true;
+    } catch {
+      return false;
+    }
+  }, [token]);
+
   // Handle reconnection
   useEffect(() => {
     if (!isConnected || !currentRunIdRef.current) return;
@@ -420,6 +472,7 @@ export function useQuickTestSocket() {
     joinRoom,
     leaveRoom,
     fetchState,
+    loadResult, // Feature #542: Load historical result for re-viewing
   };
 }
 

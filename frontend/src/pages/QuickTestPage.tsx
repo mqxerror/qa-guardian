@@ -282,6 +282,7 @@ export function QuickTestPage() {
     isConnected,
     startTest: hookStartTest,
     reset: resetTest,
+    loadResult, // Feature #542: Load historical result for re-viewing
   } = useQuickTestSocket();
 
   // URL Input State
@@ -296,6 +297,7 @@ export function QuickTestPage() {
   // History State
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false); // Feature #542: Loading a history entry
 
   // Feature #466: Screenshot modal state
   const [screenshotModal, setScreenshotModal] = useState<{
@@ -357,24 +359,52 @@ export function QuickTestPage() {
     summary: summary || undefined,
   } : null;
 
-  // Load recent URLs and history from localStorage
+  // Load recent URLs from localStorage and history from API
   useEffect(() => {
     try {
       const saved = localStorage.getItem(RECENT_URLS_KEY);
       if (saved) {
         setRecentUrls(JSON.parse(saved));
       }
-      const savedHistory = localStorage.getItem(HISTORY_KEY);
-      if (savedHistory) {
-        setHistory(JSON.parse(savedHistory).map((h: HistoryEntry) => ({
-          ...h,
-          timestamp: new Date(h.timestamp),
-        })));
-      }
     } catch {
       // Ignore localStorage errors
     }
-  }, []);
+
+    // Feature #542: Fetch history from backend API
+    const fetchHistory = async () => {
+      try {
+        const response = await fetch('/api/v1/quick-test/history?limit=20&status=completed', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const apiHistory: HistoryEntry[] = (data.results || []).map((r: { id: string; url: string; startedAt: string; overallScore: number | null }) => ({
+            runId: r.id,
+            url: r.url,
+            timestamp: new Date(r.startedAt),
+            score: r.overallScore ?? undefined,
+          }));
+          setHistory(apiHistory);
+          // Sync back to localStorage for offline access
+          try {
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(apiHistory.slice(0, MAX_HISTORY)));
+          } catch { /* ignore */ }
+        }
+      } catch {
+        // Fallback to localStorage if API unavailable
+        try {
+          const savedHistory = localStorage.getItem(HISTORY_KEY);
+          if (savedHistory) {
+            setHistory(JSON.parse(savedHistory).map((h: HistoryEntry) => ({
+              ...h,
+              timestamp: new Date(h.timestamp),
+            })));
+          }
+        } catch { /* ignore */ }
+      }
+    };
+    if (token) fetchHistory();
+  }, [token]);
 
   // Update history when test completes
   useEffect(() => {
@@ -456,11 +486,20 @@ export function QuickTestPage() {
     }
   };
 
-  // Select from history
-  const selectFromHistory = (entry: HistoryEntry) => {
-    setUrl(entry.url);
+  // Feature #542: Select from history - loads full results into the UI
+  const selectFromHistory = useCallback(async (entry: HistoryEntry) => {
     setShowHistory(false);
-  };
+    setHistoryLoading(true);
+    setUrl(entry.url);
+
+    const loaded = await loadResult(entry.runId);
+    setHistoryLoading(false);
+
+    if (!loaded) {
+      // Fallback: just set URL so user can re-run
+      setUrlError('Could not load historical results. Try running the test again.');
+    }
+  }, [loadResult]);
 
   // Feature #474: Schedule Quick Test handlers
   const openScheduleModal = () => {
@@ -701,37 +740,60 @@ export function QuickTestPage() {
           </AnimatedCard>
         )}
 
-        {/* History Panel */}
-        {showHistory && history.length > 0 && (
+        {/* Feature #542: Enhanced History Panel with re-view capability */}
+        {showHistory && (
           <AnimatedCard>
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Recent Tests</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground">Recent Tests</h2>
+                <span className="text-xs text-muted-foreground">{history.length} result{history.length !== 1 ? 's' : ''}</span>
+              </div>
+              {historyLoading && (
+                <div className="flex items-center gap-2 mb-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  <span className="text-sm text-primary">Loading test results...</span>
+                </div>
+              )}
+              {history.length === 0 ? (
+                <div className="text-sm text-muted-foreground text-center py-6">
+                  No completed tests yet. Run a test to see it here.
+                </div>
+              ) : (
+              <>
               <div className="space-y-2">
-                {history.map(entry => (
+                {history.map(entry => {
+                  let hostname = entry.url;
+                  try { hostname = new URL(entry.url).hostname; } catch { /* keep full url */ }
+                  return (
                   <button
                     key={entry.runId}
                     onClick={() => selectFromHistory(entry)}
+                    disabled={historyLoading}
                     className="w-full p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors
-                      flex items-center justify-between text-left"
+                      flex items-center justify-between text-left disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <div className="flex items-center gap-3">
-                      <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <div className="text-sm font-mono text-foreground truncate max-w-[300px]">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-foreground truncate">
+                          {hostname}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate max-w-[280px]">
                           {entry.url}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-muted-foreground mt-0.5">
                           {new Date(entry.timestamp).toLocaleString()}
                         </div>
                       </div>
                     </div>
                     {entry.score !== undefined && (
-                      <div className={`text-lg font-bold ${getScoreColor(entry.score)}`}>
+                      <div className={`text-lg font-bold ${getScoreColor(entry.score)} flex-shrink-0 ml-3`}>
                         {entry.score}
                       </div>
                     )}
                   </button>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Feature #492: Score Timeline Chart - shows when 3+ entries with scores for same URL */}
@@ -831,6 +893,8 @@ export function QuickTestPage() {
                   </div>
                 );
               })()}
+              </>
+              )}
             </CardContent>
           </AnimatedCard>
         )}
