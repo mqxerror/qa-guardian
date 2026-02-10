@@ -94,6 +94,11 @@ export interface ManualSetupConfig {
  };
  // Accessibility specific
  wcagLevel?: 'A' | 'AA' | 'AAA';
+ /** Feature #587: AccessibilityConfig fields */
+ a11yThresholds?: Record<'critical' | 'serious' | 'moderate' | 'minor', number>;
+ includeIframes?: boolean;
+ waitForA11ySelector?: string;
+ excludeRules?: string[];
  // Load specific
  virtualUsers?: number;
  duration?: number;
@@ -310,6 +315,24 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  }
  if (testType === 'accessibility') {
  requestBody.wcag_level = config.wcagLevel || 'AA';
+ // Feature #587: Include AccessibilityConfig fields from AccessibilityConfig component
+ if (config.a11yThresholds) {
+ requestBody.thresholds = {
+ critical: config.a11yThresholds.critical,
+ serious: config.a11yThresholds.serious,
+ moderate: config.a11yThresholds.moderate,
+ minor: config.a11yThresholds.minor,
+ };
+ }
+ if (config.includeIframes !== undefined) {
+ requestBody.include_iframes = config.includeIframes;
+ }
+ if (config.waitForA11ySelector) {
+ requestBody.wait_for_selector = config.waitForA11ySelector;
+ }
+ if (config.excludeRules && config.excludeRules.length > 0) {
+ requestBody.exclude_rules = config.excludeRules;
+ }
  }
  if (testType === 'load') {
  requestBody.virtual_users = config.virtualUsers || 10;
@@ -524,10 +547,31 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  );
  }
 
- case 'accessibility':
+ case 'accessibility': {
+ // Feature #587: Display AccessibilityConfig fields in review
+ const strictMode = config.a11yThresholds &&
+ config.a11yThresholds.critical === 0 &&
+ config.a11yThresholds.serious === 0 &&
+ config.a11yThresholds.moderate === 0;
  return (
+ <>
  <SummaryRow label="WCAG Level" value={`Level ${config.wcagLevel || 'AA'}`} />
+ {config.a11yThresholds && (
+ <SummaryRow
+  label="Thresholds"
+  value={strictMode ? 'Strict (Zero Tolerance)' :
+  `Critical: ${config.a11yThresholds.critical}, Serious: ${config.a11yThresholds.serious}`}
+ />
+ )}
+ {config.includeIframes && (
+ <SummaryRow label="Iframes" value="Included" />
+ )}
+ {config.excludeRules && config.excludeRules.length > 0 && (
+ <SummaryRow label="Excluded Rules" value={`${config.excludeRules.length} rules`} />
+ )}
+ </>
  );
+ }
 
  case 'load': {
  // Feature #585: Display LoadConfig fields in review

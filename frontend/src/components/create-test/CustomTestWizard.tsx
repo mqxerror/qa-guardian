@@ -338,6 +338,11 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  ttiThreshold: manualFormState.ttiThreshold,
  lighthouseCategories: manualFormState.lighthouseCategories,
  wcagLevel: manualFormState.wcagLevel,
+ // Feature #587: Accessibility config fields
+ a11yThresholds: manualFormState.a11yThresholds,
+ includeIframes: manualFormState.includeIframes,
+ waitForA11ySelector: manualFormState.waitForA11ySelector,
+ excludeRules: manualFormState.excludeRules,
  virtualUsers: manualFormState.virtualUsers,
  duration: manualFormState.duration,
  rampUp: manualFormState.rampUp,

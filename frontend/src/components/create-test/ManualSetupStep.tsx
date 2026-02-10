@@ -27,6 +27,8 @@ import { E2EConfig, type E2EConfigState } from './config/E2EConfig';
 import { LoadConfig, type LoadConfigState, type LoadScenario } from './config/LoadConfig';
 // Feature #586: Wire PerformanceConfig into wizard for full performance test configuration
 import { PerformanceConfig, type PerformanceConfigState } from './config/PerformanceConfig';
+// Feature #587: Wire AccessibilityConfig into wizard for full accessibility test configuration
+import { AccessibilityConfig, type AccessibilityConfigState, type Severity } from './config/AccessibilityConfig';
 import { type DeviceConfig } from '../test-modals/types';
 
 /**
@@ -70,6 +72,12 @@ export interface ManualSetupFormState {
  };
  // Accessibility specific
  wcagLevel: 'A' | 'AA' | 'AAA';
+ /** Feature #587: Full accessibility test configuration from AccessibilityConfig component */
+ accessibilityConfig?: AccessibilityConfigState;
+ a11yThresholds: Record<Severity, number>;
+ includeIframes: boolean;
+ waitForA11ySelector: string;
+ excludeRules: string[];
  // Load specific
  virtualUsers: number;
  duration: number;
@@ -128,6 +136,16 @@ const DEFAULT_FORM_STATE: ManualSetupFormState = {
  seo: true,
  },
  wcagLevel: 'AA',
+ // Feature #587: Accessibility config defaults
+ a11yThresholds: {
+ critical: 0,
+ serious: 0,
+ moderate: 5,
+ minor: 10,
+ },
+ includeIframes: false,
+ waitForA11ySelector: '',
+ excludeRules: [],
  virtualUsers: 10,
  duration: 60,
  rampUp: 10,
@@ -413,19 +431,42 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  );
 
  case 'accessibility':
+ // Feature #587: Use full AccessibilityConfig component with WCAG levels,
+ // severity thresholds, and advanced options
  return (
- <div className="space-y-4">
- <FormField label="WCAG Level" required hint="Web Content Accessibility Guidelines level">
- <select
- value={formState.wcagLevel}
- onChange={(e) => updateField('wcagLevel', e.target.value as 'A' | 'AA' | 'AAA')}
- className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
- >
- <option value="A">Level A (Minimum)</option>
- <option value="AA">Level AA (Recommended)</option>
- <option value="AAA">Level AAA (Maximum)</option>
- </select>
- </FormField>
+ <div className="space-y-4 -mt-4">
+ <AccessibilityConfig
+ initialValues={{
+ name: formState.name,
+ description: formState.description,
+ targetUrl: formState.targetUrl,
+ wcagLevel: formState.wcagLevel,
+ thresholds: formState.a11yThresholds,
+ includeIframes: formState.includeIframes,
+ waitForSelector: formState.waitForA11ySelector,
+ excludeRules: formState.excludeRules,
+ }}
+ onChange={(a11yConfig) => {
+ // Sync accessibility config back to form state
+ setFormState(prev => ({
+ ...prev,
+ name: a11yConfig.name || prev.name,
+ description: a11yConfig.description || prev.description,
+ targetUrl: a11yConfig.targetUrl || prev.targetUrl,
+ wcagLevel: a11yConfig.wcagLevel,
+ a11yThresholds: a11yConfig.thresholds,
+ includeIframes: a11yConfig.includeIframes,
+ waitForA11ySelector: a11yConfig.waitForSelector,
+ excludeRules: a11yConfig.excludeRules,
+ accessibilityConfig: a11yConfig,
+ }));
+ }}
+ onValidationChange={(_isValid) => {
+ // Feature #587: Accessibility config validation handled separately
+ }}
+ projectBaseUrl={projectBaseUrl}
+ className="accessibility-config-embedded"
+ />
  </div>
  );
 
@@ -501,7 +542,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  </h4>
 
  {/* Skip common fields for visual/e2e/load/performance tests - dedicated config components render them */}
- {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && formState.testType !== 'performance' && (
+ {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && formState.testType !== 'performance' && formState.testType !== 'accessibility' && (
  <>
  <FormField label="Test Name" required error={touched.name ? errors.name : undefined}>
  <input
@@ -549,7 +590,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  {renderTypeSpecificFields()}
 
  {/* Advanced Settings - skip for visual/e2e/load/performance tests (dedicated config components have their own) */}
- {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && formState.testType !== 'performance' && (
+ {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && formState.testType !== 'performance' && formState.testType !== 'accessibility' && (
  <CollapsibleSection
  title="Advanced Settings"
  isOpen={showAdvanced}
