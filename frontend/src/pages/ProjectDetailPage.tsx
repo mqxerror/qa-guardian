@@ -692,21 +692,43 @@ function ProjectDetailPage() {
   }
 
   if (error) {
+    // Distinguish rate-limit errors from actual 404s
+    const statusCode = (projectError as Error & { status?: number })?.status;
+    const isRateLimited = statusCode === 429 || error.includes('429');
+
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center p-8 min-h-[60vh]">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-foreground">Project Not Found</h2>
-            <p className="mt-2 text-muted-foreground">{error}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              The project may not exist, or you may not have access to it.
+            <h2 className="text-2xl font-bold text-foreground">
+              {isRateLimited ? 'Too Many Requests' : 'Project Not Found'}
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              {isRateLimited
+                ? 'You\'ve hit the rate limit. The project still exists — please wait a moment and try again.'
+                : error}
             </p>
-            <button
-              onClick={() => navigate('/projects')}
-              className="mt-6 rounded-md bg-primary px-6 py-2 font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Go to Projects
-            </button>
+            {!isRateLimited && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                The project may not exist, or you may not have access to it.
+              </p>
+            )}
+            <div className="mt-6 flex gap-3 justify-center">
+              {isRateLimited && (
+                <button
+                  onClick={() => window.location.reload()}
+                  className="rounded-md bg-primary px-6 py-2 font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  Retry
+                </button>
+              )}
+              <button
+                onClick={() => navigate('/projects')}
+                className={`rounded-md px-6 py-2 font-medium ${isRateLimited ? 'bg-muted text-muted-foreground hover:bg-muted/80' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
+              >
+                Go to Projects
+              </button>
+            </div>
           </div>
         </div>
       </Layout>

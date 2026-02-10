@@ -93,6 +93,9 @@ const CORS_ALLOWED_ORIGINS = [
 // Feature #153: Structured JSON logging with request correlation IDs
 // Fastify uses pino internally - configure it for production-grade logging
 const app = Fastify({
+  // Trust reverse proxy (Nginx/Traefik) so request.ip reads X-Forwarded-For
+  // Without this, ALL users behind the proxy share a single rate limit counter
+  trustProxy: true,
   logger: {
     // Use LOG_LEVEL env var or default based on environment
     level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),

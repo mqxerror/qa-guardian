@@ -54,7 +54,9 @@ const fetchWithAuth = async (url: string, token: string | null, options?: Reques
   });
 
   if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
+    const err = new Error(`API error: ${response.status}`);
+    (err as Error & { status: number }).status = response.status;
+    throw err;
   }
 
   return response.json();

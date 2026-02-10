@@ -21,7 +21,11 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 1000 * 30, // 30 seconds - better for real-time testing platform
       gcTime: 1000 * 60 * 5, // 5 minutes - garbage collection time
-      retry: 1,
+      retry: (failureCount, error) => {
+        // Never retry 429 (rate limit) — retrying makes it worse
+        if (error instanceof Error && error.message.includes('429')) return false;
+        return failureCount < 1;
+      },
     },
   },
 });
