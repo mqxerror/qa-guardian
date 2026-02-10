@@ -52,6 +52,8 @@ interface TestListSectionProps {
  onOpenCreateTestModal: () => void;
  onSetActionsDropdown: (testId: string | null) => void;
  onRunSingleTest: (testId: string) => void;
+ /** Feature #595: Callback to open full edit modal */
+ onEditTest?: (test: TestType) => void;
  onDuplicateTest: (test: TestType) => void;
  onShowTemplateModal: (testId: string) => void;
  onShowDeleteTestModal: (testId: string) => void;
@@ -77,6 +79,7 @@ export function TestListSection({
  onOpenCreateTestModal,
  onSetActionsDropdown,
  onRunSingleTest,
+ onEditTest,
  onDuplicateTest,
  onShowTemplateModal,
  onShowDeleteTestModal,
@@ -181,6 +184,7 @@ export function TestListSection({
  onSort={onSort}
  onSetActionsDropdown={onSetActionsDropdown}
  onRunSingleTest={onRunSingleTest}
+ onEditTest={onEditTest}
  onDuplicateTest={onDuplicateTest}
  onShowTemplateModal={onShowTemplateModal}
  onShowDeleteTestModal={onShowDeleteTestModal}
@@ -209,6 +213,8 @@ interface VirtualizedTestListProps {
  onSort: (field: LocalSortField) => void;
  onSetActionsDropdown: (testId: string | null) => void;
  onRunSingleTest: (testId: string) => void;
+ /** Feature #595: Callback to open full edit modal */
+ onEditTest?: (test: TestType) => void;
  onDuplicateTest: (test: TestType) => void;
  onShowTemplateModal: (testId: string) => void;
  onShowDeleteTestModal: (testId: string) => void;
@@ -229,6 +235,7 @@ function VirtualizedTestList({
  onSort,
  onSetActionsDropdown,
  onRunSingleTest,
+ onEditTest,
  onDuplicateTest,
  onShowTemplateModal,
  onShowDeleteTestModal,
@@ -552,10 +559,15 @@ function VirtualizedTestList({
  </>
  )}
  </button>
+ {/* Feature #595: Edit button opens full edit modal if callback provided */}
  <button
  onClick={() => {
  onSetActionsDropdown(null);
+ if (onEditTest) {
+ onEditTest(test);
+ } else {
  navigate(`/tests/${test.id}?edit=true`);
+ }
  }}
  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
  >
@@ -772,10 +784,15 @@ function VirtualizedTestList({
  >
  Run Test
  </button>
+ {/* Feature #595: Edit button opens full edit modal if callback provided */}
  <button
  onClick={() => {
  onSetActionsDropdown(null);
+ if (onEditTest) {
+ onEditTest(test);
+ } else {
  navigate(`/tests/${test.id}?edit=true`);
+ }
  }}
  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
  >

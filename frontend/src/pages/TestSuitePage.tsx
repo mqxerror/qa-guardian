@@ -36,6 +36,7 @@ import {
   GeneratedTestPreviewModal, RecordTestModal, ReviewRecordedTestModal,
   SuiteHeaderActions, HumanReviewPanel, SuiteRunResults,
   TestListSection, useRecordingState, EditSelectorModalState,
+  FullEditTestModal,
   computeSuiteHealthScore,
 } from '../components/suite-detail';
 
@@ -187,6 +188,8 @@ function TestSuitePage() {
   const [runningTestId, setRunningTestId] = useState<string | null>(null);
   const [showDeleteTestModal, setShowDeleteTestModal] = useState<string | null>(null);
   const [isDeletingTest, setIsDeletingTest] = useState(false);
+  // Feature #595: Full edit test modal state
+  const [editingTest, setEditingTest] = useState<TestType | null>(null);
 
   // Feature #580: AI Health Monitoring state
   const [aiHealthReport, setAIHealthReport] = useState<{
@@ -1361,6 +1364,19 @@ function TestSuitePage() {
           />
         )}
 
+        {/* Feature #595: Full Edit Test Modal */}
+        {editingTest && (
+          <FullEditTestModal
+            test={editingTest}
+            onClose={() => setEditingTest(null)}
+            onSaved={() => {
+              setEditingTest(null);
+              invalidateBySuite(suiteId || '');
+            }}
+            suiteId={suiteId}
+          />
+        )}
+
         {/* Import Tests Modal - Feature #50: Extracted to component */}
         {showImportModal && (
           <ImportTestsModal
@@ -1415,6 +1431,7 @@ function TestSuitePage() {
           }}
           onShowDeleteTestModal={setShowDeleteTestModal}
           loadStepTemplates={loadStepTemplates}
+          onEditTest={(test) => setEditingTest(test)}
         />
 
         {/* Feature #59: Pagination controls for tests */}

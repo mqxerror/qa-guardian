@@ -1,6 +1,7 @@
 /**
  * TestListItem Component
  * Feature #50: Extracted from TestSuitePage.tsx
+ * Feature #595: Added onEdit callback for full edit modal
  * Displays a single test in the test list with metadata
  */
 
@@ -13,6 +14,8 @@ import type { TestType } from './types';
 interface TestListItemProps {
  test: TestType;
  onRun?: (testId: string) => void;
+ /** Feature #595: Callback to open full edit modal */
+ onEdit?: (test: TestType) => void;
  onDuplicate?: (test: TestType) => void;
  onDelete?: (testId: string) => void;
  showQuickActions?: boolean;
@@ -21,6 +24,7 @@ interface TestListItemProps {
 const TestListItem: React.FC<TestListItemProps> = React.memo(({
  test,
  onRun,
+ onEdit,
  onDuplicate,
  onDelete,
  showQuickActions = true,
@@ -125,14 +129,28 @@ const TestListItem: React.FC<TestListItemProps> = React.memo(({
  Run Test
  </button>
  )}
+ {/* Feature #595: Edit button opens full edit modal if callback provided, else links to detail page */}
+ {onEdit ? (
+ <button
+ onClick={() => {
+ onEdit(test);
+ setShowDropdown(false);
+ }}
+ className="w-full px-4 py-2 text-left text-sm hover:bg-muted flex items-center gap-2"
+ >
+ <span>✏️</span>
+ Edit Test
+ </button>
+ ) : (
  <Link
  to={`/tests/${test.id}`}
  className="w-full px-4 py-2 text-left text-sm hover:bg-muted flex items-center gap-2"
  onClick={() => setShowDropdown(false)}
  >
  <span>📝</span>
- Edit Test
+ View Details
  </Link>
+ )}
  {onDuplicate && (
  <button
  onClick={() => {

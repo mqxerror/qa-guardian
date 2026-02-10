@@ -14,3 +14,6 @@ export type { StepTemplate } from './InsertTemplateModal';
 export { GeneratedTestPreviewModal } from './GeneratedTestPreviewModal';
 export { RecordTestModal } from './RecordTestModal';
 export { ReviewRecordedTestModal } from './ReviewRecordedTestModal';
+// Feature #595: Full-featured edit test modal
+export { FullEditTestModal } from './FullEditTestModal';
+export type { FullEditTestModalProps } from './FullEditTestModal';

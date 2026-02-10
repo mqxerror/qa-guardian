@@ -42,8 +42,9 @@ export {
   GeneratedTestPreviewModal,
   RecordTestModal,
   ReviewRecordedTestModal,
+  FullEditTestModal,
 } from './modals';
-export type { EditSelectorModalState, StepTemplate as TemplateType } from './modals';
+export type { EditSelectorModalState, StepTemplate as TemplateType, FullEditTestModalProps } from './modals';
 
 // Header Components
 export { SuiteHeaderActions } from './SuiteHeaderActions';
