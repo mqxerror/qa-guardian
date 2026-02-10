@@ -319,6 +319,8 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  tags: manualFormState.tags,
  deviceEmulationEnabled: manualFormState.deviceEmulationEnabled,
  deviceConfig: manualFormState.deviceConfig,
+ // Feature #594: Cross-browser testing
+ browsers: manualFormState.browsers,
  viewportWidth: manualFormState.viewportWidth,
  viewportHeight: manualFormState.viewportHeight,
  diffThreshold: manualFormState.diffThreshold,

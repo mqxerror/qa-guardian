@@ -17,6 +17,12 @@ import { DeviceSelect } from '../shared/DeviceSelect';
 import { DeviceConfig } from '../../test-modals/types';
 
 /**
+ * Browser types supported by Playwright
+ * Feature #594: Cross-browser testing support
+ */
+export type BrowserType = 'chromium' | 'firefox' | 'webkit';
+
+/**
  * E2E test configuration state
  */
 export interface E2EConfigState {
@@ -32,6 +38,8 @@ export interface E2EConfigState {
  /** Feature #36: Device emulation */
  deviceEmulationEnabled: boolean;
  deviceConfig: DeviceConfig;
+ /** Feature #594: Cross-browser testing */
+ browsers: BrowserType[];
 }
 
 /**
@@ -64,7 +72,34 @@ const DEFAULT_CONFIG: E2EConfigState = {
  // Feature #36: Device emulation defaults
  deviceEmulationEnabled: false,
  deviceConfig: { preset: 'desktop-1280' },
+ // Feature #594: Cross-browser testing defaults (Chromium only)
+ browsers: ['chromium'],
 };
+
+/**
+ * Browser configuration options
+ * Feature #594: Cross-browser testing
+ */
+const BROWSER_OPTIONS: { value: BrowserType; label: string; icon: string; description: string }[] = [
+ {
+   value: 'chromium',
+   label: 'Chromium',
+   icon: '🌐',
+   description: 'Chrome, Edge, Brave',
+ },
+ {
+   value: 'firefox',
+   label: 'Firefox',
+   icon: '🦊',
+   description: 'Mozilla Firefox',
+ },
+ {
+   value: 'webkit',
+   label: 'WebKit',
+   icon: '🧭',
+   description: 'Safari, iOS browsers',
+ },
+];
 
 /**
  * Form field component
@@ -242,6 +277,53 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  {!config.deviceEmulationEnabled && (
  <p className="text-xs text-muted-foreground">
  Enable to run tests on mobile/tablet devices with touch emulation and proper user agents.
+ </p>
+ )}
+ </div>
+
+ {/* Feature #594: Cross-Browser Testing */}
+ <div className="pt-3 border-t border-border/50">
+ <h4 className="text-sm font-medium text-foreground mb-3">
+ Cross-Browser Testing
+ </h4>
+ <p className="text-xs text-muted-foreground mb-3">
+ Select browsers to run this test against. Tests will run on each selected browser.
+ </p>
+ <div className="grid grid-cols-3 gap-2">
+ {BROWSER_OPTIONS.map((browser) => {
+ const isSelected = config.browsers.includes(browser.value);
+ return (
+ <button
+   key={browser.value}
+   type="button"
+   onClick={() => {
+   const newBrowsers = isSelected
+     ? config.browsers.filter(b => b !== browser.value)
+     : [...config.browsers, browser.value];
+   // Ensure at least one browser is selected
+   if (newBrowsers.length > 0) {
+     updateField('browsers', newBrowsers);
+   }
+   }}
+   className={`flex flex-col items-center p-3 rounded-lg border text-center transition-colors ${
+   isSelected
+     ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+     : 'border-border hover:border-primary/30'
+   }`}
+ >
+   <span className="text-2xl mb-1">{browser.icon}</span>
+   <span className="font-medium text-sm text-foreground">{browser.label}</span>
+   <span className="text-xs text-muted-foreground">{browser.description}</span>
+   {isSelected && (
+   <span className="mt-1 text-xs text-primary font-medium">✓ Selected</span>
+   )}
+ </button>
+ );
+ })}
+ </div>
+ {config.browsers.length > 1 && (
+ <p className="text-xs text-muted-foreground mt-2">
+ Test will run {config.browsers.length} times (once per browser)
  </p>
  )}
  </div>

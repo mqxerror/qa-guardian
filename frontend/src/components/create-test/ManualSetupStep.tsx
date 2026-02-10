@@ -31,6 +31,8 @@ import { PerformanceConfig, type PerformanceConfigState } from './config/Perform
 import { AccessibilityConfig, type AccessibilityConfigState, type Severity } from './config/AccessibilityConfig';
 // Feature #591: Wire SecurityConfig into wizard for security test configuration
 import { SecurityConfig, type SecurityConfigState, type SecurityScanType, type SecuritySeverity } from './config/SecurityConfig';
+// Feature #594: Import BrowserType for cross-browser testing
+import { type BrowserType } from './config/E2EConfig';
 import { type DeviceConfig } from '../test-modals/types';
 
 /**
@@ -52,6 +54,8 @@ export interface ManualSetupFormState {
  tags: string[];
  deviceEmulationEnabled: boolean;
  deviceConfig: DeviceConfig;
+ // Feature #594: Cross-browser testing
+ browsers: BrowserType[];
  // Visual specific - Feature #1964: Enhanced with full VisualConfig support
  viewportWidth: number;
  viewportHeight: number;
@@ -130,6 +134,8 @@ const DEFAULT_FORM_STATE: ManualSetupFormState = {
  tags: [],
  deviceEmulationEnabled: false,
  deviceConfig: { preset: 'desktop-1280' },
+ // Feature #594: Cross-browser testing default (Chromium only)
+ browsers: ['chromium'],
  viewportWidth: 1920,
  viewportHeight: 1080,
  diffThreshold: 0.1,
@@ -261,6 +267,11 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  const validate = useCallback((values: ManualSetupFormState): FormErrors => {
  const newErrors: FormErrors = {};
 
+ // Security tests handle their own name/URL validation in SecurityConfig
+ if (values.testType === 'security') {
+ return newErrors;
+ }
+
  if (!values.name.trim()) {
  newErrors.name = 'Test name is required';
  }
@@ -344,6 +355,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  tags: formState.tags,
  deviceEmulationEnabled: formState.deviceEmulationEnabled,
  deviceConfig: formState.deviceConfig as E2EConfigState['deviceConfig'],
+ // Feature #594: Pass browsers selection
+ browsers: formState.browsers,
  }}
  onChange={(e2eConfig) => {
  // Sync E2E config back to form state
@@ -359,6 +372,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  tags: e2eConfig.tags,
  deviceEmulationEnabled: e2eConfig.deviceEmulationEnabled,
  deviceConfig: e2eConfig.deviceConfig,
+ // Feature #594: Sync browsers selection
+ browsers: e2eConfig.browsers,
  e2eConfig: e2eConfig,
  }));
  }}

@@ -67,6 +67,8 @@ export interface ManualSetupConfig {
  tags?: string[];
  deviceEmulationEnabled?: boolean;
  deviceConfig?: DeviceConfig;
+ // Feature #594: Cross-browser testing
+ browsers?: ('chromium' | 'firefox' | 'webkit')[];
  // Visual specific
  viewportWidth?: number;
  viewportHeight?: number;
@@ -271,6 +273,10 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  } catch {
  // If parsing fails, don't include steps - backend will auto-generate
  }
+ }
+ // Feature #594: Cross-browser testing - send browsers array
+ if (config.browsers && config.browsers.length > 0) {
+ requestBody.browsers = config.browsers;
  }
  }
  if (testType === 'visual') {
@@ -558,15 +564,29 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  }
 
  switch (testType) {
- case 'e2e':
+ case 'e2e': {
  // Feature #584: Show all E2EConfig fields in review
+ // Feature #594: Show browser selection
+ const browserLabels: Record<string, string> = {
+ chromium: 'Chrome',
+ firefox: 'Firefox',
+ webkit: 'Safari',
+ };
+ const browserDisplay = config.browsers && config.browsers.length > 0
+ ? config.browsers.map(b => browserLabels[b] || b).join(', ')
+ : 'Chrome';
  return (
  <>
  {config.steps && (
  <SummaryRow label="Steps" value={`${config.steps.split('\n').filter(Boolean).length} steps defined`} />
  )}
+ <SummaryRow label="Browsers" value={browserDisplay} />
+ {config.browsers && config.browsers.length > 1 && (
+ <SummaryRow label="Cross-Browser" value={`${config.browsers.length} browsers selected`} />
+ )}
  </>
  );
+ }
 
  case 'visual': {
  // Feature #1983: Display all enabled viewports
