@@ -3,7 +3,8 @@
 // Feature #58: Migrated to React Query for parallel data loading
 // Feature #125: Added skeleton loaders for better perceived performance
 // Feature #337: Dark-first design system redesign
-import { useState, useEffect, useRef } from "react"; // useCallback unused
+// Feature #550: Real-time wave visualization for smoke test
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { SkeletonProjectDetail } from "../components/ui/Skeleton";
@@ -24,7 +25,10 @@ import {
   useReducedMotion,
   ScoreCard,
 } from "../components/ui";
-import { Flame, Plus, Settings, Loader2, FolderKanban, TestTube2, Calendar, User, MoreHorizontal, Github, Shield, ChevronDown } from "lucide-react";
+import { Flame, Plus, Settings, Loader2, FolderKanban, TestTube2, Calendar, User, MoreHorizontal, Github, Shield, ChevronDown, Globe, FileCheck, CheckCircle2, XCircle } from "lucide-react";
+// Feature #550: Real-time wave visualization for smoke test
+import { WaveProgressCard, type WaveProgressStatus } from "../components/ui/wave-progress-card";
+import { useSuiteRunSocket, type SuiteRun as SuiteRunSocket } from "../hooks/useSuiteRunSocket";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -179,8 +183,17 @@ function ProjectDetailPage() {
   const [deleteError, setDeleteError] = useState('');
 
   // Feature #1975: One-click Smoke Test state
+  // Feature #550: Added wave visualization state
   const [isRunningQuickSmokeTest, setIsRunningQuickSmokeTest] = useState(false);
   const [smokeTestRunId, setSmokeTestRunId] = useState<string | null>(null);
+  const [smokeTestTestId, setSmokeTestTestId] = useState<string | null>(null);
+  const [smokeTestResult, setSmokeTestResult] = useState<'passed' | 'failed' | null>(null);
+  const [smokeTestCurrentStep, setSmokeTestCurrentStep] = useState<{
+    phase: 'health' | 'pageload' | 'validation';
+    stepIndex: number;
+    totalSteps: number;
+  } | null>(null);
+  const [smokeTestExpandedPhase, setSmokeTestExpandedPhase] = useState<string | null>(null);
 
   // Feature #49: Settings state and handlers from useSettingsHandlers hook
   // Destructure what we need from settingsState
@@ -343,18 +356,71 @@ function ProjectDetailPage() {
     }
   };
 
-  // Feature #1975: One-click Smoke Test handler
+  // Feature #550: Smoke test WebSocket callbacks
+  const handleSmokeTestRunUpdate = useCallback(() => {
+    // Update handled by currentStep tracking
+  }, []);
+
+  const handleSmokeTestRunComplete = useCallback((completedRun: SuiteRunSocket) => {
+    const passed = completedRun.status === 'passed';
+    setSmokeTestResult(passed ? 'passed' : 'failed');
+    setIsRunningQuickSmokeTest(false);
+    setSmokeTestCurrentStep(null);
+
+    if (passed) {
+      toast.success('Site Healthy ✅ - All checks passed!', 5000);
+    } else {
+      toast.error('Issues Found ⚠️ - Some checks failed', 8000);
+    }
+  }, []);
+
+  // Placeholder callbacks for screenshot (not used in smoke test)
+  const handleSmokeTestScreenshot = useCallback(() => {}, []);
+  const handleSmokeTestScreenshotHistory = useCallback(() => {}, []);
+
+  // Feature #550: Use WebSocket for real-time smoke test progress
+  const { currentStep: socketCurrentStep } = useSuiteRunSocket({
+    runId: smokeTestRunId,
+    token,
+    onRunUpdate: handleSmokeTestRunUpdate,
+    onRunComplete: handleSmokeTestRunComplete,
+    onScreenshot: handleSmokeTestScreenshot,
+    onScreenshotHistory: handleSmokeTestScreenshotHistory,
+    enabled: isRunningQuickSmokeTest && !!smokeTestRunId,
+  });
+
+  // Map socket step progress to smoke test phases
+  useEffect(() => {
+    if (socketCurrentStep && isRunningQuickSmokeTest) {
+      // Map step index to phases: 0=health, 1=pageload, 2+=validation
+      const stepIdx = socketCurrentStep.stepIndex;
+      const phase: 'health' | 'pageload' | 'validation' =
+        stepIdx === 0 ? 'health' : stepIdx === 1 ? 'pageload' : 'validation';
+      setSmokeTestCurrentStep({
+        phase,
+        stepIndex: socketCurrentStep.stepIndex,
+        totalSteps: socketCurrentStep.totalSteps,
+      });
+    }
+  }, [socketCurrentStep, isRunningQuickSmokeTest]);
+
+  // Feature #1975 + #550: One-click Smoke Test handler with WebSocket
   const handleQuickSmokeTest = async () => {
     if (!project?.base_url) {
       toast.error('No base URL configured for this project. Please set it in Settings.');
       return;
     }
 
+    // Reset state
     setIsRunningQuickSmokeTest(true);
     setSmokeTestRunId(null);
+    setSmokeTestTestId(null);
+    setSmokeTestResult(null);
+    setSmokeTestCurrentStep({ phase: 'health', stepIndex: 0, totalSteps: 3 });
+    setSmokeTestExpandedPhase(null);
 
     try {
-      // Step 1: Create a temporary smoke test
+      // Start the smoke test - WebSocket will handle progress tracking
       const testResponse = await fetch(`/api/v1/projects/${id}/quick-smoke-test`, {
         method: 'POST',
         headers: {
@@ -367,59 +433,28 @@ function ProjectDetailPage() {
       });
 
       if (!testResponse.ok) {
-        // If the quick-smoke-test endpoint doesn't exist, try creating a test in a default suite
         const errorData = await testResponse.json();
         throw new Error(errorData.message || 'Failed to run smoke test');
       }
 
       const testData = await testResponse.json();
-      const runId = testData.run_id;
-      const testId = testData.test_id;
-      const suiteId = testData.suite_id;
-      setSmokeTestRunId(runId);
-
-      // Step 2: Poll for test completion
-      let completed = false;
-      let attempts = 0;
-      const maxAttempts = 60; // Max 60 seconds
-
-      while (!completed && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        attempts++;
-
-        const statusResponse = await fetch(`/api/v1/runs/${runId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (statusResponse.ok) {
-          const statusData = await statusResponse.json();
-          const status = statusData.run?.status;
-
-          if (status === 'passed') {
-            completed = true;
-            toast.success('Site Healthy ✅ - Click test details to view results', 5000);
-            // Navigate to test details after a short delay
-            setTimeout(() => navigate(`/tests/${testId}`), 1000);
-          } else if (status === 'failed' || status === 'error') {
-            completed = true;
-            toast.error('Issues Found ⚠️ - Click test details to view results', 8000);
-            // Navigate to test details after a short delay
-            setTimeout(() => navigate(`/tests/${testId}`), 1000);
-          }
-        }
-      }
-
-      if (!completed) {
-        toast.warning('Smoke test is taking longer than expected. Check run history for results.');
-      }
+      setSmokeTestRunId(testData.run_id);
+      setSmokeTestTestId(testData.test_id);
+      // WebSocket will now handle the progress tracking via useSuiteRunSocket
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to run smoke test';
       toast.error(message);
-    } finally {
       setIsRunningQuickSmokeTest(false);
+      setSmokeTestCurrentStep(null);
     }
+  };
+
+  // Feature #550: Reset smoke test state
+  const dismissSmokeTestResult = () => {
+    setSmokeTestResult(null);
+    setSmokeTestRunId(null);
+    setSmokeTestTestId(null);
+    setSmokeTestCurrentStep(null);
   };
 
   const canCreateSuite = user?.role !== 'viewer';
@@ -705,6 +740,134 @@ function ProjectDetailPage() {
             </div>
           }
         />
+
+        {/* Feature #550: Inline Smoke Test Wave Visualization */}
+        {(isRunningQuickSmokeTest || smokeTestResult) && (
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Flame className="h-5 w-5 text-warning" />
+                Smoke Test
+              </h3>
+              {smokeTestResult && (
+                <button
+                  onClick={dismissSmokeTestResult}
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Dismiss
+                </button>
+              )}
+            </div>
+
+            {/* Wave Progress Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Health Check Wave */}
+              <WaveProgressCard
+                status={
+                  smokeTestResult === 'passed' ? 'completed' :
+                  smokeTestResult === 'failed' && smokeTestCurrentStep?.phase !== 'health' ? 'completed' :
+                  smokeTestResult === 'failed' && smokeTestCurrentStep?.phase === 'health' ? 'failed' :
+                  smokeTestCurrentStep?.phase === 'health' ? 'running' :
+                  (smokeTestCurrentStep?.stepIndex || 0) > 0 ? 'completed' :
+                  'waiting' as WaveProgressStatus
+                }
+                icon={Globe}
+                title="Health Check"
+                subtitle="DNS & SSL verification"
+                expanded={smokeTestExpandedPhase === 'health'}
+                onToggle={() => setSmokeTestExpandedPhase(
+                  smokeTestExpandedPhase === 'health' ? null : 'health'
+                )}
+                steps={[
+                  { name: 'DNS Resolution', status: (smokeTestCurrentStep?.stepIndex || 0) >= 1 || smokeTestResult ? 'completed' : smokeTestCurrentStep?.phase === 'health' ? 'running' : 'pending' },
+                  { name: 'SSL Certificate', status: (smokeTestCurrentStep?.stepIndex || 0) >= 1 || smokeTestResult ? 'completed' : 'pending' },
+                ]}
+                animate={smokeTestCurrentStep?.phase === 'health'}
+              />
+
+              {/* Page Load Wave */}
+              <WaveProgressCard
+                status={
+                  smokeTestResult === 'passed' ? 'completed' :
+                  smokeTestResult === 'failed' && smokeTestCurrentStep?.phase === 'validation' ? 'completed' :
+                  smokeTestResult === 'failed' && smokeTestCurrentStep?.phase === 'pageload' ? 'failed' :
+                  smokeTestCurrentStep?.phase === 'pageload' ? 'running' :
+                  (smokeTestCurrentStep?.stepIndex || 0) > 1 ? 'completed' :
+                  'waiting' as WaveProgressStatus
+                }
+                icon={FileCheck}
+                title="Page Load"
+                subtitle="HTTP response & timing"
+                expanded={smokeTestExpandedPhase === 'pageload'}
+                onToggle={() => setSmokeTestExpandedPhase(
+                  smokeTestExpandedPhase === 'pageload' ? null : 'pageload'
+                )}
+                steps={[
+                  { name: 'HTTP Status', status: (smokeTestCurrentStep?.stepIndex || 0) >= 2 || smokeTestResult ? 'completed' : smokeTestCurrentStep?.phase === 'pageload' ? 'running' : 'pending' },
+                  { name: 'Response Time', status: (smokeTestCurrentStep?.stepIndex || 0) >= 2 || smokeTestResult ? 'completed' : 'pending' },
+                ]}
+                animate={smokeTestCurrentStep?.phase === 'pageload'}
+              />
+
+              {/* Basic Validation Wave */}
+              <WaveProgressCard
+                status={
+                  smokeTestResult === 'passed' ? 'completed' :
+                  smokeTestResult === 'failed' && smokeTestCurrentStep?.phase === 'validation' ? 'failed' :
+                  smokeTestCurrentStep?.phase === 'validation' ? 'running' :
+                  'waiting' as WaveProgressStatus
+                }
+                icon={CheckCircle2}
+                title="Validation"
+                subtitle="Content & structure checks"
+                expanded={smokeTestExpandedPhase === 'validation'}
+                onToggle={() => setSmokeTestExpandedPhase(
+                  smokeTestExpandedPhase === 'validation' ? null : 'validation'
+                )}
+                steps={[
+                  { name: 'HTML Structure', status: smokeTestResult ? (smokeTestResult === 'passed' ? 'completed' : 'failed') : smokeTestCurrentStep?.phase === 'validation' ? 'running' : 'pending' },
+                  { name: 'Console Errors', status: smokeTestResult ? (smokeTestResult === 'passed' ? 'completed' : 'pending') : 'pending' },
+                ]}
+                animate={smokeTestCurrentStep?.phase === 'validation'}
+              />
+            </div>
+
+            {/* Results Summary */}
+            {smokeTestResult && (
+              <div className={`mt-4 p-3 rounded-lg ${
+                smokeTestResult === 'passed'
+                  ? 'bg-success/10 border border-success/20'
+                  : 'bg-destructive/10 border border-destructive/20'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {smokeTestResult === 'passed' ? (
+                      <CheckCircle2 className="h-5 w-5 text-success" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-destructive" />
+                    )}
+                    <span className={`font-medium ${
+                      smokeTestResult === 'passed' ? 'text-success' : 'text-destructive'
+                    }`}>
+                      {smokeTestResult === 'passed'
+                        ? 'All checks passed!'
+                        : 'Some checks failed'
+                      }
+                    </span>
+                  </div>
+                  {smokeTestTestId && (
+                    <Link
+                      to={`/tests/${smokeTestTestId}`}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      View Details →
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Feature #526: Project Health Overview with ScoreCards */}
         {suites.length > 0 && (
