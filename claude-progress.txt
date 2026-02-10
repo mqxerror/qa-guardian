@@ -5,7 +5,31 @@
 - **Last Updated**: 2026-02-10
 - **Pending**: 0 features
 - **In Progress**: None
-- **Last Action**: Session 209 - Regression Testing (API-level)
+- **Last Action**: Session 210 - Regression Bug Fix (SuiteCard 404)
+
+---
+
+## Session 2026-02-10 (Session 210) - Regression Bug Fix
+
+### Summary
+Found and fixed a 404 regression bug in SuiteCard navigation. The SuiteCard component was linking to `/projects/{projectId}/suites/{suiteId}` but the route is defined as `/suites/{suiteId}`, causing a 404 when clicking any suite card from the project detail page.
+
+### Bug Fix
+- **File**: `frontend/src/components/project-detail/SuiteCard.tsx` line 38
+- **Before**: `to={/projects/${projectId}/suites/${suite.id}}`
+- **After**: `to={/suites/${suite.id}}`
+- **Commit**: 012fc56b
+
+### Regression Tests Performed
+1. **Landing Page** ✅ - Hero section, stats, navigation all working
+2. **Login Flow** ✅ - Authentication with owner@example.com works
+3. **Dashboard** ✅ - Stats correct (1 Project, 16 Runs, 4 Suites, 7 Tests), WebSocket connected
+4. **Projects → Project Detail → Suite Detail** ✅ - Fixed! Navigation now works end-to-end
+5. **Run History** ✅ - 16 runs displayed, filters/pagination working
+
+### Build Verification
+- npm run build: SUCCESS (7.18s)
+- 0 console errors on all tested pages
 
 ---
 
