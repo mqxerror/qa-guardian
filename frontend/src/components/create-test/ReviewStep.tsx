@@ -78,6 +78,13 @@ export interface ManualSetupConfig {
  waitTime?: number;
  hideSelectors?: string[];
  waitForSelector?: string;
+ /** Feature #590: Additional visual regression options */
+ antiAliasingTolerance?: 'off' | 'low' | 'medium' | 'high';
+ ignoreRegions?: Array<{ x: number; y: number; width: number; height: number }>;
+ ignoreSelectors?: string[];
+ customCSS?: string;
+ clipSelector?: string;
+ colorThreshold?: number;
  // Performance specific
  devicePreset?: 'desktop' | 'mobile';
  performanceThreshold?: number;
@@ -110,6 +117,14 @@ export interface ManualSetupConfig {
  http_req_duration_p95: number;
  http_req_failed: number;
  };
+ // Feature #591: Security specific
+ scanType?: 'sast' | 'dependency' | 'secrets' | 'dast' | 'full';
+ targetPath?: string;
+ failOnSeverity?: 'critical' | 'high' | 'medium' | 'low' | 'info';
+ severityThreshold?: 'critical' | 'high' | 'medium' | 'low' | 'info';
+ ignorePatterns?: string[];
+ excludePaths?: string[];
+ maxFindings?: number;
 }
 
 /**
@@ -144,6 +159,8 @@ const TEST_TYPE_CONFIG: Record<TestTypeOption, { label: string; icon: string; ic
  performance: { label: 'Performance', icon: '⚡', iconBg: 'bg-orange-100 dark:bg-orange-900/40', badgeCls: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' },
  load: { label: 'Load Test', icon: '📊', iconBg: 'bg-red-100 dark:bg-red-900/40', badgeCls: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
  accessibility: { label: 'Accessibility', icon: '♿', iconBg: 'bg-green-100 dark:bg-green-900/40', badgeCls: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
+ // Feature #591: Security test type
+ security: { label: 'Security', icon: '🛡️', iconBg: 'bg-violet-100 dark:bg-violet-900/40', badgeCls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' },
 };
 
 /**
@@ -156,6 +173,8 @@ const UI_TO_API_TEST_TYPE: Record<TestTypeOption, string> = {
  performance: 'lighthouse',
  load: 'load',
  accessibility: 'accessibility',
+ // Feature #591: Security test type
+ security: 'security',
 };
 
 /**
@@ -223,6 +242,21 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
 
  // Add type-specific fields
  if (config.method === 'manual-setup') {
+ // Feature #589: Common fields sent for ALL test types (not just E2E)
+ if (config.timeout && config.timeout !== 30000) {
+ requestBody.timeout = config.timeout;
+ }
+ if (config.retries && config.retries > 0) {
+ requestBody.retries = config.retries;
+ }
+ if (config.tags && config.tags.length > 0) {
+ requestBody.tags = config.tags;
+ }
+ if (config.deviceEmulationEnabled && config.deviceConfig) {
+ requestBody.device_emulation = true;
+ requestBody.device_config = config.deviceConfig;
+ }
+
  if (testType === 'e2e') {
  // Use structuredSteps (array) if available, otherwise try to parse steps string
  if (config.structuredSteps && config.structuredSteps.length > 0) {
@@ -237,20 +271,6 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  } catch {
  // If parsing fails, don't include steps - backend will auto-generate
  }
- }
- // Feature #584: Include E2E config fields from E2EConfig component
- if (config.timeout && config.timeout !== 30000) {
- requestBody.timeout = config.timeout;
- }
- if (config.retries && config.retries > 0) {
- requestBody.retries = config.retries;
- }
- if (config.tags && config.tags.length > 0) {
- requestBody.tags = config.tags;
- }
- if (config.deviceEmulationEnabled && config.deviceConfig) {
- requestBody.device_emulation = true;
- requestBody.device_config = config.deviceConfig;
  }
  }
  if (testType === 'visual') {
@@ -286,6 +306,25 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  }
  if (config.hideSelectors && config.hideSelectors.length > 0) {
  requestBody.hide_selectors = config.hideSelectors;
+ }
+ // Feature #590: Additional visual regression options
+ if (config.antiAliasingTolerance && config.antiAliasingTolerance !== 'off') {
+ requestBody.anti_aliasing_tolerance = config.antiAliasingTolerance;
+ }
+ if (config.ignoreRegions && config.ignoreRegions.length > 0) {
+ requestBody.ignore_regions = config.ignoreRegions;
+ }
+ if (config.ignoreSelectors && config.ignoreSelectors.length > 0) {
+ requestBody.ignore_selectors = config.ignoreSelectors;
+ }
+ if (config.customCSS) {
+ requestBody.custom_css = config.customCSS;
+ }
+ if (config.clipSelector) {
+ requestBody.clip_selector = config.clipSelector;
+ }
+ if (config.colorThreshold && config.colorThreshold !== 0.1) {
+ requestBody.color_threshold = config.colorThreshold;
  }
  }
  if (testType === 'performance') {
@@ -350,6 +389,22 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  http_req_duration_p95: config.loadThresholds.http_req_duration_p95,
  http_req_failed: config.loadThresholds.http_req_failed,
  };
+ }
+ }
+ // Feature #591: Security test fields
+ if (testType === 'security') {
+ requestBody.scan_type = config.scanType || 'full';
+ requestBody.target_path = config.targetPath || './';
+ requestBody.fail_on_severity = config.failOnSeverity || 'high';
+ requestBody.severity_threshold = config.severityThreshold || 'low';
+ if (config.excludePaths && config.excludePaths.length > 0) {
+ requestBody.exclude_paths = config.excludePaths;
+ }
+ if (config.ignorePatterns && config.ignorePatterns.length > 0) {
+ requestBody.ignore_patterns = config.ignorePatterns;
+ }
+ if (config.maxFindings) {
+ requestBody.max_findings = config.maxFindings;
  }
  }
  } else {
@@ -470,6 +525,27 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  }
  }, [buildRequestBody, suiteId, token, displayName, onSuccess, onError]);
 
+ // Feature #589: Render common settings (timeout, retries, tags) for all test types
+ const renderCommonSettings = () => {
+ if (config.method !== 'manual-setup') return null;
+ return (
+ <>
+ {config.timeout && config.timeout !== 30000 && (
+ <SummaryRow label="Timeout" value={`${(config.timeout / 1000).toFixed(0)}s`} />
+ )}
+ {config.retries !== undefined && config.retries > 0 && (
+ <SummaryRow label="Retries" value={`${config.retries}`} />
+ )}
+ {config.tags && config.tags.length > 0 && (
+ <SummaryRow label="Tags" value={config.tags.join(', ')} />
+ )}
+ {config.deviceEmulationEnabled && (
+ <SummaryRow label="Device" value={config.deviceConfig?.preset || 'Custom'} />
+ )}
+ </>
+ );
+ };
+
  // Render type-specific settings
  const renderTypeSpecificSettings = () => {
  if (config.method !== 'manual-setup') {
@@ -489,18 +565,6 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  {config.steps && (
  <SummaryRow label="Steps" value={`${config.steps.split('\n').filter(Boolean).length} steps defined`} />
  )}
- {config.timeout && config.timeout !== 30000 && (
- <SummaryRow label="Timeout" value={`${(config.timeout / 1000).toFixed(0)}s`} />
- )}
- {config.retries !== undefined && config.retries > 0 && (
- <SummaryRow label="Retries" value={`${config.retries}`} />
- )}
- {config.tags && config.tags.length > 0 && (
- <SummaryRow label="Tags" value={config.tags.join(', ')} />
- )}
- {config.deviceEmulationEnabled && (
- <SummaryRow label="Device" value={config.deviceConfig?.preset || 'Custom'} />
- )}
  </>
  );
 
@@ -518,6 +582,25 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  <SummaryRow label="Diff Threshold" value={`${Math.round((config.diffThreshold || 0.1) * 100)}%`} />
  {config.captureMode && (
  <SummaryRow label="Capture Mode" value={config.captureMode.replace('_', ' ')} />
+ )}
+ {/* Feature #590: Display additional visual regression options */}
+ {config.antiAliasingTolerance && config.antiAliasingTolerance !== 'off' && (
+ <SummaryRow label="Anti-aliasing" value={config.antiAliasingTolerance} />
+ )}
+ {config.colorThreshold !== undefined && config.colorThreshold !== 0.1 && (
+ <SummaryRow label="Color Threshold" value={`${Math.round(config.colorThreshold * 100)}%`} />
+ )}
+ {config.ignoreRegions && config.ignoreRegions.length > 0 && (
+ <SummaryRow label="Ignore Regions" value={`${config.ignoreRegions.length} region(s)`} />
+ )}
+ {config.ignoreSelectors && config.ignoreSelectors.length > 0 && (
+ <SummaryRow label="Ignore Selectors" value={config.ignoreSelectors.join(', ')} />
+ )}
+ {config.customCSS && (
+ <SummaryRow label="Custom CSS" value="Applied" />
+ )}
+ {config.clipSelector && (
+ <SummaryRow label="Clip Selector" value={config.clipSelector} />
  )}
  </>
  );
@@ -593,6 +676,36 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  label="Thresholds"
  value={`P95 ≤ ${config.loadThresholds.http_req_duration_p95}ms, Error ≤ ${Math.round(config.loadThresholds.http_req_failed * 100)}%`}
  />
+ )}
+ </>
+ );
+ }
+
+ // Feature #591: Security test type review display
+ case 'security': {
+ const scanTypeLabels: Record<string, string> = {
+ full: 'Full Scan',
+ sast: 'SAST Only',
+ dependency: 'Dependency Scan',
+ secrets: 'Secret Detection',
+ dast: 'DAST Scan',
+ };
+ const scanLabel = scanTypeLabels[config.scanType || 'full'] || 'Full Scan';
+ return (
+ <>
+ <SummaryRow label="Scan Type" value={scanLabel} />
+ {config.scanType !== 'dast' && (
+ <SummaryRow label="Target Path" value={config.targetPath || './'} />
+ )}
+ <SummaryRow
+ label="Fail On"
+ value={`${(config.failOnSeverity || 'high').charAt(0).toUpperCase()}${(config.failOnSeverity || 'high').slice(1)} severity or above`}
+ />
+ {config.excludePaths && config.excludePaths.length > 0 && (
+ <SummaryRow label="Excluded Paths" value={`${config.excludePaths.length} paths`} />
+ )}
+ {config.ignorePatterns && config.ignorePatterns.length > 0 && (
+ <SummaryRow label="Ignore Patterns" value={`${config.ignorePatterns.length} patterns`} />
  )}
  </>
  );

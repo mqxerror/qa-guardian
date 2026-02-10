@@ -29,6 +29,8 @@ import { LoadConfig, type LoadConfigState, type LoadScenario } from './config/Lo
 import { PerformanceConfig, type PerformanceConfigState } from './config/PerformanceConfig';
 // Feature #587: Wire AccessibilityConfig into wizard for full accessibility test configuration
 import { AccessibilityConfig, type AccessibilityConfigState, type Severity } from './config/AccessibilityConfig';
+// Feature #591: Wire SecurityConfig into wizard for security test configuration
+import { SecurityConfig, type SecurityConfigState, type SecurityScanType, type SecuritySeverity } from './config/SecurityConfig';
 import { type DeviceConfig } from '../test-modals/types';
 
 /**
@@ -90,6 +92,15 @@ export interface ManualSetupFormState {
  http_req_duration_p95: number;
  http_req_failed: number;
  };
+ // Feature #591: Security specific
+ securityConfig?: SecurityConfigState;
+ scanType: SecurityScanType;
+ targetPath: string;
+ failOnSeverity: SecuritySeverity;
+ severityThreshold: SecuritySeverity;
+ ignorePatterns: string[];
+ excludePaths: string[];
+ maxFindings: number;
 }
 
 /**
@@ -156,6 +167,14 @@ const DEFAULT_FORM_STATE: ManualSetupFormState = {
  http_req_duration_p95: 500,
  http_req_failed: 0.01,
  },
+ // Feature #591: Security config defaults
+ scanType: 'full',
+ targetPath: './',
+ failOnSeverity: 'high',
+ severityThreshold: 'low',
+ ignorePatterns: [],
+ excludePaths: ['node_modules', 'dist', 'build', '.git'],
+ maxFindings: 100,
 };
 
 /**
@@ -512,6 +531,50 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  </div>
  );
 
+ case 'security':
+ // Feature #591: Use full SecurityConfig component with scan type selection,
+ // severity thresholds, and ignore patterns
+ return (
+ <div className="space-y-4 -mt-4">
+ <SecurityConfig
+ initialValues={{
+ name: formState.name,
+ description: formState.description,
+ targetUrl: formState.targetUrl,
+ targetPath: formState.targetPath,
+ scanType: formState.scanType,
+ failOnSeverity: formState.failOnSeverity,
+ severityThreshold: formState.severityThreshold,
+ ignorePatterns: formState.ignorePatterns,
+ excludePaths: formState.excludePaths,
+ maxFindings: formState.maxFindings,
+ }}
+ onChange={(securityConfig) => {
+ // Sync security config back to form state
+ setFormState(prev => ({
+ ...prev,
+ name: securityConfig.name || prev.name,
+ description: securityConfig.description || prev.description,
+ targetUrl: securityConfig.targetUrl || prev.targetUrl,
+ targetPath: securityConfig.targetPath,
+ scanType: securityConfig.scanType,
+ failOnSeverity: securityConfig.failOnSeverity,
+ severityThreshold: securityConfig.severityThreshold,
+ ignorePatterns: securityConfig.ignorePatterns,
+ excludePaths: securityConfig.excludePaths,
+ maxFindings: securityConfig.maxFindings,
+ securityConfig: securityConfig,
+ }));
+ }}
+ onValidationChange={(_isValid) => {
+ // Feature #591: Security config validation handled separately
+ }}
+ projectBaseUrl={projectBaseUrl}
+ className="security-config-embedded"
+ />
+ </div>
+ );
+
  default:
  return null;
  }
@@ -541,8 +604,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  Test Configuration
  </h4>
 
- {/* Skip common fields for visual/e2e/load/performance tests - dedicated config components render them */}
- {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && formState.testType !== 'performance' && formState.testType !== 'accessibility' && (
+ {/* Skip common fields for visual/e2e/load/performance/security tests - dedicated config components render them */}
+ {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && formState.testType !== 'performance' && formState.testType !== 'accessibility' && formState.testType !== 'security' && (
  <>
  <FormField label="Test Name" required error={touched.name ? errors.name : undefined}>
  <input
@@ -589,8 +652,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  {/* Type-specific fields */}
  {renderTypeSpecificFields()}
 
- {/* Advanced Settings - skip for visual/e2e/load/performance tests (dedicated config components have their own) */}
- {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && formState.testType !== 'performance' && formState.testType !== 'accessibility' && (
+ {/* Advanced Settings - skip for visual/e2e/load/performance/security tests (dedicated config components have their own) */}
+ {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && formState.testType !== 'performance' && formState.testType !== 'accessibility' && formState.testType !== 'security' && (
  <CollapsibleSection
  title="Advanced Settings"
  isOpen={showAdvanced}

@@ -14,8 +14,9 @@ import React, { useCallback, useRef, useEffect } from 'react';
 
 /**
  * Test types supported by the selector
+ * Feature #591: Added 'security' test type
  */
-export type TestTypeOption = 'e2e' | 'visual' | 'performance' | 'load' | 'accessibility';
+export type TestTypeOption = 'e2e' | 'visual' | 'performance' | 'load' | 'accessibility' | 'security';
 
 /**
  * Configuration for each test type card
@@ -106,6 +107,21 @@ const TEST_TYPES: TestTypeConfig[] = [
  hoverBorderClass: 'hover:border-success/30',
  selectedBorderClass: 'border-success ring-2 ring-success/20',
  iconBgClass: 'bg-success/10',
+ },
+ // Feature #591: Security test type
+ {
+ id: 'security',
+ label: 'Security',
+ description: 'SAST & dependency scan',
+ icon: (
+ <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+ </svg>
+ ),
+ colorClass: 'text-violet-600 dark:text-violet-400',
+ hoverBorderClass: 'hover:border-violet-500/30',
+ selectedBorderClass: 'border-violet-500 ring-2 ring-violet-500/20',
+ iconBgClass: 'bg-violet-500/10',
  },
 ];
 
@@ -206,7 +222,7 @@ export const TestTypeCards: React.FC<TestTypeCardsProps> = ({
  ref={containerRef}
  role="radiogroup"
  aria-label={ariaLabel}
- className={`test-type-cards grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 ${className}`}
+ className={`test-type-cards grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 ${className}`}
  >
  {TEST_TYPES.map((type, index) => {
  const isSelected = selectedType === type.id;

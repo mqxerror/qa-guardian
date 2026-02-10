@@ -329,6 +329,13 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  waitTime: manualFormState.visualConfig?.delay,
  hideSelectors: manualFormState.visualConfig?.hideSelectors,
  waitForSelector: manualFormState.visualConfig?.waitForSelector,
+ // Feature #590: Additional visual regression options
+ antiAliasingTolerance: manualFormState.visualConfig?.antiAliasingTolerance,
+ ignoreRegions: manualFormState.visualConfig?.ignoreRegions,
+ ignoreSelectors: manualFormState.visualConfig?.ignoreSelectors,
+ customCSS: manualFormState.visualConfig?.customCSS,
+ clipSelector: manualFormState.visualConfig?.clipSelector,
+ colorThreshold: manualFormState.visualConfig?.colorThreshold,
  devicePreset: manualFormState.devicePreset,
  performanceThreshold: manualFormState.performanceThreshold,
  // Feature #586: Performance config fields
@@ -350,6 +357,14 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  loadScenario: manualFormState.loadScenario,
  k6Script: manualFormState.k6Script,
  loadThresholds: manualFormState.loadThresholds,
+ // Feature #591: Security config fields
+ scanType: manualFormState.scanType,
+ targetPath: manualFormState.targetPath,
+ failOnSeverity: manualFormState.failOnSeverity,
+ severityThreshold: manualFormState.severityThreshold,
+ ignorePatterns: manualFormState.ignorePatterns,
+ excludePaths: manualFormState.excludePaths,
+ maxFindings: manualFormState.maxFindings,
  };
  setWizardConfig(manualConfig);
  }
