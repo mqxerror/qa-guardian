@@ -1,8 +1,10 @@
 /**
  * useSastHandlers - SAST security scanning handlers for ProjectDetailPage
  * Feature #49: Extracted to reduce ProjectDetailPage line count
+ * Feature #624: Converted to useMutation hooks for proper cache invalidation and deduplication
  */
 import { useState, useCallback } from 'react';
+import { useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-query';
 import { toast } from '../../stores/toastStore';
 import {
   SASTConfig,
@@ -97,6 +99,9 @@ export function useSastHandlers({
   token,
   githubBranch = 'main',
 }: UseSastHandlersProps): [SastState, SastHandlers] {
+  // Feature #624: QueryClient for cache invalidation after mutations
+  const queryClient = useQueryClient();
+
   // SAST config state
   const [sastConfig, setSastConfig] = useState<SASTConfig>({
     enabled: false,
@@ -106,7 +111,7 @@ export function useSastHandlers({
   });
   const [sastScans, setSastScans] = useState<SASTScanResult[]>([]);
   const [isLoadingSast, setIsLoadingSast] = useState(false);
-  const [isUpdatingSast, setIsUpdatingSast] = useState(false);
+  // Feature #624: isUpdatingSast now comes from updateSastConfigMutation.isPending
   const [isRunningScan, setIsRunningScan] = useState(false);
   const [selectedScan, setSelectedScan] = useState<SASTScanResult | null>(null);
   const [sastRulesets, setSastRulesets] = useState<Array<{ id: string; name: string; description: string }>>([]);
@@ -115,7 +120,7 @@ export function useSastHandlers({
   const [showAddCustomRuleModal, setShowAddCustomRuleModal] = useState(false);
   const [newCustomRuleName, setNewCustomRuleName] = useState('');
   const [newCustomRuleYaml, setNewCustomRuleYaml] = useState('');
-  const [isAddingCustomRule, setIsAddingCustomRule] = useState(false);
+  // Feature #624: isAddingCustomRule now comes from addCustomRuleMutation.isPending
   const [customRuleError, setCustomRuleError] = useState<string | null>(null);
 
   // Secret patterns state
@@ -125,7 +130,7 @@ export function useSastHandlers({
   const [newPatternDescription, setNewPatternDescription] = useState('');
   const [newPatternRegex, setNewPatternRegex] = useState('');
   const [newPatternSeverity, setNewPatternSeverity] = useState<'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'>('HIGH');
-  const [isAddingPattern, setIsAddingPattern] = useState(false);
+  // Feature #624: isAddingPattern now comes from addSecretPatternMutation.isPending
   const [patternError, setPatternError] = useState<string | null>(null);
   const [patternTestInput, setPatternTestInput] = useState('');
   const [patternTestResult, setPatternTestResult] = useState<{ matches: boolean; matched?: string } | null>(null);
@@ -134,7 +139,7 @@ export function useSastHandlers({
   const [showFalsePositiveModal, setShowFalsePositiveModal] = useState(false);
   const [selectedFinding, setSelectedFinding] = useState<SASTFinding | null>(null);
   const [fpReason, setFpReason] = useState('');
-  const [isMarkingFP, setIsMarkingFP] = useState(false);
+  // Feature #624: isMarkingFP now comes from markFalsePositiveMutation.isPending
   const [showFalsePositives, setShowFalsePositives] = useState(true);
   const [expandedRemediations, setExpandedRemediations] = useState<Set<string>>(new Set());
 
@@ -150,9 +155,9 @@ export function useSastHandlers({
     });
   }, []);
 
-  const handleUpdateSastConfig = useCallback(async (updates: Partial<SASTConfig>) => {
-    setIsUpdatingSast(true);
-    try {
+  // Feature #624: useMutation for SAST config update with cache invalidation
+  const updateSastConfigMutation = useMutation({
+    mutationFn: async (updates: Partial<SASTConfig>) => {
       const response = await fetch(`/api/v1/projects/${projectId}/sast/config`, {
         method: 'PUT',
         headers: {
@@ -161,20 +166,25 @@ export function useSastHandlers({
         },
         body: JSON.stringify(updates),
       });
-
       if (!response.ok) {
         throw new Error('Failed to update SAST configuration');
       }
-
-      const data = await response.json();
+      return response.json();
+    },
+    onSuccess: (data) => {
       setSastConfig(data.config);
       toast.success('SAST configuration updated');
-    } catch (err) {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['sast', projectId] });
+    },
+    onError: () => {
       toast.error('Failed to update SAST configuration');
-    } finally {
-      setIsUpdatingSast(false);
-    }
-  }, [projectId, token]);
+    },
+  });
+
+  const handleUpdateSastConfig = useCallback(async (updates: Partial<SASTConfig>) => {
+    updateSastConfigMutation.mutate(updates);
+  }, [updateSastConfigMutation]);
 
   const handleTriggerScan = useCallback(async () => {
     setIsRunningScan(true);
@@ -230,48 +240,48 @@ export function useSastHandlers({
     }
   }, [projectId, token, githubBranch]);
 
-  const handleAddCustomRule = useCallback(async () => {
-    if (!newCustomRuleName.trim() || !newCustomRuleYaml.trim()) {
-      setCustomRuleError('Name and YAML are required');
-      return;
-    }
-
-    setIsAddingCustomRule(true);
-    setCustomRuleError(null);
-
-    try {
+  // Feature #624: useMutation for adding custom rules
+  const addCustomRuleMutation = useMutation({
+    mutationFn: async ({ name, yaml }: { name: string; yaml: string }) => {
       const response = await fetch(`/api/v1/projects/${projectId}/sast/custom-rules`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          name: newCustomRuleName,
-          yaml: newCustomRuleYaml,
-        }),
+        body: JSON.stringify({ name, yaml }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to add custom rule');
       }
-
-      const data = await response.json();
+      return response.json();
+    },
+    onSuccess: (data) => {
       setCustomRules(prev => [...prev, data.rule]);
       setShowAddCustomRuleModal(false);
       setNewCustomRuleName('');
       setNewCustomRuleYaml('');
       toast.success('Custom rule added successfully');
-    } catch (err) {
-      setCustomRuleError(err instanceof Error ? err.message : 'Failed to add custom rule');
-    } finally {
-      setIsAddingCustomRule(false);
-    }
-  }, [projectId, token, newCustomRuleName, newCustomRuleYaml]);
+      queryClient.invalidateQueries({ queryKey: ['sast', 'rules', projectId] });
+    },
+    onError: (err: Error) => {
+      setCustomRuleError(err.message);
+    },
+  });
 
-  const handleToggleCustomRule = useCallback(async (ruleId: string, enabled: boolean) => {
-    try {
+  const handleAddCustomRule = useCallback(async () => {
+    if (!newCustomRuleName.trim() || !newCustomRuleYaml.trim()) {
+      setCustomRuleError('Name and YAML are required');
+      return;
+    }
+    setCustomRuleError(null);
+    addCustomRuleMutation.mutate({ name: newCustomRuleName, yaml: newCustomRuleYaml });
+  }, [newCustomRuleName, newCustomRuleYaml, addCustomRuleMutation]);
+
+  // Feature #624: useMutation for toggling custom rules
+  const toggleCustomRuleMutation = useMutation({
+    mutationFn: async ({ ruleId, enabled }: { ruleId: string; enabled: boolean }) => {
       const response = await fetch(`/api/v1/projects/${projectId}/sast/custom-rules/${ruleId}`, {
         method: 'PUT',
         headers: {
@@ -280,42 +290,52 @@ export function useSastHandlers({
         },
         body: JSON.stringify({ enabled }),
       });
-
       if (!response.ok) {
         throw new Error('Failed to update custom rule');
       }
-
-      const data = await response.json();
-      setCustomRules(prev => prev.map(r => r.id === ruleId ? data.rule : r));
-      toast.success(`Custom rule ${enabled ? 'enabled' : 'disabled'}`);
-    } catch (err) {
+      return { ...(await response.json()), ruleId, enabled };
+    },
+    onSuccess: (data) => {
+      setCustomRules(prev => prev.map(r => r.id === data.ruleId ? data.rule : r));
+      toast.success(`Custom rule ${data.enabled ? 'enabled' : 'disabled'}`);
+    },
+    onError: () => {
       toast.error('Failed to update custom rule');
-    }
-  }, [projectId, token]);
+    },
+  });
+
+  const handleToggleCustomRule = useCallback(async (ruleId: string, enabled: boolean) => {
+    toggleCustomRuleMutation.mutate({ ruleId, enabled });
+  }, [toggleCustomRuleMutation]);
+
+  // Feature #624: useMutation for deleting custom rules
+  const deleteCustomRuleMutation = useMutation({
+    mutationFn: async (ruleId: string) => {
+      const response = await fetch(`/api/v1/projects/${projectId}/sast/custom-rules/${ruleId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete custom rule');
+      }
+      return ruleId;
+    },
+    onSuccess: (ruleId) => {
+      setCustomRules(prev => prev.filter(r => r.id !== ruleId));
+      toast.success('Custom rule deleted');
+      queryClient.invalidateQueries({ queryKey: ['sast', 'rules', projectId] });
+    },
+    onError: () => {
+      toast.error('Failed to delete custom rule');
+    },
+  });
 
   const handleDeleteCustomRule = useCallback(async (ruleId: string) => {
     if (!confirm('Are you sure you want to delete this custom rule?')) {
       return;
     }
-
-    try {
-      const response = await fetch(`/api/v1/projects/${projectId}/sast/custom-rules/${ruleId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete custom rule');
-      }
-
-      setCustomRules(prev => prev.filter(r => r.id !== ruleId));
-      toast.success('Custom rule deleted');
-    } catch (err) {
-      toast.error('Failed to delete custom rule');
-    }
-  }, [projectId, token]);
+    deleteCustomRuleMutation.mutate(ruleId);
+  }, [deleteCustomRuleMutation]);
 
   const handleTestPattern = useCallback(() => {
     if (!newPatternRegex || !patternTestInput) {
@@ -337,45 +357,29 @@ export function useSastHandlers({
     }
   }, [newPatternRegex, patternTestInput]);
 
-  const handleAddSecretPattern = useCallback(async () => {
-    if (!newPatternName.trim() || !newPatternRegex.trim()) {
-      setPatternError('Name and pattern are required');
-      return;
-    }
-
-    // Validate regex
-    try {
-      new RegExp(newPatternRegex);
-    } catch (err) {
-      setPatternError(err instanceof Error ? `Invalid regex: ${err.message}` : 'Invalid regex pattern');
-      return;
-    }
-
-    setIsAddingPattern(true);
-    setPatternError(null);
-
-    try {
+  // Feature #624: useMutation for adding secret patterns
+  const addSecretPatternMutation = useMutation({
+    mutationFn: async (params: {
+      name: string;
+      description: string;
+      pattern: string;
+      severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+    }) => {
       const response = await fetch(`/api/v1/projects/${projectId}/sast/patterns`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          name: newPatternName.trim(),
-          description: newPatternDescription.trim(),
-          pattern: newPatternRegex.trim(),
-          severity: newPatternSeverity,
-          category: 'custom',
-        }),
+        body: JSON.stringify({ ...params, category: 'custom' }),
       });
-
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.message || 'Failed to add pattern');
       }
-
-      const data = await response.json();
+      return response.json();
+    },
+    onSuccess: (data) => {
       setSecretPatterns(prev => [...prev, data]);
       setShowAddSecretPatternModal(false);
       setNewPatternName('');
@@ -385,15 +389,37 @@ export function useSastHandlers({
       setPatternTestInput('');
       setPatternTestResult(null);
       toast.success('Custom secret pattern added');
-    } catch (err) {
-      setPatternError(err instanceof Error ? err.message : 'Failed to add pattern');
-    } finally {
-      setIsAddingPattern(false);
-    }
-  }, [projectId, token, newPatternName, newPatternDescription, newPatternRegex, newPatternSeverity]);
+      queryClient.invalidateQueries({ queryKey: ['sast', 'patterns', projectId] });
+    },
+    onError: (err: Error) => {
+      setPatternError(err.message);
+    },
+  });
 
-  const handleToggleSecretPattern = useCallback(async (patternId: string, enabled: boolean) => {
+  const handleAddSecretPattern = useCallback(async () => {
+    if (!newPatternName.trim() || !newPatternRegex.trim()) {
+      setPatternError('Name and pattern are required');
+      return;
+    }
+    // Validate regex
     try {
+      new RegExp(newPatternRegex);
+    } catch (err) {
+      setPatternError(err instanceof Error ? `Invalid regex: ${err.message}` : 'Invalid regex pattern');
+      return;
+    }
+    setPatternError(null);
+    addSecretPatternMutation.mutate({
+      name: newPatternName.trim(),
+      description: newPatternDescription.trim(),
+      pattern: newPatternRegex.trim(),
+      severity: newPatternSeverity,
+    });
+  }, [addSecretPatternMutation, newPatternName, newPatternDescription, newPatternRegex, newPatternSeverity]);
+
+  // Feature #624: useMutation for toggling secret patterns
+  const toggleSecretPatternMutation = useMutation({
+    mutationFn: async ({ patternId, enabled }: { patternId: string; enabled: boolean }) => {
       const response = await fetch(`/api/v1/projects/${projectId}/sast/patterns/${patternId}`, {
         method: 'PUT',
         headers: {
@@ -402,49 +428,60 @@ export function useSastHandlers({
         },
         body: JSON.stringify({ enabled }),
       });
-
       if (!response.ok) {
         throw new Error('Failed to update pattern');
       }
-
+      return { patternId, enabled };
+    },
+    onSuccess: ({ patternId, enabled }) => {
       setSecretPatterns(prev => prev.map(p => p.id === patternId ? { ...p, enabled } : p));
       toast.success(`Pattern ${enabled ? 'enabled' : 'disabled'}`);
-    } catch (err) {
+    },
+    onError: () => {
       toast.error('Failed to update pattern');
-    }
-  }, [projectId, token]);
+    },
+  });
+
+  const handleToggleSecretPattern = useCallback(async (patternId: string, enabled: boolean) => {
+    toggleSecretPatternMutation.mutate({ patternId, enabled });
+  }, [toggleSecretPatternMutation]);
+
+  // Feature #624: useMutation for deleting secret patterns
+  const deleteSecretPatternMutation = useMutation({
+    mutationFn: async (patternId: string) => {
+      const response = await fetch(`/api/v1/projects/${projectId}/sast/patterns/${patternId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete pattern');
+      }
+      return patternId;
+    },
+    onSuccess: (patternId) => {
+      setSecretPatterns(prev => prev.filter(p => p.id !== patternId));
+      toast.success('Secret pattern deleted');
+      queryClient.invalidateQueries({ queryKey: ['sast', 'patterns', projectId] });
+    },
+    onError: () => {
+      toast.error('Failed to delete pattern');
+    },
+  });
 
   const handleDeleteSecretPattern = useCallback(async (patternId: string) => {
     if (!confirm('Are you sure you want to delete this secret pattern?')) {
       return;
     }
+    deleteSecretPatternMutation.mutate(patternId);
+  }, [deleteSecretPatternMutation]);
 
-    try {
-      const response = await fetch(`/api/v1/projects/${projectId}/sast/patterns/${patternId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete pattern');
-      }
-
-      setSecretPatterns(prev => prev.filter(p => p.id !== patternId));
-      toast.success('Secret pattern deleted');
-    } catch (err) {
-      toast.error('Failed to delete pattern');
-    }
-  }, [projectId, token]);
-
-  const handleMarkFalsePositive = useCallback(async () => {
-    if (!selectedFinding || !fpReason.trim()) {
-      return;
-    }
-
-    setIsMarkingFP(true);
-    try {
+  // Feature #624: useMutation for marking false positives
+  const markFalsePositiveMutation = useMutation({
+    mutationFn: async (params: {
+      finding: SASTFinding;
+      reason: string;
+      scan: SASTScanResult | null;
+    }) => {
       const response = await fetch(`/api/v1/projects/${projectId}/sast/false-positives`, {
         method: 'POST',
         headers: {
@@ -452,46 +489,57 @@ export function useSastHandlers({
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          ruleId: selectedFinding.ruleId,
-          filePath: selectedFinding.filePath,
-          line: selectedFinding.line,
-          snippet: selectedFinding.snippet,
-          reason: fpReason,
+          ruleId: params.finding.ruleId,
+          filePath: params.finding.filePath,
+          line: params.finding.line,
+          snippet: params.finding.snippet,
+          reason: params.reason,
         }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to mark as false positive');
       }
-
+      return params;
+    },
+    onSuccess: (params) => {
       // Update the finding in the scan results
-      if (selectedScan) {
-        const updatedFindings = selectedScan.findings.map(f =>
-          f.id === selectedFinding.id ? { ...f, isFalsePositive: true } : f
+      if (params.scan) {
+        const updatedFindings = params.scan.findings.map(f =>
+          f.id === params.finding.id ? { ...f, isFalsePositive: true } : f
         );
         setSastScans(prev => prev.map(s =>
-          s.id === selectedScan.id ? { ...s, findings: updatedFindings } : s
+          s.id === params.scan!.id ? { ...s, findings: updatedFindings } : s
         ));
-        setSelectedScan({ ...selectedScan, findings: updatedFindings });
+        setSelectedScan({ ...params.scan, findings: updatedFindings });
       }
-
       setShowFalsePositiveModal(false);
       setSelectedFinding(null);
       setFpReason('');
       toast.success('Finding marked as false positive');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to mark as false positive');
-    } finally {
-      setIsMarkingFP(false);
+      queryClient.invalidateQueries({ queryKey: ['sast', 'false-positives', projectId] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
+  const handleMarkFalsePositive = useCallback(async () => {
+    if (!selectedFinding || !fpReason.trim()) {
+      return;
     }
-  }, [projectId, token, selectedFinding, fpReason, selectedScan]);
+    markFalsePositiveMutation.mutate({
+      finding: selectedFinding,
+      reason: fpReason,
+      scan: selectedScan,
+    });
+  }, [markFalsePositiveMutation, selectedFinding, fpReason, selectedScan]);
 
   const state: SastState = {
     sastConfig,
     sastScans,
     isLoadingSast,
-    isUpdatingSast,
+    isUpdatingSast: updateSastConfigMutation.isPending, // Feature #624: Use mutation state
     isRunningScan,
     selectedScan,
     sastRulesets,
@@ -500,7 +548,7 @@ export function useSastHandlers({
     showAddCustomRuleModal,
     newCustomRuleName,
     newCustomRuleYaml,
-    isAddingCustomRule,
+    isAddingCustomRule: addCustomRuleMutation.isPending, // Feature #624: Use mutation state
     customRuleError,
     secretPatterns,
     showAddSecretPatternModal,
@@ -508,14 +556,14 @@ export function useSastHandlers({
     newPatternDescription,
     newPatternRegex,
     newPatternSeverity,
-    isAddingPattern,
+    isAddingPattern: addSecretPatternMutation.isPending, // Feature #624: Use mutation state
     patternError,
     patternTestInput,
     patternTestResult,
     showFalsePositiveModal,
     selectedFinding,
     fpReason,
-    isMarkingFP,
+    isMarkingFP: markFalsePositiveMutation.isPending, // Feature #624: Use mutation state
     showFalsePositives,
     expandedRemediations,
   };

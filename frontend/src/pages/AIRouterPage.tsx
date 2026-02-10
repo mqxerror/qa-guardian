@@ -1,15 +1,23 @@
 // AIRouterPage - AI Provider Router with circuit breaker, rate limiting, and fallback (Feature #405)
-import { useState, useEffect } from "react";
+// Feature #623: Added React.lazy for heavy panel components
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import type {
   AIRouterConfig, RouterStats, CircuitBreakerState, ProviderSwitchLog,
   ActiveProviderState, ProviderChangeLog, ProviderSwitchResult,
 } from '../components/ai-router/types';
-import {
-  AIAPIKeyManager, AIBudgetPanel, AICachePanel, AIFallbackRulesPanel,
-  AIModelConfigPanel, AIRateLimitPanel, AIRetryConfigPanel, AITimeoutPanel,
-} from '../components/ai-router';
+
+// Feature #623: Lazy-load heavy panel components for better initial load performance
+// These panels are below the fold and not immediately visible
+const AIAPIKeyManager = lazy(() => import('../components/ai-router/AIAPIKeyManager').then(m => ({ default: m.AIAPIKeyManager })));
+const AIBudgetPanel = lazy(() => import('../components/ai-router/AIBudgetPanel').then(m => ({ default: m.AIBudgetPanel })));
+const AICachePanel = lazy(() => import('../components/ai-router/AICachePanel').then(m => ({ default: m.AICachePanel })));
+const AIFallbackRulesPanel = lazy(() => import('../components/ai-router/AIFallbackRulesPanel').then(m => ({ default: m.AIFallbackRulesPanel })));
+const AIModelConfigPanel = lazy(() => import('../components/ai-router/AIModelConfigPanel').then(m => ({ default: m.AIModelConfigPanel })));
+const AIRateLimitPanel = lazy(() => import('../components/ai-router/AIRateLimitPanel').then(m => ({ default: m.AIRateLimitPanel })));
+const AIRetryConfigPanel = lazy(() => import('../components/ai-router/AIRetryConfigPanel').then(m => ({ default: m.AIRetryConfigPanel })));
+const AITimeoutPanel = lazy(() => import('../components/ai-router/AITimeoutPanel').then(m => ({ default: m.AITimeoutPanel })));
 import {
   DEFAULT_API_KEYS, DEFAULT_KEY_AUDIT_LOGS,
   DEFAULT_RETRY_CONFIG, DEFAULT_RETRY_STATS, DEFAULT_RETRY_LOGS,
@@ -413,83 +421,86 @@ function AIRouterPage() {
         </div>
       </div>
 
-      {/* Feature #1331: Retry Configuration - Extracted Component */}
-      <AIRetryConfigPanel
-        retryConfig={retryConfig}
-        setRetryConfig={setRetryConfig}
-        retryStats={retryStats}
-        setRetryStats={setRetryStats}
-        retryLogs={retryLogs}
-        setRetryLogs={setRetryLogs}
-        fallbackProvider={config?.fallback_provider}
-      />
+      {/* Feature #623: Suspense boundary for lazy-loaded panels */}
+      <Suspense fallback={<div className="bg-card rounded-lg p-6 animate-pulse"><div className="h-8 bg-muted rounded w-1/3 mb-4" /><div className="h-32 bg-muted rounded" /></div>}>
+        {/* Feature #1331: Retry Configuration - Extracted Component */}
+        <AIRetryConfigPanel
+          retryConfig={retryConfig}
+          setRetryConfig={setRetryConfig}
+          retryStats={retryStats}
+          setRetryStats={setRetryStats}
+          retryLogs={retryLogs}
+          setRetryLogs={setRetryLogs}
+          fallbackProvider={config?.fallback_provider}
+        />
 
-      {/* Feature #1334: Per-Feature Timeout Configuration - Extracted Component */}
-      <AITimeoutPanel
-        featureTimeouts={featureTimeouts}
-        setFeatureTimeouts={setFeatureTimeouts}
-        timeoutEvents={timeoutEvents}
-        setTimeoutEvents={setTimeoutEvents}
-        timeoutStats={timeoutStats}
-      />
+        {/* Feature #1334: Per-Feature Timeout Configuration - Extracted Component */}
+        <AITimeoutPanel
+          featureTimeouts={featureTimeouts}
+          setFeatureTimeouts={setFeatureTimeouts}
+          timeoutEvents={timeoutEvents}
+          setTimeoutEvents={setTimeoutEvents}
+          timeoutStats={timeoutStats}
+        />
 
-      {/* Feature #1333: Model Selection per Feature - Extracted Component */}
-      <AIModelConfigPanel
-        featureModelConfigs={featureModelConfigs}
-        setFeatureModelConfigs={setFeatureModelConfigs}
-        modelUsageStats={modelUsageStats}
-        orgDefaultModel={orgDefaultModel}
-        setOrgDefaultModel={setOrgDefaultModel}
-      />
+        {/* Feature #1333: Model Selection per Feature - Extracted Component */}
+        <AIModelConfigPanel
+          featureModelConfigs={featureModelConfigs}
+          setFeatureModelConfigs={setFeatureModelConfigs}
+          modelUsageStats={modelUsageStats}
+          orgDefaultModel={orgDefaultModel}
+          setOrgDefaultModel={setOrgDefaultModel}
+        />
 
-      {/* Feature #1335: Provider Rate Limiting - Extracted Component */}
-      <AIRateLimitPanel
-        rateLimitConfigs={rateLimitConfigs}
-        setRateLimitConfigs={setRateLimitConfigs}
-        rateLimitStatus={rateLimitStatus}
-        rateLimitEvents={rateLimitEvents}
-        rateLimitAlerts={rateLimitAlerts}
-        setRateLimitAlerts={setRateLimitAlerts}
-      />
+        {/* Feature #1335: Provider Rate Limiting - Extracted Component */}
+        <AIRateLimitPanel
+          rateLimitConfigs={rateLimitConfigs}
+          setRateLimitConfigs={setRateLimitConfigs}
+          rateLimitStatus={rateLimitStatus}
+          rateLimitEvents={rateLimitEvents}
+          rateLimitAlerts={rateLimitAlerts}
+          setRateLimitAlerts={setRateLimitAlerts}
+        />
 
-      {/* Feature #1339: Fallback Rules Configuration - Extracted Component */}
-      <AIFallbackRulesPanel
-        fallbackRules={fallbackRules}
-        setFallbackRules={setFallbackRules}
-        fallbackTestResults={fallbackTestResults}
-        setFallbackTestResults={setFallbackTestResults}
-        fallbackStats={fallbackStats}
-      />
+        {/* Feature #1339: Fallback Rules Configuration - Extracted Component */}
+        <AIFallbackRulesPanel
+          fallbackRules={fallbackRules}
+          setFallbackRules={setFallbackRules}
+          fallbackTestResults={fallbackTestResults}
+          setFallbackTestResults={setFallbackTestResults}
+          fallbackStats={fallbackStats}
+        />
 
-      {/* Feature #1329: Monthly AI Budget - Extracted Component */}
-      <AIBudgetPanel
-        budgetConfig={budgetConfig}
-        setBudgetConfig={setBudgetConfig}
-        spendingData={spendingData}
-        setSpendingData={setSpendingData}
-        budgetAlerts={budgetAlerts}
-        setBudgetAlerts={setBudgetAlerts}
-      />
+        {/* Feature #1329: Monthly AI Budget - Extracted Component */}
+        <AIBudgetPanel
+          budgetConfig={budgetConfig}
+          setBudgetConfig={setBudgetConfig}
+          spendingData={spendingData}
+          setSpendingData={setSpendingData}
+          budgetAlerts={budgetAlerts}
+          setBudgetAlerts={setBudgetAlerts}
+        />
 
-      {/* Feature #1332: AI Response Caching - Extracted Component */}
-      <AICachePanel
-        cacheConfig={cacheConfig}
-        setCacheConfig={setCacheConfig}
-        cacheStats={cacheStats}
-        setCacheStats={setCacheStats}
-        cacheEntries={cacheEntries}
-        setCacheEntries={setCacheEntries}
-        cacheEvents={cacheEvents}
-        setCacheEvents={setCacheEvents}
-      />
+        {/* Feature #1332: AI Response Caching - Extracted Component */}
+        <AICachePanel
+          cacheConfig={cacheConfig}
+          setCacheConfig={setCacheConfig}
+          cacheStats={cacheStats}
+          setCacheStats={setCacheStats}
+          cacheEntries={cacheEntries}
+          setCacheEntries={setCacheEntries}
+          cacheEvents={cacheEvents}
+          setCacheEvents={setCacheEvents}
+        />
 
-      {/* Feature #1337: API Key Management - Extracted Component */}
-      <AIAPIKeyManager
-        apiKeys={apiKeys}
-        setApiKeys={setApiKeys}
-        keyAuditLogs={keyAuditLogs}
-        setKeyAuditLogs={setKeyAuditLogs}
-      />
+        {/* Feature #1337: API Key Management - Extracted Component */}
+        <AIAPIKeyManager
+          apiKeys={apiKeys}
+          setApiKeys={setApiKeys}
+          keyAuditLogs={keyAuditLogs}
+          setKeyAuditLogs={setKeyAuditLogs}
+        />
+      </Suspense>
     </div>
   );
 }

@@ -1,8 +1,10 @@
 /**
  * useDastHandlers - DAST security scanning handlers for ProjectDetailPage
  * Feature #49: Extracted to reduce ProjectDetailPage line count
+ * Feature #624: Converted to useMutation hooks for proper cache invalidation
  */
 import { useState, useCallback } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '../../stores/toastStore';
 import {
   DASTConfig,
@@ -49,6 +51,9 @@ export function useDastHandlers({
   projectId,
   token,
 }: UseDastHandlersProps): [DastState, DastHandlers] {
+  // Feature #624: QueryClient for cache invalidation
+  const queryClient = useQueryClient();
+
   // DAST state
   const [dastConfig, setDastConfig] = useState<DASTConfig>({
     enabled: false,
@@ -59,18 +64,18 @@ export function useDastHandlers({
   });
   const [dastScans, setDastScans] = useState<DASTScanResult[]>([]);
   const [isLoadingDast, setIsLoadingDast] = useState(false);
-  const [isUpdatingDast, setIsUpdatingDast] = useState(false);
+  // Feature #624: isUpdatingDast now comes from updateDastConfigMutation.isPending
   const [isRunningDastScan, setIsRunningDastScan] = useState(false);
   const [selectedDastScan, setSelectedDastScan] = useState<DASTScanResult | null>(null);
   const [dastTargetUrl, setDastTargetUrl] = useState('');
   const [openApiSpec, setOpenApiSpec] = useState<OpenAPISpec | null>(null);
-  const [isUploadingSpec, setIsUploadingSpec] = useState(false);
+  // Feature #624: isUploadingSpec now comes from uploadOpenApiSpecMutation.isPending
   const [specUploadError, setSpecUploadError] = useState<string | null>(null);
   const [dastSchedules, setDastSchedules] = useState<any[]>([]);
 
-  const handleUpdateDastConfig = useCallback(async (updates: Partial<DASTConfig>) => {
-    setIsUpdatingDast(true);
-    try {
+  // Feature #624: useMutation for DAST config update
+  const updateDastConfigMutation = useMutation({
+    mutationFn: async (updates: Partial<DASTConfig>) => {
       const response = await fetch(`/api/v1/projects/${projectId}/dast/config`, {
         method: 'PUT',
         headers: {
@@ -79,20 +84,24 @@ export function useDastHandlers({
         },
         body: JSON.stringify(updates),
       });
-
       if (!response.ok) {
         throw new Error('Failed to update DAST configuration');
       }
-
-      const data = await response.json();
+      return response.json();
+    },
+    onSuccess: (data) => {
       setDastConfig(data.config);
       toast.success('DAST configuration updated');
-    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ['dast', projectId] });
+    },
+    onError: () => {
       toast.error('Failed to update DAST configuration');
-    } finally {
-      setIsUpdatingDast(false);
-    }
-  }, [projectId, token]);
+    },
+  });
+
+  const handleUpdateDastConfig = useCallback(async (updates: Partial<DASTConfig>) => {
+    updateDastConfigMutation.mutate(updates);
+  }, [updateDastConfigMutation]);
 
   const handleTriggerDastScan = useCallback(async () => {
     const urlToScan = dastTargetUrl || dastConfig.targetUrl;
@@ -167,10 +176,9 @@ export function useDastHandlers({
     }
   }, [projectId, token, dastTargetUrl, dastConfig.targetUrl, dastConfig.scanProfile]);
 
-  const handleUploadOpenApiSpec = useCallback(async (content: string) => {
-    setIsUploadingSpec(true);
-    setSpecUploadError(null);
-    try {
+  // Feature #624: useMutation for uploading OpenAPI spec
+  const uploadOpenApiSpecMutation = useMutation({
+    mutationFn: async (content: string) => {
       const response = await fetch(`/api/v1/projects/${projectId}/dast/openapi-spec`, {
         method: 'POST',
         headers: {
@@ -179,60 +187,74 @@ export function useDastHandlers({
         },
         body: JSON.stringify({ content }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to upload OpenAPI specification');
       }
-
       const data = await response.json();
-      toast.success(`OpenAPI specification uploaded: ${data.spec.endpointCount} endpoints found`);
-
-      // Refresh the spec
+      // Fetch the updated spec
       const specResponse = await fetch(`/api/v1/projects/${projectId}/dast/openapi-spec`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (specResponse.ok) {
         const specData = await specResponse.json();
-        setOpenApiSpec(specData.spec);
+        return { uploadData: data, spec: specData.spec };
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to upload OpenAPI specification';
-      setSpecUploadError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsUploadingSpec(false);
-    }
-  }, [projectId, token]);
+      return { uploadData: data, spec: null };
+    },
+    onSuccess: (result) => {
+      toast.success(`OpenAPI specification uploaded: ${result.uploadData.spec.endpointCount} endpoints found`);
+      if (result.spec) {
+        setOpenApiSpec(result.spec);
+      }
+      queryClient.invalidateQueries({ queryKey: ['dast', 'openapi', projectId] });
+    },
+    onError: (err: Error) => {
+      setSpecUploadError(err.message);
+      toast.error(err.message);
+    },
+  });
 
-  const handleDeleteOpenApiSpec = useCallback(async () => {
-    try {
+  const handleUploadOpenApiSpec = useCallback(async (content: string) => {
+    setSpecUploadError(null);
+    uploadOpenApiSpecMutation.mutate(content);
+  }, [uploadOpenApiSpecMutation]);
+
+  // Feature #624: useMutation for deleting OpenAPI spec
+  const deleteOpenApiSpecMutation = useMutation({
+    mutationFn: async () => {
       const response = await fetch(`/api/v1/projects/${projectId}/dast/openapi-spec`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
-
       if (!response.ok) {
         throw new Error('Failed to delete OpenAPI specification');
       }
-
+    },
+    onSuccess: () => {
       setOpenApiSpec(null);
       toast.success('OpenAPI specification deleted');
-    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ['dast', 'openapi', projectId] });
+    },
+    onError: () => {
       toast.error('Failed to delete OpenAPI specification');
-    }
-  }, [projectId, token]);
+    },
+  });
+
+  const handleDeleteOpenApiSpec = useCallback(async () => {
+    deleteOpenApiSpecMutation.mutate();
+  }, [deleteOpenApiSpecMutation]);
 
   const state: DastState = {
     dastConfig,
     dastScans,
     isLoadingDast,
-    isUpdatingDast,
+    isUpdatingDast: updateDastConfigMutation.isPending, // Feature #624: Use mutation state
     isRunningDastScan,
     selectedDastScan,
     dastTargetUrl,
     openApiSpec,
-    isUploadingSpec,
+    isUploadingSpec: uploadOpenApiSpecMutation.isPending, // Feature #624: Use mutation state
     specUploadError,
     dastSchedules,
   };

@@ -1,21 +1,22 @@
 // SettingsPage - Unified settings page with tabbed navigation
 // Feature #1832: Consolidate Admin menu into single Settings page
 // Feature #451: Tab contents extracted to components/settings/
+// Feature #623: React.lazy for tab components to improve initial load
 
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
-import {
-  TeamTab,
-  GeneralTab,
-  BillingTab,
-  APIKeysTab,
-  WebhooksTab,
-  AuditLogsTab,
-  NotificationsTab,
-  AIConfigurationTab,
-} from '../components/settings';
+
+// Feature #623: Lazy-load tab components - only the active tab is loaded
+const TeamTab = lazy(() => import('../components/settings/TeamTab').then(m => ({ default: m.TeamTab })));
+const GeneralTab = lazy(() => import('../components/settings/GeneralTab').then(m => ({ default: m.GeneralTab })));
+const BillingTab = lazy(() => import('../components/settings/BillingTab').then(m => ({ default: m.BillingTab })));
+const APIKeysTab = lazy(() => import('../components/settings/APIKeysTab').then(m => ({ default: m.APIKeysTab })));
+const WebhooksTab = lazy(() => import('../components/settings/WebhooksTab').then(m => ({ default: m.WebhooksTab })));
+const AuditLogsTab = lazy(() => import('../components/settings/AuditLogsTab').then(m => ({ default: m.AuditLogsTab })));
+const NotificationsTab = lazy(() => import('../components/settings/NotificationsTab').then(m => ({ default: m.NotificationsTab })));
+const AIConfigurationTab = lazy(() => import('../components/settings/AIConfigurationTab').then(m => ({ default: m.AIConfigurationTab })));
 
 // Tab types for the settings page
 type SettingsTab = 'team' | 'general' | 'ai-config' | 'billing' | 'api-keys' | 'webhooks' | 'audit-logs' | 'notifications';
@@ -182,9 +183,18 @@ export function SettingsPage() {
           </nav>
         </div>
 
-        {/* Tab Content */}
+        {/* Tab Content - Feature #623: Suspense boundary for lazy-loaded tabs */}
         <div className="min-h-[400px]">
-          {renderTabContent()}
+          <Suspense fallback={
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-muted rounded w-1/3" />
+              <div className="h-4 bg-muted rounded w-1/2" />
+              <div className="h-32 bg-muted rounded" />
+              <div className="h-4 bg-muted rounded w-2/3" />
+            </div>
+          }>
+            {renderTabContent()}
+          </Suspense>
         </div>
       </div>
     </Layout>
