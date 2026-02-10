@@ -1,7 +1,6 @@
 /**
  * Create Test Modal Components
  * Feature #1800: CreateTestModal with two-section layout
- * Feature #1801: useCreateTest zustand store
  * Feature #1802: URLInput component
  * Feature #1807: CustomTestWizard with MethodSelection
  * Feature #1808: AIGenerateStep with useAIParser
@@ -36,13 +35,9 @@ export type {
   CaptureMode,
 } from './config';
 
-// Hooks (Feature #1801, #1808)
-export { useCreateTest, useAIParser } from './hooks';
+// Hooks (Feature #1808)
+export { useAIParser } from './hooks';
 export type {
-  ModalSection,
-  WizardStep,
-  GeneratedTestPreview,
-  ValidationErrors,
   DetectedTestType,
   ViewportPreset,
   ParsedResult,
@@ -54,5 +49,5 @@ export type {
 export { URLInput } from './shared';
 export type { URLInputProps } from './shared';
 
-// Types
+// Types (includes ModalSection, WizardStep, GeneratedTestPreview)
 export * from './types';
