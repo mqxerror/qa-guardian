@@ -21,6 +21,7 @@ export {
   useRun,
   useRunsByTest,
   useRunsBySuite,
+  useRunsByProject,  // Feature #558
   useStartRun,
   useCancelRun,
   useStartSuiteRun,  // Feature #143

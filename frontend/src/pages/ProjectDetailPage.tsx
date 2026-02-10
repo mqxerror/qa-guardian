@@ -24,8 +24,9 @@ import {
   TabsContent,
   useReducedMotion,
   ScoreCard,
+  EmptyStates, // Feature #559: Enhanced empty state
 } from "../components/ui";
-import { Flame, Plus, Settings, Loader2, FolderKanban, TestTube2, Calendar, User, MoreHorizontal, Github, Shield, ChevronDown, Globe, FileCheck, CheckCircle2, XCircle } from "lucide-react";
+import { Flame, Plus, Settings, Loader2, FolderKanban, TestTube2, Calendar, User, MoreHorizontal, Github, Shield, ChevronDown, Globe, FileCheck, CheckCircle2, XCircle, Search, X } from "lucide-react";
 // Feature #550: Real-time wave visualization for smoke test
 import { WaveProgressCard, type WaveProgressStatus } from "../components/ui/wave-progress-card";
 import { useSuiteRunSocket, type SuiteRun as SuiteRunSocket } from "../hooks/useSuiteRunSocket";
@@ -45,6 +46,7 @@ import {
   useProject, useSuites, useInvalidateSuites,
   useProjectMembers, useAlertChannels, useAlertHistory,
   useEnvVars, useHealingSettings, useSastConfig, useDastConfig,
+  useRunsByProject, // Feature #558: Recent activity feed
 } from '../hooks/api';
 import { useMembers } from '../hooks/api/useSettings';
 // Feature #49: Import modular types, utilities and hooks from project-detail
@@ -110,6 +112,32 @@ import {
 
 // Removed inline type definitions - now imported from project-detail module (Feature #49)
 
+// Feature #558: Utility to compute security score from SAST and DAST scans
+function computeSecurityScore(
+  sastScans: SASTScanResult[],
+  dastScans: DASTScanResult[]
+): number {
+  // Perfect score if both have scans with zero findings
+  if (
+    sastScans.length > 0 && sastScans[0]?.summary?.total === 0 &&
+    dastScans.length > 0 && dastScans[0]?.summary?.total === 0
+  ) {
+    return 100;
+  }
+
+  // Neutral score if no scans yet
+  if (sastScans.length === 0 && dastScans.length === 0) {
+    return 50;
+  }
+
+  // Calculate penalty based on severity
+  const penalty =
+    (sastScans[0]?.summary?.bySeverity?.critical || 0) * 20 +
+    (sastScans[0]?.summary?.bySeverity?.high || 0) * 10 +
+    (dastScans[0]?.summary?.byRisk?.high || 0) * 10;
+
+  return Math.max(0, 100 - penalty);
+}
 
 function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -144,6 +172,9 @@ function ProjectDetailPage() {
   const suites = suitesData?.suites || suitesData?.data || [];
   const isLoading = projectLoading || suitesLoading;
   const error = projectError ? (projectError instanceof Error ? projectError.message : 'Failed to load project') : null;
+
+  // Feature #558: Fetch recent runs for activity feed
+  const { data: recentRunsData } = useRunsByProject(id, 5);
 
   // Feature #1794: Project defaults state
   const [projectDefaultBrowser, setProjectDefaultBrowser] = useState<'chromium' | 'firefox' | 'webkit'>('chromium');
@@ -886,30 +917,66 @@ function ProjectDetailPage() {
               thresholds={{ good: 1, warning: 0 }}
               size="sm"
             />
+            {/* Feature #558: Extracted security score calculation */}
             <ScoreCard
-              score={
-                sastScans.length > 0 && sastScans[0]?.summary?.total === 0 &&
-                dastScans.length > 0 && dastScans[0]?.summary?.total === 0
-                  ? 100
-                  : sastScans.length === 0 && dastScans.length === 0
-                    ? 50
-                    : Math.max(0, 100 - (
-                        (sastScans[0]?.summary?.bySeverity?.critical || 0) * 20 +
-                        (sastScans[0]?.summary?.bySeverity?.high || 0) * 10 +
-                        (dastScans[0]?.summary?.byRisk?.high || 0) * 10
-                      ))
-              }
+              score={computeSecurityScore(sastScans, dastScans)}
               label="Security Score"
               size="sm"
             />
-            <div className="p-3 rounded-lg bg-muted text-center">
-              <div className="text-xl font-bold text-foreground">
-                {githubConnected ? '✓' : '—'}
-              </div>
-              <div className="text-xs text-muted-foreground mt-0.5">GitHub</div>
-            </div>
+            {/* Feature #558: Replaced raw div with ScoreCard */}
+            <ScoreCard
+              score={githubConnected ? 100 : 0}
+              label="GitHub"
+              size="sm"
+              thresholds={{ good: 100, warning: 1 }}
+            />
           </div>
         )}
+
+        {/* Feature #558: Recent Activity feed - last 5 runs across all suites */}
+        {(() => {
+          const recentRuns = (recentRunsData?.runs || recentRunsData?.data || []).slice(0, 5);
+          if (recentRuns.length === 0) return null;
+          return (
+            <div className="mt-4 rounded-lg border border-border bg-card">
+              <div className="px-4 py-3 border-b border-border">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Recent Activity
+                </h3>
+              </div>
+              <div className="divide-y divide-border">
+                {recentRuns.map((run: { id: string; suite_name?: string; test_name?: string; status: string; created_at: string; duration_ms?: number }) => (
+                  <button
+                    key={run.id}
+                    onClick={() => navigate(`/runs/${run.id}`)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted/50 transition-colors text-left"
+                  >
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      run.status === 'passed' ? 'bg-success' :
+                      run.status === 'failed' ? 'bg-destructive' :
+                      run.status === 'running' ? 'bg-warning animate-pulse' :
+                      'bg-muted-foreground'
+                    }`} />
+                    <span className="flex-1 truncate text-foreground">
+                      {run.suite_name || 'Suite'}{run.test_name ? ` › ${run.test_name}` : ''}
+                    </span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {getRelativeTime(run.created_at)}
+                    </span>
+                    {run.duration_ms != null && run.duration_ms > 0 && (
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {run.duration_ms < 1000 ? `${run.duration_ms}ms` : `${(run.duration_ms / 1000).toFixed(1)}s`}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Tab Navigation - Feature #490: Progressive disclosure with badges */}
         <div className="mt-6 border-b border-border">

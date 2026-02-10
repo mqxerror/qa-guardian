@@ -182,6 +182,21 @@ export function useRunsByTest(testId: string | undefined) {
 /**
  * Hook to fetch runs for a specific suite
  */
+/**
+ * Feature #558: Hook to fetch recent runs for a specific project
+ */
+export function useRunsByProject(projectId: string | undefined, limit: number = 5) {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: [...runKeys.all, 'byProject', projectId || '', limit] as const,
+    queryFn: () => fetchWithAuth(`/api/v1/test-runs?project_id=${projectId}&limit=${limit}&sort=created_at:desc`, token),
+    enabled: !!token && !!projectId,
+    staleTime: 10 * 1000, // 10 seconds
+    gcTime: 30 * 1000,
+  });
+}
+
 export function useRunsBySuite(suiteId: string | undefined) {
   const token = useAuthStore(state => state.token);
 
