@@ -1,7 +1,50 @@
 // RunHistorySection.tsx
 // Feature #48: Extracted from TestDetailPage.tsx
+// Feature #571: Replace emoji with Lucide icons for cross-browser consistency
+// Feature #572: Enriched rows with duration bars, error previews, anomaly indicators, sparklines
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { BarChart3, AlertTriangle } from 'lucide-react';
 import { TestRunType } from './types';
+
+/** Feature #572: Mini sparkline showing pass/fail pattern for recent runs */
+function MiniSparkline({ runs, currentRunId }: { runs: TestRunType[]; currentRunId: string }) {
+ // Show the last 10 runs as tiny colored dots
+ const recentRuns = runs.slice(0, 10);
+ if (recentRuns.length < 2) return null;
+ return (
+  <div className="flex items-center gap-0.5" title="Last 10 runs: pass/fail pattern">
+   {recentRuns.map((r) => (
+    <div
+     key={r.id}
+     className={`h-2 w-2 rounded-full transition-transform ${
+      r.id === currentRunId ? 'ring-1 ring-foreground scale-125' : ''
+     } ${
+      r.status === 'passed' ? 'bg-success' :
+      r.status === 'failed' || r.status === 'error' ? 'bg-destructive' :
+      r.status === 'running' ? 'bg-primary' :
+      'bg-muted-foreground'
+     }`}
+    />
+   ))}
+  </div>
+ );
+}
+
+/** Feature #572: Thin horizontal duration bar relative to max duration */
+function DurationBar({ durationMs, avgDuration, maxDuration }: { durationMs: number; avgDuration: number; maxDuration: number }) {
+ if (!durationMs || maxDuration <= 0) return null;
+ const widthPct = Math.max(4, Math.min(100, (durationMs / maxDuration) * 100));
+ const isFaster = durationMs <= avgDuration;
+ return (
+  <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden" title={`${durationMs}ms (avg: ${Math.round(avgDuration)}ms)`}>
+   <div
+    className={`h-full rounded-full transition-all ${isFaster ? 'bg-success' : 'bg-destructive'}`}
+    style={{ width: `${widthPct}%` }}
+   />
+  </div>
+ );
+}
 
 interface RunCounts {
  all: number;
@@ -71,6 +114,17 @@ export function RunHistorySection({
  onCompareRuns,
  onDownloadAllArtifacts,
 }: RunHistorySectionProps) {
+ // Feature #572: Compute average and max duration for duration bars and anomaly detection
+ const { avgDuration, maxDuration } = useMemo(() => {
+  const durationsMs = runs.filter(r => r.duration_ms && r.duration_ms > 0).map(r => r.duration_ms!);
+  if (durationsMs.length === 0) return { avgDuration: 0, maxDuration: 0 };
+  const sum = durationsMs.reduce((a, b) => a + b, 0);
+  return {
+   avgDuration: sum / durationsMs.length,
+   maxDuration: Math.max(...durationsMs),
+  };
+ }, [runs]);
+
  if (runs.length === 0) {
  return null;
  }
@@ -185,7 +239,7 @@ export function RunHistorySection({
  disabled={isComparing}
  className="rounded-md bg-primary px-3 py-1 text-sm font-medium text-white hover:bg-primary disabled:opacity-50"
  >
- {isComparing ? 'Comparing...' : '📊 Compare Selected'}
+ {isComparing ? 'Comparing...' : <><BarChart3 className="h-4 w-4 inline mr-1" /> Compare Selected</>}
  </button>
  )}
  {isLoadTest && selectedRunsForCompare.length > 0 && selectedRunsForCompare.length < 2 && (
@@ -252,76 +306,104 @@ export function RunHistorySection({
  </p>
  )}
  </div>
- ) : paginatedRuns.map((run) => (
+ ) : paginatedRuns.map((run) => {
+ const isAnomaly = run.duration_ms && avgDuration > 0 && run.duration_ms > avgDuration * 2;
+ return (
  <div
- key={run.id}
- className={`flex items-center justify-between rounded-md border p-3 ${
- selectedRunsForCompare.includes(run.id)
- ? 'border-primary bg-primary/5/50'
- : 'border-border'
- }`}
+  key={run.id}
+  className={`rounded-md border p-3 ${
+  selectedRunsForCompare.includes(run.id)
+  ? 'border-primary bg-primary/5/50'
+  : isAnomaly
+  ? 'border-warning/50 bg-warning/5'
+  : 'border-border'
+  }`}
  >
- <div className="flex items-center gap-3">
- {/* Checkbox for K6 run comparison (Feature #564) */}
- {isLoadTest && (run.status === 'passed' || run.status === 'failed') && (
- <label className="cursor-pointer">
- <input
- type="checkbox"
- checked={selectedRunsForCompare.includes(run.id)}
- onChange={() => onToggleRunSelection(run.id)}
- className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
- />
- </label>
- )}
- {/* Feature #1979: Added 'warning' status styling for accessibility tests */}
- <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
- run.status === 'passed' ? 'bg-success/10 text-success' :
- run.status === 'failed' ? 'bg-destructive/10 text-destructive' :
- run.status === 'warning' ? 'bg-warning/10 text-warning' :
- run.status === 'running' ? 'bg-primary/10 text-primary' :
- run.status === 'pending' ? 'bg-warning/10 text-warning' :
- 'bg-muted text-foreground'
- }`}>
- {run.status}
- </span>
- <span className="text-sm text-muted-foreground">
- {formatDateTime(run.created_at)}
- </span>
+  <div className="flex items-center justify-between">
+  <div className="flex items-center gap-3">
+  {/* Checkbox for K6 run comparison (Feature #564) */}
+  {isLoadTest && (run.status === 'passed' || run.status === 'failed') && (
+  <label className="cursor-pointer">
+   <input
+   type="checkbox"
+   checked={selectedRunsForCompare.includes(run.id)}
+   onChange={() => onToggleRunSelection(run.id)}
+   className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+   />
+  </label>
+  )}
+  {/* Feature #1979: Added 'warning' status styling for accessibility tests */}
+  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+  run.status === 'passed' ? 'bg-success/10 text-success' :
+  run.status === 'failed' ? 'bg-destructive/10 text-destructive' :
+  run.status === 'warning' ? 'bg-warning/10 text-warning' :
+  run.status === 'running' ? 'bg-primary/10 text-primary' :
+  run.status === 'pending' ? 'bg-warning/10 text-warning' :
+  'bg-muted text-foreground'
+  }`}>
+  {run.status}
+  </span>
+  <span className="text-sm text-muted-foreground">
+  {formatDateTime(run.created_at)}
+  </span>
+  {/* Feature #572: Anomaly indicator for unusually slow runs */}
+  {isAnomaly && (
+  <span className="inline-flex items-center gap-1 text-xs text-warning" title={`Duration ${run.duration_ms}ms is >2× average (${Math.round(avgDuration)}ms)`}>
+   <AlertTriangle className="h-3.5 w-3.5" />
+   Slow
+  </span>
+  )}
+  {/* Feature #572: Mini sparkline for pass/fail pattern */}
+  <MiniSparkline runs={runs} currentRunId={run.id} />
+  </div>
+  <div className="flex items-center gap-3">
+  {/* Feature #572: Duration bar + text */}
+  <div className="flex items-center gap-2">
+   {run.duration_ms ? (
+   <DurationBar durationMs={run.duration_ms} avgDuration={avgDuration} maxDuration={maxDuration} />
+   ) : null}
+   <span className="text-sm text-muted-foreground min-w-[60px] text-right">
+   {run.duration_ms ? `${run.duration_ms}ms` : '-'}
+   </span>
+  </div>
+  {/* Feature #1823: View Details link to TestRunResultPage */}
+  {(run.status === 'passed' || run.status === 'failed' || run.status === 'error') && (
+  <Link
+   to={`/runs/${run.id}`}
+   className="inline-flex items-center gap-1 rounded-md border border-primary bg-primary/10 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/20"
+   title="View detailed run results"
+  >
+   <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+   </svg>
+   View Details
+  </Link>
+  )}
+  {/* Download All Artifacts button for completed runs */}
+  {(run.status === 'passed' || run.status === 'failed' || run.status === 'error') && (
+  <button
+   onClick={() => onDownloadAllArtifacts(run.id)}
+   disabled={isDownloadingArtifacts}
+   className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+   title="Download all artifacts (screenshots, traces, videos)"
+  >
+   <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+   </svg>
+   Download All
+  </button>
+  )}
+  </div>
+  </div>
+  {/* Feature #572: Error preview for failed/error runs */}
+  {(run.status === 'failed' || run.status === 'error') && run.error && (
+  <div className="mt-2 pl-8 text-xs text-destructive/80 font-mono truncate" title={run.error}>
+   {run.error.length > 80 ? `${run.error.slice(0, 80)}…` : run.error}
+  </div>
+  )}
  </div>
- <div className="flex items-center gap-3">
- <span className="text-sm text-muted-foreground">
- {run.duration_ms ? `${run.duration_ms}ms` : '-'}
- </span>
- {/* Feature #1823: View Details link to TestRunResultPage */}
- {(run.status === 'passed' || run.status === 'failed' || run.status === 'error') && (
- <Link
- to={`/runs/${run.id}`}
- className="inline-flex items-center gap-1 rounded-md border border-primary bg-primary/10 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/20"
- title="View detailed run results"
- >
- <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
- </svg>
- View Details
- </Link>
- )}
- {/* Download All Artifacts button for completed runs */}
- {(run.status === 'passed' || run.status === 'failed' || run.status === 'error') && (
- <button
- onClick={() => onDownloadAllArtifacts(run.id)}
- disabled={isDownloadingArtifacts}
- className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
- title="Download all artifacts (screenshots, traces, videos)"
- >
- <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
- </svg>
- Download All
- </button>
- )}
- </div>
- </div>
- ))}
+ );
+ })}
  </div>
 
  {/* Pagination */}
