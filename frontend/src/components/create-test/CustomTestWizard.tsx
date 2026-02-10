@@ -48,25 +48,25 @@ export interface CustomTestWizardProps {
 }
 
 /**
- * Step indicator component
+ * Step indicator component — animated connecting line with transition-all
  */
 const StepIndicator: React.FC<{ currentStep: WizardStep; totalSteps: number }> = ({
  currentStep,
  totalSteps,
 }) => {
  return (
- <div className="flex items-center justify-center gap-2 mb-6">
+ <div className="flex items-center justify-center gap-1.5 mb-4">
  {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
  <React.Fragment key={step}>
  <div
  className={`
- flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors
+ flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all duration-300
  ${
  step === currentStep
- ? 'bg-primary text-white'
+ ? 'bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2 ring-offset-card'
  : step < currentStep
  ? 'bg-success text-white'
- : 'bg-secondary text-muted-foreground'
+ : 'bg-muted text-muted-foreground'
  }
  `}
  >
@@ -79,18 +79,40 @@ const StepIndicator: React.FC<{ currentStep: WizardStep; totalSteps: number }> =
  )}
  </div>
  {step < totalSteps && (
- <div
- className={`w-12 h-1 rounded ${
- step < currentStep
- ? 'bg-success'
- : 'bg-secondary'
- }`}
- />
+ <div className="w-12 h-1 rounded-full bg-muted overflow-hidden">
+  <div
+   className={`h-full rounded-full transition-all duration-500 ease-in-out ${
+   step < currentStep ? 'w-full bg-success' : 'w-0 bg-primary'
+   }`}
+  />
+ </div>
  )}
  </React.Fragment>
  ))}
  </div>
  );
+};
+
+/**
+ * Safe color mapping for method cards — avoids dynamic Tailwind classes
+ */
+const methodColorMap = {
+ purple: {
+  selected: 'border-purple-500 bg-purple-50 dark:bg-purple-950/30 shadow-lg',
+  badge: 'text-purple-600 bg-purple-100 dark:bg-purple-900/40 dark:text-purple-300',
+  iconBg: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300',
+  title: 'text-purple-700 dark:text-purple-300',
+  check: 'text-purple-500 dark:text-purple-400',
+  indicator: 'border-purple-500 bg-purple-500',
+ },
+ blue: {
+  selected: 'border-blue-500 bg-blue-50 dark:bg-blue-950/30 shadow-lg',
+  badge: 'text-blue-600 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300',
+  iconBg: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300',
+  title: 'text-blue-700 dark:text-blue-300',
+  check: 'text-blue-500 dark:text-blue-400',
+  indicator: 'border-blue-500 bg-blue-500',
+ },
 };
 
 /**
@@ -118,7 +140,7 @@ const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect })
  </svg>
  ),
  benefits: ['Natural language input', 'AI-powered test generation', 'Automatic selector detection'],
- color: 'purple',
+ color: 'purple' as const,
  badge: 'Recommended',
  },
  'manual-setup': {
@@ -141,30 +163,32 @@ const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect })
  </svg>
  ),
  benefits: ['Full control over settings', 'Step-by-step configuration', 'Advanced options'],
- color: 'blue',
+ color: 'blue' as const,
  badge: null,
  },
  };
 
  const { title, description, icon, benefits, color, badge } = config[method];
+ const colors = methodColorMap[color];
 
  return (
  <button
  type="button"
  onClick={onSelect}
  className={`
- relative flex flex-col p-6 rounded-xl border-2 transition-all text-left
+ relative flex flex-col p-5 rounded-xl border-2 transition-all duration-200 text-left
+ hover:scale-[1.02] hover:shadow-md
  ${
  isSelected
- ? `border-${color}-500 bg-${color}-50 shadow-lg`
- : 'border-border hover:border-border hover:shadow-md'
+ ? colors.selected
+ : 'border-border bg-card hover:border-primary/30'
  }
  `}
  aria-pressed={isSelected}
  >
  {/* Badge */}
  {badge && (
- <span className={`absolute top-3 right-3 px-2 py-0.5 text-xs font-medium text-${color}-600 bg-${color}-100 rounded-full`}>
+ <span className={`absolute top-3 right-3 px-2 py-0.5 text-xs font-medium rounded-full ${colors.badge}`}>
  {badge}
  </span>
  )}
@@ -172,20 +196,21 @@ const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect })
  {/* Icon */}
  <div
  className={`
- w-16 h-16 rounded-xl flex items-center justify-center mb-4
- ${isSelected ? `bg-${color}-100 text-${color}-600` : 'bg-muted text-muted-foreground'}
+ w-14 h-14 rounded-xl flex items-center justify-center mb-3
+ ${isSelected ? colors.iconBg : 'bg-muted text-muted-foreground'}
+ transition-colors
  `}
  >
  {icon}
  </div>
 
  {/* Title */}
- <h4 className={`text-lg font-semibold mb-2 ${isSelected ? `text-${color}-700` : 'text-foreground'}`}>
+ <h4 className={`text-lg font-semibold mb-1 ${isSelected ? colors.title : 'text-foreground'}`}>
  {title}
  </h4>
 
  {/* Description */}
- <p className="text-sm text-foreground mb-4">
+ <p className="text-sm text-muted-foreground mb-3">
  {description}
  </p>
 
@@ -193,7 +218,7 @@ const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect })
  <ul className="space-y-1">
  {benefits.map((benefit, i) => (
  <li key={i} className="flex items-center gap-2 text-sm text-foreground">
- <svg className={`w-4 h-4 ${isSelected ? `text-${color}-500` : 'text-muted-foreground'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <svg className={`w-4 h-4 flex-shrink-0 ${isSelected ? colors.check : 'text-muted-foreground'} transition-colors`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
  </svg>
  {benefit}
@@ -204,8 +229,8 @@ const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect })
  {/* Selection indicator */}
  <div
  className={`
- absolute top-4 left-4 w-5 h-5 rounded-full border-2 flex items-center justify-center
- ${isSelected ? `border-${color}-500 bg-${color}-500` : 'border-border'}
+ absolute top-4 left-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all
+ ${isSelected ? colors.indicator : 'border-border'}
  `}
  >
  {isSelected && (
@@ -227,10 +252,10 @@ const MethodSelection: React.FC<{
 }> = ({ selectedMethod, onMethodSelect }) => {
  return (
  <div>
- <h3 className="text-lg font-semibold text-foreground mb-2">
+ <h3 className="text-xl font-semibold text-foreground mb-1">
  How would you like to create your test?
  </h3>
- <p className="text-sm text-foreground mb-6">
+ <p className="text-sm text-muted-foreground mb-4">
  Choose your preferred method to get started
  </p>
 
@@ -442,11 +467,11 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
 
  {/* Footer - hidden on Step 3 since ReviewStep has its own buttons */}
  {wizardStep !== 3 && (
- <div className="px-6 py-4 bg-muted border-t border-border flex items-center justify-between">
+ <div className="px-6 py-3 bg-muted/50 border-t border-border flex items-center justify-between">
  <button
  type="button"
  onClick={handleBack}
- className="px-4 py-2 text-sm font-medium text-foreground hover:text-foreground transition-colors flex items-center gap-2"
+ className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 rounded-lg hover:bg-muted/80"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -455,14 +480,14 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  </button>
 
  <div className="flex items-center gap-3">
- <span className="text-sm text-muted-foreground">
+ <span className="text-xs text-muted-foreground">
  {wizardStep} of 3
  </span>
  <button
  type="button"
  onClick={handleContinue}
  disabled={!canContinue}
- className="px-4 py-2 bg-primary hover:bg-primary disabled:bg-muted text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
+ className="px-5 py-2 bg-primary hover:bg-primary/90 disabled:bg-muted text-primary-foreground text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
  >
  Continue
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

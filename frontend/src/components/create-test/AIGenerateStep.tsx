@@ -15,14 +15,14 @@ import React, { useState, useCallback } from 'react';
 import { useAIParser, type DetectedTestType, type ViewportPreset } from './hooks';
 
 /**
- * Test type display config
+ * Test type display config — safe color mapping (no dynamic Tailwind)
  */
-const TEST_TYPE_CONFIG: Record<Exclude<DetectedTestType, null>, { label: string; color: string; icon: string }> = {
- e2e: { label: 'E2E Test', color: 'blue', icon: '🔄' },
- visual: { label: 'Visual Regression', color: 'purple', icon: '📸' },
- accessibility: { label: 'Accessibility', color: 'green', icon: '♿' },
- performance: { label: 'Performance', color: 'orange', icon: '⚡' },
- load: { label: 'Load Test', color: 'red', icon: '📊' },
+const TEST_TYPE_CONFIG: Record<Exclude<DetectedTestType, null>, { label: string; icon: string; iconBg: string }> = {
+ e2e: { label: 'E2E Test', icon: '🔄', iconBg: 'bg-blue-100 dark:bg-blue-900/40' },
+ visual: { label: 'Visual Regression', icon: '📸', iconBg: 'bg-purple-100 dark:bg-purple-900/40' },
+ accessibility: { label: 'Accessibility', icon: '♿', iconBg: 'bg-green-100 dark:bg-green-900/40' },
+ performance: { label: 'Performance', icon: '⚡', iconBg: 'bg-orange-100 dark:bg-orange-900/40' },
+ load: { label: 'Load Test', icon: '📊', iconBg: 'bg-red-100 dark:bg-red-900/40' },
 };
 
 /**
@@ -296,13 +296,13 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  ];
 
  return (
- <div className="space-y-6">
+ <div className="space-y-4">
  {/* Header */}
  <div>
- <h3 className="text-lg font-semibold text-foreground mb-2">
+ <h3 className="text-xl font-semibold text-foreground mb-1">
  Describe your test
  </h3>
- <p className="text-sm text-foreground">
+ <p className="text-sm text-muted-foreground">
  Tell us what you want to test in natural language. We'll automatically detect the test type, URL, and settings.
  </p>
  </div>
@@ -313,16 +313,16 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  value={input}
  onChange={handleInputChange}
  placeholder="Example: Test the login form on https://myapp.com using mobile viewport..."
- className="w-full h-32 px-4 py-3 border border-border rounded-xl bg-input text-foreground placeholder-muted-foreground resize-none focus:ring-2 focus:ring-primary focus:border-transparent"
+ className="w-full h-32 px-4 py-3 border border-border rounded-xl bg-muted/50 text-foreground placeholder-muted-foreground resize-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
  autoFocus
  />
- <div className="flex items-center justify-between mt-2">
+ <div className="flex items-center justify-between mt-1.5">
  <span className="text-xs text-muted-foreground">
  {input.length} characters
  </span>
  {isParsing && (
- <span className="flex items-center gap-1 text-xs text-primary">
- <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+ <span className="flex items-center gap-1.5 text-xs text-primary">
+ <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
  </svg>
@@ -334,16 +334,16 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
 
  {/* Examples */}
  {!input && (
- <div className="bg-muted rounded-lg p-4">
+ <div className="bg-muted/50 rounded-lg p-4 border border-border">
  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
  Try one of these examples:
  </p>
- <div className="space-y-1">
+ <div className="space-y-0.5">
  {examples.slice(0, 3).map((example, i) => (
  <button
  key={i}
  onClick={() => setInput(example)}
- className="block w-full text-left text-sm text-foreground hover:text-primary py-1 px-2 rounded hover:bg-muted transition-colors"
+ className="block w-full text-left text-sm text-foreground hover:text-primary py-1.5 px-2 rounded-md hover:bg-muted/80 transition-colors"
  >
  "{example}"
  </button>
@@ -355,7 +355,7 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  {/* Preview Card */}
  {result && (
  <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
- <div className="flex items-center justify-between mb-4">
+ <div className="flex items-center justify-between mb-3">
  <h4 className="text-sm font-medium text-foreground">
  Detected Configuration
  </h4>
@@ -376,7 +376,7 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  {/* Edit Button */}
  <button
  onClick={() => setShowEditModal(true)}
- className="flex items-center gap-1 px-2 py-1 text-xs text-foreground hover:text-primary hover:bg-muted rounded transition-colors"
+ className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-primary hover:bg-muted/80 rounded-md transition-colors"
  >
  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -386,12 +386,12 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  </div>
  </div>
 
- <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
  {/* Test Type */}
- <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+ <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${
  result.testType
- ? `bg-${TEST_TYPE_CONFIG[result.testType].color}-100`
+ ? TEST_TYPE_CONFIG[result.testType].iconBg
  : 'bg-muted'
  }`}>
  {result.testType ? TEST_TYPE_CONFIG[result.testType].icon : '?'}
@@ -405,7 +405,7 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  </div>
 
  {/* URL */}
- <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+ <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
  <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg bg-primary/10">
  🌐
  </div>
@@ -418,8 +418,8 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  </div>
 
  {/* Viewport */}
- <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
- <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg bg-accent/10">
+ <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+ <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg bg-muted">
  {VIEWPORT_CONFIG[result.viewport.preset].icon}
  </div>
  <div>
@@ -433,14 +433,14 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
 
  {/* Suggestions */}
  {result.suggestions.length > 0 && (
- <div className="mt-4 pt-4 border-t border-border">
- <p className="text-xs font-medium text-warning mb-2">
+ <div className="mt-3 pt-3 border-t border-border">
+ <p className="text-xs font-medium text-warning mb-1.5">
  Suggestions to improve detection:
  </p>
  <ul className="space-y-1">
  {result.suggestions.map((suggestion, i) => (
- <li key={i} className="flex items-start gap-2 text-sm text-foreground">
- <span className="text-warning">•</span>
+ <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+ <span className="text-warning mt-0.5">•</span>
  {suggestion}
  </li>
  ))}

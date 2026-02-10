@@ -83,7 +83,7 @@ const DEFAULT_FORM_STATE: ManualSetupFormState = {
 };
 
 /**
- * Collapsible section component
+ * Collapsible section component — semantic tokens, hover states
  */
 const CollapsibleSection: React.FC<{
  title: string;
@@ -91,15 +91,15 @@ const CollapsibleSection: React.FC<{
  onToggle: () => void;
  children: React.ReactNode;
 }> = ({ title, isOpen, onToggle, children }) => (
- <div className="border border-border rounded-lg overflow-hidden">
+ <div className="border border-border rounded-lg overflow-hidden bg-card">
  <button
  type="button"
  onClick={onToggle}
- className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted transition-colors"
+ className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/50 hover:bg-muted/80 transition-colors"
  >
  <span className="text-sm font-medium text-foreground">{title}</span>
  <svg
- className={`w-5 h-5 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
+ className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
  fill="none"
  viewBox="0 0 24 24"
  stroke="currentColor"
@@ -112,7 +112,7 @@ const CollapsibleSection: React.FC<{
 );
 
 /**
- * Form field component
+ * Form field component — semantic tokens, tight spacing
  */
 const FormField: React.FC<{
  label: string;
@@ -124,11 +124,11 @@ const FormField: React.FC<{
  <div className="space-y-1">
  <label className="block text-sm font-medium text-foreground">
  {label}
- {required && <span className="text-destructive ml-1">*</span>}
+ {required && <span className="text-destructive ml-0.5">*</span>}
  </label>
  {children}
- {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
- {error && <p className="text-xs text-destructive">{error}</p>}
+ {hint && !error && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
+ {error && <p className="text-xs text-destructive mt-0.5">{error}</p>}
  </div>
 );
 
@@ -376,13 +376,13 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  };
 
  return (
- <div className="space-y-6">
+ <div className="space-y-4">
  {/* Step 1: Select Test Type */}
  <div>
- <h3 className="text-lg font-semibold text-foreground mb-2">
+ <h3 className="text-xl font-semibold text-foreground mb-1">
  Select Test Type
  </h3>
- <p className="text-sm text-foreground mb-4">
+ <p className="text-sm text-muted-foreground mb-3">
  Choose the type of test you want to create
  </p>
  <TestTypeCards
@@ -394,8 +394,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
 
  {/* Step 2: Basic Info (shown when type is selected) */}
  {formState.testType && (
- <div className="space-y-4 pt-4 border-t border-border">
- <h4 className="text-md font-medium text-foreground">
+ <div className="space-y-3 pt-3 border-t border-border">
+ <h4 className="text-sm font-medium text-foreground">
  Test Configuration
  </h4>
 
@@ -492,13 +492,13 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  {/* Validation Summary */}
  {formState.testType && !isFormValid && Object.keys(validationErrors).length > 0 && (
  <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
- <p className="text-sm text-destructive">
+ <p className="text-xs text-destructive">
  Please fix the errors above to continue.
  </p>
  </div>
  )}
  {formState.testType === null && (
- <p className="text-sm text-warning">
+ <p className="text-xs text-muted-foreground">
  Please select a test type to continue.
  </p>
  )}
