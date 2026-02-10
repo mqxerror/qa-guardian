@@ -190,33 +190,20 @@ export function useModalState() {
   // Feature #560: Single reducer for all 11 modal visibility flags
   const [vis, dispatchModal] = useReducer(modalVisibilityReducer, initialModalVisibility);
 
-  // Stable setter factories that match the old `setShow*Modal(bool)` API
-  const makeModalSetter = useCallback(
-    (key: ModalVisibilityKey) => (open: boolean | ((prev: boolean) => boolean)) => {
-      if (typeof open === 'function') {
-        // For callback setters, we compute the new value from current state
-        // but useReducer doesn't support this directly. Use OPEN/CLOSE based on result.
-        // This is rare in practice - most callers pass a boolean directly.
-        dispatchModal({ type: open(vis[key]) ? 'OPEN' : 'CLOSE', key });
-      } else {
-        dispatchModal({ type: open ? 'OPEN' : 'CLOSE', key });
-      }
-    },
-    [vis],
-  );
-
-  // Convenience: create all setters
-  const setShowDeleteModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('delete')(v), [makeModalSetter]);
-  const setShowEditModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('edit')(v), [makeModalSetter]);
-  const setShowAddStepModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('addStep')(v), [makeModalSetter]);
-  const setShowUnsavedChangesModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('unsavedChanges')(v), [makeModalSetter]);
-  const setShowApproveBaselineModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('approveBaseline')(v), [makeModalSetter]);
-  const setShowRestoreBaselineModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('restoreBaseline')(v), [makeModalSetter]);
-  const setShowRejectChangesModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('rejectChanges')(v), [makeModalSetter]);
-  const setShowMergeBaselineModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('mergeBaseline')(v), [makeModalSetter]);
-  const setShowQuickScheduleModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('quickSchedule')(v), [makeModalSetter]);
-  const setShowExplainModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('explain')(v), [makeModalSetter]);
-  const setShowCompareModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('compare')(v), [makeModalSetter]);
+  // Feature #565: Replaced makeModalSetter (had stale closure bug with [vis] dependency)
+  // with direct dispatch calls. dispatchModal from useReducer is guaranteed stable by React,
+  // so these callbacks have empty dependency arrays and never recreate.
+  const setShowDeleteModal = useCallback((v: boolean) => dispatchModal({ type: v ? 'OPEN' : 'CLOSE', key: 'delete' }), []);
+  const setShowEditModal = useCallback((v: boolean) => dispatchModal({ type: v ? 'OPEN' : 'CLOSE', key: 'edit' }), []);
+  const setShowAddStepModal = useCallback((v: boolean) => dispatchModal({ type: v ? 'OPEN' : 'CLOSE', key: 'addStep' }), []);
+  const setShowUnsavedChangesModal = useCallback((v: boolean) => dispatchModal({ type: v ? 'OPEN' : 'CLOSE', key: 'unsavedChanges' }), []);
+  const setShowApproveBaselineModal = useCallback((v: boolean) => dispatchModal({ type: v ? 'OPEN' : 'CLOSE', key: 'approveBaseline' }), []);
+  const setShowRestoreBaselineModal = useCallback((v: boolean) => dispatchModal({ type: v ? 'OPEN' : 'CLOSE', key: 'restoreBaseline' }), []);
+  const setShowRejectChangesModal = useCallback((v: boolean) => dispatchModal({ type: v ? 'OPEN' : 'CLOSE', key: 'rejectChanges' }), []);
+  const setShowMergeBaselineModal = useCallback((v: boolean) => dispatchModal({ type: v ? 'OPEN' : 'CLOSE', key: 'mergeBaseline' }), []);
+  const setShowQuickScheduleModal = useCallback((v: boolean) => dispatchModal({ type: v ? 'OPEN' : 'CLOSE', key: 'quickSchedule' }), []);
+  const setShowExplainModal = useCallback((v: boolean) => dispatchModal({ type: v ? 'OPEN' : 'CLOSE', key: 'explain' }), []);
+  const setShowCompareModal = useCallback((v: boolean) => dispatchModal({ type: v ? 'OPEN' : 'CLOSE', key: 'compare' }), []);
 
   // Associated modal form/loading/error state (non-boolean, kept as individual useState)
   // Delete
