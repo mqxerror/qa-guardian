@@ -14,6 +14,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { type TestTypeOption } from './shared';
+import { type DeviceConfig } from '../test-modals/types';
 
 /**
  * Configuration from AI Generate step
@@ -60,6 +61,12 @@ export interface ManualSetupConfig {
  // E2E specific
  steps?: string;
  structuredSteps?: Step[];
+ /** Feature #584: E2E config fields from E2EConfig component */
+ timeout?: number;
+ retries?: number;
+ tags?: string[];
+ deviceEmulationEnabled?: boolean;
+ deviceConfig?: DeviceConfig;
  // Visual specific
  viewportWidth?: number;
  viewportHeight?: number;
@@ -207,6 +214,20 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  } catch {
  // If parsing fails, don't include steps - backend will auto-generate
  }
+ }
+ // Feature #584: Include E2E config fields from E2EConfig component
+ if (config.timeout && config.timeout !== 30000) {
+ requestBody.timeout = config.timeout;
+ }
+ if (config.retries && config.retries > 0) {
+ requestBody.retries = config.retries;
+ }
+ if (config.tags && config.tags.length > 0) {
+ requestBody.tags = config.tags;
+ }
+ if (config.deviceEmulationEnabled && config.deviceConfig) {
+ requestBody.device_emulation = true;
+ requestBody.device_config = config.deviceConfig;
  }
  }
  if (testType === 'visual') {
@@ -387,9 +408,26 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
 
  switch (testType) {
  case 'e2e':
- return config.steps ? (
+ // Feature #584: Show all E2EConfig fields in review
+ return (
+ <>
+ {config.steps && (
  <SummaryRow label="Steps" value={`${config.steps.split('\n').filter(Boolean).length} steps defined`} />
- ) : null;
+ )}
+ {config.timeout && config.timeout !== 30000 && (
+ <SummaryRow label="Timeout" value={`${(config.timeout / 1000).toFixed(0)}s`} />
+ )}
+ {config.retries !== undefined && config.retries > 0 && (
+ <SummaryRow label="Retries" value={`${config.retries}`} />
+ )}
+ {config.tags && config.tags.length > 0 && (
+ <SummaryRow label="Tags" value={config.tags.join(', ')} />
+ )}
+ {config.deviceEmulationEnabled && (
+ <SummaryRow label="Device" value={config.deviceConfig?.preset || 'Custom'} />
+ )}
+ </>
+ );
 
  case 'visual': {
  // Feature #1983: Display all enabled viewports

@@ -18,9 +18,12 @@
 
 import React, { useState, useCallback } from 'react';
 import { TestTypeCards, type TestTypeOption } from './shared';
-import { StepBuilder, type Step } from './config/StepBuilder';
+import { type Step } from './config/StepBuilder';
 // Feature #513: Removed unused CaptureMode, ViewportConfig - using VisualConfigState instead
 import { VisualConfig, type VisualConfigState } from './config/VisualConfig';
+// Feature #584: Wire E2EConfig into wizard for full E2E configuration
+import { E2EConfig, type E2EConfigState } from './config/E2EConfig';
+import { type DeviceConfig } from '../test-modals/types';
 
 /**
  * Form state for all test types
@@ -34,6 +37,13 @@ export interface ManualSetupFormState {
  steps: string;
  /** Structured steps for StepBuilder (Feature #1822) */
  structuredSteps?: Step[];
+ /** Feature #584: Full E2E configuration from E2EConfig component */
+ e2eConfig?: E2EConfigState;
+ timeout: number;
+ retries: number;
+ tags: string[];
+ deviceEmulationEnabled: boolean;
+ deviceConfig: DeviceConfig;
  // Visual specific - Feature #1964: Enhanced with full VisualConfig support
  viewportWidth: number;
  viewportHeight: number;
@@ -71,6 +81,12 @@ const DEFAULT_FORM_STATE: ManualSetupFormState = {
  description: '',
  targetUrl: '',
  steps: '',
+ // Feature #584: E2E config defaults
+ timeout: 30000,
+ retries: 0,
+ tags: [],
+ deviceEmulationEnabled: false,
+ deviceConfig: { preset: 'desktop-1280' },
  viewportWidth: 1920,
  viewportHeight: 1080,
  diffThreshold: 0.1,
@@ -233,25 +249,46 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
 
  switch (formState.testType) {
  case 'e2e':
+ // Feature #584: Use full E2EConfig component with step builder,
+ // device emulation, timeout, retries, and tags
  return (
- <div className="space-y-4">
- <FormField label="Test Steps" hint="Define actions using dropdowns. Drag to reorder steps.">
- <StepBuilder
- value={formState.structuredSteps}
- onChange={(steps) => {
- // Convert steps to string for legacy support
- const stepsString = steps
- .map((step, index) => {
- let stepStr = `${index + 1}. ${step.action}`;
- if (step.selector) stepStr += ` "${step.selector}"`;
- if (step.value) stepStr += ` → ${step.value}`;
- return stepStr;
- })
- .join('\n');
- setFormState(prev => ({ ...prev, steps: stepsString, structuredSteps: steps }));
+ <div className="space-y-4 -mt-4">
+ <E2EConfig
+ initialValues={{
+ name: formState.name,
+ description: formState.description,
+ targetUrl: formState.targetUrl,
+ steps: formState.steps,
+ structuredSteps: formState.structuredSteps,
+ timeout: formState.timeout,
+ retries: formState.retries,
+ tags: formState.tags,
+ deviceEmulationEnabled: formState.deviceEmulationEnabled,
+ deviceConfig: formState.deviceConfig as E2EConfigState['deviceConfig'],
  }}
+ onChange={(e2eConfig) => {
+ // Sync E2E config back to form state
+ setFormState(prev => ({
+ ...prev,
+ name: e2eConfig.name || prev.name,
+ description: e2eConfig.description || prev.description,
+ targetUrl: e2eConfig.targetUrl || prev.targetUrl,
+ steps: e2eConfig.steps,
+ structuredSteps: e2eConfig.structuredSteps,
+ timeout: e2eConfig.timeout,
+ retries: e2eConfig.retries,
+ tags: e2eConfig.tags,
+ deviceEmulationEnabled: e2eConfig.deviceEmulationEnabled,
+ deviceConfig: e2eConfig.deviceConfig,
+ e2eConfig: e2eConfig,
+ }));
+ }}
+ onValidationChange={(_isValid) => {
+ // Feature #584: E2E config validation handled separately
+ }}
+ projectBaseUrl={projectBaseUrl}
+ className="e2e-config-embedded"
  />
- </FormField>
  </div>
  );
 
@@ -399,8 +436,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  Test Configuration
  </h4>
 
- {/* Skip common fields for visual tests - VisualConfig component renders them */}
- {formState.testType !== 'visual' && (
+ {/* Skip common fields for visual/e2e tests - VisualConfig/E2EConfig render them */}
+ {formState.testType !== 'visual' && formState.testType !== 'e2e' && (
  <>
  <FormField label="Test Name" required error={touched.name ? errors.name : undefined}>
  <input
@@ -447,8 +484,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  {/* Type-specific fields */}
  {renderTypeSpecificFields()}
 
- {/* Advanced Settings - skip for visual tests (VisualConfig has its own) */}
- {formState.testType !== 'visual' && (
+ {/* Advanced Settings - skip for visual/e2e tests (VisualConfig/E2EConfig have their own) */}
+ {formState.testType !== 'visual' && formState.testType !== 'e2e' && (
  <CollapsibleSection
  title="Advanced Settings"
  isOpen={showAdvanced}
