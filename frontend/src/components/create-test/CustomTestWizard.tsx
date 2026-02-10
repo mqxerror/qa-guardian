@@ -313,6 +313,12 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  targetUrl: manualFormState.targetUrl,
  steps: manualFormState.steps,
  structuredSteps: manualFormState.structuredSteps,
+ // Feature #584: E2E config fields
+ timeout: manualFormState.timeout,
+ retries: manualFormState.retries,
+ tags: manualFormState.tags,
+ deviceEmulationEnabled: manualFormState.deviceEmulationEnabled,
+ deviceConfig: manualFormState.deviceConfig,
  viewportWidth: manualFormState.viewportWidth,
  viewportHeight: manualFormState.viewportHeight,
  diffThreshold: manualFormState.diffThreshold,

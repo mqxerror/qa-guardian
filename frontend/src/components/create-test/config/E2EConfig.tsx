@@ -146,7 +146,7 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  }, [updateField]);
 
  return (
- <div className={`e2e-config space-y-4 ${className}`}>
+ <div className={`e2e-config space-y-3 ${className}`}>
  {/* Test Name */}
  <FormField label="Test Name" required error={errors.name}>
  <input
@@ -154,7 +154,7 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  value={config.name}
  onChange={(e) => updateField('name', e.target.value)}
  placeholder="Enter test name"
- className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
+ className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground transition-colors ${
  errors.name
  ? 'border-destructive focus:ring-destructive'
  : 'border-border focus:ring-primary'
@@ -169,7 +169,7 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  value={config.targetUrl}
  onChange={(e) => updateField('targetUrl', e.target.value)}
  placeholder={projectBaseUrl || 'https://your-site.com'}
- className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground ${
+ className={`w-full px-3 py-2 border rounded-lg bg-input text-foreground transition-colors ${
  errors.targetUrl
  ? 'border-destructive focus:ring-destructive'
  : 'border-border focus:ring-primary'
@@ -184,7 +184,7 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  onChange={(e) => updateField('description', e.target.value)}
  placeholder="Describe what this test does..."
  rows={2}
- className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground resize-none"
+ className="w-full px-3 py-2 border border-border rounded-lg bg-muted/50 text-foreground resize-none transition-colors focus:bg-input"
  />
  </FormField>
 
@@ -216,7 +216,7 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  </FormField>
 
  {/* Feature #36: Device Emulation */}
- <div className="pt-4 border-t border-border">
+ <div className="pt-3 border-t border-border/50">
  <div className="flex items-center justify-between mb-3">
  <h4 className="text-sm font-medium text-foreground">
  Device Emulation
@@ -247,12 +247,12 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  </div>
 
  {/* Advanced Settings */}
- <div className="pt-4 border-t border-border">
+ <div className="pt-3 border-t border-border/50">
  <h4 className="text-sm font-medium text-foreground mb-3">
  Advanced Settings
  </h4>
 
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-2 gap-3">
  {/* Timeout */}
  <FormField label="Timeout (ms)" hint="Maximum execution time">
  <input
@@ -280,7 +280,7 @@ export const E2EConfig: React.FC<E2EConfigProps> = ({
  </div>
 
  {/* Tags */}
- <div className="mt-4">
+ <div className="mt-3">
  <FormField label="Tags" hint="Comma-separated list of tags for filtering">
  <input
  type="text"
