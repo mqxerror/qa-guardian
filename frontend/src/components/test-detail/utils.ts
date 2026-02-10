@@ -177,7 +177,8 @@ export const getTestTypeBadgeClass = (type: TestCategory): string => {
  return badges[type] || 'bg-muted text-foreground';
 };
 
-// Get test type icon
+// Get test type icon - NOTE: Currently unused, kept for backward compatibility
+// Feature #571: For Lucide icons, use suite-detail/TestTypeBadge component instead
 export const getTestTypeIcon = (type: TestCategory): string => {
  const icons: Record<TestCategory, string> = {
  'e2e': '🧪',

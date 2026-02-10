@@ -1,9 +1,11 @@
 /**
  * FlakinessPanel - Feature #48: Extracted from TestDetailPage.tsx
  * Feature #524: Updated to use unified ScoreCard for pass rate metric
+ * Feature #571: Replace emoji with Lucide icons for cross-browser consistency
  * Displays flakiness trend data and analysis for a test
  */
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendingUp } from 'lucide-react';
 import type { FlakinessTrend, TestRunType } from './types';
 import { ScoreCard } from '../ui/score-card';
 
@@ -30,7 +32,7 @@ export function FlakinessPanel({
  <div className="mt-8 rounded-lg border border-border bg-card p-6">
  <div className="flex items-center justify-between mb-4">
  <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
- <span className="text-xl">📊</span> Flakiness Trend
+ <TrendingUp className="h-5 w-5" /> Flakiness Trend
  </h2>
  <button
  onClick={onHideSection}

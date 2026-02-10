@@ -1,7 +1,9 @@
 // Feature #48: K6ScriptTab - Extracted from TestDetailPage.tsx
+// Feature #571: Replace emoji with Lucide icons for cross-browser consistency
 // Displays K6 load test script with edit capability
 
 import { useState } from 'react';
+import { Rocket } from 'lucide-react';
 import { toast } from '../../stores/toastStore';
 
 interface K6Template {
@@ -365,7 +367,7 @@ export function K6ScriptTab({
           )}
         </div>
         <div className="p-3 rounded-lg bg-muted/50 border border-border">
-          <p className="text-sm font-medium text-foreground mb-2">🚀 Run this script with K6:</p>
+          <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-1"><Rocket className="h-4 w-4" /> Run this script with K6:</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 px-3 py-2 rounded bg-background text-foreground text-sm font-mono">
               k6 run {test?.name?.replace(/\s+/g, '-').toLowerCase() || 'load-test'}.js

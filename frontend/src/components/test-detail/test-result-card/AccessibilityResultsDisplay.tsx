@@ -1,7 +1,9 @@
 // Feature #48: AccessibilityResultsDisplay - Extracted from TestResultCard.tsx
+// Feature #571: Replace emoji with Lucide icons for cross-browser consistency
 // Displays accessibility audit results with violation filtering and export options
 
 import React from 'react';
+import { FileSpreadsheet } from 'lucide-react';
 import { AccessibilityResults, getScoreColor, getScoreBgColor } from './types';
 
 interface AccessibilityResultsDisplayProps {
@@ -61,7 +63,7 @@ export function AccessibilityResultsDisplay({
  onClick={() => onExportCSV(a11y, testName, formatDateTime(new Date()))}
  className="text-xs px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20"
  >
- 📊 CSV
+ <FileSpreadsheet className="h-3 w-3 inline mr-1" />CSV
  </button>
  )}
  </div>

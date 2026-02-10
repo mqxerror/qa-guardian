@@ -1,8 +1,10 @@
 // Feature #48: K6ResultsDisplay - Extracted from TestResultCard.tsx
+// Feature #571: Replace emoji with Lucide icons for cross-browser consistency
 // Displays K6 load test results including metrics, thresholds, checks, and response codes chart
 
 import React from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart3 } from 'lucide-react';
 import { K6Results } from './types';
 
 interface K6ResultsDisplayProps {
@@ -15,7 +17,7 @@ export function K6ResultsDisplay({ results }: K6ResultsDisplayProps) {
   return (
     <div className="mt-4 p-4 border border-border rounded-lg bg-muted/30">
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg">📊</span>
+        <BarChart3 className="h-5 w-5" />
         <h4 className="text-sm font-semibold text-foreground">Load Test Results</h4>
         <span className={`text-xs px-2 py-0.5 rounded-full ${
           results.status === 'passed' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'

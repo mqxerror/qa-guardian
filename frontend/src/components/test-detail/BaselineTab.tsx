@@ -1,6 +1,8 @@
 // Feature #48: Extracted BaselineTab component from TestDetailPage.tsx
 // Displays visual regression baseline management, history, and merge options
+// Feature #571: Replace emoji with Lucide icons for cross-browser consistency
 import React from 'react';
+import { Camera } from 'lucide-react';
 
 interface BaselineData {
  hasBaseline: boolean;
@@ -112,7 +114,7 @@ function NoBaselineState({
 }) {
  return (
  <div className="text-center py-12">
- <div className="text-4xl mb-4">📷</div>
+ <div className="mb-4"><Camera className="h-10 w-10 mx-auto text-muted-foreground" /></div>
  <h3 className="text-lg font-semibold text-foreground mb-2">No Baseline on Branch '{selectedBranch}'</h3>
  <p className="text-muted-foreground max-w-md mx-auto">
  Run this visual regression test once on branch '{selectedBranch}' to capture the initial baseline screenshot.

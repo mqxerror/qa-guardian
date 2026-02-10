@@ -2,7 +2,10 @@
  * K6CompareModal - Feature #48: Extracted from TestDetailPage.tsx
  * K6 Load Test comparison modal (Feature #564)
  * Feature #127: Mobile responsive design - p-4 backdrop, max-h-[90vh] overflow, responsive padding
+ * Feature #571: Replace emoji with Lucide icons for cross-browser consistency
  */
+
+import { BarChart3 } from 'lucide-react';
 
 // K6 Compare Results type
 export interface K6CompareResults {
@@ -61,7 +64,7 @@ export function K6CompareModal({
  >
  <div className="sticky top-0 bg-background border-b border-border p-4 flex items-center justify-between">
  <div className="flex items-center gap-2">
- <span className="text-lg">📊</span>
+ <BarChart3 className="h-5 w-5" />
  <h3 id="k6-compare-modal-title" className="text-lg font-semibold text-foreground">K6 Load Test Comparison</h3>
  </div>
  <button

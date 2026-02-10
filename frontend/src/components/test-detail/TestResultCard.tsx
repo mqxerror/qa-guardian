@@ -1,9 +1,11 @@
 // Feature #48: TestResultCard - Extracted from TestDetailPage.tsx
 // Feature #104: Refactored to import sub-components from test-result-card/ folder
+// Feature #571: Replace emoji with Lucide icons for cross-browser consistency
 // Renders a single test result including all test type specific displays
 // (E2E, Visual Regression, Lighthouse, Accessibility, K6 Load Test)
 
 import { useState } from 'react';
+import { Settings } from 'lucide-react';
 import { toast } from '../../stores/toastStore';
 
 // Import types and components from extracted folder
@@ -174,7 +176,7 @@ export function TestResultCard({
  {result.k6ThresholdConfigError && (
  <div className="mt-2 p-3 rounded-md bg-warning/5 border border-warning/20">
  <div className="flex items-center gap-2 mb-2">
- <span className="text-warning">⚙️</span>
+ <Settings className="h-4 w-4 text-warning" />
  <span className="text-sm font-medium text-warning">K6 Threshold Configuration Error</span>
  </div>
  {result.k6ThresholdConfigErrors && result.k6ThresholdConfigErrors.length > 0 && (
