@@ -4,14 +4,15 @@
  * Feature #35: Live screenshot panel during test execution
  * Feature #525: Added ScoreCard for suite pass rate metrics
  * Feature #547: WaveProgressCard grid for running tests with animated status borders
+ * Feature #576: Hybrid scaling for large test suites (full cards ≤8, compact 9-20, virtualized 20+)
  * Feature #1065: Healed selector indicator
  * Feature #1072: Selector diff visualization
  * Feature #1073: Confidence meter visualization
  * Feature #1074: Quick link to healing options
  */
 
-import React, { useState } from 'react';
-import { FlaskConical } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { FlaskConical, CheckCircle2, XCircle, Clock, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import type { EditSelectorModalState } from './modals';
 import { ScoreCard } from '../ui/score-card';
 import { WaveProgressCard, type WaveProgressStatus, type StepStatus } from '../ui/wave-progress-card';
@@ -117,6 +118,8 @@ export function SuiteRunResults({
 }: SuiteRunResultsProps) {
  // Feature #547: Track which test cards are expanded
  const [expandedTestIds, setExpandedTestIds] = useState<Set<string>>(new Set());
+ // Feature #576: Show all tests toggle for 20+ test suites
+ const [showAllTests, setShowAllTests] = useState(false);
 
  if (!suiteRun) return null;
 
@@ -176,6 +179,32 @@ export function SuiteRunResults({
    return next;
   });
  };
+
+ // Feature #576: Determine display mode based on test count
+ const displayMode: 'full' | 'compact' | 'virtualized' = tests.length <= 8 ? 'full' : tests.length <= 20 ? 'compact' : 'virtualized';
+
+ // Feature #576: Get status icon for compact rows
+ const getCompactStatusIcon = (status: WaveProgressStatus) => {
+  switch (status) {
+   case 'completed': return <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />;
+   case 'failed': return <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />;
+   case 'running': return <Loader2 className="h-4 w-4 text-primary animate-spin flex-shrink-0" />;
+   case 'skipped': return <Clock className="h-4 w-4 text-warning flex-shrink-0" />;
+   default: return <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />;
+  }
+ };
+
+ // Feature #576: Compute step progress for compact row bar
+ const getCompactProgress = (test: TestInfo): number => {
+  const steps = getStepProgress(test);
+  if (steps.length === 0) return 0;
+  const completed = steps.filter(s => s.status === 'completed' || s.status === 'running').length;
+  return Math.round((completed / steps.length) * 100);
+ };
+
+ // Feature #576: Visible tests for 20+ virtualized mode
+ const visibleTests = displayMode === 'virtualized' && !showAllTests ? tests.slice(0, 20) : tests;
+ const hiddenCount = tests.length - visibleTests.length;
 
  return (
  <div className="mt-6 rounded-lg border border-border bg-card p-6">
@@ -238,15 +267,20 @@ export function SuiteRunResults({
  )}
 
  {/* Feature #547: WaveProgressCard grid for running tests */}
+ {/* Feature #576: Hybrid scaling - full cards ≤8, compact rows 9-20, virtualized 20+ */}
  {tests.length > 0 && perTestStatus && (
  <div className="mt-4">
-  <h4 className="text-sm font-medium text-foreground mb-3">Test Progress</h4>
+  <h4 className="text-sm font-medium text-foreground mb-3">
+   Test Progress ({tests.length} tests)
+  </h4>
+
+  {/* Mode 1: Full WaveProgressCard grid for ≤8 tests */}
+  {displayMode === 'full' && (
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
    {tests.map((test) => {
     const waveStatus = getWaveStatus(test.id);
     const steps = getStepProgress(test);
     const isCurrentTest = currentStep?.testId === test.id;
-
     return (
      <WaveProgressCard
       key={test.id}
@@ -267,6 +301,65 @@ export function SuiteRunResults({
     );
    })}
   </div>
+  )}
+
+  {/* Mode 2 & 3: Compact single-line rows for 9+ tests */}
+  {(displayMode === 'compact' || displayMode === 'virtualized') && (
+  <div className="space-y-1">
+   {visibleTests.map((test) => {
+    const waveStatus = getWaveStatus(test.id);
+    const progress = getCompactProgress(test);
+    const isCurrentTest = currentStep?.testId === test.id;
+    return (
+     <div
+      key={test.id}
+      className={`flex items-center gap-3 rounded-md border px-3 py-2 transition-colors ${
+       waveStatus === 'running' ? 'border-primary/50 bg-primary/5' :
+       waveStatus === 'failed' ? 'border-destructive/30 bg-destructive/5' :
+       waveStatus === 'completed' ? 'border-success/30' :
+       'border-border'
+      }`}
+     >
+      {getCompactStatusIcon(waveStatus)}
+      <span className="text-sm font-medium text-foreground truncate flex-1 min-w-0">
+       {test.name}
+      </span>
+      {/* Progress bar */}
+      <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden flex-shrink-0">
+       <div
+        className={`h-full rounded-full transition-all duration-300 ${
+         waveStatus === 'failed' ? 'bg-destructive' :
+         waveStatus === 'completed' ? 'bg-success' :
+         'bg-primary'
+        }`}
+        style={{ width: `${waveStatus === 'completed' ? 100 : progress}%` }}
+       />
+      </div>
+      {/* Step info */}
+      <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 w-16 text-right">
+       {isCurrentTest && currentStep
+        ? `${currentStep.stepIndex + 1}/${currentStep.totalSteps}`
+        : waveStatus === 'completed' ? 'Done' : waveStatus === 'failed' ? 'Failed' : '—'
+       }
+      </span>
+     </div>
+    );
+   })}
+   {/* Feature #576: Show all / show less toggle for 20+ tests */}
+   {displayMode === 'virtualized' && tests.length > 20 && (
+    <button
+     onClick={() => setShowAllTests(!showAllTests)}
+     className="w-full flex items-center justify-center gap-2 py-2 text-sm text-primary hover:text-primary/80 transition-colors"
+    >
+     {showAllTests ? (
+      <><ChevronUp className="h-4 w-4" /> Show less</>
+     ) : (
+      <><ChevronDown className="h-4 w-4" /> Show all {tests.length} tests ({hiddenCount} more)</>
+     )}
+    </button>
+   )}
+  </div>
+  )}
  </div>
  )}
 
