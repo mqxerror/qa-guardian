@@ -14,6 +14,8 @@ import { getErrorMessage } from '../utils/errorHandling';
 import { UnifiedAIService } from '../services/UnifiedAIService';
 import { CreateTestModal } from '../components/create-test';
 import { ScoreCard } from '../components/ui/score-card';
+// Feature #580: Icons for AI health monitoring panel
+import { Sparkles, AlertTriangle, AlertCircle, Info, ChevronDown, ChevronUp, Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 // Feature #554: Standardized PageHeader with breadcrumbs
 // Feature #556: ScoreTrendChart replaces inline recharts chart
 import { PageHeader, ScoreTrendChart } from '../components/ui';
@@ -185,6 +187,25 @@ function TestSuitePage() {
   const [runningTestId, setRunningTestId] = useState<string | null>(null);
   const [showDeleteTestModal, setShowDeleteTestModal] = useState<string | null>(null);
   const [isDeletingTest, setIsDeletingTest] = useState(false);
+
+  // Feature #580: AI Health Monitoring state
+  const [aiHealthReport, setAIHealthReport] = useState<{
+    health_score: number;
+    trend: 'improving' | 'stable' | 'degrading';
+    ai_summary: string;
+    recommendations: Array<{
+      id: string;
+      severity: 'critical' | 'warning' | 'info';
+      category: string;
+      title: string;
+      description: string;
+      suggested_action: string;
+      affected_tests?: string[];
+    }>;
+    generated_at: string;
+  } | null>(null);
+  const [isLoadingHealthCheck, setIsLoadingHealthCheck] = useState(false);
+  const [showHealthInsights, setShowHealthInsights] = useState(false);
 
   // Feature #50: Visual recorder state moved to useRecordingState hook (saves ~55 lines)
   // Feature #31: Step Templates state (kept here as not part of recording hook)
@@ -481,6 +502,33 @@ function TestSuitePage() {
   };
 
   // Feature #50: computeCodeDiff, calculateTestConfidence, validateTestName moved to utils.ts
+
+  // Feature #580: Run AI health check
+  const handleAIHealthCheck = async () => {
+    if (!suiteId || !token) return;
+    setIsLoadingHealthCheck(true);
+    try {
+      const response = await fetch(`/api/v1/suites/${suiteId}/ai-health-check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAIHealthReport(data.report);
+        setShowHealthInsights(true);
+      } else {
+        toast.error('Failed to run AI health check');
+      }
+    } catch (err) {
+      console.error('AI health check failed:', err);
+      toast.error('AI health check failed');
+    } finally {
+      setIsLoadingHealthCheck(false);
+    }
+  };
 
   const handleRunSuite = async () => {
     if (tests.length === 0) return;
@@ -1156,6 +1204,127 @@ function TestSuitePage() {
             </div>
           );
         })()}
+
+        {/* Feature #580: AI Health Monitoring - Proactive insights panel */}
+        {tests.length > 0 && (
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
+            <button
+              onClick={() => {
+                if (!showHealthInsights && !aiHealthReport && !isLoadingHealthCheck) {
+                  handleAIHealthCheck();
+                } else {
+                  setShowHealthInsights(!showHealthInsights);
+                }
+              }}
+              className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10">
+                  <Sparkles className="h-4 w-4 text-accent" />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-sm font-semibold text-foreground">AI Health Insights</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {aiHealthReport
+                      ? `Score: ${aiHealthReport.health_score} · ${aiHealthReport.recommendations.length} recommendation${aiHealthReport.recommendations.length !== 1 ? 's' : ''}`
+                      : 'Click to analyze suite health'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {isLoadingHealthCheck && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                {aiHealthReport && (
+                  <span className={`text-sm font-bold ${
+                    aiHealthReport.health_score >= 80 ? 'text-success' :
+                    aiHealthReport.health_score >= 60 ? 'text-warning' :
+                    'text-destructive'
+                  }`}>
+                    {aiHealthReport.health_score}
+                  </span>
+                )}
+                {showHealthInsights ? (
+                  <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                )}
+              </div>
+            </button>
+
+            {showHealthInsights && aiHealthReport && (
+              <div className="px-4 pb-4 border-t border-border pt-4 space-y-4">
+                {/* AI Summary + Trend */}
+                <div className="flex items-start gap-3 p-3 rounded-md bg-muted/50">
+                  <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                    {aiHealthReport.trend === 'improving' && <TrendingUp className="h-4 w-4 text-success" />}
+                    {aiHealthReport.trend === 'degrading' && <TrendingDown className="h-4 w-4 text-destructive" />}
+                    {aiHealthReport.trend === 'stable' && <Minus className="h-4 w-4 text-muted-foreground" />}
+                  </div>
+                  <div>
+                    <p className="text-sm text-foreground">{aiHealthReport.ai_summary}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Generated {new Date(aiHealthReport.generated_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                <div className="space-y-2">
+                  {aiHealthReport.recommendations.map((rec) => (
+                    <div
+                      key={rec.id}
+                      className={`rounded-md p-3 border ${
+                        rec.severity === 'critical'
+                          ? 'bg-destructive/5 border-destructive/20'
+                          : rec.severity === 'warning'
+                          ? 'bg-warning/5 border-warning/20'
+                          : 'bg-muted/30 border-border'
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        {rec.severity === 'critical' && <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />}
+                        {rec.severity === 'warning' && <AlertCircle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />}
+                        {rec.severity === 'info' && <Info className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground">{rec.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{rec.description}</p>
+                          <p className="text-xs text-accent mt-1">
+                            <span className="font-medium">Action:</span> {rec.suggested_action}
+                          </p>
+                          {rec.affected_tests && rec.affected_tests.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {rec.affected_tests.map((test, idx) => (
+                                <span key={idx} className="px-1.5 py-0.5 text-xs bg-muted rounded text-muted-foreground">
+                                  {test}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Refresh button */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleAIHealthCheck}
+                    disabled={isLoadingHealthCheck}
+                    className="px-3 py-1.5 text-xs bg-muted text-muted-foreground rounded-md
+                      hover:bg-muted/80 transition-colors disabled:opacity-50 flex items-center gap-1"
+                  >
+                    {isLoadingHealthCheck ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
+                    Refresh Analysis
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Feature #1151: Human Review Panel - Feature #50: Extracted to component */}
         <HumanReviewPanel

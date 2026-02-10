@@ -53,6 +53,7 @@ import { aiRefineRoutes } from './ai-refine.js';
 import { aiFeedbackRoutes } from './ai-feedback.js';
 import { aiVariationsRoutes } from './ai-variations.js';
 import { aiCoverageRoutes } from './ai-coverage.js';
+import { aiHealthMonitoringRoutes } from './ai-health-monitoring.js';
 
 // Combined test suite routes function that registers all sub-routes
 export async function testSuiteRoutes(app: FastifyInstance) {
@@ -67,4 +68,5 @@ export async function testSuiteRoutes(app: FastifyInstance) {
   await aiFeedbackRoutes(app);
   await aiVariationsRoutes(app);
   await aiCoverageRoutes(app);
+  await aiHealthMonitoringRoutes(app);
 }
