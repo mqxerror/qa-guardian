@@ -24,6 +24,170 @@ import { CustomTestWizard } from './CustomTestWizard';
 import { toast } from '../../stores/toastStore';
 import { devLog } from '../../utils/logger';
 import { URL_REGEX, normalizeUrl as normalizeUrlBase } from '../../constants/validation';
+// Feature #615: Lucide icons for test types (replacing emoji icons)
+import {
+ Flame,
+ Globe,
+ Camera,
+ Accessibility,
+ Zap,
+ BarChart3,
+ type LucideIcon,
+} from 'lucide-react';
+
+// Feature #609: Static icon and color maps moved to module scope for reusability
+const TEST_TYPE_ICON_MAP: Record<string, LucideIcon> = {
+  smoke: Flame,
+  e2e: Globe,
+  visual: Camera,
+  accessibility: Accessibility,
+  performance: Zap,
+  load: BarChart3,
+};
+
+const TEST_TYPE_COLOR_MAP: Record<string, { selected: string; checkbox: string }> = {
+  blue: { selected: 'border-primary bg-primary/5 text-primary', checkbox: 'border-primary bg-primary' },
+  purple: { selected: 'border-accent bg-accent/5 text-accent', checkbox: 'border-accent bg-accent' },
+  green: { selected: 'border-success bg-success/5 text-success', checkbox: 'border-success bg-success' },
+  amber: { selected: 'border-warning bg-warning/5 text-warning', checkbox: 'border-warning bg-warning' },
+  orange: { selected: 'border-warning bg-warning/5 text-warning', checkbox: 'border-warning bg-warning' },
+  red: { selected: 'border-destructive bg-destructive/5 text-destructive', checkbox: 'border-destructive bg-destructive' },
+};
+
+/**
+ * Feature #609: TestTypeGrid - Extracted from IIFE for better readability and memoization
+ * Displays a grid of test type checkboxes with icons and semantic colors
+ */
+interface TestTypeGridProps {
+  testSelection: QuickTestSelection;
+  toggleTestType: (type: keyof QuickTestSelection) => void;
+}
+
+const TestTypeGrid: React.FC<TestTypeGridProps> = ({ testSelection, toggleTestType }) => (
+  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+    {(Object.entries(TEST_TYPE_CONFIG) as [keyof QuickTestSelection, typeof TEST_TYPE_CONFIG.e2e][]).map(
+      ([key, config]) => {
+        const Icon = TEST_TYPE_ICON_MAP[key];
+        return (
+          <button
+            key={key}
+            onClick={() => toggleTestType(key)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${
+              testSelection[key]
+                ? (TEST_TYPE_COLOR_MAP[config.color] || TEST_TYPE_COLOR_MAP.blue).selected
+                : 'border-border text-foreground hover:border-border'
+            }`}
+            type="button"
+            aria-pressed={testSelection[key]}
+            title={config.description}
+          >
+            <div
+              className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                testSelection[key]
+                  ? (TEST_TYPE_COLOR_MAP[config.color] || TEST_TYPE_COLOR_MAP.blue).checkbox
+                  : 'border-border'
+              }`}
+            >
+              {testSelection[key] && (
+                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <Icon className="w-4 h-4" />
+            <span className="text-sm font-medium">{config.label}</span>
+          </button>
+        );
+      }
+    )}
+  </div>
+);
+TestTypeGrid.displayName = 'TestTypeGrid';
+
+/**
+ * Feature #609: GeneratedTestsSummary - Extracted from IIFE for better readability
+ * Displays success summary with Run Now button after tests are generated
+ */
+interface GeneratedTestsSummaryProps {
+  generatedTests: GeneratedTestPreview[];
+  runStatus: 'idle' | 'running' | 'started' | 'error';
+  isRunningTests: boolean;
+  handleRunNow: () => void;
+}
+
+const GeneratedTestsSummary: React.FC<GeneratedTestsSummaryProps> = ({
+  generatedTests,
+  runStatus,
+  isRunningTests,
+  handleRunNow,
+}) => {
+  const createdCount = generatedTests.filter(t => t.status === 'created').length;
+  const pendingCount = generatedTests.filter(t => t.status === 'pending' || t.status === 'creating').length;
+  const isComplete = pendingCount === 0;
+
+  if (!isComplete || createdCount === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
+      <div className="flex items-center gap-2">
+        {runStatus === 'started' ? (
+          <>
+            <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-medium text-success">
+              Tests running! Closing...
+            </span>
+          </>
+        ) : (
+          <>
+            <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-medium text-success">
+              {createdCount} test{createdCount !== 1 ? 's' : ''} created!
+            </span>
+          </>
+        )}
+      </div>
+      {/* Run Now Button */}
+      <button
+        type="button"
+        onClick={handleRunNow}
+        disabled={isRunningTests || runStatus === 'started'}
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-success hover:bg-success disabled:bg-success/80 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+      >
+        {isRunningTests ? (
+          <>
+            <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span>Starting...</span>
+          </>
+        ) : runStatus === 'started' ? (
+          <>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Running</span>
+          </>
+        ) : (
+          <>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Run Now</span>
+          </>
+        )}
+      </button>
+    </div>
+  );
+};
+GeneratedTestsSummary.displayName = 'GeneratedTestsSummary';
 
 /**
  * Validate and normalize URL with error message
@@ -499,134 +663,20 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  <label className="block text-sm font-medium text-foreground mb-2">
  Select Test Types ({selectedCount} selected)
  </label>
- {/* Feature #1972: Add icon mapping for test types */}
- {(() => {
- const iconMap: Record<string, string> = {
- smoke: '🔥',
- e2e: '🌐',
- visual: '📸',
- accessibility: '♿',
- performance: '⚡',
- load: '📊',
- };
- // Semantic color mapping for test types
- const colorClassMap: Record<string, { selected: string; checkbox: string }> = {
- blue: { selected: 'border-primary bg-primary/5 text-primary', checkbox: 'border-primary bg-primary' },
- purple: { selected: 'border-accent bg-accent/5 text-accent', checkbox: 'border-accent bg-accent' },
- green: { selected: 'border-success bg-success/5 text-success', checkbox: 'border-success bg-success' },
- amber: { selected: 'border-warning bg-warning/5 text-warning', checkbox: 'border-warning bg-warning' },
- orange: { selected: 'border-warning bg-warning/5 text-warning', checkbox: 'border-warning bg-warning' },
- red: { selected: 'border-destructive bg-destructive/5 text-destructive', checkbox: 'border-destructive bg-destructive' },
- };
- return (
- <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
- {(Object.entries(TEST_TYPE_CONFIG) as [keyof QuickTestSelection, typeof TEST_TYPE_CONFIG.e2e][]).map(
- ([key, config]) => (
- <button
- key={key}
- onClick={() => toggleTestType(key)}
- className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${
- testSelection[key]
- ? (colorClassMap[config.color] || colorClassMap.blue).selected
- : 'border-border text-foreground hover:border-border'
- }`}
- type="button"
- aria-pressed={testSelection[key]}
- title={config.description}
- >
- <div
- className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
- testSelection[key]
- ? (colorClassMap[config.color] || colorClassMap.blue).checkbox
- : 'border-border'
- }`}
- >
- {testSelection[key] && (
- <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
- </svg>
- )}
- </div>
- <span className="text-sm">{iconMap[key]}</span>
- <span className="text-sm font-medium">{config.label}</span>
- </button>
- )
- )}
- </div>
- );
- })()}
+ {/* Feature #609: Extracted TestTypeGrid component (was IIFE) */}
+ <TestTypeGrid testSelection={testSelection} toggleTestType={toggleTestType} />
  </div>
 
  {/* Generated Tests Preview */}
  {generatedTests.length > 0 && (
  <div className="mt-4 p-4 bg-muted rounded-lg">
- {/* Feature #1806: Success summary with Run Now button */}
- {(() => {
- const createdCount = generatedTests.filter(t => t.status === 'created').length;
- const pendingCount = generatedTests.filter(t => t.status === 'pending' || t.status === 'creating').length;
- const isComplete = pendingCount === 0;
-
- if (isComplete && createdCount > 0) {
- return (
- <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
- <div className="flex items-center gap-2">
- {runStatus === 'started' ? (
- <>
- <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
- <span className="text-sm font-medium text-success">
- Tests running! Closing...
- </span>
- </>
- ) : (
- <>
- <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
- <span className="text-sm font-medium text-success">
- {createdCount} test{createdCount !== 1 ? 's' : ''} created!
- </span>
- </>
- )}
- </div>
- {/* Run Now Button */}
- <button
- type="button"
- onClick={handleRunNow}
- disabled={isRunningTests || runStatus === 'started'}
- className="flex items-center gap-1.5 px-3 py-1.5 bg-success hover:bg-success disabled:bg-success/80 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
- >
- {isRunningTests ? (
- <>
- <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
- </svg>
- <span>Starting...</span>
- </>
- ) : runStatus === 'started' ? (
- <>
- <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
- </svg>
- <span>Running</span>
- </>
- ) : (
- <>
- <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
- <span>Run Now</span>
- </>
- )}
- </button>
- </div>
- );
- }
- return null;
- })()}
+ {/* Feature #609: Extracted GeneratedTestsSummary component (was IIFE) */}
+ <GeneratedTestsSummary
+ generatedTests={generatedTests}
+ runStatus={runStatus}
+ isRunningTests={isRunningTests}
+ handleRunNow={handleRunNow}
+ />
 
  <h4 className="text-sm font-medium text-foreground mb-2">
  Generated Tests
@@ -776,7 +826,6 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  onClose();
  }}
  suiteId={suiteId}
- token={token}
  projectBaseUrl={project?.baseUrl}
  />
  )}
