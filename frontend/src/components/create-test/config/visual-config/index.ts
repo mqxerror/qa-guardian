@@ -9,6 +9,8 @@ export type {
   VisualConfigProps,
   DevicePreset,
   CaptureModeOption,
+  IgnoreRegion,
+  AntiAliasingTolerance,
 } from './types';
 
 // Constants
@@ -17,6 +19,7 @@ export {
   DEFAULT_VIEWPORTS,
   DEFAULT_CONFIG,
   CAPTURE_MODES,
+  ANTI_ALIASING_OPTIONS,
 } from './constants';
 
 // Components

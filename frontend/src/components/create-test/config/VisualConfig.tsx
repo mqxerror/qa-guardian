@@ -436,6 +436,19 @@ export const VisualConfig: React.FC<VisualConfigProps> = ({
  onWaitForSelectorChange={(value) => updateField('waitForSelector', value)}
  onDelayChange={(value) => updateField('delay', value)}
  onHideSelectorsChange={(value) => updateField('hideSelectors', value)}
+ // Feature #590: New visual regression options
+ antiAliasingTolerance={config.antiAliasingTolerance}
+ ignoreRegions={config.ignoreRegions}
+ ignoreSelectors={config.ignoreSelectors}
+ customCSS={config.customCSS}
+ clipSelector={config.clipSelector}
+ colorThreshold={config.colorThreshold}
+ onAntiAliasingToleranceChange={(value) => updateField('antiAliasingTolerance', value)}
+ onIgnoreRegionsChange={(value) => updateField('ignoreRegions', value)}
+ onIgnoreSelectorsChange={(value) => updateField('ignoreSelectors', value)}
+ onCustomCSSChange={(value) => updateField('customCSS', value)}
+ onClipSelectorChange={(value) => updateField('clipSelector', value)}
+ onColorThresholdChange={(value) => updateField('colorThreshold', value)}
  />
 
  {/* Validation Summary */}

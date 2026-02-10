@@ -40,7 +40,25 @@ export const DEFAULT_CONFIG: VisualConfigState = {
   hideSelectors: [],
   waitForSelector: '',
   delay: 0,
+  // Feature #590: Additional visual regression options
+  antiAliasingTolerance: 'off',
+  ignoreRegions: [],
+  ignoreSelectors: [],
+  customCSS: '',
+  clipSelector: '',
+  colorThreshold: 0.1,
 };
+
+/**
+ * Anti-aliasing tolerance options for UI display
+ * Feature #590: Human-readable labels for anti-aliasing levels
+ */
+export const ANTI_ALIASING_OPTIONS = [
+  { value: 'off', label: 'Off', description: 'No anti-aliasing tolerance (strictest)' },
+  { value: 'low', label: 'Low', description: 'Minor font rendering differences' },
+  { value: 'medium', label: 'Medium', description: 'Moderate edge smoothing (recommended)' },
+  { value: 'high', label: 'High', description: 'Maximum tolerance for visual differences' },
+] as const;
 
 /**
  * Capture mode options

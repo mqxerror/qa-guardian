@@ -21,6 +21,22 @@ export interface ViewportConfig {
 export type CaptureMode = 'full_page' | 'viewport' | 'element';
 
 /**
+ * Ignore region for masking dynamic areas during visual comparison
+ */
+export interface IgnoreRegion {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Anti-aliasing tolerance levels for visual comparison
+ * Feature #590: Maps to backend anti_aliasing_tolerance
+ */
+export type AntiAliasingTolerance = 'off' | 'low' | 'medium' | 'high';
+
+/**
  * Visual test configuration state
  */
 export interface VisualConfigState {
@@ -34,6 +50,13 @@ export interface VisualConfigState {
   hideSelectors: string[];
   waitForSelector: string;
   delay: number;
+  // Feature #590: Additional visual regression options
+  antiAliasingTolerance: AntiAliasingTolerance;
+  ignoreRegions: IgnoreRegion[];
+  ignoreSelectors: string[];
+  customCSS: string;
+  clipSelector: string;
+  colorThreshold: number;
 }
 
 /**
