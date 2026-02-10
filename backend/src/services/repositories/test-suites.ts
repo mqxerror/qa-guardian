@@ -27,7 +27,7 @@ const memTests = new Map<string, Test>();
  * Explicit column list for test_suites table.
  */
 const TEST_SUITE_COLUMNS = [
-  'id', 'project_id', 'name', 'description', 'type', 'config', 'tags',
+  'id', 'project_id', 'organization_id', 'name', 'description', 'type', 'config', 'tags',
   'created_at', 'updated_at'
 ].join(', ');
 
@@ -46,6 +46,7 @@ const TEST_COLUMNS = [
 interface TestSuiteRow {
   id: string;
   project_id: string;
+  organization_id: string | null;
   name: string;
   description: string | null;
   type: string;
@@ -93,17 +94,17 @@ export async function createTestSuite(suite: TestSuite): Promise<TestSuite> {
   }
 
   const result = await query<TestSuiteRow>(
-    `INSERT INTO test_suites (id, project_id, name, description, type, config, tags, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO test_suites (id, project_id, organization_id, name, description, type, config, tags, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
     [
       suite.id,
       suite.project_id,
+      suite.organization_id || null,
       suite.name,
       suite.description || null,
       suite.type || 'e2e',
       JSON.stringify({
-        organization_id: suite.organization_id,
         base_url: suite.base_url,
         browser: suite.browser,
         browsers: suite.browsers,
@@ -159,7 +160,7 @@ export async function updateTestSuite(id: string, updates: Partial<TestSuite>): 
 
   const result = await query<TestSuiteRow>(
     `UPDATE test_suites SET
-      name = $2, description = $3, type = $4, config = $5, tags = $6, updated_at = $7
+      name = $2, description = $3, type = $4, config = $5, tags = $6, organization_id = $7, updated_at = $8
      WHERE id = $1
      RETURNING *`,
     [
@@ -168,7 +169,6 @@ export async function updateTestSuite(id: string, updates: Partial<TestSuite>): 
       updatedSuite.description || null,
       updatedSuite.type || 'e2e',
       JSON.stringify({
-        organization_id: updatedSuite.organization_id,
         base_url: updatedSuite.base_url,
         browser: updatedSuite.browser,
         browsers: updatedSuite.browsers,
@@ -179,6 +179,7 @@ export async function updateTestSuite(id: string, updates: Partial<TestSuite>): 
         require_human_review: updatedSuite.require_human_review,
       }),
       updatedSuite.type ? [updatedSuite.type] : [],
+      updatedSuite.organization_id || null,
       updatedSuite.updated_at,
     ]
   );
@@ -595,7 +596,7 @@ function rowToTestSuite(row: TestSuiteRow): TestSuite {
   return {
     id: row.id,
     project_id: row.project_id,
-    organization_id: config.organization_id || '',
+    organization_id: row.organization_id || config.organization_id || '',
     name: row.name,
     description: row.description || undefined,
     type: row.type as TestSuite['type'],

@@ -2,6 +2,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
+import { validateURLForSSRF } from '../../utils/index.js';
 import { getProject, listProjects } from '../../services/repositories/projects.js';
 import { logAuditEntry } from '../audit-logs.js';
 
@@ -164,6 +165,19 @@ export async function dastRoutes(app: FastifyInstance) {
       return reply.status(400).send({
         error: 'Invalid URL',
         message: 'Please provide a valid target URL (e.g., https://example.com)',
+      });
+    }
+
+    // SSRF protection: prevent scans against internal/private networks
+    const ssrfValidation = validateURLForSSRF(targetUrl, {
+      allowPrivateIPs: false,
+      allowLocalhost: false,
+      requireHTTPS: false,
+    });
+    if (!ssrfValidation.valid) {
+      return reply.status(400).send({
+        error: 'URL blocked by security policy',
+        message: ssrfValidation.reason || 'Internal or private network URLs are not allowed for DAST scans.',
       });
     }
 
