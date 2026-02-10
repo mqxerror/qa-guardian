@@ -669,3 +669,105 @@ export function computeSuiteHealthScore(tests: TestType[]): SuiteHealthBreakdown
 
  return { overall, passRate, durationStability, flakiness, recency };
 }
+
+// =============================================================================
+// Feature #551: Test Health Score for individual test runs
+// =============================================================================
+
+/**
+ * Test run input for health score calculation
+ */
+export interface TestRunInput {
+  status: 'passed' | 'failed' | 'running' | 'pending' | 'skipped' | string;
+  duration_ms?: number | null;
+  completed_at?: string | null;
+  created_at?: string;
+}
+
+/**
+ * Compute a weighted Test Health Score (0-100) from run history.
+ *
+ * Same formula as Suite Health Score but for individual test runs:
+ * - Pass Rate: 40% - percentage of runs that passed
+ * - Duration Stability: 20% - lower variance in duration = higher score
+ * - Flakiness Inverse: 20% - 100 minus flakiness percentage (pass/fail alternations)
+ * - Recency: 20% - fresher last run = higher score, decays over 7 days
+ */
+export function computeTestHealthScore(runs: TestRunInput[]): SuiteHealthBreakdown {
+  if (runs.length === 0) {
+    return { overall: 0, passRate: 0, durationStability: 0, flakiness: 0, recency: 0 };
+  }
+
+  // 1. Pass Rate (40%): percentage of runs that passed
+  const completedRuns = runs.filter(r => r.status !== 'running' && r.status !== 'pending');
+  const passedRuns = completedRuns.filter(r => r.status === 'passed').length;
+  const passRate = completedRuns.length > 0
+    ? Math.round((passedRuns / completedRuns.length) * 100)
+    : 0;
+
+  // 2. Duration Stability (20%): lower coefficient of variation = higher score
+  const durationsMs = runs
+    .map(r => r.duration_ms)
+    .filter((d): d is number => d != null && d > 0);
+
+  let durationStability = 100; // Default to perfect if no duration data
+  if (durationsMs.length >= 2) {
+    const mean = durationsMs.reduce((a, b) => a + b, 0) / durationsMs.length;
+    const variance = durationsMs.reduce((sum, d) => sum + Math.pow(d - mean, 2), 0) / durationsMs.length;
+    const stdDev = Math.sqrt(variance);
+    const cv = mean > 0 ? stdDev / mean : 0; // Coefficient of variation
+
+    // CV of 0 = perfect stability (100), CV of 1+ = unstable (0)
+    durationStability = Math.max(0, Math.min(100, Math.round((1 - cv) * 100)));
+  }
+
+  // 3. Flakiness Inverse (20%): detect alternating pass/fail patterns
+  let flakinessPercent = 0;
+  if (completedRuns.length >= 2) {
+    // Sort by completed_at or created_at descending (most recent first)
+    const sortedRuns = [...completedRuns].sort((a, b) => {
+      const dateA = a.completed_at || a.created_at || '';
+      const dateB = b.completed_at || b.created_at || '';
+      return dateB.localeCompare(dateA);
+    });
+
+    // Count status changes (alternations)
+    let alternations = 0;
+    for (let i = 1; i < sortedRuns.length; i++) {
+      if (sortedRuns[i].status !== sortedRuns[i - 1].status) {
+        alternations++;
+      }
+    }
+
+    // Alternation rate: max alternations = length - 1
+    const maxAlternations = sortedRuns.length - 1;
+    flakinessPercent = Math.round((alternations / maxAlternations) * 100);
+  }
+  const flakiness = 100 - flakinessPercent;
+
+  // 4. Recency (20%): fresher last run = higher score, decay over 7 days
+  const now = Date.now();
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+  const runTimes = runs
+    .map(r => r.completed_at || r.created_at)
+    .filter((t): t is string => !!t)
+    .map(t => new Date(t).getTime());
+
+  let recency = 0;
+  if (runTimes.length > 0) {
+    const mostRecentRun = Math.max(...runTimes);
+    const age = now - mostRecentRun;
+    // Linear decay: 100 at age=0, 0 at age=7days
+    recency = Math.max(0, Math.min(100, Math.round((1 - age / SEVEN_DAYS_MS) * 100)));
+  }
+
+  // Weighted overall score
+  const overall = Math.round(
+    passRate * 0.40 +
+    durationStability * 0.20 +
+    flakiness * 0.20 +
+    recency * 0.20
+  );
+
+  return { overall, passRate, durationStability, flakiness, recency };
+}

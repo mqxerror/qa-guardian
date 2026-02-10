@@ -11,6 +11,10 @@ import { useSocketStore } from '../stores/socketStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { toast } from '../stores/toastStore';
 import { logger } from '../utils/logger';
+// Feature #551: Health score and skeleton loading
+import { ScoreCard } from '../components/ui/score-card';
+import { SkeletonTestDetailPage } from '../components/ui/Skeleton';
+import { computeTestHealthScore } from '../components/suite-detail/utils';
 // Feature #337: Design system components - Feature #513: Removed unused imports
 // AnimatedCard, StatusPill, MetadataRow, SectionHeader, CardContent, Tabs, TabsList, TabsTrigger, TabsContent, useReducedMotion - moved to test-detail components
 // lucide-react icons: Play, Clock, Calendar, Tag - moved to test-detail components
@@ -1024,11 +1028,12 @@ function TestDetailPage() {
     };
   }, [socket, testId, token, addNotification, refetchRuns]);
 
+  // Feature #551: Skeleton loading state for better perceived performance
   if (isLoading) {
     return (
       <Layout>
         <div className="p-8">
-          <p className="text-muted-foreground">Loading test...</p>
+          <SkeletonTestDetailPage />
         </div>
       </Layout>
     );
@@ -1085,6 +1090,47 @@ function TestDetailPage() {
           runError={runError}
           duplicateError={duplicateError}
         />
+
+        {/* Feature #551: Test Health Score with weighted breakdown */}
+        {runs.length > 0 && (() => {
+          const healthScore = computeTestHealthScore(runs);
+          return (
+            <div className="mt-6 mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <ScoreCard
+                  score={healthScore.overall}
+                  label="Health"
+                  size="md"
+                  showIcon
+                />
+                <ScoreCard
+                  score={healthScore.passRate}
+                  label="Pass Rate (40%)"
+                  size="sm"
+                  thresholds={{ good: 90, warning: 70 }}
+                />
+                <ScoreCard
+                  score={healthScore.durationStability}
+                  label="Stability (20%)"
+                  size="sm"
+                  thresholds={{ good: 80, warning: 50 }}
+                />
+                <ScoreCard
+                  score={healthScore.flakiness}
+                  label="Flakiness (20%)"
+                  size="sm"
+                  thresholds={{ good: 80, warning: 50 }}
+                />
+                <ScoreCard
+                  score={healthScore.recency}
+                  label="Recency (20%)"
+                  size="sm"
+                  thresholds={{ good: 80, warning: 40 }}
+                />
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Feature #489: AI Summary Card for instant failure diagnosis */}
         {test && (
