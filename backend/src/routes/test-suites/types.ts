@@ -48,6 +48,12 @@ export interface Test {
   steps: TestStep[];
   playwright_code?: string; // Custom Playwright code for advanced users
   use_custom_code?: boolean; // Whether to use custom code instead of steps
+  // Feature #589: E2E test specific fields
+  timeout?: number; // Test timeout in milliseconds (default: 30000)
+  retries?: number; // Number of retry attempts on failure (default: 0)
+  tags?: string[]; // Test tags for filtering and organization
+  device_emulation?: boolean; // Enable device emulation
+  device_config?: { preset?: string; width?: number; height?: number; deviceScaleFactor?: number; isMobile?: boolean; hasTouch?: boolean; }; // Device configuration
   // Accessibility test specific fields
   wcag_level?: 'A' | 'AA' | 'AAA'; // WCAG conformance level
   accessibility_rules?: string[]; // Specific rules to check (axe-core rule IDs)
@@ -206,6 +212,12 @@ export interface CreateTestBody {
   description?: string;
   test_type?: 'e2e' | 'visual_regression' | 'lighthouse' | 'load' | 'accessibility'; // Defaults to 'e2e'
   steps?: TestStep[];
+  // Feature #589: E2E test specific fields
+  timeout?: number; // Test timeout in milliseconds (default: 30000)
+  retries?: number; // Number of retry attempts on failure (default: 0)
+  tags?: string[]; // Test tags for filtering and organization
+  device_emulation?: boolean; // Enable device emulation
+  device_config?: { preset?: string; width?: number; height?: number; deviceScaleFactor?: number; isMobile?: boolean; hasTouch?: boolean; }; // Device configuration
   // Accessibility test specific fields
   wcag_level?: 'A' | 'AA' | 'AAA'; // WCAG conformance level
   accessibility_rules?: string[]; // Specific rules to check

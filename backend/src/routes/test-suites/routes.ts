@@ -494,7 +494,8 @@ export async function coreRoutes(app: FastifyInstance) {
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { suiteId } = request.params;
-    const { name, description, test_type = 'e2e', steps = [], target_url, viewport_width, viewport_height, viewport_preset, capture_mode = 'full_page', element_selector, wait_for_selector, wait_time, hide_selectors, remove_selectors, multi_viewport, viewports, diff_threshold, diff_threshold_mode, diff_pixel_threshold, ignore_regions, ignore_selectors, mask_datetime_selectors, mask_dynamic_content, anti_aliasing_tolerance, color_threshold, device_preset, performance_threshold, lcp_threshold, cls_threshold, bypass_csp, ignore_ssl_errors, audit_timeout, virtual_users, duration, ramp_up_time, k6_script, k6_thresholds, ai_generated, ai_confidence_score, review_status, status: statusOverride } = request.body;
+    // Feature #589: Added timeout, retries, tags, device_emulation, device_config for E2E tests
+    const { name, description, test_type = 'e2e', steps = [], target_url, viewport_width, viewport_height, viewport_preset, capture_mode = 'full_page', element_selector, wait_for_selector, wait_time, hide_selectors, remove_selectors, multi_viewport, viewports, diff_threshold, diff_threshold_mode, diff_pixel_threshold, ignore_regions, ignore_selectors, mask_datetime_selectors, mask_dynamic_content, anti_aliasing_tolerance, color_threshold, device_preset, performance_threshold, lcp_threshold, cls_threshold, bypass_csp, ignore_ssl_errors, audit_timeout, virtual_users, duration, ramp_up_time, k6_script, k6_thresholds, ai_generated, ai_confidence_score, review_status, status: statusOverride, timeout, retries, tags, device_emulation, device_config } = request.body;
     const user = request.user as JwtPayload;
     const orgId = getOrganizationId(request);
 
@@ -592,6 +593,12 @@ export async function coreRoutes(app: FastifyInstance) {
       description,
       test_type,
       steps: finalSteps.map((s, i) => ({ ...s, id: s.id || crypto.randomUUID(), order: i })),
+      // Feature #589: E2E test specific fields
+      timeout: test_type === 'e2e' ? (timeout ?? 30000) : undefined, // Default 30 seconds
+      retries: test_type === 'e2e' ? (retries ?? 0) : undefined, // Default 0 retries
+      tags: test_type === 'e2e' && tags && tags.length > 0 ? tags : undefined,
+      device_emulation: test_type === 'e2e' ? (device_emulation ?? false) : undefined,
+      device_config: test_type === 'e2e' && device_emulation ? device_config : undefined,
       // Accessibility fields
       wcag_level: test_type === 'accessibility' ? (wcag_level ?? 'AA') : undefined, // Default to AA
       accessibility_rules: test_type === 'accessibility' ? accessibility_rules : undefined,
