@@ -943,12 +943,6 @@ function TestSuitePage() {
       return;
     }
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast.error('Could not open print window. Please allow popups.');
-      return;
-    }
-
     const passed = suiteRun.results.filter(r => r.status === 'passed').length;
     const failed = suiteRun.results.filter(r => r.status === 'failed' || r.status === 'error').length;
     const total = suiteRun.results.length;
@@ -1034,10 +1028,33 @@ function TestSuitePage() {
 </body>
 </html>`;
 
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.onload = () => {
-      printWindow.print();
+    // Feature #578: Use Blob URL + hidden iframe instead of window.open (avoids popup blockers)
+    const blob = new Blob([html], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    iframe.src = blobUrl;
+    document.body.appendChild(iframe);
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow?.print();
+      } catch {
+        // Fallback: download as HTML file
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `suite-run-report-${suite?.name || 'suite'}.html`;
+        a.click();
+      }
+      // Cleanup after a delay to allow print dialog to open
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+        URL.revokeObjectURL(blobUrl);
+      }, 60000);
     };
 
     toast.success('Opening PDF print dialog...');
