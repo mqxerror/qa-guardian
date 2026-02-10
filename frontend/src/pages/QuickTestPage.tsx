@@ -11,10 +11,11 @@
  * - Export/save actions
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'; // useMemo unused
+import { useEffect, useCallback, useRef } from 'react'; // Feature #608: useState replaced with useReducer
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useQuickTestSocket, WaveState, QuickTestSummary } from '../hooks/useQuickTestSocket';
+import { useQuickTestPageState, type HistoryEntry as ReducerHistoryEntry } from '../hooks/useQuickTestPageState';
 import { useAuthStore } from '../stores/authStore';
 import {
   PageHeader,
@@ -66,6 +67,7 @@ import {
   // Feature #537: Detailed report
   DetailedReport,
 } from '../components/quick-test';
+import { getWaveDefinitionsWithStatus, WAVE_DEFINITIONS } from '../constants/waves';
 
 // ============================================================
 // Types - Feature #514: Moved to ../components/quick-test/types.ts
@@ -73,104 +75,9 @@ import {
 // ============================================================
 
 // ============================================================
-// Constants - Feature #514: Storage keys moved to ../components/quick-test/utils.ts
+// Constants - Feature #612: Wave definitions centralized to ../constants/waves.ts
+// Feature #514: Storage keys moved to ../components/quick-test/utils.ts
 // ============================================================
-
-const WAVE_DEFINITIONS = [
-  {
-    wave: 1,
-    name: 'Health Check',
-    icon: Globe,
-    steps: [
-      { name: 'DNS Resolution', status: 'pending' as const },
-      { name: 'HTTP Request', status: 'pending' as const },
-      { name: 'SSL Certificate', status: 'pending' as const },
-      { name: 'Response Time', status: 'pending' as const },
-    ],
-  },
-  {
-    wave: 2,
-    name: 'Visual + Performance',
-    icon: Gauge,
-    steps: [
-      { name: 'Desktop Screenshot', status: 'pending' as const },
-      { name: 'Mobile Screenshot', status: 'pending' as const },
-      { name: 'Core Web Vitals', status: 'pending' as const },
-      { name: 'Performance Score', status: 'pending' as const },
-    ],
-  },
-  {
-    wave: 3,
-    name: 'Security Scan',
-    icon: Shield,
-    steps: [
-      { name: 'Security Headers', status: 'pending' as const },
-      { name: 'Cookie Audit', status: 'pending' as const },
-      { name: 'Mixed Content', status: 'pending' as const },
-      { name: 'Exposed Paths', status: 'pending' as const },
-    ],
-  },
-  {
-    wave: 4,
-    name: 'AI Analysis',
-    icon: Brain,
-    steps: [
-      { name: 'Test Suggestions', status: 'pending' as const },
-      { name: 'UX Issues', status: 'pending' as const },
-      { name: 'Accessibility', status: 'pending' as const },
-      { name: 'Summary', status: 'pending' as const },
-    ],
-  },
-  // Feature #471: Wave 5 - Accessibility Scan
-  {
-    wave: 5,
-    name: 'Accessibility',
-    icon: Accessibility,
-    steps: [
-      { name: 'WCAG 2.1 AA Scan', status: 'pending' as const },
-      { name: 'Critical Violations', status: 'pending' as const },
-      { name: 'Serious Violations', status: 'pending' as const },
-      { name: 'Minor Violations', status: 'pending' as const },
-    ],
-  },
-  // Feature #472: Wave 6 - API Discovery
-  {
-    wave: 6,
-    name: 'API Discovery',
-    icon: Network,
-    steps: [
-      { name: 'OpenAPI Spec Detection', status: 'pending' as const },
-      { name: 'Common API Paths', status: 'pending' as const },
-      { name: 'Endpoint Health', status: 'pending' as const },
-      { name: 'Auth Protection', status: 'pending' as const },
-    ],
-  },
-  // Feature #527: Wave 7 - SEO Analysis (Smoke Test)
-  {
-    wave: 7,
-    name: 'SEO Analysis',
-    icon: Search,
-    steps: [
-      { name: 'Meta Tags', status: 'pending' as const },
-      { name: 'Heading Structure', status: 'pending' as const },
-      { name: 'Schema Markup', status: 'pending' as const },
-      { name: 'Navigation', status: 'pending' as const },
-      { name: 'Tracking Scripts', status: 'pending' as const },
-      { name: 'Crawlability', status: 'pending' as const },
-    ],
-  },
-];
-
-// Feature #514: Constants and helpers moved to ../components/quick-test/utils.ts
-// RECENT_URLS_KEY, MAX_RECENT_URLS, HISTORY_KEY, MAX_HISTORY - now imported
-// isValidUrl, getScoreColor, getScoreBgColor - now imported
-
-// Feature #514: WaveCard, ScreenshotModal, AIAnalysisDetails, AccessibilityDetails,
-// APIDiscoveryDetails, ScheduleModal, CreateTestSuiteModal all extracted to
-// ../components/quick-test/ and imported via barrel
-
-// Feature #514: WaveCard, ScreenshotModal, ScheduleModal, CreateTestSuiteModal
-// all extracted to ../components/quick-test/ and imported via barrel export
 
 // ============================================================
 // Score Display Component
@@ -285,59 +192,34 @@ export function QuickTestPage() {
     loadResult, // Feature #542: Load historical result for re-viewing
   } = useQuickTestSocket();
 
-  // URL Input State
-  const [url, setUrl] = useState('');
-  const [urlError, setUrlError] = useState<string | null>(null);
-  const [recentUrls, setRecentUrls] = useState<string[]>([]);
-  const [showRecentUrls, setShowRecentUrls] = useState(false);
-  // Feature #579: Browser selection for cross-browser Quick Test
-  const [selectedBrowser, setSelectedBrowser] = useState<'chromium' | 'firefox' | 'webkit'>('chromium');
+  // Feature #608: Consolidated state management with useReducer
+  const { state: pageState, actions } = useQuickTestPageState();
 
-  // UI State for wave expansion (not managed by hook)
-  const [waveExpanded, setWaveExpanded] = useState<Record<number, boolean>>({});
+  // Destructure for convenience (backwards-compatible variable names)
+  const url = pageState.url.value;
+  const urlError = pageState.url.error;
+  const recentUrls = pageState.url.recentUrls;
+  const showRecentUrls = pageState.url.showRecent;
+  const selectedBrowser = pageState.ui.selectedBrowser;
+  const waveExpanded = pageState.ui.waveExpanded;
+  const history = pageState.history.entries;
+  const showHistory = pageState.ui.showHistory;
+  const historyLoading = pageState.history.isLoading;
+  const screenshotModal = pageState.screenshotModal;
+  const scheduleModal = pageState.scheduleModal;
+  const createTestSuiteModal = pageState.createTestSuiteModal;
+  const showExportMenu = pageState.ui.showExportMenu;
 
-  // History State
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(false); // Feature #542: Loading a history entry
-
-  // Feature #466: Screenshot modal state
-  const [screenshotModal, setScreenshotModal] = useState<{
-    isOpen: boolean;
-    url: string | null;
-    type: 'desktop' | 'mobile' | null;
-  }>({ isOpen: false, url: null, type: null });
-
-  // Feature #474: Schedule modal state
-  const [scheduleModal, setScheduleModal] = useState<{
-    isOpen: boolean;
-    frequency: '1h' | '6h' | '12h' | '24h' | 'weekly';
-    notifyOnDrop: boolean;
-    threshold: number;
-    isSubmitting: boolean;
-    error: string | null;
-    success: boolean;
-  }>({
-    isOpen: false,
-    frequency: '24h',
-    notifyOnDrop: true,
-    threshold: 70,
-    isSubmitting: false,
-    error: null,
-    success: false,
-  });
-
-  // Feature #475: Create Test Suite modal state
-  const [createTestSuiteModal, setCreateTestSuiteModal] = useState<{
-    isOpen: boolean;
-    testSuggestions: AIAnalysisData['testSuggestions'];
-  }>({
-    isOpen: false,
-    testSuggestions: undefined,
-  });
-
-  // Feature #543: Export dropdown state
-  const [showExportMenu, setShowExportMenu] = useState(false);
+  // Action aliases for backwards compatibility
+  const setUrl = actions.setUrl;
+  const setUrlError = actions.setUrlError;
+  const setRecentUrls = actions.setRecentUrls;
+  const setShowRecentUrls = actions.toggleRecentUrls;
+  const setSelectedBrowser = actions.setBrowser;
+  const setWaveExpanded = actions.setWaveExpanded;
+  const setShowHistory = actions.toggleHistory;
+  const setHistoryLoading = actions.setHistoryLoading;
+  const setShowExportMenu = actions.toggleExportMenu;
 
   // Refs
   const urlInputRef = useRef<HTMLInputElement>(null);
@@ -387,7 +269,7 @@ export function QuickTestPage() {
             timestamp: new Date(r.startedAt),
             score: r.overallScore ?? undefined,
           }));
-          setHistory(apiHistory);
+          actions.setHistory(apiHistory);
           // Sync back to localStorage for offline access
           try {
             localStorage.setItem(HISTORY_KEY, JSON.stringify(apiHistory.slice(0, MAX_HISTORY)));
@@ -398,10 +280,10 @@ export function QuickTestPage() {
         try {
           const savedHistory = localStorage.getItem(HISTORY_KEY);
           if (savedHistory) {
-            setHistory(JSON.parse(savedHistory).map((h: HistoryEntry) => ({
+            actions.setHistory(JSON.parse(savedHistory).map((h: HistoryEntry) => ({
               ...h,
               timestamp: new Date(h.timestamp),
-            })));
+            })) as ReducerHistoryEntry[]);
           }
         } catch { /* ignore */ }
       }
@@ -412,23 +294,23 @@ export function QuickTestPage() {
   // Update history when test completes
   useEffect(() => {
     if (testStatus === 'completed' && currentRunId && testingUrl && summary) {
-      const newEntry: HistoryEntry = {
+      const newEntry: ReducerHistoryEntry = {
         runId: currentRunId,
         url: testingUrl,
         timestamp: new Date(),
         score: summary.overallScore,
       };
-      setHistory(prevHistory => {
-        const updated = [newEntry, ...prevHistory.filter(h => h.runId !== newEntry.runId)].slice(0, MAX_HISTORY);
-        try {
-          localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-        } catch {
-          // Ignore localStorage errors
-        }
-        return updated;
-      });
+      // Feature #608: Use reducer action instead of functional setState
+      actions.addHistoryEntry(newEntry);
+      // Also sync to localStorage
+      try {
+        const updated = [newEntry, ...history.filter(h => h.runId !== newEntry.runId)].slice(0, MAX_HISTORY);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+      } catch {
+        // Ignore localStorage errors
+      }
     }
-  }, [testStatus, currentRunId, testingUrl, summary]);
+  }, [testStatus, currentRunId, testingUrl, summary, actions, history]);
 
   // Feature #543: Close export menu when clicking outside
   useEffect(() => {
@@ -466,15 +348,13 @@ export function QuickTestPage() {
     setWaveExpanded({}); // Reset expansions
 
     // Save to recent URLs
-    setRecentUrls(prev => {
-      const updated = [testUrl, ...prev.filter(u => u !== testUrl)].slice(0, MAX_RECENT_URLS);
-      try {
-        localStorage.setItem(RECENT_URLS_KEY, JSON.stringify(updated));
-      } catch {
-        // Ignore
-      }
-      return updated;
-    });
+    const updatedRecent = [testUrl, ...recentUrls.filter(u => u !== testUrl)].slice(0, MAX_RECENT_URLS);
+    try {
+      localStorage.setItem(RECENT_URLS_KEY, JSON.stringify(updatedRecent));
+    } catch {
+      // Ignore
+    }
+    setRecentUrls(updatedRecent);
 
     // Use hook's startTest function
     // Feature #579: Pass selected browser for cross-browser testing
@@ -495,10 +375,7 @@ export function QuickTestPage() {
   const toggleWaveExpand = (waveIndex: number) => {
     const waveNum = waves[waveIndex]?.wave;
     if (waveNum) {
-      setWaveExpanded(prev => ({
-        ...prev,
-        [waveNum]: !prev[waveNum],
-      }));
+      actions.toggleWaveExpanded(waveNum);
     }
   };
 
@@ -660,27 +537,20 @@ export function QuickTestPage() {
     };
   }, [result, summary, waves]);
 
-  // Feature #474: Schedule Quick Test handlers
+  // Feature #474: Schedule Quick Test handlers - Feature #608: Using reducer actions
   const openScheduleModal = () => {
-    setScheduleModal({
-      isOpen: true,
-      frequency: '24h',
-      notifyOnDrop: true,
-      threshold: 70,
-      isSubmitting: false,
-      error: null,
-      success: false,
-    });
+    actions.resetScheduleModal();
+    actions.openScheduleModal();
   };
 
   const closeScheduleModal = () => {
-    setScheduleModal(prev => ({ ...prev, isOpen: false }));
+    actions.closeScheduleModal();
   };
 
   const handleScheduleSubmit = async () => {
     if (!testingUrl) return;
 
-    setScheduleModal(prev => ({ ...prev, isSubmitting: true, error: null }));
+    actions.updateScheduleModal({ isSubmitting: true, error: null });
 
     try {
       // Convert frequency to cron expression
@@ -712,18 +582,17 @@ export function QuickTestPage() {
         throw new Error(errorData.message || 'Failed to create schedule');
       }
 
-      setScheduleModal(prev => ({ ...prev, isSubmitting: false, success: true }));
+      actions.updateScheduleModal({ isSubmitting: false, success: true });
 
       // Auto-close after success
       setTimeout(() => {
         closeScheduleModal();
       }, 2000);
     } catch (err) {
-      setScheduleModal(prev => ({
-        ...prev,
+      actions.updateScheduleModal({
         isSubmitting: false,
         error: err instanceof Error ? err.message : 'Failed to create schedule',
-      }));
+      });
     }
   };
 
@@ -862,10 +731,10 @@ export function QuickTestPage() {
               key={wave.wave}
               wave={wave}
               onToggleExpand={() => toggleWaveExpand(idx)}
-              onScreenshotClick={(url, type) => setScreenshotModal({ isOpen: true, url, type })}
-              // Feature #475: Handle create test suite from AI suggestions
+              onScreenshotClick={(url, type) => actions.openScreenshotModal(url, type)}
+              // Feature #475: Handle create test suite from AI suggestions - Feature #608: Using reducer
               onCreateTestSuite={(testSuggestions) =>
-                setCreateTestSuiteModal({ isOpen: true, testSuggestions })
+                actions.openCreateSuiteModal(testSuggestions)
               }
             />
           ))}
@@ -899,14 +768,14 @@ export function QuickTestPage() {
                         onClick={handleExportJSON}
                         className="w-full px-4 py-2.5 text-sm text-left hover:bg-muted flex items-center gap-2 transition-colors"
                       >
-                        <FileJson className="w-4 h-4 text-blue-500" />
+                        <FileJson className="w-4 h-4 text-info" />
                         Export as JSON
                       </button>
                       <button
                         onClick={handleExportPDF}
                         className="w-full px-4 py-2.5 text-sm text-left hover:bg-muted flex items-center gap-2 transition-colors"
                       >
-                        <FileText className="w-4 h-4 text-red-500" />
+                        <FileText className="w-4 h-4 text-destructive" />
                         Export as PDF
                       </button>
                     </div>
@@ -1018,16 +887,15 @@ export function QuickTestPage() {
         )}
       </div>
 
-      {/* Feature #466: Screenshot Modal */}
-      {/* Feature #466: Screenshot Modal */}
+      {/* Feature #466: Screenshot Modal - Feature #608: Using reducer actions */}
       <ScreenshotModal
         isOpen={screenshotModal.isOpen}
         url={screenshotModal.url}
         type={screenshotModal.type}
-        onClose={() => setScreenshotModal({ isOpen: false, url: null, type: null })}
+        onClose={actions.closeScreenshotModal}
       />
 
-      {/* Feature #474: Schedule Modal */}
+      {/* Feature #474: Schedule Modal - Feature #608: Using reducer actions */}
       <ScheduleModal
         isOpen={scheduleModal.isOpen}
         url={testingUrl || ''}
@@ -1037,20 +905,19 @@ export function QuickTestPage() {
         isSubmitting={scheduleModal.isSubmitting}
         error={scheduleModal.error}
         success={scheduleModal.success}
-        onFrequencyChange={(freq) => setScheduleModal(prev => ({ ...prev, frequency: freq }))}
-        onNotifyChange={(notify) => setScheduleModal(prev => ({ ...prev, notifyOnDrop: notify }))}
-        onThresholdChange={(thresh) => setScheduleModal(prev => ({ ...prev, threshold: thresh }))}
+        onFrequencyChange={(freq) => actions.updateScheduleModal({ frequency: freq })}
+        onNotifyChange={(notify) => actions.updateScheduleModal({ notifyOnDrop: notify })}
+        onThresholdChange={(thresh) => actions.updateScheduleModal({ threshold: thresh })}
         onSubmit={handleScheduleSubmit}
         onClose={closeScheduleModal}
       />
 
-      {/* Feature #475: Create Test Suite Modal */}
+      {/* Feature #475: Create Test Suite Modal - Feature #608: Using reducer actions */}
       <CreateTestSuiteModal
         isOpen={createTestSuiteModal.isOpen}
         testSuggestions={createTestSuiteModal.testSuggestions}
         targetUrl={testingUrl || ''}
-        token={token}
-        onClose={() => setCreateTestSuiteModal({ isOpen: false, testSuggestions: undefined })}
+        onClose={actions.closeCreateSuiteModal}
       />
 
     </Layout>
