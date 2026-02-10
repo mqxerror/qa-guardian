@@ -26,6 +26,8 @@ import { useTest, useInvalidateTests } from '../hooks/api/useTests';
 import { useRunsByTest, useInvalidateRuns } from '../hooks/api/useRuns';
 import { useSuite } from '../hooks/api/useSuites';
 import { useProject } from '../hooks/api/useProjects';
+// Feature #581: Browser notifications for long-running test completion
+import { useTestNotifications } from '../hooks/useTestNotifications';
 // Feature #48: Import modular types and utilities
 import {
   // Feature #513: Removed unused type imports - now used only in test-detail components
@@ -85,6 +87,8 @@ function TestDetailPage() {
   const { formatDate, formatDateTime } = useTimezoneStore();
   const { socket, connect, joinRun, leaveRun, joinOrg } = useSocketStore();
   const { addNotification } = useNotificationStore();
+  // Feature #581: Browser notifications for long-running test completion
+  const { notificationsEnabled, notificationsSupported, toggleNotifications, notifyTestComplete } = useTestNotifications();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -950,6 +954,14 @@ function TestDetailPage() {
         testId: testId,
       });
 
+      // Feature #581: Browser notification for long-running tests (> 30s)
+      notifyTestComplete({
+        testName: data.testName || 'Test',
+        status: data.status,
+        durationMs: data.duration_ms,
+        runId: data.runId,
+      });
+
       // Feature #68: Refresh runs list using React Query (caches the result)
       refetchRuns().catch(err => console.error('Failed to refresh runs:', err));
     };
@@ -959,7 +971,7 @@ function TestDetailPage() {
     return () => {
       socket.off('run-complete', handleOrgRunComplete);
     };
-  }, [socket, testId, token, addNotification, refetchRuns]);
+  }, [socket, testId, token, addNotification, refetchRuns, notifyTestComplete]);
 
   // Feature #551: Skeleton loading state for better perceived performance
   if (isLoading) {
@@ -1022,6 +1034,10 @@ function TestDetailPage() {
           onDelete={() => setShowDeleteModal(true)}
           runError={runError}
           duplicateError={duplicateError}
+          // Feature #581: Browser notification toggle
+          notificationsEnabled={notificationsEnabled}
+          notificationsSupported={notificationsSupported}
+          onToggleNotifications={toggleNotifications}
         />
 
         {/* Feature #570: Page-level tab navigation */}

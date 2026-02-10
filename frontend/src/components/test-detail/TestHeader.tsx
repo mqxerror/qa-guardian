@@ -1,7 +1,9 @@
 // Feature #48: TestHeader - Extracted from TestDetailPage.tsx
 // Feature #554: Standardized to use shared PageHeader with consistent breadcrumbs
+// Feature #581: Added browser notification toggle for long-running tests
 // Displays breadcrumb navigation, test title, status badge, and action buttons
 
+import { Bell, BellOff } from 'lucide-react';
 import { TestType } from './types';
 import { PageHeader } from '../ui';
 
@@ -30,6 +32,10 @@ export interface TestHeaderProps {
   // Error states
   runError?: string;
   duplicateError?: string;
+  // Feature #581: Browser notification toggle
+  notificationsEnabled?: boolean;
+  notificationsSupported?: boolean;
+  onToggleNotifications?: () => void;
 }
 
 export function TestHeader({
@@ -54,6 +60,10 @@ export function TestHeader({
   onDelete,
   runError,
   duplicateError,
+  // Feature #581: Browser notification toggle
+  notificationsEnabled = false,
+  notificationsSupported = false,
+  onToggleNotifications,
 }: TestHeaderProps) {
   // Determine if run button should be disabled
   const isRunDisabled =
@@ -82,6 +92,28 @@ export function TestHeader({
             }`}>
               {test?.status}
             </span>
+
+          {/* Feature #581: Browser notification toggle for long-running tests */}
+          {notificationsSupported && onToggleNotifications && (
+            <button
+              onClick={onToggleNotifications}
+              className={`p-2 rounded-md transition-colors ${
+                notificationsEnabled
+                  ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+              title={notificationsEnabled
+                ? 'Disable browser notifications for test completion'
+                : 'Enable browser notifications for long-running tests (> 30s)'
+              }
+            >
+              {notificationsEnabled ? (
+                <Bell className="h-4 w-4" />
+              ) : (
+                <BellOff className="h-4 w-4" />
+              )}
+            </button>
+          )}
 
           {/* Branch selector for visual regression tests */}
           {test?.test_type === 'visual_regression' && (
