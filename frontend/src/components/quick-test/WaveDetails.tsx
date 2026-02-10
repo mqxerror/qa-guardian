@@ -1,13 +1,16 @@
 /**
  * Feature #514: Wave Details Components
  * Extracted from QuickTestPage.tsx
+ * Feature #622: Added React.memo for performance optimization
  *
  * Contains the detail components for each wave type:
  * - AIAnalysisDetails (Wave 4)
  * - AccessibilityDetails (Wave 5)
  * - APIDiscoveryDetails (Wave 6)
+ * - SeoAnalysisDetails (Wave 7)
  */
 
+import { memo } from 'react';
 import {
   Eye,
   Lightbulb,
@@ -41,7 +44,7 @@ interface AIAnalysisDetailsProps {
   onCreateTestSuite?: () => void;
 }
 
-export function AIAnalysisDetails({ data, onCreateTestSuite }: AIAnalysisDetailsProps) {
+export const AIAnalysisDetails = memo(function AIAnalysisDetails({ data, onCreateTestSuite }: AIAnalysisDetailsProps) {
   const hasTestSuggestions = data.testSuggestions && data.testSuggestions.length > 0;
   const hasUxIssues = data.uxIssues && data.uxIssues.length > 0;
   const hasAccessibility = data.accessibilityRecommendations && data.accessibilityRecommendations.length > 0;
@@ -54,7 +57,7 @@ export function AIAnalysisDetails({ data, onCreateTestSuite }: AIAnalysisDetails
     <div className="mt-3 pt-3 border-t border-border space-y-4">
       {/* Vision Analysis Indicator */}
       {data.visionAnalysisIncluded && (
-        <div className="flex items-center gap-2 text-xs text-purple-400 bg-purple-500/10 px-2 py-1 rounded">
+        <div className="flex items-center gap-2 text-xs text-method-ai bg-method-ai/10 px-2 py-1 rounded">
           <Eye className="w-3 h-3" />
           <span>Vision analysis included - AI analyzed the screenshot for visual insights</span>
         </div>
@@ -162,14 +165,15 @@ export function AIAnalysisDetails({ data, onCreateTestSuite }: AIAnalysisDetails
       )}
     </div>
   );
-}
+});
+AIAnalysisDetails.displayName = 'AIAnalysisDetails';
 
 // ============================================================
 // Feature #471: Accessibility Details Component
 // AccessibilityData is now imported from ./types
 // ============================================================
 
-export function AccessibilityDetails({ data }: { data: AccessibilityData }) {
+export const AccessibilityDetails = memo(function AccessibilityDetails({ data }: { data: AccessibilityData }) {
   if (!data || !data.violationCounts) return null;
   const hasViolations = data.violations && data.violations.length > 0;
 
@@ -262,14 +266,15 @@ export function AccessibilityDetails({ data }: { data: AccessibilityData }) {
       )}
     </div>
   );
-}
+});
+AccessibilityDetails.displayName = 'AccessibilityDetails';
 
 // ============================================================
 // Feature #472: API Discovery Details Component
 // APIDiscoveryData is now imported from ./types
 // ============================================================
 
-export function APIDiscoveryDetails({ data }: { data: APIDiscoveryData }) {
+export const APIDiscoveryDetails = memo(function APIDiscoveryDetails({ data }: { data: APIDiscoveryData }) {
   if (!data || !data.summary) return null;
   const hasEndpoints = data.endpoints && data.endpoints.length > 0;
   const hasConcerns = data.securityConcerns && data.securityConcerns.length > 0;
@@ -425,13 +430,14 @@ export function APIDiscoveryDetails({ data }: { data: APIDiscoveryData }) {
       )}
     </div>
   );
-}
+});
+APIDiscoveryDetails.displayName = 'APIDiscoveryDetails';
 
 // ============================================================
 // Feature #527: SEO Analysis Details Component
 // ============================================================
 
-export function SeoAnalysisDetails({ data }: { data: SeoAnalysisData }) {
+export const SeoAnalysisDetails = memo(function SeoAnalysisDetails({ data }: { data: SeoAnalysisData }) {
   if (!data || !data.metaTags) return null;
 
   // Count issues and recommendations
@@ -886,4 +892,5 @@ export function SeoAnalysisDetails({ data }: { data: SeoAnalysisData }) {
       )}
     </div>
   );
-}
+});
+SeoAnalysisDetails.displayName = 'SeoAnalysisDetails';
