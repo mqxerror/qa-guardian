@@ -142,13 +142,7 @@ export interface AICopilotSuggestion {
   confidence: number;
 }
 
-export interface GeneratedTestPreview {
-  name: string;
-  type: string;
-  target_url: string;
-  steps?: Array<{ action: string; target: string; value?: string }>;
-  description?: string;
-}
+// Note: GeneratedTestPreview was removed - use from create-test/types.ts or suite-detail/useModalState.ts
 
 export interface ProjectContext {
   id: string;

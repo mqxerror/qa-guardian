@@ -7,6 +7,16 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
+// Import shared types from useModalState (canonical definitions)
+import {
+  GeneratedTestPreview,
+  ScreenshotElement,
+  ScreenshotTestStep,
+  ScreenshotAnalysis,
+} from './useModalState';
+
+// Re-export for backward compatibility
+export type { GeneratedTestPreview, ScreenshotElement, ScreenshotTestStep, ScreenshotAnalysis };
 
 // AI generation mode types
 export type AIGenMode = 'text' | 'screenshot' | 'user-story' | 'gherkin' | 'wizard' | 'openapi';
@@ -37,62 +47,6 @@ export interface AICopilotSuggestion {
   suggestion: string;
   impact: 'high' | 'medium' | 'low';
   field?: string;
-}
-
-// Generated test preview interface
-export interface GeneratedTestPreview {
-  test_name: string;
-  steps: string[];
-  selectors: string[];
-  assertions: string[];
-  syntax_valid: boolean;
-  syntax_errors?: string[];
-  complexity: 'simple' | 'medium' | 'complex';
-  warnings?: string[];
-  confidence_score?: number;
-  confidence_factors?: {
-    factor: string;
-    score: number;
-    max_score: number;
-    description: string;
-  }[];
-}
-
-// Screenshot analysis interface
-export interface ScreenshotElement {
-  id: string;
-  type: string;
-  description: string;
-  suggested_selector: string;
-  suggested_action: string;
-  confidence: number;
-  location: { x: number; y: number; width: number; height: number };
-  attributes?: { label?: string; placeholder?: string; role?: string };
-}
-
-export interface ScreenshotTestStep {
-  step_number: number;
-  action: string;
-  element_id: string;
-  description: string;
-  playwright_code: string;
-  assertion?: string;
-}
-
-export interface ScreenshotAnalysis {
-  elements: ScreenshotElement[];
-  suggested_test_steps: ScreenshotTestStep[];
-  page_context: {
-    page_type: string;
-    main_functionality: string;
-    detected_framework?: string;
-    responsive_design: boolean;
-  };
-  generated_test: {
-    name: string;
-    code: string;
-    complexity: string;
-  };
 }
 
 // Generated test suite interface

@@ -12,6 +12,7 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { URLInput } from './URLInput';
+import { GeneratedTestPreview } from '../types';
 
 /**
  * Test type configuration for checkbox cards
@@ -38,18 +39,8 @@ export type QuickTestType = 'e2e' | 'visual' | 'performance' | 'accessibility' |
  */
 export type QuickTestSelection = Record<QuickTestType, boolean>;
 
-/**
- * Generated test preview item
- */
-export interface GeneratedTestPreview {
- id: string;
- type: QuickTestType;
- name: string;
- status: 'pending' | 'creating' | 'created' | 'failed';
- error?: string;
- /** ID of created test for linking */
- createdTestId?: string;
-}
+// Re-export GeneratedTestPreview for backward compatibility
+export type { GeneratedTestPreview };
 
 /**
  * Test type configurations with colors and icons

@@ -52,15 +52,18 @@ export type WizardStep = 'type' | 'url' | 'settings' | 'review';
 
 /**
  * Generated test preview from quick generation
+ * Canonical definition - consolidates QuickTestPanel.tsx and types.ts versions
  */
 export interface GeneratedTestPreview {
   id: string;
   type: string;
   name: string;
-  targetUrl: string;
-  estimatedDuration: string;
+  targetUrl?: string;
+  estimatedDuration?: string;
   status: 'pending' | 'creating' | 'created' | 'failed';
   error?: string;
+  /** ID of created test for linking */
+  createdTestId?: string;
 }
 
 /**
