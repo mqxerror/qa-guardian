@@ -148,10 +148,11 @@ interface VisualPerformanceResult {
   };
   coreWebVitals?: {
     lcp?: number; // Largest Contentful Paint
-    fid?: number; // First Input Delay
+    fid?: number; // First Input Delay (deprecated, replaced by INP)
     cls?: number; // Cumulative Layout Shift
     fcp?: number; // First Contentful Paint
     ttfb?: number; // Time to First Byte
+    inp?: number; // Feature #564: Interaction to Next Paint (replaced FID in March 2024)
   };
   screenshots: {
     desktop?: string; // Base64 encoded (temporary, before saving to disk)
@@ -691,6 +692,71 @@ async function runVisualPerformance(url: string, browser: Browser): Promise<Visu
       // LCP observer not supported, skip
     }
 
+    // Feature #564: Measure CLS (Cumulative Layout Shift) via PerformanceObserver
+    try {
+      const cls = await page.evaluate(() => {
+        return new Promise<number | undefined>((resolve) => {
+          let clsValue = 0;
+          const observer = new PerformanceObserver((list) => {
+            for (const entry of list.getEntries()) {
+              // Only count layout shifts that aren't triggered by user input
+              if (!(entry as any).hadRecentInput) {
+                clsValue += (entry as any).value;
+              }
+            }
+          });
+          observer.observe({ type: 'layout-shift', buffered: true });
+          setTimeout(() => {
+            observer.disconnect();
+            resolve(clsValue > 0 ? Math.round(clsValue * 1000) / 1000 : undefined);
+          }, 1000);
+        });
+      });
+      if (cls !== undefined) {
+        result.coreWebVitals!.cls = cls;
+      }
+    } catch {
+      // layout-shift observer not supported, skip
+    }
+
+    // Feature #564: Measure INP (Interaction to Next Paint) via PerformanceObserver
+    // INP replaced FID as a Core Web Vital in March 2024
+    // For synthetic tests, we simulate a click interaction and measure processing time
+    try {
+      const inp = await page.evaluate(() => {
+        return new Promise<number | undefined>((resolve) => {
+          let maxDuration = 0;
+          const observer = new PerformanceObserver((list) => {
+            for (const entry of list.getEntries()) {
+              // event entries have duration property representing interaction latency
+              const duration = (entry as any).duration;
+              if (duration && duration > maxDuration) {
+                maxDuration = duration;
+              }
+            }
+          });
+          try {
+            observer.observe({ type: 'event', buffered: true });
+          } catch {
+            // 'event' type not supported
+            resolve(undefined);
+            return;
+          }
+          // Trigger a click interaction to generate event timing entries
+          document.body?.click();
+          setTimeout(() => {
+            observer.disconnect();
+            resolve(maxDuration > 0 ? Math.round(maxDuration) : undefined);
+          }, 500);
+        });
+      });
+      if (inp !== undefined) {
+        result.coreWebVitals!.inp = inp;
+      }
+    } catch {
+      // event observer not supported, skip
+    }
+
     // Desktop screenshot
     const desktopScreenshot = await page.screenshot({ type: 'png', fullPage: false });
     result.screenshots.desktop = desktopScreenshot.toString('base64');
@@ -761,6 +827,18 @@ function calculatePerformanceScore(result: VisualPerformanceResult): number {
     if (cwv.lcp > 4000) score -= 25;
     else if (cwv.lcp > 2500) score -= 15;
     else if (cwv.lcp > 1500) score -= 5;
+  }
+
+  // Feature #564: CLS scoring (thresholds per Google: Good ≤0.1, Needs Improvement ≤0.25)
+  if (cwv.cls !== undefined) {
+    if (cwv.cls > 0.25) score -= 20;
+    else if (cwv.cls > 0.1) score -= 10;
+  }
+
+  // Feature #564: INP scoring (thresholds per Google: Good ≤200ms, Needs Improvement ≤500ms)
+  if (cwv.inp) {
+    if (cwv.inp > 500) score -= 20;
+    else if (cwv.inp > 200) score -= 10;
   }
 
   // Load time scoring

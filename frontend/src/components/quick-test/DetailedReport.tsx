@@ -262,7 +262,8 @@ function HealthCheckDetails({ data }: { data: Record<string, unknown> }) {
 function PerformanceDetails({ data }: { data: Record<string, unknown> }) {
   // Feature #563: Renamed from 'lighthouse' to 'performanceScores' - these are custom heuristic scores, not real Lighthouse
   const performanceScores = (data.performanceScores || data.lighthouse) as { performance?: number; accessibility?: number; seo?: number; bestPractices?: number } | undefined;
-  const cwv = data.coreWebVitals as { lcp?: number; fid?: number; cls?: number; fcp?: number; ttfb?: number } | undefined;
+  // Feature #564: Added inp field (Interaction to Next Paint, replaced FID in March 2024)
+  const cwv = data.coreWebVitals as { lcp?: number; fid?: number; cls?: number; fcp?: number; ttfb?: number; inp?: number } | undefined;
   const loadTime = data.loadTime as number | undefined;
 
   // CWV thresholds per Google
@@ -273,6 +274,7 @@ function PerformanceDetails({ data }: { data: Record<string, unknown> }) {
       case 'cls': return value <= 0.1 ? 'good' : value <= 0.25 ? 'needs-improvement' : 'poor';
       case 'fcp': return value <= 1800 ? 'good' : value <= 3000 ? 'needs-improvement' : 'poor';
       case 'ttfb': return value <= 800 ? 'good' : value <= 1800 ? 'needs-improvement' : 'poor';
+      case 'inp': return value <= 200 ? 'good' : value <= 500 ? 'needs-improvement' : 'poor';
       default: return 'good';
     }
   };
@@ -461,11 +463,29 @@ function PerformanceDetails({ data }: { data: Record<string, unknown> }) {
                 <div className={`flex items-center justify-between p-2.5 rounded ${statusBg(status)}`}>
                   <div>
                     <div className="text-sm font-medium text-foreground">FID (First Input Delay)</div>
-                    <div className="text-xs text-muted-foreground">Target: ≤ 100ms</div>
+                    <div className="text-xs text-muted-foreground">Target: ≤ 100ms (deprecated, see INP)</div>
                   </div>
                   <div className="text-right">
                     <div className={`text-lg font-bold ${statusColor(status)}`}>
                       {cwv.fid}ms
+                    </div>
+                    <div className={`text-xs ${statusColor(status)}`}>{statusLabel(status)}</div>
+                  </div>
+                </div>
+              );
+            })()}
+            {/* Feature #564: INP (Interaction to Next Paint) - replaced FID as Core Web Vital in March 2024 */}
+            {cwv.inp !== undefined && (() => {
+              const status = cwvStatus('inp', cwv.inp);
+              return (
+                <div className={`flex items-center justify-between p-2.5 rounded ${statusBg(status)}`}>
+                  <div>
+                    <div className="text-sm font-medium text-foreground">INP (Interaction to Next Paint)</div>
+                    <div className="text-xs text-muted-foreground">Target: ≤ 200ms</div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-lg font-bold ${statusColor(status)}`}>
+                      {cwv.inp}ms
                     </div>
                     <div className={`text-xs ${statusColor(status)}`}>{statusLabel(status)}</div>
                   </div>
