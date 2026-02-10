@@ -13,7 +13,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'; // useMemo unused
 import { Link } from 'react-router-dom';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Layout } from '../components/Layout';
 import { useQuickTestSocket, WaveState, QuickTestSummary } from '../hooks/useQuickTestSocket';
 import { useAuthStore } from '../stores/authStore';
@@ -21,6 +20,7 @@ import {
   PageHeader,
   AnimatedCard,
   CardContent,
+  ScoreTrendChart,
 } from '../components/ui';
 import { getScoreTextColor } from '../components/ui/score-card';
 import {
@@ -979,7 +979,7 @@ export function QuickTestPage() {
                 })}
               </div>
 
-              {/* Feature #492: Score Timeline Chart - shows when 3+ entries with scores for same URL */}
+              {/* Feature #492 / #556: Score Timeline Chart - uses reusable ScoreTrendChart */}
               {(() => {
                 // Filter history entries that have scores and match the current URL being tested
                 const entriesWithScores = history
@@ -989,20 +989,10 @@ export function QuickTestPage() {
 
                 if (entriesWithScores.length < 3) return null;
 
-                // Prepare chart data
                 const chartData = entriesWithScores.map(e => ({
-                  time: new Date(e.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                  score: e.score,
+                  label: new Date(e.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                  value: e.score || 0,
                 }));
-
-                // Calculate average score for reference line
-                const avgScore = Math.round(
-                  entriesWithScores.reduce((sum, e) => sum + (e.score || 0), 0) / entriesWithScores.length
-                );
-
-                // Determine line color based on latest score
-                const latestScore = entriesWithScores[entriesWithScores.length - 1]?.score || 0;
-                const lineColor = latestScore >= 80 ? '#22c55e' : latestScore >= 60 ? '#f59e0b' : '#ef4444';
 
                 return (
                   <div className="mt-6 pt-4 border-t border-border">
@@ -1010,69 +1000,11 @@ export function QuickTestPage() {
                       <BarChart2 className="w-4 h-4" />
                       Score Trend (Last {entriesWithScores.length} Runs)
                     </h3>
-                    <div className="h-32 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
-                          <XAxis
-                            dataKey="time"
-                            tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
-                            tickLine={false}
-                            axisLine={{ stroke: 'var(--border)' }}
-                          />
-                          <YAxis
-                            domain={[0, 100]}
-                            tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
-                            tickLine={false}
-                            axisLine={{ stroke: 'var(--border)' }}
-                            tickFormatter={(value) => `${value}`}
-                          />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: 'var(--card)',
-                              border: '1px solid var(--border)',
-                              borderRadius: '0.375rem',
-                              padding: '0.5rem',
-                            }}
-                            labelStyle={{ color: 'var(--foreground)', fontWeight: 500 }}
-                            itemStyle={{ color: 'var(--foreground)' }}
-                            formatter={(value: number) => [`${value}`, 'Score']}
-                          />
-                          <ReferenceLine
-                            y={avgScore}
-                            stroke="var(--muted-foreground)"
-                            strokeDasharray="3 3"
-                            label={{
-                              value: `Avg: ${avgScore}`,
-                              position: 'insideTopRight',
-                              fontSize: 10,
-                              fill: 'var(--muted-foreground)',
-                            }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="score"
-                            stroke={lineColor}
-                            strokeWidth={2}
-                            dot={{ fill: lineColor, strokeWidth: 0, r: 3 }}
-                            activeDot={{ r: 5, fill: lineColor }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="mt-2 flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <span className="w-3 h-0.5 bg-success rounded"></span>
-                        ≥80 Good
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-3 h-0.5 bg-warning rounded"></span>
-                        60-79 Fair
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-3 h-0.5 bg-destructive rounded"></span>
-                        &lt;60 Poor
-                      </span>
-                    </div>
+                    <ScoreTrendChart
+                      data={chartData}
+                      thresholds={{ good: 80, warning: 60 }}
+                      valueLabel="Score"
+                    />
                   </div>
                 );
               })()}

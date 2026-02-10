@@ -154,3 +154,12 @@ export {
   type WaveProgressStep,
   type StepStatus,
 } from './wave-progress-card';
+
+// Feature #556: Score trend chart component
+export {
+  ScoreTrendChart,
+  type ScoreTrendChartProps,
+  type ScoreTrendDataPoint,
+  type ScoreTrendThreshold,
+  type ScoreTrendLegendItem,
+} from './ScoreTrendChart';

@@ -15,7 +15,8 @@ import { UnifiedAIService } from '../services/UnifiedAIService';
 import { CreateTestModal } from '../components/create-test';
 import { ScoreCard } from '../components/ui/score-card';
 // Feature #554: Standardized PageHeader with breadcrumbs
-import { PageHeader } from '../components/ui';
+// Feature #556: ScoreTrendChart replaces inline recharts chart
+import { PageHeader, ScoreTrendChart } from '../components/ui';
 // Feature #546: WebSocket-based suite run tracking (replaces HTTP polling + separate socket)
 import { useSuiteRunSocket, type LiveScreenshot, type ScreenshotHistoryEntry, type SuiteRun as SuiteRunSocket } from '../hooks/useSuiteRunSocket';
 // Feature #59: React Query hooks for paginated test loading
@@ -26,8 +27,7 @@ import {
   useStartRun, useCancelRun, useStartSuiteRun, useDeleteSuite,
   useRunsBySuite,
 } from '../hooks/api';
-// Feature #553: Recharts for pass rate trend chart
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+// Feature #553: Pass rate trend chart (Feature #556: now uses ScoreTrendChart component)
 import {
   TestType, DeleteSuiteModal, DeleteTestModal, // TestStep unused - referenced in comment only
   ImportTestsModal, EditSelectorModal, ExpandedScreenshotModal, InsertTemplateModal,
@@ -1304,26 +1304,17 @@ function TestSuitePage() {
 
           if (completedRuns.length === 0) return null;
 
-          // Prepare chart data (oldest first)
+          // Feature #556: Prepare chart data for ScoreTrendChart (oldest first)
           const chartRuns = [...completedRuns].reverse();
           const chartData = chartRuns.map((r: { passed_count?: number; results_count?: number; created_at: string }) => {
             const total = r.results_count || 1;
             const passed = r.passed_count || 0;
             const passRate = Math.round((passed / total) * 100);
             return {
-              date: new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-              passRate,
+              label: new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              value: passRate,
             };
           });
-
-          // Average pass rate for reference line
-          const avgPassRate = chartData.length > 0
-            ? Math.round(chartData.reduce((sum: number, d: { passRate: number }) => sum + d.passRate, 0) / chartData.length)
-            : 0;
-
-          // Latest pass rate for line color
-          const latestPassRate = chartData.length > 0 ? chartData[chartData.length - 1].passRate : 0;
-          const lineColor = latestPassRate >= 90 ? '#22c55e' : latestPassRate >= 70 ? '#f59e0b' : '#ef4444';
 
           return (
             <div className="mt-6 rounded-lg border border-border bg-card">
@@ -1347,71 +1338,20 @@ function TestSuitePage() {
 
               {showRecentRuns && (
                 <div className="px-4 pb-4 space-y-4">
-                  {/* Pass Rate Trend Chart */}
+                  {/* Feature #556: Pass Rate Trend Chart - uses ScoreTrendChart */}
                   {chartData.length >= 3 && (
-                    <div>
-                      <h4 className="text-xs font-medium text-muted-foreground mb-2">Pass Rate Trend</h4>
-                      <div className="h-32 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
-                            <XAxis
-                              dataKey="date"
-                              tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
-                              tickLine={false}
-                              axisLine={{ stroke: 'var(--border)' }}
-                            />
-                            <YAxis
-                              domain={[0, 100]}
-                              tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
-                              tickLine={false}
-                              axisLine={{ stroke: 'var(--border)' }}
-                              tickFormatter={(value: number) => `${value}%`}
-                            />
-                            <Tooltip
-                              contentStyle={{
-                                backgroundColor: 'var(--card)',
-                                border: '1px solid var(--border)',
-                                borderRadius: '0.375rem',
-                                padding: '0.5rem',
-                              }}
-                              labelStyle={{ color: 'var(--foreground)', fontWeight: 500 }}
-                              itemStyle={{ color: 'var(--foreground)' }}
-                              formatter={(value: number) => [`${value}%`, 'Pass Rate']}
-                            />
-                            <ReferenceLine
-                              y={avgPassRate}
-                              stroke="var(--muted-foreground)"
-                              strokeDasharray="3 3"
-                              label={{
-                                value: `Avg: ${avgPassRate}%`,
-                                position: 'insideTopRight',
-                                fontSize: 10,
-                                fill: 'var(--muted-foreground)',
-                              }}
-                            />
-                            <Line
-                              type="monotone"
-                              dataKey="passRate"
-                              stroke={lineColor}
-                              strokeWidth={2}
-                              dot={{ fill: lineColor, strokeWidth: 0, r: 3 }}
-                              activeDot={{ r: 5, fill: lineColor }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="mt-1 flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <span className="w-3 h-0.5 bg-success rounded"></span> ≥90%
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-3 h-0.5 bg-warning rounded"></span> 70-89%
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-3 h-0.5 bg-destructive rounded"></span> &lt;70%
-                        </span>
-                      </div>
-                    </div>
+                    <ScoreTrendChart
+                      data={chartData}
+                      title="Pass Rate Trend"
+                      thresholds={{ good: 90, warning: 70 }}
+                      valueLabel="Pass Rate"
+                      showPercent
+                      legend={[
+                        { label: '≥90% Good', colorClass: 'bg-success' },
+                        { label: '70-89% Fair', colorClass: 'bg-warning' },
+                        { label: '<70% Poor', colorClass: 'bg-destructive' },
+                      ]}
+                    />
                   )}
 
                   {/* Compact Run Rows */}

@@ -1,8 +1,9 @@
 // Feature #48: TestHeader - Extracted from TestDetailPage.tsx
+// Feature #554: Standardized to use shared PageHeader with consistent breadcrumbs
 // Displays breadcrumb navigation, test title, status badge, and action buttons
 
-import { Link } from 'react-router-dom';
 import { TestType } from './types';
+import { PageHeader } from '../ui';
 
 export interface TestHeaderProps {
   test: TestType | null;
@@ -62,38 +63,25 @@ export function TestHeader({
 
   return (
     <>
-      {/* Breadcrumb navigation */}
-      <nav className="mb-6 flex items-center gap-2 text-sm">
-        <Link to="/projects" className="text-muted-foreground hover:text-foreground">
-          Projects
-        </Link>
-        <span className="text-muted-foreground">/</span>
-        <Link to={`/projects/${project?.id}`} className="text-muted-foreground hover:text-foreground">
-          {project?.name || 'Project'}
-        </Link>
-        <span className="text-muted-foreground">/</span>
-        <Link to={`/suites/${suite?.id}`} className="text-muted-foreground hover:text-foreground">
-          {suite?.name || 'Suite'}
-        </Link>
-        <span className="text-muted-foreground">/</span>
-        <span className="font-medium text-foreground">{test?.name}</span>
-      </nav>
-
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">{test?.name}</h1>
-          {test?.description && (
-            <p className="mt-2 text-muted-foreground">{test.description}</p>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <span className={`rounded-full px-3 py-1 text-sm font-medium ${
-            test?.status === 'active' ? 'bg-success/10 text-success' :
-            test?.status === 'draft' ? 'bg-warning/10 text-warning' :
-            'bg-muted text-foreground'
-          }`}>
-            {test?.status}
-          </span>
+      {/* Feature #554: Standardized PageHeader with consistent breadcrumbs */}
+      <PageHeader
+        title={test?.name || 'Test'}
+        description={test?.description}
+        breadcrumbs={[
+          { label: 'Projects', href: '/projects' },
+          { label: project?.name || 'Project', href: `/projects/${project?.id}` },
+          { label: suite?.name || 'Suite', href: `/suites/${suite?.id}` },
+          { label: test?.name || 'Test' },
+        ]}
+        actions={
+          <div className="flex items-center gap-3">
+            <span className={`rounded-full px-3 py-1 text-sm font-medium ${
+              test?.status === 'active' ? 'bg-success/10 text-success' :
+              test?.status === 'draft' ? 'bg-warning/10 text-warning' :
+              'bg-muted text-foreground'
+            }`}>
+              {test?.status}
+            </span>
 
           {/* Branch selector for visual regression tests */}
           {test?.test_type === 'visual_regression' && (
@@ -184,8 +172,9 @@ export function TestHeader({
               Delete Test
             </button>
           )}
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* Run Error */}
       {runError && (
