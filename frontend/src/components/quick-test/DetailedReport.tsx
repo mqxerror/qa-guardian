@@ -260,7 +260,8 @@ function HealthCheckDetails({ data }: { data: Record<string, unknown> }) {
 // ============================================================
 
 function PerformanceDetails({ data }: { data: Record<string, unknown> }) {
-  const lighthouse = data.lighthouse as { performance?: number; accessibility?: number; seo?: number; bestPractices?: number } | undefined;
+  // Feature #563: Renamed from 'lighthouse' to 'performanceScores' - these are custom heuristic scores, not real Lighthouse
+  const performanceScores = (data.performanceScores || data.lighthouse) as { performance?: number; accessibility?: number; seo?: number; bestPractices?: number } | undefined;
   const cwv = data.coreWebVitals as { lcp?: number; fid?: number; cls?: number; fcp?: number; ttfb?: number } | undefined;
   const loadTime = data.loadTime as number | undefined;
 
@@ -317,58 +318,59 @@ function PerformanceDetails({ data }: { data: Record<string, unknown> }) {
         </div>
       )}
 
-      {/* Lighthouse Scores */}
-      {lighthouse && (
+      {/* Feature #563: Renamed from "Lighthouse Scores" to "Performance Scores" - these are heuristic, not real Lighthouse */}
+      {performanceScores && (
         <div>
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
             <Gauge className="w-3.5 h-3.5" />
-            Lighthouse Scores
+            Performance Scores
+            <span className="text-[10px] opacity-60">(heuristic)</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {lighthouse.performance !== undefined && (
+            {performanceScores.performance !== undefined && (
               <div className="text-center p-3 rounded bg-background/50">
                 <div className={`text-xl font-bold ${
-                  lighthouse.performance >= 90 ? 'text-success' :
-                  lighthouse.performance >= 50 ? 'text-warning' :
+                  performanceScores.performance >= 90 ? 'text-success' :
+                  performanceScores.performance >= 50 ? 'text-warning' :
                   'text-destructive'
                 }`}>
-                  {lighthouse.performance}
+                  {performanceScores.performance}
                 </div>
                 <div className="text-xs text-muted-foreground">Performance</div>
               </div>
             )}
-            {lighthouse.accessibility !== undefined && (
+            {performanceScores.accessibility !== undefined && performanceScores.accessibility > 0 && (
               <div className="text-center p-3 rounded bg-background/50">
                 <div className={`text-xl font-bold ${
-                  lighthouse.accessibility >= 90 ? 'text-success' :
-                  lighthouse.accessibility >= 50 ? 'text-warning' :
+                  performanceScores.accessibility >= 90 ? 'text-success' :
+                  performanceScores.accessibility >= 50 ? 'text-warning' :
                   'text-destructive'
                 }`}>
-                  {lighthouse.accessibility}
+                  {performanceScores.accessibility}
                 </div>
                 <div className="text-xs text-muted-foreground">Accessibility</div>
               </div>
             )}
-            {lighthouse.bestPractices !== undefined && (
+            {performanceScores.bestPractices !== undefined && performanceScores.bestPractices > 0 && (
               <div className="text-center p-3 rounded bg-background/50">
                 <div className={`text-xl font-bold ${
-                  lighthouse.bestPractices >= 90 ? 'text-success' :
-                  lighthouse.bestPractices >= 50 ? 'text-warning' :
+                  performanceScores.bestPractices >= 90 ? 'text-success' :
+                  performanceScores.bestPractices >= 50 ? 'text-warning' :
                   'text-destructive'
                 }`}>
-                  {lighthouse.bestPractices}
+                  {performanceScores.bestPractices}
                 </div>
                 <div className="text-xs text-muted-foreground">Best Practices</div>
               </div>
             )}
-            {lighthouse.seo !== undefined && (
+            {performanceScores.seo !== undefined && performanceScores.seo > 0 && (
               <div className="text-center p-3 rounded bg-background/50">
                 <div className={`text-xl font-bold ${
-                  lighthouse.seo >= 90 ? 'text-success' :
-                  lighthouse.seo >= 50 ? 'text-warning' :
+                  performanceScores.seo >= 90 ? 'text-success' :
+                  performanceScores.seo >= 50 ? 'text-warning' :
                   'text-destructive'
                 }`}>
-                  {lighthouse.seo}
+                  {performanceScores.seo}
                 </div>
                 <div className="text-xs text-muted-foreground">SEO</div>
               </div>

@@ -138,7 +138,9 @@ interface HealthCheckResult {
 
 // Visual + Performance types
 interface VisualPerformanceResult {
-  lighthouse?: {
+  // Feature #563: Renamed from 'lighthouse' to 'performanceScores' to avoid misleading users.
+  // These are custom heuristic scores derived from Core Web Vitals, NOT real Lighthouse audit results.
+  performanceScores?: {
     performance: number;
     accessibility: number;
     seo: number;
@@ -713,13 +715,13 @@ async function runVisualPerformance(url: string, browser: Browser): Promise<Visu
     context = null;
     page = null;
 
-    // Simplified Lighthouse-like scores based on metrics
+    // Feature #563: Custom heuristic scores based on Core Web Vitals metrics (NOT real Lighthouse)
     const performanceScore = calculatePerformanceScore(result);
-    result.lighthouse = {
+    result.performanceScores = {
       performance: performanceScore,
-      accessibility: 0, // Would need axe-core for proper scoring
-      seo: 0, // Would need additional checks
-      bestPractices: 0, // Would need additional checks
+      accessibility: 0, // Quick Test uses axe-core in Wave 5 instead
+      seo: 0, // Quick Test uses dedicated SEO wave instead
+      bestPractices: 0, // Not assessed in Quick Test
     };
 
   } catch (err) {
@@ -999,7 +1001,7 @@ ${url}
 - TTFB: ${visualResult.coreWebVitals?.ttfb ?? 'N/A'}ms
 - FCP: ${visualResult.coreWebVitals?.fcp ?? 'N/A'}ms
 - LCP: ${visualResult.coreWebVitals?.lcp ?? 'N/A'}ms
-- Performance Score: ${visualResult.lighthouse?.performance ?? 'N/A'}
+- Performance Score: ${visualResult.performanceScores?.performance ?? 'N/A'}
 
 ## Security Results
 - Security Header Score: ${securityResult.headers.score}/100
@@ -2382,7 +2384,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
 
       // Include screenshot URLs instead of boolean flags
       const visualDataForEmit = {
-        lighthouse: visualResult.lighthouse,
+        performanceScores: visualResult.performanceScores,
         coreWebVitals: visualResult.coreWebVitals,
         loadTime: visualResult.loadTime,
         // Feature #466: Include URLs instead of boolean flags
@@ -2635,7 +2637,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
 
     // Feature #538: Calculate summary scores - use 0 for failed/missing waves (no fake fallbacks)
     const healthScore = healthResult?.dns.resolved && healthResult?.http.status >= 200 && healthResult?.http.status < 400 ? 100 : 0;
-    const performanceScore = visualResult?.lighthouse?.performance || 0;
+    const performanceScore = visualResult?.performanceScores?.performance || 0;
     const securityScore = securityResult?.overallScore || 0;
     const accessibilityScore = accessibilityResult?.score ?? 0;
     const apiScore = apiDiscoveryResult?.score ?? 0;
