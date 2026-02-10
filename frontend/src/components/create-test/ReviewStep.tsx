@@ -15,6 +15,8 @@
 import React, { useState, useCallback } from 'react';
 import { type TestTypeOption } from './shared';
 import { type DeviceConfig } from '../test-modals/types';
+// Feature #596: Schedule picker for Create & Schedule flow
+import { SchedulePicker, DEFAULT_SCHEDULE, type ScheduleConfig } from './SchedulePicker';
 
 /**
  * Configuration from AI Generate step
@@ -215,6 +217,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  const [isSubmitting, setIsSubmitting] = useState(false);
  const [submissionPhase, setSubmissionPhase] = useState<SubmissionPhase>(null);
  const [error, setError] = useState<string | null>(null);
+ // Feature #596: Schedule configuration state
+ const [showSchedulePicker, setShowSchedulePicker] = useState(false);
+ const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>(DEFAULT_SCHEDULE);
 
  // Get test type config
  const testType = config.testType;
@@ -531,6 +536,80 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  }
  }, [buildRequestBody, suiteId, token, displayName, onSuccess, onError]);
 
+ /**
+ * Feature #596: Create & Schedule test flow
+ * Creates the test, then creates a recurring schedule for the suite
+ */
+ const handleCreateAndSchedule = useCallback(async () => {
+ const requestBody = buildRequestBody();
+ if (!requestBody) {
+ setError('Test type is required');
+ return;
+ }
+
+ setIsSubmitting(true);
+ setSubmissionPhase('creating');
+ setError(null);
+
+ try {
+ // Step 1: Create the test
+ const createResponse = await fetch(`/api/v1/suites/${suiteId}/tests`, {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ Authorization: `Bearer ${token}`,
+ },
+ body: JSON.stringify(requestBody),
+ });
+
+ if (!createResponse.ok) {
+ const errorData = await createResponse.json().catch(() => ({}));
+ throw new Error(errorData.message || `Failed to create test (${createResponse.status})`);
+ }
+
+ const data = await createResponse.json();
+ const testId = data.test?.id || data.id || data.test_id;
+
+ // Step 2: Create the schedule for the suite
+ setSubmissionPhase('running'); // Reuse running phase for "scheduling"
+
+ const scheduleResponse = await fetch('/api/v1/schedules', {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ Authorization: `Bearer ${token}`,
+ },
+ body: JSON.stringify({
+ suite_id: suiteId,
+ name: `${displayName} Schedule`,
+ description: `Auto-created schedule for ${displayName}`,
+ cron_expression: scheduleConfig.cronExpression,
+ timezone: scheduleConfig.timezone,
+ enabled: scheduleConfig.enabled,
+ notify_on_failure: scheduleConfig.notifyOnFailure,
+ }),
+ });
+
+ if (!scheduleResponse.ok) {
+ // Test was created but schedule failed - still report success with warning
+ const errorData = await scheduleResponse.json().catch(() => ({}));
+ onError?.(`Test created, but schedule failed: ${errorData.message || 'Unknown error'}`);
+ onSuccess({ id: testId, name: displayName });
+ return;
+ }
+
+ // Success!
+ onSuccess({ id: testId, name: displayName });
+ } catch (err) {
+ const errorMessage = err instanceof Error ? err.message : 'Failed to create and schedule test';
+ setError(errorMessage);
+ onError?.(errorMessage);
+ } finally {
+ setIsSubmitting(false);
+ setSubmissionPhase(null);
+ }
+ }, [buildRequestBody, suiteId, token, displayName, scheduleConfig, onSuccess, onError]);
+
  // Feature #589: Render common settings (timeout, retries, tags) for all test types
  const renderCommonSettings = () => {
  if (config.method !== 'manual-setup') return null;
@@ -802,7 +881,18 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  </div>
  )}
 
- {/* Action Buttons - Feature #1985: Create & Run flow */}
+ {/* Feature #596: Schedule Picker (shown when Create & Schedule is selected) */}
+ {showSchedulePicker && (
+ <SchedulePicker
+ value={scheduleConfig}
+ onChange={setScheduleConfig}
+ onClose={() => setShowSchedulePicker(false)}
+ />
+ )}
+
+ {/* Action Buttons - Feature #1985: Create & Run flow, Feature #596: Create & Schedule */}
+ <div className="space-y-3">
+ {/* Primary Row: Create & Run */}
  <div className="flex gap-3">
  {/* Create Test Button */}
  <button
@@ -811,7 +901,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  disabled={isSubmitting || !testType}
  className="flex-1 py-2.5 bg-muted hover:bg-muted/80 disabled:bg-muted/50 text-foreground text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-border"
  >
- {isSubmitting && !submissionPhase ? (
+ {isSubmitting && !submissionPhase && !showSchedulePicker ? (
  <>
  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -836,7 +926,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  disabled={isSubmitting || !testType}
  className="flex-1 py-2.5 bg-success hover:bg-success/90 disabled:bg-muted/50 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
  >
- {submissionPhase ? (
+ {submissionPhase && !showSchedulePicker ? (
  <>
  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -854,6 +944,48 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  </>
  )}
  </button>
+ </div>
+
+ {/* Secondary Row: Create & Schedule - Feature #596 */}
+ <div className="flex gap-3">
+ {!showSchedulePicker ? (
+ <button
+ type="button"
+ onClick={() => setShowSchedulePicker(true)}
+ disabled={isSubmitting || !testType}
+ className="flex-1 py-2 bg-primary/10 hover:bg-primary/20 disabled:bg-muted/50 text-primary text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-primary/20"
+ >
+ <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+ </svg>
+ Create & Schedule
+ </button>
+ ) : (
+ <button
+ type="button"
+ onClick={handleCreateAndSchedule}
+ disabled={isSubmitting || !testType}
+ className="flex-1 py-2.5 bg-primary hover:bg-primary/90 disabled:bg-muted/50 text-primary-foreground text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
+ >
+ {submissionPhase ? (
+ <>
+ <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+ <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+ <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+ </svg>
+ {submissionPhase === 'creating' ? 'Creating test...' : 'Creating schedule...'}
+ </>
+ ) : (
+ <>
+ <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+ </svg>
+ Confirm Create & Schedule
+ </>
+ )}
+ </button>
+ )}
+ </div>
  </div>
  </div>
  );
