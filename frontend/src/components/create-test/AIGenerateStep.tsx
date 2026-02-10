@@ -224,9 +224,11 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  projectBaseUrl,
 }) => {
  // Feature #513: isReady check moved to useEffect, prefixing unused
- const { input, isParsing, result, setInput, isReady: _isReady, updateResult } = useAIParser({
+ // Feature #588: Enable useAIService to call backend /api/v1/ai/parse-intent for real AI parsing
+ const { input, isParsing, result, setInput, isReady: _isReady, updateResult, error } = useAIParser({
  debounceMs: 400,
  minInputLength: 5,
+ useAIService: true, // Feature #588: Use backend AI for enhanced parsing
  });
 
  const [showEditModal, setShowEditModal] = useState(false);
@@ -326,7 +328,8 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
  </svg>
- Analyzing...
+ {/* Feature #588: Show AI analyzing when using backend service */}
+ AI Analyzing...
  </span>
  )}
  </div>
@@ -349,6 +352,21 @@ export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
  </button>
  ))}
  </div>
+ </div>
+ )}
+
+ {/* Feature #588: Error Display */}
+ {error && (
+ <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
+ <p className="text-sm text-destructive flex items-center gap-2">
+ <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+ </svg>
+ {error}
+ </p>
+ <p className="text-xs text-muted-foreground mt-1">
+ Using local parsing as fallback. Your test configuration may have reduced accuracy.
+ </p>
  </div>
  )}
 

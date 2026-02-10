@@ -335,8 +335,48 @@ class UnifiedAIServiceClass {
   /**
    * Parse user intent from natural language for test creation
    * Used by Create Test modal to understand what the user wants
+   * Feature #588: Now calls backend /api/v1/ai/parse-intent for real AI-powered parsing
+   * Falls back to local parsing if backend is unavailable
    */
   public async parseTestIntent(userInput: string): Promise<ParsedTestIntent> {
+    // Try backend API first for real AI-powered parsing
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/ai/parse-intent`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          text: userInput,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.intent) {
+          const intent = data.intent;
+          return {
+            action: intent.action || 'unknown',
+            testType: intent.testType,
+            targetUrl: intent.targetUrl,
+            testName: intent.testName,
+            parameters: intent.parameters,
+            confidence: intent.confidence || 0.5,
+          };
+        }
+      }
+      // Fall through to local parsing if response not ok or no success
+    } catch (error) {
+      console.warn('[UnifiedAIService] Backend parse-intent failed, falling back to local parsing:', error);
+    }
+
+    // Local fallback parsing (original implementation)
+    return this.parseTestIntentLocal(userInput);
+  }
+
+  /**
+   * Local fallback for parseTestIntent when backend is unavailable
+   * Feature #588: Extracted from original parseTestIntent for graceful degradation
+   */
+  private parseTestIntentLocal(userInput: string): ParsedTestIntent {
     const input = userInput.toLowerCase().trim();
 
     // Determine action
