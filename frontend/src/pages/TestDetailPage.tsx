@@ -2,7 +2,8 @@
 // Feature #1441: Split App.tsx into logical modules
 // Feature #68: Added React Query caching for faster loading
 // Feature #337: Dark-first design system redesign
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+// Feature #569: Removed useState - all state now managed by useTestDetailState hook
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
@@ -29,7 +30,8 @@ import {
   // TestSuite, ConsoleLog, NetworkRequest, TestRunResult, StepResult, TestStatus,
   // RunStatus, ResultStatus, StepStatus, TestCategory - used in sub-components
   TestType,
-  TestRunType,
+  // Feature #569: Removed TestRunType, FlakinessTrend, K6CompareResults, TestExplanation
+  // (no longer used directly - state types now managed by useTestDetailState hook)
   // Feature #48: Import extracted components
   DeleteTestModal,
   ApproveBaselineModal,
@@ -37,16 +39,13 @@ import {
   MergeBaselineModal,
   RejectChangesModal,
   FlakinessPanel,
-  FlakinessTrend,
   ImageLightbox,
   K6CompareModal,
-  K6CompareResults,
   RunHistorySection,
   EditTestModal,
   AddStepModal,
   AIExplainModal,
   UnsavedChangesConfirmModal,
-  TestExplanation,
   QuickScheduleModal,
   ViewCodeTab,
   K6ScriptTab,
@@ -74,8 +73,8 @@ import {
   useRunHandlers,
   useBaselineDataFetching,
   useTestPageUtilities,
-  // Feature #560: Consolidated modal state management
-  useModalState,
+  // Feature #569: Combined state hook replaces ~78 useState + useModalState
+  useTestDetailState,
 } from '../components/test-detail';
 
 function TestDetailPage() {
@@ -108,129 +107,119 @@ function TestDetailPage() {
   const { invalidateTest } = useInvalidateTests();
   const { invalidateAll: invalidateRuns } = useInvalidateRuns();
 
-  // Local state derived from React Query data
-  const [test, setTest] = useState<TestType | null>(null);
-  // Feature #137: Simplified suite type - only need id/name for breadcrumb, not full TestSuite
-  const [suite, setSuite] = useState<{ id: string; name: string } | null>(null);
-  const [project, setProject] = useState<{ id: string; name: string } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Feature #560: Consolidated modal state management
-  // 11 boolean visibility flags use a single useReducer; associated form/loading/error state
-  // remains as individual useState within the hook. Both new API (modals.*, openModal, closeModal)
-  // and legacy API (showDeleteModal, setShowDeleteModal, etc.) are available.
+  // Feature #569: Combined state hook replaces ~78 useState + useModalState
+  // All state is managed by useTestDetailState() which calls useCoreTestState,
+  // useModalState, useVisualTestingState, useUIState, useStepManagementState internally.
   const {
-    modals, openModal, closeModal, closeAllModals,
-    // Delete modal
-    showDeleteModal, setShowDeleteModal,
-    isDeleting, setIsDeleting,
+    // Core test state
+    test, setTest, suite, setSuite, project, setProject,
+    isLoading, setIsLoading, error, setError,
+    currentRun, setCurrentRun, runs, setRuns,
+    isRunning, setIsRunning, isCancellingRun, setIsCancellingRun,
+    runError, setRunError,
+    liveProgress, setLiveProgress, liveScreenshot, setLiveScreenshot,
+    liveConsoleLogs, setLiveConsoleLogs,
+    // Modal state (visibility + associated form/loading/error)
+    showDeleteModal, setShowDeleteModal, isDeleting, setIsDeleting,
     deleteError, setDeleteError,
-    resetDeleteModal,
-    // Edit modal
-    showEditModal, setShowEditModal,
-    editName, setEditName,
-    editDescription, setEditDescription,
-    isEditing, setIsEditing,
+    showEditModal, setShowEditModal, editName, setEditName,
+    editDescription, setEditDescription, isEditing, setIsEditing,
     editError, setEditError,
-    resetEditModal,
-    // Approve baseline
     showApproveBaselineModal, setShowApproveBaselineModal,
     approvingBaseline, setApprovingBaseline,
     approveBaselineRunId, setApproveBaselineRunId,
     approveBaselineError, setApproveBaselineError,
-    // Reject changes
     showRejectChangesModal, setShowRejectChangesModal,
     rejectingChanges, setRejectingChanges,
     rejectChangesRunId, setRejectChangesRunId,
     rejectChangesError, setRejectChangesError,
     rejectionReason, setRejectionReason,
-    // Restore baseline
     showRestoreBaselineModal, setShowRestoreBaselineModal,
     restoreHistoryEntry, setRestoreHistoryEntry,
     restoringBaseline, setRestoringBaseline,
     restoreBaselineError, setRestoreBaselineError,
-    // Merge baseline
     showMergeBaselineModal, setShowMergeBaselineModal,
     selectedMergeBranch, setSelectedMergeBranch,
     isMergingBaseline, setIsMergingBaseline,
     mergeBaselineError, setMergeBaselineError,
-    // Quick schedule
     showQuickScheduleModal, setShowQuickScheduleModal,
     isCreatingSchedule, setIsCreatingSchedule,
     quickScheduleError, setQuickScheduleError,
-    // Add step
     showAddStepModal, setShowAddStepModal,
-    // Explain
     showExplainModal, setShowExplainModal,
     testExplanation, setTestExplanation,
     isExplainingTest, setIsExplainingTest,
-    // Unsaved changes
     showUnsavedChangesModal, setShowUnsavedChangesModal,
     pendingNavigation, setPendingNavigation,
-    // Compare
     showCompareModal, setShowCompareModal,
     compareResults, setCompareResults,
     isComparing, setIsComparing,
-  } = useModalState();
-
-  const [isRunning, setIsRunning] = useState(false);
-  const [isCancellingRun, setIsCancellingRun] = useState(false);
-  const [runError, setRunError] = useState('');
-  const [currentRun, setCurrentRun] = useState<TestRunType | null>(null);
-  const [runs, setRuns] = useState<TestRunType[]>([]);
-  const [isDuplicating, setIsDuplicating] = useState(false);
-  const [duplicateError, setDuplicateError] = useState('');
-  // Real-time progress state
-  const [liveProgress, setLiveProgress] = useState<{
-    totalTests: number;
-    completedTests: number;
-    currentTest?: string;
-    currentStep?: { index: number; total: number; action: string };
-    // K6 load test specific metrics
-    k6Metrics?: {
-      phase: string;
-      progress: number;
-      currentVUs?: number;
-      totalRequests?: number;
-      requestsPerSecond?: number;
-      avgResponseTime?: number;
-      errorRate?: number;
-      // Response time percentiles
-      p50ResponseTime?: number;
-      p95ResponseTime?: number;
-      p99ResponseTime?: number;
-    };
-  } | null>(null);
-  const [liveScreenshot, setLiveScreenshot] = useState<string | null>(null);
-  const [liveConsoleLogs, setLiveConsoleLogs] = useState<Array<{ level: string; message: string; timestamp: number }>>([]);
+    // Visual testing state
+    baselineData, setBaselineData, loadingBaseline, setLoadingBaseline,
+    baselineHistory, setBaselineHistory, loadingBaselineHistory, setLoadingBaselineHistory,
+    selectedHistoryVersion, setSelectedHistoryVersion,
+    historyVersionImage, setHistoryVersionImage,
+    loadingHistoryImage, setLoadingHistoryImage,
+    selectedBranch, setSelectedBranch,
+    availableBranches, setAvailableBranches, loadingBranches, setLoadingBranches,
+    mergeableBranches, setMergeableBranches,
+    loadingMergeableBranches, setLoadingMergeableBranches,
+    rejectionStatus, setRejectionStatus,
+    comparisonViewMode, setComparisonViewMode,
+    sliderPosition, setSliderPosition,
+    onionSkinOpacity, setOnionSkinOpacity,
+    diffOverlayOpacity, setDiffOverlayOpacity,
+    imageZoomLevel, setImageZoomLevel,
+    lightboxImage, setLightboxImage,
+    lightboxZoom, setLightboxZoom,
+    lightboxPan, setLightboxPan,
+    isDragging, setIsDragging, dragStart, setDragStart,
+    // UI state
+    activeTab, setActiveTab,
+    flakinessTrend, setFlakinessTrend,
+    isLoadingFlakinessTrend, setIsLoadingFlakinessTrend,
+    showFlakinessTrendSection, setShowFlakinessTrendSection,
+    isDirty, setIsDirty,
+    isDownloadingArtifacts, setIsDownloadingArtifacts,
+    isDuplicating, setIsDuplicating, duplicateError, setDuplicateError,
+    k6Script, setK6Script,
+    isEditingK6Script, setIsEditingK6Script,
+    isSavingK6Script, setIsSavingK6Script,
+    showK6Templates, setShowK6Templates,
+    foldedRegions, setFoldedRegions,
+    isEditingCode, setIsEditingCode, editedCode, setEditedCode,
+    isSavingCode, setIsSavingCode, codeError, setCodeError,
+    sortBy, setSortBy, sortOrder, setSortOrder,
+    selectedRunsForCompare, setSelectedRunsForCompare,
+    a11ySeverityFilter, setA11ySeverityFilter,
+    a11yCategoryFilter, setA11yCategoryFilter,
+    a11ySearchQuery, setA11ySearchQuery,
+    // Step management state
+    draggedStepIndex, setDraggedStepIndex,
+    dragOverIndex, setDragOverIndex,
+    isSavingStepOrder, setIsSavingStepOrder,
+    hasReorderedSteps, setHasReorderedSteps,
+    newStepAction, setNewStepAction,
+    newStepSelector, setNewStepSelector,
+    newStepValue, setNewStepValue,
+    isAddingStep, setIsAddingStep, addStepError, setAddStepError,
+    newStepCheckpointName, setNewStepCheckpointName,
+    newStepCheckpointThreshold, setNewStepCheckpointThreshold,
+    newStepA11yWcagLevel, setNewStepA11yWcagLevel,
+    newStepA11yFailOnAny, setNewStepA11yFailOnAny,
+    newStepA11yFailOnCritical, setNewStepA11yFailOnCritical,
+    newStepA11yThreshold, setNewStepA11yThreshold,
+    selectorAutocomplete, setSelectorAutocomplete,
+    valueAutocomplete, setValueAutocomplete,
+    showSelectorAutocomplete, setShowSelectorAutocomplete,
+    showValueAutocomplete, setShowValueAutocomplete,
+  } = useTestDetailState();
 
   // Read filter state from URL search params (persists across navigation)
   const statusFilter = (searchParams.get('status') as 'all' | 'passed' | 'failed' | 'running') || 'all';
   const dateFilter = (searchParams.get('date') as 'all' | 'today' | '7days' | '30days') || 'all';
   const runPage = parseInt(searchParams.get('page') || '1', 10);
   const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
-  // Feature #560: showAddStepModal moved to useModalState
-  const [isAddingStep, setIsAddingStep] = useState(false);
-  const [addStepError, setAddStepError] = useState('');
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-  const [lightboxZoom, setLightboxZoom] = useState(1);
-  const [lightboxPan, setLightboxPan] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-
-  // Visual comparison view mode state
-  const [comparisonViewMode, setComparisonViewMode] = useState<'side-by-side' | 'slider' | 'onion-skin' | 'diff' | 'diff-overlay'>('side-by-side');
-  const [sliderPosition, setSliderPosition] = useState(50); // Percentage position 0-100 for slider
-  const [onionSkinOpacity, setOnionSkinOpacity] = useState(50); // Percentage opacity 0-100 for onion skin
-  const [diffOverlayOpacity, setDiffOverlayOpacity] = useState(50); // Percentage opacity 0-100 for diff overlay
-  const [imageZoomLevel, setImageZoomLevel] = useState<'fit' | '100' | '50' | '200'>('fit'); // Zoom level for images
-
-  // Feature #1101: Flakiness trend tracking state - Feature #48: Use imported type
-  const [flakinessTrend, setFlakinessTrend] = useState<FlakinessTrend | null>(null);
-  const [isLoadingFlakinessTrend, setIsLoadingFlakinessTrend] = useState(false);
-  const [showFlakinessTrendSection, setShowFlakinessTrendSection] = useState(true);
-
   // Refs for synchronized scrolling in side-by-side view
   const baselineContainerRef = useRef<HTMLDivElement>(null);
   const currentContainerRef = useRef<HTMLDivElement>(null);
@@ -266,27 +255,6 @@ function TestDetailPage() {
     });
   }, []);
 
-  // Track dirty state for unsaved changes warning
-  const [isDirty, setIsDirty] = useState(false);
-  // Feature #560: showUnsavedChangesModal & pendingNavigation moved to useModalState
-  const [isDownloadingArtifacts, setIsDownloadingArtifacts] = useState(false);
-
-  // Drag and drop step reordering
-  const [draggedStepIndex, setDraggedStepIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [isSavingStepOrder, setIsSavingStepOrder] = useState(false);
-  const [hasReorderedSteps, setHasReorderedSteps] = useState(false);
-
-  // View Code tab state
-  const [activeTab, setActiveTab] = useState<'steps' | 'code' | 'baseline' | 'k6script'>('steps');
-  // K6 script editor state
-  const [k6Script, setK6Script] = useState('');
-  const [isEditingK6Script, setIsEditingK6Script] = useState(false);
-  const [isSavingK6Script, setIsSavingK6Script] = useState(false);
-  const [showK6Templates, setShowK6Templates] = useState(false);
-  // K6 script code folding state
-  const [foldedRegions, setFoldedRegions] = useState<Set<number>>(new Set());
-
   const toggleFold = useCallback((lineNumber: number) => {
     setFoldedRegions(prev => {
       const newSet = new Set(prev);
@@ -306,60 +274,6 @@ function TestDetailPage() {
   const isLineHiddenForLine = useCallback((lineNumber: number, regions: FoldableRegion[]) => {
     return isLineHidden(lineNumber, regions, foldedRegions);
   }, [foldedRegions]);
-  const [baselineData, setBaselineData] = useState<{hasBaseline: boolean; image?: string; createdAt?: string; size?: number; approvedBy?: string; approvedByUserId?: string; approvedAt?: string; sourceRunId?: string} | null>(null);
-  const [loadingBaseline, setLoadingBaseline] = useState(false);
-
-  // Baseline approval state - Feature #560: moved to useModalState
-
-  // Baseline history state
-  const [baselineHistory, setBaselineHistory] = useState<Array<{
-    id: string;
-    testId: string;
-    viewportId: string;
-    version: number;
-    approvedBy: string;
-    approvedByUserId: string;
-    approvedAt: string;
-    sourceRunId?: string;
-    filename: string;
-  }>>([]);
-  const [loadingBaselineHistory, setLoadingBaselineHistory] = useState(false);
-  const [selectedHistoryVersion, setSelectedHistoryVersion] = useState<string | null>(null);
-  const [historyVersionImage, setHistoryVersionImage] = useState<string | null>(null);
-  const [loadingHistoryImage, setLoadingHistoryImage] = useState(false);
-  // Feature #560: restoreBaseline, rejectChanges state moved to useModalState
-  const [rejectionStatus, setRejectionStatus] = useState<{hasRejection: boolean; rejectedBy?: string; rejectedAt?: string; reason?: string} | null>(null);
-
-  // Branch selection state for visual regression tests
-  const [selectedBranch, setSelectedBranch] = useState('main');
-  const [availableBranches, setAvailableBranches] = useState<string[]>(['main']);
-  const [loadingBranches, setLoadingBranches] = useState(false);
-
-  // Baseline merge state (for merging baselines from feature branches)
-  const [mergeableBranches, setMergeableBranches] = useState<Array<{
-    branch: string;
-    updatedAt: string;
-    approvedBy?: string;
-    isNewer: boolean;
-    hasBaseline: boolean;
-  }>>([]);
-  const [loadingMergeableBranches, setLoadingMergeableBranches] = useState(false);
-  // Feature #560: mergeBaseline, quickSchedule state moved to useModalState
-
-  // Accessibility results filter state
-  const [a11ySeverityFilter, setA11ySeverityFilter] = useState<{ [key: string]: 'all' | 'critical' | 'serious' | 'moderate' | 'minor' }>({});
-  const [a11yCategoryFilter, setA11yCategoryFilter] = useState<{ [key: string]: 'all' | 'color' | 'images' | 'forms' | 'navigation' | 'structure' | 'aria' }>({});
-  const [a11ySearchQuery, setA11ySearchQuery] = useState<{ [key: string]: string }>({});
-
-  // Export accessibility report as PDF
-
-  // Code editor state for advanced users
-  const [isEditingCode, setIsEditingCode] = useState(false);
-  const [editedCode, setEditedCode] = useState('');
-  const [isSavingCode, setIsSavingCode] = useState(false);
-  const [codeError, setCodeError] = useState('');
-
-  // Feature #560: explain/testExplanation state moved to useModalState
 
   const generatePlaywrightCodeForTest = useCallback((steps: TestType['steps'] | undefined) => {
     return generatePlaywrightCode(steps || [], test?.name || 'Untitled Test');
@@ -610,13 +524,6 @@ function TestDetailPage() {
     running: runs.filter(r => r.status === 'running').length,
   };
 
-  // Sort state
-  const [sortBy, setSortBy] = useState<'date' | 'duration'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-
-  // K6 run comparison state (Feature #564) - Feature #560: compare state moved to useModalState
-  const [selectedRunsForCompare, setSelectedRunsForCompare] = useState<string[]>([]);
-
   // Check if current test is a load test (for comparison feature)
   const isLoadTest = test?.test_type === 'load';
 
@@ -662,23 +569,6 @@ function TestDetailPage() {
       return [...prev, runId];
     });
   };
-
-  const [newStepAction, setNewStepAction] = useState('navigate');
-  const [newStepSelector, setNewStepSelector] = useState('');
-  const [newStepValue, setNewStepValue] = useState('');
-  const [newStepCheckpointName, setNewStepCheckpointName] = useState('');
-  const [newStepCheckpointThreshold, setNewStepCheckpointThreshold] = useState('0.1');
-  // Accessibility check step configuration
-  const [newStepA11yWcagLevel, setNewStepA11yWcagLevel] = useState<'A' | 'AA' | 'AAA'>('AA');
-  const [newStepA11yFailOnAny, setNewStepA11yFailOnAny] = useState(false);
-  const [newStepA11yFailOnCritical, setNewStepA11yFailOnCritical] = useState(true);
-  const [newStepA11yThreshold, setNewStepA11yThreshold] = useState('0'); // 0 = any violation fails
-
-  // AI Copilot autocomplete state
-  const [selectorAutocomplete, setSelectorAutocomplete] = useState<string | null>(null);
-  const [valueAutocomplete, setValueAutocomplete] = useState<string | null>(null);
-  const [showSelectorAutocomplete, setShowSelectorAutocomplete] = useState(false);
-  const [showValueAutocomplete, setShowValueAutocomplete] = useState(false);
 
   const baseUrl = test?.target_url || '';
 

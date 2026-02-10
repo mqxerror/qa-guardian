@@ -17,7 +17,7 @@ import { K6CompareResults } from './K6CompareModal';
 export interface TestSuite {
   id: string;
   name: string;
-  project_id: string;
+  project_id?: string;
   default_browser?: string;
 }
 
@@ -51,9 +51,10 @@ export interface BaselineHistoryEntry {
 
 export interface MergeableBranch {
   branch: string;
-  hasBaseline: boolean;
-  lastUpdated?: string;
+  updatedAt: string;
   approvedBy?: string;
+  isNewer: boolean;
+  hasBaseline: boolean;
 }
 
 export interface RejectionStatus {
