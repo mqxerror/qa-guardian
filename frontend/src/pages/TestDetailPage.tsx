@@ -215,6 +215,24 @@ function TestDetailPage() {
     showValueAutocomplete, setShowValueAutocomplete,
   } = useTestDetailState();
 
+  // Feature #570: Page-level section navigation (deep-linked via URL)
+  type PageSection = 'overview' | 'execution' | 'configuration' | 'history';
+  const validSections: PageSection[] = ['overview', 'execution', 'configuration', 'history'];
+  const rawSection = searchParams.get('section');
+  const pageSection: PageSection = validSections.includes(rawSection as PageSection)
+    ? (rawSection as PageSection) : 'overview';
+  const setPageSection = (section: PageSection) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (section === 'overview') {
+        newParams.delete('section');
+      } else {
+        newParams.set('section', section);
+      }
+      return newParams;
+    }, { replace: true });
+  };
+
   // Read filter state from URL search params (persists across navigation)
   const statusFilter = (searchParams.get('status') as 'all' | 'passed' | 'failed' | 'running') || 'all';
   const dateFilter = (searchParams.get('date') as 'all' | 'today' | '7days' | '30days') || 'all';
@@ -1004,56 +1022,100 @@ function TestDetailPage() {
           duplicateError={duplicateError}
         />
 
-        {/* Feature #551: Test Health Score with weighted breakdown */}
-        {runs.length > 0 && (() => {
-          const healthScore = computeTestHealthScore(runs);
-          return (
-            <div className="mt-6 mb-4">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <ScoreCard
-                  score={healthScore.overall}
-                  label="Health"
-                  size="md"
-                  showIcon
-                />
-                <ScoreCard
-                  score={healthScore.passRate}
-                  label="Pass Rate (40%)"
-                  size="sm"
-                  thresholds={{ good: 90, warning: 70 }}
-                />
-                <ScoreCard
-                  score={healthScore.durationStability}
-                  label="Stability (20%)"
-                  size="sm"
-                  thresholds={{ good: 80, warning: 50 }}
-                />
-                <ScoreCard
-                  score={healthScore.flakiness}
-                  label="Flakiness (20%)"
-                  size="sm"
-                  thresholds={{ good: 80, warning: 50 }}
-                />
-                <ScoreCard
-                  score={healthScore.recency}
-                  label="Recency (20%)"
-                  size="sm"
-                  thresholds={{ good: 80, warning: 40 }}
-                />
-              </div>
-            </div>
-          );
-        })()}
+        {/* Feature #570: Page-level tab navigation */}
+        <div className="border-b border-border mb-6 mt-4">
+          <nav className="flex gap-1 overflow-x-auto">
+            {([
+              { id: 'overview' as PageSection, label: 'Overview', icon: '📋' },
+              { id: 'execution' as PageSection, label: 'Execution', icon: '▶️', badge: currentRun ? 1 : 0 },
+              { id: 'configuration' as PageSection, label: 'Configuration', icon: '⚙️' },
+              { id: 'history' as PageSection, label: 'History', icon: '📊', badge: runs.length },
+            ]).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setPageSection(tab.id)}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  pageSection === tab.id
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                }`}
+              >
+                <span className="mr-2">{tab.icon}</span>
+                {tab.label}
+                {tab.badge !== undefined && tab.badge > 0 && (
+                  <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-muted">
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
 
-        {/* Feature #489: AI Summary Card for instant failure diagnosis */}
-        {test && (
-          <TestAISummary
-            testId={test.id}
-            testName={test.name}
-            runs={runs}
-            token={token}
-            formatDateTime={formatDateTime}
-          />
+        {/* Feature #570: Overview Section */}
+        {pageSection === 'overview' && (
+          <>
+            {/* Feature #551: Test Health Score with weighted breakdown */}
+            {runs.length > 0 && (() => {
+              const healthScore = computeTestHealthScore(runs);
+              return (
+                <div className="mb-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <ScoreCard
+                      score={healthScore.overall}
+                      label="Health"
+                      size="md"
+                      showIcon
+                    />
+                    <ScoreCard
+                      score={healthScore.passRate}
+                      label="Pass Rate (40%)"
+                      size="sm"
+                      thresholds={{ good: 90, warning: 70 }}
+                    />
+                    <ScoreCard
+                      score={healthScore.durationStability}
+                      label="Stability (20%)"
+                      size="sm"
+                      thresholds={{ good: 80, warning: 50 }}
+                    />
+                    <ScoreCard
+                      score={healthScore.flakiness}
+                      label="Flakiness (20%)"
+                      size="sm"
+                      thresholds={{ good: 80, warning: 50 }}
+                    />
+                    <ScoreCard
+                      score={healthScore.recency}
+                      label="Recency (20%)"
+                      size="sm"
+                      thresholds={{ good: 80, warning: 40 }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Feature #489: AI Summary Card for instant failure diagnosis */}
+            {test && (
+              <TestAISummary
+                testId={test.id}
+                testName={test.name}
+                runs={runs}
+                token={token}
+                formatDateTime={formatDateTime}
+              />
+            )}
+
+            {/* Test Details Card */}
+            <div className="mt-6">
+              <TestDetailsCard
+                test={test}
+                suiteName={suite?.name}
+                formatDate={formatDate}
+              />
+            </div>
+          </>
         )}
 
         {/* Delete Confirmation Modal - Feature #48: Extracted to component */}
@@ -1183,159 +1245,157 @@ function TestDetailPage() {
           onConfirm={handleConfirmNavigation}
         />
 
-        {/* Test Details - Feature #48: Using extracted TestDetailsCard component */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <TestDetailsCard
-            // Feature #568: Removed as-unknown-as cast (fixed TestDetailsCard to accept string | string[])
-            test={test}
-            suiteName={suite?.name}
-            formatDate={formatDate}
-          />
+        {/* Feature #570: Configuration Section */}
+        {pageSection === 'configuration' && (
+          <>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <TestDetailsCard
+                test={test}
+                suiteName={suite?.name}
+                formatDate={formatDate}
+              />
 
-          <div className="rounded-lg border border-border bg-card p-6">
-            {/* Tab Header */}
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setActiveTab('steps')}
-                  className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
-                    activeTab === 'steps'
-                      ? 'text-foreground border-primary'
-                      : 'text-muted-foreground border-transparent hover:text-foreground'
-                  }`}
-                >
-                  Test Steps
-                </button>
-                <button
-                  onClick={() => setActiveTab('code')}
-                  className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
-                    activeTab === 'code'
-                      ? 'text-foreground border-primary'
-                      : 'text-muted-foreground border-transparent hover:text-foreground'
-                  }`}
-                >
-                  View Code
-                </button>
-                {test?.test_type === 'visual_regression' && (
-                  <button
-                    onClick={() => setActiveTab('baseline')}
-                    className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
-                      activeTab === 'baseline'
-                        ? 'text-foreground border-primary'
-                        : 'text-muted-foreground border-transparent hover:text-foreground'
-                    }`}
-                  >
-                    📸 Baseline
-                  </button>
+              <div className="rounded-lg border border-border bg-card p-6">
+                {/* Sub-tab Header for steps/code/baseline/k6script */}
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => setActiveTab('steps')}
+                      className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
+                        activeTab === 'steps'
+                          ? 'text-foreground border-primary'
+                          : 'text-muted-foreground border-transparent hover:text-foreground'
+                      }`}
+                    >
+                      Test Steps
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('code')}
+                      className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
+                        activeTab === 'code'
+                          ? 'text-foreground border-primary'
+                          : 'text-muted-foreground border-transparent hover:text-foreground'
+                      }`}
+                    >
+                      View Code
+                    </button>
+                    {test?.test_type === 'visual_regression' && (
+                      <button
+                        onClick={() => setActiveTab('baseline')}
+                        className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
+                          activeTab === 'baseline'
+                            ? 'text-foreground border-primary'
+                            : 'text-muted-foreground border-transparent hover:text-foreground'
+                        }`}
+                      >
+                        Baseline
+                      </button>
+                    )}
+                    {test?.test_type === 'load' && (
+                      <button
+                        onClick={() => setActiveTab('k6script')}
+                        className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
+                          activeTab === 'k6script'
+                            ? 'text-foreground border-primary'
+                            : 'text-muted-foreground border-transparent hover:text-foreground'
+                        }`}
+                      >
+                        K6 Script
+                      </button>
+                    )}
+                  </div>
+                  {canEdit && activeTab === 'steps' && !['visual_regression', 'lighthouse', 'accessibility'].includes(test?.test_type || '') && (
+                    <button
+                      onClick={() => setShowAddStepModal(true)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      + Add Step
+                    </button>
+                  )}
+                </div>
+
+                {activeTab === 'steps' && (
+                  <TestStepsTab
+                    test={test}
+                    hasReorderedSteps={hasReorderedSteps}
+                    isSavingStepOrder={isSavingStepOrder}
+                    draggedStepIndex={draggedStepIndex}
+                    dragOverIndex={dragOverIndex}
+                    onSaveStepOrder={handleSaveStepOrder}
+                    onStepDragStart={handleStepDragStart}
+                    onStepDragEnd={handleStepDragEnd}
+                    onStepDragOver={handleStepDragOver}
+                    onStepDrop={handleStepDrop}
+                  />
                 )}
-                {test?.test_type === 'load' && (
-                  <button
-                    onClick={() => setActiveTab('k6script')}
-                    className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
-                      activeTab === 'k6script'
-                        ? 'text-foreground border-primary'
-                        : 'text-muted-foreground border-transparent hover:text-foreground'
-                    }`}
-                  >
-                    🚀 K6 Script
-                  </button>
+
+                {activeTab === 'code' && (
+                  <ViewCodeTab
+                    test={test}
+                    canEdit={canEdit}
+                    isEditingCode={isEditingCode}
+                    editedCode={editedCode}
+                    codeError={codeError}
+                    isSavingCode={isSavingCode}
+                    isExplainingTest={isExplainingTest}
+                    onSetEditedCode={setEditedCode}
+                    onStartEditCode={handleStartEditCode}
+                    onCancelEditCode={handleCancelEditCode}
+                    onSaveCode={handleSaveCode}
+                    onRevertToSteps={handleRevertToSteps}
+                    onExplainTest={handleExplainTest}
+                    generatePlaywrightCode={generatePlaywrightCodeForTest}
+                  />
+                )}
+
+                {activeTab === 'k6script' && test?.test_type === 'load' && (
+                  <K6ScriptTab
+                    test={test}
+                    canEdit={canEdit}
+                    isEditingK6Script={isEditingK6Script}
+                    k6Script={k6Script}
+                    isSavingK6Script={isSavingK6Script}
+                    token={token}
+                    k6Templates={k6Templates}
+                    showK6Templates={showK6Templates}
+                    onSetK6Script={setK6Script}
+                    onSetIsEditingK6Script={setIsEditingK6Script}
+                    onSetShowK6Templates={setShowK6Templates}
+                    generateK6Script={generateK6ScriptForTest}
+                  />
+                )}
+
+                {activeTab === 'baseline' && test?.test_type === 'visual_regression' && (
+                  <BaselineTab
+                    testId={testId!}
+                    selectedBranch={selectedBranch}
+                    availableBranches={availableBranches}
+                    loadingBaseline={loadingBaseline}
+                    baselineData={baselineData}
+                    isRunning={isRunning}
+                    mergeableBranches={mergeableBranches}
+                    baselineHistory={baselineHistory}
+                    loadingBaselineHistory={loadingBaselineHistory}
+                    selectedHistoryVersion={selectedHistoryVersion}
+                    historyVersionImage={historyVersionImage}
+                    loadingHistoryImage={loadingHistoryImage}
+                    onRunTest={handleRunTest}
+                    onSetSelectedMergeBranch={setSelectedMergeBranch}
+                    onSetShowMergeBaselineModal={setShowMergeBaselineModal}
+                    onSetLightboxImage={setLightboxImage}
+                    onSetSelectedHistoryVersion={setSelectedHistoryVersion}
+                    onSetHistoryVersionImage={setHistoryVersionImage}
+                    onSetRestoreHistoryEntry={setRestoreHistoryEntry}
+                    onSetShowRestoreBaselineModal={setShowRestoreBaselineModal}
+                    onSetRestoreBaselineError={setRestoreBaselineError}
+                  />
                 )}
               </div>
-              {/* Feature #1963: Only show Add Step for E2E tests (visual/lighthouse/accessibility don't use steps) */}
-              {canEdit && activeTab === 'steps' && !['visual_regression', 'lighthouse', 'accessibility'].includes(test?.test_type || '') && (
-                <button
-                  onClick={() => setShowAddStepModal(true)}
-                  className="text-sm text-primary hover:underline"
-                >
-                  + Add Step
-                </button>
-              )}
             </div>
+          </>
+        )}
 
-            {/* Steps Tab Content - Feature #48: Extracted to TestStepsTab component */}
-            {activeTab === 'steps' && (
-              <TestStepsTab
-                test={test}
-                hasReorderedSteps={hasReorderedSteps}
-                isSavingStepOrder={isSavingStepOrder}
-                draggedStepIndex={draggedStepIndex}
-                dragOverIndex={dragOverIndex}
-                onSaveStepOrder={handleSaveStepOrder}
-                onStepDragStart={handleStepDragStart}
-                onStepDragEnd={handleStepDragEnd}
-                onStepDragOver={handleStepDragOver}
-                onStepDrop={handleStepDrop}
-              />
-            )}
-
-            {/* View Code Tab Content - Feature #48: Extracted to ViewCodeTab component */}
-            {activeTab === 'code' && (
-              <ViewCodeTab
-                test={test}
-                canEdit={canEdit}
-                isEditingCode={isEditingCode}
-                editedCode={editedCode}
-                codeError={codeError}
-                isSavingCode={isSavingCode}
-                isExplainingTest={isExplainingTest}
-                onSetEditedCode={setEditedCode}
-                onStartEditCode={handleStartEditCode}
-                onCancelEditCode={handleCancelEditCode}
-                onSaveCode={handleSaveCode}
-                onRevertToSteps={handleRevertToSteps}
-                onExplainTest={handleExplainTest}
-                generatePlaywrightCode={generatePlaywrightCodeForTest}
-              />
-            )}
-
-            {/* K6 Script Tab Content - Feature #48: Use extracted K6ScriptTab component */}
-            {activeTab === 'k6script' && test?.test_type === 'load' && (
-              <K6ScriptTab
-                test={test}
-                canEdit={canEdit}
-                isEditingK6Script={isEditingK6Script}
-                k6Script={k6Script}
-                isSavingK6Script={isSavingK6Script}
-                token={token}
-                k6Templates={k6Templates}
-                showK6Templates={showK6Templates}
-                onSetK6Script={setK6Script}
-                onSetIsEditingK6Script={setIsEditingK6Script}
-                onSetShowK6Templates={setShowK6Templates}
-                generateK6Script={generateK6ScriptForTest}
-              />
-            )}
-
-            {/* Baseline Tab Content - Feature #48: Extracted to BaselineTab component */}
-            {activeTab === 'baseline' && test?.test_type === 'visual_regression' && (
-              <BaselineTab
-                testId={testId!}
-                selectedBranch={selectedBranch}
-                availableBranches={availableBranches}
-                loadingBaseline={loadingBaseline}
-                baselineData={baselineData}
-                isRunning={isRunning}
-                mergeableBranches={mergeableBranches}
-                baselineHistory={baselineHistory}
-                loadingBaselineHistory={loadingBaselineHistory}
-                selectedHistoryVersion={selectedHistoryVersion}
-                historyVersionImage={historyVersionImage}
-                loadingHistoryImage={loadingHistoryImage}
-                onRunTest={handleRunTest}
-                onSetSelectedMergeBranch={setSelectedMergeBranch}
-                onSetShowMergeBaselineModal={setShowMergeBaselineModal}
-                onSetLightboxImage={setLightboxImage}
-                onSetSelectedHistoryVersion={setSelectedHistoryVersion}
-                onSetHistoryVersionImage={setHistoryVersionImage}
-                onSetRestoreHistoryEntry={setRestoreHistoryEntry}
-                onSetShowRestoreBaselineModal={setShowRestoreBaselineModal}
-                onSetRestoreBaselineError={setRestoreBaselineError}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Add Step Modal - Feature #48: Extracted to component */}
+        {/* Add Step Modal - always available from any section */}
         <AddStepModal
           show={showAddStepModal}
           newStepAction={newStepAction}
@@ -1369,8 +1429,8 @@ function TestDetailPage() {
           onClose={() => setShowAddStepModal(false)}
         />
 
-        {/* Current Run Status - Feature #48: Extracted to component */}
-        {currentRun && (
+        {/* Feature #570: Execution Section */}
+        {pageSection === 'execution' && currentRun && (
           <CurrentRunStatusSection
             currentRun={currentRun}
             test={test}
@@ -1408,19 +1468,25 @@ function TestDetailPage() {
             formatDateTime={formatDateTime}
           />
         )}
+        {pageSection === 'execution' && !currentRun && (
+          <div className="rounded-lg border border-border bg-card p-8 text-center">
+            <p className="text-muted-foreground">No active run. Click &ldquo;Run Test&rdquo; to start a new execution.</p>
+          </div>
+        )}
 
-        {/* Feature #1101: Flakiness Trend - Feature #48: Extracted to component */}
-        <FlakinessPanel
-          isLoading={isLoadingFlakinessTrend}
-          flakinessTrend={flakinessTrend}
-          runs={runs}
-          showSection={showFlakinessTrendSection}
-          onHideSection={() => setShowFlakinessTrendSection(false)}
-          onRefresh={fetchFlakinessTrend}
-        />
+        {/* Feature #570: History Section */}
+        {pageSection === 'history' && (
+          <>
+            <FlakinessPanel
+              isLoading={isLoadingFlakinessTrend}
+              flakinessTrend={flakinessTrend}
+              runs={runs}
+              showSection={showFlakinessTrendSection}
+              onHideSection={() => setShowFlakinessTrendSection(false)}
+              onRefresh={fetchFlakinessTrend}
+            />
 
-        {/* Run History - Feature #48: Extracted to component */}
-        <RunHistorySection
+            <RunHistorySection
           runs={runs}
           filteredRuns={filteredRuns}
           sortedRuns={sortedRuns}
@@ -1450,8 +1516,10 @@ function TestDetailPage() {
           onCompareRuns={handleCompareRuns}
           onDownloadAllArtifacts={handleDownloadAllArtifacts}
         />
+          </>
+        )}
 
-        {/* K6 Run Comparison Modal - Feature #48: Extracted to component */}
+        {/* K6 Run Comparison Modal - always available */}
         <K6CompareModal
           show={showCompareModal}
           results={compareResults}
