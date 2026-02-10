@@ -32,7 +32,6 @@ import {
   Loader2,
   ExternalLink,
   History,
-  Save,
   Download,
   AlertCircle,
   BarChart2,
@@ -61,7 +60,6 @@ import {
   // Modal components
   CreateTestSuiteModal,
   ScheduleModal,
-  SaveAsSuiteModal, // Feature #532
   // Feature #514: Extracted components
   WaveCard,
   ScreenshotModal,
@@ -337,9 +335,6 @@ export function QuickTestPage() {
     isOpen: false,
     testSuggestions: undefined,
   });
-
-  // Feature #532: Save as Suite modal state
-  const [saveAsSuiteModal, setSaveAsSuiteModal] = useState(false);
 
   // Feature #543: Export dropdown state
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -917,15 +912,6 @@ export function QuickTestPage() {
                     </div>
                   )}
                 </div>
-                {/* Feature #532: Save as Suite button */}
-                <button
-                  onClick={() => setSaveAsSuiteModal(true)}
-                  className="px-4 py-2 bg-muted text-muted-foreground rounded-lg
-                    hover:bg-muted/80 transition-colors flex items-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  Save as Suite
-                </button>
                 {/* Feature #474: Schedule Recurring Test button */}
                 <button
                   onClick={openScheduleModal}
@@ -1067,20 +1053,6 @@ export function QuickTestPage() {
         onClose={() => setCreateTestSuiteModal({ isOpen: false, testSuggestions: undefined })}
       />
 
-      {/* Feature #532: Save as Suite Modal */}
-      <SaveAsSuiteModal
-        isOpen={saveAsSuiteModal}
-        waves={waves.map(w => ({
-          wave: w.wave,
-          name: w.name,
-          status: w.status,
-          data: w.data,
-          duration: w.duration,
-        }))}
-        targetUrl={testingUrl || ''}
-        token={token || ''}
-        onClose={() => setSaveAsSuiteModal(false)}
-      />
     </Layout>
   );
 }
