@@ -24,7 +24,8 @@ import {
  TabsContent,
  useReducedMotion,
 } from '../components/ui';
-import { Download, RefreshCw, Share2 } from 'lucide-react';
+// Feature #571: Added Lucide icons to replace emoji in tab navigation
+import { Download, RefreshCw, Share2, FlaskConical, ListOrdered, Camera, BarChart3, Globe, Eye, Accessibility, ScrollText } from 'lucide-react';
 import { useMetricsState } from '../hooks/useMetricsState';
 import { useNetworkAnalysisState } from '../hooks/useNetworkAnalysisState';
 import { useAccessibilityState } from '../hooks/useAccessibilityState';
@@ -1227,14 +1228,14 @@ export default function TestRunResultPage() {
  activeTab={activeTab}
  onTabChange={(tab) => setActiveTab(tab as ActiveTab)}
  tabs={[
- { id: 'results', label: 'Results', icon: '🧪', count: run.results?.length || 0 },
- { id: 'timeline', label: 'Timeline', icon: '📋', count: allSteps.length },
- { id: 'screenshots', label: 'Screenshots', icon: '📸', count: screenshots.length },
- { id: 'metrics', label: 'Metrics', icon: '📊', count: performanceResults.length + loadTestResults.length },
- { id: 'network', label: 'Network', icon: '🌐', count: networkRequests.length },
- { id: 'visual', label: 'Visual Diff', icon: '🎨', count: visualResults.length },
- { id: 'accessibility', label: 'Accessibility', icon: '♿', count: accessibilityResults.length },
- { id: 'logs', label: 'Logs', icon: '📝', count: consoleLogs.length },
+ { id: 'results', label: 'Results', icon: <FlaskConical className="h-4 w-4" />, count: run.results?.length || 0 },
+ { id: 'timeline', label: 'Timeline', icon: <ListOrdered className="h-4 w-4" />, count: allSteps.length },
+ { id: 'screenshots', label: 'Screenshots', icon: <Camera className="h-4 w-4" />, count: screenshots.length },
+ { id: 'metrics', label: 'Metrics', icon: <BarChart3 className="h-4 w-4" />, count: performanceResults.length + loadTestResults.length },
+ { id: 'network', label: 'Network', icon: <Globe className="h-4 w-4" />, count: networkRequests.length },
+ { id: 'visual', label: 'Visual Diff', icon: <Eye className="h-4 w-4" />, count: visualResults.length },
+ { id: 'accessibility', label: 'Accessibility', icon: <Accessibility className="h-4 w-4" />, count: accessibilityResults.length },
+ { id: 'logs', label: 'Logs', icon: <ScrollText className="h-4 w-4" />, count: consoleLogs.length },
  ]}
  />
 

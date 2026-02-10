@@ -5,6 +5,8 @@
 // Feature #569: Removed useState - all state now managed by useTestDetailState hook
 import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+// Feature #571: Lucide icons for page-level tab navigation (replaces emoji)
+import { LayoutDashboard, Play, Settings, History } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
@@ -1026,24 +1028,24 @@ function TestDetailPage() {
         <div className="border-b border-border mb-6 mt-4">
           <nav className="flex gap-1 overflow-x-auto">
             {([
-              { id: 'overview' as PageSection, label: 'Overview', icon: '📋' },
-              { id: 'execution' as PageSection, label: 'Execution', icon: '▶️', badge: currentRun ? 1 : 0 },
-              { id: 'configuration' as PageSection, label: 'Configuration', icon: '⚙️' },
-              { id: 'history' as PageSection, label: 'History', icon: '📊', badge: runs.length },
+              { id: 'overview' as PageSection, label: 'Overview', icon: <LayoutDashboard className="h-4 w-4" /> },
+              { id: 'execution' as PageSection, label: 'Execution', icon: <Play className="h-4 w-4" />, badge: currentRun ? 1 : 0 },
+              { id: 'configuration' as PageSection, label: 'Configuration', icon: <Settings className="h-4 w-4" /> },
+              { id: 'history' as PageSection, label: 'History', icon: <History className="h-4 w-4" />, badge: runs.length },
             ]).map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setPageSection(tab.id)}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
                   pageSection === tab.id
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                 }`}
               >
-                <span className="mr-2">{tab.icon}</span>
+                {tab.icon}
                 {tab.label}
                 {tab.badge !== undefined && tab.badge > 0 && (
-                  <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-muted">
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-muted">
                     {tab.badge}
                   </span>
                 )}

@@ -1,6 +1,7 @@
 /**
  * TabNavigation Component
  * Feature #46: Extracted from TestRunResultPage.tsx
+ * Feature #571: Changed icon from emoji string to React.ReactNode for Lucide icons
  * Provides tab navigation for different result views
  */
 
@@ -10,7 +11,7 @@ import { ActiveTab } from './types';
 interface TabConfig {
   id: ActiveTab;
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   count: number;
 }
 
@@ -32,13 +33,13 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap inline-flex items-center gap-2 ${
               activeTab === tab.id
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
             }`}
           >
-            <span className="mr-2">{tab.icon}</span>
+            {tab.icon}
             {tab.label}
             {tab.count > 0 && (
               <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-muted">
