@@ -292,6 +292,8 @@ export function QuickTestPage() {
   const [urlError, setUrlError] = useState<string | null>(null);
   const [recentUrls, setRecentUrls] = useState<string[]>([]);
   const [showRecentUrls, setShowRecentUrls] = useState(false);
+  // Feature #579: Browser selection for cross-browser Quick Test
+  const [selectedBrowser, setSelectedBrowser] = useState<'chromium' | 'firefox' | 'webkit'>('chromium');
 
   // UI State for wave expansion (not managed by hook)
   const [waveExpanded, setWaveExpanded] = useState<Record<number, boolean>>({});
@@ -480,11 +482,12 @@ export function QuickTestPage() {
     });
 
     // Use hook's startTest function
-    const result = await hookStartTest(testUrl);
+    // Feature #579: Pass selected browser for cross-browser testing
+    const result = await hookStartTest(testUrl, selectedBrowser);
     if ('error' in result) {
       setUrlError(result.error);
     }
-  }, [url, hookStartTest]);
+  }, [url, hookStartTest, selectedBrowser]);
 
   // Handle enter key
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -785,6 +788,20 @@ export function QuickTestPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Feature #579: Browser selector for cross-browser testing */}
+                <select
+                  value={selectedBrowser}
+                  onChange={(e) => setSelectedBrowser(e.target.value as 'chromium' | 'firefox' | 'webkit')}
+                  disabled={isRunning}
+                  className="px-3 py-3 bg-muted border border-border rounded-lg text-foreground
+                    focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  title="Select browser"
+                >
+                  <option value="chromium">🌐 Chromium</option>
+                  <option value="firefox">🦊 Firefox</option>
+                  <option value="webkit">🧭 WebKit</option>
+                </select>
 
                 <button
                   onClick={startTest}

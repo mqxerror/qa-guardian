@@ -31,8 +31,10 @@ import { createLogger } from '../../services/logger.js';
 const log = createLogger('quick-test-routes');
 
 // Request body type
+// Feature #579: Added browser option for cross-browser Quick Test
 interface QuickTestBody {
   url: string;
+  browser?: 'chromium' | 'firefox' | 'webkit';
 }
 
 // Feature #473: Comparative Quick Test request body
@@ -123,6 +125,13 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
               format: 'uri',
               description: 'The URL to test (must include protocol)',
             },
+            // Feature #579: Cross-browser Quick Test
+            browser: {
+              type: 'string',
+              enum: ['chromium', 'firefox', 'webkit'],
+              default: 'chromium',
+              description: 'Browser to use for testing (default: chromium)',
+            },
           },
         },
         response: {
@@ -150,7 +159,8 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
-      const { url } = request.body;
+      // Feature #579: Extract browser option (default to chromium)
+      const { url, browser = 'chromium' } = request.body;
       const user = request.user as JwtPayload;
       const orgId = getOrganizationId(request);
 
@@ -181,11 +191,13 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       const runId = uuidv4();
 
       // Start the quick test asynchronously
+      // Feature #579: Pass browser selection to runner
       runQuickTest({
         url,
         runId,
         orgId,
         userId: user.id,
+        browser,
       }).catch((err) => {
         // Feature #481: Use structured Pino logging
         log.error({ runId, url, error: err }, 'Unhandled error in quick test');

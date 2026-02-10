@@ -196,7 +196,8 @@ export function useQuickTestSocket() {
   }, [socket, isConnected]);
 
   // Start a new quick test
-  const startTest = useCallback(async (url: string): Promise<{ runId: string } | { error: string }> => {
+  // Feature #579: Added browser parameter for cross-browser testing
+  const startTest = useCallback(async (url: string, browser: 'chromium' | 'firefox' | 'webkit' = 'chromium'): Promise<{ runId: string } | { error: string }> => {
     // Reset state
     reset();
 
@@ -207,7 +208,7 @@ export function useQuickTestSocket() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, browser }),
       });
 
       if (!response.ok) {

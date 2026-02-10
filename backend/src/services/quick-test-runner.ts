@@ -15,7 +15,19 @@ import tls from 'tls';
 import https from 'https';
 import http from 'http';
 import { URL } from 'url';
-import { chromium, Browser, BrowserContext, Page } from 'playwright';
+import { chromium, firefox, webkit, Browser, BrowserContext, Page, BrowserType } from 'playwright';
+
+// Feature #579: Browser type for cross-browser Quick Test
+export type QuickTestBrowser = 'chromium' | 'firefox' | 'webkit';
+
+// Feature #579: Map browser string to Playwright launcher
+function getBrowserLauncher(browser: QuickTestBrowser): BrowserType {
+  switch (browser) {
+    case 'firefox': return firefox;
+    case 'webkit': return webkit;
+    default: return chromium;
+  }
+}
 import { AxeBuilder } from '@axe-core/playwright';
 import { getWebSocketIO } from './websocket-events.js';
 import { aiService } from './ai-service.js';
@@ -72,6 +84,8 @@ export interface QuickTestRequest {
   runId: string;
   orgId: string;
   userId: string;
+  // Feature #579: Cross-browser Quick Test (default: chromium)
+  browser?: QuickTestBrowser;
 }
 
 export interface WaveResult {
@@ -2366,7 +2380,8 @@ async function runSeoAnalysis(url: string, browser: Browser): Promise<SeoAnalysi
 // ============================================================
 
 export async function runQuickTest(request: QuickTestRequest): Promise<void> {
-  const { url, runId, orgId, userId } = request;
+  const { url, runId, orgId, userId, browser: browserType = 'chromium' } = request;
+  const browserLauncher = getBrowserLauncher(browserType);
 
   // Initialize result
   // Feature #461: Include orgId for IDOR protection
@@ -2404,8 +2419,8 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
   let securityResult: SecurityScanResult | undefined;
 
   try {
-    // Launch browser once for waves 2 and 3
-    browser = await chromium.launch({ headless: true });
+    // Feature #579: Launch selected browser once for waves 2 and 3
+    browser = await browserLauncher.launch({ headless: true });
 
     // Wave 1: Health Check
     emitWaveStart(orgId, runId, 1, 'Health Check');
@@ -2551,7 +2566,8 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       let ownsBrowser = false;
 
       if (!a11yBrowser) {
-        a11yBrowser = await chromium.launch({ headless: true });
+        // Feature #579: Use selected browser for a11y scan
+        a11yBrowser = await browserLauncher.launch({ headless: true });
         ownsBrowser = true;
       }
 
@@ -2678,7 +2694,8 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       let seoBrowser: Browser | null = browser;
       let ownsBrowser = false;
       if (!seoBrowser) {
-        seoBrowser = await chromium.launch({ headless: true });
+        // Feature #579: Use selected browser for SEO analysis
+        seoBrowser = await browserLauncher.launch({ headless: true });
         ownsBrowser = true;
       }
 
