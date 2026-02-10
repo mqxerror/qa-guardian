@@ -76,9 +76,35 @@ function TestAISummaryInner({
     return lastRun.status === 'failed' || lastRun.status === 'error';
   }, [recentRuns]);
 
-  // Fetch AI diagnosis when last run failed
+  // Feature #575: Detect degrading-but-passing conditions for proactive AI analysis
+  const isDegrading = useMemo(() => {
+    if (lastRunFailed || runs.length < 3) return false;
+    // Check 1: trend is degrading (more recent failures than older)
+    if (trend === 'degrading') return true;
+    // Check 2: Duration regression — last run > 2× average of previous runs
+    const runsWithDuration = runs.filter(r => r.duration_ms && r.duration_ms > 0);
+    if (runsWithDuration.length >= 3) {
+      const allDurations = runsWithDuration.map(r => r.duration_ms!);
+      const olderAvg = allDurations.slice(1).reduce((a, b) => a + b, 0) / (allDurations.length - 1);
+      if (olderAvg > 0 && allDurations[0] > olderAvg * 2) return true;
+    }
+    // Check 3: Flakiness rate > 20% in recent runs
+    const last10 = runs.slice(0, 10);
+    const failCount = last10.filter(r => r.status === 'failed' || r.status === 'error').length;
+    if (last10.length >= 5 && (failCount / last10.length) > 0.2) return true;
+    return false;
+  }, [lastRunFailed, runs, trend]);
+
+  // Feature #575: Determine diagnosis mode — 'failure' | 'degrading' | null
+  const diagnosisMode = useMemo(() => {
+    if (lastRunFailed) return 'failure' as const;
+    if (isDegrading) return 'degrading' as const;
+    return null;
+  }, [lastRunFailed, isDegrading]);
+
+  // Fetch AI diagnosis when last run failed OR test is degrading (Feature #575)
   useEffect(() => {
-    if (!lastRunFailed || !token || !recentRuns[0]) {
+    if (!diagnosisMode || !token || !recentRuns[0]) {
       setDiagnosis(null);
       return;
     }
@@ -89,48 +115,93 @@ function TestAISummaryInner({
 
       try {
         const lastRun = recentRuns[0];
-        const errorMessage = lastRun.error || 'Test failed';
 
-        // Call the AI failure analysis endpoint
-        const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/explain-failure`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              test_id: testId,
-              test_name: testName,
-              run_id: lastRun.id,
-              error_message: errorMessage,
-              format: 'brief', // Request a brief diagnosis for the summary card
-            }),
+        if (diagnosisMode === 'failure') {
+          const errorMessage = lastRun.error || 'Test failed';
+
+          // Call the AI failure analysis endpoint
+          const response = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/explain-failure`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                test_id: testId,
+                test_name: testName,
+                run_id: lastRun.id,
+                error_message: errorMessage,
+                format: 'brief',
+              }),
+            }
+          );
+
+          if (!response.ok) {
+            setDiagnosis({
+              summary: `Test "${testName}" failed in the last run`,
+              likely_cause: lastRun.error || 'Unknown error - check test results for details',
+            });
+            return;
           }
-        );
 
-        if (!response.ok) {
-          // If AI endpoint fails, generate a fallback diagnosis
-          setDiagnosis({
-            summary: `Test "${testName}" failed in the last run`,
-            likely_cause: lastRun.error || 'Unknown error - check test results for details',
+          const data = await response.json();
+          setDiagnosis(data.diagnosis || {
+            summary: data.summary || `Test failed: ${errorMessage.substring(0, 100)}`,
+            likely_cause: data.likely_cause || data.root_cause || 'See full results for details',
+            suggested_fix: data.suggested_fix || data.suggested_fixes?.[0],
           });
-          return;
-        }
+        } else {
+          // Feature #575: Degrading-but-passing — send trend data for proactive analysis
+          const runsWithDuration = runs.filter(r => r.duration_ms && r.duration_ms > 0);
+          const durations = runsWithDuration.slice(0, 10).map(r => r.duration_ms!);
+          const avgDur = durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
+          const last10 = runs.slice(0, 10);
+          const failRate = last10.length > 0 ? Math.round((last10.filter(r => r.status === 'failed' || r.status === 'error').length / last10.length) * 100) : 0;
 
-        const data = await response.json();
-        setDiagnosis(data.diagnosis || {
-          summary: data.summary || `Test failed: ${errorMessage.substring(0, 100)}`,
-          likely_cause: data.likely_cause || data.root_cause || 'See full results for details',
-          suggested_fix: data.suggested_fix || data.suggested_fixes?.[0],
-        });
+          const response = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/explain-failure`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                test_id: testId,
+                test_name: testName,
+                run_id: lastRun.id,
+                error_message: `Test is passing but showing degradation: avg duration ${avgDur}ms, last run ${lastRun.duration_ms}ms, fail rate ${failRate}%, trend: ${trend}`,
+                format: 'brief',
+                analysis_type: 'degradation',
+              }),
+            }
+          );
+
+          if (!response.ok) {
+            setDiagnosis({
+              summary: `Test "${testName}" is passing but showing signs of degradation`,
+              likely_cause: `Duration trend or flakiness rate suggests the test may start failing soon (fail rate: ${failRate}%)`,
+              suggested_fix: 'Review recent changes to test environment or application code',
+            });
+            return;
+          }
+
+          const data = await response.json();
+          setDiagnosis(data.diagnosis || {
+            summary: data.summary || `Test passing but degrading: ${failRate}% fail rate`,
+            likely_cause: data.likely_cause || data.root_cause || 'Duration regression or increasing flakiness detected',
+            suggested_fix: data.suggested_fix || data.suggested_fixes?.[0] || 'Monitor closely and investigate root cause',
+          });
+        }
       } catch (err) {
-        // On error, show a basic diagnosis
         setDiagnosisError('Could not load AI diagnosis');
         setDiagnosis({
-          summary: `Test "${testName}" failed`,
-          likely_cause: recentRuns[0]?.error || 'Check test results for details',
+          summary: diagnosisMode === 'failure' ? `Test "${testName}" failed` : `Test "${testName}" is degrading`,
+          likely_cause: diagnosisMode === 'failure'
+            ? (recentRuns[0]?.error || 'Check test results for details')
+            : 'Duration regression or flakiness increase detected',
         });
       } finally {
         setIsLoadingDiagnosis(false);
@@ -138,7 +209,7 @@ function TestAISummaryInner({
     };
 
     fetchDiagnosis();
-  }, [lastRunFailed, token, testId, testName, recentRuns]);
+  }, [diagnosisMode, token, testId, testName, recentRuns, runs, trend]);
 
   // Don't render if no runs
   if (runs.length === 0) {
@@ -207,6 +278,12 @@ function TestAISummaryInner({
               {lastRunFailed && (
                 <span className="text-xs text-destructive font-medium ml-2">
                   Last run failed
+                </span>
+              )}
+              {/* Feature #575: Show degrading warning in collapsed header */}
+              {isDegrading && !lastRunFailed && (
+                <span className="text-xs text-warning font-medium ml-2">
+                  Degrading
                 </span>
               )}
             </div>
@@ -279,17 +356,21 @@ function TestAISummaryInner({
               </div>
             </div>
 
-            {/* AI Diagnosis (only if last run failed) */}
+            {/* AI Diagnosis - Feature #575: Extended to cover failure, degrading, and healthy states */}
             <div className="space-y-2">
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 AI Diagnosis
               </h4>
-              {lastRunFailed ? (
-                <div className="rounded-md bg-destructive/5 border border-destructive/20 p-3">
+              {diagnosisMode ? (
+                <div className={`rounded-md p-3 ${
+                  diagnosisMode === 'failure'
+                    ? 'bg-destructive/5 border border-destructive/20'
+                    : 'bg-warning/5 border border-warning/20'
+                }`}>
                   {isLoadingDiagnosis ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Analyzing failure...
+                      {diagnosisMode === 'failure' ? 'Analyzing failure...' : 'Analyzing degradation...'}
                     </div>
                   ) : diagnosis ? (
                     <div className="space-y-1">
@@ -300,14 +381,14 @@ function TestAISummaryInner({
                         {diagnosis.likely_cause}
                       </p>
                       {diagnosis.suggested_fix && (
-                        <p className="text-xs text-accent mt-2">
+                        <p className={`text-xs mt-2 ${diagnosisMode === 'failure' ? 'text-accent' : 'text-warning'}`}>
                           <span className="font-medium">Suggested fix:</span> {diagnosis.suggested_fix}
                         </p>
                       )}
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      {diagnosisError || 'Unable to analyze failure'}
+                      {diagnosisError || 'Unable to analyze'}
                     </p>
                   )}
                 </div>
