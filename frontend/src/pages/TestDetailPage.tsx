@@ -74,6 +74,8 @@ import {
   useRunHandlers,
   useBaselineDataFetching,
   useTestPageUtilities,
+  // Feature #560: Consolidated modal state management
+  useModalState,
 } from '../components/test-detail';
 
 function TestDetailPage() {
@@ -113,14 +115,65 @@ function TestDetailPage() {
   const [project, setProject] = useState<{ id: string; name: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [editError, setEditError] = useState('');
+
+  // Feature #560: Consolidated modal state management
+  // 11 boolean visibility flags use a single useReducer; associated form/loading/error state
+  // remains as individual useState within the hook. Both new API (modals.*, openModal, closeModal)
+  // and legacy API (showDeleteModal, setShowDeleteModal, etc.) are available.
+  const {
+    modals, openModal, closeModal, closeAllModals,
+    // Delete modal
+    showDeleteModal, setShowDeleteModal,
+    isDeleting, setIsDeleting,
+    deleteError, setDeleteError,
+    resetDeleteModal,
+    // Edit modal
+    showEditModal, setShowEditModal,
+    editName, setEditName,
+    editDescription, setEditDescription,
+    isEditing, setIsEditing,
+    editError, setEditError,
+    resetEditModal,
+    // Approve baseline
+    showApproveBaselineModal, setShowApproveBaselineModal,
+    approvingBaseline, setApprovingBaseline,
+    approveBaselineRunId, setApproveBaselineRunId,
+    approveBaselineError, setApproveBaselineError,
+    // Reject changes
+    showRejectChangesModal, setShowRejectChangesModal,
+    rejectingChanges, setRejectingChanges,
+    rejectChangesRunId, setRejectChangesRunId,
+    rejectChangesError, setRejectChangesError,
+    rejectionReason, setRejectionReason,
+    // Restore baseline
+    showRestoreBaselineModal, setShowRestoreBaselineModal,
+    restoreHistoryEntry, setRestoreHistoryEntry,
+    restoringBaseline, setRestoringBaseline,
+    restoreBaselineError, setRestoreBaselineError,
+    // Merge baseline
+    showMergeBaselineModal, setShowMergeBaselineModal,
+    selectedMergeBranch, setSelectedMergeBranch,
+    isMergingBaseline, setIsMergingBaseline,
+    mergeBaselineError, setMergeBaselineError,
+    // Quick schedule
+    showQuickScheduleModal, setShowQuickScheduleModal,
+    isCreatingSchedule, setIsCreatingSchedule,
+    quickScheduleError, setQuickScheduleError,
+    // Add step
+    showAddStepModal, setShowAddStepModal,
+    // Explain
+    showExplainModal, setShowExplainModal,
+    testExplanation, setTestExplanation,
+    isExplainingTest, setIsExplainingTest,
+    // Unsaved changes
+    showUnsavedChangesModal, setShowUnsavedChangesModal,
+    pendingNavigation, setPendingNavigation,
+    // Compare
+    showCompareModal, setShowCompareModal,
+    compareResults, setCompareResults,
+    isComparing, setIsComparing,
+  } = useModalState();
+
   const [isRunning, setIsRunning] = useState(false);
   const [isCancellingRun, setIsCancellingRun] = useState(false);
   const [runError, setRunError] = useState('');
@@ -157,7 +210,7 @@ function TestDetailPage() {
   const dateFilter = (searchParams.get('date') as 'all' | 'today' | '7days' | '30days') || 'all';
   const runPage = parseInt(searchParams.get('page') || '1', 10);
   const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
-  const [showAddStepModal, setShowAddStepModal] = useState(false);
+  // Feature #560: showAddStepModal moved to useModalState
   const [isAddingStep, setIsAddingStep] = useState(false);
   const [addStepError, setAddStepError] = useState('');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -215,8 +268,7 @@ function TestDetailPage() {
 
   // Track dirty state for unsaved changes warning
   const [isDirty, setIsDirty] = useState(false);
-  const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
+  // Feature #560: showUnsavedChangesModal & pendingNavigation moved to useModalState
   const [isDownloadingArtifacts, setIsDownloadingArtifacts] = useState(false);
 
   // Drag and drop step reordering
@@ -257,11 +309,7 @@ function TestDetailPage() {
   const [baselineData, setBaselineData] = useState<{hasBaseline: boolean; image?: string; createdAt?: string; size?: number; approvedBy?: string; approvedByUserId?: string; approvedAt?: string; sourceRunId?: string} | null>(null);
   const [loadingBaseline, setLoadingBaseline] = useState(false);
 
-  // Baseline approval state
-  const [showApproveBaselineModal, setShowApproveBaselineModal] = useState(false);
-  const [approvingBaseline, setApprovingBaseline] = useState(false);
-  const [approveBaselineRunId, setApproveBaselineRunId] = useState<string | null>(null);
-  const [approveBaselineError, setApproveBaselineError] = useState('');
+  // Baseline approval state - Feature #560: moved to useModalState
 
   // Baseline history state
   const [baselineHistory, setBaselineHistory] = useState<Array<{
@@ -279,18 +327,7 @@ function TestDetailPage() {
   const [selectedHistoryVersion, setSelectedHistoryVersion] = useState<string | null>(null);
   const [historyVersionImage, setHistoryVersionImage] = useState<string | null>(null);
   const [loadingHistoryImage, setLoadingHistoryImage] = useState(false);
-  // Baseline restore state
-  const [showRestoreBaselineModal, setShowRestoreBaselineModal] = useState(false);
-  const [restoreHistoryEntry, setRestoreHistoryEntry] = useState<{id: string; version: number} | null>(null);
-  const [restoringBaseline, setRestoringBaseline] = useState(false);
-  const [restoreBaselineError, setRestoreBaselineError] = useState('');
-
-  // Visual regression rejection state
-  const [showRejectChangesModal, setShowRejectChangesModal] = useState(false);
-  const [rejectingChanges, setRejectingChanges] = useState(false);
-  const [rejectChangesRunId, setRejectChangesRunId] = useState<string | null>(null);
-  const [rejectChangesError, setRejectChangesError] = useState('');
-  const [rejectionReason, setRejectionReason] = useState('');
+  // Feature #560: restoreBaseline, rejectChanges state moved to useModalState
   const [rejectionStatus, setRejectionStatus] = useState<{hasRejection: boolean; rejectedBy?: string; rejectedAt?: string; reason?: string} | null>(null);
 
   // Branch selection state for visual regression tests
@@ -307,15 +344,7 @@ function TestDetailPage() {
     hasBaseline: boolean;
   }>>([]);
   const [loadingMergeableBranches, setLoadingMergeableBranches] = useState(false);
-  const [showMergeBaselineModal, setShowMergeBaselineModal] = useState(false);
-  const [selectedMergeBranch, setSelectedMergeBranch] = useState<string | null>(null);
-  const [isMergingBaseline, setIsMergingBaseline] = useState(false);
-  const [mergeBaselineError, setMergeBaselineError] = useState('');
-
-  // Quick schedule modal state - Feature #48: State moved to QuickScheduleModal component
-  const [showQuickScheduleModal, setShowQuickScheduleModal] = useState(false);
-  const [isCreatingSchedule, setIsCreatingSchedule] = useState(false);
-  const [quickScheduleError, setQuickScheduleError] = useState('');
+  // Feature #560: mergeBaseline, quickSchedule state moved to useModalState
 
   // Accessibility results filter state
   const [a11ySeverityFilter, setA11ySeverityFilter] = useState<{ [key: string]: 'all' | 'critical' | 'serious' | 'moderate' | 'minor' }>({});
@@ -330,10 +359,7 @@ function TestDetailPage() {
   const [isSavingCode, setIsSavingCode] = useState(false);
   const [codeError, setCodeError] = useState('');
 
-  // AI Explanation state - Feature #48: Use imported TestExplanation type
-  const [showExplainModal, setShowExplainModal] = useState(false);
-  const [testExplanation, setTestExplanation] = useState<TestExplanation | null>(null);
-  const [isExplainingTest, setIsExplainingTest] = useState(false);
+  // Feature #560: explain/testExplanation state moved to useModalState
 
   const generatePlaywrightCodeForTest = useCallback((steps: TestType['steps'] | undefined) => {
     return generatePlaywrightCode(steps || [], test?.name || 'Untitled Test');
@@ -588,11 +614,8 @@ function TestDetailPage() {
   const [sortBy, setSortBy] = useState<'date' | 'duration'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // K6 run comparison state (Feature #564) - Feature #48: Use imported type
+  // K6 run comparison state (Feature #564) - Feature #560: compare state moved to useModalState
   const [selectedRunsForCompare, setSelectedRunsForCompare] = useState<string[]>([]);
-  const [showCompareModal, setShowCompareModal] = useState(false);
-  const [compareResults, setCompareResults] = useState<K6CompareResults | null>(null);
-  const [isComparing, setIsComparing] = useState(false);
 
   // Check if current test is a load test (for comparison feature)
   const isLoadTest = test?.test_type === 'load';

@@ -3,7 +3,7 @@
  * Consolidates 122+ useState hooks from TestDetailPage.tsx into organized groups
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useReducer } from 'react';
 import { TestRunType, TestType, FlakinessTrend } from './types';
 import { TestExplanation } from './modals/AIExplainModal';
 import { K6CompareResults } from './K6CompareModal';
@@ -148,129 +148,198 @@ export function useCoreTestState() {
 // Modal State Hook
 // ============================================================================
 
+/**
+ * Feature #560: Modal visibility reducer
+ * Consolidates 11 boolean useState(false) calls into a single useReducer
+ */
+type ModalVisibilityKey =
+  | 'delete' | 'edit' | 'addStep' | 'unsavedChanges'
+  | 'approveBaseline' | 'restoreBaseline' | 'rejectChanges'
+  | 'mergeBaseline' | 'quickSchedule' | 'explain' | 'compare';
+
+type ModalVisibilityState = Record<ModalVisibilityKey, boolean>;
+
+type ModalVisibilityAction =
+  | { type: 'OPEN'; key: ModalVisibilityKey }
+  | { type: 'CLOSE'; key: ModalVisibilityKey }
+  | { type: 'CLOSE_ALL' };
+
+const initialModalVisibility: ModalVisibilityState = {
+  delete: false, edit: false, addStep: false, unsavedChanges: false,
+  approveBaseline: false, restoreBaseline: false, rejectChanges: false,
+  mergeBaseline: false, quickSchedule: false, explain: false, compare: false,
+};
+
+function modalVisibilityReducer(
+  state: ModalVisibilityState,
+  action: ModalVisibilityAction,
+): ModalVisibilityState {
+  switch (action.type) {
+    case 'OPEN':
+      return { ...state, [action.key]: true };
+    case 'CLOSE':
+      return { ...state, [action.key]: false };
+    case 'CLOSE_ALL':
+      return { ...initialModalVisibility };
+    default:
+      return state;
+  }
+}
+
 export function useModalState() {
-  // Delete modal
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // Feature #560: Single reducer for all 11 modal visibility flags
+  const [vis, dispatchModal] = useReducer(modalVisibilityReducer, initialModalVisibility);
+
+  // Stable setter factories that match the old `setShow*Modal(bool)` API
+  const makeModalSetter = useCallback(
+    (key: ModalVisibilityKey) => (open: boolean | ((prev: boolean) => boolean)) => {
+      if (typeof open === 'function') {
+        // For callback setters, we compute the new value from current state
+        // but useReducer doesn't support this directly. Use OPEN/CLOSE based on result.
+        // This is rare in practice - most callers pass a boolean directly.
+        dispatchModal({ type: open(vis[key]) ? 'OPEN' : 'CLOSE', key });
+      } else {
+        dispatchModal({ type: open ? 'OPEN' : 'CLOSE', key });
+      }
+    },
+    [vis],
+  );
+
+  // Convenience: create all setters
+  const setShowDeleteModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('delete')(v), [makeModalSetter]);
+  const setShowEditModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('edit')(v), [makeModalSetter]);
+  const setShowAddStepModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('addStep')(v), [makeModalSetter]);
+  const setShowUnsavedChangesModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('unsavedChanges')(v), [makeModalSetter]);
+  const setShowApproveBaselineModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('approveBaseline')(v), [makeModalSetter]);
+  const setShowRestoreBaselineModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('restoreBaseline')(v), [makeModalSetter]);
+  const setShowRejectChangesModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('rejectChanges')(v), [makeModalSetter]);
+  const setShowMergeBaselineModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('mergeBaseline')(v), [makeModalSetter]);
+  const setShowQuickScheduleModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('quickSchedule')(v), [makeModalSetter]);
+  const setShowExplainModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('explain')(v), [makeModalSetter]);
+  const setShowCompareModal = useCallback((v: boolean | ((p: boolean) => boolean)) => makeModalSetter('compare')(v), [makeModalSetter]);
+
+  // Associated modal form/loading/error state (non-boolean, kept as individual useState)
+  // Delete
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
-
-  // Edit modal
-  const [showEditModal, setShowEditModal] = useState(false);
+  // Edit
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editError, setEditError] = useState('');
-
-  // Approve baseline modal
-  const [showApproveBaselineModal, setShowApproveBaselineModal] = useState(false);
+  // Approve baseline
   const [approvingBaseline, setApprovingBaseline] = useState(false);
   const [approveBaselineRunId, setApproveBaselineRunId] = useState<string | null>(null);
   const [approveBaselineError, setApproveBaselineError] = useState('');
-
-  // Reject changes modal
-  const [showRejectChangesModal, setShowRejectChangesModal] = useState(false);
+  // Reject changes
   const [rejectingChanges, setRejectingChanges] = useState(false);
   const [rejectChangesRunId, setRejectChangesRunId] = useState<string | null>(null);
   const [rejectChangesError, setRejectChangesError] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
-
-  // Restore baseline modal
-  const [showRestoreBaselineModal, setShowRestoreBaselineModal] = useState(false);
+  // Restore baseline
   const [restoreHistoryEntry, setRestoreHistoryEntry] = useState<{ id: string; version: number } | null>(null);
   const [restoringBaseline, setRestoringBaseline] = useState(false);
   const [restoreBaselineError, setRestoreBaselineError] = useState('');
-
-  // Merge baseline modal
-  const [showMergeBaselineModal, setShowMergeBaselineModal] = useState(false);
+  // Merge baseline
   const [selectedMergeBranch, setSelectedMergeBranch] = useState<string | null>(null);
   const [isMergingBaseline, setIsMergingBaseline] = useState(false);
   const [mergeBaselineError, setMergeBaselineError] = useState('');
-
-  // Quick schedule modal
-  const [showQuickScheduleModal, setShowQuickScheduleModal] = useState(false);
+  // Quick schedule
   const [isCreatingSchedule, setIsCreatingSchedule] = useState(false);
   const [quickScheduleError, setQuickScheduleError] = useState('');
-
-  // Add step modal
-  const [showAddStepModal, setShowAddStepModal] = useState(false);
-
-  // Explain modal
-  const [showExplainModal, setShowExplainModal] = useState(false);
+  // Explain
   const [testExplanation, setTestExplanation] = useState<TestExplanation | null>(null);
   const [isExplainingTest, setIsExplainingTest] = useState(false);
-
-  // Unsaved changes modal
-  const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
+  // Unsaved changes
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
-
-  // K6 compare modal
-  const [showCompareModal, setShowCompareModal] = useState(false);
+  // K6 compare
   const [compareResults, setCompareResults] = useState<K6CompareResults | null>(null);
   const [isComparing, setIsComparing] = useState(false);
 
   const resetDeleteModal = useCallback(() => {
-    setShowDeleteModal(false);
+    dispatchModal({ type: 'CLOSE', key: 'delete' });
     setIsDeleting(false);
     setDeleteError('');
   }, []);
 
   const resetEditModal = useCallback(() => {
-    setShowEditModal(false);
+    dispatchModal({ type: 'CLOSE', key: 'edit' });
     setEditName('');
     setEditDescription('');
     setIsEditing(false);
     setEditError('');
   }, []);
 
+  // Feature #560: New convenience API for TestDetailPage (modals.*, openModal, closeModal)
+  const openModal = useCallback(
+    (key: ModalVisibilityKey) => dispatchModal({ type: 'OPEN', key }),
+    [],
+  );
+  const closeModal = useCallback(
+    (key: ModalVisibilityKey) => dispatchModal({ type: 'CLOSE', key }),
+    [],
+  );
+  const closeAllModals = useCallback(
+    () => dispatchModal({ type: 'CLOSE_ALL' }),
+    [],
+  );
+
   return {
+    // Feature #560: New reducer-based API
+    modals: vis,
+    openModal,
+    closeModal,
+    closeAllModals,
+    // Legacy compatible: individual boolean + setter pairs
+    modalVisibility: vis,
     // Delete
-    showDeleteModal, setShowDeleteModal,
+    showDeleteModal: vis.delete, setShowDeleteModal,
     isDeleting, setIsDeleting,
     deleteError, setDeleteError,
     resetDeleteModal,
     // Edit
-    showEditModal, setShowEditModal,
+    showEditModal: vis.edit, setShowEditModal,
     editName, setEditName,
     editDescription, setEditDescription,
     isEditing, setIsEditing,
     editError, setEditError,
     resetEditModal,
     // Approve baseline
-    showApproveBaselineModal, setShowApproveBaselineModal,
+    showApproveBaselineModal: vis.approveBaseline, setShowApproveBaselineModal,
     approvingBaseline, setApprovingBaseline,
     approveBaselineRunId, setApproveBaselineRunId,
     approveBaselineError, setApproveBaselineError,
     // Reject changes
-    showRejectChangesModal, setShowRejectChangesModal,
+    showRejectChangesModal: vis.rejectChanges, setShowRejectChangesModal,
     rejectingChanges, setRejectingChanges,
     rejectChangesRunId, setRejectChangesRunId,
     rejectChangesError, setRejectChangesError,
     rejectionReason, setRejectionReason,
     // Restore baseline
-    showRestoreBaselineModal, setShowRestoreBaselineModal,
+    showRestoreBaselineModal: vis.restoreBaseline, setShowRestoreBaselineModal,
     restoreHistoryEntry, setRestoreHistoryEntry,
     restoringBaseline, setRestoringBaseline,
     restoreBaselineError, setRestoreBaselineError,
     // Merge baseline
-    showMergeBaselineModal, setShowMergeBaselineModal,
+    showMergeBaselineModal: vis.mergeBaseline, setShowMergeBaselineModal,
     selectedMergeBranch, setSelectedMergeBranch,
     isMergingBaseline, setIsMergingBaseline,
     mergeBaselineError, setMergeBaselineError,
     // Quick schedule
-    showQuickScheduleModal, setShowQuickScheduleModal,
+    showQuickScheduleModal: vis.quickSchedule, setShowQuickScheduleModal,
     isCreatingSchedule, setIsCreatingSchedule,
     quickScheduleError, setQuickScheduleError,
     // Add step
-    showAddStepModal, setShowAddStepModal,
+    showAddStepModal: vis.addStep, setShowAddStepModal,
     // Explain
-    showExplainModal, setShowExplainModal,
+    showExplainModal: vis.explain, setShowExplainModal,
     testExplanation, setTestExplanation,
     isExplainingTest, setIsExplainingTest,
     // Unsaved changes
-    showUnsavedChangesModal, setShowUnsavedChangesModal,
+    showUnsavedChangesModal: vis.unsavedChanges, setShowUnsavedChangesModal,
     pendingNavigation, setPendingNavigation,
     // K6 compare
-    showCompareModal, setShowCompareModal,
+    showCompareModal: vis.compare, setShowCompareModal,
     compareResults, setCompareResults,
     isComparing, setIsComparing,
   };
