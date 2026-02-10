@@ -1,6 +1,7 @@
 // Feature #48: CurrentRunStatusSection - Extracted from TestDetailPage.tsx
 // Feature #539: Integrated WaveProgressCard + ScoreCardGrid for richer run display
 // Feature #552: Enhanced WaveProgressCard with live step execution and screenshot thumbnail
+// Feature #573: Consolidated duplicate displays - WaveProgressCard collapsed shows summary, expanded shows full LiveExecutionPanel
 // Displays current run header, status badge, live execution, and test results
 
 import { useState, useMemo, RefObject, Dispatch, SetStateAction } from 'react';
@@ -89,7 +90,9 @@ export function CurrentRunStatusSection({
 }: CurrentRunStatusSectionProps) {
   const hasResults = currentRun.results && currentRun.results.length > 0;
   const isCompleted = currentRun.status === 'passed' || currentRun.status === 'failed' || currentRun.status === 'error';
-  const [waveExpanded, setWaveExpanded] = useState(true);
+  const isRunning = currentRun.status === 'running' || currentRun.status === 'pending';
+  // Feature #573: Start collapsed when running (click to expand for full LiveExecutionPanel)
+  const [waveExpanded, setWaveExpanded] = useState(!isRunning);
 
   // Feature #539: Map run status to WaveProgressCard status
   const waveStatus: WaveProgressStatus = useMemo(() => {
@@ -231,8 +234,8 @@ export function CurrentRunStatusSection({
           steps={waveSteps.length > 0 ? waveSteps : undefined}
           animate={currentRun.status === 'running'}
         >
-          {/* Feature #552: Live screenshot thumbnail when running */}
-          {currentRun.status === 'running' && liveScreenshot && (
+          {/* Feature #573: Consolidated live run display — collapsed shows mini summary, expanded shows full LiveExecutionPanel */}
+          {currentRun.status === 'running' && !waveExpanded && liveScreenshot && (
             <div className="mt-3 pt-3 border-t border-border">
               <div className="flex items-center gap-3 mb-2">
                 <div className="relative">
@@ -249,8 +252,8 @@ export function CurrentRunStatusSection({
             </div>
           )}
 
-          {/* Feature #552: Live progress info when running */}
-          {currentRun.status === 'running' && liveProgress && (
+          {/* Feature #573: Mini progress bar shown only in collapsed view */}
+          {currentRun.status === 'running' && !waveExpanded && liveProgress && (
             <div className="mt-3 pt-3 border-t border-border">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
@@ -266,7 +269,6 @@ export function CurrentRunStatusSection({
                   }
                 </span>
               </div>
-              {/* Mini progress bar */}
               <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary rounded-full transition-all duration-300"
@@ -284,6 +286,21 @@ export function CurrentRunStatusSection({
             </div>
           )}
 
+          {/* Feature #573: Full LiveExecutionPanel shown in expanded view — replaces duplicate mini views */}
+          {waveExpanded && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <LiveExecutionPanel
+                currentRun={currentRun}
+                test={test}
+                liveProgress={liveProgress}
+                liveScreenshot={liveScreenshot}
+                liveConsoleLogs={liveConsoleLogs}
+                isCancellingRun={isCancellingRun}
+                onCancelRun={onCancelRun}
+              />
+            </div>
+          )}
+
           {/* Feature #539: ScoreCardGrid for run metrics when results available */}
           {scoreItems.length > 0 && isCompleted && (
             <div className="mt-3 pt-3 border-t border-border">
@@ -291,17 +308,6 @@ export function CurrentRunStatusSection({
             </div>
           )}
         </WaveProgressCard>
-
-        {/* Live Execution Panel */}
-        <LiveExecutionPanel
-          currentRun={currentRun}
-          test={test}
-          liveProgress={liveProgress}
-          liveScreenshot={liveScreenshot}
-          liveConsoleLogs={liveConsoleLogs}
-          isCancellingRun={isCancellingRun}
-          onCancelRun={onCancelRun}
-        />
 
         {/* Test Results */}
         {hasResults && (
