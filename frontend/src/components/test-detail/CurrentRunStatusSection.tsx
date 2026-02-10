@@ -1,5 +1,6 @@
 // Feature #48: CurrentRunStatusSection - Extracted from TestDetailPage.tsx
 // Feature #539: Integrated WaveProgressCard + ScoreCardGrid for richer run display
+// Feature #552: Enhanced WaveProgressCard with live step execution and screenshot thumbnail
 // Displays current run header, status badge, live execution, and test results
 
 import { useState, useMemo, RefObject, Dispatch, SetStateAction } from 'react';
@@ -127,8 +128,35 @@ export function CurrentRunStatusSection({
     }
   }, [currentRun.status]);
 
-  // Feature #539: Build steps from test results for WaveProgressCard
+  // Feature #539 + #552: Build steps from test results or live progress for WaveProgressCard
   const waveSteps: WaveProgressStep[] = useMemo(() => {
+    // If running, build steps from liveProgress for real-time feedback
+    if (currentRun.status === 'running' && liveProgress?.currentStep) {
+      const totalSteps = liveProgress.currentStep.total || 1;
+      const currentStepIndex = liveProgress.currentStep.index || 0;
+      const steps: WaveProgressStep[] = [];
+
+      for (let i = 0; i < totalSteps; i++) {
+        let status: 'completed' | 'running' | 'pending' | 'failed';
+        if (i < currentStepIndex) {
+          status = 'completed';
+        } else if (i === currentStepIndex) {
+          status = 'running';
+        } else {
+          status = 'pending';
+        }
+
+        steps.push({
+          name: i === currentStepIndex && liveProgress.currentStep.action
+            ? liveProgress.currentStep.action
+            : `Step ${i + 1}`,
+          status,
+        });
+      }
+      return steps;
+    }
+
+    // If completed, use results
     if (!hasResults || !currentRun.results) return [];
     // Flatten all result steps into WaveProgressStep format
     const steps: WaveProgressStep[] = [];
@@ -145,7 +173,7 @@ export function CurrentRunStatusSection({
       }
     }
     return steps;
-  }, [hasResults, currentRun.results]);
+  }, [hasResults, currentRun.results, currentRun.status, liveProgress]);
 
   // Feature #539: Build score items from result data for ScoreCardGrid
   const scoreItems = useMemo(() => {
@@ -215,7 +243,9 @@ export function CurrentRunStatusSection({
         <WaveProgressCard
           status={waveStatus}
           icon={waveIcon}
-          title={`Test Run: ${currentRun.status.charAt(0).toUpperCase() + currentRun.status.slice(1)}`}
+          title={currentRun.status === 'running' && liveProgress?.currentStep?.action
+            ? liveProgress.currentStep.action
+            : `Test Run: ${currentRun.status.charAt(0).toUpperCase() + currentRun.status.slice(1)}`}
           subtitle={currentRun.duration_ms !== undefined ? `Completed in ${currentRun.duration_ms}ms` : undefined}
           duration={currentRun.duration_ms}
           expanded={waveExpanded}
@@ -223,6 +253,59 @@ export function CurrentRunStatusSection({
           steps={waveSteps.length > 0 ? waveSteps : undefined}
           animate={currentRun.status === 'running'}
         >
+          {/* Feature #552: Live screenshot thumbnail when running */}
+          {currentRun.status === 'running' && liveScreenshot && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="relative">
+                  <div className="h-2 w-2 bg-primary rounded-full animate-ping absolute"></div>
+                  <div className="h-2 w-2 bg-primary rounded-full relative"></div>
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">Live Screenshot</span>
+              </div>
+              <img
+                src={liveScreenshot.startsWith('data:') ? liveScreenshot : `data:image/png;base64,${liveScreenshot}`}
+                alt="Live screenshot"
+                className="w-full max-h-32 object-contain bg-black/20 rounded-lg"
+              />
+            </div>
+          )}
+
+          {/* Feature #552: Live progress info when running */}
+          {currentRun.status === 'running' && liveProgress && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>
+                  {test?.test_type === 'load' && liveProgress.k6Metrics
+                    ? `${liveProgress.k6Metrics.phase || 'Running'} - ${liveProgress.k6Metrics.progress}%`
+                    : `Step ${(liveProgress.currentStep?.index || 0) + 1} of ${liveProgress.currentStep?.total || '?'}`
+                  }
+                </span>
+                <span>
+                  {test?.test_type === 'load' && liveProgress.k6Metrics
+                    ? `${liveProgress.k6Metrics.currentVUs || 0} VUs`
+                    : `${liveProgress.completedTests || 0}/${liveProgress.totalTests || 1} tests`
+                  }
+                </span>
+              </div>
+              {/* Mini progress bar */}
+              <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-300"
+                  style={{
+                    width: `${
+                      test?.test_type === 'load' && liveProgress.k6Metrics
+                        ? liveProgress.k6Metrics.progress
+                        : liveProgress.currentStep
+                          ? Math.round(((liveProgress.currentStep.index + 1) / Math.max(liveProgress.currentStep.total, 1)) * 100)
+                          : 0
+                    }%`
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Feature #539: ScoreCardGrid for run metrics when results available */}
           {scoreItems.length > 0 && isCompleted && (
             <div className="mt-3 pt-3 border-t border-border">
