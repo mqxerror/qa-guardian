@@ -7,34 +7,10 @@ import { useState, useMemo, RefObject, Dispatch, SetStateAction } from 'react';
 import { Play, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
 import { LiveExecutionPanel } from './LiveExecutionPanel';
 import { TestResultCard, TestResult } from './TestResultCard';
-import { TestRunType, TestType } from './types';
+// Feature #566: Import canonical LiveProgress & ConsoleLogEntry from types.ts
+import { TestRunType, TestType, LiveProgress, ConsoleLogEntry } from './types';
 import { WaveProgressCard, type WaveProgressStatus, type WaveProgressStep } from '../ui/wave-progress-card';
 import { ScoreCardGrid } from '../ui/score-card';
-
-interface LiveProgress {
-  totalTests: number;
-  completedTests: number;
-  currentTest?: string;
-  currentStep?: { index: number; total: number; action: string };
-  k6Metrics?: {
-    phase: string;
-    progress: number;
-    currentVUs?: number;
-    totalRequests?: number;
-    requestsPerSecond?: number;
-    avgResponseTime?: number;
-    errorRate?: number;
-    p50ResponseTime?: number;
-    p95ResponseTime?: number;
-    p99ResponseTime?: number;
-  };
-}
-
-interface ConsoleLogEntry {
-  level: string;
-  message: string;
-  timestamp: number;
-}
 
 interface CurrentRunStatusSectionProps {
   currentRun: TestRunType;

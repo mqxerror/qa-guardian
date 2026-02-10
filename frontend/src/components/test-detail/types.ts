@@ -136,6 +136,40 @@ export interface ConsoleLog {
   location?: string;
 }
 
+// Feature #566: Canonical ConsoleLogEntry type (consolidates 3 duplicate definitions)
+// Used by LiveExecutionPanel, CurrentRunStatusSection, CurrentRunPanel, useTestDetailState
+export interface ConsoleLogEntry {
+  level: string;
+  message: string;
+  timestamp: number;
+}
+
+// Feature #566: Canonical LiveProgress type (consolidates 5 duplicate definitions)
+// Used by useTestDetailState, useRunHandlers, LiveExecutionPanel, CurrentRunStatusSection, CurrentRunPanel
+// All optional/required field choices use the most permissive version (optional) to avoid type errors.
+export interface LiveProgress {
+  completedTests: number;
+  totalTests: number;
+  currentTest?: string;
+  currentStep?: {
+    index: number;
+    total: number;
+    action?: string;
+  };
+  k6Metrics?: {
+    phase?: string;
+    progress: number;
+    currentVUs?: number;
+    totalRequests?: number;
+    requestsPerSecond?: number;
+    avgResponseTime?: number;
+    errorRate?: number;
+    p50ResponseTime?: number;
+    p95ResponseTime?: number;
+    p99ResponseTime?: number;
+  };
+}
+
 // Network request entry
 export interface NetworkRequest {
   timestamp: number;

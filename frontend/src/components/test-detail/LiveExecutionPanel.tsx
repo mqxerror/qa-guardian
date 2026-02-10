@@ -2,36 +2,8 @@
 // Displays real-time test execution progress with live metrics and screenshots
 
 import React from 'react';
-
-// Interfaces
-interface LiveProgress {
- completedTests: number;
- totalTests: number;
- currentTest?: string;
- currentStep?: {
- index: number;
- total: number;
- action?: string;
- };
- k6Metrics?: {
- phase?: string;
- progress: number;
- currentVUs?: number;
- totalRequests?: number;
- requestsPerSecond?: number;
- avgResponseTime?: number;
- errorRate?: number;
- p50ResponseTime?: number;
- p95ResponseTime?: number;
- p99ResponseTime?: number;
- };
-}
-
-interface ConsoleLogEntry {
- level: string;
- message: string;
- timestamp: number;
-}
+// Feature #566: Import canonical LiveProgress & ConsoleLogEntry from types.ts
+import type { LiveProgress, ConsoleLogEntry } from './types';
 
 interface TestType {
  test_type?: string;

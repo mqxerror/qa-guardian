@@ -4,7 +4,9 @@
  */
 
 import { useState, useCallback, useReducer } from 'react';
-import { TestRunType, TestType, FlakinessTrend } from './types';
+// Feature #566: Import canonical LiveProgress & ConsoleLogEntry from types.ts
+import { TestRunType, TestType, FlakinessTrend, LiveProgress, ConsoleLogEntry } from './types';
+export type { LiveProgress, ConsoleLogEntry };
 import { TestExplanation } from './modals/AIExplainModal';
 import { K6CompareResults } from './K6CompareModal';
 
@@ -22,35 +24,6 @@ export interface TestSuite {
 export interface Project {
   id: string;
   name: string;
-}
-
-export interface LiveProgress {
-  completedTests: number;
-  totalTests: number;
-  currentTest?: string;
-  currentStep?: {
-    index: number;
-    total: number;
-    action?: string;
-  };
-  k6Metrics?: {
-    phase?: string;
-    progress: number;
-    currentVUs?: number;
-    totalRequests?: number;
-    requestsPerSecond?: number;
-    avgResponseTime?: number;
-    errorRate?: number;
-    p50ResponseTime?: number;
-    p95ResponseTime?: number;
-    p99ResponseTime?: number;
-  };
-}
-
-export interface ConsoleLogEntry {
-  level: string;
-  message: string;
-  timestamp: number;
 }
 
 export interface BaselineData {

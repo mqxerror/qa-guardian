@@ -8,26 +8,9 @@ import { toast } from '../../stores/toastStore';
 import { getErrorMessage } from '../../utils/errorHandling';
 import { logger } from '../../utils/logger';
 import type { Socket } from 'socket.io-client';
-import type { TestRunType } from './types';
-
-export interface LiveProgress {
-  totalTests: number;
-  completedTests: number;
-  currentTest?: string;
-  currentStep?: { index: number; total: number; action: string };
-  k6Metrics?: {
-    phase: string;
-    progress: number;
-    currentVUs?: number;
-    totalRequests?: number;
-    requestsPerSecond?: number;
-    avgResponseTime?: number;
-    errorRate?: number;
-    p50ResponseTime?: number;
-    p95ResponseTime?: number;
-    p99ResponseTime?: number;
-  };
-}
+// Feature #566: Import canonical LiveProgress from types.ts
+import type { TestRunType, LiveProgress } from './types';
+export type { LiveProgress };
 
 export interface UseRunHandlersProps {
   testId: string | undefined;

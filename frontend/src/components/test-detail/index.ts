@@ -34,7 +34,9 @@ export { FlakinessPanel } from './FlakinessPanel';
 export { ImageLightbox } from './ImageLightbox';
 export { K6CompareModal, type K6CompareResults } from './K6CompareModal';
 export { RunHistorySection } from './RunHistorySection';
-export { CurrentRunPanel, type CurrentRunPanelProps, type LiveProgress, type ConsoleLogEntry } from './CurrentRunPanel';
+export { CurrentRunPanel, type CurrentRunPanelProps } from './CurrentRunPanel';
+// Feature #566: Export canonical LiveProgress & ConsoleLogEntry from types.ts
+export type { LiveProgress, ConsoleLogEntry } from './types';
 export { ViewCodeTab } from './ViewCodeTab';
 export { K6ScriptTab } from './K6ScriptTab';
 export { TestDetailsCard } from './TestDetailsCard';
@@ -86,7 +88,6 @@ export {
   useRunHandlers,
   type UseRunHandlersProps,
   type RunHandlers,
-  type LiveProgress as RunLiveProgress,
 } from './useRunHandlers';
 export {
   useBaselineDataFetching,

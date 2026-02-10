@@ -5,37 +5,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { VideoPlayer } from './VideoPlayer';
-import { TestRunType, TestType, StepResult } from './types';
-
-// Interfaces for the panel
-interface LiveProgress {
- completedTests: number;
- totalTests: number;
- currentTest?: string;
- currentStep?: {
- index: number;
- total: number;
- action?: string;
- };
- k6Metrics?: {
- phase?: string;
- progress: number;
- currentVUs?: number;
- totalRequests?: number;
- requestsPerSecond?: number;
- avgResponseTime?: number;
- errorRate?: number;
- p50ResponseTime?: number;
- p95ResponseTime?: number;
- p99ResponseTime?: number;
- };
-}
-
-interface ConsoleLogEntry {
- level: string;
- message: string;
- timestamp: number;
-}
+// Feature #566: Import canonical LiveProgress & ConsoleLogEntry from types.ts
+import { TestRunType, TestType, StepResult, LiveProgress, ConsoleLogEntry } from './types';
 
 interface CurrentRunPanelProps {
  currentRun: TestRunType;
