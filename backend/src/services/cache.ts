@@ -411,15 +411,15 @@ export class CacheService {
     // Try Redis first
     if (this.redis && this.connected) {
       try {
-        // Use MULTI/EXEC for atomic INCR + EXPIRE
-        const result = await this.redis.multi()
-          .incr(fullKey)
-          .expire(fullKey, ttlSeconds)
-          .exec();
-
-        if (result && result[0] && result[0][1] !== null) {
-          return result[0][1] as number;
+        // Use INCR first, then only set EXPIRE if key is new (count = 1)
+        // This creates a fixed window rate limit instead of a sliding window
+        // With sliding window, EXPIRE resets on every request so the counter never expires
+        const count = await this.redis.incr(fullKey);
+        if (count === 1) {
+          // Only set TTL when key is first created (fixed window start)
+          await this.redis.expire(fullKey, ttlSeconds);
         }
+        return count;
       } catch (err) {
         logger.warn({ key, error: err }, 'Redis incr error');
       }
