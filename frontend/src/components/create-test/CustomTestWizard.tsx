@@ -17,12 +17,13 @@
 import React, { useState, useCallback } from 'react';
 import { AIGenerateStep } from './AIGenerateStep';
 import { ManualSetupStep, type ManualSetupFormState } from './ManualSetupStep';
+import { RecordStep, type RecordConfig } from './RecordStep';
 import { ReviewStep, type WizardConfig, type AIGeneratedConfig, type ManualSetupConfig } from './ReviewStep';
 
 /**
- * Configuration method - AI Generate or Manual Setup
+ * Configuration method - AI Generate, Manual Setup, or Record
  */
-export type ConfigMethod = 'ai-generate' | 'manual-setup' | null;
+export type ConfigMethod = 'ai-generate' | 'manual-setup' | 'record' | null;
 
 /**
  * Wizard step
@@ -113,13 +114,21 @@ const methodColorMap = {
   check: 'text-blue-500 dark:text-blue-400',
   indicator: 'border-blue-500 bg-blue-500',
  },
+ rose: {
+  selected: 'border-rose-500 bg-rose-50 dark:bg-rose-950/30 shadow-lg',
+  badge: 'text-rose-600 bg-rose-100 dark:bg-rose-900/40 dark:text-rose-300',
+  iconBg: 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300',
+  title: 'text-rose-700 dark:text-rose-300',
+  check: 'text-rose-500 dark:text-rose-400',
+  indicator: 'border-rose-500 bg-rose-500',
+ },
 };
 
 /**
  * Method selection card component
  */
 interface MethodCardProps {
- method: 'ai-generate' | 'manual-setup';
+ method: 'ai-generate' | 'manual-setup' | 'record';
  isSelected: boolean;
  onSelect: () => void;
 }
@@ -165,6 +174,23 @@ const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect })
  benefits: ['Full control over settings', 'Step-by-step configuration', 'Advanced options'],
  color: 'blue' as const,
  badge: null,
+ },
+ 'record': {
+ title: 'Record Actions',
+ description: 'Record your interactions in a live browser and convert them into test steps',
+ icon: (
+ <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <path
+ strokeLinecap="round"
+ strokeLinejoin="round"
+ strokeWidth={1.5}
+ d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+ />
+ </svg>
+ ),
+ benefits: ['Visual recording', 'Click-to-create steps', 'Live browser preview'],
+ color: 'rose' as const,
+ badge: 'Interactive',
  },
  };
 
@@ -259,11 +285,16 @@ const MethodSelection: React.FC<{
  Choose your preferred method to get started
  </p>
 
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
  <MethodCard
  method="ai-generate"
  isSelected={selectedMethod === 'ai-generate'}
  onSelect={() => onMethodSelect('ai-generate')}
+ />
+ <MethodCard
+ method="record"
+ isSelected={selectedMethod === 'record'}
+ onSelect={() => onMethodSelect('record')}
  />
  <MethodCard
  method="manual-setup"
@@ -407,6 +438,14 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  }
  }, []);
 
+ // Feature #592: Handle record form state changes
+ const handleRecordFormChange = useCallback((config: RecordConfig | null, isValid: boolean) => {
+ setIsStep2Valid(isValid);
+ if (isValid && config) {
+ setWizardConfig(config);
+ }
+ }, []);
+
  // Can continue check
  const canContinue = wizardStep === 1
  ? configMethod !== null
@@ -417,7 +456,7 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  // Step titles
  const stepTitles = {
  1: 'Choose Method',
- 2: configMethod === 'ai-generate' ? 'AI Configuration' : 'Test Configuration',
+ 2: configMethod === 'ai-generate' ? 'AI Configuration' : configMethod === 'record' ? 'Record Actions' : 'Test Configuration',
  3: 'Review & Create',
  };
 
@@ -486,6 +525,19 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  }}
  onChange={handleManualFormChange}
  projectBaseUrl={projectBaseUrl}
+ />
+ )}
+
+ {/* Feature #592: Recording wizard method */}
+ {wizardStep === 2 && configMethod === 'record' && (
+ <RecordStep
+ onContinue={(config) => {
+ setWizardConfig(config);
+ handleContinue();
+ }}
+ onChange={handleRecordFormChange}
+ projectBaseUrl={projectBaseUrl}
+ token={token}
  />
  )}
 

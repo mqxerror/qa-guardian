@@ -132,9 +132,36 @@ export interface ManualSetupConfig {
 }
 
 /**
+ * Recording step interface
+ * Feature #592: Recording wizard method
+ */
+export interface RecordingStepData {
+ action: string;
+ selector?: string;
+ value?: string;
+ text?: string;
+ url?: string;
+ timestamp?: number;
+}
+
+/**
+ * Configuration from Record step
+ * Feature #592: Recording wizard method
+ */
+export interface RecordConfig {
+ method: 'record';
+ testType: 'e2e';
+ name: string;
+ description: string;
+ targetUrl: string;
+ steps: RecordingStepData[];
+ deviceConfig?: DeviceConfig;
+}
+
+/**
  * Combined wizard configuration type
  */
-export type WizardConfig = AIGeneratedConfig | ManualSetupConfig;
+export type WizardConfig = AIGeneratedConfig | ManualSetupConfig | RecordConfig;
 
 /**
  * Props for ReviewStep
@@ -226,11 +253,11 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  const typeConfig = testType ? TEST_TYPE_CONFIG[testType] : null;
 
  // Get display values based on config method
- const displayName = config.method === 'manual-setup'
+ const displayName = config.method === 'manual-setup' || config.method === 'record'
  ? config.name
  : `${typeConfig?.label || 'Test'} - ${new URL(config.url || 'https://unknown-site.com').hostname}`;
 
- const displayUrl = config.method === 'manual-setup' ? config.targetUrl : config.url;
+ const displayUrl = config.method === 'manual-setup' || config.method === 'record' ? config.targetUrl : config.url;
  const displayDescription = config.description || 'No description provided';
 
  // Build request body for test creation (shared between create and create+run)
@@ -417,6 +444,23 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  if (config.maxFindings) {
  requestBody.max_findings = config.maxFindings;
  }
+ }
+ } else if (config.method === 'record') {
+ // Feature #592: Recording wizard method - convert recorded steps to test steps
+ if (config.steps && config.steps.length > 0) {
+ // Convert recording steps to structured test steps
+ requestBody.steps = config.steps.map((step, index) => ({
+  id: `step-${index + 1}`,
+  action: step.action,
+  selector: step.selector,
+  value: step.value || step.text || step.url,
+  order: index,
+ }));
+ }
+ // Include device config if used during recording
+ if (config.deviceConfig) {
+ requestBody.device_emulation = true;
+ requestBody.device_config = config.deviceConfig;
  }
  } else {
  // AI Generated config
@@ -633,11 +677,21 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
 
  // Render type-specific settings
  const renderTypeSpecificSettings = () => {
- if (config.method !== 'manual-setup') {
+ if (config.method === 'ai-generate') {
  return (
  <SummaryRow
  label="Viewport"
  value={`${config.viewport.preset} (${config.viewport.width}×${config.viewport.height})`}
+ />
+ );
+ }
+
+ // Feature #592: Recording shows recorded steps count
+ if (config.method === 'record') {
+ return (
+ <SummaryRow
+ label="Recorded Steps"
+ value={`${config.steps.length} step${config.steps.length !== 1 ? 's' : ''}`}
  />
  );
  }
