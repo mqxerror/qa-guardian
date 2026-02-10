@@ -331,6 +331,12 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  waitForSelector: manualFormState.visualConfig?.waitForSelector,
  devicePreset: manualFormState.devicePreset,
  performanceThreshold: manualFormState.performanceThreshold,
+ // Feature #586: Performance config fields
+ lcpThreshold: manualFormState.lcpThreshold,
+ clsThreshold: manualFormState.clsThreshold,
+ fidThreshold: manualFormState.fidThreshold,
+ ttiThreshold: manualFormState.ttiThreshold,
+ lighthouseCategories: manualFormState.lighthouseCategories,
  wcagLevel: manualFormState.wcagLevel,
  virtualUsers: manualFormState.virtualUsers,
  duration: manualFormState.duration,

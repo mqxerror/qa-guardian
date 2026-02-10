@@ -25,6 +25,8 @@ import { VisualConfig, type VisualConfigState } from './config/VisualConfig';
 import { E2EConfig, type E2EConfigState } from './config/E2EConfig';
 // Feature #585: Wire LoadConfig into wizard for full load test configuration
 import { LoadConfig, type LoadConfigState, type LoadScenario } from './config/LoadConfig';
+// Feature #586: Wire PerformanceConfig into wizard for full performance test configuration
+import { PerformanceConfig, type PerformanceConfigState } from './config/PerformanceConfig';
 import { type DeviceConfig } from '../test-modals/types';
 
 /**
@@ -54,6 +56,18 @@ export interface ManualSetupFormState {
  // Performance specific
  devicePreset: 'desktop' | 'mobile';
  performanceThreshold: number;
+ /** Feature #586: Full performance test configuration from PerformanceConfig component */
+ performanceConfig?: PerformanceConfigState;
+ lcpThreshold: number;
+ clsThreshold: number;
+ fidThreshold: number;
+ ttiThreshold: number;
+ lighthouseCategories: {
+ performance: boolean;
+ accessibility: boolean;
+ bestPractices: boolean;
+ seo: boolean;
+ };
  // Accessibility specific
  wcagLevel: 'A' | 'AA' | 'AAA';
  // Load specific
@@ -102,6 +116,17 @@ const DEFAULT_FORM_STATE: ManualSetupFormState = {
  diffThreshold: 0.1,
  devicePreset: 'desktop',
  performanceThreshold: 50,
+ // Feature #586: Performance config defaults
+ lcpThreshold: 2500,
+ clsThreshold: 0.1,
+ fidThreshold: 100,
+ ttiThreshold: 3800,
+ lighthouseCategories: {
+ performance: true,
+ accessibility: true,
+ bestPractices: true,
+ seo: true,
+ },
  wcagLevel: 'AA',
  virtualUsers: 10,
  duration: 60,
@@ -344,28 +369,46 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  );
 
  case 'performance':
+ // Feature #586: Use full PerformanceConfig component with Core Web Vitals,
+ // category toggles, and device presets
  return (
- <div className="space-y-4">
- <FormField label="Device Preset" required>
- <select
- value={formState.devicePreset}
- onChange={(e) => updateField('devicePreset', e.target.value as 'desktop' | 'mobile')}
- className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
- >
- <option value="desktop">Desktop</option>
- <option value="mobile">Mobile</option>
- </select>
- </FormField>
- <FormField label="Performance Threshold" hint="Minimum Lighthouse score (0-100)">
- <input
- type="number"
- value={formState.performanceThreshold}
- onChange={(e) => updateField('performanceThreshold', parseInt(e.target.value) || 50)}
- min={0}
- max={100}
- className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
+ <div className="space-y-4 -mt-4">
+ <PerformanceConfig
+ initialValues={{
+ name: formState.name,
+ description: formState.description,
+ targetUrl: formState.targetUrl,
+ devicePreset: formState.devicePreset,
+ performanceThreshold: formState.performanceThreshold,
+ lcpThreshold: formState.lcpThreshold,
+ clsThreshold: formState.clsThreshold,
+ fidThreshold: formState.fidThreshold,
+ ttiThreshold: formState.ttiThreshold,
+ categories: formState.lighthouseCategories,
+ }}
+ onChange={(perfConfig) => {
+ // Sync performance config back to form state
+ setFormState(prev => ({
+ ...prev,
+ name: perfConfig.name || prev.name,
+ description: perfConfig.description || prev.description,
+ targetUrl: perfConfig.targetUrl || prev.targetUrl,
+ devicePreset: perfConfig.devicePreset,
+ performanceThreshold: perfConfig.performanceThreshold,
+ lcpThreshold: perfConfig.lcpThreshold,
+ clsThreshold: perfConfig.clsThreshold,
+ fidThreshold: perfConfig.fidThreshold,
+ ttiThreshold: perfConfig.ttiThreshold,
+ lighthouseCategories: perfConfig.categories,
+ performanceConfig: perfConfig,
+ }));
+ }}
+ onValidationChange={(_isValid) => {
+ // Feature #586: Performance config validation handled separately
+ }}
+ projectBaseUrl={projectBaseUrl}
+ className="performance-config-embedded"
  />
- </FormField>
  </div>
  );
 
@@ -457,8 +500,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  Test Configuration
  </h4>
 
- {/* Skip common fields for visual/e2e/load tests - dedicated config components render them */}
- {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && (
+ {/* Skip common fields for visual/e2e/load/performance tests - dedicated config components render them */}
+ {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && formState.testType !== 'performance' && (
  <>
  <FormField label="Test Name" required error={touched.name ? errors.name : undefined}>
  <input
@@ -505,8 +548,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  {/* Type-specific fields */}
  {renderTypeSpecificFields()}
 
- {/* Advanced Settings - skip for visual/e2e/load tests (dedicated config components have their own) */}
- {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && (
+ {/* Advanced Settings - skip for visual/e2e/load/performance tests (dedicated config components have their own) */}
+ {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && formState.testType !== 'performance' && (
  <CollapsibleSection
  title="Advanced Settings"
  isOpen={showAdvanced}

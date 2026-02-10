@@ -81,6 +81,17 @@ export interface ManualSetupConfig {
  // Performance specific
  devicePreset?: 'desktop' | 'mobile';
  performanceThreshold?: number;
+ /** Feature #586: PerformanceConfig fields */
+ lcpThreshold?: number;
+ clsThreshold?: number;
+ fidThreshold?: number;
+ ttiThreshold?: number;
+ lighthouseCategories?: {
+ performance: boolean;
+ accessibility: boolean;
+ bestPractices: boolean;
+ seo: boolean;
+ };
  // Accessibility specific
  wcagLevel?: 'A' | 'AA' | 'AAA';
  // Load specific
@@ -275,6 +286,27 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  if (testType === 'performance') {
  requestBody.device_preset = config.devicePreset || 'desktop';
  requestBody.performance_threshold = config.performanceThreshold || 50;
+ // Feature #586: Include PerformanceConfig fields from PerformanceConfig component
+ if (config.lcpThreshold) {
+ requestBody.lcp_threshold = config.lcpThreshold;
+ }
+ if (config.clsThreshold) {
+ requestBody.cls_threshold = config.clsThreshold;
+ }
+ if (config.fidThreshold) {
+ requestBody.fid_threshold = config.fidThreshold;
+ }
+ if (config.ttiThreshold) {
+ requestBody.tti_threshold = config.ttiThreshold;
+ }
+ if (config.lighthouseCategories) {
+ requestBody.lighthouse_categories = {
+ performance: config.lighthouseCategories.performance,
+ accessibility: config.lighthouseCategories.accessibility,
+ best_practices: config.lighthouseCategories.bestPractices,
+ seo: config.lighthouseCategories.seo,
+ };
+ }
  }
  if (testType === 'accessibility') {
  requestBody.wcag_level = config.wcagLevel || 'AA';
@@ -468,13 +500,29 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  );
  }
 
- case 'performance':
+ case 'performance': {
+ // Feature #586: Display PerformanceConfig fields in review
+ const enabledCategories = config.lighthouseCategories
+ ? Object.entries(config.lighthouseCategories)
+  .filter(([, enabled]) => enabled)
+  .map(([cat]) => cat === 'bestPractices' ? 'Best Practices' : cat.charAt(0).toUpperCase() + cat.slice(1))
+ : ['Performance', 'Accessibility', 'Best Practices', 'SEO'];
  return (
  <>
  <SummaryRow label="Device" value={config.devicePreset === 'mobile' ? 'Mobile' : 'Desktop'} />
  <SummaryRow label="Threshold" value={`Score ≥ ${config.performanceThreshold || 50}`} />
+ {(config.lcpThreshold || config.clsThreshold) && (
+ <SummaryRow
+  label="Core Web Vitals"
+  value={`LCP ≤ ${config.lcpThreshold || 2500}ms, CLS ≤ ${config.clsThreshold || 0.1}`}
+ />
+ )}
+ {enabledCategories.length < 4 && (
+ <SummaryRow label="Categories" value={enabledCategories.join(', ')} />
+ )}
  </>
  );
+ }
 
  case 'accessibility':
  return (
