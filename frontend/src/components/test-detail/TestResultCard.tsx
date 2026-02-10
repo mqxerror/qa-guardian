@@ -4,7 +4,7 @@
 // Renders a single test result including all test type specific displays
 // (E2E, Visual Regression, Lighthouse, Accessibility, K6 Load Test)
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Settings } from 'lucide-react';
 import { toast } from '../../stores/toastStore';
 
@@ -18,7 +18,8 @@ import {
  AccessibilityResultsDisplay,
 } from './test-result-card';
 
-export function TestResultCard({
+// Feature #574: Wrapped in React.memo to prevent re-renders from unrelated state changes
+function TestResultCardInner({
  result,
  testType,
  token,
@@ -313,4 +314,5 @@ export function TestResultCard({
  );
 }
 
+export const TestResultCard = React.memo(TestResultCardInner);
 export type { TestResultCardProps, TestResult };

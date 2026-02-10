@@ -2,7 +2,7 @@
 // Feature #48: Extracted from TestDetailPage.tsx
 // Feature #571: Replace emoji with Lucide icons for cross-browser consistency
 // Feature #572: Enriched rows with duration bars, error previews, anomaly indicators, sparklines
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { BarChart3, AlertTriangle } from 'lucide-react';
 import { TestRunType } from './types';
@@ -84,7 +84,8 @@ interface RunHistorySectionProps {
  onDownloadAllArtifacts: (runId: string) => void;
 }
 
-export function RunHistorySection({
+// Feature #574: Wrapped in React.memo to prevent re-renders from unrelated state changes
+function RunHistorySectionInner({
  runs,
  filteredRuns,
  sortedRuns,
@@ -457,3 +458,5 @@ export function RunHistorySection({
  </div>
  );
 }
+
+export const RunHistorySection = React.memo(RunHistorySectionInner);

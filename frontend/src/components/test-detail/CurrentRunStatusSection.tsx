@@ -4,7 +4,7 @@
 // Feature #573: Consolidated duplicate displays - WaveProgressCard collapsed shows summary, expanded shows full LiveExecutionPanel
 // Displays current run header, status badge, live execution, and test results
 
-import { useState, useMemo, RefObject, Dispatch, SetStateAction } from 'react';
+import React, { useState, useMemo, RefObject, Dispatch, SetStateAction } from 'react';
 import { Play, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
 import { LiveExecutionPanel } from './LiveExecutionPanel';
 import { TestResultCard, TestResult } from './TestResultCard';
@@ -52,7 +52,8 @@ interface CurrentRunStatusSectionProps {
   formatDateTime: (date: string | Date) => string;
 }
 
-export function CurrentRunStatusSection({
+// Feature #574: Wrapped in React.memo to prevent re-renders from unrelated state changes
+function CurrentRunStatusSectionInner({
   currentRun,
   test,
   liveProgress,
@@ -234,26 +235,27 @@ export function CurrentRunStatusSection({
           steps={waveSteps.length > 0 ? waveSteps : undefined}
           animate={currentRun.status === 'running'}
         >
-          {/* Feature #573: Consolidated live run display — collapsed shows mini summary, expanded shows full LiveExecutionPanel */}
-          {currentRun.status === 'running' && !waveExpanded && liveScreenshot && (
+          {/* Feature #573: Collapsed view — mini screenshot when not expanded and running */}
+          {isRunning && !waveExpanded && liveScreenshot && (
             <div className="mt-3 pt-3 border-t border-border">
               <div className="flex items-center gap-3 mb-2">
                 <div className="relative">
                   <div className="h-2 w-2 bg-primary rounded-full animate-ping absolute"></div>
                   <div className="h-2 w-2 bg-primary rounded-full relative"></div>
                 </div>
-                <span className="text-xs font-medium text-muted-foreground">Live Screenshot</span>
+                <span className="text-xs font-medium text-muted-foreground">Live Screenshot — click to expand</span>
               </div>
               <img
                 src={liveScreenshot.startsWith('data:') ? liveScreenshot : `data:image/png;base64,${liveScreenshot}`}
                 alt="Live screenshot"
-                className="w-full max-h-32 object-contain bg-black/20 rounded-lg"
+                className="w-full max-h-32 object-contain bg-black/20 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => setWaveExpanded(true)}
               />
             </div>
           )}
 
-          {/* Feature #573: Mini progress bar shown only in collapsed view */}
-          {currentRun.status === 'running' && !waveExpanded && liveProgress && (
+          {/* Feature #573: Collapsed view — mini progress bar when not expanded and running */}
+          {isRunning && !waveExpanded && liveProgress && (
             <div className="mt-3 pt-3 border-t border-border">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
@@ -286,8 +288,8 @@ export function CurrentRunStatusSection({
             </div>
           )}
 
-          {/* Feature #573: Full LiveExecutionPanel shown in expanded view — replaces duplicate mini views */}
-          {waveExpanded && (
+          {/* Feature #573: Expanded view — full LiveExecutionPanel when expanded and running */}
+          {isRunning && waveExpanded && (
             <div className="mt-3 pt-3 border-t border-border">
               <LiveExecutionPanel
                 currentRun={currentRun}
@@ -352,4 +354,5 @@ export function CurrentRunStatusSection({
   );
 }
 
+export const CurrentRunStatusSection = React.memo(CurrentRunStatusSectionInner);
 export type { CurrentRunStatusSectionProps };

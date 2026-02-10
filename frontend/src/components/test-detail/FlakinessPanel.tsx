@@ -4,6 +4,7 @@
  * Feature #571: Replace emoji with Lucide icons for cross-browser consistency
  * Displays flakiness trend data and analysis for a test
  */
+import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import type { FlakinessTrend, TestRunType } from './types';
@@ -18,7 +19,8 @@ export interface FlakinessPanelProps {
  onRefresh: () => void;
 }
 
-export function FlakinessPanel({
+// Feature #574: Wrapped in React.memo to prevent re-renders from unrelated state changes
+function FlakinessPanelInner({
  isLoading,
  flakinessTrend,
  runs,
@@ -207,4 +209,5 @@ export function FlakinessPanel({
  );
 }
 
+export const FlakinessPanel = React.memo(FlakinessPanelInner);
 export default FlakinessPanel;

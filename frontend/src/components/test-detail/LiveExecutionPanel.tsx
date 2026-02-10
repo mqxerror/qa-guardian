@@ -25,7 +25,8 @@ interface LiveExecutionPanelProps {
  onCancelRun: () => void;
 }
 
-export function LiveExecutionPanel({
+// Feature #574: Wrapped in React.memo to prevent re-renders from unrelated state changes
+function LiveExecutionPanelInner({
  currentRun,
  test,
  liveProgress,
@@ -281,4 +282,5 @@ function K6LiveMetrics({ k6Metrics, virtualUsers }: K6LiveMetricsProps) {
  );
 }
 
+export const LiveExecutionPanel = React.memo(LiveExecutionPanelInner);
 export type { LiveExecutionPanelProps, LiveProgress, ConsoleLogEntry };

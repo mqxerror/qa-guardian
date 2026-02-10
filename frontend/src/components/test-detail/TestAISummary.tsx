@@ -9,7 +9,7 @@
  * - Collapsible card with chevron toggle
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Sparkles, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
 import { TestRunType, RunStatus } from './types';
 
@@ -27,7 +27,8 @@ interface AIDiagnosis {
   suggested_fix?: string;
 }
 
-export function TestAISummary({
+// Feature #574: Wrapped in React.memo to prevent re-renders from unrelated state changes
+function TestAISummaryInner({
   testId,
   testName,
   runs,
@@ -327,3 +328,5 @@ export function TestAISummary({
     </div>
   );
 }
+
+export const TestAISummary = React.memo(TestAISummaryInner);
