@@ -165,13 +165,15 @@ export function CurrentRunStatusSection({
       items.push({ score: passRate, label: 'Steps Passed' });
     }
 
-    // Lighthouse scores if available
-    const lighthouse = (result as unknown as Record<string, unknown>).lighthouse as Record<string, unknown> | undefined;
-    if (lighthouse) {
-      if (typeof lighthouse.performance === 'number') items.push({ score: lighthouse.performance, label: 'Performance' });
-      if (typeof lighthouse.accessibility === 'number') items.push({ score: lighthouse.accessibility, label: 'Accessibility' });
-      if (typeof lighthouse.bestPractices === 'number') items.push({ score: lighthouse.bestPractices, label: 'Best Practices' });
-      if (typeof lighthouse.seo === 'number') items.push({ score: lighthouse.seo, label: 'SEO' });
+    // Feature #568: Access lighthouse from step results (not result directly)
+    // Lighthouse data lives in individual steps, not at the TestRunResult level
+    const lighthouseStep = result.steps?.find(s => s.lighthouse);
+    if (lighthouseStep?.lighthouse) {
+      const lh = lighthouseStep.lighthouse;
+      if (typeof lh.performance === 'number') items.push({ score: lh.performance, label: 'Performance' });
+      if (typeof lh.accessibility === 'number') items.push({ score: lh.accessibility, label: 'Accessibility' });
+      if (typeof lh.bestPractices === 'number') items.push({ score: lh.bestPractices, label: 'Best Practices' });
+      if (typeof lh.seo === 'number') items.push({ score: lh.seo, label: 'SEO' });
     }
 
     return items;
@@ -307,7 +309,7 @@ export function CurrentRunStatusSection({
             {currentRun.results!.map((result) => (
               <TestResultCard
                 key={result.test_id}
-                // Type cast needed: TestRunResult.steps differs from TestResult.steps (step_id field)
+                // Feature #568: Kept single as-unknown-as (a11y_results shape differs between types.ts and test-result-card)
                 result={result as unknown as TestResult}
                 testType={test?.test_type}
                 token={token}
@@ -329,11 +331,9 @@ export function CurrentRunStatusSection({
                 onApproveBaseline={onApproveBaseline}
                 onRejectChanges={onRejectChanges}
                 a11ySeverityFilter={a11ySeverityFilter as Record<string, string>}
-                // Type cast needed: SetStateAction union types incompatible with string record setter
-                setA11ySeverityFilter={setA11ySeverityFilter as unknown as (filters: Record<string, string>) => void}
+                setA11ySeverityFilter={setA11ySeverityFilter}
                 a11yCategoryFilter={a11yCategoryFilter as Record<string, string>}
-                // Type cast needed: SetStateAction union types incompatible with string record setter
-                setA11yCategoryFilter={setA11yCategoryFilter as unknown as (filters: Record<string, string>) => void}
+                setA11yCategoryFilter={setA11yCategoryFilter}
                 a11ySearchQuery={a11ySearchQuery}
                 setA11ySearchQuery={setA11ySearchQuery}
                 formatDateTime={formatDateTime}

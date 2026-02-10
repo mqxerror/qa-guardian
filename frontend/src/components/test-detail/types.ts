@@ -263,6 +263,8 @@ export interface TestRunResult {
   diff_image_base64?: string;
   diff_percentage?: number;
   load_test?: LoadTestResult;
+  // Feature #568: Added optional lighthouse field to align with test-result-card/TestResult
+  lighthouse?: LighthouseResult;
 }
 
 // Step result

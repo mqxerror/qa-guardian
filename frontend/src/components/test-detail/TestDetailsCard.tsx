@@ -13,8 +13,9 @@ interface TestType {
  viewports?: (string | { name: string; width: number; height: number })[];
  wait_for_selector?: string;
  wait_time?: number;
- hide_selectors?: string;
- remove_selectors?: string;
+ // Feature #568: Fixed type to match types.ts (was string, causing as-unknown-as cast)
+ hide_selectors?: string | string[];
+ remove_selectors?: string | string[];
  diff_threshold?: number;
  diff_threshold_mode?: 'percentage' | 'pixel_count';
  diff_pixel_threshold?: number;

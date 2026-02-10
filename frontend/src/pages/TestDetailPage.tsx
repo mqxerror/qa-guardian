@@ -1296,8 +1296,8 @@ function TestDetailPage() {
         {/* Test Details - Feature #48: Using extracted TestDetailsCard component */}
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <TestDetailsCard
-            // Type cast needed: hide_selectors is string[] in types.ts but string in TestDetailsCard
-            test={test as unknown as Parameters<typeof TestDetailsCard>[0]['test']}
+            // Feature #568: Removed as-unknown-as cast (fixed TestDetailsCard to accept string | string[])
+            test={test}
             suiteName={suite?.name}
             formatDate={formatDate}
           />

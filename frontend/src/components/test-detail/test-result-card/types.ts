@@ -1,11 +1,14 @@
 // Feature #48: TestResultCard Types - Extracted from TestResultCard.tsx
 // Contains all interface definitions and helper functions for test result display
 
+import type { Dispatch, SetStateAction } from 'react';
 import { AccessibilityExportData } from '../exportUtils';
 
 // Result types
 export interface StepResult {
- step_id: string;
+ // Feature #568: Accept both id and step_id for compatibility with types.ts StepResult
+ step_id?: string;
+ id?: string;
  action: string;
  status: 'passed' | 'failed' | 'skipped' | 'pending';
  duration_ms?: number;
@@ -214,13 +217,13 @@ export interface TestResultCardProps {
  onOpenLightbox: (imageUrl: string) => void;
  onApproveBaseline: (runId: string) => void;
  onRejectChanges: (runId: string) => void;
- // Accessibility filters (per-result keyed by result.test_id)
+ // Feature #568: Use Dispatch<SetStateAction<...>> to properly accept React state setters
  a11ySeverityFilter: Record<string, string>;
- setA11ySeverityFilter: (filters: Record<string, string>) => void;
+ setA11ySeverityFilter: Dispatch<SetStateAction<Record<string, string>>>;
  a11yCategoryFilter: Record<string, string>;
- setA11yCategoryFilter: (filters: Record<string, string>) => void;
+ setA11yCategoryFilter: Dispatch<SetStateAction<Record<string, string>>>;
  a11ySearchQuery: Record<string, string>;
- setA11ySearchQuery: (queries: Record<string, string>) => void;
+ setA11ySearchQuery: Dispatch<SetStateAction<Record<string, string>>>;
  // Lighthouse history for charts
  lighthouseHistory?: Array<{
  run_id: string;
