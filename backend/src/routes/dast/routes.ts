@@ -170,14 +170,13 @@ export async function dastRoutes(app: FastifyInstance) {
 
     // SSRF protection: prevent scans against internal/private networks
     const ssrfValidation = validateURLForSSRF(targetUrl, {
-      allowPrivateIPs: false,
       allowLocalhost: false,
-      requireHTTPS: false,
+      requireHttps: false,
     });
-    if (!ssrfValidation.valid) {
+    if (!ssrfValidation.safe) {
       return reply.status(400).send({
         error: 'URL blocked by security policy',
-        message: ssrfValidation.reason || 'Internal or private network URLs are not allowed for DAST scans.',
+        message: ssrfValidation.error || 'Internal or private network URLs are not allowed for DAST scans.',
       });
     }
 
