@@ -335,6 +335,10 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  virtualUsers: manualFormState.virtualUsers,
  duration: manualFormState.duration,
  rampUp: manualFormState.rampUp,
+ // Feature #585: Load config fields
+ loadScenario: manualFormState.loadScenario,
+ k6Script: manualFormState.k6Script,
+ loadThresholds: manualFormState.loadThresholds,
  };
  setWizardConfig(manualConfig);
  }

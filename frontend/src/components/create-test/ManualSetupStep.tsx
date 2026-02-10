@@ -23,6 +23,8 @@ import { type Step } from './config/StepBuilder';
 import { VisualConfig, type VisualConfigState } from './config/VisualConfig';
 // Feature #584: Wire E2EConfig into wizard for full E2E configuration
 import { E2EConfig, type E2EConfigState } from './config/E2EConfig';
+// Feature #585: Wire LoadConfig into wizard for full load test configuration
+import { LoadConfig, type LoadConfigState, type LoadScenario } from './config/LoadConfig';
 import { type DeviceConfig } from '../test-modals/types';
 
 /**
@@ -58,6 +60,14 @@ export interface ManualSetupFormState {
  virtualUsers: number;
  duration: number;
  rampUp: number;
+ /** Feature #585: Full load test configuration from LoadConfig component */
+ loadConfig?: LoadConfigState;
+ loadScenario: LoadScenario;
+ k6Script: string;
+ loadThresholds: {
+ http_req_duration_p95: number;
+ http_req_failed: number;
+ };
 }
 
 /**
@@ -96,6 +106,13 @@ const DEFAULT_FORM_STATE: ManualSetupFormState = {
  virtualUsers: 10,
  duration: 60,
  rampUp: 10,
+ // Feature #585: Load config defaults
+ loadScenario: 'constant',
+ k6Script: '',
+ loadThresholds: {
+ http_req_duration_p95: 500,
+ http_req_failed: 0.01,
+ },
 };
 
 /**
@@ -370,40 +387,44 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  );
 
  case 'load':
+ // Feature #585: Use full LoadConfig component with scenario selection,
+ // thresholds, k6 script editor, and advanced options
  return (
- <div className="space-y-4">
- <FormField label="Virtual Users" required hint="Number of concurrent users to simulate">
- <input
- type="number"
- value={formState.virtualUsers}
- onChange={(e) => updateField('virtualUsers', parseInt(e.target.value) || 10)}
- min={1}
- max={10000}
- className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
+ <div className="space-y-4 -mt-4">
+ <LoadConfig
+ initialValues={{
+ name: formState.name,
+ description: formState.description,
+ targetUrl: formState.targetUrl,
+ virtualUsers: formState.virtualUsers,
+ duration: formState.duration,
+ rampUp: formState.rampUp,
+ scenario: formState.loadScenario,
+ k6Script: formState.k6Script,
+ thresholds: formState.loadThresholds,
+ }}
+ onChange={(loadConfig) => {
+ // Sync load config back to form state
+ setFormState(prev => ({
+ ...prev,
+ name: loadConfig.name || prev.name,
+ description: loadConfig.description || prev.description,
+ targetUrl: loadConfig.targetUrl || prev.targetUrl,
+ virtualUsers: loadConfig.virtualUsers,
+ duration: loadConfig.duration,
+ rampUp: loadConfig.rampUp,
+ loadScenario: loadConfig.scenario,
+ k6Script: loadConfig.k6Script,
+ loadThresholds: loadConfig.thresholds,
+ loadConfig: loadConfig,
+ }));
+ }}
+ onValidationChange={(_isValid) => {
+ // Feature #585: Load config validation handled separately
+ }}
+ projectBaseUrl={projectBaseUrl}
+ className="load-config-embedded"
  />
- </FormField>
- <div className="grid grid-cols-2 gap-4">
- <FormField label="Duration (seconds)" required>
- <input
- type="number"
- value={formState.duration}
- onChange={(e) => updateField('duration', parseInt(e.target.value) || 60)}
- min={10}
- max={3600}
- className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
- />
- </FormField>
- <FormField label="Ramp-up (seconds)">
- <input
- type="number"
- value={formState.rampUp}
- onChange={(e) => updateField('rampUp', parseInt(e.target.value) || 10)}
- min={0}
- max={300}
- className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground"
- />
- </FormField>
- </div>
  </div>
  );
 
@@ -436,8 +457,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  Test Configuration
  </h4>
 
- {/* Skip common fields for visual/e2e tests - VisualConfig/E2EConfig render them */}
- {formState.testType !== 'visual' && formState.testType !== 'e2e' && (
+ {/* Skip common fields for visual/e2e/load tests - dedicated config components render them */}
+ {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && (
  <>
  <FormField label="Test Name" required error={touched.name ? errors.name : undefined}>
  <input
@@ -484,8 +505,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  {/* Type-specific fields */}
  {renderTypeSpecificFields()}
 
- {/* Advanced Settings - skip for visual/e2e tests (VisualConfig/E2EConfig have their own) */}
- {formState.testType !== 'visual' && formState.testType !== 'e2e' && (
+ {/* Advanced Settings - skip for visual/e2e/load tests (dedicated config components have their own) */}
+ {formState.testType !== 'visual' && formState.testType !== 'e2e' && formState.testType !== 'load' && (
  <CollapsibleSection
  title="Advanced Settings"
  isOpen={showAdvanced}

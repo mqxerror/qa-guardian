@@ -87,6 +87,13 @@ export interface ManualSetupConfig {
  virtualUsers?: number;
  duration?: number;
  rampUp?: number;
+ /** Feature #585: LoadConfig fields */
+ loadScenario?: 'constant' | 'ramping' | 'stages' | 'custom';
+ k6Script?: string;
+ loadThresholds?: {
+ http_req_duration_p95: number;
+ http_req_failed: number;
+ };
 }
 
 /**
@@ -276,6 +283,19 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  requestBody.virtual_users = config.virtualUsers || 10;
  requestBody.duration = config.duration || 60;
  requestBody.ramp_up = config.rampUp || 10;
+ // Feature #585: Include LoadConfig fields from LoadConfig component
+ if (config.loadScenario) {
+ requestBody.scenario = config.loadScenario;
+ }
+ if (config.k6Script) {
+ requestBody.k6_script = config.k6Script;
+ }
+ if (config.loadThresholds) {
+ requestBody.thresholds = {
+ http_req_duration_p95: config.loadThresholds.http_req_duration_p95,
+ http_req_failed: config.loadThresholds.http_req_failed,
+ };
+ }
  }
  } else {
  // AI Generated config
@@ -461,14 +481,30 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  <SummaryRow label="WCAG Level" value={`Level ${config.wcagLevel || 'AA'}`} />
  );
 
- case 'load':
+ case 'load': {
+ // Feature #585: Display LoadConfig fields in review
+ const scenarioLabel = config.loadScenario === 'constant' ? 'Constant Load'
+ : config.loadScenario === 'ramping' ? 'Ramping Load'
+ : config.loadScenario === 'stages' ? 'Staged Load'
+ : config.loadScenario === 'custom' ? 'Custom Script'
+ : 'Constant Load';
  return (
  <>
  <SummaryRow label="Virtual Users" value={`${config.virtualUsers || 10} VUs`} />
  <SummaryRow label="Duration" value={`${config.duration || 60} seconds`} />
  <SummaryRow label="Ramp-up" value={`${config.rampUp || 10} seconds`} />
+ {config.loadScenario && (
+ <SummaryRow label="Scenario" value={scenarioLabel} />
+ )}
+ {config.loadThresholds && (
+ <SummaryRow
+ label="Thresholds"
+ value={`P95 ≤ ${config.loadThresholds.http_req_duration_p95}ms, Error ≤ ${Math.round(config.loadThresholds.http_req_failed * 100)}%`}
+ />
+ )}
  </>
  );
+ }
 
  default:
  return null;
