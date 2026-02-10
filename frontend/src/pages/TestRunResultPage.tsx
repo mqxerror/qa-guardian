@@ -8,10 +8,9 @@ import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'; // useParams unused
 import { useAuthStore } from '../stores/authStore';
 import { useOrganizationBrandingStore } from '../stores/organizationBrandingStore';
-// Feature #46: Recharts and jsPDF imports removed - now used only in extracted components
-import { io, Socket } from 'socket.io-client';
+// Feature #567: Replaced standalone io() connection with shared useSocketStore
+import { useSocketStore } from '../stores/socketStore';
 import { toast } from '../stores/toastStore';
-import { logger } from '../utils/logger';
 // Feature #337: Design system components
 import {
  PageHeader,
@@ -306,7 +305,7 @@ export default function TestRunResultPage() {
  const [exportModalOpen, setExportModalOpen] = useState(false);
 
  // Feature #1844: Live execution state
- const socketRef = useRef<Socket | null>(null);
+ // Feature #567: Removed standalone socketRef - using shared useSocketStore
  const [liveMode, setLiveMode] = useState(false);
  const [currentStep, setCurrentStep] = useState<{ action: string; selector?: string; progress: number } | null>(null);
  const [liveScreenshot, setLiveScreenshot] = useState<string | null>(null);
@@ -371,6 +370,7 @@ export default function TestRunResultPage() {
  // moved to useTestRunData hook
 
  // Feature #1844: WebSocket connection for live updates + polling fallback
+ // Feature #567: Use shared useSocketStore instead of standalone io() connection
  useEffect(() => {
  if (!runId || !token) return;
 
@@ -382,63 +382,31 @@ export default function TestRunResultPage() {
 
  setLiveMode(true);
 
- // Create WebSocket connection
- const socket = io(window.location.origin, {
- auth: { token },
- query: { runId },
- transports: ['websocket', 'polling'],
- });
+ // Use shared socket store (avoids duplicate connections across tabs/pages)
+ const { connect, joinRun, leaveRun, socket } = useSocketStore.getState();
 
- socketRef.current = socket;
+ // Ensure we're connected
+ if (!socket?.connected) {
+ connect();
+ }
 
- // Handle connection events
- socket.on('connect', () => {
- logger.websocket.debug('Live updates connected');
- socket.emit('subscribe:run', { runId });
- });
+ // Join the run room for live updates
+ joinRun(runId);
 
- // Handle live step updates
- socket.on('run:step', (data: { action: string; selector?: string; stepIndex: number; totalSteps: number }) => {
- setCurrentStep({
- action: data.action,
- selector: data.selector,
- progress: ((data.stepIndex + 1) / data.totalSteps) * 100,
- });
- setExecutionProgress({
- current: data.stepIndex + 1,
- total: data.totalSteps,
- eta: undefined, // Could calculate based on average step time
- });
- });
+ // Listen for run-progress events on the shared socket
+ const handleRunProgress = (data: { runId: string; progress: number }) => {
+ if (data.runId === runId) {
+ setExecutionProgress(prev => ({
+ ...prev,
+ current: Math.round(data.progress),
+ total: 100,
+ }));
+ }
+ };
 
- // Handle live screenshots
- socket.on('run:screenshot', (data: { screenshot: string }) => {
- setLiveScreenshot(data.screenshot);
- });
-
- // Handle live console logs
- socket.on('run:console', (data: { level: string; message: string; timestamp: number }) => {
- setLiveConsoleLogs(prev => [...prev.slice(-50), data]); // Keep last 50 logs
- });
-
- // Handle live metrics (for load tests)
- socket.on('run:metrics', (data: { rps?: number; responseTime?: number; vus?: number }) => {
- setLiveMetrics(data);
- });
-
- // Handle run completion
- socket.on('run:complete', (data: { status: string }) => {
- setLiveMode(false);
- // Refresh the run data by incrementing retryTrigger
- setRetryTrigger(prev => prev + 1);
- });
-
- // Handle run error
- socket.on('run:error', (data: { error: string }) => {
- setLiveMode(false);
- // Refresh the run data to show error state
- setRetryTrigger(prev => prev + 1);
- });
+ // Subscribe to the shared socket's events
+ const currentSocket = useSocketStore.getState().socket;
+ currentSocket?.on('run-progress', handleRunProgress);
 
  // Feature #18: Polling fallback - poll every 3 seconds to detect run completion
  // This handles cases where WebSocket events are missed (e.g., run completes before socket connects)
@@ -462,10 +430,11 @@ export default function TestRunResultPage() {
  }
  }, 3000);
 
- // Cleanup
+ // Cleanup: leave run room and remove event listener (don't disconnect shared socket)
  return () => {
- socket.disconnect();
- socketRef.current = null;
+ leaveRun(runId);
+ const cleanupSocket = useSocketStore.getState().socket;
+ cleanupSocket?.off('run-progress', handleRunProgress);
  clearInterval(pollInterval);
  };
  }, [runId, token, run?.status]);
