@@ -35,7 +35,7 @@ const SuiteCard: React.FC<SuiteCardProps> = React.memo(({
  return (
  <Link
  key={suite.id}
- to={`/projects/${projectId}/suites/${suite.id}`}
+ to={`/suites/${suite.id}`}
  className="block p-4 bg-card border border-border rounded-lg hover:shadow-md transition-shadow"
  >
  <div className="flex items-start justify-between">
