@@ -1,10 +1,12 @@
 /**
  * SuiteHeaderActions Component
  * Feature #50: Extract suite header actions from TestSuitePage.tsx
+ * Feature #555: Added export run results as JSON/PDF
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { FileJson, FileText, Download } from 'lucide-react';
 
 interface SuiteHeaderActionsProps {
   suiteId: string;
@@ -18,6 +20,10 @@ interface SuiteHeaderActionsProps {
   onShowRecordModal: () => void;
   onShowCreateTestModal: () => void;
   onShowDeleteSuiteModal: () => void;
+  // Feature #555: Export run results
+  hasCompletedRun?: boolean;
+  onExportRunJSON?: () => void;
+  onExportRunPDF?: () => void;
 }
 
 export function SuiteHeaderActions({
@@ -32,7 +38,13 @@ export function SuiteHeaderActions({
   onShowRecordModal,
   onShowCreateTestModal,
   onShowDeleteSuiteModal,
+  hasCompletedRun,
+  onExportRunJSON,
+  onExportRunPDF,
 }: SuiteHeaderActionsProps) {
+  // Feature #555: Export results dropdown state
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
   return (
     <div className="flex gap-2">
       {testsCount > 0 && (
@@ -51,6 +63,40 @@ export function SuiteHeaderActions({
         >
           Export Tests
         </button>
+      )}
+      {/* Feature #555: Export run results dropdown */}
+      {hasCompletedRun && onExportRunJSON && onExportRunPDF && (
+        <div className="relative">
+          <button
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            onBlur={() => setTimeout(() => setShowExportMenu(false), 150)}
+            className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted inline-flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export Results
+            <svg className={`w-4 h-4 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showExportMenu && (
+            <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+              <button
+                onClick={() => { onExportRunJSON(); setShowExportMenu(false); }}
+                className="w-full px-4 py-2.5 text-sm text-left hover:bg-muted flex items-center gap-2 transition-colors"
+              >
+                <FileJson className="w-4 h-4 text-blue-500" />
+                Export as JSON
+              </button>
+              <button
+                onClick={() => { onExportRunPDF(); setShowExportMenu(false); }}
+                className="w-full px-4 py-2.5 text-sm text-left hover:bg-muted flex items-center gap-2 transition-colors"
+              >
+                <FileText className="w-4 h-4 text-red-500" />
+                Export as PDF
+              </button>
+            </div>
+          )}
+        </div>
       )}
       {/* Feature #1851: View run history at suite level */}
       <Link

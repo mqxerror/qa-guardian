@@ -14,6 +14,8 @@ import { getErrorMessage } from '../utils/errorHandling';
 import { UnifiedAIService } from '../services/UnifiedAIService';
 import { CreateTestModal } from '../components/create-test';
 import { ScoreCard } from '../components/ui/score-card';
+// Feature #554: Standardized PageHeader with breadcrumbs
+import { PageHeader } from '../components/ui';
 // Feature #546: WebSocket-based suite run tracking (replaces HTTP polling + separate socket)
 import { useSuiteRunSocket, type LiveScreenshot, type ScreenshotHistoryEntry, type SuiteRun as SuiteRunSocket } from '../hooks/useSuiteRunSocket';
 // Feature #59: React Query hooks for paginated test loading
@@ -22,7 +24,10 @@ import {
   useTestsPaginated, useSuite, useInvalidateTests,
   useReviewTest, useBatchReviewTests, useDuplicateTest, useDeleteTest,
   useStartRun, useCancelRun, useStartSuiteRun, useDeleteSuite,
+  useRunsBySuite,
 } from '../hooks/api';
+// Feature #553: Recharts for pass rate trend chart
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import {
   TestType, DeleteSuiteModal, DeleteTestModal, // TestStep unused - referenced in comment only
   ImportTestsModal, EditSelectorModal, ExpandedScreenshotModal, InsertTemplateModal,
@@ -44,10 +49,12 @@ interface SuiteRunResultLocal {
 }
 
 // Suite run state - matches component expectations
+// Feature #555: Added completed_at for export functionality
 interface SuiteRunLocal {
   id: string;
   status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
   started_at?: string;
+  completed_at?: string;
   duration_ms?: number;
   results?: SuiteRunResultLocal[];
 }
@@ -68,6 +75,8 @@ function TestSuitePage() {
     limit: itemsPerPage,
   });
   const { invalidateBySuite } = useInvalidateTests();
+  // Feature #553: Fetch last runs for suite run history + trend chart
+  const { data: suiteRunsData } = useRunsBySuite(suiteId);
 
   // Feature #143: Mutation hooks for operations (replace raw fetch calls)
   const reviewTestMutation = useReviewTest();
@@ -90,6 +99,9 @@ function TestSuitePage() {
     review_status: t.review_status as TestType['review_status'], // Cast review_status
   })) as TestType[];
   const pagination = testsData?.pagination;
+
+  // Feature #553: State for collapsible recent runs section
+  const [showRecentRuns, setShowRecentRuns] = useState(false);
 
   // Project state - loaded separately after suite loads
   const [project, setProject] = useState<{ id: string; name: string; base_url?: string } | null>(null);
@@ -878,6 +890,159 @@ function TestSuitePage() {
     toast.success(`Exported ${tests.length} test(s) to file`);
   };
 
+  // Feature #555: Export completed run results as JSON
+  const handleExportRunJSON = useCallback(() => {
+    if (!suiteRun || !suiteRun.results) {
+      toast.error('No completed run to export');
+      return;
+    }
+
+    const exportData = {
+      runId: suiteRun.id,
+      suiteId: suiteId,
+      suiteName: suite?.name,
+      status: suiteRun.status,
+      startedAt: suiteRun.started_at,
+      completedAt: suiteRun.completed_at,
+      durationMs: suiteRun.duration_ms,
+      summary: {
+        total: suiteRun.results.length,
+        passed: suiteRun.results.filter(r => r.status === 'passed').length,
+        failed: suiteRun.results.filter(r => r.status === 'failed').length,
+        error: suiteRun.results.filter(r => r.status === 'error').length,
+      },
+      results: suiteRun.results.map(r => ({
+        testId: r.test_id,
+        testName: r.test_name,
+        testType: r.test_type,
+        status: r.status,
+        durationMs: r.duration_ms,
+        error: r.error,
+      })),
+      exportedAt: new Date().toISOString(),
+      exportedBy: 'QA Guardian',
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `suite-run-${suite?.name?.toLowerCase().replace(/\s+/g, '-') || 'results'}-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success('Exported run results to JSON');
+  }, [suiteRun, suiteId, suite?.name]);
+
+  // Feature #555: Export completed run results as PDF
+  const handleExportRunPDF = useCallback(() => {
+    if (!suiteRun || !suiteRun.results) {
+      toast.error('No completed run to export');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Could not open print window. Please allow popups.');
+      return;
+    }
+
+    const passed = suiteRun.results.filter(r => r.status === 'passed').length;
+    const failed = suiteRun.results.filter(r => r.status === 'failed' || r.status === 'error').length;
+    const total = suiteRun.results.length;
+    const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+    const statusColor = passRate >= 90 ? '#22c55e' : passRate >= 70 ? '#f59e0b' : '#ef4444';
+
+    const resultRows = suiteRun.results.map(r => {
+      const statusIcon = r.status === 'passed' ? '✅' : r.status === 'failed' ? '❌' : '⚠️';
+      const dur = r.duration_ms ? `${(r.duration_ms / 1000).toFixed(1)}s` : '—';
+      return `<tr>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${statusIcon} ${r.test_name}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${r.test_type || 'e2e'}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${r.status}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${dur}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #ef4444; font-size: 12px;">${r.error || ''}</td>
+      </tr>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Suite Run Report - ${suite?.name || 'Suite'}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 24px; color: #111827; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3b82f6; padding-bottom: 16px; margin-bottom: 24px; }
+    .brand { font-size: 18px; font-weight: 700; color: #3b82f6; }
+    .subtitle { font-size: 12px; color: #6b7280; }
+    .summary { display: flex; gap: 24px; margin: 24px 0; }
+    .summary-card { background: #f9fafb; border-radius: 8px; padding: 16px; text-align: center; flex: 1; }
+    .summary-value { font-size: 28px; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    th { text-align: left; padding: 8px; border-bottom: 2px solid #e5e7eb; font-size: 13px; color: #6b7280; }
+    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; text-align: center; }
+    @media print { body { padding: 16px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="brand">QA Guardian</div>
+      <div class="subtitle">Suite Run Report</div>
+    </div>
+    <div style="text-align: right;">
+      <div style="font-weight: 600;">${suite?.name || 'Test Suite'}</div>
+      <div class="subtitle">${new Date(suiteRun.completed_at || suiteRun.started_at || new Date()).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="summary-card">
+      <div class="summary-value" style="color: ${statusColor};">${passRate}%</div>
+      <div style="font-size: 12px; color: #6b7280;">Pass Rate</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-value" style="color: #22c55e;">${passed}</div>
+      <div style="font-size: 12px; color: #6b7280;">Passed</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-value" style="color: #ef4444;">${failed}</div>
+      <div style="font-size: 12px; color: #6b7280;">Failed</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-value">${total}</div>
+      <div style="font-size: 12px; color: #6b7280;">Total Tests</div>
+    </div>
+  </div>
+
+  <h3 style="font-size: 16px; color: #374151; margin-top: 24px;">Test Results</h3>
+  <table>
+    <thead><tr>
+      <th>Test Name</th>
+      <th style="text-align: center;">Type</th>
+      <th style="text-align: center;">Status</th>
+      <th style="text-align: right;">Duration</th>
+      <th>Error</th>
+    </tr></thead>
+    <tbody>${resultRows}</tbody>
+  </table>
+
+  <div class="footer">
+    Generated by QA Guardian &middot; ${new Date().toISOString()} &middot; Run ID: ${suiteRun.id}
+  </div>
+</body>
+</html>`;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+
+    toast.success('Opening PDF print dialog...');
+  }, [suiteRun, suite?.name]);
+
   // Feature #546: Polling and separate Socket.IO connection replaced by useSuiteRunSocket hook
   // The hook handles: run-start, run-progress, step-start, step-complete, step:screenshot, run-complete
   // See useSuiteRunSocket initialization above (after screenshot state declarations)
@@ -915,50 +1080,42 @@ function TestSuitePage() {
   return (
     <Layout>
       <div className="p-8">
-        {/* Breadcrumb navigation */}
-        <nav className="mb-6 flex items-center gap-2 text-sm">
-          <Link to="/projects" className="text-muted-foreground hover:text-foreground">
-            Projects
-          </Link>
-          <span className="text-muted-foreground">/</span>
-          <Link to={`/projects/${project?.id}`} className="text-muted-foreground hover:text-foreground">
-            {project?.name || 'Project'}
-          </Link>
-          <span className="text-muted-foreground">/</span>
-          <span className="font-medium text-foreground">{suite?.name}</span>
-        </nav>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">{suite?.name}</h1>
-            {suite?.description && (
-              <p className="mt-2 text-muted-foreground">{suite.description}</p>
-            )}
-            {/* Browser Settings */}
-            <div className="mt-3 flex flex-wrap gap-4 text-sm">
-              <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 px-2 py-1 text-primary border border-primary/20">
-                🌐 {suite?.browser === 'firefox' ? 'Firefox' : suite?.browser === 'webkit' ? 'WebKit (Safari)' : 'Chromium'}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-muted-foreground">
-                📐 {suite?.viewport_width || 1280}×{suite?.viewport_height || 720}
-              </span>
-            </div>
-          </div>
-          {/* Feature #50: Extracted to SuiteHeaderActions component */}
-          {/* Feature #533: Removed AI Parallel Run button (simulated) */}
-          <SuiteHeaderActions
-            suiteId={suiteId!}
-            testsCount={tests.length}
-            isRunningSuite={isRunningSuite}
-            canCreateTest={canCreateTest}
-            canDeleteSuite={canDeleteSuite}
-            onRunSuite={handleRunSuite}
-            onExportTests={handleExportTests}
-            onShowImportModal={() => setShowImportModal(true)}
-            onShowRecordModal={() => recording.setShowRecordModal(true)}
-            onShowCreateTestModal={() => setShowNewCreateTestModal(true)}
-            onShowDeleteSuiteModal={() => setShowDeleteSuiteModal(true)}
-          />
+        {/* Feature #554: Standardized PageHeader with breadcrumbs */}
+        <PageHeader
+          title={suite?.name || 'Test Suite'}
+          description={suite?.description}
+          breadcrumbs={[
+            { label: 'Projects', href: '/projects' },
+            { label: project?.name || 'Project', href: `/projects/${project?.id}` },
+            { label: suite?.name || 'Suite' },
+          ]}
+          actions={
+            <SuiteHeaderActions
+              suiteId={suiteId!}
+              testsCount={tests.length}
+              isRunningSuite={isRunningSuite}
+              canCreateTest={canCreateTest}
+              canDeleteSuite={canDeleteSuite}
+              onRunSuite={handleRunSuite}
+              onExportTests={handleExportTests}
+              onShowImportModal={() => setShowImportModal(true)}
+              onShowRecordModal={() => recording.setShowRecordModal(true)}
+              onShowCreateTestModal={() => setShowNewCreateTestModal(true)}
+              onShowDeleteSuiteModal={() => setShowDeleteSuiteModal(true)}
+              hasCompletedRun={!!(suiteRun && (suiteRun.status === 'passed' || suiteRun.status === 'failed') && suiteRun.results)}
+              onExportRunJSON={handleExportRunJSON}
+              onExportRunPDF={handleExportRunPDF}
+            />
+          }
+        />
+        {/* Browser settings badges */}
+        <div className="mt-3 flex flex-wrap gap-4 text-sm">
+          <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 px-2 py-1 text-primary border border-primary/20">
+            🌐 {suite?.browser === 'firefox' ? 'Firefox' : suite?.browser === 'webkit' ? 'WebKit (Safari)' : 'Chromium'}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-muted-foreground">
+            📐 {suite?.viewport_width || 1280}×{suite?.viewport_height || 720}
+          </span>
         </div>
 
         {/* Feature #548: Suite Health Score with weighted breakdown */}
@@ -1136,6 +1293,167 @@ function TestSuitePage() {
             </div>
           </div>
         )}
+
+        {/* Feature #553: Inline run history with pass rate trend chart */}
+        {(() => {
+          const suiteRuns = suiteRunsData?.runs || suiteRunsData?.data || [];
+          // Only show if there are completed runs
+          const completedRuns = suiteRuns
+            .filter((r: { status: string }) => r.status === 'passed' || r.status === 'failed' || r.status === 'error')
+            .slice(0, 10);
+
+          if (completedRuns.length === 0) return null;
+
+          // Prepare chart data (oldest first)
+          const chartRuns = [...completedRuns].reverse();
+          const chartData = chartRuns.map((r: { passed_count?: number; results_count?: number; created_at: string }) => {
+            const total = r.results_count || 1;
+            const passed = r.passed_count || 0;
+            const passRate = Math.round((passed / total) * 100);
+            return {
+              date: new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              passRate,
+            };
+          });
+
+          // Average pass rate for reference line
+          const avgPassRate = chartData.length > 0
+            ? Math.round(chartData.reduce((sum: number, d: { passRate: number }) => sum + d.passRate, 0) / chartData.length)
+            : 0;
+
+          // Latest pass rate for line color
+          const latestPassRate = chartData.length > 0 ? chartData[chartData.length - 1].passRate : 0;
+          const lineColor = latestPassRate >= 90 ? '#22c55e' : latestPassRate >= 70 ? '#f59e0b' : '#ef4444';
+
+          return (
+            <div className="mt-6 rounded-lg border border-border bg-card">
+              <button
+                onClick={() => setShowRecentRuns(!showRecentRuns)}
+                className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-muted/50 rounded-lg transition-colors"
+              >
+                <span className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Recent Runs ({completedRuns.length})
+                </span>
+                <svg
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${showRecentRuns ? 'rotate-180' : ''}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showRecentRuns && (
+                <div className="px-4 pb-4 space-y-4">
+                  {/* Pass Rate Trend Chart */}
+                  {chartData.length >= 3 && (
+                    <div>
+                      <h4 className="text-xs font-medium text-muted-foreground mb-2">Pass Rate Trend</h4>
+                      <div className="h-32 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
+                            <XAxis
+                              dataKey="date"
+                              tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
+                              tickLine={false}
+                              axisLine={{ stroke: 'var(--border)' }}
+                            />
+                            <YAxis
+                              domain={[0, 100]}
+                              tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
+                              tickLine={false}
+                              axisLine={{ stroke: 'var(--border)' }}
+                              tickFormatter={(value: number) => `${value}%`}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: 'var(--card)',
+                                border: '1px solid var(--border)',
+                                borderRadius: '0.375rem',
+                                padding: '0.5rem',
+                              }}
+                              labelStyle={{ color: 'var(--foreground)', fontWeight: 500 }}
+                              itemStyle={{ color: 'var(--foreground)' }}
+                              formatter={(value: number) => [`${value}%`, 'Pass Rate']}
+                            />
+                            <ReferenceLine
+                              y={avgPassRate}
+                              stroke="var(--muted-foreground)"
+                              strokeDasharray="3 3"
+                              label={{
+                                value: `Avg: ${avgPassRate}%`,
+                                position: 'insideTopRight',
+                                fontSize: 10,
+                                fill: 'var(--muted-foreground)',
+                              }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="passRate"
+                              stroke={lineColor}
+                              strokeWidth={2}
+                              dot={{ fill: lineColor, strokeWidth: 0, r: 3 }}
+                              activeDot={{ r: 5, fill: lineColor }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="mt-1 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <span className="w-3 h-0.5 bg-success rounded"></span> ≥90%
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="w-3 h-0.5 bg-warning rounded"></span> 70-89%
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="w-3 h-0.5 bg-destructive rounded"></span> &lt;70%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Compact Run Rows */}
+                  <div className="space-y-1">
+                    {completedRuns.map((run: { id: string; status: string; created_at: string; duration_ms?: number; passed_count?: number; results_count?: number }) => (
+                      <button
+                        key={run.id}
+                        onClick={() => navigate(`/runs/${run.id}`)}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-muted/50 transition-colors text-left"
+                      >
+                        {/* Status dot */}
+                        <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                          run.status === 'passed' ? 'bg-success' :
+                          run.status === 'failed' ? 'bg-destructive' :
+                          'bg-warning'
+                        }`} />
+                        {/* Date */}
+                        <span className="text-muted-foreground w-28 flex-shrink-0">
+                          {new Date(run.created_at).toLocaleDateString('en-US', {
+                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                          })}
+                        </span>
+                        {/* Duration */}
+                        <span className="text-muted-foreground w-16 flex-shrink-0">
+                          {run.duration_ms ? `${(run.duration_ms / 1000).toFixed(1)}s` : '-'}
+                        </span>
+                        {/* Pass count */}
+                        <span className="text-foreground flex-1">
+                          {run.passed_count || 0}/{run.results_count || 0} passed
+                        </span>
+                        {/* Arrow */}
+                        <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Feature #1800: New two-section Create Test Modal */}
         <CreateTestModal
