@@ -573,3 +573,99 @@ export function validateTestName(name: string): string {
 
  return '';
 }
+
+// =============================================================================
+// Feature #548: Suite Health Score with weighted breakdown
+// =============================================================================
+
+export interface SuiteHealthBreakdown {
+ /** Overall weighted health score (0-100) */
+ overall: number;
+ /** Pass rate score (0-100) - weight: 40% */
+ passRate: number;
+ /** Duration stability score (0-100) - weight: 20% */
+ durationStability: number;
+ /** Flakiness inverse score (0-100) - weight: 20% */
+ flakiness: number;
+ /** Recency score (0-100) - weight: 20% */
+ recency: number;
+}
+
+/**
+ * Compute a weighted Suite Health Score (0-100) from test data.
+ *
+ * Weights:
+ * - Pass Rate: 40% - percentage of tests passing in latest run
+ * - Duration Stability: 20% - lower variance in avg_duration_ms = higher score
+ * - Flakiness Inverse: 20% - 100 minus estimated flakiness %
+ * - Recency: 20% - fresher last run = higher score, decays over 7 days
+ */
+export function computeSuiteHealthScore(tests: TestType[]): SuiteHealthBreakdown {
+ if (tests.length === 0) {
+  return { overall: 0, passRate: 0, durationStability: 0, flakiness: 0, recency: 0 };
+ }
+
+ // 1. Pass Rate (40%): percentage of tests passing in latest run
+ const testsWithResults = tests.filter(t => t.last_result);
+ const passedTests = tests.filter(t => t.last_result === 'passed').length;
+ const passRate = testsWithResults.length > 0
+  ? Math.round((passedTests / testsWithResults.length) * 100)
+  : 0;
+
+ // 2. Duration Stability (20%): lower coefficient of variation = higher score
+ const durationsMs = tests
+  .map(t => t.avg_duration_ms)
+  .filter((d): d is number => d != null && d > 0);
+
+ let durationStability = 100; // Default to perfect if no duration data
+ if (durationsMs.length >= 2) {
+  const mean = durationsMs.reduce((a, b) => a + b, 0) / durationsMs.length;
+  const variance = durationsMs.reduce((sum, d) => sum + Math.pow(d - mean, 2), 0) / durationsMs.length;
+  const stdDev = Math.sqrt(variance);
+  const cv = mean > 0 ? stdDev / mean : 0; // Coefficient of variation
+
+  // CV of 0 = perfect stability (100), CV of 1+ = unstable (0)
+  // Map CV 0-1 to score 100-0
+  durationStability = Math.max(0, Math.min(100, Math.round((1 - cv) * 100)));
+ }
+
+ // 3. Flakiness Inverse (20%): 100 minus estimated flakiness percentage
+ // Estimate flakiness: tests that have run multiple times with inconsistent results
+ // A test is "potentially flaky" if it has failed but also has runs (indicating it sometimes passes)
+ const testsWithRuns = tests.filter(t => (t.run_count || 0) > 1);
+ let flakinessPercent = 0;
+ if (testsWithRuns.length > 0) {
+  // Count tests where last_result is 'failed' or 'error' but they've had multiple runs
+  // (indicating inconsistent behavior)
+  const potentiallyFlaky = testsWithRuns.filter(
+   t => t.last_result === 'failed' || t.last_result === 'error'
+  ).length;
+  flakinessPercent = Math.round((potentiallyFlaky / testsWithRuns.length) * 100);
+ }
+ const flakiness = 100 - flakinessPercent;
+
+ // 4. Recency (20%): fresher last run = higher score, decay over 7 days
+ const now = Date.now();
+ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+ const lastRunTimes = tests
+  .map(t => t.last_run_at ? new Date(t.last_run_at).getTime() : 0)
+  .filter(t => t > 0);
+
+ let recency = 0;
+ if (lastRunTimes.length > 0) {
+  const mostRecentRun = Math.max(...lastRunTimes);
+  const age = now - mostRecentRun;
+  // Linear decay: 100 at age=0, 0 at age=7days
+  recency = Math.max(0, Math.min(100, Math.round((1 - age / SEVEN_DAYS_MS) * 100)));
+ }
+
+ // Weighted overall score
+ const overall = Math.round(
+  passRate * 0.40 +
+  durationStability * 0.20 +
+  flakiness * 0.20 +
+  recency * 0.20
+ );
+
+ return { overall, passRate, durationStability, flakiness, recency };
+}

@@ -29,6 +29,7 @@ import {
   GeneratedTestPreviewModal, RecordTestModal, ReviewRecordedTestModal,
   SuiteHeaderActions, HumanReviewPanel, SuiteRunResults,
   TestListSection, useRecordingState, EditSelectorModalState,
+  computeSuiteHealthScore,
 } from '../components/suite-detail';
 
 // Suite run result for test status tracking (compatible with both SuiteRunResults and TestListSection)
@@ -960,22 +961,26 @@ function TestSuitePage() {
           />
         </div>
 
-        {/* Feature #525: Suite Health Metrics - unified ScoreCard display */}
+        {/* Feature #548: Suite Health Score with weighted breakdown */}
         {tests.length > 0 && (() => {
+          const health = computeSuiteHealthScore(tests);
           const testsWithResults = tests.filter(t => t.last_result);
-          const passedTests = tests.filter(t => t.last_result === 'passed').length;
-          const failedTests = tests.filter(t => t.last_result === 'failed' || t.last_result === 'error').length;
-          const passRate = testsWithResults.length > 0
-            ? Math.round((passedTests / testsWithResults.length) * 100)
-            : 0;
-          return testsWithResults.length > 0 ? (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <ScoreCard score={passRate} label="Pass Rate" size="sm" thresholds={{ good: 80, warning: 60 }} />
-              <ScoreCard score={tests.length} label="Total Tests" size="sm" thresholds={{ good: 0, warning: 0 }} />
-              <ScoreCard score={passedTests} label="Passed" size="sm" thresholds={{ good: 0, warning: 0 }} />
-              <ScoreCard score={failedTests} label="Failed" size="sm" thresholds={{ good: 0, warning: 0 }} />
+          if (testsWithResults.length === 0) return null;
+          return (
+            <div className="flex flex-col sm:flex-row gap-4 items-stretch">
+              {/* Prominent overall health score */}
+              <div className="flex-shrink-0">
+                <ScoreCard score={health.overall} label="Suite Health" size="lg" showIcon thresholds={{ good: 80, warning: 60 }} />
+              </div>
+              {/* Category breakdown grid */}
+              <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <ScoreCard score={health.passRate} label="Pass Rate (40%)" size="sm" thresholds={{ good: 80, warning: 60 }} />
+                <ScoreCard score={health.durationStability} label="Duration Stability (20%)" size="sm" thresholds={{ good: 70, warning: 50 }} />
+                <ScoreCard score={health.flakiness} label="Flakiness (20%)" size="sm" thresholds={{ good: 80, warning: 60 }} />
+                <ScoreCard score={health.recency} label="Recency (20%)" size="sm" thresholds={{ good: 70, warning: 40 }} />
+              </div>
             </div>
-          ) : null;
+          );
         })()}
 
         {/* Feature #1151: Human Review Panel - Feature #50: Extracted to component */}

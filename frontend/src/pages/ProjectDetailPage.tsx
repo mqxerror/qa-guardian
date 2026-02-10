@@ -877,23 +877,21 @@ function ProjectDetailPage() {
                 )}
               </div>
             ) : (
+              /* Feature #549: Enriched suite cards with AnimatedCard + SuiteCard */
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {suites.map((suite) => (
-                  <div
+                {suites.map((suite, index) => (
+                  <AnimatedCard
                     key={suite.id}
-                    onClick={() => navigate(`/suites/${suite.id}`)}
-                    className="cursor-pointer rounded-lg border border-border bg-card p-6 transition-shadow hover:shadow-md"
+                    variant="interactive"
+                    staggerIndex={index}
+                    className="p-0"
                   >
-                    <h3 className="text-lg font-semibold text-foreground">{suite.name}</h3>
-                    {suite.description && (
-                      <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-                        {suite.description}
-                      </p>
-                    )}
-                    <p className="mt-4 text-xs text-muted-foreground">
-                      ID: {suite.id}
-                    </p>
-                  </div>
+                    <SuiteCard
+                      suite={suite as TestSuite}
+                      projectId={id || ''}
+                      formatDate={formatDate}
+                    />
+                  </AnimatedCard>
                 ))}
               </div>
             )}

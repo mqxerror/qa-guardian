@@ -33,3 +33,15 @@ export {
   type QuickTestSummary,
   type QuickTestState,
 } from './useQuickTestSocket';
+
+export {
+  useSuiteRunSocket,
+  type LiveScreenshot,
+  type ScreenshotHistoryEntry,
+  type SuiteRun,
+  type SuiteRunResult,
+  type TestRunStatus,
+  type CurrentStepProgress,
+  type UseSuiteRunSocketProps,
+  type UseSuiteRunSocketReturn,
+} from './useSuiteRunSocket';
