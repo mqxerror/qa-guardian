@@ -16,11 +16,22 @@
 // Main components
 export { CreateTestModal, default } from './CreateTestModal';
 export { CustomTestWizard } from './CustomTestWizard';
-export type { ConfigMethod, CustomTestWizardProps } from './CustomTestWizard';
+export type { ConfigMethod, CustomTestWizardProps, CustomWizardStep } from './CustomTestWizard';
 export { AIGenerateStep } from './AIGenerateStep';
 export type { AIGenerateStepProps } from './AIGenerateStep';
-export { ManualSetupStep } from './ManualSetupStep';
-export type { ManualSetupStepProps, ManualSetupFormState } from './ManualSetupStep';
+export { ManualSetupStep, getDefaultsForTestType } from './ManualSetupStep';
+export type {
+  ManualSetupStepProps,
+  ManualSetupFormState,
+  // Feature #618: Type-specific form state interfaces
+  BaseFormState,
+  E2EFormFields,
+  VisualFormFields,
+  PerformanceFormFields,
+  AccessibilityFormFields,
+  LoadFormFields,
+  SecurityFormFields,
+} from './ManualSetupStep';
 export { ReviewStep } from './ReviewStep';
 export type { ReviewStepProps, WizardConfig, AIGeneratedConfig, ManualSetupConfig } from './ReviewStep';
 

@@ -34,69 +34,95 @@ import { SecurityConfig, type SecurityConfigState, type SecurityScanType, type S
 // Feature #594: Import BrowserType for cross-browser testing
 import { type BrowserType } from './config/E2EConfig';
 import { type DeviceConfig } from '../test-modals/types';
+import { URL_REGEX } from '../../constants/validation';
 
 /**
- * Form state for all test types
+ * Feature #618: Base form state shared by all test types
+ * Split from monolithic 67-field interface to reduce re-renders
  */
-export interface ManualSetupFormState {
+export interface BaseFormState {
  testType: TestTypeOption | null;
  name: string;
  description: string;
  targetUrl: string;
- // E2E specific
- steps: string;
- /** Structured steps for StepBuilder (Feature #1822) */
- structuredSteps?: Step[];
- /** Feature #584: Full E2E configuration from E2EConfig component */
- e2eConfig?: E2EConfigState;
+ tags: string[];
  timeout: number;
  retries: number;
- tags: string[];
+}
+
+/**
+ * Feature #618: E2E-specific form state
+ */
+export interface E2EFormFields {
+ steps: string;
+ structuredSteps?: Step[];
+ e2eConfig?: E2EConfigState;
  deviceEmulationEnabled: boolean;
  deviceConfig: DeviceConfig;
- // Feature #594: Cross-browser testing
  browsers: BrowserType[];
- // Visual specific - Feature #1964: Enhanced with full VisualConfig support
+}
+
+/**
+ * Feature #618: Visual-specific form state
+ */
+export interface VisualFormFields {
  viewportWidth: number;
  viewportHeight: number;
  diffThreshold: number;
- visualConfig?: VisualConfigState; // Full visual configuration
- // Performance specific
+ visualConfig?: VisualConfigState;
+}
+
+/**
+ * Feature #618: Performance-specific form state
+ */
+export interface PerformanceFormFields {
  devicePreset: 'desktop' | 'mobile';
  performanceThreshold: number;
- /** Feature #586: Full performance test configuration from PerformanceConfig component */
  performanceConfig?: PerformanceConfigState;
  lcpThreshold: number;
  clsThreshold: number;
  fidThreshold: number;
  ttiThreshold: number;
  lighthouseCategories: {
- performance: boolean;
- accessibility: boolean;
- bestPractices: boolean;
- seo: boolean;
+  performance: boolean;
+  accessibility: boolean;
+  bestPractices: boolean;
+  seo: boolean;
  };
- // Accessibility specific
+}
+
+/**
+ * Feature #618: Accessibility-specific form state
+ */
+export interface AccessibilityFormFields {
  wcagLevel: 'A' | 'AA' | 'AAA';
- /** Feature #587: Full accessibility test configuration from AccessibilityConfig component */
  accessibilityConfig?: AccessibilityConfigState;
  a11yThresholds: Record<Severity, number>;
  includeIframes: boolean;
  waitForA11ySelector: string;
  excludeRules: string[];
- // Load specific
+}
+
+/**
+ * Feature #618: Load-specific form state
+ */
+export interface LoadFormFields {
  virtualUsers: number;
  duration: number;
  rampUp: number;
- /** Feature #585: Full load test configuration from LoadConfig component */
  loadConfig?: LoadConfigState;
  loadScenario: LoadScenario;
  k6Script: string;
  loadThresholds: {
- http_req_duration_p95: number;
- http_req_failed: number;
+  http_req_duration_p95: number;
+  http_req_failed: number;
  };
- // Feature #591: Security specific
+}
+
+/**
+ * Feature #618: Security-specific form state
+ */
+export interface SecurityFormFields {
  securityConfig?: SecurityConfigState;
  scanType: SecurityScanType;
  targetPath: string;
@@ -106,6 +132,23 @@ export interface ManualSetupFormState {
  excludePaths: string[];
  maxFindings: number;
 }
+
+/**
+ * Feature #618: Combined form state - discriminated union pattern
+ * All test-type-specific fields are included but only the relevant ones
+ * are actively used based on testType. This maintains backward compatibility
+ * while providing clearer type organization.
+ *
+ * Future optimization: Use discriminated union with testType as discriminator
+ * to only include relevant fields per type. For now, we keep full compatibility.
+ */
+export interface ManualSetupFormState extends BaseFormState,
+ E2EFormFields,
+ VisualFormFields,
+ PerformanceFormFields,
+ AccessibilityFormFields,
+ LoadFormFields,
+ SecurityFormFields {}
 
 /**
  * Props for ManualSetupStep
@@ -120,60 +163,90 @@ export interface ManualSetupStepProps {
 }
 
 /**
- * Default form values
+ * Feature #618: Default values for base form fields (shared by all test types)
  */
-const DEFAULT_FORM_STATE: ManualSetupFormState = {
+const DEFAULT_BASE_STATE: BaseFormState = {
  testType: null,
  name: '',
  description: '',
  targetUrl: '',
- steps: '',
- // Feature #584: E2E config defaults
+ tags: [],
  timeout: 30000,
  retries: 0,
- tags: [],
+};
+
+/**
+ * Feature #618: Default values for E2E-specific fields
+ */
+const DEFAULT_E2E_FIELDS: E2EFormFields = {
+ steps: '',
  deviceEmulationEnabled: false,
  deviceConfig: { preset: 'desktop-1280' },
- // Feature #594: Cross-browser testing default (Chromium only)
  browsers: ['chromium'],
+};
+
+/**
+ * Feature #618: Default values for Visual-specific fields
+ */
+const DEFAULT_VISUAL_FIELDS: VisualFormFields = {
  viewportWidth: 1920,
  viewportHeight: 1080,
  diffThreshold: 0.1,
+};
+
+/**
+ * Feature #618: Default values for Performance-specific fields
+ */
+const DEFAULT_PERFORMANCE_FIELDS: PerformanceFormFields = {
  devicePreset: 'desktop',
  performanceThreshold: 50,
- // Feature #586: Performance config defaults
  lcpThreshold: 2500,
  clsThreshold: 0.1,
  fidThreshold: 100,
  ttiThreshold: 3800,
  lighthouseCategories: {
- performance: true,
- accessibility: true,
- bestPractices: true,
- seo: true,
+  performance: true,
+  accessibility: true,
+  bestPractices: true,
+  seo: true,
  },
+};
+
+/**
+ * Feature #618: Default values for Accessibility-specific fields
+ */
+const DEFAULT_ACCESSIBILITY_FIELDS: AccessibilityFormFields = {
  wcagLevel: 'AA',
- // Feature #587: Accessibility config defaults
  a11yThresholds: {
- critical: 0,
- serious: 0,
- moderate: 5,
- minor: 10,
+  critical: 0,
+  serious: 0,
+  moderate: 5,
+  minor: 10,
  },
  includeIframes: false,
  waitForA11ySelector: '',
  excludeRules: [],
+};
+
+/**
+ * Feature #618: Default values for Load-specific fields
+ */
+const DEFAULT_LOAD_FIELDS: LoadFormFields = {
  virtualUsers: 10,
  duration: 60,
  rampUp: 10,
- // Feature #585: Load config defaults
  loadScenario: 'constant',
  k6Script: '',
  loadThresholds: {
- http_req_duration_p95: 500,
- http_req_failed: 0.01,
+  http_req_duration_p95: 500,
+  http_req_failed: 0.01,
  },
- // Feature #591: Security config defaults
+};
+
+/**
+ * Feature #618: Default values for Security-specific fields
+ */
+const DEFAULT_SECURITY_FIELDS: SecurityFormFields = {
  scanType: 'full',
  targetPath: './',
  failOnSeverity: 'high',
@@ -182,6 +255,46 @@ const DEFAULT_FORM_STATE: ManualSetupFormState = {
  excludePaths: ['node_modules', 'dist', 'build', '.git'],
  maxFindings: 100,
 };
+
+/**
+ * Feature #618: Combined default form state - composed from type-specific defaults
+ * This maintains backward compatibility while organizing defaults by test type.
+ */
+const DEFAULT_FORM_STATE: ManualSetupFormState = {
+ ...DEFAULT_BASE_STATE,
+ ...DEFAULT_E2E_FIELDS,
+ ...DEFAULT_VISUAL_FIELDS,
+ ...DEFAULT_PERFORMANCE_FIELDS,
+ ...DEFAULT_ACCESSIBILITY_FIELDS,
+ ...DEFAULT_LOAD_FIELDS,
+ ...DEFAULT_SECURITY_FIELDS,
+};
+
+/**
+ * Feature #618: Helper to get type-specific defaults when switching test types
+ * This allows initializing only relevant fields when testType changes.
+ */
+export const getDefaultsForTestType = (testType: TestTypeOption | null): Partial<ManualSetupFormState> => {
+ const base = { ...DEFAULT_BASE_STATE, testType };
+
+ switch (testType) {
+  case 'e2e':
+   return { ...base, ...DEFAULT_E2E_FIELDS };
+  case 'visual':
+   return { ...base, ...DEFAULT_VISUAL_FIELDS };
+  case 'performance':
+   return { ...base, ...DEFAULT_PERFORMANCE_FIELDS };
+  case 'accessibility':
+   return { ...base, ...DEFAULT_ACCESSIBILITY_FIELDS };
+  case 'load':
+   return { ...base, ...DEFAULT_LOAD_FIELDS };
+  case 'security':
+   return { ...base, ...DEFAULT_SECURITY_FIELDS };
+  default:
+   return base;
+ }
+};
+
 
 /**
  * Collapsible section component — semantic tokens, hover states
@@ -244,11 +357,6 @@ interface FormErrors {
  targetUrl?: string;
  testType?: string;
 }
-
-/**
- * URL validation regex
- */
-const URL_REGEX = /^https?:\/\/[^\s<>"']+$/i;
 
 export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  onContinue: _onContinue, // Feature #513: prefixed - continuation handled via onChange callback
