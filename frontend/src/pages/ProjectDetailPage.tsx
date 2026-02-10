@@ -189,6 +189,8 @@ function ProjectDetailPage() {
   // Feature #144: Settings data loading is now handled by React Query hooks
   const [githubDataLoaded, setGithubDataLoaded] = useState(false);
   const [showCreateSuiteModal, setShowCreateSuiteModal] = useState(false);
+  // Feature #559: Suite search filter
+  const [suiteSearchQuery, setSuiteSearchQuery] = useState('');
   const [newSuiteName, setNewSuiteName] = useState('');
   const [newSuiteDescription, setNewSuiteDescription] = useState('');
   const [newSuiteBrowser, setNewSuiteBrowser] = useState<'chromium' | 'firefox' | 'webkit'>(testDefaults.defaultBrowser);
@@ -1081,50 +1083,79 @@ function ProjectDetailPage() {
           <div className="mt-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-foreground">Test Suites</h2>
-              {canCreateSuite && (
-                <button
-                  onClick={() => setShowCreateSuiteModal(true)}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  Create Suite
-                </button>
-              )}
-            </div>
-
-            {suites.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">
-                <h3 className="text-lg font-semibold text-foreground">No test suites yet</h3>
-                <p className="mt-2 text-muted-foreground">
-                  Create your first test suite to organize your tests.
-                </p>
+              <div className="flex items-center gap-2">
+                {/* Feature #559: Suite search filter */}
+                {suites.length > 0 && (
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <input
+                      type="text"
+                      value={suiteSearchQuery}
+                      onChange={(e) => setSuiteSearchQuery(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Escape') setSuiteSearchQuery(''); }}
+                      placeholder="Search suites..."
+                      className="h-9 w-48 rounded-md border border-input bg-background pl-8 pr-8 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                    {suiteSearchQuery && (
+                      <button
+                        onClick={() => setSuiteSearchQuery('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                )}
                 {canCreateSuite && (
                   <button
                     onClick={() => setShowCreateSuiteModal(true)}
-                    className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                   >
                     Create Suite
                   </button>
                 )}
               </div>
-            ) : (
-              /* Feature #549: Enriched suite cards with AnimatedCard + SuiteCard */
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {suites.map((suite, index) => (
-                  <AnimatedCard
-                    key={suite.id}
-                    variant="interactive"
-                    staggerIndex={index}
-                    className="p-0"
-                  >
-                    <SuiteCard
-                      suite={suite as TestSuite}
-                      projectId={id || ''}
-                      formatDate={formatDate}
-                    />
-                  </AnimatedCard>
-                ))}
-              </div>
-            )}
+            </div>
+
+            {/* Feature #559: Enhanced empty state with EmptyStates component */}
+            {suites.length === 0 ? (
+              EmptyStates.noSuites(canCreateSuite ? () => setShowCreateSuiteModal(true) : undefined)
+            ) : (() => {
+              const query = suiteSearchQuery.toLowerCase().trim();
+              const filteredSuites = query
+                ? suites.filter((s) => {
+                    const suite = s as TestSuite;
+                    return (
+                      (suite.name || '').toLowerCase().includes(query) ||
+                      (suite.description || '').toLowerCase().includes(query)
+                    );
+                  })
+                : suites;
+
+              if (filteredSuites.length === 0) {
+                return EmptyStates.noSearchResults(suiteSearchQuery);
+              }
+
+              return (
+                /* Feature #549: Enriched suite cards with AnimatedCard + SuiteCard */
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {filteredSuites.map((suite, index) => (
+                    <AnimatedCard
+                      key={suite.id}
+                      variant="interactive"
+                      staggerIndex={index}
+                      className="p-0"
+                    >
+                      <SuiteCard
+                        suite={suite as TestSuite}
+                        projectId={id || ''}
+                        formatDate={formatDate}
+                      />
+                    </AnimatedCard>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
 
