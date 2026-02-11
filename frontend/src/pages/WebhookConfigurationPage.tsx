@@ -1,6 +1,8 @@
 // WebhookConfigurationPage extracted from App.tsx for code quality compliance (Feature #1357)
 // Note: This file is 723 lines - will need further splitting in future sessions
+// Feature #636: Adopt Modal component in page-level inline modals
 import { useState, useEffect } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
@@ -452,15 +454,14 @@ export function WebhookConfigurationPage() {
         </div>
 
         {/* Create/Edit Modal */}
-        {showCreateModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && setShowCreateModal(false)}
-          >
-            <div role="dialog" aria-modal="true" className="w-full max-w-lg rounded-lg bg-card p-6 shadow-lg max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold text-foreground mb-4">
-                {selectedWebhook ? 'Edit Webhook' : 'Create Webhook'}
-              </h3>
+        <Modal
+          isOpen={showCreateModal}
+          onClose={() => { setShowCreateModal(false); resetForm(); }}
+          title={selectedWebhook ? 'Edit Webhook' : 'Create Webhook'}
+          size="lg"
+        >
+          <form id="webhook-form" onSubmit={handleSubmit}>
+            <ModalBody className="max-h-[60vh] overflow-y-auto">
 
               {error && (
                 <div className="mb-4 rounded-md bg-destructive/10 border border-destructive/20 p-3">
@@ -468,7 +469,7 @@ export function WebhookConfigurationPage() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Name</label>
                   <input
@@ -631,53 +632,35 @@ export function WebhookConfigurationPage() {
                     </div>
                   )}
                 </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                  <button
-                    type="button"
-                    onClick={() => { setShowCreateModal(false); resetForm(); }}
-                    className="rounded-md px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || formEvents.length === 0}
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    {isSubmitting ? 'Saving...' : (selectedWebhook ? 'Update' : 'Create')}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <button
+                type="button"
+                onClick={() => { setShowCreateModal(false); resetForm(); }}
+                className="rounded-md px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || formEvents.length === 0}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                {isSubmitting ? 'Saving...' : (selectedWebhook ? 'Update' : 'Create')}
+              </button>
+            </ModalFooter>
+          </form>
+        </Modal>
 
         {/* Feature #1303: Delivery History Modal */}
-        {showHistoryModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && setShowHistoryModal(false)}
-          >
-            <div role="dialog" aria-modal="true" className="w-full max-w-4xl rounded-lg bg-card p-6 shadow-lg max-h-[90vh] overflow-hidden flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-foreground">
-                  Delivery History
-                  {historyWebhookId && (
-                    <span className="text-sm font-normal text-muted-foreground ml-2">
-                      ({webhooks.find(w => w.id === historyWebhookId)?.name})
-                    </span>
-                  )}
-                </h3>
-                <button
-                  onClick={() => setShowHistoryModal(false)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+        <Modal
+          isOpen={showHistoryModal}
+          onClose={() => setShowHistoryModal(false)}
+          title={historyWebhookId ? `Delivery History (${webhooks.find(w => w.id === historyWebhookId)?.name || ''})` : 'Delivery History'}
+          size="full"
+        >
+          <ModalBody className="max-h-[70vh] overflow-hidden flex flex-col">
 
               {/* Filter tabs */}
               <div className="flex gap-2 mb-4">
@@ -762,9 +745,8 @@ export function WebhookConfigurationPage() {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-        )}
+          </ModalBody>
+        </Modal>
       </div>
     </Layout>
   );

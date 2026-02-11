@@ -1,5 +1,7 @@
 // Feature #77: Migrated to React Query with caching
+// Feature #636: Adopt Modal component in page-level inline modals
 import { useState } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
@@ -932,19 +934,19 @@ Respond in this JSON format:
  )}
 
  {/* Batch Approve Confirmation Modal */}
- {showBatchApproveModal && (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) => e.target === e.currentTarget && !batchApproveMutation.isPending && setShowBatchApproveModal(false)}
+ <Modal
+ isOpen={showBatchApproveModal}
+ onClose={() => !batchApproveMutation.isPending && setShowBatchApproveModal(false)}
+ title="Confirm Batch Approval"
+ size="md"
  >
- <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg">
+ <ModalBody>
  <div className="flex items-center gap-3 mb-4">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
  <svg className="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
  </svg>
  </div>
- <h3 className="text-lg font-semibold text-foreground">Confirm Batch Approval</h3>
  </div>
  <p className="text-muted-foreground">
  Are you sure you want to approve <span className="font-semibold text-foreground">{selectedChanges.size}</span> visual {selectedChanges.size === 1 ? 'change' : 'changes'} as new baselines?
@@ -952,7 +954,8 @@ Respond in this JSON format:
  <p className="text-sm text-muted-foreground mt-2">
  This will update the baseline screenshots for the selected tests. This action cannot be undone.
  </p>
- <div className="mt-6 flex justify-end gap-3">
+ </ModalBody>
+ <ModalFooter>
  <button
  onClick={() => setShowBatchApproveModal(false)}
  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
@@ -977,25 +980,28 @@ Respond in this JSON format:
  `Approve ${selectedChanges.size} ${selectedChanges.size === 1 ? 'Change' : 'Changes'}`
  )}
  </button>
- </div>
- </div>
- </div>
- )}
+ </ModalFooter>
+ </Modal>
 
  {/* Batch Reject Confirmation Modal */}
- {showBatchRejectModal && (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) => e.target === e.currentTarget && !batchRejectMutation.isPending && setShowBatchRejectModal(false)}
+ <Modal
+ isOpen={showBatchRejectModal}
+ onClose={() => {
+ if (!batchRejectMutation.isPending) {
+ setShowBatchRejectModal(false);
+ setBatchRejectReason('');
+ }
+ }}
+ title="Confirm Batch Rejection"
+ size="md"
  >
- <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg">
+ <ModalBody>
  <div className="flex items-center gap-3 mb-4">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
  <svg className="h-6 w-6 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
  </svg>
  </div>
- <h3 className="text-lg font-semibold text-foreground">Confirm Batch Rejection</h3>
  </div>
  <p className="text-muted-foreground">
  Are you sure you want to reject <span className="font-semibold text-foreground">{selectedChanges.size}</span> visual {selectedChanges.size === 1 ? 'change' : 'changes'} as regressions?
@@ -1017,8 +1023,8 @@ Respond in this JSON format:
  rows={3}
  />
  </div>
-
- <div className="mt-6 flex justify-end gap-3">
+ </ModalBody>
+ <ModalFooter>
  <button
  onClick={() => {
  setShowBatchRejectModal(false);
@@ -1046,32 +1052,26 @@ Respond in this JSON format:
  `Reject ${selectedChanges.size} ${selectedChanges.size === 1 ? 'Change' : 'Changes'}`
  )}
  </button>
- </div>
- </div>
- </div>
- )}
+ </ModalFooter>
+ </Modal>
 
  {/* Image Lightbox */}
- {lightboxImage && (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
- onClick={() => setLightboxImage(null)}
+ <Modal
+ isOpen={!!lightboxImage}
+ onClose={() => setLightboxImage(null)}
+ title="Image Preview"
+ size="xl"
  >
+ <ModalBody>
+ {lightboxImage && (
  <img
  src={lightboxImage}
  alt="Full size"
- className="max-w-[90vw] max-h-[90vh] object-contain"
+ className="max-w-full max-h-[80vh] object-contain mx-auto"
  />
- <button
- onClick={() => setLightboxImage(null)}
- className="absolute top-4 right-4 text-white hover:text-white/70"
- >
- <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
- </button>
- </div>
  )}
+ </ModalBody>
+ </Modal>
  </div>
  </Layout>
  );

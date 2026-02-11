@@ -1,4 +1,5 @@
 // OrganizationSettingsPage - Extracted from App.tsx
+// Feature #636: Adopt Modal component in page-level inline modals
 // Feature #1441: Split App.tsx into logical modules
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +12,7 @@ import { useTestDefaultsStore } from '../stores/testDefaultsStore';
 import { useArtifactRetentionStore } from '../stores/artifactRetentionStore';
 import { useOrganizationBrandingStore } from '../stores/organizationBrandingStore';
 import { toast } from '../stores/toastStore';
+import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 
 // Session Management Types
 interface SessionInfo {
@@ -1558,9 +1560,13 @@ function OrganizationSettingsPage() {
  </div>
  </div>
 
- {showTransferModal && (
- <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={(e) => e.target === e.currentTarget && !transferSuccess && setShowTransferModal(false)}>
- <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg">
+ <Modal
+ isOpen={showTransferModal}
+ onClose={() => !transferSuccess && setShowTransferModal(false)}
+ title="Transfer Ownership"
+ size="md"
+ >
+ <ModalBody>
  {transferSuccess ? (
  <div className="text-center">
  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success/10"><svg aria-hidden="true" className="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg></div>
@@ -1568,11 +1574,10 @@ function OrganizationSettingsPage() {
  <p className="mt-2 text-muted-foreground">Redirecting to login...</p>
  </div>
  ) : (
- <form onSubmit={handleTransferOwnership}>
- <h3 className="text-lg font-semibold text-foreground mb-4">Transfer Ownership</h3>
+ <>
  <p className="text-sm text-muted-foreground mb-4">You are about to transfer ownership. You will become an admin.</p>
  {transferError && <div role="alert" className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{transferError}</div>}
- <div className="space-y-4">
+ <form id="transfer-ownership-form" onSubmit={handleTransferOwnership} className="space-y-4">
  <div>
  <label htmlFor="new-owner" className="mb-1 block text-sm font-medium text-foreground">New Owner</label>
  <select id="new-owner" value={selectedNewOwner} onChange={(e) => setSelectedNewOwner(e.target.value)} required className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground">
@@ -1583,20 +1588,25 @@ function OrganizationSettingsPage() {
  <label htmlFor="transfer-password" className="mb-1 block text-sm font-medium text-foreground">Confirm Your Password</label>
  <input id="transfer-password" type="password" value={transferPassword} onChange={(e) => setTransferPassword(e.target.value)} required placeholder="Enter your password" className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground" />
  </div>
- </div>
- <div className="flex justify-end gap-3 pt-4">
- <button type="button" onClick={() => setShowTransferModal(false)} className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted">Cancel</button>
- <button type="submit" disabled={isTransferring || !selectedNewOwner || !transferPassword} className="rounded-md bg-warning px-4 py-2 font-medium text-primary-foreground hover:bg-warning disabled:opacity-50">{isTransferring ? 'Transferring...' : 'Transfer Ownership'}</button>
- </div>
  </form>
+ </>
  )}
- </div>
- </div>
+ </ModalBody>
+ {!transferSuccess && (
+ <ModalFooter>
+ <button type="button" onClick={() => setShowTransferModal(false)} className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted">Cancel</button>
+ <button type="submit" form="transfer-ownership-form" disabled={isTransferring || !selectedNewOwner || !transferPassword} className="rounded-md bg-warning px-4 py-2 font-medium text-primary-foreground hover:bg-warning disabled:opacity-50">{isTransferring ? 'Transferring...' : 'Transfer Ownership'}</button>
+ </ModalFooter>
  )}
+ </Modal>
 
- {showDeleteModal && (
- <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
- <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg">
+ <Modal
+ isOpen={showDeleteModal}
+ onClose={() => { setShowDeleteModal(false); setDeletePassword(''); setDeleteError(''); }}
+ title="Delete Organization"
+ size="md"
+ >
+ <ModalBody>
  {deleteSuccess ? (
  <div className="text-center">
  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success/10"><svg aria-hidden="true" className="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg></div>
@@ -1605,24 +1615,24 @@ function OrganizationSettingsPage() {
  </div>
  ) : (
  <>
- <h3 className="text-lg font-semibold text-foreground mb-4">Delete Organization</h3>
  <p className="text-sm text-muted-foreground mb-4">This action <strong>cannot be undone</strong>. This will permanently delete your organization, all projects, test suites, and test results.</p>
- <form onSubmit={handleDeleteOrganization} className="space-y-4">
+ <form id="delete-organization-form" onSubmit={handleDeleteOrganization} className="space-y-4">
  {deleteError && <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{deleteError}</div>}
  <div>
  <label htmlFor="deletePassword" className="mb-1 block text-sm font-medium text-foreground">Enter your password to confirm</label>
  <input id="deletePassword" type="password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} placeholder="Enter your password" required autoComplete="current-password" className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground" />
  </div>
- <div className="flex justify-end gap-3 pt-2">
- <button type="button" onClick={() => { setShowDeleteModal(false); setDeletePassword(''); setDeleteError(''); }} className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted">Cancel</button>
- <button type="submit" disabled={isDeleting || !deletePassword} className="rounded-md bg-destructive px-4 py-2 font-medium text-primary-foreground hover:bg-destructive/90 disabled:opacity-50">{isDeleting ? 'Deleting...' : 'Delete Organization'}</button>
- </div>
  </form>
  </>
  )}
- </div>
- </div>
+ </ModalBody>
+ {!deleteSuccess && (
+ <ModalFooter>
+ <button type="button" onClick={() => { setShowDeleteModal(false); setDeletePassword(''); setDeleteError(''); }} className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted">Cancel</button>
+ <button type="submit" form="delete-organization-form" disabled={isDeleting || !deletePassword} className="rounded-md bg-destructive px-4 py-2 font-medium text-primary-foreground hover:bg-destructive/90 disabled:opacity-50">{isDeleting ? 'Deleting...' : 'Delete Organization'}</button>
+ </ModalFooter>
  )}
+ </Modal>
  </div>
  </Layout>
  );

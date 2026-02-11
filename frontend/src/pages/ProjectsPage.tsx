@@ -1,4 +1,5 @@
 // Feature #1357: Extracted ProjectsPage for code quality compliance (400 line limit)
+// Feature #636: Adopt Modal component in page-level inline modals
 // Feature #71: Migrated to React Query for caching
 // Feature #126: Added empty states with CTA
 // Feature #337: Dark-first design system redesign
@@ -21,6 +22,7 @@ import {
   useReducedMotion,
 } from '../components/ui';
 import { Plus, Archive, RotateCcw, Loader2 } from 'lucide-react';
+import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 
 interface Project {
   id: string;
@@ -116,16 +118,7 @@ export function ProjectsPage() {
     }
   };
 
-  // Handle Escape key to close modal
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showCreateModal) {
-        setShowCreateModal(false);
-      }
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [showCreateModal]);
+  // Escape key handling moved to Modal component
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -317,112 +310,105 @@ export function ProjectsPage() {
           )}
         </div>
 
-        {/* Create Project Modal */}
-        {showCreateModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && setShowCreateModal(false)}
-          >
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="create-project-title"
-              className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 id="create-project-title" className="text-lg font-semibold text-foreground">Create Project</h3>
-              <form onSubmit={handleCreateProject} className="mt-4 space-y-4">
-                <div>
-                  <label htmlFor="project-name" className="mb-1 block text-sm font-medium text-foreground">
-                    Project Name
-                  </label>
-                  <input
-                    id="project-name"
-                    type="text"
-                    value={newProjectName}
-                    onChange={(e) => {
-                      setNewProjectName(e.target.value);
-                      if (nameError) setNameError('');
-                    }}
-                    placeholder="My Test Project"
-                    maxLength={100}
-                    className={`w-full rounded-md border bg-background px-3 py-2 text-foreground ${
-                      nameError ? 'border-destructive' : 'border-input'
-                    }`}
-                  />
-                  <div className="mt-1 flex justify-between">
-                    {nameError ? (
-                      <p className="text-sm text-destructive" role="alert" aria-live="polite">{nameError}</p>
-                    ) : (
-                      <span />
-                    )}
-                    <span className={`text-xs ${newProjectName.length > 90 ? 'text-warning' : 'text-muted-foreground'}`}>
-                      {newProjectName.length}/100
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="project-description" className="mb-1 block text-sm font-medium text-foreground">
-                    Description (optional)
-                  </label>
-                  <textarea
-                    id="project-description"
-                    value={newProjectDescription}
-                    onChange={(e) => setNewProjectDescription(e.target.value)}
-                    placeholder="Describe your project..."
-                    rows={3}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="project-base-url" className="mb-1 block text-sm font-medium text-foreground">
-                    Base URL (optional)
-                  </label>
-                  <input
-                    id="project-base-url"
-                    type="url"
-                    value={newProjectBaseUrl}
-                    onChange={(e) => handleUrlChange(e.target.value)}
-                    onBlur={handleUrlBlur}
-                    placeholder="https://example.com"
-                    aria-describedby={urlError ? 'project-url-error' : undefined}
-                    aria-invalid={!!urlError}
-                    className={`w-full rounded-md border bg-background px-3 py-2 text-foreground ${
-                      urlError
-                        ? 'border-destructive focus:border-destructive focus:ring-destructive'
-                        : 'border-input focus:border-primary focus:ring-primary'
-                    }`}
-                  />
-                  {urlError && (
-                    <p id="project-url-error" role="alert" className="mt-1 text-sm text-destructive">{urlError}</p>
+        {/* Create Project Modal - Feature #636: Using Modal component */}
+        <Modal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          title="Create Project"
+          size="md"
+        >
+          <form onSubmit={handleCreateProject}>
+            <ModalBody className="space-y-4">
+              <div>
+                <label htmlFor="project-name" className="mb-1 block text-sm font-medium text-foreground">
+                  Project Name
+                </label>
+                <input
+                  id="project-name"
+                  type="text"
+                  value={newProjectName}
+                  onChange={(e) => {
+                    setNewProjectName(e.target.value);
+                    if (nameError) setNameError('');
+                  }}
+                  placeholder="My Test Project"
+                  maxLength={100}
+                  className={`w-full rounded-md border bg-background px-3 py-2 text-foreground ${
+                    nameError ? 'border-destructive' : 'border-input'
+                  }`}
+                />
+                <div className="mt-1 flex justify-between">
+                  {nameError ? (
+                    <p className="text-sm text-destructive" role="alert" aria-live="polite">{nameError}</p>
+                  ) : (
+                    <span />
                   )}
+                  <span className={`text-xs ${newProjectName.length > 90 ? 'text-warning' : 'text-muted-foreground'}`}>
+                    {newProjectName.length}/100
+                  </span>
                 </div>
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={createProjectMutation.isPending}
-                    className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {createProjectMutation.isPending && (
-                      <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    )}
-                    {createProjectMutation.isPending ? 'Creating...' : 'Create Project'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+              </div>
+              <div>
+                <label htmlFor="project-description" className="mb-1 block text-sm font-medium text-foreground">
+                  Description (optional)
+                </label>
+                <textarea
+                  id="project-description"
+                  value={newProjectDescription}
+                  onChange={(e) => setNewProjectDescription(e.target.value)}
+                  placeholder="Describe your project..."
+                  rows={3}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
+                />
+              </div>
+              <div>
+                <label htmlFor="project-base-url" className="mb-1 block text-sm font-medium text-foreground">
+                  Base URL (optional)
+                </label>
+                <input
+                  id="project-base-url"
+                  type="url"
+                  value={newProjectBaseUrl}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                  onBlur={handleUrlBlur}
+                  placeholder="https://example.com"
+                  aria-describedby={urlError ? 'project-url-error' : undefined}
+                  aria-invalid={!!urlError}
+                  className={`w-full rounded-md border bg-background px-3 py-2 text-foreground ${
+                    urlError
+                      ? 'border-destructive focus:border-destructive focus:ring-destructive'
+                      : 'border-input focus:border-primary focus:ring-primary'
+                  }`}
+                />
+                {urlError && (
+                  <p id="project-url-error" role="alert" className="mt-1 text-sm text-destructive">{urlError}</p>
+                )}
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={createProjectMutation.isPending}
+                className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+              >
+                {createProjectMutation.isPending && (
+                  <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                {createProjectMutation.isPending ? 'Creating...' : 'Create Project'}
+              </button>
+            </ModalFooter>
+          </form>
+        </Modal>
       </div>
     </Layout>
   );

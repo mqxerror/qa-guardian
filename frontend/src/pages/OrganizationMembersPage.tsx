@@ -1,5 +1,7 @@
 // Feature #81: Migrated to React Query for caching
+// Feature #636: Adopt Modal component in page-level inline modals
 import { useState, useEffect } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 import { Layout } from '../components/Layout';
@@ -222,24 +224,25 @@ export function OrganizationMembersPage() {
         )}
 
         {/* Invite Modal */}
-        {showInviteModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && setShowInviteModal(false)}
-          >
-            <div role="dialog" aria-modal="true" aria-labelledby="invite-modal-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-              <h3 id="invite-modal-title" className="text-lg font-semibold text-foreground">Invite Team Member</h3>
-              <form onSubmit={handleInvite} className="mt-4 space-y-4" noValidate>
-                {inviteError && (
-                  <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                    {inviteError}
-                  </div>
-                )}
-                {inviteSuccess && (
-                  <div className="rounded-md bg-success/10 p-3 text-sm text-success">
-                    {inviteSuccess}
-                  </div>
-                )}
+        <Modal
+          isOpen={showInviteModal}
+          onClose={() => setShowInviteModal(false)}
+          title="Invite Team Member"
+          size="md"
+        >
+          <form id="invite-form" onSubmit={handleInvite} noValidate>
+            <ModalBody>
+              {inviteError && (
+                <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive mb-4">
+                  {inviteError}
+                </div>
+              )}
+              {inviteSuccess && (
+                <div className="rounded-md bg-success/10 p-3 text-sm text-success mb-4">
+                  {inviteSuccess}
+                </div>
+              )}
+              <div className="space-y-4">
                 <div>
                   <label htmlFor="invite-email" className="mb-1 block text-sm font-medium text-foreground">
                     Email Address
@@ -270,122 +273,133 @@ export function OrganizationMembersPage() {
                     <option value="viewer">Viewer</option>
                   </select>
                 </div>
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowInviteModal(false)}
-                    className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isInviting}
-                    className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    {isInviting ? 'Sending...' : 'Send Invitation'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <button
+                type="button"
+                onClick={() => setShowInviteModal(false)}
+                className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isInviting}
+                className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                {isInviting ? 'Sending...' : 'Send Invitation'}
+              </button>
+            </ModalFooter>
+          </form>
+        </Modal>
 
         {/* Remove Member Modal */}
-        {showRemoveModal && memberToRemove && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && setShowRemoveModal(false)}
-          >
-            <div role="dialog" aria-modal="true" aria-labelledby="remove-member-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-              <h3 id="remove-member-title" className="text-lg font-semibold text-foreground">Remove Team Member</h3>
-              <p className="mt-2 text-muted-foreground">
+        <Modal
+          isOpen={showRemoveModal && !!memberToRemove}
+          onClose={() => {
+            setShowRemoveModal(false);
+            setMemberToRemove(null);
+          }}
+          title="Remove Team Member"
+          size="md"
+        >
+          <ModalBody>
+            {memberToRemove && (
+              <p className="text-muted-foreground">
                 Are you sure you want to remove <strong>{memberToRemove.name}</strong> ({memberToRemove.email}) from the organization? They will lose access to all projects immediately.
               </p>
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRemoveModal(false);
-                    setMemberToRemove(null);
-                  }}
-                  className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRemoveMember}
-                  disabled={isRemoving}
-                  className="rounded-md bg-destructive px-4 py-2 font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
-                >
-                  {isRemoving ? 'Removing...' : 'Remove'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <button
+              type="button"
+              onClick={() => {
+                setShowRemoveModal(false);
+                setMemberToRemove(null);
+              }}
+              className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleRemoveMember}
+              disabled={isRemoving}
+              className="rounded-md bg-destructive px-4 py-2 font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+            >
+              {isRemoving ? 'Removing...' : 'Remove'}
+            </button>
+          </ModalFooter>
+        </Modal>
 
         {/* Edit Role Modal */}
-        {showEditRoleModal && memberToEdit && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={(e) => e.target === e.currentTarget && setShowEditRoleModal(false)}
-          >
-            <div role="dialog" aria-modal="true" aria-labelledby="edit-role-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-              <h3 id="edit-role-title" className="text-lg font-semibold text-foreground">Edit Member Role</h3>
-              <p className="mt-2 text-muted-foreground">
-                Change the role for <strong>{memberToEdit.name}</strong> ({memberToEdit.email})
-              </p>
-              {editRoleError && (
-                <div role="alert" className="mt-3 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  {editRoleError}
-                </div>
-              )}
-              <div className="mt-4">
-                <label htmlFor="edit-role-select" className="mb-1 block text-sm font-medium text-foreground">
-                  New Role
-                </label>
-                <select
-                  id="edit-role-select"
-                  value={newRole}
-                  onChange={(e) => setNewRole(e.target.value as 'admin' | 'developer' | 'viewer')}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                >
-                  {user?.role === 'owner' && <option value="admin">Admin</option>}
-                  <option value="developer">Developer</option>
-                  <option value="viewer">Viewer</option>
-                </select>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {newRole === 'admin' && 'Can manage users and all projects'}
-                  {newRole === 'developer' && 'Can create and run tests'}
-                  {newRole === 'viewer' && 'Can only view results'}
+        <Modal
+          isOpen={showEditRoleModal && !!memberToEdit}
+          onClose={() => {
+            setShowEditRoleModal(false);
+            setMemberToEdit(null);
+            setEditRoleError('');
+          }}
+          title="Edit Member Role"
+          size="md"
+        >
+          <ModalBody>
+            {memberToEdit && (
+              <>
+                <p className="text-muted-foreground">
+                  Change the role for <strong>{memberToEdit.name}</strong> ({memberToEdit.email})
                 </p>
-              </div>
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditRoleModal(false);
-                    setMemberToEdit(null);
-                    setEditRoleError('');
-                  }}
-                  className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleUpdateRole}
-                  disabled={isUpdatingRole || newRole === memberToEdit.role}
-                  className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                >
-                  {isUpdatingRole ? 'Updating...' : 'Update Role'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+                {editRoleError && (
+                  <div role="alert" className="mt-3 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                    {editRoleError}
+                  </div>
+                )}
+                <div className="mt-4">
+                  <label htmlFor="edit-role-select" className="mb-1 block text-sm font-medium text-foreground">
+                    New Role
+                  </label>
+                  <select
+                    id="edit-role-select"
+                    value={newRole}
+                    onChange={(e) => setNewRole(e.target.value as 'admin' | 'developer' | 'viewer')}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
+                  >
+                    {user?.role === 'owner' && <option value="admin">Admin</option>}
+                    <option value="developer">Developer</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {newRole === 'admin' && 'Can manage users and all projects'}
+                    {newRole === 'developer' && 'Can create and run tests'}
+                    {newRole === 'viewer' && 'Can only view results'}
+                  </p>
+                </div>
+              </>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <button
+              type="button"
+              onClick={() => {
+                setShowEditRoleModal(false);
+                setMemberToEdit(null);
+                setEditRoleError('');
+              }}
+              className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleUpdateRole}
+              disabled={isUpdatingRole || !!(memberToEdit && newRole === memberToEdit.role)}
+              className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {isUpdatingRole ? 'Updating...' : 'Update Role'}
+            </button>
+          </ModalFooter>
+        </Modal>
       </div>
     </Layout>
   );

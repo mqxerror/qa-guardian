@@ -1,4 +1,5 @@
 // SchedulesPage - Extracted from App.tsx for code quality compliance
+// Feature #636: Adopt Modal component in page-level inline modals
 // Feature #1357: Frontend file size limit enforcement
 // Feature #74: Migrated to React Query with caching
 // Note: This file is 828 lines, exceeding the 400 line limit. Future work should split it further.
@@ -16,6 +17,7 @@ import {
  // type Schedule, // Unused - using hook return type inference
  type CreateScheduleInput,
 } from '../hooks/api/useSchedules';
+import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 
 // Feature #1256: AI Schedule Recommendation interfaces
 interface AIScheduleRecommendation {
@@ -525,19 +527,19 @@ export function SchedulesPage() {
  )}
 
  {/* Create Schedule Modal */}
- {showCreateModal && (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
- onClick={(e) => e.target === e.currentTarget && setShowCreateModal(false)}
+ <Modal
+ isOpen={showCreateModal}
+ onClose={() => setShowCreateModal(false)}
+ title="Create Schedule"
+ size="lg"
  >
- <div role="dialog" aria-modal="true" aria-labelledby="create-schedule-title" className="w-full max-w-lg rounded-lg border border-border bg-card p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
- <h3 id="create-schedule-title" className="text-lg font-semibold text-foreground mb-4">Create Schedule</h3>
+ <ModalBody>
  {createError && (
  <div role="alert" className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
  {createError}
  </div>
  )}
- <form onSubmit={handleCreateSchedule} className="space-y-4">
+ <form id="create-schedule-form" onSubmit={handleCreateSchedule} className="space-y-4">
  <div>
  <label className="block text-sm font-medium text-foreground mb-1">
  Schedule Name
@@ -761,7 +763,9 @@ export function SchedulesPage() {
  </label>
  </div>
 
- <div className="flex justify-end gap-3 pt-2">
+ </form>
+ </ModalBody>
+ <ModalFooter>
  <button
  type="button"
  onClick={() => setShowCreateModal(false)}
@@ -771,6 +775,7 @@ export function SchedulesPage() {
  </button>
  <button
  type="submit"
+ form="create-schedule-form"
  disabled={createScheduleMutation.isPending || testSuites.length === 0}
  className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
  >
@@ -782,11 +787,8 @@ export function SchedulesPage() {
  )}
  {createScheduleMutation.isPending ? 'Creating...' : 'Create Schedule'}
  </button>
- </div>
- </form>
- </div>
- </div>
- )}
+ </ModalFooter>
+ </Modal>
  </div>
  </Layout>
  );

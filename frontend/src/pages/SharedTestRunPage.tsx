@@ -1,5 +1,6 @@
 /**
  * Shared Test Run Page
+ * Feature #636: Adopt Modal component in page-level inline modals
  * Feature #2002: Public page for viewing shared test run results
  *
  * This page allows users to view test run results via a shareable link
@@ -8,6 +9,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 
 // Types from the main test run page
 interface StepResult {

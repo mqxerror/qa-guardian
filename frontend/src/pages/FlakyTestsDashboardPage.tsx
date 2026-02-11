@@ -1,4 +1,5 @@
 // Feature #1441: FlakyTestsDashboardPage extracted from App.tsx (~1,575 lines)
+// Feature #636: Adopt Modal component in page-level inline modals
 // Features #1102-1107: Flaky test management, quarantine, suggestions, impact report
 // Feature #76: Migrated to React Query with caching
 // Feature #336: Dark-first design system redesign
@@ -20,6 +21,7 @@ import {
  useReducedMotion,
 } from '../components/ui';
 import { AlertTriangle, RefreshCw, Settings2 } from 'lucide-react';
+import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import {
  useFlakyTests,
  useFlakyImpactReport,
@@ -1298,22 +1300,13 @@ Please provide:
  )}
 
  {/* Feature #1106: AI Suggestions Modal */}
- {showSuggestionsModal && (
- <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
- <div className="w-full max-w-4xl max-h-[90vh] overflow-auto rounded-lg border border-border bg-background shadow-xl m-4">
- <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-border bg-background">
- <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
- <span>💡</span> AI Suggestions for {suggestions?.test_name || 'Test'}
- </h2>
- <button
- onClick={() => setShowSuggestionsModal(false)}
- className="p-2 rounded-lg hover:bg-muted transition-colors"
+ <Modal
+ isOpen={showSuggestionsModal}
+ onClose={() => setShowSuggestionsModal(false)}
+ title={`AI Suggestions for ${suggestions?.test_name || 'Test'}`}
+ size="xl"
  >
- ✕
- </button>
- </div>
-
- <div className="p-6">
+ <ModalBody>
  {isLoadingSuggestions ? (
  <div className="flex flex-col items-center justify-center py-12">
  <div className="animate-spin h-8 w-8 border-4 border-accent border-t-transparent rounded-full mb-4" />
@@ -1447,34 +1440,23 @@ Please provide:
  <p>Failed to load suggestions. Please try again.</p>
  </div>
  )}
- </div>
- </div>
- </div>
- )}
+ </ModalBody>
+ </Modal>
 
  {/* Feature #1107: Release from Quarantine Confirmation Modal */}
- {showReleaseConfirmModal && testToRelease && (
- <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
- <div className="w-full max-w-md rounded-lg border border-border bg-background shadow-xl m-4">
- <div className="flex items-center justify-between px-6 py-4 border-b border-border">
- <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
- <span>🔓</span> Release from Quarantine
- </h2>
- <button
- onClick={() => {
+ <Modal
+ isOpen={showReleaseConfirmModal && !!testToRelease}
+ onClose={() => {
  setShowReleaseConfirmModal(false);
  setTestToRelease(null);
  }}
- className="p-2 rounded-lg hover:bg-muted transition-colors"
+ title="Release from Quarantine"
+ size="md"
  >
- ✕
- </button>
- </div>
-
- <div className="p-6 space-y-4">
+ <ModalBody className="space-y-4">
  <div className="p-4 rounded-lg bg-success/5 border border-success/20">
  <div className="font-semibold text-success mb-1">
- {testToRelease.test_name}
+ {testToRelease?.test_name}
  </div>
  <p className="text-sm text-success">
  This test will be released from quarantine and will:
@@ -1509,7 +1491,8 @@ Please provide:
  </div>
  )}
 
- <div className="flex gap-3 pt-4">
+ </ModalBody>
+ <ModalFooter>
  <button
  onClick={() => {
  setShowReleaseConfirmModal(false);
@@ -1536,61 +1519,37 @@ Please provide:
  </>
  )}
  </button>
- </div>
- </div>
- </div>
- </div>
- )}
+ </ModalFooter>
+ </Modal>
 
  {/* Feature #1953: AI Flakiness Analysis Modal */}
- {showFlakinessAnalysisModal && selectedTestForAnalysis && (
- <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
- <div className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
- <div className="p-4 border-b border-border bg-gradient-to-r from-accent/10 to-accent/5">
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-3">
- <div className="h-10 w-10 rounded-full bg-gradient-to-r from-accent to-accent/70 flex items-center justify-center">
- <span className="text-primary-foreground text-lg">🤖</span>
- </div>
- <div>
- <h3 className="font-semibold text-foreground">AI Flakiness Analysis</h3>
- <p className="text-sm text-muted-foreground truncate max-w-md" title={selectedTestForAnalysis.test_name}>
- {selectedTestForAnalysis.test_name}
- </p>
- </div>
- </div>
- <button
- onClick={() => setShowFlakinessAnalysisModal(false)}
- className="p-2 rounded-full hover:bg-muted transition-colors"
+ <Modal
+ isOpen={showFlakinessAnalysisModal && !!selectedTestForAnalysis}
+ onClose={() => setShowFlakinessAnalysisModal(false)}
+ title="AI Flakiness Analysis"
+ size="lg"
  >
- <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
- </button>
- </div>
- </div>
-
- <div className="p-4 overflow-y-auto max-h-[60vh]">
+ <ModalBody>
  {/* Test Stats Summary */}
  <div className="grid grid-cols-4 gap-3 mb-4">
  <div className="bg-muted/50 rounded-lg p-2 text-center">
- <div className="text-lg font-bold text-foreground">{selectedTestForAnalysis.total_runs}</div>
+ <div className="text-lg font-bold text-foreground">{selectedTestForAnalysis?.total_runs}</div>
  <div className="text-xs text-muted-foreground">Total Runs</div>
  </div>
  <div className="bg-muted/50 rounded-lg p-2 text-center">
- <div className="text-lg font-bold text-destructive">{(selectedTestForAnalysis.flakiness_score * 100).toFixed(0)}%</div>
+ <div className="text-lg font-bold text-destructive">{((selectedTestForAnalysis?.flakiness_score ?? 0) * 100).toFixed(0)}%</div>
  <div className="text-xs text-muted-foreground">Flaky</div>
  </div>
  <div className="bg-muted/50 rounded-lg p-2 text-center">
- <div className="text-lg font-bold text-success">{selectedTestForAnalysis.pass_rate}%</div>
+ <div className="text-lg font-bold text-success">{selectedTestForAnalysis?.pass_rate}%</div>
  <div className="text-xs text-muted-foreground">Pass Rate</div>
  </div>
  <div className="bg-muted/50 rounded-lg p-2 text-center">
  <div className="text-lg font-bold text-foreground flex items-center justify-center gap-1">
- {selectedTestForAnalysis.has_time_pattern && <span title="Time pattern">⏰</span>}
- {selectedTestForAnalysis.has_environment_pattern && <span title="Env pattern">🖥️</span>}
- {selectedTestForAnalysis.is_retry_flaky && <span title="Retry flaky">🔄</span>}
- {!selectedTestForAnalysis.has_time_pattern && !selectedTestForAnalysis.has_environment_pattern && !selectedTestForAnalysis.is_retry_flaky && '—'}
+ {selectedTestForAnalysis?.has_time_pattern && <span title="Time pattern">⏰</span>}
+ {selectedTestForAnalysis?.has_environment_pattern && <span title="Env pattern">🖥️</span>}
+ {selectedTestForAnalysis?.is_retry_flaky && <span title="Retry flaky">🔄</span>}
+ {!selectedTestForAnalysis?.has_time_pattern && !selectedTestForAnalysis?.has_environment_pattern && !selectedTestForAnalysis?.is_retry_flaky && '—'}
  </div>
  <div className="text-xs text-muted-foreground">Patterns</div>
  </div>
@@ -1611,7 +1570,7 @@ Please provide:
  ) : null}
 
  {/* Cached indicator */}
- {flakinessAnalysisCache[selectedTestForAnalysis.test_id] && !isLoadingFlakinessAnalysis && (
+ {selectedTestForAnalysis && flakinessAnalysisCache[selectedTestForAnalysis.test_id] && !isLoadingFlakinessAnalysis && (
  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
  <span className="flex items-center gap-1">
  <span>💾</span> Cached analysis (24hr)
@@ -1631,11 +1590,10 @@ Please provide:
  </button>
  </div>
  )}
- </div>
-
- <div className="p-4 border-t border-border bg-muted/30 flex justify-between">
+ </ModalBody>
+ <ModalFooter>
  <button
- onClick={() => handleGetSuggestions(selectedTestForAnalysis.test_id)}
+ onClick={() => selectedTestForAnalysis && handleGetSuggestions(selectedTestForAnalysis.test_id)}
  className="px-4 py-2 text-sm font-medium rounded-lg border border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
  >
  💡 Get Fix Suggestions
@@ -1646,10 +1604,8 @@ Please provide:
  >
  Close
  </button>
- </div>
- </div>
- </div>
- )}
+ </ModalFooter>
+ </Modal>
  </div>
  </Layout>
  );
