@@ -263,7 +263,7 @@ function rowToHealedSelectorEntry(row: HealedSelectorRow): HealedSelectorEntry {
 export async function createTestRun(run: TestRun): Promise<TestRun> {
   if (isDatabaseConnected()) {
     try {
-      const result = await query<any>(
+      const result = await query<TestRunRow>(
         `INSERT INTO test_runs (
           id, suite_id, suite_name, project_id, project_name, test_id, schedule_id,
           organization_id, browser, branch, test_type, status, started_at, completed_at,
@@ -319,7 +319,7 @@ export async function createTestRun(run: TestRun): Promise<TestRun> {
 export async function getTestRun(id: string): Promise<TestRun | undefined> {
   if (isDatabaseConnected()) {
     try {
-      const result = await query<any>(
+      const result = await query<TestRunRow>(
         `SELECT ${TEST_RUN_COLUMNS} FROM test_runs WHERE id = $1`,
         [id]
       );
@@ -419,7 +419,7 @@ export async function updateTestRun(id: string, updates: Partial<TestRun>): Prom
 
       if (setClauses.length > 0) {
         values.push(id);
-        const result = await query<any>(
+        const result = await query<TestRunRow>(
           `UPDATE test_runs SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
           values
         );
@@ -476,7 +476,7 @@ export async function listTestRunsBySuite(suiteId: string, orgId?: string): Prom
 
       queryText += ' ORDER BY created_at DESC';
 
-      const result = await query<any>(queryText, params);
+      const result = await query<TestRunRow>(queryText, params);
       if (result && result.rows) {
         return result.rows.map(rowToTestRun);
       }
@@ -513,7 +513,7 @@ export async function listTestRunsByProject(projectId: string, orgId?: string): 
 
       queryText += ' ORDER BY created_at DESC';
 
-      const result = await query<any>(queryText, params);
+      const result = await query<TestRunRow>(queryText, params);
       if (result && result.rows) {
         return result.rows.map(rowToTestRun);
       }
@@ -582,7 +582,7 @@ export async function listTestRunsByOrg(
         params.push(options.limit);
       }
 
-      const result = await query<any>(queryText, params);
+      const result = await query<TestRunRow>(queryText, params);
       if (result && result.rows) {
         return result.rows.map(rowToTestRun);
       }
@@ -613,7 +613,7 @@ export async function listTestRunsBySchedule(scheduleId: string, orgId: string, 
   if (isDatabaseConnected()) {
     try {
       // Feature #203: Use TEST_RUN_COLUMNS_LIGHT to avoid loading heavy results JSONB
-      const result = await query<any>(
+      const result = await query<TestRunRow>(
         `SELECT ${TEST_RUN_COLUMNS_LIGHT} FROM test_runs
          WHERE schedule_id = $1 AND organization_id = $2
          ORDER BY created_at DESC
@@ -656,7 +656,7 @@ export async function listTestRunsByTestId(testId: string, orgId: string, limit:
       // (test_id = $2::uuid) and text context (elem->>'test_id' = $2::text).
       // Without casts, PostgreSQL infers $2 as uuid and fails on text comparison
       // with error 42883: "No operator matches the given name and argument types."
-      const result = await query<any>(
+      const result = await query<TestRunRow>(
         `SELECT id, suite_id, suite_name, project_id, project_name, test_id,
           schedule_id, organization_id, browser, branch, test_type, status,
           started_at, completed_at, duration_ms, created_at,
@@ -738,7 +738,7 @@ export async function getRecentTestRuns(
         LIMIT $${params.length + 1} OFFSET $${params.length + 2}
       `;
 
-      const result = await query<any>(combinedQuery, [...params, limit, offset]);
+      const result = await query<TestRunRow & { total_count: string }>(combinedQuery, [...params, limit, offset]);
       const runs = result?.rows ? result.rows.map(rowToTestRun) : [];
       const total = result?.rows[0]?.total_count ? parseInt(result.rows[0].total_count, 10) : 0;
 
@@ -835,7 +835,7 @@ export async function listTestRunsPaginated(
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
       `;
 
-      const result = await query<any>(combinedQuery, [...params, limit, offset]);
+      const result = await query<TestRunRow & { total_count: string }>(combinedQuery, [...params, limit, offset]);
       const runs = result?.rows ? result.rows.map(rowToTestRun) : [];
       const total = result?.rows[0]?.total_count ? parseInt(result.rows[0].total_count, 10) : 0;
 
@@ -894,7 +894,7 @@ export async function listTestRunsPaginated(
 export async function upsertSelectorOverride(override: SelectorOverride): Promise<SelectorOverride> {
   if (isDatabaseConnected()) {
     try {
-      const result = await query<any>(
+      const result = await query<SelectorOverrideRow>(
         `INSERT INTO selector_overrides (
           test_id, step_id, original_selector, new_selector, override_by, override_by_email, override_at, notes
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -930,7 +930,7 @@ export async function upsertSelectorOverride(override: SelectorOverride): Promis
 export async function getSelectorOverride(testId: string, stepId: string): Promise<SelectorOverride | undefined> {
   if (isDatabaseConnected()) {
     try {
-      const result = await query<any>(
+      const result = await query<SelectorOverrideRow>(
         `SELECT ${SELECTOR_OVERRIDE_COLUMNS} FROM selector_overrides WHERE test_id = $1 AND step_id = $2`,
         [testId, stepId]
       );
@@ -971,7 +971,7 @@ export async function deleteSelectorOverride(testId: string, stepId: string): Pr
 export async function listSelectorOverrides(testId: string): Promise<SelectorOverride[]> {
   if (isDatabaseConnected()) {
     try {
-      const result = await query<any>(
+      const result = await query<SelectorOverrideRow>(
         `SELECT ${SELECTOR_OVERRIDE_COLUMNS} FROM selector_overrides WHERE test_id = $1`,
         [testId]
       );
@@ -997,7 +997,7 @@ export async function listSelectorOverrides(testId: string): Promise<SelectorOve
 export async function upsertHealedSelectorEntry(entry: HealedSelectorEntry): Promise<HealedSelectorEntry> {
   if (isDatabaseConnected()) {
     try {
-      const result = await query<any>(
+      const result = await query<HealedSelectorRow>(
         `INSERT INTO healed_selector_history (
           run_id, test_id, step_id, original_selector, healed_selector, strategy, healing_strategy,
           confidence, healing_confidence, healed_at, was_successful, was_accepted, accepted_by,
@@ -1050,7 +1050,7 @@ export async function upsertHealedSelectorEntry(entry: HealedSelectorEntry): Pro
 export async function getHealedSelectorEntry(testId: string, stepId: string): Promise<HealedSelectorEntry | undefined> {
   if (isDatabaseConnected()) {
     try {
-      const result = await query<any>(
+      const result = await query<HealedSelectorRow>(
         `SELECT ${HEALED_SELECTOR_COLUMNS} FROM healed_selector_history WHERE test_id = $1 AND step_id = $2`,
         [testId, stepId]
       );
@@ -1072,7 +1072,7 @@ export async function getHealedSelectorEntry(testId: string, stepId: string): Pr
 export async function listHealedSelectorHistory(testId: string): Promise<HealedSelectorEntry[]> {
   if (isDatabaseConnected()) {
     try {
-      const result = await query<any>(
+      const result = await query<HealedSelectorRow>(
         `SELECT ${HEALED_SELECTOR_COLUMNS} FROM healed_selector_history WHERE test_id = $1 ORDER BY healed_at DESC`,
         [testId]
       );
@@ -1134,7 +1134,7 @@ export async function getFlakinessTrendData(
 ): Promise<FlakinessTrendRow[]> {
   if (isDatabaseConnected()) {
     try {
-      const result = await query<any>(
+      const result = await query<FlakinessTrendDBRow>(
         `SELECT
           tr.id as run_id,
           tr.created_at,
@@ -1203,6 +1203,15 @@ export interface TestRunMetadata {
   last_run_at: Date | null;
   last_result: TestRunStatus | null;
   avg_duration_ms: number | null;
+}
+
+/** Database row type for test run metadata query */
+interface TestRunMetadataRow {
+  test_id: string;
+  run_count: string;
+  last_run_at: string | Date | null;
+  last_result: string | null;
+  avg_duration_ms: string | null;
 }
 
 /**
@@ -1283,7 +1292,7 @@ export async function getTestRunMetadataForSuite(
         LEFT JOIN latest_runs lr ON rs.test_id = lr.test_id
       `;
 
-      const result = await query<any>(queryText, params);
+      const result = await query<TestRunMetadataRow>(queryText, params);
 
       if (result && result.rows) {
         for (const row of result.rows) {
