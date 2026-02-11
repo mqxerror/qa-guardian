@@ -4,6 +4,7 @@
  */
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { Frown, ArrowLeft, Home } from 'lucide-react';
 
 export function NotFoundPage() {
   const navigate = useNavigate();
@@ -29,21 +30,7 @@ export function NotFoundPage() {
           </h1>
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="bg-card border border-border rounded-2xl p-6 shadow-lg">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-12 w-12 text-muted-foreground mx-auto"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <Frown className="h-12 w-12 text-muted-foreground mx-auto" strokeWidth={1.5} aria-hidden="true" />
             </div>
           </div>
         </div>
@@ -65,16 +52,7 @@ export function NotFoundPage() {
             onClick={() => navigate(-1)}
             className="w-full sm:w-auto px-6 py-3 border border-border rounded-lg font-medium text-foreground hover:bg-muted transition-colors inline-flex items-center justify-center gap-2"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Go Back
           </button>
 
@@ -82,16 +60,7 @@ export function NotFoundPage() {
             to={isAuthenticated ? '/dashboard' : '/'}
             className="w-full sm:w-auto px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
+            <Home className="h-4 w-4" aria-hidden="true" />
             {isAuthenticated ? 'Go to Dashboard' : 'Go Home'}
           </Link>
         </div>
