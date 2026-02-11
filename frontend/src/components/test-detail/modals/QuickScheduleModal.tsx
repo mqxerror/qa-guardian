@@ -205,7 +205,7 @@ export function QuickScheduleModal({
  <button
  type="submit"
  disabled={isCreating || (type === 'one-time' && !runAt)}
- className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary disabled:opacity-50"
+ className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
  >
  {isCreating ? 'Creating...' : 'Create Schedule'}
  </button>

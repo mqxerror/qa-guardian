@@ -131,7 +131,7 @@ export function ApproveBaselineModal({
  <button
  onClick={() => onApprove(runId || undefined)}
  disabled={approvingBaseline}
- className="rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50"
+ className="rounded-md bg-success px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-success disabled:opacity-50"
  >
  {approvingBaseline ? (
  <span className="flex items-center gap-2">
@@ -257,7 +257,7 @@ export function RestoreBaselineModal({
  <button
  onClick={() => onRestore(restoreHistoryEntry.id)}
  disabled={restoringBaseline}
- className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning disabled:opacity-50"
+ className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-warning disabled:opacity-50"
  >
  {restoringBaseline ? (
  <span className="flex items-center gap-2">
@@ -388,7 +388,7 @@ export function MergeBaselineModal({
  <button
  onClick={() => onMerge(selectedMergeBranch)}
  disabled={isMergingBaseline}
- className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary disabled:opacity-50"
+ className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
  >
  {isMergingBaseline ? (
  <span className="flex items-center gap-2">
@@ -528,7 +528,7 @@ export function RejectChangesModal({
  <button
  onClick={() => onReject(runId || undefined)}
  disabled={rejectingChanges}
- className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive disabled:opacity-50"
+ className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-destructive disabled:opacity-50"
  >
  {rejectingChanges ? (
  <span className="flex items-center gap-2">

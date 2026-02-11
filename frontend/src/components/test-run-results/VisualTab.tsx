@@ -14,7 +14,7 @@ interface VisualTabProps {
  videoUrl: string | null;
  videoLoading: boolean;
  videoError: string | null;
- visualVideoRef: React.RefObject<HTMLVideoElement | null>;
+ visualVideoRef: React.RefObject<HTMLVideoElement>;
  visualMarkers: VisualMarker[];
  runDurationMs: number;
 
@@ -419,12 +419,12 @@ export default function VisualTab({
  {/* Diff badge */}
  {hasBaseline ? (
  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
- hasDiff ? 'bg-destructive text-white' : 'bg-success text-white'
+ hasDiff ? 'bg-destructive text-primary-foreground' : 'bg-success text-primary-foreground'
  }`}>
  {diffPercent.toFixed(2)}% diff
  </span>
  ) : (
- <span className="px-3 py-1 rounded-full text-sm font-medium bg-warning text-white">
+ <span className="px-3 py-1 rounded-full text-sm font-medium bg-warning text-primary-foreground">
  No baseline
  </span>
  )}
@@ -435,7 +435,7 @@ export default function VisualTab({
  <button
  onClick={() => handleApproveBaseline(result.test_id, idx)}
  disabled={isApprovalLoading}
- className="px-3 py-1.5 text-sm bg-success text-white rounded-lg hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+ className="px-3 py-1.5 text-sm bg-success text-primary-foreground rounded-lg hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
  >
  {isApprovalLoading ? (
  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -452,7 +452,7 @@ export default function VisualTab({
  <button
  onClick={() => handleRejectBaseline(result.test_id, idx)}
  disabled={isApprovalLoading}
- className="px-3 py-1.5 text-sm bg-destructive text-white rounded-lg hover:bg-destructive disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+ className="px-3 py-1.5 text-sm bg-destructive text-primary-foreground rounded-lg hover:bg-destructive disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -562,9 +562,9 @@ export default function VisualTab({
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
  vpHasBaseline
  ? vpHasDiff
- ? 'bg-destructive text-white'
- : 'bg-success text-white'
- : 'bg-warning text-white'
+ ? 'bg-destructive text-primary-foreground'
+ : 'bg-success text-primary-foreground'
+ : 'bg-warning text-primary-foreground'
  }`}>
  {vpHasBaseline
  ? `${(vp.diffPercentage || 0).toFixed(2)}% diff`
@@ -577,14 +577,14 @@ export default function VisualTab({
  <div className="flex items-center gap-2">
  <button
  onClick={() => handleApproveBaseline(result.test_id, idx, vp.viewportId)}
- className="px-2 py-1 text-xs bg-success text-white rounded hover:bg-success transition-colors"
+ className="px-2 py-1 text-xs bg-success text-primary-foreground rounded hover:bg-success transition-colors"
  title={`Approve ${vp.viewportLabel} baseline`}
  >
  ✓ Approve
  </button>
  <button
  onClick={() => handleRejectBaseline(result.test_id, idx, vp.viewportId)}
- className="px-2 py-1 text-xs bg-destructive text-white rounded hover:bg-destructive transition-colors"
+ className="px-2 py-1 text-xs bg-destructive text-primary-foreground rounded hover:bg-destructive transition-colors"
  title={`Reject ${vp.viewportLabel} baseline`}
  >
  ✗ Reject

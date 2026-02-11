@@ -74,7 +74,7 @@ export default function ExportModal({
  resultSummary,
  pdfSections,
  logoBase64,
- organizationName,
+ organizationName: organizationName ?? undefined,
  setGeneratingPdf,
  });
  };
@@ -286,7 +286,7 @@ export default function ExportModal({
  <button
  onClick={handleGeneratePdfReport}
  disabled={generatingPdf}
- className="w-full px-4 py-2 bg-destructive text-white rounded-md hover:bg-destructive disabled:opacity-50 transition-colors"
+ className="w-full px-4 py-2 bg-destructive text-primary-foreground rounded-md hover:bg-destructive disabled:opacity-50 transition-colors"
  >
  {generatingPdf ? (
  <span className="flex items-center justify-center gap-2">
@@ -317,7 +317,7 @@ export default function ExportModal({
  <button
  onClick={handleGenerateHtmlReport}
  disabled={generatingHtml}
- className="px-4 py-2 bg-warning text-white rounded-md hover:bg-warning/90 disabled:opacity-50 transition-colors"
+ className="px-4 py-2 bg-warning text-primary-foreground rounded-md hover:bg-warning/90 disabled:opacity-50 transition-colors"
  >
  {generatingHtml ? (
  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -345,7 +345,7 @@ export default function ExportModal({
  </div>
  <button
  onClick={exportFullJson}
- className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary transition-colors"
+ className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary transition-colors"
  >
  Download
  </button>
@@ -400,7 +400,7 @@ export default function ExportModal({
  />
  <button
  onClick={copyShareLink}
- className="px-3 py-2 bg-success text-white rounded-md hover:bg-success transition-colors"
+ className="px-3 py-2 bg-success text-primary-foreground rounded-md hover:bg-success transition-colors"
  >
  Copy
  </button>
@@ -409,7 +409,7 @@ export default function ExportModal({
  <button
  onClick={generateShareLink}
  disabled={generatingShare}
- className="w-full px-4 py-2 bg-success text-white rounded-md hover:bg-success disabled:opacity-50 transition-colors"
+ className="w-full px-4 py-2 bg-success text-primary-foreground rounded-md hover:bg-success disabled:opacity-50 transition-colors"
  >
  {generatingShare ? (
  <span className="flex items-center justify-center gap-2">

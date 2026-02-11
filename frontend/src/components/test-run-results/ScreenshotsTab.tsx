@@ -377,7 +377,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  onClick={() => toggleGroup(type)}
  className="flex items-center gap-3 flex-1 hover:opacity-80 transition-opacity"
  >
- <span className={`w-8 h-8 ${typeInfo.color} rounded-lg flex items-center justify-center text-white text-sm`}>
+ <span className={`w-8 h-8 ${typeInfo.color} rounded-lg flex items-center justify-center text-primary-foreground text-sm`}>
  {typeInfo.icon}
  </span>
  <div className="text-left">
@@ -478,7 +478,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  <div className="p-2 bg-muted/50">
  <div className="flex items-center gap-1.5 mb-1">
  {/* Test type badge with distinct color */}
- <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium text-white ${typeInfo.color}`}>
+ <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium text-primary-foreground ${typeInfo.color}`}>
  {screenshot.testType}
  </span>
  {/* Screenshot status badge */}

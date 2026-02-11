@@ -64,7 +64,7 @@ export interface TimelineTabProps {
  // Video playback state
  videoFile: string | null;
  videoUrl: string | null;
- videoRef: React.RefObject<HTMLVideoElement | null>;
+ videoRef: React.RefObject<HTMLVideoElement>;
  videoLoading: boolean;
  videoError: string | null;
  isVideoPlaying: boolean;
@@ -236,9 +236,9 @@ export default function TimelineTab({
  >
  <div className="flex items-center gap-3">
  <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium ${
- step.status === 'passed' ? 'bg-success text-white' :
- step.status === 'failed' ? 'bg-destructive text-white' :
- 'bg-muted-foreground text-white'
+ step.status === 'passed' ? 'bg-success text-primary-foreground' :
+ step.status === 'failed' ? 'bg-destructive text-primary-foreground' :
+ 'bg-muted-foreground text-primary-foreground'
  }`}>
  {step.status === 'passed' ? '✓' : step.status === 'failed' ? '✗' : '-'}
  </span>
@@ -528,10 +528,10 @@ export default function TimelineTab({
  >
  <div className="flex items-center gap-2 mb-1">
  <span className={`px-2 py-0.5 text-xs font-medium rounded ${
- violation.impact === 'critical' ? 'bg-destructive text-white' :
- violation.impact === 'serious' ? 'bg-warning text-white' :
- violation.impact === 'moderate' ? 'bg-warning text-white' :
- 'bg-primary text-white'
+ violation.impact === 'critical' ? 'bg-destructive text-primary-foreground' :
+ violation.impact === 'serious' ? 'bg-warning text-primary-foreground' :
+ violation.impact === 'moderate' ? 'bg-warning text-primary-foreground' :
+ 'bg-primary text-primary-foreground'
  }`}>
  {violation.impact}
  </span>

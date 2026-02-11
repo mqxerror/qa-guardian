@@ -97,7 +97,7 @@ export function AccessibilityResultsDisplay({
  <button
  onClick={() => onSetSeverityFilter('all')}
  className={`px-2 py-1 text-xs rounded-full ${
- currentSeverityFilter === 'all' ? 'bg-card text-white' : 'bg-muted'
+ currentSeverityFilter === 'all' ? 'bg-card text-primary-foreground' : 'bg-muted'
  }`}
  >
  All: {a11y.violations.count}
@@ -106,7 +106,7 @@ export function AccessibilityResultsDisplay({
  <button
  onClick={() => onSetSeverityFilter('critical')}
  className={`px-2 py-1 text-xs rounded-full ${
- currentSeverityFilter === 'critical' ? 'bg-destructive text-white' : 'bg-destructive/10 text-destructive'
+ currentSeverityFilter === 'critical' ? 'bg-destructive text-primary-foreground' : 'bg-destructive/10 text-destructive'
  }`}
  >
  Critical: {a11y.violations.critical}
@@ -116,7 +116,7 @@ export function AccessibilityResultsDisplay({
  <button
  onClick={() => onSetSeverityFilter('serious')}
  className={`px-2 py-1 text-xs rounded-full ${
- currentSeverityFilter === 'serious' ? 'bg-warning text-white' : 'bg-warning/10 text-warning'
+ currentSeverityFilter === 'serious' ? 'bg-warning text-primary-foreground' : 'bg-warning/10 text-warning'
  }`}
  >
  Serious: {a11y.violations.serious}
@@ -126,7 +126,7 @@ export function AccessibilityResultsDisplay({
  <button
  onClick={() => onSetSeverityFilter('moderate')}
  className={`px-2 py-1 text-xs rounded-full ${
- currentSeverityFilter === 'moderate' ? 'bg-warning text-white' : 'bg-warning/10 text-warning'
+ currentSeverityFilter === 'moderate' ? 'bg-warning text-primary-foreground' : 'bg-warning/10 text-warning'
  }`}
  >
  Moderate: {a11y.violations.moderate}
@@ -136,7 +136,7 @@ export function AccessibilityResultsDisplay({
  <button
  onClick={() => onSetSeverityFilter('minor')}
  className={`px-2 py-1 text-xs rounded-full ${
- currentSeverityFilter === 'minor' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'
+ currentSeverityFilter === 'minor' ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary'
  }`}
  >
  Minor: {a11y.violations.minor}

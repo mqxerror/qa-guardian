@@ -245,7 +245,7 @@ function BaselineHistoryTable({
  <td className="px-4 py-3">
  <span className={`inline-flex items-center gap-1.5 ${index === 0 ? 'text-success font-medium' : 'text-foreground'}`}>
  {index === 0 && (
- <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-success text-white text-xs">✓</span>
+ <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-success text-primary-foreground text-xs">✓</span>
  )}
  v{entry.version}
  {index === 0 && <span className="text-xs text-success">(Current)</span>}
@@ -484,7 +484,7 @@ function CurrentBaselineDisplay({
  onSetSelectedMergeBranch(branch.branch);
  onSetShowMergeBaselineModal(true);
  }}
- className="px-3 py-1 text-xs font-medium rounded bg-primary text-white hover:bg-primary transition-colors"
+ className="px-3 py-1 text-xs font-medium rounded bg-primary text-primary-foreground hover:bg-primary transition-colors"
  >
  Adopt Baseline
  </button>

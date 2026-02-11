@@ -258,7 +258,7 @@ function LiveExecutionPanel({
  <button
  onClick={onCancelRun}
  disabled={isCancellingRun}
- className="flex items-center gap-2 px-4 py-2 bg-destructive text-white rounded-md hover:bg-destructive disabled:opacity-50 transition-colors"
+ className="flex items-center gap-2 px-4 py-2 bg-destructive text-primary-foreground rounded-md hover:bg-destructive disabled:opacity-50 transition-colors"
  >
  {isCancellingRun ? (
  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -595,10 +595,10 @@ function TestResultItem({
  {result.steps.map((step: StepResult, idx: number) => (
  <div key={step.id || idx} className="flex items-center gap-2 text-sm">
  <span className={`h-4 w-4 rounded-full flex items-center justify-center text-xs ${
- step.status === 'passed' ? 'bg-success text-white' :
- step.status === 'failed' ? 'bg-destructive text-white' :
- step.status === 'warning' ? 'bg-warning text-white' :
- 'bg-muted-foreground text-white'
+ step.status === 'passed' ? 'bg-success text-primary-foreground' :
+ step.status === 'failed' ? 'bg-destructive text-primary-foreground' :
+ step.status === 'warning' ? 'bg-warning text-primary-foreground' :
+ 'bg-muted-foreground text-primary-foreground'
  }`}>
  {step.status === 'passed' ? '✓' : step.status === 'failed' ? '✗' : step.status === 'warning' ? '⚠' : '-'}
  </span>

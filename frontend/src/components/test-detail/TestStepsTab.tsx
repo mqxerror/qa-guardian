@@ -54,8 +54,8 @@ function VisualTestConfig({ test }: { test: TestType }) {
  <div className="bg-card rounded p-3 border border-border">
  <dt className="text-xs font-medium text-muted-foreground mb-1">Viewport</dt>
  <dd className="text-sm text-foreground">
- {test?.multi_viewport && test?.viewports?.length > 0 ? (
- <span>Multi-viewport: {test.viewports.map((vp: string | { name: string; width: number; height: number }) =>
+ {test?.multi_viewport && (test?.viewports?.length ?? 0) > 0 ? (
+ <span>Multi-viewport: {test.viewports!.map((vp: string | { name: string; width: number; height: number }) =>
  typeof vp === 'object' ? vp.name : vp
  ).join(', ')}</span>
  ) : test?.viewport_preset && test.viewport_preset !== 'custom' ? (
@@ -288,7 +288,7 @@ export function TestStepsTab({
  <button
  onClick={onSaveStepOrder}
  disabled={isSavingStepOrder}
- className="ml-auto rounded-md bg-warning px-3 py-1 text-sm font-medium text-white hover:bg-warning disabled:opacity-50"
+ className="ml-auto rounded-md bg-warning px-3 py-1 text-sm font-medium text-primary-foreground hover:bg-warning disabled:opacity-50"
  >
  {isSavingStepOrder ? 'Saving...' : 'Save Order'}
  </button>

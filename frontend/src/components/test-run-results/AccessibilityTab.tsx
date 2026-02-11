@@ -304,10 +304,10 @@ export default function AccessibilityTab({
 
  const isExpanded = a11yExpandedSeverities.has(severity);
  const colors = {
- critical: { border: 'border-destructive', header: 'bg-destructive/5', badge: 'bg-destructive text-white' },
- serious: { border: 'border-warning', header: 'bg-warning/10', badge: 'bg-warning text-white' },
- moderate: { border: 'border-warning', header: 'bg-warning/5', badge: 'bg-warning text-white' },
- minor: { border: 'border-primary', header: 'bg-primary/5', badge: 'bg-primary text-white' },
+ critical: { border: 'border-destructive', header: 'bg-destructive/5', badge: 'bg-destructive text-primary-foreground' },
+ serious: { border: 'border-warning', header: 'bg-warning/10', badge: 'bg-warning text-primary-foreground' },
+ moderate: { border: 'border-warning', header: 'bg-warning/5', badge: 'bg-warning text-primary-foreground' },
+ minor: { border: 'border-primary', header: 'bg-primary/5', badge: 'bg-primary text-primary-foreground' },
  };
 
  return (
@@ -474,7 +474,7 @@ export default function AccessibilityTab({
  >
  <div className="flex items-start justify-between mb-2">
  <div className="flex items-center gap-2">
- <span className={`px-2 py-0.5 text-xs font-medium rounded text-white ${
+ <span className={`px-2 py-0.5 text-xs font-medium rounded text-primary-foreground ${
  violation.impact === 'critical' ? 'bg-destructive' :
  violation.impact === 'serious' ? 'bg-warning' :
  violation.impact === 'moderate' ? 'bg-warning' :

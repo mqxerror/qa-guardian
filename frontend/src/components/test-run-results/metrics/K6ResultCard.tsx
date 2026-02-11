@@ -153,7 +153,7 @@ export const K6ResultCard: React.FC<K6ResultCardProps> = ({
 
  <button
  onClick={() => exportK6ResultsPDF(loadTest, result.test_name)}
- className="px-3 py-1.5 text-sm bg-destructive text-white rounded-lg hover:bg-destructive transition-colors flex items-center gap-1.5"
+ className="px-3 py-1.5 text-sm bg-destructive text-primary-foreground rounded-lg hover:bg-destructive transition-colors flex items-center gap-1.5"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -164,7 +164,7 @@ export const K6ResultCard: React.FC<K6ResultCardProps> = ({
  <button
  onClick={() => analyzePerformanceResults(result.test_name, null, loadTest)}
  disabled={perfAILoading && perfAIAnalysisOpen === result.test_name}
- className="px-3 py-1.5 text-sm bg-gradient-to-r from-accent to-accent/80 text-white rounded-lg hover:from-accent/90 hover:to-accent/70 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+ className="px-3 py-1.5 text-sm bg-gradient-to-r from-accent to-accent/80 text-primary-foreground rounded-lg hover:from-accent/90 hover:to-accent/70 transition-colors flex items-center gap-1.5 disabled:opacity-50"
  >
  {perfAILoading && perfAIAnalysisOpen === result.test_name ? (
  <>

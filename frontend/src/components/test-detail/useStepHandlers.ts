@@ -118,7 +118,7 @@ export function useStepHandlers({
     if (fromIndex === null || fromIndex === dropIndex || !test) return;
 
     // Reorder steps
-    const newSteps = [...test.steps];
+    const newSteps = [...(test.steps || [])];
     const [movedStep] = newSteps.splice(fromIndex, 1);
     newSteps.splice(dropIndex, 0, movedStep);
 

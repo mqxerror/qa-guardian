@@ -123,7 +123,7 @@ export async function exportAccessibilityPDF(a11yData: AccessibilityExportData, 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const summaryItems = [
-    { label: 'Violations', value: a11yData.violations?.count || 0, color: a11yData.violations?.count > 0 ? [239, 68, 68] : [34, 197, 94] },
+    { label: 'Violations', value: a11yData.violations?.count || 0, color: (a11yData.violations?.count ?? 0) > 0 ? [239, 68, 68] : [34, 197, 94] },
     { label: 'Passes', value: a11yData.passes?.count || 0, color: [34, 197, 94] },
     { label: 'Incomplete', value: a11yData.incomplete?.count || 0, color: [234, 179, 8] },
     { label: 'Not Applicable', value: a11yData.inapplicable?.count || 0, color: [156, 163, 175] }
@@ -142,7 +142,7 @@ export async function exportAccessibilityPDF(a11yData: AccessibilityExportData, 
   doc.setTextColor(0);
 
   // Violations breakdown by severity
-  if (a11yData.violations?.count > 0) {
+  if ((a11yData.violations?.count ?? 0) > 0) {
     checkPageBreak(30);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
@@ -152,10 +152,10 @@ export async function exportAccessibilityPDF(a11yData: AccessibilityExportData, 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     const severities = [
-      { label: 'Critical', value: a11yData.violations.critical || 0, color: [239, 68, 68] },
-      { label: 'Serious', value: a11yData.violations.serious || 0, color: [249, 115, 22] },
-      { label: 'Moderate', value: a11yData.violations.moderate || 0, color: [234, 179, 8] },
-      { label: 'Minor', value: a11yData.violations.minor || 0, color: [59, 130, 246] }
+      { label: 'Critical', value: a11yData.violations?.critical || 0, color: [239, 68, 68] },
+      { label: 'Serious', value: a11yData.violations?.serious || 0, color: [249, 115, 22] },
+      { label: 'Moderate', value: a11yData.violations?.moderate || 0, color: [234, 179, 8] },
+      { label: 'Minor', value: a11yData.violations?.minor || 0, color: [59, 130, 246] }
     ];
 
     severities.forEach((sev) => {
@@ -170,14 +170,14 @@ export async function exportAccessibilityPDF(a11yData: AccessibilityExportData, 
   }
 
   // Detailed violations
-  if (a11yData.violations?.items?.length > 0) {
+  if ((a11yData.violations?.items?.length ?? 0) > 0) {
     checkPageBreak(20);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text('Violation Details', margin, y);
     y += 10;
 
-    a11yData.violations.items.forEach((violation: A11yViolationItem) => {
+    a11yData.violations!.items!.forEach((violation: A11yViolationItem) => {
       checkPageBreak(50);
 
       // Violation header with impact badge
@@ -189,7 +189,7 @@ export async function exportAccessibilityPDF(a11yData: AccessibilityExportData, 
         moderate: [234, 179, 8],
         minor: [59, 130, 246]
       };
-      const impactColor = impactColors[violation.impact] || [100, 100, 100];
+      const impactColor = (violation.impact ? impactColors[violation.impact] : null) || [100, 100, 100];
 
       doc.setTextColor(impactColor[0], impactColor[1], impactColor[2]);
       doc.text(`[${(violation.impact || 'unknown').toUpperCase()}]`, margin, y);
@@ -222,20 +222,20 @@ export async function exportAccessibilityPDF(a11yData: AccessibilityExportData, 
       }
 
       // WCAG tags
-      if (violation.wcagTags?.length > 0) {
+      if ((violation.wcagTags?.length ?? 0) > 0) {
         doc.setTextColor(59, 130, 246);
-        doc.text(`WCAG: ${violation.wcagTags.join(', ')}`, margin, y);
+        doc.text(`WCAG: ${violation.wcagTags!.join(', ')}`, margin, y);
         y += 4;
         doc.setTextColor(0);
       }
 
       // Affected elements
-      if (violation.nodes?.length > 0) {
+      if ((violation.nodes?.length ?? 0) > 0) {
         doc.setTextColor(100);
-        doc.text(`Affected elements: ${violation.nodes.length}`, margin, y);
+        doc.text(`Affected elements: ${violation.nodes!.length}`, margin, y);
         y += 4;
-        if (violation.nodes[0]?.target) {
-          const targetText = violation.nodes[0].target.join(', ');
+        if (violation.nodes![0]?.target) {
+          const targetText = violation.nodes![0].target.join(', ');
           const targetLines = doc.splitTextToSize(`Selector: ${targetText}`, contentWidth);
           targetLines.slice(0, 2).forEach((line: string) => {
             checkPageBreak(6);
@@ -261,7 +261,7 @@ export async function exportAccessibilityPDF(a11yData: AccessibilityExportData, 
   }
 
   // Passing checks summary
-  if (a11yData.passes?.categories?.length > 0) {
+  if ((a11yData.passes?.categories?.length ?? 0) > 0) {
     checkPageBreak(30);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
@@ -272,7 +272,7 @@ export async function exportAccessibilityPDF(a11yData: AccessibilityExportData, 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(34, 197, 94);
-    const passCategories = a11yData.passes.categories.join(', ');
+    const passCategories = a11yData.passes!.categories!.join(', ');
     const passLines = doc.splitTextToSize(passCategories, contentWidth);
     passLines.forEach((line: string) => {
       checkPageBreak(6);
@@ -331,8 +331,8 @@ export function exportAccessibilityCSV(a11yData: AccessibilityExportData, testNa
   ]);
 
   // Add violation rows
-  if (a11yData.violations?.items?.length > 0) {
-    a11yData.violations.items.forEach((violation: A11yViolationItem) => {
+  if ((a11yData.violations?.items?.length ?? 0) > 0) {
+    a11yData.violations!.items!.forEach((violation: A11yViolationItem) => {
       const firstSelector = violation.nodes?.[0]?.target?.join(' > ') || '';
       rows.push([
         escapeCSV(violation.impact || 'unknown'),

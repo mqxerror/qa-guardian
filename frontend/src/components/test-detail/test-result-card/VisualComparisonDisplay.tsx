@@ -165,13 +165,13 @@ export function VisualComparisonDisplay({
  <div className="flex gap-2 mt-3">
  <button
  onClick={() => onApproveBaseline(result.test_id)}
- className="px-3 py-1.5 text-xs font-medium bg-success text-white rounded hover:bg-success"
+ className="px-3 py-1.5 text-xs font-medium bg-success text-primary-foreground rounded hover:bg-success"
  >
  ✓ Approve as New Baseline
  </button>
  <button
  onClick={() => onRejectChanges(result.test_id)}
- className="px-3 py-1.5 text-xs font-medium bg-destructive text-white rounded hover:bg-destructive"
+ className="px-3 py-1.5 text-xs font-medium bg-destructive text-primary-foreground rounded hover:bg-destructive"
  >
  ✗ Reject Changes
  </button>

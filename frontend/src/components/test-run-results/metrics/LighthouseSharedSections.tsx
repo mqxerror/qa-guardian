@@ -48,7 +48,7 @@ export const FilmstripSection: React.FC<{ lighthouse: LighthouseWithFilmstrip }>
  </span>
  </h4>
  <div className="flex gap-2 overflow-x-auto pb-2">
- {lighthouse.filmstrip.map((frame: { timestamp_ms: number; screenshot_base64: string; label?: string }, idx: number) => (
+ {lighthouse.filmstrip?.map((frame: { timestamp_ms: number; screenshot_base64: string; label?: string }, idx: number) => (
  <div
  key={idx}
  className="flex-shrink-0 cursor-pointer group"
