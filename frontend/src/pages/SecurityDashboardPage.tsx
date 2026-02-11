@@ -199,7 +199,7 @@ export function SecurityDashboardPage() {
     switch (severity) {
       case 'CRITICAL': return 'bg-destructive text-primary-foreground';
       case 'HIGH': return 'bg-warning text-primary-foreground';
-      case 'MEDIUM': return 'bg-warning text-black';
+      case 'MEDIUM': return 'bg-warning text-warning-foreground';
       case 'LOW': return 'bg-primary text-primary-foreground';
       default: return 'bg-muted text-muted-foreground';
     }

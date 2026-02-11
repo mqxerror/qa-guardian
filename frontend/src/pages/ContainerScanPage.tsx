@@ -75,7 +75,7 @@ interface ScanResult {
 const severityColors = {
   critical: 'bg-destructive text-primary-foreground',
   high: 'bg-warning text-primary-foreground',
-  medium: 'bg-warning text-black',
+  medium: 'bg-warning text-warning-foreground',
   low: 'bg-primary text-primary-foreground',
 };
 
@@ -306,7 +306,7 @@ export function ContainerScanPage() {
                   onClick={() => setSeverityFilter('medium')}
                   className={`px-4 py-2 rounded-lg border transition-colors ${
                     severityFilter === 'medium'
-                      ? 'bg-warning text-black border-warning'
+                      ? 'bg-warning text-warning-foreground border-warning'
                       : 'border-warning text-warning hover:bg-warning/10'
                   }`}
                 >

@@ -465,7 +465,7 @@ function CheckDetailPanel({
  >
  Maintenance
  {maintenanceData?.in_maintenance && (
- <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] text-xs rounded-full bg-warning text-black">
+ <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] text-xs rounded-full bg-warning text-warning-foreground">
  🔧
  </span>
  )}

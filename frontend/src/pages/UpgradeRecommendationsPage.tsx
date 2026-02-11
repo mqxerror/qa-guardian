@@ -74,7 +74,7 @@ interface Project {
 
 const riskColors = {
   safe: 'bg-success text-primary-foreground',
-  caution: 'bg-warning text-black',
+  caution: 'bg-warning text-warning-foreground',
   breaking: 'bg-destructive text-primary-foreground',
 };
 
@@ -325,7 +325,7 @@ export function UpgradeRecommendationsPage() {
                   onClick={() => setRiskFilter('caution')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
                     riskFilter === 'caution'
-                      ? 'bg-warning text-black border-warning'
+                      ? 'bg-warning text-warning-foreground border-warning'
                       : 'border-warning text-warning hover:bg-warning/10'
                   }`}
                 >
