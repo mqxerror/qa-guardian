@@ -1,6 +1,7 @@
 /**
  * Frontend Error Reporting Routes
  * Feature #166: Catch and store frontend errors for tracking and debugging
+ * Feature #653: Rate limiting (10 req/min per IP) and payload validation (10KB max)
  *
  * Provides API endpoints for:
  * - Reporting frontend errors (from ErrorBoundary)
@@ -11,6 +12,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { pool } from '../../services/database.js';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
+
+// Feature #653: Payload size limits for error reporting endpoint
+const MAX_PAYLOAD_SIZE_BYTES = 10 * 1024; // 10KB max payload
+const MAX_METADATA_SIZE_BYTES = 2 * 1024; // 2KB max for metadata field
 
 // Row interfaces for typed database queries
 interface ErrorRow {
@@ -87,10 +92,23 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
   /**
    * POST /api/v1/errors - Report a frontend error
    * This endpoint accepts errors both from authenticated and anonymous users
+   * Feature #653: Rate limiting (10 req/min) handled by global rate limiter
+   * Feature #653: Payload size validation (10KB max) enforced here
    */
-  app.post('/api/v1/errors', async (request: FastifyRequest, reply: FastifyReply) => {
+  // Feature #653: Enforce 10KB max payload size at Fastify level
+  app.post('/api/v1/errors', {
+    bodyLimit: MAX_PAYLOAD_SIZE_BYTES,
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     if (!pool) {
       return reply.status(503).send({ error: 'Database not available' });
+    }
+
+    // Feature #653: Double-check Content-Length header as backup validation
+    const contentLength = parseInt(request.headers['content-length'] || '0', 10);
+    if (contentLength > MAX_PAYLOAD_SIZE_BYTES) {
+      return reply.status(413).send({
+        error: `Payload too large: ${contentLength} bytes exceeds limit of ${MAX_PAYLOAD_SIZE_BYTES} bytes (10KB)`,
+      });
     }
 
     const body = request.body as {
@@ -110,6 +128,16 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(400).send({
         error: 'Missing required fields: message and url are required',
       });
+    }
+
+    // Feature #653: Validate metadata size to prevent oversized JSON
+    if (body.metadata) {
+      const metadataSize = JSON.stringify(body.metadata).length;
+      if (metadataSize > MAX_METADATA_SIZE_BYTES) {
+        return reply.status(400).send({
+          error: `Metadata too large: ${metadataSize} bytes exceeds limit of ${MAX_METADATA_SIZE_BYTES} bytes`,
+        });
+      }
     }
 
     // Try to extract user info from JWT if present (but don't require it)
