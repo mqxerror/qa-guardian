@@ -2,6 +2,7 @@
  * PreCommitHookSection - Pre-commit hook generation UI
  * Feature #102: Extracted from SecurityTab.tsx
  */
+import { ShieldCheck, Download } from 'lucide-react';
 import { SecretPattern } from '../types';
 
 export interface PreCommitHookSectionProps {
@@ -15,9 +16,7 @@ export function PreCommitHookSection({ projectId, secretPatterns }: PreCommitHoo
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-4">
  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10">
- <svg className="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
- </svg>
+ <ShieldCheck className="h-6 w-6 text-success" />
  </div>
  <div>
  <h3 className="text-lg font-semibold text-foreground">Pre-commit Hook</h3>
@@ -42,9 +41,7 @@ export function PreCommitHookSection({ projectId, secretPatterns }: PreCommitHoo
  {/* Pre-commit Framework Option */}
  <div className="border border-border rounded-lg p-4 hover:border-success transition-colors">
  <div className="flex items-center gap-2 mb-2">
- <svg className="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
- </svg>
+ <Download className="h-5 w-5 text-success" />
  <span className="font-medium text-foreground">.pre-commit-config.yaml</span>
  </div>
  <p className="text-xs text-muted-foreground mb-3">
@@ -56,9 +53,7 @@ export function PreCommitHookSection({ projectId, secretPatterns }: PreCommitHoo
  download=".pre-commit-config.yaml"
  className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-success text-success-foreground hover:bg-success"
  >
- <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
- </svg>
+ <Download className="h-3 w-3" />
  Block Mode
  </a>
  <a
@@ -66,9 +61,7 @@ export function PreCommitHookSection({ projectId, secretPatterns }: PreCommitHoo
  download=".pre-commit-config.yaml"
  className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-warning text-warning-foreground hover:bg-warning"
  >
- <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
- </svg>
+ <Download className="h-3 w-3" />
  Warn Mode
  </a>
  </div>
@@ -77,9 +70,7 @@ export function PreCommitHookSection({ projectId, secretPatterns }: PreCommitHoo
  {/* Git Hook Option */}
  <div className="border border-border rounded-lg p-4 hover:border-success transition-colors">
  <div className="flex items-center gap-2 mb-2">
- <svg className="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
- </svg>
+ <Download className="h-5 w-5 text-success" />
  <span className="font-medium text-foreground">Git Hook Script</span>
  </div>
  <p className="text-xs text-muted-foreground mb-3">
@@ -91,9 +82,7 @@ export function PreCommitHookSection({ projectId, secretPatterns }: PreCommitHoo
  download="pre-commit"
  className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-success text-success-foreground hover:bg-success"
  >
- <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
- </svg>
+ <Download className="h-3 w-3" />
  Block Mode
  </a>
  <a
@@ -101,9 +90,7 @@ export function PreCommitHookSection({ projectId, secretPatterns }: PreCommitHoo
  download="pre-commit"
  className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-warning text-warning-foreground hover:bg-warning"
  >
- <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
- </svg>
+ <Download className="h-3 w-3" />
  Warn Mode
  </a>
  </div>

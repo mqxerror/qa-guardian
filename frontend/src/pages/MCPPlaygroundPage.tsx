@@ -3,9 +3,11 @@
 // Extracted from App.tsx for code quality compliance (Feature #1357)
 
 import React, { useState, useEffect } from 'react';
+import { Search, PlayCircle, HelpCircle, Zap, Check, X, Copy } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 
 // Types for MCP Tools
 interface MCPToolInfo {
@@ -253,12 +255,16 @@ export function MCPPlaygroundPage() {
  return (
  <Layout>
  <div className="p-8">
- <div className="mb-6">
- <h2 className="text-3xl font-bold text-foreground">MCP Playground</h2>
- <p className="mt-2 text-muted-foreground">
- Test MCP tools interactively. Select a tool, configure parameters, and execute to see results in real-time.
- </p>
- </div>
+ {/* Feature #640: PageHeader component */}
+ <PageHeader
+   title="MCP Playground"
+   description="Test MCP tools interactively. Select a tool, configure parameters, and execute to see results in real-time."
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'MCP', href: '/mcp/chat' },
+     { label: 'Playground' }
+   ]}
+ />
 
  {isLoading ? (
  <div className="flex justify-center py-12">
@@ -274,9 +280,7 @@ export function MCPPlaygroundPage() {
 
  {/* Search */}
  <div className="relative mb-4">
- <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
- </svg>
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
  <input
  type="text"
  placeholder="Search tools..."
@@ -360,10 +364,7 @@ export function MCPPlaygroundPage() {
  </>
  ) : (
  <>
- <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <PlayCircle className="h-5 w-5" />
  Execute Tool
  </>
  )}
@@ -385,18 +386,14 @@ export function MCPPlaygroundPage() {
 
  {!selectedTool ? (
  <div className="flex flex-col items-center justify-center py-12 text-center">
- <svg className="h-16 w-16 text-muted-foreground/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <HelpCircle className="h-16 w-16 text-muted-foreground/30" />
  <p className="mt-4 text-muted-foreground">
  Select a tool to get started
  </p>
  </div>
  ) : !response ? (
  <div className="flex flex-col items-center justify-center py-12 text-center">
- <svg className="h-16 w-16 text-muted-foreground/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
- </svg>
+ <Zap className="h-16 w-16 text-muted-foreground/30" />
  <p className="mt-4 text-muted-foreground">
  Click "Execute Tool" to see results
  </p>
@@ -407,16 +404,12 @@ export function MCPPlaygroundPage() {
  <div className="mb-4">
  {response.success ? (
  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-success/10 text-success text-sm font-medium">
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
- </svg>
+ <Check className="h-4 w-4" />
  Success
  </span>
  ) : (
  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-destructive/10 text-destructive text-sm font-medium">
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
+ <X className="h-4 w-4" />
  Error
  </span>
  )}
@@ -439,9 +432,7 @@ export function MCPPlaygroundPage() {
  className="absolute top-2 right-2 p-2 rounded-md bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
  title="Copy to clipboard"
  >
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
- </svg>
+ <Copy className="h-4 w-4" />
  </button>
  <pre className="p-4 rounded-md bg-muted/30 text-sm font-mono text-foreground overflow-x-auto max-h-[500px] overflow-y-auto whitespace-pre-wrap break-all">
  {JSON.stringify(response.data, null, 2)}
