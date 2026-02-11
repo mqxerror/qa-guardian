@@ -13,6 +13,9 @@
  */
 
 import { aiService } from '../../services/ai-service.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('ai-analysis');
 
 // ============================================
 // Types and Interfaces
@@ -240,7 +243,7 @@ Provide a structured analysis including:
         processing_time_ms: processingTime,
       };
     } catch (error) {
-      console.warn('[AI Analysis] Claude API call failed, falling back to simulation:', error);
+      logger.warn({ err: error }, 'Claude API call failed, falling back to simulation');
       // Fall through to simulation on error
     }
   }

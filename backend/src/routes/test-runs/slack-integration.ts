@@ -14,6 +14,9 @@ import {
   slackConnections,
   slackLog,
 } from './alerts.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('slack-integration');
 
 // ============================================================================
 // Route Registration
@@ -114,7 +117,7 @@ export async function slackIntegrationRoutes(app: FastifyInstance) {
 
       slackConnections.set(orgId, connection);
 
-      console.log(`[SLACK] Connected workspace "${workspaceName}" (${workspaceId}) for organization ${orgId} by ${user.email}`);
+      logger.info({ workspaceName, workspaceId, orgId, userEmail: user.email }, 'Slack workspace connected');
 
       return reply.status(201).send({
         connected: true,
@@ -161,7 +164,7 @@ export async function slackIntegrationRoutes(app: FastifyInstance) {
 
     slackConnections.delete(orgId);
 
-    console.log(`[SLACK] Disconnected workspace "${connection.workspace_name}" from organization ${orgId} by ${user.email}`);
+    logger.info({ workspaceName: connection.workspace_name, orgId, userEmail: user.email }, 'Slack workspace disconnected');
 
     return {
       message: 'Slack workspace disconnected successfully',

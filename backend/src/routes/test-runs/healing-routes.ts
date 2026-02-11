@@ -35,6 +35,9 @@ import {
 } from './healing.js';
 import { testRuns, TestRun } from './execution.js';
 import { getTestRun } from '../../services/repositories/test-runs.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('healing-routes');
 
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
@@ -607,7 +610,7 @@ export async function healingRoutes(app: FastifyInstance) {
       url,
     };
 
-    console.log(`[HEALING] Linked commit ${sha} to healing event ${eventId}`);
+    logger.info({ sha, eventId }, 'Linked commit to healing event');
 
     return {
       success: true,
@@ -859,5 +862,5 @@ export async function healingRoutes(app: FastifyInstance) {
     };
   });
 
-  console.log('[HEALING-ROUTES] Healing routes registered');
+  logger.debug('Healing routes registered');
 }

@@ -8,6 +8,9 @@ import {
   OpenAPISpec,
   OpenAPIEndpoint,
 } from './types.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('dast-scanner');
 
 // ZAP API response types
 interface ZAPAlertResponse {
@@ -305,12 +308,12 @@ export async function runZAPScan(
   // immediately (HTTP 202). Errors are captured on the scan record.
   executeZAPScan(scan, projectId, targetUrl, scanProfile, authConfig, contextConfig)
     .catch((err) => {
-      console.error(`[DAST] Scan ${scanId} failed:`, err);
+      logger.error({ scanId, err }, 'DAST scan failed');
       scan.status = 'failed';
       scan.error = err.message || 'Unknown error during ZAP scan';
       scan.completedAt = new Date().toISOString();
       updateDastScan(scan.id, scan).catch((e) =>
-        console.error(`[DAST] Failed to persist error state for scan ${scanId}:`, e)
+        logger.error({ scanId, err: e }, 'Failed to persist error state for DAST scan')
       );
     });
 

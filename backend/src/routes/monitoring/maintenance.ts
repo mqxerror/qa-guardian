@@ -25,6 +25,9 @@ import {
   deleteMaintenanceWindow as dbDeleteMaintenanceWindow,
 } from './stores.js';
 import { startCheckInterval, stopCheckInterval } from './helpers.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('maintenance');
 
 export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
   // Get maintenance windows for a check
@@ -131,7 +134,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
         { checkId, start_time, end_time, reason }
       );
 
-      console.log(`[MONITORING] Maintenance window created: "${name}" for check ${check.name} (${startDate.toISOString()} - ${endDate.toISOString()})`);
+      logger.info({ windowName: name, checkName: check.name, start: startDate.toISOString(), end: endDate.toISOString() }, 'Maintenance window created');
 
       return {
         id: newWindow.id,
@@ -187,7 +190,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
         { checkId }
       );
 
-      console.log(`[MONITORING] Maintenance window deleted: "${deletedWindow.name}" for check ${check.name}`);
+      logger.info({ windowName: deletedWindow.name, checkName: check.name }, 'Maintenance window deleted');
 
       return {
         message: 'Maintenance window deleted successfully',
@@ -316,7 +319,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
         { check_count: createdWindows.length, start_time, end_time, reason }
       );
 
-      console.log(`[MONITORING] Bulk maintenance window created: "${name}" for ${createdWindows.length} checks (${startDate.toISOString()} - ${endDate.toISOString()})`);
+      logger.info({ windowName: name, checkCount: createdWindows.length, start: startDate.toISOString(), end: endDate.toISOString() }, 'Bulk maintenance window created');
 
       // Check if any of the windows are currently active
       const now = new Date();

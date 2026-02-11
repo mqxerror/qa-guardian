@@ -7,6 +7,9 @@ import { getTestSuite, createTest } from './stores.js';
 import { Test } from './types.js';
 import { generatePlaywrightCode } from './utils.js';
 import { logAuditEntry } from '../audit-logs.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('ai-variations');
 
 // Feature #1146: Interface for test variation suggestion
 interface TestVariationSuggestion {
@@ -630,7 +633,7 @@ export async function aiVariationsRoutes(app: FastifyInstance) {
       });
     }
 
-    console.log(`[AI SUGGEST VARIATIONS] Generating variations for: "${description.substring(0, 50)}..."`);
+    logger.info({ descriptionPreview: description.substring(0, 50) }, 'Generating AI test variations');
 
     // Detect the test type from description
     const detectedType = test_type || detectTestType(description);
@@ -657,7 +660,7 @@ export async function aiVariationsRoutes(app: FastifyInstance) {
     });
     filteredVariations = filteredVariations.slice(0, max_suggestions);
 
-    console.log(`[AI SUGGEST VARIATIONS] Generated ${filteredVariations.length} variations for ${detectedType} test`);
+    logger.info({ variationCount: filteredVariations.length, testType: detectedType }, 'Generated AI test variations');
 
     return {
       success: true,
@@ -702,7 +705,7 @@ export async function aiVariationsRoutes(app: FastifyInstance) {
       });
     }
 
-    console.log(`[AI GENERATE VARIATION] Generating variation ${variation_id}`);
+    logger.info({ variationId: variation_id }, 'Generating AI test variation');
 
     // Generate the variation test
     const generatedSteps = parseNaturalLanguageToSteps(variation_description, base_url || suite.base_url || '');

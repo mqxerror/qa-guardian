@@ -32,6 +32,9 @@ import {
   detectMixedContent,
   runRealLighthouseAudit,
 } from './lighthouse-executor.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('lighthouse-executor');
 
 /**
  * Configuration for a Lighthouse performance test
@@ -124,7 +127,7 @@ export async function executeLighthouseTest(
   let lighthouseResults: any;
   let screenshot_base64: string | undefined;
 
-  console.log(`[Lighthouse] Starting performance audit for ${test.name}`);
+  logger.info({ testName: test.name }, 'Starting Lighthouse performance audit');
 
   // Emit step start
   emitRunEvent(runId, orgId, 'step-start', {
@@ -246,7 +249,7 @@ export async function executeLighthouseTest(
     const auditTimeout = test.audit_timeout || 120000;
 
     // Run mobile audit first
-    console.log(`[Lighthouse] Starting mobile audit for ${test.target_url}`);
+    logger.info({ targetUrl: test.target_url }, 'Starting Lighthouse mobile audit');
     const mobileAudit = await runRealLighthouseAudit(test.target_url, 'mobile', auditTimeout);
 
     // Emit progress for desktop audit
@@ -260,7 +263,7 @@ export async function executeLighthouseTest(
     });
 
     // Run desktop audit
-    console.log(`[Lighthouse] Starting desktop audit for ${test.target_url}`);
+    logger.info({ targetUrl: test.target_url }, 'Starting Lighthouse desktop audit');
     const desktopAudit = await runRealLighthouseAudit(test.target_url, 'desktop', auditTimeout);
 
     // Create device-specific results for Feature #67

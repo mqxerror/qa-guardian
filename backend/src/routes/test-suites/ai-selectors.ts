@@ -3,6 +3,9 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate } from '../../middleware/auth.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('ai-selectors');
 
 // Feature #1139: Interface for AI selector suggestion
 interface SuggestedSelector {
@@ -47,12 +50,12 @@ async function fetchAndAnalyzeElements(url?: string, html?: string): Promise<Ana
         signal: AbortSignal.timeout(15000),
       });
       if (!response.ok) {
-        console.warn(`[AI SELECTOR] Failed to fetch ${url}: ${response.status}`);
+        logger.warn({ url, status: response.status }, 'Failed to fetch URL for selector analysis');
         return [];
       }
       htmlContent = await response.text();
     } catch (err: unknown) {
-      console.warn(`[AI SELECTOR] Error fetching ${url}: ${err instanceof Error ? err.message : String(err)}`);
+      logger.warn({ url, err }, 'Error fetching URL for selector analysis');
       return [];
     }
   }
@@ -292,7 +295,7 @@ export async function aiSelectorsRoutes(app: FastifyInstance) {
       });
     }
 
-    console.log(`[AI SELECTOR SUGGESTION] Analyzing ${url || 'provided HTML'} for optimal selectors`);
+    logger.info({ url: url || 'provided HTML' }, 'Analyzing page for optimal selectors');
 
     // Fetch and parse real HTML from URL or provided HTML string
     const analyzedElements: AnalyzedElement[] = await fetchAndAnalyzeElements(url, html);
@@ -326,7 +329,7 @@ export async function aiSelectorsRoutes(app: FastifyInstance) {
     // Sort by stability score (most stable first)
     filteredSuggestions.sort((a, b) => b.stability_score - a.stability_score);
 
-    console.log(`[AI SELECTOR SUGGESTION] Generated ${filteredSuggestions.length} selector suggestions`);
+    logger.info({ suggestionCount: filteredSuggestions.length }, 'Generated selector suggestions');
 
     return {
       success: true,

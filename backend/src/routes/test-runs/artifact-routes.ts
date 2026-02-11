@@ -22,6 +22,9 @@ import {
   ArtifactToDelete,
   DownloadArtifactInfo,
 } from './artifact-types.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('artifact-routes');
 // TestRunResult available from execution.js if needed
 import { AddressInfo } from 'net';
 
@@ -1113,7 +1116,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     await archive.finalize();
 
-    console.log(`[ARTIFACT DOWNLOAD] Created bulk download ZIP for run ${runId} with ${artifacts.length} artifacts`);
+    logger.info({ runId, artifactCount: artifacts.length }, 'Created bulk download ZIP');
 
     return reply;
   });
@@ -1307,7 +1310,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     const actualSizeFreed = deletedArtifacts.reduce((sum, a) => sum + a.size_bytes, 0);
 
-    console.log(`[ARTIFACT DELETE] Deleted ${deletedArtifacts.length} artifacts for run ${runId}, freed ${actualSizeFreed} bytes`);
+    logger.info({ runId, deletedCount: deletedArtifacts.length, bytesFreed: actualSizeFreed }, 'Deleted artifacts');
 
     return {
       deleted: true,

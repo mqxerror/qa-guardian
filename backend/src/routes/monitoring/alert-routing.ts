@@ -28,6 +28,9 @@ import {
   alertRateLimitConfigs,
   alertRateLimitStates,
 } from './stores.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('alert-routing');
 
 import {
   checkAlertRateLimit,
@@ -500,7 +503,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
 
       alertRateLimitConfigs.set(orgId, config);
 
-      console.log(`[RATE LIMIT] Configuration updated for org ${orgId}:`, config);
+      logger.info({ orgId, config }, 'Rate limit configuration updated');
 
       return {
         success: true,
@@ -587,7 +590,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
 
       const state = alertRateLimitStates.get(orgId);
 
-      console.log(`[RATE LIMIT TEST] Org ${orgId}: ${sent} sent, ${suppressed} suppressed, ${summariesNeeded} summaries needed`);
+      logger.info({ orgId, sent, suppressed, summariesNeeded }, 'Rate limit test completed');
 
       return {
         test_alerts: Math.min(alert_count, 50),
@@ -613,7 +616,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
     async (request) => {
       const orgId = getOrganizationId(request);
       alertRateLimitStates.delete(orgId);
-      console.log(`[RATE LIMIT] State reset for org ${orgId}`);
+      logger.info({ orgId }, 'Rate limit state reset');
       return {
         success: true,
         message: 'Rate limit state reset',

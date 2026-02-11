@@ -25,6 +25,9 @@ import {
   saveDastConfig,
 } from './stores.js';
 import { generateId, getDASTConfig, isUrlInScope } from './utils.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('dast-lightweight');
 
 // ---------------------------------------------------------------------------
 // Security check definitions
@@ -700,12 +703,12 @@ export async function runLightweightScan(
   // Run the scan asynchronously
   executeLightweightScan(scan, projectId, targetUrl, scanProfile, authConfig, contextConfig)
     .catch((err) => {
-      console.error(`[DAST-Lightweight] Scan ${scanId} failed:`, err);
+      logger.error({ scanId, err }, 'Scan failed');
       scan.status = 'failed';
       scan.error = err.message || 'Unknown error during lightweight scan';
       scan.completedAt = new Date().toISOString();
       updateDastScan(scan.id, scan).catch((e) =>
-        console.error(`[DAST-Lightweight] Failed to persist error state for scan ${scanId}:`, e)
+        logger.error({ scanId, err: e }, 'Failed to persist error state for scan')
       );
     });
 
@@ -737,7 +740,7 @@ async function executeLightweightScan(
   };
   await updateDastScan(scan.id, scan);
 
-  console.log(`[DAST-Lightweight] Starting scan of ${targetUrl} (profile: ${scanProfile})`);
+  logger.info({ targetUrl, scanProfile }, 'Starting lightweight DAST scan');
 
   // Fetch the main page
   let mainResponse: HttpResponse;
@@ -784,7 +787,7 @@ async function executeLightweightScan(
         allAlerts.push(alert);
       }
     } catch (err) {
-      console.error(`[DAST-Lightweight] Check ${check.id} failed:`, err);
+      logger.error({ checkId: check.id, err }, 'Security check failed');
     }
   }
 
@@ -834,7 +837,7 @@ async function executeLightweightScan(
         }
       }
     } catch (err) {
-      console.warn(`[DAST-Lightweight] Failed to scan ${url}:`, err);
+      logger.warn({ url, err }, 'Failed to scan URL');
     }
   }
 
@@ -913,7 +916,7 @@ async function executeLightweightScan(
   config.lastScanStatus = 'completed';
   await saveDastConfig(projectId, config);
 
-  console.log(`[DAST-Lightweight] Scan ${scan.id} completed: ${filteredAlerts.length} alerts found, ${scannedUrls.length} URLs scanned in ${durationSeconds}s`);
+  logger.info({ scanId: scan.id, alertCount: filteredAlerts.length, urlCount: scannedUrls.length, durationSeconds }, 'Scan completed');
 }
 
 /**

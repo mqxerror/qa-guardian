@@ -7,6 +7,9 @@ import { Test } from './types.js';
 import { getTestSuite, getTest, updateTest, updateTestSuite, listTests, batchGetTests } from './stores.js';
 // Feature #89: Redis caching for review settings
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('review');
 
 // Review action body interface
 interface ReviewTestBody {
@@ -231,7 +234,7 @@ export async function reviewRoutes(app: FastifyInstance) {
       return response;
     } catch (error) {
       // Feature #89: Return defaults on any error instead of 502
-      console.error('[ReviewSettings] Error fetching review settings:', error);
+      logger.error({ err: error }, 'Error fetching review settings');
       return defaultResponse;
     }
   });

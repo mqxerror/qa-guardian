@@ -8,6 +8,9 @@ import { logAuditEntry } from '../audit-logs.js';
 import { getTestSuite, createTest, listAllTests } from './stores.js';
 import { Test, TestStep } from './types.js';
 import { generatePlaywrightCode } from './utils.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('ai-coverage');
 
 // Feature #1147: Interface for coverage gap
 interface CoverageGap {
@@ -815,7 +818,7 @@ export async function aiCoverageRoutes(app: FastifyInstance) {
     } = request.body;
     const orgId = getOrganizationId(request);
 
-    console.log(`[AI COVERAGE GAPS] Analyzing coverage for org ${orgId}`);
+    logger.info({ orgId }, 'Analyzing AI coverage gaps');
 
     // Get existing tests for the organization
     const allTests = await listAllTests(orgId);
@@ -833,7 +836,7 @@ export async function aiCoverageRoutes(app: FastifyInstance) {
       return severityOrder[a.severity] - severityOrder[b.severity];
     });
 
-    console.log(`[AI COVERAGE GAPS] Found ${gaps.length} coverage gaps`);
+    logger.info({ gapCount: gaps.length }, 'Found AI coverage gaps');
 
     return {
       success: true,
@@ -872,7 +875,7 @@ export async function aiCoverageRoutes(app: FastifyInstance) {
       });
     }
 
-    console.log(`[AI ANALYZE CHANGES] Analyzing ${changes.length} code changes`);
+    logger.info({ changeCount: changes.length }, 'Analyzing code changes');
 
     // Analyze each change and generate test suggestions
     const allSuggestions: TestSuggestionForChange[] = [];
@@ -898,7 +901,7 @@ export async function aiCoverageRoutes(app: FastifyInstance) {
     const mediumPriority = allSuggestions.filter(s => s.priority === 'medium').length;
     const lowPriority = allSuggestions.filter(s => s.priority === 'low').length;
 
-    console.log(`[AI ANALYZE CHANGES] Generated ${allSuggestions.length} test suggestions (${highPriority} high, ${mediumPriority} medium, ${lowPriority} low)`);
+    logger.info({ suggestionCount: allSuggestions.length, highPriority, mediumPriority, lowPriority }, 'Generated test suggestions from code changes');
 
     // Generate a notification message
     const notification = generateChangeNotification(allSuggestions, changes);
@@ -950,7 +953,7 @@ export async function aiCoverageRoutes(app: FastifyInstance) {
       });
     }
 
-    console.log(`[AI BULK GENERATE] Generating ${suggestions.length} tests`);
+    logger.info({ suggestionCount: suggestions.length }, 'Bulk generating AI tests');
 
     const generatedTests: Array<{ id: string; name: string; steps_count: number; confidence: number }> = [];
     const errors: Array<{ name: string; error: string }> = [];

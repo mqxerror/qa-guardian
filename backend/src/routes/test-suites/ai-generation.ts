@@ -7,6 +7,9 @@ import { logAuditEntry } from '../audit-logs.js';
 import { Test } from './types.js';
 import { getTestSuite, createTest } from './stores.js';
 import { generatePlaywrightCode } from './utils.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('ai-generation');
 
 // Feature #1137: Request body for AI test generation
 interface AIGenerateTestBody {
@@ -301,7 +304,7 @@ export async function aiGenerationRoutes(app: FastifyInstance) {
       });
     }
 
-    console.log(`[AI TEST GENERATION] Generating test from description: "${description.substring(0, 100)}..."`);
+    logger.info({ descriptionPreview: description.substring(0, 100) }, 'Generating AI test from description');
 
     // Parse the natural language description into test steps
     // This is a rule-based implementation that handles common test scenarios
@@ -346,7 +349,7 @@ export async function aiGenerationRoutes(app: FastifyInstance) {
     // Store the test
     await createTest(newTest);
 
-    console.log(`[AI TEST GENERATION] Created test ${testId} with ${generatedSteps.length} steps (confidence: ${confidenceScore}%)`);
+    logger.info({ testId, stepCount: generatedSteps.length, confidenceScore }, 'Created AI-generated test');
 
     // Log audit entry
     logAuditEntry(

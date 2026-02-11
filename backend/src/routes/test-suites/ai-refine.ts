@@ -7,6 +7,9 @@ import { logAuditEntry } from '../audit-logs.js';
 import { getTestSuite, createTest } from './stores.js';
 import { Test, TestStep } from './types.js';
 import { generatePlaywrightCode } from './utils.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('ai-refine');
 
 // Feature #1141: Interface for clarifying question
 export interface ClarifyingQuestion {
@@ -72,12 +75,12 @@ export async function aiRefineRoutes(app: FastifyInstance) {
       });
     }
 
-    console.log(`[AI ANALYZE DESCRIPTION] Analyzing: "${description.substring(0, 50)}..."`);
+    logger.info({ descriptionPreview: description.substring(0, 50) }, 'Analyzing test description');
 
     // Analyze the description for ambiguity
     const analysis = analyzeDescriptionForAmbiguity(description, context);
 
-    console.log(`[AI ANALYZE DESCRIPTION] Ambiguity score: ${analysis.ambiguity_score}, Questions: ${analysis.questions.length}`);
+    logger.info({ ambiguityScore: analysis.ambiguity_score, questionCount: analysis.questions.length }, 'Description analysis complete');
 
     // If not ambiguous and auto_generate is enabled, generate the test
     if (!analysis.is_ambiguous && auto_generate_if_clear && suite_id) {
@@ -144,7 +147,7 @@ export async function aiRefineRoutes(app: FastifyInstance) {
       });
     }
 
-    console.log(`[AI REFINE TEST] Refining test with ${Object.keys(answers).length} answers`);
+    logger.info({ answerCount: Object.keys(answers).length }, 'Refining test with answers');
 
     // Enhance the description with answers
     const enhancedDescription = enhanceDescriptionWithAnswers(description, answers);
@@ -186,7 +189,7 @@ export async function aiRefineRoutes(app: FastifyInstance) {
     // Store the test
     await createTest(newTest);
 
-    console.log(`[AI REFINE TEST] Created refined test ${testId} with ${generatedSteps.length} steps`);
+    logger.info({ testId, stepCount: generatedSteps.length }, 'Created refined test');
 
     // Log audit entry
     logAuditEntry(

@@ -44,6 +44,9 @@ import {
   estimateComplexity,
   generatePlaywrightTest,
 } from './ai-test-gen-utils.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('ai-test-generation');
 
 // =============================================================================
 // Main Routes Export
@@ -105,7 +108,7 @@ export async function aiTestGenerationRoutes(app: FastifyInstance): Promise<void
 
       if (!aiResult.success) {
         // Fall back to template generation if AI fails
-        console.warn('[AI Routes] Real AI failed, falling back to template:', aiResult.error);
+        logger.warn({ error: aiResult.error }, 'Real AI failed, falling back to template');
         const generatedTest = generatePlaywrightTest(
           description.trim(), base_url, test_type || 'e2e',
           include_assertions !== false, include_screenshot === true
@@ -151,7 +154,7 @@ export async function aiTestGenerationRoutes(app: FastifyInstance): Promise<void
         },
       });
     } catch (error) {
-      console.error('Error generating test:', error);
+      logger.error({ err: error }, 'Error generating test');
 
       // Final fallback to template on error
       try {
@@ -221,7 +224,7 @@ export async function aiTestGenerationRoutes(app: FastifyInstance): Promise<void
 
       if (!aiResult.success) {
         // Fall back to template generation
-        console.warn('[AI Routes] Real AI failed for suite, falling back to template:', aiResult.error);
+        logger.warn({ error: aiResult.error }, 'Real AI failed for suite, falling back to template');
         const entityMatch = user_story.match(/(?:create|edit|delete|view|manage)\s+(?:a\s+)?(\w+)/i);
         const entity = entityMatch ? entityMatch[1].replace(/s$/, '') : 'item';
         const coreTests = [generatePlaywrightTest(`Create a new ${entity}`, base_url, test_type)];
@@ -283,7 +286,7 @@ export async function aiTestGenerationRoutes(app: FastifyInstance): Promise<void
         },
       });
     } catch (error) {
-      console.error('Error generating test suite:', error);
+      logger.error({ err: error }, 'Error generating test suite');
       return reply.status(500).send({ error: 'Suite generation failed', message: 'Failed to generate test suite. Please try again.' });
     }
   });
@@ -331,7 +334,7 @@ export async function aiTestGenerationRoutes(app: FastifyInstance): Promise<void
 
       if (!aiResult.success) {
         // Fall back to simple rule-based conversion
-        console.warn('[AI Routes] Real AI failed for Gherkin, falling back to rule-based:', aiResult.error);
+        logger.warn({ error: aiResult.error }, 'Real AI failed for Gherkin, falling back to rule-based');
         const lines = gherkin.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         let feature = feature_name || 'Test Feature';
         let scenario = 'Test Scenario';
@@ -405,7 +408,7 @@ ${steps.map(s => s.playwright_code).join('\n\n')}
         },
       });
     } catch (error) {
-      console.error('Error converting Gherkin:', error);
+      logger.error({ err: error }, 'Error converting Gherkin');
       return reply.status(500).send({ error: 'Conversion failed', message: 'Failed to convert Gherkin scenario. Please try again.' });
     }
   });
@@ -484,7 +487,7 @@ ${steps.map(s => s.playwright_code).join('\n\n')}
 
       if (!aiResult.success) {
         // Fall back to basic response if Vision AI fails
-        console.warn('[AI Routes] Real Vision AI failed, returning placeholder:', aiResult.error);
+        logger.warn({ error: aiResult.error }, 'Real Vision AI failed, returning placeholder');
         const pageType = context?.toLowerCase().includes('login') ? 'login' : 'other';
         const testName = context ? context.split(' ').slice(0, 5).join(' ').replace(/[^a-zA-Z0-9\s]/g, '') : 'Screenshot Test';
 
@@ -575,7 +578,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
         },
       });
     } catch (error) {
-      console.error('Error analyzing screenshot:', error);
+      logger.error({ err: error }, 'Error analyzing screenshot');
       return reply.status(500).send({ error: 'Analysis failed', message: 'Failed to analyze screenshot. Please try again.' });
     }
   });
@@ -644,7 +647,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
 
       if (!aiResult.success) {
         // Fall back to simple generation
-        console.warn('[AI Routes] Real Vision AI failed for annotations, falling back:', aiResult.error);
+        logger.warn({ error: aiResult.error }, 'Real Vision AI failed for annotations, falling back');
         const testSteps = annotations.map((ann, idx) => ({
           step_number: idx + 1,
           action: ann.type,
@@ -715,7 +718,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
         },
       });
     } catch (error) {
-      console.error('Error processing annotated screenshot:', error);
+      logger.error({ err: error }, 'Error processing annotated screenshot');
       return reply.status(500).send({ error: 'Processing failed', message: 'Failed to process annotated screenshot. Please try again.' });
     }
   });
@@ -764,7 +767,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
       if (!aiResult.success) {
         // Fall back to simple pattern-based analysis
         // Feature #1982: Fixed to return format expected by frontend
-        console.warn('[AI Routes] Real AI explanation failed, falling back:', aiResult.error);
+        logger.warn({ error: aiResult.error }, 'Real AI explanation failed, falling back');
         const lines = code.split('\n');
         // Frontend expects: { line: number; code: string; explanation: string; type: string }
         const steps: Array<{ line: number; code: string; explanation: string; type: string }> = [];
@@ -895,7 +898,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
         },
       });
     } catch (error) {
-      console.error('Error explaining test:', error);
+      logger.error({ err: error }, 'Error explaining test');
       return reply.status(500).send({ error: 'Explanation failed', message: 'Failed to explain test code. Please try again.' });
     }
   });
@@ -955,7 +958,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
 
       if (!aiResult.success) {
         // Fall back to simple heuristic-based suggestions
-        console.warn('[AI Routes] Real Vision healing failed, falling back:', aiResult.error);
+        logger.warn({ error: aiResult.error }, 'Real Vision healing failed, falling back');
         const suggestedSelectors = [
           { selector: `getByRole('button', { name: '${element_context?.text_content || 'Submit'}' })`, type: 'role' as const, confidence: 0.7, reason: 'Role-based selector with accessible name (heuristic)', best_practice: true },
           { selector: `getByText('${element_context?.text_content || 'Submit'}')`, type: 'text' as const, confidence: 0.6, reason: 'Text content selector (heuristic)', best_practice: false },
@@ -1028,7 +1031,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
         },
       });
     } catch (error) {
-      console.error('Error healing with vision:', error);
+      logger.error({ err: error }, 'Error healing with vision');
       return reply.status(500).send({ error: 'Healing failed', message: 'Failed to heal selector with vision. Please try again.' });
     }
   });
@@ -1192,7 +1195,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
 
       if (!aiResult.success) {
         // Fall back to simple pattern-based analysis
-        console.warn('[AI Routes] Real AI improvement analysis failed, falling back:', aiResult.error);
+        logger.warn({ error: aiResult.error }, 'Real AI improvement analysis failed, falling back');
         const lines = test_code.split('\n');
         let score = 85;
         const bestPractices: Array<{ category: string; issue: string; severity: 'low' | 'medium' | 'high'; suggestion: string }> = [];
@@ -1284,7 +1287,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
         },
       });
     } catch (error) {
-      console.error('Error analyzing test improvements:', error);
+      logger.error({ err: error }, 'Error analyzing test improvements');
       return reply.status(500).send({ error: 'Analysis failed', message: 'Failed to analyze test improvements. Please try again.' });
     }
   });

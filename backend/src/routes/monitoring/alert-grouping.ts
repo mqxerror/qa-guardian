@@ -39,6 +39,10 @@ import {
   alertGroups,
 } from './stores.js';
 
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('alert-grouping');
+
 export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
   // ==================== Alert Grouping Routes ====================
 
@@ -349,7 +353,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
 
       // Cancel any pending escalations for this group
       // (In a real system, this would cancel scheduled escalation jobs)
-      console.log(`Escalation stopped for alert group ${groupId} - acknowledged by ${group.acknowledged_by}`);
+      logger.info({ groupId, acknowledgedBy: group.acknowledged_by }, 'Escalation stopped - alert group acknowledged');
 
       return {
         success: true,
@@ -409,7 +413,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       group.resolution_notes = resolution_notes || '';
       group.resolution_time_seconds = resolutionTimeSeconds;
 
-      console.log(`Alert group ${groupId} resolved by ${group.resolved_by} - resolution time: ${resolutionTimeSeconds}s`);
+      logger.info({ groupId, resolvedBy: group.resolved_by, resolutionTimeSeconds }, 'Alert group resolved');
 
       return {
         success: true,
@@ -468,7 +472,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       group.snoozed_by = getUserEmail(user) || user?.id || 'unknown';
       group.snooze_duration_hours = duration_hours;
 
-      console.log(`Alert group ${groupId} snoozed by ${group.snoozed_by} for ${duration_hours}h until ${snoozedUntil.toISOString()}`);
+      logger.info({ groupId, snoozedBy: group.snoozed_by, durationHours: duration_hours, snoozedUntil: snoozedUntil.toISOString() }, 'Alert group snoozed');
 
       return {
         success: true,
@@ -522,7 +526,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       group.snoozed_by = undefined;
       group.snooze_duration_hours = undefined;
 
-      console.log(`Alert group ${groupId} unsnoozed by ${getUserEmail(user) || 'unknown'} - was snoozed until ${wasSnoozedUntil.toISOString()}`);
+      logger.info({ groupId, unsnoozedBy: getUserEmail(user) || 'unknown', wasSnoozedUntil: wasSnoozedUntil.toISOString() }, 'Alert group unsnoozed');
 
       return {
         success: true,
@@ -896,7 +900,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       const groupedCount = results.filter(r => r.grouped).length;
       const deduplicatedCount = results.filter(r => r.deduplicated).length;
 
-      console.log(`[Alert Grouping] Processed ${alerts.length} alerts: ${uniqueGroups.size} groups, ${groupedCount} grouped, ${deduplicatedCount} deduplicated`);
+      logger.info({ alertCount: alerts.length, groupCount: uniqueGroups.size, groupedCount, deduplicatedCount }, 'Processed alert grouping');
 
       return {
         success: true,

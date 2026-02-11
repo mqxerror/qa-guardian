@@ -55,6 +55,10 @@ import {
 
 const execFileAsync = promisify(execFile);
 
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('sast-pr-integration');
+
 /**
  * Run Semgrep scan function type
  * This function is passed in from the main sast.ts module
@@ -397,31 +401,25 @@ ${findingsList ? `### Top Findings:\n${findingsList}\n` : ''}`
 
           await createSastPRComment(prComment);
 
-          console.log(`
-====================================
-  SAST PR Comment Posted
-====================================
-  Project: ${project.name}
-  PR #${prNumber}: ${prTitle}
-  Findings: ${summary.total} total
-  Blocked: ${blocked}
-====================================
-          `);
+          logger.info({
+            projectName: project.name,
+            prNumber,
+            prTitle,
+            findings: summary.total,
+            blocked
+          }, 'SAST PR comment posted');
         }
 
-        console.log(`
-====================================
-  SAST PR Check Completed
-====================================
-  Project: ${project.name}
-  PR #${prNumber}: ${prTitle}
-  SHA: ${headSha}
-  Status: ${prCheck.status}
-  Conclusion: ${conclusion}
-  Findings: ${summary.total} total
-  Blocked: ${blocked}
-====================================
-        `);
+        logger.info({
+          projectName: project.name,
+          prNumber,
+          prTitle,
+          sha: headSha,
+          status: prCheck.status,
+          conclusion,
+          findings: summary.total,
+          blocked
+        }, 'SAST PR check completed');
 
       } catch (error) {
         prCheck.status = 'error';

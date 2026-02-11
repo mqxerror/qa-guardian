@@ -18,6 +18,9 @@ import {
   onCallSchedules,
   escalationPolicies,
 } from './stores.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('on-call-escalation');
 
 // ================================
 // ON-CALL AND ESCALATION ROUTES
@@ -254,9 +257,11 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
         }
       );
 
-      console.log(`[ON-CALL] Rotation completed for schedule "${schedule.name}":`);
-      console.log(`  Previous: ${previousOnCall?.user_name} (${previousOnCall?.user_email})`);
-      console.log(`  Now: ${newOnCall?.user_name} (${newOnCall?.user_email})`);
+      logger.info({
+        scheduleName: schedule.name,
+        previousOnCall: previousOnCall ? { name: previousOnCall.user_name, email: previousOnCall.user_email } : null,
+        newOnCall: newOnCall ? { name: newOnCall.user_name, email: newOnCall.user_email } : null
+      }, 'On-call rotation completed');
 
       return {
         schedule: {
@@ -626,7 +631,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
         };
       });
 
-      console.log(`[Escalation Test] Policy "${policy.name}" flow:`, JSON.stringify(escalationFlow, null, 2));
+      logger.debug({ policyName: policy.name, escalationFlow }, 'Escalation test completed');
 
       return {
         success: true,

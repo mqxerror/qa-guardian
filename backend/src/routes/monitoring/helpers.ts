@@ -25,6 +25,10 @@ import {
   AlertRunbook,
 } from './types.js';
 
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('monitoring');
+
 import {
   // Async DB functions
   getUptimeCheck,
@@ -241,7 +245,7 @@ export async function runCheck(check: UptimeCheck, location: MonitoringLocation)
   // Check for maintenance window
   const maintenanceStatus = await isInMaintenanceWindow(check.id);
   if (maintenanceStatus.inMaintenance) {
-    console.log(`[MONITORING] Check ${check.name}: In maintenance window "${maintenanceStatus.window?.name}" - suppressing alerts`);
+    logger.info({ checkId: check.id, checkName: check.name, window: maintenanceStatus.window?.name }, 'Check in maintenance window - suppressing alerts');
   } else {
     const threshold = check.consecutive_failures_threshold || 1;
     const currentFailures = await getConsecutiveFailures(check.id);
@@ -253,13 +257,13 @@ export async function runCheck(check: UptimeCheck, location: MonitoringLocation)
       if (newFailures < threshold) {
         result.status = 'up';
         result.error = undefined;
-        console.log(`[MONITORING] Check ${check.name}: Failure ${newFailures}/${threshold} - suppressing alert`);
+        logger.info({ checkId: check.id, checkName: check.name, failures: newFailures, threshold }, 'Failure below threshold - suppressing alert');
       } else {
-        console.log(`[MONITORING] Check ${check.name}: Failure ${newFailures}/${threshold} - threshold reached, alerting`);
+        logger.warn({ checkId: check.id, checkName: check.name, failures: newFailures, threshold }, 'Threshold reached - alerting');
       }
     } else {
       if (currentFailures > 0) {
-        console.log(`[MONITORING] Check ${check.name}: Reset consecutive failures (was ${currentFailures})`);
+        logger.info({ checkId: check.id, checkName: check.name, previousFailures: currentFailures }, 'Reset consecutive failures');
       }
       await setConsecutiveFailures(check.id, 0);
     }
@@ -282,7 +286,7 @@ export async function runCheck(check: UptimeCheck, location: MonitoringLocation)
         affected_locations: [location],
       };
       await setActiveIncident(check.id, newIncident);
-      console.log(`[INCIDENT] Started incident for ${check.name}: ${result.status}`);
+      logger.warn({ checkId: check.id, checkName: check.name, incidentId: newIncident.id, status: result.status }, 'Incident started');
     } else {
       if (!activeIncident.affected_locations.includes(location)) {
         activeIncident.affected_locations.push(location);
@@ -300,11 +304,11 @@ export async function runCheck(check: UptimeCheck, location: MonitoringLocation)
 
       await resolveIncident(activeIncident.id, endTime);
       await clearActiveIncident(check.id);
-      console.log(`[INCIDENT] Resolved incident for ${check.name} after ${activeIncident.duration_seconds}s`);
+      logger.info({ checkId: check.id, checkName: check.name, incidentId: activeIncident.id, durationSeconds: activeIncident.duration_seconds }, 'Incident resolved');
     }
   }
 
-  console.log(`[MONITORING] Check ${check.name} (${check.url}) from ${location}: ${result.status} - ${result.response_time}ms${result.assertions_failed ? ` (${result.assertions_failed} assertions failed)` : ''}`);
+  logger.info({ checkId: check.id, checkName: check.name, url: check.url, location, status: result.status, responseTimeMs: result.response_time, assertionsFailed: result.assertions_failed }, 'Check completed');
 
   return result;
 }

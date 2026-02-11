@@ -3,6 +3,9 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate } from '../../middleware/auth.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('ai-assertions');
 
 // Feature #1140: Interface for generated assertion
 interface GeneratedAssertion {
@@ -262,7 +265,7 @@ export async function aiAssertionsRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
-    console.log(`[AI ASSERTION GENERATION] Generating assertions for ${expected_outcomes.length} outcomes`);
+    logger.info({ outcomeCount: expected_outcomes.length }, 'Generating AI assertions');
 
     const assertions: GeneratedAssertion[] = [];
 
@@ -273,7 +276,7 @@ export async function aiAssertionsRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
-    console.log(`[AI ASSERTION GENERATION] Generated ${assertions.length} assertions`);
+    logger.info({ assertionCount: assertions.length }, 'Generated AI assertions');
 
     return {
       success: true,

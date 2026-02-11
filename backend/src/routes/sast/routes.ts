@@ -24,6 +24,10 @@ import * as crypto from 'crypto';
 
 const execFileAsync = promisify(execFile);
 
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('sast');
+
 // Semgrep result type
 interface SemgrepResult {
   check_id: string;
@@ -159,7 +163,7 @@ async function runSemgrepScan(
     const execErr = err as { code?: string; stdout?: string; message?: string };
     // If semgrep binary is not installed, fall back to built-in JS scanner
     if (execErr.code === 'ENOENT') {
-      console.log('[SAST] Semgrep not installed, falling back to built-in JS SAST scanner');
+      logger.info('Semgrep not installed, falling back to built-in JS SAST scanner');
       return runBuiltinSASTScan(projectId, repoPath, config);
     }
 
@@ -420,7 +424,7 @@ async function runBuiltinSASTScan(
   const allExtensions = ['.js', '.ts', '.jsx', '.tsx', '.json'];
   const sourceFiles = walkSourceFiles(scanPath, allExtensions);
 
-  console.log(`[SAST] Built-in scanner: scanning ${sourceFiles.length} files in ${scanPath}`);
+  logger.info({ fileCount: sourceFiles.length, scanPath }, 'Built-in scanner starting');
 
   const findings: SASTFinding[] = [];
 
@@ -473,7 +477,7 @@ async function runBuiltinSASTScan(
     }
   }
 
-  console.log(`[SAST] Built-in scanner: found ${findings.length} raw findings`);
+  logger.info({ findingCount: findings.length }, 'Built-in scanner completed');
 
   // Filter by severity threshold
   const severityOrder: Record<SASTSeverity, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
@@ -657,7 +661,7 @@ export async function coreRoutes(app: FastifyInstance) {
           summary,
         });
         await updateSASTConfig(projectId, { lastScanStatus: 'completed' });
-        console.log(`[SAST] Scan ${scanId} completed: ${findings.length} findings`);
+        logger.info({ scanId, findingCount: findings.length }, 'SAST scan completed');
       } catch (error) {
         scan.status = 'failed';
         scan.completedAt = new Date().toISOString();
@@ -669,7 +673,7 @@ export async function coreRoutes(app: FastifyInstance) {
           error: scan.error,
         });
         await updateSASTConfig(projectId, { lastScanStatus: 'failed' });
-        console.error(`[SAST] Scan ${scanId} failed:`, scan.error);
+        logger.error({ scanId, error: scan.error }, 'SAST scan failed');
       }
     })();
 

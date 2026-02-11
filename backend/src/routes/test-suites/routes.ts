@@ -42,6 +42,9 @@ import { generatePlaywrightCode } from './utils.js';
 // Feature #1958: testRuns import removed - now using getTestRunMetadataForSuite
 // Feature #87: Use optimized aggregated query instead of loading all runs
 import { getTestRunMetadataForSuite } from '../../services/repositories/test-runs.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('test-suites');
 
 export async function coreRoutes(app: FastifyInstance) {
   // List test suites for a project
@@ -686,7 +689,7 @@ export async function coreRoutes(app: FastifyInstance) {
       project_id: suite.project_id,
       created_by: user.email,
     }).catch(err => {
-      console.error('[WEBHOOK] Failed to send test.created webhook:', err);
+      logger.error({ err }, 'Failed to send test.created webhook');
     });
 
     // Feature #108: Emit WebSocket event for real-time cache invalidation

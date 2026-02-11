@@ -15,9 +15,13 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('dependency-scanning');
+
 // TODO: sendSecurityVulnerabilityWebhook not yet implemented in test-runs module
 async function sendSecurityVulnerabilityWebhook(..._args: unknown[]): Promise<void> {
-  console.log('[WEBHOOK] sendSecurityVulnerabilityWebhook: stub - not yet implemented');
+  logger.debug('sendSecurityVulnerabilityWebhook: stub - not yet implemented');
 }
 import {
   githubConnections,
@@ -230,17 +234,14 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
 
     githubConnections.set(projectId, connection);
 
-    console.log(`
-====================================
-  PR Dependency Scanning ${pr_dependency_scan_enabled ? 'Enabled' : 'Disabled'}
-====================================
-  Project: ${project.name}
-  Repository: ${connection.github_owner}/${connection.github_repo}
-  Watch Files: ${connection.pr_dependency_scan_files?.join(', ') || 'default'}
-  Severity Threshold: ${connection.pr_dependency_scan_severity || 'HIGH'}
-  Block on Critical: ${connection.pr_dependency_scan_block_on_critical || false}
-====================================
-    `);
+    logger.info({
+      enabled: pr_dependency_scan_enabled,
+      projectName: project.name,
+      repository: `${connection.github_owner}/${connection.github_repo}`,
+      watchFiles: connection.pr_dependency_scan_files || 'default',
+      severityThreshold: connection.pr_dependency_scan_severity || 'HIGH',
+      blockOnCritical: connection.pr_dependency_scan_block_on_critical || false
+    }, 'PR dependency scanning configuration updated');
 
     return {
       message: `PR dependency scanning ${pr_dependency_scan_enabled ? 'enabled' : 'updated'} successfully`,
@@ -472,23 +473,16 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       prStatusChecks.get(projectId)!.push(statusCheck);
     }
 
-    console.log(`
-====================================
-  PR Dependency Scan Completed
-====================================
-  Repository: ${fullName}
-  PR #${prNumber}: ${pr.title}
-  Changed Files: ${matchingFiles.join(', ')}
-  Vulnerabilities Found: ${scanResult.summary.total}
-    - Critical: ${scanResult.summary.critical}
-    - High: ${scanResult.summary.high}
-    - Medium: ${scanResult.summary.medium}
-    - Low: ${scanResult.summary.low}
-  New in PR: ${scanResult.summary.new_in_pr}
-  Fixed in PR: ${scanResult.summary.fixed_in_pr}
-  Merge Blocked: ${shouldBlock}
-====================================
-    `);
+    logger.info({
+      repository: fullName,
+      prNumber,
+      prTitle: pr.title,
+      changedFiles: matchingFiles,
+      vulnerabilities: scanResult.summary,
+      newInPr: scanResult.summary.new_in_pr,
+      fixedInPr: scanResult.summary.fixed_in_pr,
+      mergeBlocked: shouldBlock
+    }, 'PR dependency scan completed');
 
     return reply.status(201).send({
       message: 'Dependency scan completed',
@@ -698,7 +692,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
         references: alert.references,
       },
       affectedProjects
-    ).catch(err => console.error('[WEBHOOK] Error sending security vulnerability webhook:', err));
+    ).catch(err => logger.error({ err }, 'Error sending security vulnerability webhook'));
 
     const notifications: Array<{ channel: string; sent_at: Date }> = [];
 
@@ -856,16 +850,13 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       orgPolicies.push(policy);
       dependencyPolicies.set(orgId, orgPolicies);
 
-      console.log(`
-====================================
-  Dependency Policy Created
-====================================
-  Organization: ${orgId}
-  Policy: ${policy.name}
-  Max Severity: ${policy.max_allowed_severity}
-  Block Builds: ${policy.block_builds}
-====================================
-      `);
+      logger.info({
+        orgId,
+        policyId: policy.id,
+        policyName: policy.name,
+        maxSeverity: policy.max_allowed_severity,
+        blockBuilds: policy.block_builds
+      }, 'Dependency policy created');
 
       return {
         success: true,
@@ -1090,18 +1081,14 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
         }
       }
 
-      console.log(`
-====================================
-  Dependency Policy Check
-====================================
-  Project: ${projectName}
-  Build Type: ${build_type}
-  Dependencies Checked: ${depsToCheck.length}
-  Policies Evaluated: ${enabledPolicies.length}
-  Violations Found: ${allViolations.length}
-  Build Blocked: ${shouldBlock}
-====================================
-      `);
+      logger.info({
+        projectName,
+        buildType: build_type,
+        dependenciesChecked: depsToCheck.length,
+        policiesEvaluated: enabledPolicies.length,
+        violationsFound: allViolations.length,
+        buildBlocked: shouldBlock
+      }, 'Dependency policy check completed');
 
       return {
         allowed: !shouldBlock,
@@ -1198,15 +1185,11 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       orgViolations[violationIndex] = violation;
       policyViolations.set(orgId, orgViolations);
 
-      console.log(`
-====================================
-  Policy Violation Override
-====================================
-  Violation: ${violationId}
-  Overridden By: ${violation.overridden_by}
-  Reason: ${reason}
-====================================
-      `);
+      logger.info({
+        violationId,
+        overriddenBy: violation.overridden_by,
+        reason
+      }, 'Policy violation overridden');
 
       return {
         success: true,

@@ -41,6 +41,9 @@ import {
   listGraphQLScans,
   performGraphQLIntrospection,
 } from './graphql.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('dast');
 
 // DAST Routes
 export async function dastRoutes(app: FastifyInstance) {
@@ -184,10 +187,10 @@ export async function dastRoutes(app: FastifyInstance) {
     let scan: DASTScanResult;
     const zapAvailable = await isZAPAvailable();
     if (zapAvailable) {
-      console.log(`[DAST] ZAP available — using ZAP scanner for ${targetUrl}`);
+      logger.info({ targetUrl }, 'ZAP available - using ZAP scanner');
       scan = await runZAPScan(projectId, targetUrl, scanProfile, config.authConfig, config.contextConfig);
     } else {
-      console.log(`[DAST] ZAP not available — using lightweight scanner for ${targetUrl}`);
+      logger.info({ targetUrl }, 'ZAP not available - using lightweight scanner');
       scan = await runLightweightScan(projectId, targetUrl, scanProfile, config.authConfig, config.contextConfig);
     }
 

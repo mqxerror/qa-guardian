@@ -4,6 +4,9 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate } from '../../middleware/auth.js';
 import { generatePlaywrightCode } from './utils.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('ai-feedback');
 
 // Feature #1144: Interface for regeneration with feedback
 interface AIRegenerateWithFeedbackBody {
@@ -637,7 +640,7 @@ export async function aiFeedbackRoutes(app: FastifyInstance) {
       });
     }
 
-    console.log(`[AI REGENERATE] Regenerating with ${feedback.length} feedback items`);
+    logger.info({ feedbackCount: feedback.length }, 'Regenerating with AI feedback');
 
     // Apply feedback rules to modify generation
     const feedbackRules = parseFeedbackToRules(feedback);
@@ -675,7 +678,7 @@ export async function aiFeedbackRoutes(app: FastifyInstance) {
       };
     });
 
-    console.log(`[AI REGENERATE] Regenerated with ${stepBreakdown.length} steps, ${feedbackRules.length} rules applied`);
+    logger.info({ stepCount: stepBreakdown.length, rulesApplied: feedbackRules.length }, 'Regenerated with AI feedback');
 
     return {
       success: true,

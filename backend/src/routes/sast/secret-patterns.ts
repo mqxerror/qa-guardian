@@ -18,6 +18,9 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { getProject } from '../../services/repositories/projects.js';
 import { logAuditEntry } from '../audit-logs.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('secret-patterns');
 import { SecretPattern, SASTSeverity } from './types.js';
 import {
   getSecretPatterns,
@@ -146,17 +149,13 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
         { patternId: newPattern.id, patternName: name }
       );
 
-      console.log(`
-====================================
-  Secret Pattern Created
-====================================
-  Project: ${project.name}
-  Pattern: ${name}
-  Regex: ${pattern}
-  Severity: ${severity}
-  Category: ${category}
-====================================
-      `);
+      logger.info({
+        projectName: project.name,
+        patternName: name,
+        regex: pattern,
+        severity,
+        category
+      }, 'Secret pattern created');
 
       return newPattern;
     }
