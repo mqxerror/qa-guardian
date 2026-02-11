@@ -592,7 +592,7 @@ export default function SharedTestRunPage() {
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
  <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
- <span className="text-white text-xl">🛡️</span>
+ <span className="text-primary-foreground text-xl">🛡️</span>
  </div>
  <div>
  <h1 className="text-xl font-bold text-foreground">QA Guardian</h1>
@@ -888,18 +888,18 @@ export default function SharedTestRunPage() {
  </h4>
  <div className="flex items-center justify-center gap-3 mt-2">
  <span className={`px-2 py-0.5 text-sm rounded ${
- galleryScreenshots[lightboxIndex].testType === 'E2E' ? 'bg-primary' :
- galleryScreenshots[lightboxIndex].testType === 'Visual' ? 'bg-accent' :
- 'bg-success'
- } text-white`}>
+ galleryScreenshots[lightboxIndex].testType === 'E2E' ? 'bg-primary text-primary-foreground' :
+ galleryScreenshots[lightboxIndex].testType === 'Visual' ? 'bg-accent text-accent-foreground' :
+ 'bg-success text-success-foreground'
+ }`}>
  {galleryScreenshots[lightboxIndex].testType}
  </span>
  <span className={`px-2 py-0.5 text-sm rounded ${
- galleryScreenshots[lightboxIndex].status === 'passed' ? 'bg-success' : 'bg-destructive'
- } text-white`}>
+ galleryScreenshots[lightboxIndex].status === 'passed' ? 'bg-success text-success-foreground' : 'bg-destructive text-destructive-foreground'
+ }`}>
  {galleryScreenshots[lightboxIndex].status === 'passed' ? '✓ Passed' : '✗ Failed'}
  </span>
- <span className="px-2 py-0.5 text-sm rounded bg-secondary text-white">
+ <span className="px-2 py-0.5 text-sm rounded bg-secondary text-secondary-foreground">
  {galleryScreenshots[lightboxIndex].type}
  </span>
  </div>

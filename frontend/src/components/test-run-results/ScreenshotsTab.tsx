@@ -665,13 +665,13 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  <span className={`text-xs px-2 py-0.5 rounded ${getScreenshotTypeBadge(allScreenshots[lightboxIndex].type)}`}>
  {allScreenshots[lightboxIndex].type.replace('_', ' ')}
  </span>
- <span className={`text-xs px-2 py-0.5 rounded text-white ${
- allScreenshots[lightboxIndex].testType === 'E2E' ? 'bg-primary' :
- allScreenshots[lightboxIndex].testType === 'Visual' ? 'bg-accent' :
- allScreenshots[lightboxIndex].testType === 'Accessibility' ? 'bg-success' :
- allScreenshots[lightboxIndex].testType === 'Performance' ? 'bg-warning' :
- allScreenshots[lightboxIndex].testType === 'Load' ? 'bg-warning' :
- 'bg-muted-foreground'
+ <span className={`text-xs px-2 py-0.5 rounded ${
+ allScreenshots[lightboxIndex].testType === 'E2E' ? 'bg-primary text-primary-foreground' :
+ allScreenshots[lightboxIndex].testType === 'Visual' ? 'bg-accent text-accent-foreground' :
+ allScreenshots[lightboxIndex].testType === 'Accessibility' ? 'bg-success text-success-foreground' :
+ allScreenshots[lightboxIndex].testType === 'Performance' ? 'bg-warning text-warning-foreground' :
+ allScreenshots[lightboxIndex].testType === 'Load' ? 'bg-warning text-warning-foreground' :
+ 'bg-muted-foreground text-muted'
  }`}>
  {allScreenshots[lightboxIndex].testType}
  </span>

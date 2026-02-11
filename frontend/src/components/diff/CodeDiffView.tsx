@@ -270,7 +270,7 @@ export function CodeDiffView({
  <button
  type="button"
  onClick={handleAcceptAll}
- className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-success text-white hover:bg-success transition-colors"
+ className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-success text-success-foreground hover:bg-success transition-colors"
  >
  <span>✓</span>
  Accept All
@@ -336,7 +336,7 @@ export function CodeDiffView({
  onClick={() => handleAcceptHunk(hunk.id)}
  className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md transition-colors ${
  hunk.accepted === true
- ? 'bg-success text-white'
+ ? 'bg-success text-success-foreground'
  : 'border border-success/50 text-success hover:bg-success/10'
  }`}
  >
@@ -348,7 +348,7 @@ export function CodeDiffView({
  onClick={() => handleRejectHunk(hunk.id)}
  className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md transition-colors ${
  hunk.accepted === false
- ? 'bg-destructive text-white'
+ ? 'bg-destructive text-destructive-foreground'
  : 'border border-destructive/50 text-destructive hover:bg-destructive/10'
  }`}
  >
@@ -437,7 +437,7 @@ export function CodeDiffView({
  <button
  type="button"
  onClick={handleApply}
- className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent/90 transition-colors"
+ className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-accent text-accent-foreground hover:bg-accent/90 transition-colors"
  >
  <span>✓</span>
  Apply {stats.accepted > 0 || stats.pending > 0 ? `(${stats.accepted + stats.pending} hunks)` : 'Changes'}
