@@ -8,6 +8,7 @@
  */
 
 import { useMemo } from 'react';
+import { FileText, Search } from 'lucide-react';
 import { TestListProps, TestSortField } from './types';
 import { TestListItem } from './TestListItem';
 
@@ -122,19 +123,7 @@ export function TestList({
   if (tests.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/10 py-16">
-        <svg
-          className="h-12 w-12 text-muted-foreground/50"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
-        </svg>
+        <FileText className="h-12 w-12 text-muted-foreground/50" strokeWidth={1.5} />
         <p className="mt-4 text-lg font-medium text-foreground">No tests yet</p>
         <p className="mt-2 text-sm text-muted-foreground">
           Create your first test to get started
@@ -147,19 +136,7 @@ export function TestList({
   if (filteredTests.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-muted/10 py-12">
-        <svg
-          className="h-10 w-10 text-muted-foreground/50"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
+        <Search className="h-10 w-10 text-muted-foreground/50" strokeWidth={1.5} />
         <p className="mt-4 text-lg font-medium text-foreground">No matching tests</p>
         <p className="mt-2 text-sm text-muted-foreground">
           Try adjusting your search query
