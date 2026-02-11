@@ -13,6 +13,8 @@ import { useArtifactRetentionStore } from '../stores/artifactRetentionStore';
 import { useOrganizationBrandingStore } from '../stores/organizationBrandingStore';
 import { toast } from '../stores/toastStore';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
+import { PageHeader } from '../components/ui';
+import { Loader2, AlertTriangle, Wifi, FileText, BarChart3, LayoutGrid, Search, CheckCircle2, Link2, X, ImageIcon, Check } from 'lucide-react';
 
 // Session Management Types
 interface SessionInfo {
@@ -214,10 +216,7 @@ function SessionManagementSection() {
 
  {isLoading ? (
  <div className="mt-4 flex items-center justify-center py-8">
- <svg aria-hidden="true" className="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 aria-hidden="true" className="animate-spin h-6 w-6 text-primary" />
  <span className="ml-2 text-muted-foreground">Loading sessions...</span>
  </div>
  ) : sessions.length === 0 ? (
@@ -276,10 +275,7 @@ function SessionManagementSection() {
  className="w-full px-4 py-2 text-sm font-medium text-destructive border border-destructive/50 rounded-md hover:bg-destructive/10 disabled:opacity-50 flex items-center justify-center gap-2"
  >
  {isLoggingOutAll && (
- <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 aria-hidden="true" className="animate-spin h-4 w-4" />
  )}
  {isLoggingOutAll ? 'Logging out all sessions...' : 'Logout All Other Sessions'}
  </button>
@@ -607,9 +603,7 @@ function StorageUsageSection() {
  {storageData.is_warning && (
  <div className="rounded-md bg-warning/5 border border-warning/20 p-4">
  <div className="flex items-start gap-3">
- <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
- <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
- </svg>
+ <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
  <div>
  <h4 className="text-sm font-medium text-warning">Storage Warning</h4>
  <p className="text-sm text-warning mt-1">
@@ -697,9 +691,7 @@ function MCPConnectionsSection() {
  return (
  <div className="mt-6 rounded-lg border border-border bg-card p-6">
  <div className="flex items-center gap-3 mb-2">
- <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
- </svg>
+ <Wifi className="h-6 w-6 text-primary" />
  <h3 className="text-lg font-semibold text-foreground">MCP Connections</h3>
  <span className="ml-auto px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary">
  {connections.length} active
@@ -711,9 +703,7 @@ function MCPConnectionsSection() {
 
  {connections.length === 0 ? (
  <div className="text-center py-8 border border-dashed border-border rounded-lg">
- <svg className="mx-auto h-12 w-12 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
- </svg>
+ <Wifi className="mx-auto h-12 w-12 text-muted-foreground/50" strokeWidth={1.5} />
  <p className="mt-3 text-sm text-muted-foreground">No active MCP connections</p>
  <p className="text-xs text-muted-foreground mt-1">Connect an AI agent using an API key with MCP scopes</p>
  </div>
@@ -815,9 +805,7 @@ function MCPAuditLogSection() {
  return (
  <div className="mt-6 rounded-lg border border-border bg-card p-6">
  <div className="flex items-center gap-3 mb-2">
- <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
- </svg>
+ <FileText className="h-6 w-6 text-primary" />
  <h3 className="text-lg font-semibold text-foreground">MCP Audit Log</h3>
  <span className="ml-auto px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{totalLogs} entries</span>
  </div>
@@ -841,9 +829,7 @@ function MCPAuditLogSection() {
 
  {auditLogs.length === 0 ? (
  <div className="text-center py-8 border border-dashed border-border rounded-lg">
- <svg className="mx-auto h-12 w-12 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
- </svg>
+ <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" strokeWidth={1.5} />
  <p className="mt-3 text-sm text-muted-foreground">No MCP audit logs found</p>
  </div>
  ) : (
@@ -982,9 +968,7 @@ function MCPAnalyticsDashboard() {
  <div className="mt-6 rounded-lg border border-border bg-card p-6">
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-3">
- <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
- </svg>
+ <BarChart3 className="h-6 w-6 text-primary" />
  <h3 className="text-lg font-semibold text-foreground">MCP Analytics Dashboard</h3>
  </div>
  <div className="flex items-center gap-2">
@@ -1135,7 +1119,7 @@ function MCPToolsCatalogSection() {
  return (
  <div className="mt-6 rounded-lg border border-border bg-card p-6">
  <div className="flex items-center gap-3 mb-2">
- <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+ <LayoutGrid className="h-6 w-6 text-primary" />
  <h3 className="text-lg font-semibold text-foreground">MCP Tools Catalog</h3>
  <span className="ml-auto px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{tools.length} tools</span>
  </div>
@@ -1144,7 +1128,7 @@ function MCPToolsCatalogSection() {
 
  <div className="flex flex-col sm:flex-row gap-3 mb-4">
  <div className="relative flex-1">
- <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
  <input type="text" placeholder="Search tools..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-3 py-2 text-sm border border-input rounded-md bg-background text-foreground" />
  </div>
  <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground">
@@ -1261,7 +1245,7 @@ function SlackIntegrationSection() {
  {slackData.connected ? (
  <div className="space-y-4">
  <div className="flex items-center gap-2 p-3 bg-success/5 rounded-lg border border-success/20">
- <svg className="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+ <CheckCircle2 className="h-5 w-5 text-success" />
  <span className="text-success font-medium">Connected to Slack</span>
  </div>
  <div className="grid grid-cols-2 gap-4 text-sm">
@@ -1285,7 +1269,7 @@ function SlackIntegrationSection() {
  ) : (
  <div className="space-y-4">
  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
- <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" /></svg>
+ <Link2 className="h-5 w-5 text-muted-foreground" />
  <span className="text-muted-foreground">Not connected</span>
  </div>
  <div className="bg-warning/5 rounded-lg p-4 border border-warning/20">
@@ -1431,8 +1415,15 @@ function OrganizationSettingsPage() {
  return (
  <Layout>
  <div className="p-8">
- <h2 className="text-3xl font-bold text-foreground">Organization Settings</h2>
- <p className="mt-2 text-muted-foreground">Manage your organization's settings and configuration.</p>
+ <PageHeader
+   title="Organization Settings"
+   description="Manage your organization's settings and configuration."
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'Settings', href: '/settings' },
+     { label: 'Organization' }
+   ]}
+ />
 
  <div className="mt-8 max-w-2xl">
  <div className="rounded-lg border border-border bg-card p-6">
@@ -1449,12 +1440,12 @@ function OrganizationSettingsPage() {
  <div className="relative">
  <img src={logoUrl} alt="Organization logo" className="h-16 w-16 rounded-lg object-cover border border-border" />
  <button type="button" onClick={handleRemoveLogo} className="absolute -top-2 -right-2 rounded-full bg-destructive p-1 text-primary-foreground hover:bg-destructive/90" aria-label="Remove logo">
- <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+ <X className="h-3 w-3" />
  </button>
  </div>
  ) : (
  <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted">
- <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+ <ImageIcon className="h-6 w-6 text-muted-foreground" />
  </div>
  )}
  <div>
@@ -1476,7 +1467,7 @@ function OrganizationSettingsPage() {
  </select>
  </div>
  <button onClick={handleSaveSettings} disabled={isSaving} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
- {isSaving && <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>}
+ {isSaving && <Loader2 aria-hidden="true" className="animate-spin h-4 w-4" />}
  {isSaving ? 'Saving...' : 'Save Changes'}
  </button>
  </div>
@@ -1569,7 +1560,7 @@ function OrganizationSettingsPage() {
  <ModalBody>
  {transferSuccess ? (
  <div className="text-center">
- <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success/10"><svg aria-hidden="true" className="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg></div>
+ <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success/10"><Check aria-hidden="true" className="h-6 w-6 text-success" /></div>
  <h3 className="text-lg font-semibold text-foreground">Ownership Transferred</h3>
  <p className="mt-2 text-muted-foreground">Redirecting to login...</p>
  </div>
@@ -1609,7 +1600,7 @@ function OrganizationSettingsPage() {
  <ModalBody>
  {deleteSuccess ? (
  <div className="text-center">
- <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success/10"><svg aria-hidden="true" className="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg></div>
+ <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success/10"><Check aria-hidden="true" className="h-6 w-6 text-success" /></div>
  <h3 className="text-lg font-semibold text-foreground">Organization Deleted</h3>
  <p className="mt-2 text-muted-foreground">Redirecting to login...</p>
  </div>

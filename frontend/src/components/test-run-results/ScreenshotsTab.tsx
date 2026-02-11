@@ -14,6 +14,7 @@
 import React from 'react';
 import { formatStepTime } from './utils';
 import { GalleryViewMode, ScreenshotTypeFilter } from './types';
+import { LayoutGrid, ImageIcon, Columns, Loader2, Download, Filter, ChevronDown, Check, ChevronLeft, ChevronRight, X, Eye } from 'lucide-react';
 
 // Screenshot item interface (matches the one in TestRunResultPage)
 export interface ScreenshotItem {
@@ -161,9 +162,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  }`}
  >
  <span className="flex items-center gap-1.5">
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
- </svg>
+ <LayoutGrid className="w-4 h-4" />
  Grid
  </span>
  </button>
@@ -176,9 +175,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  }`}
  >
  <span className="flex items-center gap-1.5">
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
- </svg>
+ <ImageIcon className="w-4 h-4" />
  Carousel
  </span>
  </button>
@@ -197,9 +194,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  }`}
  >
  <span className="flex items-center gap-1.5">
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
- </svg>
+ <Columns className="w-4 h-4" />
  Compare {comparisonMode && selectedForComparison.length > 0 && `(${selectedForComparison.length}/2)`}
  </span>
  </button>
@@ -213,17 +208,12 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  <span className="flex items-center gap-1.5">
  {downloadingZip ? (
  <>
- <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
- </svg>
+ <Loader2 className="w-4 h-4 animate-spin" />
  Creating ZIP...
  </>
  ) : (
  <>
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
- </svg>
+ <Download className="w-4 h-4" />
  Download All (ZIP)
  </>
  )}
@@ -270,9 +260,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
 
  {allScreenshots.length === 0 ? (
  <div className="text-center py-12 border border-dashed border-border rounded-lg">
- <svg className="w-12 h-12 mx-auto text-muted-foreground mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
- </svg>
+ <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground mb-4" strokeWidth={1.5} />
  <p className="text-muted-foreground">No screenshots captured during this run.</p>
  </div>
  ) : (
@@ -304,9 +292,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  className="text-muted-foreground hover:text-foreground"
  title="Download"
  >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
- </svg>
+ <Download className="w-4 h-4" />
  </button>
  </div>
  <p className="text-sm text-muted-foreground mb-2 truncate">{screenshot.title}</p>
@@ -347,9 +333,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  if (filteredScreenshots.length === 0) {
  return (
  <div className="text-center py-12 border border-dashed border-border rounded-lg">
- <svg className="w-12 h-12 mx-auto text-muted-foreground mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
- </svg>
+ <Filter className="w-12 h-12 mx-auto text-muted-foreground mb-4" strokeWidth={1.5} />
  <p className="text-muted-foreground">No {screenshotTypeFilter.toLowerCase()} screenshots found.</p>
  <button
  onClick={() => setScreenshotTypeFilter('All')}
@@ -397,14 +381,9 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  title={`Download all ${typeInfo.label.toLowerCase()} as ZIP`}
  >
  {downloadingZip ? (
- <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
- </svg>
+ <Loader2 className="w-4 h-4 animate-spin" />
  ) : (
- <svg className="w-4 h-4 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
- </svg>
+ <Download className="w-4 h-4 text-foreground" />
  )}
  </button>
  {/* Collapse/expand indicator */}
@@ -412,14 +391,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  onClick={() => toggleGroup(type)}
  className="p-2 rounded-lg hover:bg-muted transition-colors"
  >
- <svg
- className={`w-5 h-5 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
- fill="none"
- viewBox="0 0 24 24"
- stroke="currentColor"
- >
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
- </svg>
+ <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-180'}`} />
  </button>
  </div>
  </div>
@@ -452,9 +424,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  : 'bg-background/80 border-border'
  }`}>
  {selectedForComparison.includes(screenshot.id) && (
- <svg className="w-3 h-3 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
- <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
- </svg>
+ <Check className="w-3 h-3 text-primary-foreground" />
  )}
  </div>
  </div>
@@ -518,9 +488,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  className="absolute top-2 right-2 p-1.5 bg-background/80 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background"
  title="Download"
  >
- <svg className="w-4 h-4 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
- </svg>
+ <Download className="w-4 h-4 text-foreground" />
  </button>
 
  {/* Status indicator */}
@@ -560,17 +528,13 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
  className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-background/80 rounded-full hover:bg-background transition-colors"
  >
- <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
- </svg>
+ <ChevronLeft className="w-5 h-5" />
  </button>
  <button
  onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-background/80 rounded-full hover:bg-background transition-colors"
  >
- <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
- </svg>
+ <ChevronRight className="w-5 h-5" />
  </button>
  </div>
 
@@ -667,9 +631,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  aria-label="Close dialog"
  className="absolute -top-10 right-0 p-2 text-white/70 hover:text-white transition-colors"
  >
- <svg className="w-6 h-6" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
+ <X className="w-6 h-6" aria-hidden="true" />
  </button>
 
  {/* Navigation */}
@@ -677,17 +639,13 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  onClick={() => navigateLightbox('prev')}
  className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
  >
- <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
- </svg>
+ <ChevronLeft className="w-6 h-6 text-white" />
  </button>
  <button
  onClick={() => navigateLightbox('next')}
  className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
  >
- <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
- </svg>
+ <ChevronRight className="w-6 h-6 text-white" />
  </button>
 
  {/* Image */}
@@ -751,10 +709,7 @@ const ScreenshotsTab: React.FC<ScreenshotsTabProps> = ({
  }}
  className="px-3 py-1.5 text-sm bg-primary/80 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-1.5"
  >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
- </svg>
+ <Eye className="w-4 h-4" />
  View Test
  </button>
  <button
