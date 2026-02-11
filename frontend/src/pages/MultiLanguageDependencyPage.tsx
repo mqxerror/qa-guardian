@@ -5,7 +5,10 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
+import { createLogger } from '../utils/logger';
 import { RefreshCw, Settings, Check, X, AlertTriangle, Clock } from 'lucide-react';
+
+const logger = createLogger('multi-language-dep');
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 
 // Type definitions for multi-language dependency scanning
@@ -92,7 +95,7 @@ export function MultiLanguageDependencyPage() {
           setSelectedProject(projectList[0].id);
         }
       })
-      .catch(console.error);
+      .catch((err) => logger.error('Fetch failed:', err));
   }, [token]);
 
   useEffect(() => {
@@ -104,7 +107,7 @@ export function MultiLanguageDependencyPage() {
     })
       .then((res) => res.json())
       .then(setConfig)
-      .catch(console.error);
+      .catch((err) => logger.error('Fetch failed:', err));
 
     // Load stats
     fetch('/api/v1/organization/multi-language/stats', {
@@ -112,7 +115,7 @@ export function MultiLanguageDependencyPage() {
     })
       .then((res) => res.json())
       .then(setStats)
-      .catch(console.error);
+      .catch((err) => logger.error('Fetch failed:', err));
 
     // Load all dependencies
     fetch(`/api/v1/projects/${selectedProject}/all-dependencies`, {
@@ -120,7 +123,7 @@ export function MultiLanguageDependencyPage() {
     })
       .then((res) => res.json())
       .then((data) => setDependencies(data.dependencies_by_language || {}))
-      .catch(console.error);
+      .catch((err) => logger.error('Fetch failed:', err));
   }, [token, selectedProject]);
 
   const handleScan = async () => {
@@ -160,7 +163,7 @@ export function MultiLanguageDependencyPage() {
 
       setTimeout(() => pollResults(data.scan_id), 500);
     } catch (error) {
-      console.error(error);
+      logger.error('Scan failed:', error);
       setIsScanning(false);
     }
   };
@@ -178,7 +181,7 @@ export function MultiLanguageDependencyPage() {
       });
       setShowConfigModal(false);
     } catch (error) {
-      console.error(error);
+      logger.error('Save config failed:', error);
     }
   };
 

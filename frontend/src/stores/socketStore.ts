@@ -12,7 +12,9 @@
 
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
-import { logger } from '../utils/logger';
+import { logger, createLogger } from '../utils/logger';
+
+const socketLogger = createLogger('socket');
 import { useAuthStore } from './authStore';
 
 /**
@@ -144,7 +146,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
 
         // Start timeout for pong response
         heartbeatTimeout = setTimeout(() => {
-          console.warn('[Socket.IO] Heartbeat timeout - no pong received');
+          socketLogger.warn('[Socket.IO] Heartbeat timeout - no pong received');
           // Force disconnect to trigger reconnect
           socket.disconnect();
         }, HEARTBEAT_TIMEOUT_MS);
@@ -286,13 +288,13 @@ export const useSocketStore = create<SocketState>((set, get) => {
       });
 
       newSocket.on('connect_error', (error) => {
-        console.error('[Socket.IO] Connection error:', error.message);
+        socketLogger.error('[Socket.IO] Connection error:', error.message);
 
         set({ connectionStatus: 'disconnected' });
 
         // Feature #201: Check if authentication failed
         if (error.message.includes('Authentication failed')) {
-          console.warn('[Socket.IO] Authentication failed - token may be expired');
+          socketLogger.warn('[Socket.IO] Authentication failed - token may be expired');
           // Don't auto-reconnect on auth failure - user needs to login again
           // or the token needs to be refreshed
           logReconnectionEvent({
@@ -310,7 +312,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
 
       // Feature #201: Handle server-side errors (e.g., unauthorized org join)
       newSocket.on('error', (error: { message: string }) => {
-        console.warn('[Socket.IO] Server error:', error.message);
+        socketLogger.warn('[Socket.IO] Server error:', error.message);
       });
 
       // Feature #167: Handle pong response for heartbeat

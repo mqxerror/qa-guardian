@@ -19,6 +19,9 @@
 
 import { useState, useCallback } from 'react'; // useEffect unused
 import { toast } from '../../../stores/toastStore';
+import { createLogger } from '../../../utils/logger';
+
+const logger = createLogger('monitoring-settings');
 import {
   MonitoringSettings,
   RetentionStats,
@@ -391,7 +394,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         setSettingsAutoCleanup(data.settings?.auto_cleanup_enabled ?? true);
       }
     } catch (error) {
-      console.error('Failed to fetch monitoring settings:', error);
+      logger.error('Failed to fetch monitoring settings:', error);
     } finally {
       setIsLoadingSettings(false);
     }
@@ -419,7 +422,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to save settings');
       }
     } catch (error) {
-      console.error('Failed to save settings:', error);
+      logger.error('Failed to save settings:', error);
       toast.error('Failed to save settings');
     } finally {
       setIsSavingSettings(false);
@@ -445,7 +448,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to run cleanup');
       }
     } catch (error) {
-      console.error('Failed to run cleanup:', error);
+      logger.error('Failed to run cleanup:', error);
       toast.error('Failed to run cleanup');
     } finally {
       setIsRunningCleanup(false);
@@ -468,7 +471,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         setAvailableChecksForStatus(data.available_checks || []);
       }
     } catch (error) {
-      console.error('Failed to fetch status pages:', error);
+      logger.error('Failed to fetch status pages:', error);
     } finally {
       setIsLoadingStatusPages(false);
     }
@@ -491,7 +494,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to delete status page');
       }
     } catch (error) {
-      console.error('Failed to delete status page:', error);
+      logger.error('Failed to delete status page:', error);
       toast.error('Failed to delete status page');
     }
   }, [token, fetchStatusPages]);
@@ -511,7 +514,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         setStatusPageIncidents(data.incidents || []);
       }
     } catch (error) {
-      console.error('Failed to fetch incidents:', error);
+      logger.error('Failed to fetch incidents:', error);
     } finally {
       setIsLoadingStatusPageIncidents(false);
     }
@@ -558,7 +561,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to save status page');
       }
     } catch (error) {
-      console.error('Failed to save status page:', error);
+      logger.error('Failed to save status page:', error);
       toast.error('Failed to save status page');
     } finally {
       setIsSubmittingStatusPage(false);
@@ -614,7 +617,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to save incident');
       }
     } catch (error) {
-      console.error('Failed to save incident:', error);
+      logger.error('Failed to save incident:', error);
       toast.error('Failed to save incident');
     } finally {
       setIsSubmittingIncident(false);
@@ -650,7 +653,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to post update');
       }
     } catch (error) {
-      console.error('Failed to post update:', error);
+      logger.error('Failed to post update:', error);
       toast.error('Failed to post update');
     } finally {
       setIsSubmittingIncident(false);
@@ -672,7 +675,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         setOnCallSchedules(data.schedules || []);
       }
     } catch (error) {
-      console.error('Failed to fetch on-call schedules:', error);
+      logger.error('Failed to fetch on-call schedules:', error);
     } finally {
       setIsLoadingOnCallSchedules(false);
     }
@@ -695,7 +698,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to delete schedule');
       }
     } catch (error) {
-      console.error('Failed to delete schedule:', error);
+      logger.error('Failed to delete schedule:', error);
       toast.error('Failed to delete schedule');
     }
   }, [token, fetchOnCallSchedules]);
@@ -717,7 +720,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to rotate schedule');
       }
     } catch (error) {
-      console.error('Failed to rotate schedule:', error);
+      logger.error('Failed to rotate schedule:', error);
       toast.error('Failed to rotate schedule');
     }
   }, [token, fetchOnCallSchedules]);
@@ -755,7 +758,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to save schedule');
       }
     } catch (error) {
-      console.error('Failed to save schedule:', error);
+      logger.error('Failed to save schedule:', error);
       toast.error('Failed to save schedule');
     } finally {
       setIsSubmittingOnCallSchedule(false);
@@ -820,7 +823,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         setEscalationPolicies(data.policies || []);
       }
     } catch (error) {
-      console.error('Failed to fetch escalation policies:', error);
+      logger.error('Failed to fetch escalation policies:', error);
     } finally {
       setIsLoadingEscalationPolicies(false);
     }
@@ -843,7 +846,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to delete policy');
       }
     } catch (error) {
-      console.error('Failed to delete policy:', error);
+      logger.error('Failed to delete policy:', error);
       toast.error('Failed to delete policy');
     }
   }, [token, fetchEscalationPolicies]);
@@ -864,7 +867,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to send test alert');
       }
     } catch (error) {
-      console.error('Failed to test policy:', error);
+      logger.error('Failed to test policy:', error);
       toast.error('Failed to send test alert');
     }
   }, [token]);
@@ -885,7 +888,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         setAlertGroups(data.groups || []);
       }
     } catch (error) {
-      console.error('Failed to fetch alert grouping:', error);
+      logger.error('Failed to fetch alert grouping:', error);
     } finally {
       setIsLoadingAlertGrouping(false);
     }
@@ -908,7 +911,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to delete rule');
       }
     } catch (error) {
-      console.error('Failed to delete rule:', error);
+      logger.error('Failed to delete rule:', error);
       toast.error('Failed to delete rule');
     }
   }, [token, fetchAlertGroupingRules]);
@@ -930,7 +933,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to simulate grouping');
       }
     } catch (error) {
-      console.error('Failed to simulate:', error);
+      logger.error('Failed to simulate:', error);
       toast.error('Failed to simulate grouping');
     }
   }, [token, fetchAlertGroupingRules]);
@@ -952,7 +955,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to acknowledge group');
       }
     } catch (error) {
-      console.error('Failed to acknowledge:', error);
+      logger.error('Failed to acknowledge:', error);
       toast.error('Failed to acknowledge group');
     }
   }, [token, fetchAlertGroupingRules]);
@@ -973,7 +976,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to resolve group');
       }
     } catch (error) {
-      console.error('Failed to resolve:', error);
+      logger.error('Failed to resolve:', error);
       toast.error('Failed to resolve group');
     }
   }, [token, fetchAlertGroupingRules]);
@@ -995,7 +998,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to snooze group');
       }
     } catch (error) {
-      console.error('Failed to snooze:', error);
+      logger.error('Failed to snooze:', error);
       toast.error('Failed to snooze group');
     }
   }, [token, fetchAlertGroupingRules]);
@@ -1016,7 +1019,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         setAlertRoutingLogs(data.logs || []);
       }
     } catch (error) {
-      console.error('Failed to fetch alert routing:', error);
+      logger.error('Failed to fetch alert routing:', error);
     } finally {
       setIsLoadingAlertRouting(false);
     }
@@ -1039,7 +1042,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to delete rule');
       }
     } catch (error) {
-      console.error('Failed to delete rule:', error);
+      logger.error('Failed to delete rule:', error);
       toast.error('Failed to delete rule');
     }
   }, [token, fetchAlertRoutingRules]);
@@ -1062,7 +1065,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to toggle rule');
       }
     } catch (error) {
-      console.error('Failed to toggle rule:', error);
+      logger.error('Failed to toggle rule:', error);
       toast.error('Failed to toggle rule');
     }
   }, [token, fetchAlertRoutingRules]);
@@ -1087,7 +1090,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Rate limit test failed');
       }
     } catch (error) {
-      console.error('Failed to test rate limiting:', error);
+      logger.error('Failed to test rate limiting:', error);
       toast.error('Failed to test rate limiting');
     } finally {
       setIsTestingRateLimit(false);
@@ -1111,7 +1114,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to save rate limit settings');
       }
     } catch (error) {
-      console.error('Failed to save rate limit settings:', error);
+      logger.error('Failed to save rate limit settings:', error);
       toast.error('Failed to save rate limit settings');
     } finally {
       setIsSavingRateLimit(false);
@@ -1135,7 +1138,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to acknowledge');
       }
     } catch (error) {
-      console.error('Failed to acknowledge:', error);
+      logger.error('Failed to acknowledge:', error);
       toast.error('Failed to acknowledge');
     }
   }, [token]);
@@ -1155,7 +1158,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         setAlertRunbooks(data.runbooks || []);
       }
     } catch (error) {
-      console.error('Failed to fetch runbooks:', error);
+      logger.error('Failed to fetch runbooks:', error);
     } finally {
       setIsLoadingRunbooks(false);
     }
@@ -1178,7 +1181,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to delete runbook');
       }
     } catch (error) {
-      console.error('Failed to delete runbook:', error);
+      logger.error('Failed to delete runbook:', error);
       toast.error('Failed to delete runbook');
     }
   }, [token, fetchAlertRunbooks]);
@@ -1199,7 +1202,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to test runbook');
       }
     } catch (error) {
-      console.error('Failed to test runbook:', error);
+      logger.error('Failed to test runbook:', error);
       toast.error('Failed to test runbook');
     }
   }, [token]);
@@ -1219,7 +1222,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         setManagedIncidents(data.incidents || []);
       }
     } catch (error) {
-      console.error('Failed to fetch incidents:', error);
+      logger.error('Failed to fetch incidents:', error);
     } finally {
       setIsLoadingManagedIncidents(false);
     }
@@ -1243,7 +1246,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to update incident');
       }
     } catch (error) {
-      console.error('Failed to update incident:', error);
+      logger.error('Failed to update incident:', error);
       toast.error('Failed to update incident');
     }
   }, [token, fetchManagedIncidents]);
@@ -1265,7 +1268,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to assign responder');
       }
     } catch (error) {
-      console.error('Failed to assign responder:', error);
+      logger.error('Failed to assign responder:', error);
       toast.error('Failed to assign responder');
     }
   }, [token, fetchManagedIncidents]);
@@ -1287,7 +1290,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         toast.error('Failed to resolve incident');
       }
     } catch (error) {
-      console.error('Failed to resolve incident:', error);
+      logger.error('Failed to resolve incident:', error);
       toast.error('Failed to resolve incident');
     }
   }, [token, fetchManagedIncidents]);
@@ -1313,7 +1316,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
         setAlertsOverTime(data.over_time || []);
       }
     } catch (error) {
-      console.error('Failed to fetch alert history:', error);
+      logger.error('Failed to fetch alert history:', error);
     } finally {
       setIsLoadingAlertHistory(false);
     }

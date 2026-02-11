@@ -13,7 +13,9 @@ import { useTimezoneStore } from '../stores/timezoneStore';
 import { useSocketStore } from '../stores/socketStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { toast } from '../stores/toastStore';
-import { logger } from '../utils/logger';
+import { logger, createLogger } from '../utils/logger';
+
+const pageLogger = createLogger('test-detail');
 // Feature #551: Health score and skeleton loading
 import { ScoreCard } from '../components/ui/score-card';
 import { SkeletonTestDetailPage } from '../components/ui/Skeleton';
@@ -823,7 +825,7 @@ function TestDetailPage() {
           setRejectionStatus(data);
         }
       } catch (error) {
-        console.error('Failed to check rejection status:', error);
+        pageLogger.error('Failed to check rejection status:', error);
       }
     };
 
@@ -978,7 +980,7 @@ function TestDetailPage() {
       });
 
       // Feature #68: Refresh runs list using React Query (caches the result)
-      refetchRuns().catch(err => console.error('Failed to refresh runs:', err));
+      refetchRuns().catch(err => pageLogger.error('Failed to refresh runs:', err));
     };
 
     socket.on('run-complete', handleOrgRunComplete);

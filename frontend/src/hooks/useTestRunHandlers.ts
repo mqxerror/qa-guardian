@@ -5,6 +5,9 @@
 
 import { useCallback } from 'react';
 import { toast } from '../stores/toastStore';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('test-run-handlers');
 import { ScreenshotItem } from '../components/test-run-results';
 import type { LighthouseResult, StepLoadTestResult } from '../components/test-detail/types';
 import type { K6LoadTestData } from '../components/test-run-results/pdfExport';
@@ -248,7 +251,7 @@ export function useTestRunHandlers({
         toast.error(errorData?.error || `Failed to approve baseline (${response.status})`);
       }
     } catch (err) {
-      console.error('Failed to approve baseline:', err);
+      logger.error('Failed to approve baseline:', err);
       toast.error('Failed to approve baseline. Please try again.');
     } finally {
       setApprovalLoading(prev => ({ ...prev, [key]: false }));
@@ -283,7 +286,7 @@ export function useTestRunHandlers({
         toast.error(errorData?.error || `Failed to reject baseline (${response.status})`);
       }
     } catch (err) {
-      console.error('Failed to reject baseline:', err);
+      logger.error('Failed to reject baseline:', err);
       toast.error('Failed to reject baseline. Please try again.');
     } finally {
       setApprovalLoading(prev => ({ ...prev, [key]: false }));
@@ -544,7 +547,7 @@ Format your response with clear sections using **bold headers**.`;
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Download failed:', err);
+      logger.error('Download failed:', err);
     }
   }, [videoUrl, token]);
 
@@ -578,7 +581,7 @@ Format your response with clear sections using **bold headers**.`;
         window.location.reload();
       }
     } catch (err) {
-      console.error('Failed to cancel test:', err);
+      logger.error('Failed to cancel test:', err);
     } finally {
       setCancellingTest(false);
     }
@@ -676,7 +679,7 @@ Format your response with clear sections using **bold headers**.`;
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Failed to create ZIP:', err);
+      logger.error('Failed to create ZIP:', err);
     } finally {
       setDownloadingZip(false);
     }
@@ -713,7 +716,7 @@ Format your response with clear sections using **bold headers**.`;
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Failed to create ZIP:', err);
+      logger.error('Failed to create ZIP:', err);
     } finally {
       setDownloadingZip(false);
     }

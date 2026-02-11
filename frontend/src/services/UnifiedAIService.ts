@@ -10,6 +10,10 @@
  * - AI Copilot features
  */
 
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('unified-ai');
+
 // API base URL
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
@@ -153,7 +157,7 @@ class UnifiedAIServiceClass {
         }
         throw new Error(`Status check failed: ${response.status}`);
       } catch (error) {
-        console.error('Failed to check AI status:', error);
+        logger.error('Failed to check AI status:', error);
         this.aiStatus = {
           ready: false,
           providers: {
@@ -265,7 +269,7 @@ class UnifiedAIServiceClass {
         },
       };
     } catch (error) {
-      console.error('UnifiedAIService chat error:', error);
+      logger.error('UnifiedAIService chat error:', error);
       return {
         success: false,
         content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -324,7 +328,7 @@ class UnifiedAIServiceClass {
         error: data.error || 'Failed to generate test',
       };
     } catch (error) {
-      console.error('UnifiedAIService generateTest error:', error);
+      logger.error('UnifiedAIService generateTest error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -365,7 +369,7 @@ class UnifiedAIServiceClass {
       }
       // Fall through to local parsing if response not ok or no success
     } catch (error) {
-      console.warn('[UnifiedAIService] Backend parse-intent failed, falling back to local parsing:', error);
+      logger.warn('[UnifiedAIService] Backend parse-intent failed, falling back to local parsing:', error);
     }
 
     // Local fallback parsing (original implementation)
@@ -561,7 +565,7 @@ class UnifiedAIServiceClass {
         metadata: data.metadata,
       };
     } catch (error) {
-      console.error(`UnifiedAIService executeTool(${toolName}) error:`, error);
+      logger.error(`UnifiedAIService executeTool(${toolName}) error:`, error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

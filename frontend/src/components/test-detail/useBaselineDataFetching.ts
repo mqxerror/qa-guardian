@@ -4,6 +4,9 @@
  */
 
 import { useEffect } from 'react';
+import { createLogger } from '../../utils/logger';
+
+const logger = createLogger('baseline-data');
 
 export interface BaselineDataResult {
   hasBaseline: boolean;
@@ -102,7 +105,7 @@ export function useBaselineDataFetching({
           setAvailableBranches(branches);
         }
       } catch (err) {
-        console.error('Failed to fetch branches:', err);
+        logger.error('Failed to fetch branches:', err);
         setAvailableBranches(['main']);
       } finally {
         setLoadingBranches(false);
@@ -134,7 +137,7 @@ export function useBaselineDataFetching({
           setMergeableBranches([]);
         }
       } catch (err) {
-        console.error('Failed to fetch mergeable branches:', err);
+        logger.error('Failed to fetch mergeable branches:', err);
         setMergeableBranches([]);
       } finally {
         setLoadingMergeableBranches(false);
@@ -167,7 +170,7 @@ export function useBaselineDataFetching({
           setBaselineData({ hasBaseline: false });
         }
       } catch (err) {
-        console.error('Failed to fetch baseline:', err);
+        logger.error('Failed to fetch baseline:', err);
         setBaselineData({ hasBaseline: false });
       } finally {
         setLoadingBaseline(false);
@@ -199,7 +202,7 @@ export function useBaselineDataFetching({
           setBaselineHistory([]);
         }
       } catch (err) {
-        console.error('Failed to fetch baseline history:', err);
+        logger.error('Failed to fetch baseline history:', err);
         setBaselineHistory([]);
       } finally {
         setLoadingBaselineHistory(false);
@@ -232,7 +235,7 @@ export function useBaselineDataFetching({
           setHistoryVersionImage(null);
         }
       } catch (err) {
-        console.error('Failed to fetch baseline history image:', err);
+        logger.error('Failed to fetch baseline history image:', err);
         setHistoryVersionImage(null);
       } finally {
         setLoadingHistoryImage(false);

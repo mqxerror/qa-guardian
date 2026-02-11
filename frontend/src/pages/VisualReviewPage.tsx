@@ -7,7 +7,9 @@ import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
-import { logger } from '../utils/logger';
+import { logger, createLogger } from '../utils/logger';
+
+const pageLogger = createLogger('visual-review');
 import {
  usePendingVisualChanges,
  useBatchApproveChanges,
@@ -363,7 +365,7 @@ Respond in this JSON format:
  // Fallback: Use AI response as summary with heuristic values
  return generateFallbackAnalysis(change, aiResponse);
  } catch (error) {
- console.error('AI analysis failed, using heuristic fallback:', error);
+ pageLogger.error('AI analysis failed, using heuristic fallback:', error);
  return generateFallbackAnalysis(change, '');
  }
  };
@@ -445,7 +447,7 @@ Respond in this JSON format:
  const analysis = await generateImpactAnalysis(change);
  setChangeAnalyses(prev => ({ ...prev, [key]: analysis }));
  } catch (error) {
- console.error('Failed to analyze change:', error);
+ pageLogger.error('Failed to analyze change:', error);
  } finally {
  setAnalyzingChangeId(null);
  }

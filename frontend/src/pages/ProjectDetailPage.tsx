@@ -41,7 +41,10 @@ import { useAuthStore } from "../stores/authStore";
 import { useTimezoneStore } from "../stores/timezoneStore";
 import { useTestDefaultsStore } from "../stores/testDefaultsStore";
 import { toast } from "../stores/toastStore";
+import { createLogger } from "../utils/logger";
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
+
+const logger = createLogger('project-detail');
 // Feature #58: Import React Query hooks for parallel data fetching
 // Feature #144: Added project settings hooks for caching
 import {
@@ -597,7 +600,7 @@ function ProjectDetailPage() {
 
         setGithubDataLoaded(true);
       } catch (err) {
-        console.error('Failed to load GitHub data:', err);
+        logger.error('Failed to load GitHub data:', err);
       }
     };
 
@@ -660,7 +663,7 @@ function ProjectDetailPage() {
             setDastScans(scansData.scans);
           }
         } catch (err) {
-          console.error('Failed to poll DAST scans:', err);
+          logger.error('Failed to poll DAST scans:', err);
         }
       }
     }, 500);  // Poll every 500ms for smooth progress updates

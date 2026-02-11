@@ -12,7 +12,10 @@ import { useTestDefaultsStore } from '../stores/testDefaultsStore';
 import { useArtifactRetentionStore } from '../stores/artifactRetentionStore';
 import { useOrganizationBrandingStore } from '../stores/organizationBrandingStore';
 import { toast } from '../stores/toastStore';
+import { createLogger } from '../utils/logger';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
+
+const logger = createLogger('org-settings');
 import { PageHeader } from '../components/ui';
 import { Loader2, AlertTriangle, Wifi, FileText, BarChart3, LayoutGrid, Search, CheckCircle2, Link2, X, ImageIcon, Check } from 'lucide-react';
 
@@ -128,7 +131,7 @@ function SessionManagementSection() {
  setSessions(data.sessions || []);
  }
  } catch (err) {
- console.error('Failed to fetch sessions:', err);
+ logger.error('Failed to fetch sessions:', err);
  } finally {
  setIsLoading(false);
  }
@@ -323,7 +326,7 @@ function ArtifactRetentionSection() {
  setLocalRetentionDays(data.retention_days);
  }
  } catch (err) {
- console.error('Failed to fetch retention policy:', err);
+ logger.error('Failed to fetch retention policy:', err);
  }
  };
  fetchRetention();
@@ -546,7 +549,7 @@ function StorageUsageSection() {
  setStorageData(data);
  }
  } catch (err) {
- console.error('Failed to fetch storage usage:', err);
+ logger.error('Failed to fetch storage usage:', err);
  } finally {
  setIsLoading(false);
  }
@@ -665,7 +668,7 @@ function MCPConnectionsSection() {
  setConnections(data.mcp_connections || []);
  }
  } catch (err) {
- console.error('Failed to fetch MCP connections:', err);
+ logger.error('Failed to fetch MCP connections:', err);
  } finally {
  setIsLoading(false);
  }
@@ -767,7 +770,7 @@ function MCPAuditLogSection() {
  setTotalLogs(data.total || 0);
  }
  } catch (err) {
- console.error('Failed to fetch MCP audit logs:', err);
+ logger.error('Failed to fetch MCP audit logs:', err);
  } finally {
  setIsLoading(false);
  }
@@ -914,7 +917,7 @@ function MCPAnalyticsDashboard() {
  setAnalytics(data.analytics || null);
  }
  } catch (err) {
- console.error('Failed to fetch MCP analytics:', err);
+ logger.error('Failed to fetch MCP analytics:', err);
  } finally {
  setIsLoading(false);
  }
@@ -944,7 +947,7 @@ function MCPAnalyticsDashboard() {
  document.body.removeChild(a);
  }
  } catch (err) {
- console.error('Failed to export analytics:', err);
+ logger.error('Failed to export analytics:', err);
  } finally {
  setIsExporting(false);
  }
@@ -1198,7 +1201,7 @@ function SlackIntegrationSection() {
  try {
  const response = await fetch(`/api/v1/organizations/${user.organization_id}/slack`, { headers: { Authorization: `Bearer ${token}` } });
  if (response.ok) { const data = await response.json(); setSlackData(data); }
- } catch (err) { console.error('Failed to fetch Slack status:', err); }
+ } catch (err) { logger.error('Failed to fetch Slack status:', err); }
  finally { setIsLoading(false); }
  };
  fetchSlackStatus();
@@ -1326,7 +1329,7 @@ function OrganizationSettingsPage() {
  const admins = (data.members || []).filter((m: { user_id: string; role: string }) => m.role === 'admin' && m.user_id !== user.id);
  setAdminMembers(admins);
  }
- } catch (err) { console.error('Failed to fetch admin members:', err); }
+ } catch (err) { logger.error('Failed to fetch admin members:', err); }
  };
  fetchAdmins();
  }, [user, token]);

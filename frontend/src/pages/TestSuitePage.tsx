@@ -11,7 +11,10 @@ import { SkeletonTestSuitePage } from '../components/ui/Skeleton';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { getErrorMessage } from '../utils/errorHandling';
+import { createLogger } from '../utils/logger';
 import { UnifiedAIService } from '../services/UnifiedAIService';
+
+const logger = createLogger('test-suite');
 // Feature #673: Lazy-load CreateTestModal for better initial page load
 const CreateTestModal = lazy(() => import('../components/create-test').then(m => ({ default: m.CreateTestModal })));
 import { ScoreCard } from '../components/ui/score-card';
@@ -261,7 +264,7 @@ function TestSuitePage() {
           setSuiteRun(data.run);
         }
       } catch (err) {
-        console.error('Failed to fetch final run results:', err);
+        logger.error('Failed to fetch final run results:', err);
       }
     }
   }, [token]);
@@ -395,7 +398,7 @@ function TestSuitePage() {
           setProject(projectData.project);
         }
       } catch (err) {
-        console.error('Failed to load project:', err);
+        logger.error('Failed to load project:', err);
       }
     };
     fetchProject();
@@ -415,7 +418,7 @@ function TestSuitePage() {
           setReviewStats(data.stats);
         }
       } catch (err) {
-        console.error('Failed to fetch review settings:', err);
+        logger.error('Failed to fetch review settings:', err);
       }
     };
     fetchReviewSettings();
@@ -527,7 +530,7 @@ function TestSuitePage() {
         toast.error('Failed to run AI health check');
       }
     } catch (err) {
-      console.error('AI health check failed:', err);
+      logger.error('AI health check failed:', err);
       toast.error('AI health check failed');
     } finally {
       setIsLoadingHealthCheck(false);
@@ -550,7 +553,7 @@ function TestSuitePage() {
       // Feature #546: Enable WebSocket tracking instead of polling
       setSuiteRunActive(true);
     } catch (err) {
-      console.error('Failed to run suite:', err);
+      logger.error('Failed to run suite:', err);
       toast.error(getErrorMessage(err, 'Failed to start test run'));
       setIsRunningSuite(false);
     }
@@ -565,7 +568,7 @@ function TestSuitePage() {
       toast.success('Test run started');
       navigate(`/tests/${testId}`);
     } catch (err) {
-      console.error('Failed to run test:', err);
+      logger.error('Failed to run test:', err);
       toast.error(getErrorMessage(err, 'Failed to start test run'));
     } finally {
       setRunningTestId(null);
@@ -589,7 +592,7 @@ function TestSuitePage() {
       });
       toast.success('Test duplicated successfully');
     } catch (err) {
-      console.error('Failed to duplicate test:', err);
+      logger.error('Failed to duplicate test:', err);
       toast.error(getErrorMessage(err, 'Failed to duplicate test'));
     }
   };
@@ -603,7 +606,7 @@ function TestSuitePage() {
       toast.success('Test deleted successfully');
       setShowDeleteTestModal(null);
     } catch (err) {
-      console.error('Failed to delete test:', err);
+      logger.error('Failed to delete test:', err);
       toast.error(getErrorMessage(err, 'Failed to delete test'));
     } finally {
       setIsDeletingTest(false);
@@ -855,7 +858,7 @@ function TestSuitePage() {
         setStepTemplates(data.templates || []);
       }
     } catch (err) {
-      console.error('Failed to load templates:', err);
+      logger.error('Failed to load templates:', err);
     }
   };
 

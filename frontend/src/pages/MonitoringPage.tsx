@@ -9,7 +9,9 @@ import { useAuthStore } from "../stores/authStore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { toast } from "../stores/toastStore";
 import { useMonitoringSummary } from "../hooks/api/useMonitoring";
-import { devLog } from "../utils/logger";
+import { devLog, createLogger } from "../utils/logger";
+
+const logger = createLogger('monitoring');
 // Feature #336: Design system components
 import {
   PageHeader,
@@ -416,7 +418,7 @@ function MonitoringPage() {
         setRetentionStats(stats);
       }
     } catch (error) {
-      console.error('Failed to fetch monitoring settings:', error);
+      logger.error('Failed to fetch monitoring settings:', error);
     } finally {
       setIsLoadingSettings(false);
     }
@@ -447,7 +449,7 @@ function MonitoringPage() {
         toast.error('Failed to save settings');
       }
     } catch (error) {
-      console.error('Failed to save settings:', error);
+      logger.error('Failed to save settings:', error);
       toast.error('Failed to save settings');
     } finally {
       setIsSavingSettings(false);
@@ -473,7 +475,7 @@ function MonitoringPage() {
         toast.error('Failed to run cleanup');
       }
     } catch (error) {
-      console.error('Failed to run cleanup:', error);
+      logger.error('Failed to run cleanup:', error);
       toast.error('Failed to run cleanup');
     } finally {
       setIsRunningCleanup(false);
@@ -504,7 +506,7 @@ function MonitoringPage() {
         setAvailableChecksForStatus(data.checks || []);
       }
     } catch (error) {
-      console.error('Failed to fetch status pages:', error);
+      logger.error('Failed to fetch status pages:', error);
     } finally {
       setIsLoadingStatusPages(false);
     }
@@ -527,7 +529,7 @@ function MonitoringPage() {
         toast.error('Failed to delete status page');
       }
     } catch (error) {
-      console.error('Failed to delete status page:', error);
+      logger.error('Failed to delete status page:', error);
       toast.error('Failed to delete status page');
     }
   };
@@ -556,7 +558,7 @@ function MonitoringPage() {
         setOnCallSchedules(data.schedules || []);
       }
     } catch (error) {
-      console.error('Failed to fetch on-call schedules:', error);
+      logger.error('Failed to fetch on-call schedules:', error);
     } finally {
       setIsLoadingOnCallSchedules(false);
     }
@@ -585,7 +587,7 @@ function MonitoringPage() {
         toast.error('Failed to delete on-call schedule');
       }
     } catch (error) {
-      console.error('Failed to delete on-call schedule:', error);
+      logger.error('Failed to delete on-call schedule:', error);
       toast.error('Failed to delete on-call schedule');
     }
   };
@@ -607,7 +609,7 @@ function MonitoringPage() {
         toast.error('Failed to rotate on-call schedule');
       }
     } catch (error) {
-      console.error('Failed to rotate on-call schedule:', error);
+      logger.error('Failed to rotate on-call schedule:', error);
       toast.error('Failed to rotate on-call schedule');
     }
   };
@@ -625,7 +627,7 @@ function MonitoringPage() {
         setEscalationPolicies(data.policies || []);
       }
     } catch (error) {
-      console.error('Failed to fetch escalation policies:', error);
+      logger.error('Failed to fetch escalation policies:', error);
     } finally {
       setIsLoadingEscalationPolicies(false);
     }
@@ -654,7 +656,7 @@ function MonitoringPage() {
         toast.error('Failed to delete escalation policy');
       }
     } catch (error) {
-      console.error('Failed to delete escalation policy:', error);
+      logger.error('Failed to delete escalation policy:', error);
       toast.error('Failed to delete escalation policy');
     }
   };
@@ -677,7 +679,7 @@ function MonitoringPage() {
         toast.error('Failed to test escalation policy');
       }
     } catch (error) {
-      console.error('Failed to test escalation policy:', error);
+      logger.error('Failed to test escalation policy:', error);
       toast.error('Failed to test escalation policy');
     }
   };
@@ -703,7 +705,7 @@ function MonitoringPage() {
         setAlertsOverTime(data.alerts_over_time || []);
       }
     } catch (error) {
-      console.error('Failed to fetch alert history:', error);
+      logger.error('Failed to fetch alert history:', error);
     } finally {
       setIsLoadingAlertHistory(false);
     }
@@ -737,7 +739,7 @@ function MonitoringPage() {
         toast.error('Failed to export alert history');
       }
     } catch (error) {
-      console.error('Failed to export alert history:', error);
+      logger.error('Failed to export alert history:', error);
       toast.error('Failed to export alert history');
     }
   };
@@ -758,7 +760,7 @@ function MonitoringPage() {
         setAlertRoutingRules(data.rules || []);
       }
     } catch (error) {
-      console.error('Failed to fetch alert routing rules:', error);
+      logger.error('Failed to fetch alert routing rules:', error);
     } finally {
       setIsLoadingAlertRouting(false);
     }
@@ -776,7 +778,7 @@ function MonitoringPage() {
         setAlertRoutingLogs(data.logs || []);
       }
     } catch (error) {
-      console.error('Failed to fetch alert routing logs:', error);
+      logger.error('Failed to fetch alert routing logs:', error);
     }
   }, [token]);
 
@@ -803,7 +805,7 @@ function MonitoringPage() {
         toast.error('Failed to delete alert routing rule');
       }
     } catch (error) {
-      console.error('Failed to delete alert routing rule:', error);
+      logger.error('Failed to delete alert routing rule:', error);
       toast.error('Failed to delete alert routing rule');
     }
   };
