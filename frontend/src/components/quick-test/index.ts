@@ -18,8 +18,6 @@ export type { SourceType, PriorityType, ImpactType } from '../ui/Badge';
 // Modal components
 export { CreateTestSuiteModal } from './CreateTestSuiteModal';
 export { ScheduleModal } from './ScheduleModal';
-export { SaveAsSuiteModal } from './SaveAsSuiteModal';
-export type { SaveAsSuiteModalProps } from './SaveAsSuiteModal';
 // Wave detail components - Feature #514: Extracted from QuickTestPage
 // Note: AccessibilityData, APIDiscoveryData, SeoAnalysisData types are exported via './types'
 export {

@@ -744,7 +744,9 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Get available schedule frequencies
-  app.get('/api/v1/dast/schedule-frequencies', async (request, reply) => {
+  app.get('/api/v1/dast/schedule-frequencies', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
     return reply.send({
       frequencies: Object.entries(SCHEDULE_FREQUENCIES).map(([id, info]) => ({
         id,
@@ -763,6 +765,18 @@ export async function dastRoutes(app: FastifyInstance) {
 
     if (!config.endpoint) {
       return reply.status(400).send({ error: 'GraphQL endpoint URL is required' });
+    }
+
+    // SSRF protection: prevent scans against internal/private networks
+    const ssrfCheck = validateURLForSSRF(config.endpoint, {
+      allowLocalhost: false,
+      requireHttps: false,
+    });
+    if (!ssrfCheck.safe) {
+      return reply.status(400).send({
+        error: 'URL blocked by security policy',
+        message: ssrfCheck.error || 'Internal or private network URLs are not allowed for GraphQL scans.',
+      });
     }
 
     const scan = await startGraphQLScan(config);
@@ -826,6 +840,18 @@ export async function dastRoutes(app: FastifyInstance) {
 
     if (!endpoint) {
       return reply.status(400).send({ error: 'GraphQL endpoint URL is required' });
+    }
+
+    // SSRF protection: prevent introspection against internal/private networks
+    const ssrfCheck = validateURLForSSRF(endpoint, {
+      allowLocalhost: false,
+      requireHttps: false,
+    });
+    if (!ssrfCheck.safe) {
+      return reply.status(400).send({
+        error: 'URL blocked by security policy',
+        message: ssrfCheck.error || 'Internal or private network URLs are not allowed for GraphQL introspection.',
+      });
     }
 
     try {
