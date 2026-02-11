@@ -11,6 +11,21 @@ import { PageHeader } from '../components/ui';
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // Type definitions
+interface ScanDependency {
+  name: string;
+  version: string;
+  type?: 'production' | 'development' | 'optional' | 'peer';
+  license?: string;
+}
+
+interface ScanVulnerability {
+  id: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  title: string;
+  package_name: string;
+  affected_versions?: string;
+}
+
 interface ScanCacheEntry {
   id: string;
   scan_type: string;
@@ -55,8 +70,8 @@ interface ScanResult {
   scan_duration_ms: number;
   saved_time_ms?: number;
   results: {
-    dependencies: any[];
-    vulnerabilities: any[];
+    dependencies: ScanDependency[];
+    vulnerabilities: ScanVulnerability[];
     total_dependencies: number;
     total_vulnerabilities: number;
   };

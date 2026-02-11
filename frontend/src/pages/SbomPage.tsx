@@ -47,7 +47,7 @@ interface GeneratedSbom {
   generated_by: string;
   summary: SbomSummary;
   download: SbomDownload;
-  sbom: any;
+  sbom: Record<string, unknown>;
   storage: SbomStorage;
   compliance: SbomCompliance;
 }

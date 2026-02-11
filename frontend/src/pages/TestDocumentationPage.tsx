@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 
 // Feature #1253: Test Documentation Page interfaces
 interface TestSuiteForDocs {
@@ -15,6 +16,16 @@ interface TestSuiteForDocs {
  description: string;
  projectId: string;
  projectName: string;
+}
+
+// API response type for suite data
+interface SuiteApiResponse {
+ id: string;
+ name: string;
+ test_count?: number;
+ description?: string;
+ project_id: string;
+ project_name?: string;
 }
 
 interface GeneratedDocumentation {
@@ -98,7 +109,7 @@ export function TestDocumentationPage() {
  });
  if (response.ok) {
  const data = await response.json();
- setTestSuites(data.map((suite: any) => ({
+ setTestSuites(data.map((suite: SuiteApiResponse) => ({
  id: suite.id,
  name: suite.name,
  testCount: suite.test_count || Math.floor(Math.random() * 20) + 5,
@@ -303,13 +314,16 @@ export function TestDocumentationPage() {
  return (
  <Layout>
  <div className="p-6 space-y-6">
- {/* Header */}
- <div className="flex items-center justify-between">
- <div>
- <h1 className="text-2xl font-bold text-foreground">Test Documentation Generator</h1>
- <p className="text-sm text-muted-foreground">AI creates documentation from your test code automatically</p>
- </div>
- </div>
+ {/* Feature #640: PageHeader component */}
+ <PageHeader
+   title="Test Documentation Generator"
+   description="AI creates documentation from your test code automatically"
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'Tools', href: '/test-improvement' },
+     { label: 'Documentation Generator' }
+   ]}
+ />
 
  {/* Step 1: Test Suite Selection */}
  <div className="rounded-lg border border-border bg-card p-6">

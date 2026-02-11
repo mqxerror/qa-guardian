@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 
@@ -287,8 +288,9 @@ export function ServicesPage() {
 
       setData(json);
       setNextRefreshIn(AUTO_REFRESH_INTERVAL / 1000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load services');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load services';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -346,52 +348,57 @@ export function ServicesPage() {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground">Platform Services</h2>
-            {data && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {data.healthy_count} of {data.total_services} services healthy
-                {' \u2014 '}
-                <span className={
-                  data.overall_status === 'operational' ? 'text-success' :
-                  data.overall_status === 'degraded' ? 'text-warning' :
-                  'text-destructive'
-                }>
-                  {data.overall_status === 'operational' ? 'All Systems Operational' :
-                   data.overall_status === 'degraded' ? 'Some Systems Degraded' : 'System Issues Detected'}
-                </span>
-              </p>
-            )}
+        {/* Feature #640: PageHeader component */}
+        <PageHeader
+          title="Platform Services"
+          description={data ? `${data.healthy_count} of ${data.total_services} services healthy` : 'Monitoring platform service health'}
+          breadcrumbs={[
+            { label: 'Home', href: '/' },
+            { label: 'Monitoring', href: '/ai-router' },
+            { label: 'Services' }
+          ]}
+          actions={
+            <div className="flex items-center gap-3">
+              {/* Auto-refresh toggle */}
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={autoRefresh}
+                  onChange={(e) => {
+                    setAutoRefresh(e.target.checked);
+                    if (e.target.checked) setNextRefreshIn(AUTO_REFRESH_INTERVAL / 1000);
+                  }}
+                  className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
+                />
+                Auto-refresh
+                {autoRefresh && <span className="text-muted-foreground">({nextRefreshIn}s)</span>}
+              </label>
+              <button
+                onClick={() => fetchServices()}
+                disabled={loading}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-muted/50 disabled:opacity-50 transition-colors"
+              >
+                <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
+            </div>
+          }
+        />
+        {/* Status indicator */}
+        {data && (
+          <div className="mb-4 text-sm">
+            <span className={
+              data.overall_status === 'operational' ? 'text-success' :
+              data.overall_status === 'degraded' ? 'text-warning' :
+              'text-destructive'
+            }>
+              {data.overall_status === 'operational' ? 'All Systems Operational' :
+               data.overall_status === 'degraded' ? 'Some Systems Degraded' : 'System Issues Detected'}
+            </span>
           </div>
-          <div className="flex items-center gap-3 mt-2 sm:mt-0">
-            {/* Auto-refresh toggle */}
-            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={autoRefresh}
-                onChange={(e) => {
-                  setAutoRefresh(e.target.checked);
-                  if (e.target.checked) setNextRefreshIn(AUTO_REFRESH_INTERVAL / 1000);
-                }}
-                className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
-              />
-              Auto-refresh
-              {autoRefresh && <span className="text-muted-foreground">({nextRefreshIn}s)</span>}
-            </label>
-            <button
-              onClick={() => fetchServices()}
-              disabled={loading}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-muted/50 disabled:opacity-50 transition-colors"
-            >
-              <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Refresh
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Summary cards */}
         {data && !loading && (

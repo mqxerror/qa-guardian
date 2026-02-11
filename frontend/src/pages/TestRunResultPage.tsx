@@ -28,7 +28,7 @@ import {
 import { Download, RefreshCw, Share2, FlaskConical, ListOrdered, Camera, BarChart3, Globe, Eye, Accessibility, ScrollText } from 'lucide-react';
 import { useMetricsState } from '../hooks/useMetricsState';
 import { useNetworkAnalysisState } from '../hooks/useNetworkAnalysisState';
-import { useAccessibilityState } from '../hooks/useAccessibilityState';
+import { useAccessibilityState, AccessibilityData } from '../hooks/useAccessibilityState';
 import { useComputedResults } from '../hooks/useComputedResults';
 import { useTestRunHandlers } from '../hooks/useTestRunHandlers';
 import { useVisualTestState } from '../hooks/useVisualTestState';
@@ -985,7 +985,7 @@ export default function TestRunResultPage() {
  // Feature #46: analyzePerformanceResults moved to useTestRunHandlers hook
 
  // Feature #1936: AI analysis for accessibility violations - wrapper that passes token to hook function
- const analyzeAccessibilityResults = useCallback(async (testName: string, a11y: any) => {
+ const analyzeAccessibilityResults = useCallback(async (testName: string, a11y: AccessibilityData) => {
  if (!token) return;
  await analyzeA11y(testName, a11y, token);
  }, [token, analyzeA11y]);
