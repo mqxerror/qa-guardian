@@ -5,6 +5,7 @@
  */
 
 import React, { useMemo } from 'react';
+import { Loader2, ArrowDown, ArrowUp } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { formatDuration } from './utils';
 import { ResultSummary, TestRun } from './types';
@@ -130,10 +131,7 @@ export default function ComparisonPanel({
 
  {loadingCompareRun && (
  <div className="text-center py-4">
- <svg className="animate-spin h-6 w-6 mx-auto text-primary" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
- </svg>
+ <Loader2 className="animate-spin h-6 w-6 mx-auto text-primary" />
  </div>
  )}
 
@@ -159,13 +157,9 @@ export default function ComparisonPanel({
  comparisonMetrics.duration.improved ? 'text-success' : 'text-destructive'
  }`}>
  {comparisonMetrics.duration.delta.direction === 'down' ? (
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
- </svg>
+ <ArrowDown className="w-4 h-4" />
  ) : (
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
- </svg>
+ <ArrowUp className="w-4 h-4" />
  )}
  {formatDuration(comparisonMetrics.duration.delta.value)}
  </span>

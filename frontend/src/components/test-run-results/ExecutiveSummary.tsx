@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { Check, ChevronRight, CheckCircle } from 'lucide-react';
 import { ResultSummary, ActiveTab } from './types';
 import { calculateHealthScore, getHealthScoreColorClass, getHealthScoreBarClass } from './utils';
 
@@ -75,9 +76,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
  <div className="mt-3 text-sm text-muted-foreground">
  {resultSummary.failed === 0 && resultSummary.total > 0 ? (
  <span className="text-success flex items-center gap-1">
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
- </svg>
+ <Check className="w-4 h-4" />
  All tests passed
  </span>
  ) : resultSummary.total > 0 ? (
@@ -110,17 +109,13 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
  className="text-sm text-primary hover:underline flex items-center gap-1"
  >
  View failure details
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
- </svg>
+ <ChevronRight className="w-4 h-4" />
  </button>
  </div>
  )}
  {resultSummary.failed === 0 && resultSummary.total > 0 && (
  <div className="mt-3 text-sm text-success flex items-center gap-1">
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <CheckCircle className="w-4 h-4" />
  No critical issues
  </div>
  )}

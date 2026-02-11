@@ -9,6 +9,7 @@
  * - SecurityInsightsSection
  */
 import React from 'react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 import { LighthouseResult } from '../types';
 
 // Opportunity item from Lighthouse audit
@@ -120,14 +121,7 @@ export const OpportunitiesSection: React.FC<OpportunitiesSectionProps> = ({
  className="w-full p-3 flex items-center justify-between hover:bg-muted/30 transition-colors"
  >
  <div className="flex items-center gap-3">
- <svg
- className={`w-4 h-4 transition-transform ${expandedOpportunities.has(opp.id) ? 'rotate-90' : ''}`}
- fill="none"
- viewBox="0 0 24 24"
- stroke="currentColor"
- >
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
- </svg>
+ <ChevronRight className={`w-4 h-4 transition-transform ${expandedOpportunities.has(opp.id) ? 'rotate-90' : ''}`} />
  <span className="text-sm text-foreground">{opp.title}</span>
  </div>
  <span className="text-sm font-medium text-warning">
@@ -173,14 +167,7 @@ export const DiagnosticsSection: React.FC<DiagnosticsSectionProps> = ({
  onClick={() => toggleDiagnostic(diag.id)}
  className="w-full p-3 flex items-center gap-3 hover:bg-muted/30 transition-colors"
  >
- <svg
- className={`w-4 h-4 transition-transform ${expandedDiagnostics.has(diag.id) ? 'rotate-90' : ''}`}
- fill="none"
- viewBox="0 0 24 24"
- stroke="currentColor"
- >
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
- </svg>
+ <ChevronRight className={`w-4 h-4 transition-transform ${expandedDiagnostics.has(diag.id) ? 'rotate-90' : ''}`} />
  <span className="text-sm text-foreground">{diag.title}</span>
  </button>
  {expandedDiagnostics.has(diag.id) && (
@@ -238,14 +225,7 @@ export const SecurityInsightsSection: React.FC<SecurityInsightsSectionProps> = (
  Auth Required
  </span>
  )}
- <svg
- className={`w-4 h-4 text-accent transition-transform ${securityInsightsCollapsed ? '' : 'rotate-180'}`}
- fill="none"
- viewBox="0 0 24 24"
- stroke="currentColor"
- >
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
- </svg>
+ <ChevronDown className={`w-4 h-4 text-accent transition-transform ${securityInsightsCollapsed ? '' : 'rotate-180'}`} />
  </div>
  </button>
  {!securityInsightsCollapsed && (
