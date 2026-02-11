@@ -1,10 +1,12 @@
 /**
  * AlertRoutingModal - Extracted from MonitoringPage.tsx for Feature #47
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #635: Migrated to Modal/ModalBody/ModalFooter
  * Handles creation and editing of alert routing rules with multiple destination types
  */
 
 import { useState } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../../ui/Modal';
 import { toast } from '../../../../stores/toastStore';
 import { AlertRoutingCondition, AlertRoutingDestination, AlertRoutingRule } from '../../types';
 
@@ -174,17 +176,17 @@ export function AlertRoutingModal({
  };
 
  return (
- <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
- <div
- role="dialog"
- aria-modal="true"
- aria-labelledby="alert-routing-modal-title"
- className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
+ <Modal
+ isOpen
+ onClose={() => {
+ resetForm();
+ onClose();
+ }}
+ title={editingRule ? 'Edit Alert Routing Rule' : 'Create Alert Routing Rule'}
+ size="lg"
  >
- <h2 id="alert-routing-modal-title" className="text-lg font-semibold text-foreground mb-4">
- {editingRule ? 'Edit Alert Routing Rule' : 'Create Alert Routing Rule'}
- </h2>
- <form onSubmit={handleSubmit} className="space-y-4">
+ <form id="alert-routing-form" onSubmit={handleSubmit}>
+ <ModalBody className="space-y-4">
  <div>
  <label className="block text-sm font-medium text-foreground mb-1">Rule Name *</label>
  <input
@@ -332,7 +334,8 @@ export function AlertRoutingModal({
  </div>
  </div>
 
- <div className="flex gap-3 pt-4">
+ </ModalBody>
+ <ModalFooter>
  <button
  type="button"
  onClick={() => {
@@ -345,15 +348,15 @@ export function AlertRoutingModal({
  </button>
  <button
  type="submit"
+ form="alert-routing-form"
  disabled={isSubmitting || !name.trim() || conditions.length === 0 || destinations.length === 0}
  className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
  >
  {isSubmitting ? 'Saving...' : editingRule ? 'Update' : 'Create'}
  </button>
- </div>
+ </ModalFooter>
  </form>
- </div>
- </div>
+ </Modal>
  );
 }
 

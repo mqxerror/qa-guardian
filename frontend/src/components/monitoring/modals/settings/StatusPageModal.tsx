@@ -2,6 +2,7 @@
  * Status Page Modal
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #635: Migrated to Modal/ModalBody/ModalFooter
  *
  * Handles creation and editing of public status pages with:
  * - Name, slug, description
@@ -10,6 +11,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../../ui/Modal';
 import { toast } from '../../../../stores/toastStore';
 import type { StatusPage, AvailableCheck } from '../../types';
 
@@ -143,17 +145,14 @@ export const StatusPageModal: React.FC<StatusPageModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/50">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="status-page-modal-title"
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
-      >
-        <h2 id="status-page-modal-title" className="text-lg font-semibold text-foreground mb-4">
-          {editingStatusPage ? 'Edit Status Page' : 'Create Status Page'}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={editingStatusPage ? 'Edit Status Page' : 'Create Status Page'}
+      size="lg"
+    >
+      <form id="status-page-form" onSubmit={handleSubmit}>
+        <ModalBody className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Name *</label>
@@ -294,28 +293,29 @@ export const StatusPageModal: React.FC<StatusPageModalProps> = ({
             )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                resetForm();
-              }}
-              className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !name.trim()}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Saving...' : editingStatusPage ? 'Update' : 'Create'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              resetForm();
+            }}
+            className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="status-page-form"
+            disabled={isSubmitting || !name.trim()}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isSubmitting ? 'Saving...' : editingStatusPage ? 'Update' : 'Create'}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 };
 

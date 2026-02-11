@@ -1,10 +1,12 @@
 /**
  * EscalationPolicyModal - Extracted from MonitoringPage.tsx for Feature #47
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #635: Migrated to Modal/ModalBody/ModalFooter
  * Handles creation and editing of escalation policies with multi-level targets
  */
 
 import { useState, useEffect } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../../ui/Modal';
 import { toast } from '../../../../stores/toastStore';
 import { EscalationPolicy, EscalationTarget, OnCallSchedule } from '../../types';
 
@@ -151,17 +153,17 @@ export function EscalationPolicyModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="escalation-policy-modal-title"
-        className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
-      >
-        <h2 id="escalation-policy-modal-title" className="text-lg font-semibold text-foreground mb-4">
-          {editingPolicy ? 'Edit Escalation Policy' : 'Create Escalation Policy'}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal
+      isOpen
+      onClose={() => {
+        resetForm();
+        onClose();
+      }}
+      title={editingPolicy ? 'Edit Escalation Policy' : 'Create Escalation Policy'}
+      size="xl"
+    >
+      <form id="escalation-policy-form" onSubmit={handleSubmit}>
+        <ModalBody className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Policy Name *</label>
@@ -264,28 +266,29 @@ export function EscalationPolicyModal({
             )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <button
-              type="button"
-              onClick={() => {
-                resetForm();
-                onClose();
-              }}
-              className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !name.trim() || levels.length === 0}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Saving...' : editingPolicy ? 'Update' : 'Create'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={() => {
+              resetForm();
+              onClose();
+            }}
+            className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="escalation-policy-form"
+            disabled={isSubmitting || !name.trim() || levels.length === 0}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isSubmitting ? 'Saving...' : editingPolicy ? 'Update' : 'Create'}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }
 

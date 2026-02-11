@@ -1,8 +1,10 @@
 // ManagedIncidentModal - Feature #47: Extract from MonitoringPage.tsx
 // Modal for creating new managed incidents
 // Feature #127: Mobile responsive design audit and fixes
+// Feature #635: Migrated to Modal/ModalBody/ModalFooter
 
 import { useState } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../../ui/Modal';
 import { ManagedIncident } from '../../types';
 
 interface ManagedIncidentModalProps {
@@ -65,17 +67,9 @@ export function ManagedIncidentModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/50">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="managed-incident-modal-title"
-        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
-      >
-        <h2 id="managed-incident-modal-title" className="text-lg font-semibold text-foreground mb-4">
-          🔥 Declare Incident
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal isOpen onClose={handleClose} title="🔥 Declare Incident" size="md">
+      <form id="managed-incident-form" onSubmit={handleSubmit}>
+        <ModalBody className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Incident Title *</label>
             <input
@@ -152,24 +146,25 @@ export function ManagedIncidentModal({
             />
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !title.trim()}
-              className="flex-1 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Creating...' : 'Declare Incident'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="managed-incident-form"
+            disabled={isSubmitting || !title.trim()}
+            className="flex-1 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+          >
+            {isSubmitting ? 'Creating...' : 'Declare Incident'}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }

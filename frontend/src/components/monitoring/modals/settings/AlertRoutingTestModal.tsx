@@ -2,12 +2,14 @@
  * Alert Routing Test Modal
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #635: Migrated to Modal/ModalBody/ModalFooter
  *
  * Allows users to test alert routing rules by simulating alerts
  * with different severity levels, check types, and names.
  */
 
 import React, { useState } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../../ui/Modal';
 import { toast } from '../../../../stores/toastStore';
 
 export interface AlertRoutingTestModalProps {
@@ -75,20 +77,11 @@ export const AlertRoutingTestModal: React.FC<AlertRoutingTestModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="alert-routing-test-modal-title"
-        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
-      >
-        <h2 id="alert-routing-test-modal-title" className="text-lg font-semibold text-foreground mb-4">
-          🧪 Test Alert Routing
-        </h2>
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Simulate an alert to see which routing rules would match and where it would be routed.
-          </p>
+    <Modal isOpen onClose={handleClose} title="🧪 Test Alert Routing" size="md">
+      <ModalBody className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Simulate an alert to see which routing rules would match and where it would be routed.
+        </p>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -159,15 +152,16 @@ export const AlertRoutingTestModal: React.FC<AlertRoutingTestModalProps> = ({
             </div>
           )}
 
-          <button
-            onClick={handleClose}
-            className="w-full rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <button
+          onClick={handleClose}
+          className="w-full rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+        >
+          Close
+        </button>
+      </ModalFooter>
+    </Modal>
   );
 };
 

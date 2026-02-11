@@ -2,6 +2,7 @@
  * Alert Grouping Modal
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #635: Migrated to Modal/ModalBody/ModalFooter
  *
  * Handles creation and editing of alert grouping rules with:
  * - Rule name and description
@@ -11,6 +12,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../../ui/Modal';
 import { toast } from '../../../../stores/toastStore';
 import type { AlertGroupingRule } from '../../types';
 
@@ -121,17 +123,17 @@ export const AlertGroupingModal: React.FC<AlertGroupingModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="alert-grouping-modal-title"
-        className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
-      >
-        <h2 id="alert-grouping-modal-title" className="text-lg font-semibold text-foreground mb-4">
-          {editingRule ? 'Edit Alert Grouping Rule' : 'Create Alert Grouping Rule'}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal
+      isOpen
+      onClose={() => {
+        onClose();
+        resetForm();
+      }}
+      title={editingRule ? 'Edit Alert Grouping Rule' : 'Create Alert Grouping Rule'}
+      size="md"
+    >
+      <form id="alert-grouping-form" onSubmit={handleSubmit}>
+        <ModalBody className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Rule Name *</label>
             <input
@@ -218,28 +220,29 @@ export const AlertGroupingModal: React.FC<AlertGroupingModalProps> = ({
             </label>
           </div>
 
-          <div className="flex gap-2 pt-4">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                resetForm();
-              }}
-              className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !name.trim() || groupBy.length === 0}
-              className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Saving...' : editingRule ? 'Update' : 'Create'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              resetForm();
+            }}
+            className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="alert-grouping-form"
+            disabled={isSubmitting || !name.trim() || groupBy.length === 0}
+            className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isSubmitting ? 'Saving...' : editingRule ? 'Update' : 'Create'}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 };
 

@@ -1,8 +1,10 @@
 // ManagedIncidentModals - Feature #47: Extract from MonitoringPage.tsx
 // All incident-related modals bundled together for modularity
 // Feature #127: Mobile responsive design audit and fixes
+// Feature #635: Migrated to Modal/ModalBody/ModalFooter
 
 import { useState } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../../ui/Modal';
 import { ManagedIncident, ManagedIncidentResponder } from '../../types';
 
 // Helper functions
@@ -90,17 +92,9 @@ export function CreateManagedIncidentModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/50">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-managed-incident-modal-title"
-        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
-      >
-        <h2 id="create-managed-incident-modal-title" className="text-lg font-semibold text-foreground mb-4">
-          🔥 Declare Incident
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+    <Modal isOpen onClose={handleClose} title="🔥 Declare Incident" size="md">
+      <form id="create-managed-incident-form" onSubmit={handleSubmit} noValidate>
+        <ModalBody className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Incident Title *</label>
             <input
@@ -177,25 +171,26 @@ export function CreateManagedIncidentModal({
             />
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !title.trim()}
-              className="flex-1 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Creating...' : 'Declare Incident'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="create-managed-incident-form"
+            disabled={isSubmitting || !title.trim()}
+            className="flex-1 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+          >
+            {isSubmitting ? 'Creating...' : 'Declare Incident'}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }
 
@@ -231,35 +226,20 @@ export function ManagedIncidentDetailModal({
   if (!isOpen || !incident) return null;
 
   return (
-    <div className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/50">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="managed-incident-detail-modal-title"
-        className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
-      >
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`px-2 py-0.5 text-xs font-bold rounded ${getIncidentPriorityColor(incident.priority)}`}>
-                {incident.priority}
-              </span>
-              <span className={`px-2 py-0.5 text-xs rounded ${getIncidentStatusColor(incident.status)}`}>
-                {incident.status}
-              </span>
-            </div>
-            <h2 id="managed-incident-detail-modal-title" className="text-xl font-semibold text-foreground">{incident.title}</h2>
-            {incident.description && (
-              <p className="text-muted-foreground mt-1">{incident.description}</p>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            ✕
-          </button>
+    <Modal isOpen onClose={onClose} title={incident.title} size="xl">
+      <ModalBody>
+        {/* Custom header with status badges */}
+        <div className="flex items-center gap-2 mb-4">
+          <span className={`px-2 py-0.5 text-xs font-bold rounded ${getIncidentPriorityColor(incident.priority)}`}>
+            {incident.priority}
+          </span>
+          <span className={`px-2 py-0.5 text-xs rounded ${getIncidentStatusColor(incident.status)}`}>
+            {incident.status}
+          </span>
         </div>
+        {incident.description && (
+          <p className="text-muted-foreground mb-4">{incident.description}</p>
+        )}
 
         {/* Status Actions */}
         {incident.status !== 'resolved' && (
@@ -456,16 +436,16 @@ export function ManagedIncidentDetailModal({
           </div>
         </div>
 
-        <div className="flex justify-end mt-6">
-          <button
-            onClick={onClose}
-            className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <button
+          onClick={onClose}
+          className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+        >
+          Close
+        </button>
+      </ModalFooter>
+    </Modal>
   );
 }
 
@@ -503,15 +483,8 @@ export function AssignResponderModal({
   if (!isOpen || !incidentId) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] p-4 flex items-center justify-center bg-black/50">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="assign-responder-modal-title"
-        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
-      >
-        <h2 id="assign-responder-modal-title" className="text-lg font-semibold text-foreground mb-4">Assign Responder</h2>
-        <div className="space-y-4">
+    <Modal isOpen onClose={handleClose} title="Assign Responder" size="md">
+      <ModalBody className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Name *</label>
             <input
@@ -544,24 +517,23 @@ export function AssignResponderModal({
               <option value="observer">Observer</option>
             </select>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={handleClose}
-              className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAssign}
-              disabled={!name.trim() || !email.trim()}
-              className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              Assign
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <button
+          onClick={handleClose}
+          className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleAssign}
+          disabled={!name.trim() || !email.trim()}
+          className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        >
+          Assign
+        </button>
+      </ModalFooter>
+    </Modal>
   );
 }
 
@@ -599,15 +571,8 @@ export function ResolveIncidentModal({
   if (!isOpen || !incidentId) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] p-4 flex items-center justify-center bg-black/50">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="resolve-incident-modal-title"
-        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
-      >
-        <h2 id="resolve-incident-modal-title" className="text-lg font-semibold text-foreground mb-4">Resolve Incident</h2>
-        <div className="space-y-4">
+    <Modal isOpen onClose={handleClose} title="Resolve Incident" size="md">
+      <ModalBody className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Resolution Summary *</label>
             <textarea
@@ -640,23 +605,22 @@ export function ResolveIncidentModal({
               Postmortem has been completed
             </label>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={handleClose}
-              className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleResolve}
-              disabled={!resolutionSummary.trim()}
-              className="flex-1 rounded-md bg-success px-4 py-2 text-sm font-medium text-success-foreground hover:bg-success disabled:opacity-50"
-            >
-              Resolve Incident
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <button
+          onClick={handleClose}
+          className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleResolve}
+          disabled={!resolutionSummary.trim()}
+          className="flex-1 rounded-md bg-success px-4 py-2 text-sm font-medium text-success-foreground hover:bg-success disabled:opacity-50"
+        >
+          Resolve Incident
+        </button>
+      </ModalFooter>
+    </Modal>
   );
 }

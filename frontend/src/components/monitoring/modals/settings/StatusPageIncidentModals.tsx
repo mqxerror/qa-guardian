@@ -2,6 +2,7 @@
  * Status Page Incident Modals
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #635: Migrated to Modal/ModalBody/ModalFooter
  *
  * Contains 3 modals:
  * 1. IncidentManagementPanel - Panel for viewing/managing incidents on a status page
@@ -10,6 +11,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../../ui/Modal';
 import { toast } from '../../../../stores/toastStore';
 import type { StatusPage, StatusPageIncident } from '../../types';
 
@@ -93,29 +95,16 @@ export const IncidentManagementPanel: React.FC<IncidentManagementPanelProps> = (
 
   return (
     <>
-      <div className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/50">
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="incident-management-panel-title"
-          className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 id="incident-management-panel-title" className="text-lg font-semibold text-foreground">
-                📢 Incident Management - {statusPage.name}
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Create and manage incident communications for your status page
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              ✕
-            </button>
-          </div>
+      <Modal
+        isOpen
+        onClose={onClose}
+        title={`📢 Incident Management - ${statusPage.name}`}
+        size="xl"
+      >
+        <ModalBody>
+          <p className="text-sm text-muted-foreground mb-4">
+            Create and manage incident communications for your status page
+          </p>
 
           <div className="flex items-center justify-end mb-4">
             <button
@@ -208,16 +197,16 @@ export const IncidentManagementPanel: React.FC<IncidentManagementPanelProps> = (
             </div>
           )}
 
-          <div className="flex justify-end pt-4 border-t border-border mt-4">
-            <button
-              onClick={onClose}
-              className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={onClose}
+            className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Close
+          </button>
+        </ModalFooter>
+      </Modal>
 
       {/* Nested modals */}
       <CreateStatusPageIncidentModal
@@ -321,15 +310,9 @@ export const CreateStatusPageIncidentModal: React.FC<CreateStatusPageIncidentMod
   if (!isOpen || !statusPage) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] p-4 flex items-center justify-center bg-black/50">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-status-page-incident-modal-title"
-        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
-      >
-        <h2 id="create-status-page-incident-modal-title" className="text-lg font-semibold text-foreground mb-4">Create New Incident</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal isOpen onClose={onClose} title="Create New Incident" size="md">
+      <form id="create-status-incident-form" onSubmit={handleSubmit}>
+        <ModalBody className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Incident Title *</label>
             <input
@@ -382,28 +365,29 @@ export const CreateStatusPageIncidentModal: React.FC<CreateStatusPageIncidentMod
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                resetForm();
-              }}
-              className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !title.trim()}
-              className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Creating...' : 'Create Incident'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              resetForm();
+            }}
+            className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="create-status-incident-form"
+            disabled={isSubmitting || !title.trim()}
+            className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90 disabled:opacity-50"
+          >
+            {isSubmitting ? 'Creating...' : 'Create Incident'}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 };
 
@@ -482,18 +466,12 @@ export const AddIncidentUpdateModal: React.FC<AddIncidentUpdateModalProps> = ({
   if (!isOpen || !statusPage || !incident) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] p-4 flex items-center justify-center bg-black/50">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-incident-update-modal-title"
-        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-lg bg-card p-4 sm:p-6 shadow-xl"
-      >
-        <h2 id="add-incident-update-modal-title" className="text-lg font-semibold text-foreground mb-4">Add Incident Update</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Incident: {incident.title}
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal isOpen onClose={onClose} title="Add Incident Update" size="md">
+      <form id="add-incident-update-form" onSubmit={handleSubmit}>
+        <ModalBody className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Incident: {incident.title}
+          </p>
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">New Status</label>
             <select
@@ -520,28 +498,29 @@ export const AddIncidentUpdateModal: React.FC<AddIncidentUpdateModalProps> = ({
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                resetForm();
-              }}
-              className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !message.trim()}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Posting...' : 'Post Update'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              resetForm();
+            }}
+            className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="add-incident-update-form"
+            disabled={isSubmitting || !message.trim()}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isSubmitting ? 'Posting...' : 'Post Update'}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 };
 
