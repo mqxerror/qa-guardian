@@ -1,48 +1,37 @@
 // SuiteRunHistoryPage - Feature #1851: Test Run History page at suite level
 // Shows all historical test runs for a specific suite
+// Feature #677: Migrated to React Query hooks
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ClipboardList, Eye } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
-import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
-// Feature #656: Import canonical TestSuite from shared location
-import { type TestSuite } from '../hooks/api/useSuites';
-
-interface TestRun {
- id: string;
- suite_id: string;
- test_id?: string;
- status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
- browser?: string;
- branch?: string;
- created_at: string;
- started_at?: string;
- completed_at?: string;
- duration_ms?: number;
- results_count: number;
- passed_count: number;
- failed_count: number;
-}
-
-interface Project {
- id: string;
- name: string;
-}
+// Feature #677: Use React Query hooks instead of raw fetch+useState
+import { useSuite } from '../hooks/api/useSuites';
+import { useRunsBySuite, type TestRun } from '../hooks/api/useRuns';
+import { useProject } from '../hooks/api/useProjects';
 
 function SuiteRunHistoryPage() {
  const { suiteId } = useParams<{ suiteId: string }>();
  const navigate = useNavigate();
- const { token } = useAuthStore();
  const { formatDate } = useTimezoneStore();
 
- const [suite, setSuite] = useState<TestSuite | null>(null);
- const [project, setProject] = useState<Project | null>(null);
- const [runs, setRuns] = useState<TestRun[]>([]);
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState<string | null>(null);
+ // Feature #677: React Query hooks for data fetching with caching
+ const { data: suiteData, isLoading: suiteLoading } = useSuite(suiteId);
+ const suite = suiteData?.suite ?? suiteData ?? null;
+ const projectId = suite?.project_id;
+
+ const { data: projectData } = useProject(projectId);
+ const project = projectData?.project ?? projectData ?? null;
+
+ const { data: runsData, isLoading: runsLoading, error: runsError } = useRunsBySuite(suiteId);
+ const runs: TestRun[] = runsData?.runs ?? [];
+
+ // Derived loading/error state
+ const loading = suiteLoading || runsLoading;
+ const error = runsError ? (runsError instanceof Error ? runsError.message : 'Failed to load run history') : null;
 
  // Filters
  const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -52,68 +41,6 @@ function SuiteRunHistoryPage() {
  // Pagination
  const [currentPage, setCurrentPage] = useState(1);
  const [itemsPerPage, setItemsPerPage] = useState(10);
-
- // Fetch suite details
- useEffect(() => {
- const fetchSuite = async () => {
- if (!suiteId || !token) return;
-
- try {
- const response = await fetch(`/api/v1/suites/${suiteId}`, {
- headers: { Authorization: `Bearer ${token}` },
- });
-
- if (!response.ok) throw new Error('Failed to fetch suite');
-
- const data = await response.json();
- setSuite(data);
-
- // Fetch project details
- if (data.project_id) {
- const projectResponse = await fetch(`/api/v1/projects/${data.project_id}`, {
- headers: { Authorization: `Bearer ${token}` },
- });
- if (projectResponse.ok) {
- const projectData = await projectResponse.json();
- setProject(projectData);
- }
- }
- } catch (err) {
- console.error('Error fetching suite:', err);
- }
- };
-
- fetchSuite();
- }, [suiteId, token]);
-
- // Fetch runs
- useEffect(() => {
- const fetchRuns = async () => {
- if (!suiteId || !token) return;
-
- setLoading(true);
- setError(null);
-
- try {
- const response = await fetch(`/api/v1/suites/${suiteId}/runs`, {
- headers: { Authorization: `Bearer ${token}` },
- });
-
- if (!response.ok) {
- throw new Error(`Failed to fetch runs: ${response.status}`);
- }
-
- const data = await response.json();
- setRuns(data.runs || []);
- } catch (err) {
- setError(err instanceof Error ? err.message : 'Failed to load run history');
- } finally {
- setLoading(false);
- }
- };
-
- fetchRuns();
- }, [suiteId, token]);
 
  // Filter runs
  const filteredRuns = useMemo(() => {
