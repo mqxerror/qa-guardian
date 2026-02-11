@@ -528,7 +528,7 @@ export function AutoPRPage() {
                             <div className="flex space-x-2 pt-2">
                               <button
                                 onClick={() => updatePRStatus(pr.id, 'merged', 'passed')}
-                                className="px-3 py-1.5 bg-success text-white text-sm rounded hover:bg-success"
+                                className="px-3 py-1.5 bg-success text-primary-foreground text-sm rounded hover:bg-success"
                               >
                                 Merge
                               </button>

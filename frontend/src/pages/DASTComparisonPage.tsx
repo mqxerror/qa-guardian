@@ -384,7 +384,7 @@ export function DASTComparisonPage() {
  <button
  onClick={runNewScan}
  disabled={isScanning || !selectedProject || !scanTarget}
- className="px-6 py-2 bg-destructive text-white rounded-md hover:bg-destructive disabled:opacity-50 flex items-center gap-2"
+ className="px-6 py-2 bg-destructive text-primary-foreground rounded-md hover:bg-destructive disabled:opacity-50 flex items-center gap-2"
  >
  {isScanning && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
  {isScanning ? 'Scanning...' : 'Run DAST Scan'}

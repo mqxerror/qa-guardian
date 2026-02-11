@@ -347,10 +347,10 @@ export function CVEDatabasePage() {
  };
 
  const getCVSSColor = (score: number) => {
- if (score >= 9) return 'bg-accent text-white';
- if (score >= 7) return 'bg-destructive text-white';
- if (score >= 4) return 'bg-warning text-white';
- return 'bg-primary text-white';
+ if (score >= 9) return 'bg-accent text-primary-foreground';
+ if (score >= 7) return 'bg-destructive text-primary-foreground';
+ if (score >= 4) return 'bg-warning text-primary-foreground';
+ return 'bg-primary text-primary-foreground';
  };
 
  const toggleExpand = (id: string) => {
@@ -653,12 +653,12 @@ export function CVEDatabasePage() {
  href={vuln.nvdUrl}
  target="_blank"
  rel="noopener noreferrer"
- className="px-3 py-1.5 bg-primary text-white rounded text-sm hover:bg-primary"
+ className="px-3 py-1.5 bg-primary text-primary-foreground rounded text-sm hover:bg-primary"
  >
  🏛️ View NVD Details
  </a>
  {vuln.fixedVersion && (
- <button className="px-3 py-1.5 bg-success text-white rounded text-sm hover:bg-success">
+ <button className="px-3 py-1.5 bg-success text-primary-foreground rounded text-sm hover:bg-success">
  Auto-fix to {vuln.fixedVersion}
  </button>
  )}

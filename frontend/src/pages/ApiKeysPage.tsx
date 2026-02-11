@@ -356,7 +356,7 @@ export function ApiKeysPage() {
                             onClick={() => toggleScope(scope)}
                             className={`rounded-full px-3 py-1 text-sm font-medium border transition-colors ${
                               newKeyScopes.includes(scope)
-                                ? 'bg-accent text-white border-accent'
+                                ? 'bg-accent text-primary-foreground border-accent'
                                 : 'bg-background text-foreground border-border hover:border-accent'
                             }`}
                           >

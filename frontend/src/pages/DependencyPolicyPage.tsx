@@ -562,7 +562,7 @@ export function DependencyPolicyPage() {
                                 const reason = prompt('Enter override reason:');
                                 if (reason) overrideViolation(violation.id, reason);
                               }}
-                              className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent transition-colors"
+                              className="px-4 py-2 bg-accent text-primary-foreground rounded-lg hover:bg-accent transition-colors"
                             >
                               Override &amp; Allow Build
                             </button>

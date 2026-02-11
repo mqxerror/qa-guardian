@@ -73,10 +73,10 @@ interface ScanResult {
 }
 
 const severityColors = {
-  critical: 'bg-destructive text-white',
-  high: 'bg-warning text-white',
+  critical: 'bg-destructive text-primary-foreground',
+  high: 'bg-warning text-primary-foreground',
   medium: 'bg-warning text-black',
-  low: 'bg-primary text-white',
+  low: 'bg-primary text-primary-foreground',
 };
 
 const severityBorderColors = {
@@ -296,7 +296,7 @@ export function ContainerScanPage() {
                   onClick={() => setSeverityFilter('critical')}
                   className={`px-4 py-2 rounded-lg border transition-colors ${
                     severityFilter === 'critical'
-                      ? 'bg-destructive text-white border-destructive'
+                      ? 'bg-destructive text-primary-foreground border-destructive'
                       : 'border-destructive text-destructive hover:bg-destructive/10'
                   }`}
                 >
@@ -306,7 +306,7 @@ export function ContainerScanPage() {
                   onClick={() => setSeverityFilter('high')}
                   className={`px-4 py-2 rounded-lg border transition-colors ${
                     severityFilter === 'high'
-                      ? 'bg-warning text-white border-warning'
+                      ? 'bg-warning text-primary-foreground border-warning'
                       : 'border-warning text-warning hover:bg-warning/10'
                   }`}
                 >
@@ -326,7 +326,7 @@ export function ContainerScanPage() {
                   onClick={() => setSeverityFilter('low')}
                   className={`px-4 py-2 rounded-lg border transition-colors ${
                     severityFilter === 'low'
-                      ? 'bg-primary text-white border-primary'
+                      ? 'bg-primary text-primary-foreground border-primary'
                       : 'border-primary text-primary hover:bg-primary/10'
                   }`}
                 >

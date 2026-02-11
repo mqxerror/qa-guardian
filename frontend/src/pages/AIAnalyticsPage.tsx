@@ -308,7 +308,7 @@ export function AIAnalyticsPage() {
                 <button
                   onClick={handleExport}
                   disabled={isExporting}
-                  className="px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 disabled:opacity-50"
+                  className="px-4 py-2 bg-success text-primary-foreground rounded-lg hover:bg-success/90 disabled:opacity-50"
                 >
                   {isExporting ? '⏳ Exporting...' : '📥 Export'}
                 </button>
@@ -356,7 +356,7 @@ export function AIAnalyticsPage() {
           <>
             {/* Savings Banner (always visible) */}
             {analytics && (
-              <div className="bg-gradient-to-r from-success to-success text-white rounded-xl p-6 mb-8">
+              <div className="bg-gradient-to-r from-success to-success text-primary-foreground rounded-xl p-6 mb-8">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div>
                     <h2 className="text-2xl font-bold">💰 You've Saved {formatCurrency(analytics.savings.total_saved)}</h2>

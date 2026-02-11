@@ -32,6 +32,8 @@ import {
  useRunAutoQuarantine,
  useUpdateAutoQuarantineSettings,
  useUpdateRetryStrategySettings,
+ type RetryStrategySettings,
+ type AutoQuarantineSettings,
 } from '../hooks/api/useFlakyTests';
 
 // FlakyTest interface
@@ -193,7 +195,7 @@ export function FlakyTestsDashboardPage() {
 
  // Feature #1105: Update retry strategy settings
  // Feature #76: Use React Query mutation for updating retry strategy settings
- const handleUpdateRetryStrategySettings = async (updates: Partial<typeof retryStrategySettings>) => {
+ const handleUpdateRetryStrategySettings = async (updates: Partial<RetryStrategySettings>) => {
  updateRetryStrategyMutation.mutate(updates, {
  onSuccess: () => {
  toast.success('Retry strategy settings updated');
@@ -238,7 +240,7 @@ export function FlakyTestsDashboardPage() {
  };
 
  // Feature #1104: Update auto-quarantine settings - using React Query mutation
- const handleUpdateAutoQuarantineSettings = async (updates: Partial<typeof autoQuarantineSettings>) => {
+ const handleUpdateAutoQuarantineSettings = async (updates: Partial<AutoQuarantineSettings>) => {
  updateAutoQuarantineMutation.mutate(updates, {
  onSuccess: () => {
  toast.success('Auto-quarantine settings updated');
@@ -632,7 +634,7 @@ Please provide:
  disabled={!autoQuarantineSettings.enabled || isLoadingAutoQuarantine}
  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
  autoQuarantineSettings.enabled && !isLoadingAutoQuarantine
- ? 'bg-warning text-white hover:bg-warning'
+ ? 'bg-warning text-primary-foreground hover:bg-warning'
  : 'bg-muted text-muted-foreground cursor-not-allowed'
  }`}
  >
@@ -1521,7 +1523,7 @@ Please provide:
  <button
  onClick={confirmReleaseFromQuarantine}
  disabled={isReleasingFromQuarantine}
- className="flex-1 px-4 py-2 rounded-lg bg-success text-white hover:bg-success transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+ className="flex-1 px-4 py-2 rounded-lg bg-success text-primary-foreground hover:bg-success transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
  >
  {isReleasingFromQuarantine ? (
  <>
@@ -1548,7 +1550,7 @@ Please provide:
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
  <div className="h-10 w-10 rounded-full bg-gradient-to-r from-accent to-accent/70 flex items-center justify-center">
- <span className="text-white text-lg">🤖</span>
+ <span className="text-primary-foreground text-lg">🤖</span>
  </div>
  <div>
  <h3 className="font-semibold text-foreground">AI Flakiness Analysis</h3>

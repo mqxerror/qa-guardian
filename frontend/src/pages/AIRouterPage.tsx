@@ -197,7 +197,7 @@ function AIRouterPage() {
       </div>
 
       {/* Provider Flow Diagram */}
-      <div className="mb-6 bg-gradient-to-r from-accent via-accent to-primary rounded-lg p-6 text-white">
+      <div className="mb-6 bg-gradient-to-r from-accent via-accent to-primary rounded-lg p-6 text-primary-foreground">
         <h2 className="text-lg font-bold mb-4">Request Flow</h2>
         <div className="flex items-center justify-center gap-4">
           <div className="bg-white/20 rounded-lg p-4 text-center"><div className="text-2xl mb-1">📨</div><div className="font-medium">Request</div></div>
@@ -244,9 +244,9 @@ function AIRouterPage() {
               </div>
               <div className="flex flex-col items-end gap-1">
                 {activeProvider?.current_provider === 'kie' ? (
-                  <span className="px-3 py-1 bg-success text-white text-xs rounded-full font-medium flex items-center gap-1"><span className="w-2 h-2 bg-card rounded-full animate-pulse"></span> ACTIVE</span>
+                  <span className="px-3 py-1 bg-success text-primary-foreground text-xs rounded-full font-medium flex items-center gap-1"><span className="w-2 h-2 bg-card rounded-full animate-pulse"></span> ACTIVE</span>
                 ) : (
-                  <button onClick={() => openSwitchModal('kie')} disabled={isSwitching || activeProvider?.switching} className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary disabled:opacity-50 transition-colors">Switch to Kie.ai</button>
+                  <button onClick={() => openSwitchModal('kie')} disabled={isSwitching || activeProvider?.switching} className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary disabled:opacity-50 transition-colors">Switch to Kie.ai</button>
                 )}
               </div>
             </div>
@@ -263,9 +263,9 @@ function AIRouterPage() {
               </div>
               <div className="flex flex-col items-end gap-1">
                 {activeProvider?.current_provider === 'anthropic' ? (
-                  <span className="px-3 py-1 bg-success text-white text-xs rounded-full font-medium flex items-center gap-1"><span className="w-2 h-2 bg-card rounded-full animate-pulse"></span> ACTIVE</span>
+                  <span className="px-3 py-1 bg-success text-primary-foreground text-xs rounded-full font-medium flex items-center gap-1"><span className="w-2 h-2 bg-card rounded-full animate-pulse"></span> ACTIVE</span>
                 ) : (
-                  <button onClick={() => openSwitchModal('anthropic')} disabled={isSwitching || activeProvider?.switching} className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary disabled:opacity-50 transition-colors">Switch to Anthropic</button>
+                  <button onClick={() => openSwitchModal('anthropic')} disabled={isSwitching || activeProvider?.switching} className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary disabled:opacity-50 transition-colors">Switch to Anthropic</button>
                 )}
               </div>
             </div>
@@ -311,7 +311,7 @@ function AIRouterPage() {
             )}
             <div className="flex justify-end gap-2">
               <button onClick={() => setShowSwitchModal(false)} disabled={isSwitching} className="px-4 py-2 text-foreground hover:text-foreground">Cancel</button>
-              <button onClick={hotSwapProvider} disabled={isSwitching} className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary disabled:opacity-50 flex items-center gap-2">
+              <button onClick={hotSwapProvider} disabled={isSwitching} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary disabled:opacity-50 flex items-center gap-2">
                 {isSwitching && <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>}
                 {isSwitching ? 'Switching...' : 'Switch Provider'}
               </button>

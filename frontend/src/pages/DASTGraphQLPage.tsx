@@ -398,7 +398,7 @@ export function DASTGraphQLPage() {
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-3">
  <div className="w-8 h-8 rounded-full bg-warning flex items-center justify-center animate-pulse">
- <span className="text-white">&#128302;</span>
+ <span className="text-primary-foreground">&#128302;</span>
  </div>
  <div>
  <p className="font-medium text-foreground">{scanResult.progress?.phase}</p>
