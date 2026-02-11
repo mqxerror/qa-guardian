@@ -6,6 +6,7 @@ import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { RefreshCw, Settings, Check, X, AlertTriangle, Clock } from 'lucide-react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 
 // Type definitions for multi-language dependency scanning
 interface LanguageScanConfig {
@@ -441,17 +442,19 @@ export function MultiLanguageDependencyPage() {
           </div>
         )}
 
-        {/* Configuration Modal */}
-        {showConfigModal && config && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-card rounded-lg border border-border w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-foreground">Multi-Language Scan Configuration</h2>
-                <button onClick={() => setShowConfigModal(false)} className="text-muted-foreground hover:text-foreground">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="p-6 space-y-6">
+        {/* Feature #661: Configuration Modal - migrated to shared Modal */}
+        {config && (
+          <Modal
+            isOpen={showConfigModal}
+            onClose={() => setShowConfigModal(false)}
+            title="Multi-Language Scan Configuration"
+            size="lg"
+          >
+            <ModalHeader onClose={() => setShowConfigModal(false)}>
+              Multi-Language Scan Configuration
+            </ModalHeader>
+            <ModalBody>
+              <div className="space-y-6">
                 {/* Language toggles */}
                 <div>
                   <h3 className="font-medium text-foreground mb-3">Enabled Languages</h3>
@@ -545,22 +548,22 @@ export function MultiLanguageDependencyPage() {
                   </div>
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
-                <button
-                  onClick={() => setShowConfigModal(false)}
-                  className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveConfig}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  Save Configuration
-                </button>
-              </div>
-            </div>
-          </div>
+            </ModalBody>
+            <ModalFooter>
+              <button
+                onClick={() => setShowConfigModal(false)}
+                className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveConfig}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Save Configuration
+              </button>
+            </ModalFooter>
+          </Modal>
         )}
       </div>
     </Layout>

@@ -7,6 +7,7 @@ import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 
 // Type definitions
 interface DependencyAlertConfig {
@@ -538,57 +539,62 @@ export function DependencyAlertsPage() {
  )}
  </div>
 
- {/* Simulate CVE Modal */}
- {showSimulateModal && (
- <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
- <div className="bg-card rounded-lg p-6 w-full max-w-md border border-border">
- <h3 className="text-lg font-semibold text-foreground mb-4">Simulate New CVE</h3>
- <p className="text-sm text-muted-foreground mb-4">
- Simulate a new CVE being published to test the alerting system.
- </p>
- <div className="space-y-4">
- <div>
- <label className="block text-sm font-medium text-foreground mb-1">Package Name</label>
- <input
- type="text"
- value={simulatePackage}
- onChange={(e) => setSimulatePackage(e.target.value)}
- className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground"
- placeholder="e.g., lodash, express, axios"
- />
- </div>
- <div>
- <label className="block text-sm font-medium text-foreground mb-1">Severity</label>
- <select
- value={simulateSeverity}
- onChange={(e) => setSimulateSeverity(e.target.value as typeof simulateSeverity)}
- className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground"
- >
- <option value="CRITICAL">Critical</option>
- <option value="HIGH">High</option>
- <option value="MEDIUM">Medium</option>
- <option value="LOW">Low</option>
- </select>
- </div>
- </div>
- <div className="flex justify-end gap-2 mt-6">
- <button
- onClick={() => setShowSimulateModal(false)}
- className="px-4 py-2 text-muted-foreground hover:text-foreground"
- >
- Cancel
- </button>
- <button
- onClick={handleSimulateCVE}
- disabled={isSimulating || !simulatePackage}
- className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
- >
- {isSimulating ? 'Simulating...' : 'Simulate CVE'}
- </button>
- </div>
- </div>
- </div>
- )}
+ {/* Feature #661: Simulate CVE Modal - migrated to shared Modal */}
+      <Modal
+        isOpen={showSimulateModal}
+        onClose={() => setShowSimulateModal(false)}
+        title="Simulate New CVE"
+        size="md"
+      >
+        <ModalHeader onClose={() => setShowSimulateModal(false)}>
+          Simulate New CVE
+        </ModalHeader>
+        <ModalBody>
+          <p className="text-sm text-muted-foreground mb-4">
+            Simulate a new CVE being published to test the alerting system.
+          </p>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Package Name</label>
+              <input
+                type="text"
+                value={simulatePackage}
+                onChange={(e) => setSimulatePackage(e.target.value)}
+                className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground"
+                placeholder="e.g., lodash, express, axios"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Severity</label>
+              <select
+                value={simulateSeverity}
+                onChange={(e) => setSimulateSeverity(e.target.value as typeof simulateSeverity)}
+                className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground"
+              >
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+              </select>
+            </div>
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={() => setShowSimulateModal(false)}
+            className="px-4 py-2 text-muted-foreground hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSimulateCVE}
+            disabled={isSimulating || !simulatePackage}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isSimulating ? 'Simulating...' : 'Simulate CVE'}
+          </button>
+        </ModalFooter>
+      </Modal>
  </div>
  </Layout>
  );

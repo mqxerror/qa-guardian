@@ -8,6 +8,7 @@ import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
 import { Shield, Plus, Play, Check, X, ChevronDown, ChevronRight } from 'lucide-react'; // AlertTriangle unused
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 
 // Feature #770: Dependency Policy Enforcement interfaces
 interface DependencyPolicy {
@@ -577,212 +578,212 @@ export function DependencyPolicyPage() {
         </div>
       </div>
 
-      {/* Create Policy Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-border">
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-foreground">Create Dependency Policy</h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
-              </button>
+      {/* Feature #661: Create Policy Modal - migrated to shared Modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Create Dependency Policy"
+        size="lg"
+      >
+        <ModalHeader onClose={() => setShowCreateModal(false)}>
+          Create Dependency Policy
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Policy Name</label>
+              <input
+                type="text"
+                value={newPolicy.name}
+                onChange={(e) => setNewPolicy({ ...newPolicy, name: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                placeholder="e.g., Production Security Policy"
+              />
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Policy Name</label>
-                <input
-                  type="text"
-                  value={newPolicy.name}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, name: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
-                  placeholder="e.g., Production Security Policy"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Description</label>
-                <textarea
-                  value={newPolicy.description}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, description: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
-                  rows={2}
-                  placeholder="Optional description"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Max Allowed Severity</label>
-                <select
-                  value={newPolicy.max_allowed_severity}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, max_allowed_severity: e.target.value as DependencyPolicy['max_allowed_severity'] })}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
-                >
-                  <option value="NONE">None (Block all vulnerabilities)</option>
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                  <option value="CRITICAL">Critical</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Fail On Severity</label>
-                <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center text-foreground cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={newPolicy.fail_on_critical}
-                      onChange={(e) => setNewPolicy({ ...newPolicy, fail_on_critical: e.target.checked })}
-                      className="mr-2 rounded border-border"
-                    />
-                    Critical
-                  </label>
-                  <label className="flex items-center text-foreground cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={newPolicy.fail_on_high}
-                      onChange={(e) => setNewPolicy({ ...newPolicy, fail_on_high: e.target.checked })}
-                      className="mr-2 rounded border-border"
-                    />
-                    High
-                  </label>
-                  <label className="flex items-center text-foreground cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={newPolicy.fail_on_medium}
-                      onChange={(e) => setNewPolicy({ ...newPolicy, fail_on_medium: e.target.checked })}
-                      className="mr-2 rounded border-border"
-                    />
-                    Medium
-                  </label>
-                  <label className="flex items-center text-foreground cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={newPolicy.fail_on_low}
-                      onChange={(e) => setNewPolicy({ ...newPolicy, fail_on_low: e.target.checked })}
-                      className="mr-2 rounded border-border"
-                    />
-                    Low
-                  </label>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Block On</label>
-                <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center text-foreground cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={newPolicy.block_builds}
-                      onChange={(e) => setNewPolicy({ ...newPolicy, block_builds: e.target.checked })}
-                      className="mr-2 rounded border-border"
-                    />
-                    CI Builds
-                  </label>
-                  <label className="flex items-center text-foreground cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={newPolicy.block_deployments}
-                      onChange={(e) => setNewPolicy({ ...newPolicy, block_deployments: e.target.checked })}
-                      className="mr-2 rounded border-border"
-                    />
-                    Deployments
-                  </label>
-                  <label className="flex items-center text-foreground cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={newPolicy.block_pr_merge}
-                      onChange={(e) => setNewPolicy({ ...newPolicy, block_pr_merge: e.target.checked })}
-                      className="mr-2 rounded border-border"
-                    />
-                    PR Merge
-                  </label>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Exception Patterns (comma-separated)</label>
-                <input
-                  type="text"
-                  value={newPolicy.exception_patterns}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, exception_patterns: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
-                  placeholder="e.g., lodash*, @internal/*"
-                />
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Description</label>
+              <textarea
+                value={newPolicy.description}
+                onChange={(e) => setNewPolicy({ ...newPolicy, description: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                rows={2}
+                placeholder="Optional description"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Max Allowed Severity</label>
+              <select
+                value={newPolicy.max_allowed_severity}
+                onChange={(e) => setNewPolicy({ ...newPolicy, max_allowed_severity: e.target.value as DependencyPolicy['max_allowed_severity'] })}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+              >
+                <option value="NONE">None (Block all vulnerabilities)</option>
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="CRITICAL">Critical</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Fail On Severity</label>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center text-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newPolicy.fail_on_critical}
+                    onChange={(e) => setNewPolicy({ ...newPolicy, fail_on_critical: e.target.checked })}
+                    className="mr-2 rounded border-border"
+                  />
+                  Critical
+                </label>
+                <label className="flex items-center text-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newPolicy.fail_on_high}
+                    onChange={(e) => setNewPolicy({ ...newPolicy, fail_on_high: e.target.checked })}
+                    className="mr-2 rounded border-border"
+                  />
+                  High
+                </label>
+                <label className="flex items-center text-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newPolicy.fail_on_medium}
+                    onChange={(e) => setNewPolicy({ ...newPolicy, fail_on_medium: e.target.checked })}
+                    className="mr-2 rounded border-border"
+                  />
+                  Medium
+                </label>
+                <label className="flex items-center text-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newPolicy.fail_on_low}
+                    onChange={(e) => setNewPolicy({ ...newPolicy, fail_on_low: e.target.checked })}
+                    className="mr-2 rounded border-border"
+                  />
+                  Low
+                </label>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreatePolicy}
-                disabled={!newPolicy.name || isCreatingPolicy}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
-              >
-                {isCreatingPolicy ? 'Creating...' : 'Create Policy'}
-              </button>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Block On</label>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center text-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newPolicy.block_builds}
+                    onChange={(e) => setNewPolicy({ ...newPolicy, block_builds: e.target.checked })}
+                    className="mr-2 rounded border-border"
+                  />
+                  CI Builds
+                </label>
+                <label className="flex items-center text-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newPolicy.block_deployments}
+                    onChange={(e) => setNewPolicy({ ...newPolicy, block_deployments: e.target.checked })}
+                    className="mr-2 rounded border-border"
+                  />
+                  Deployments
+                </label>
+                <label className="flex items-center text-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newPolicy.block_pr_merge}
+                    onChange={(e) => setNewPolicy({ ...newPolicy, block_pr_merge: e.target.checked })}
+                    className="mr-2 rounded border-border"
+                  />
+                  PR Merge
+                </label>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Exception Patterns (comma-separated)</label>
+              <input
+                type="text"
+                value={newPolicy.exception_patterns}
+                onChange={(e) => setNewPolicy({ ...newPolicy, exception_patterns: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                placeholder="e.g., lodash*, @internal/*"
+              />
             </div>
           </div>
-        </div>
-      )}
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={() => setShowCreateModal(false)}
+            className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleCreatePolicy}
+            disabled={!newPolicy.name || isCreatingPolicy}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            {isCreatingPolicy ? 'Creating...' : 'Create Policy'}
+          </button>
+        </ModalFooter>
+      </Modal>
 
-      {/* Simulate Build Modal */}
-      {showSimulateBuildModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg w-full max-w-lg border border-border">
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-foreground">Simulate Build Check</h3>
-              <button onClick={() => { setShowSimulateBuildModal(false); setSimulationResult(null); }} className="text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
-              </button>
+      {/* Feature #661: Simulate Build Modal - migrated to shared Modal */}
+      <Modal
+        isOpen={showSimulateBuildModal}
+        onClose={() => { setShowSimulateBuildModal(false); setSimulationResult(null); }}
+        title="Simulate Build Check"
+        size="md"
+      >
+        <ModalHeader onClose={() => { setShowSimulateBuildModal(false); setSimulationResult(null); }}>
+          Simulate Build Check
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Build Type</label>
+              <select
+                value={simulateBuildType}
+                onChange={(e) => setSimulateBuildType(e.target.value as typeof simulateBuildType)}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+              >
+                <option value="ci">CI Build</option>
+                <option value="deployment">Deployment</option>
+                <option value="pr">PR Merge</option>
+              </select>
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Build Type</label>
-                <select
-                  value={simulateBuildType}
-                  onChange={(e) => setSimulateBuildType(e.target.value as typeof simulateBuildType)}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
-                >
-                  <option value="ci">CI Build</option>
-                  <option value="deployment">Deployment</option>
-                  <option value="pr">PR Merge</option>
-                </select>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                This will simulate a build with vulnerable dependencies (lodash, express, axios)
-                to test your policy enforcement.
-              </p>
-              {simulationResult && (
-                <div className={`p-4 rounded-lg ${simulationResult.allowed ? 'bg-success/10 border border-success/30' : 'bg-destructive/10 border border-destructive/30'}`}>
-                  <div className={`font-semibold flex items-center gap-2 ${simulationResult.allowed ? 'text-success' : 'text-destructive'}`}>
-                    {simulationResult.allowed ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                    {simulationResult.allowed ? 'Build Allowed' : 'Build Blocked'}
-                  </div>
-                  <div className={`text-sm mt-1 ${simulationResult.allowed ? 'text-success/80' : 'text-destructive/80'}`}>
-                    {simulationResult.message}
-                  </div>
+            <p className="text-sm text-muted-foreground">
+              This will simulate a build with vulnerable dependencies (lodash, express, axios)
+              to test your policy enforcement.
+            </p>
+            {simulationResult && (
+              <div className={`p-4 rounded-lg ${simulationResult.allowed ? 'bg-success/10 border border-success/30' : 'bg-destructive/10 border border-destructive/30'}`}>
+                <div className={`font-semibold flex items-center gap-2 ${simulationResult.allowed ? 'text-success' : 'text-destructive'}`}>
+                  {simulationResult.allowed ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                  {simulationResult.allowed ? 'Build Allowed' : 'Build Blocked'}
                 </div>
-              )}
-            </div>
-            <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
-              <button
-                onClick={() => { setShowSimulateBuildModal(false); setSimulationResult(null); }}
-                className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
-              >
-                Close
-              </button>
-              <button
-                onClick={handleSimulateBuild}
-                disabled={isSimulating || policies.filter(p => p.enabled).length === 0}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
-              >
-                <Play className="h-4 w-4" />
-                {isSimulating ? 'Checking...' : 'Run Build Check'}
-              </button>
-            </div>
+                <div className={`text-sm mt-1 ${simulationResult.allowed ? 'text-success/80' : 'text-destructive/80'}`}>
+                  {simulationResult.message}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={() => { setShowSimulateBuildModal(false); setSimulationResult(null); }}
+            className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+          >
+            Close
+          </button>
+          <button
+            onClick={handleSimulateBuild}
+            disabled={isSimulating || policies.filter(p => p.enabled).length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            <Play className="h-4 w-4" />
+            {isSimulating ? 'Checking...' : 'Run Build Check'}
+          </button>
+        </ModalFooter>
+      </Modal>
     </Layout>
   );
 }

@@ -8,6 +8,7 @@ import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
 import { Clock, RefreshCw, Settings, AlertTriangle, Check, X } from 'lucide-react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 
 // Feature #772: Dependency Age Tracking interfaces
 interface DependencyAgeConfig {
@@ -373,77 +374,77 @@ export function DependencyAgePage() {
         </div>
       </div>
 
-      {/* Configure Thresholds Modal */}
-      {showConfigModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg w-full max-w-md border border-border">
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-foreground">Configure Thresholds</h3>
-              <button onClick={() => setShowConfigModal(false)} className="text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
-              </button>
+      {/* Feature #661: Configure Thresholds Modal - migrated to shared Modal */}
+      <Modal
+        isOpen={showConfigModal}
+        onClose={() => setShowConfigModal(false)}
+        title="Configure Thresholds"
+        size="md"
+      >
+        <ModalHeader onClose={() => setShowConfigModal(false)}>
+          Configure Thresholds
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Outdated Threshold (days)
+              </label>
+              <input
+                type="number"
+                value={editConfig.outdated_threshold_days}
+                onChange={(e) => setEditConfig({ ...editConfig, outdated_threshold_days: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                min={1}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Dependencies older than this will be flagged as outdated ({Math.round(editConfig.outdated_threshold_days / 30)} months)
+              </p>
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Outdated Threshold (days)
-                </label>
-                <input
-                  type="number"
-                  value={editConfig.outdated_threshold_days}
-                  onChange={(e) => setEditConfig({ ...editConfig, outdated_threshold_days: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
-                  min={1}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Dependencies older than this will be flagged as outdated ({Math.round(editConfig.outdated_threshold_days / 30)} months)
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Critical Threshold (days)
-                </label>
-                <input
-                  type="number"
-                  value={editConfig.critical_age_days}
-                  onChange={(e) => setEditConfig({ ...editConfig, critical_age_days: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
-                  min={1}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Dependencies older than this will be flagged as critical ({(editConfig.critical_age_days / 365).toFixed(1)} years)
-                </p>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                <div>
-                  <div className="font-medium text-foreground">Notify on Outdated</div>
-                  <div className="text-sm text-muted-foreground">Send notifications when deps become outdated</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editConfig.notify_on_outdated}
-                  onChange={(e) => setEditConfig({ ...editConfig, notify_on_outdated: e.target.checked })}
-                  className="h-4 w-4 rounded border-border"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Critical Threshold (days)
+              </label>
+              <input
+                type="number"
+                value={editConfig.critical_age_days}
+                onChange={(e) => setEditConfig({ ...editConfig, critical_age_days: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                min={1}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Dependencies older than this will be flagged as critical ({(editConfig.critical_age_days / 365).toFixed(1)} years)
+              </p>
             </div>
-            <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
-              <button
-                onClick={() => setShowConfigModal(false)}
-                className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveConfig}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                Save
-              </button>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+              <div>
+                <div className="font-medium text-foreground">Notify on Outdated</div>
+                <div className="text-sm text-muted-foreground">Send notifications when deps become outdated</div>
+              </div>
+              <input
+                type="checkbox"
+                checked={editConfig.notify_on_outdated}
+                onChange={(e) => setEditConfig({ ...editConfig, notify_on_outdated: e.target.checked })}
+                className="h-4 w-4 rounded border-border"
+              />
             </div>
           </div>
-        </div>
-      )}
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={() => setShowConfigModal(false)}
+            className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSaveConfig}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Save
+          </button>
+        </ModalFooter>
+      </Modal>
     </Layout>
   );
 }

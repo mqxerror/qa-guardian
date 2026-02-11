@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { Loader2, FileText, CheckCircle, AlertTriangle, X } from 'lucide-react';
+import { Modal, ModalHeader, ModalBody } from '../components/ui/Modal';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
@@ -704,81 +705,75 @@ export function TestDocumentationPage() {
  </div>
  )}
 
- {/* Feature #1254: Test Editor Modal */}
- {showTestEditor && (
- <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
- <div className="bg-card rounded-lg border border-border w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
- <div className="flex items-center justify-between p-4 border-b border-border">
- <h2 className="text-lg font-semibold text-foreground">Modify Test Code</h2>
- <button
- onClick={() => { setShowTestEditor(false); setEditingTest(null); }}
- className="p-1 rounded hover:bg-muted"
- >
- <X className="h-5 w-5" aria-hidden="true" />
- </button>
- </div>
+ {/* Feature #661: Test Editor Modal - migrated to shared Modal */}
+      <Modal
+        isOpen={showTestEditor}
+        onClose={() => { setShowTestEditor(false); setEditingTest(null); }}
+        title="Modify Test Code"
+        size="lg"
+      >
+        <ModalHeader onClose={() => { setShowTestEditor(false); setEditingTest(null); }}>
+          Modify Test Code
+        </ModalHeader>
+        <ModalBody>
+          <p className="text-sm text-muted-foreground mb-4">
+            Select a test to modify. Changes will automatically trigger documentation regeneration.
+          </p>
 
- <div className="p-4 overflow-auto flex-1">
- <p className="text-sm text-muted-foreground mb-4">
- Select a test to modify. Changes will automatically trigger documentation regeneration.
- </p>
+          <div className="space-y-3 mb-4">
+            {modifiedTests.map((test) => (
+              <button
+                key={test.testId}
+                onClick={() => setEditingTest(test)}
+                className={`w-full p-3 rounded-lg border text-left transition-all ${
+                  editingTest?.testId === test.testId
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <code className="text-sm font-mono text-foreground">{test.testName}</code>
+                  {test.currentCode !== test.originalCode && (
+                    <span className="px-1.5 py-0.5 rounded text-xs bg-warning/10 text-warning">
+                      Modified
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Last modified: {test.lastModified.toLocaleTimeString()}
+                </p>
+              </button>
+            ))}
+          </div>
 
- <div className="space-y-3 mb-4">
- {modifiedTests.map((test) => (
- <button
- key={test.testId}
- onClick={() => setEditingTest(test)}
- className={`w-full p-3 rounded-lg border text-left transition-all ${
- editingTest?.testId === test.testId
- ? 'border-primary bg-primary/10'
- : 'border-border hover:border-primary/50'
- }`}
- >
- <div className="flex items-center justify-between">
- <code className="text-sm font-mono text-foreground">{test.testName}</code>
- {test.currentCode !== test.originalCode && (
- <span className="px-1.5 py-0.5 rounded text-xs bg-warning/10 text-warning">
- Modified
- </span>
- )}
- </div>
- <p className="text-xs text-muted-foreground mt-1">
- Last modified: {test.lastModified.toLocaleTimeString()}
- </p>
- </button>
- ))}
- </div>
-
- {editingTest && (
- <div className="space-y-3">
- <label className="block text-sm font-medium text-foreground">
- Test Code for: {editingTest.testName}
- </label>
- <textarea
- value={editingTest.currentCode}
- onChange={(e) => setEditingTest({ ...editingTest, currentCode: e.target.value })}
- className="w-full h-48 p-3 rounded-lg border border-border bg-background text-foreground font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
- />
- <div className="flex items-center gap-2">
- <button
- onClick={() => handleTestModification(editingTest.testId, editingTest.currentCode)}
- className="px-4 py-2 rounded bg-primary text-primary-foreground font-medium hover:bg-primary/90"
- >
- 💾 Save & Regenerate Docs
- </button>
- <button
- onClick={() => setEditingTest({ ...editingTest, currentCode: editingTest.originalCode })}
- className="px-4 py-2 rounded bg-muted text-muted-foreground font-medium hover:bg-muted/80"
- >
- ↩️ Reset to Original
- </button>
- </div>
- </div>
- )}
- </div>
- </div>
- </div>
- )}
+          {editingTest && (
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-foreground">
+                Test Code for: {editingTest.testName}
+              </label>
+              <textarea
+                value={editingTest.currentCode}
+                onChange={(e) => setEditingTest({ ...editingTest, currentCode: e.target.value })}
+                className="w-full h-48 p-3 rounded-lg border border-border bg-background text-foreground font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleTestModification(editingTest.testId, editingTest.currentCode)}
+                  className="px-4 py-2 rounded bg-primary text-primary-foreground font-medium hover:bg-primary/90"
+                >
+                  💾 Save & Regenerate Docs
+                </button>
+                <button
+                  onClick={() => setEditingTest({ ...editingTest, currentCode: editingTest.originalCode })}
+                  className="px-4 py-2 rounded bg-muted text-muted-foreground font-medium hover:bg-muted/80"
+                >
+                  ↩️ Reset to Original
+                </button>
+              </div>
+            </div>
+          )}
+        </ModalBody>
+      </Modal>
  </div>
  </Layout>
  );
