@@ -1,7 +1,9 @@
 // AddStepModal.tsx
 // Feature #48: Extracted from TestDetailPage.tsx
 // Feature #127: Mobile responsive design audit and fixes
+// Feature #633: Migrated to Modal/ModalHeader/ModalBody/ModalFooter
 import { FormEvent, KeyboardEvent } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../ui/Modal';
 
 interface AddStepModalProps {
  show: boolean;
@@ -119,13 +121,10 @@ export function AddStepModal({
  };
 
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
- onClick={(e) => e.target === e.currentTarget && onClose()}
- >
- <div role="dialog" aria-modal="true" aria-labelledby="add-step-title" className="w-full max-w-md rounded-lg bg-card p-4 sm:p-6 shadow-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
- <h3 id="add-step-title" className="text-lg font-semibold text-foreground">Add Test Step</h3>
- <form onSubmit={onSubmit} className="mt-4 space-y-4">
+ <Modal isOpen onClose={onClose} title="Add Test Step" size="md">
+ <ModalHeader onClose={onClose}>Add Test Step</ModalHeader>
+ <ModalBody>
+ <form onSubmit={onSubmit} id="add-step-form" className="space-y-4">
  {/* Feature #1965: Expanded action dropdown with categorized sections */}
  <div>
  <label htmlFor="add-step-action" className="block text-sm font-medium text-foreground">Action</label>
@@ -377,8 +376,9 @@ export function AddStepModal({
  {addStepError}
  </div>
  )}
-
- <div className="flex justify-end gap-3 pt-2">
+ </form>
+ </ModalBody>
+ <ModalFooter>
  <button
  type="button"
  onClick={onClose}
@@ -389,14 +389,13 @@ export function AddStepModal({
  </button>
  <button
  type="submit"
+ form="add-step-form"
  disabled={isAddingStep}
  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
  >
  {isAddingStep ? 'Adding...' : 'Add Step'}
  </button>
- </div>
- </form>
- </div>
- </div>
+ </ModalFooter>
+ </Modal>
  );
 }

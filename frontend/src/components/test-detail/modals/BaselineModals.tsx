@@ -1,4 +1,7 @@
 // Feature #48: Baseline modals extracted from TestDetailPage.tsx
+// Feature #633: Migrated to Modal/ModalHeader/ModalBody/ModalFooter
+
+import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 
 interface ApproveBaselineModalProps {
  testName: string;
@@ -32,20 +35,9 @@ export function ApproveBaselineModal({
  runResult?.baseline_screenshot_base64 && runResult?.screenshot_base64;
 
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) =>
- e.target === e.currentTarget && !approvingBaseline && onClose()
- }
- >
- <div
- role="dialog"
- aria-modal="true"
- aria-labelledby="approve-baseline-title"
- className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg"
- onClick={(e) => e.stopPropagation()}
- >
- <div className="flex items-center gap-3 mb-4">
+ <Modal isOpen onClose={onClose} title="Approve New Baseline" size="md" closeOnBackdrop={!approvingBaseline}>
+ {/* Custom Header with icon */}
+ <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
  <svg
  className="h-6 w-6 text-success"
@@ -61,13 +53,11 @@ export function ApproveBaselineModal({
  />
  </svg>
  </div>
- <h3
- id="approve-baseline-title"
- className="text-lg font-semibold text-foreground"
- >
+ <h2 className="text-lg font-semibold text-foreground">
  Approve New Baseline
- </h3>
+ </h2>
  </div>
+ <ModalBody>
  <p className="text-muted-foreground">
  Are you sure you want to approve the current screenshot as the new
  baseline for{' '}
@@ -120,7 +110,8 @@ export function ApproveBaselineModal({
  {approveBaselineError}
  </div>
  )}
- <div className="mt-6 flex justify-end gap-3">
+ </ModalBody>
+ <ModalFooter>
  <button
  onClick={onClose}
  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
@@ -131,7 +122,7 @@ export function ApproveBaselineModal({
  <button
  onClick={() => onApprove(runId || undefined)}
  disabled={approvingBaseline}
- className="rounded-md bg-success px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-success disabled:opacity-50"
+ className="rounded-md bg-success px-4 py-2 text-sm font-medium text-success-foreground hover:bg-success disabled:opacity-50"
  >
  {approvingBaseline ? (
  <span className="flex items-center gap-2">
@@ -161,9 +152,8 @@ export function ApproveBaselineModal({
  'Approve Baseline'
  )}
  </button>
- </div>
- </div>
- </div>
+ </ModalFooter>
+ </Modal>
  );
 }
 
@@ -187,20 +177,9 @@ export function RestoreBaselineModal({
  if (!restoreHistoryEntry) return null;
 
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) =>
- e.target === e.currentTarget && !restoringBaseline && onClose()
- }
- >
- <div
- role="dialog"
- aria-modal="true"
- aria-labelledby="restore-baseline-title"
- className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg"
- onClick={(e) => e.stopPropagation()}
- >
- <div className="flex items-center gap-3 mb-4">
+ <Modal isOpen onClose={onClose} title="Restore Previous Baseline" size="md" closeOnBackdrop={!restoringBaseline}>
+ {/* Custom Header with icon */}
+ <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10">
  <svg
  className="h-6 w-6 text-warning"
@@ -216,13 +195,11 @@ export function RestoreBaselineModal({
  />
  </svg>
  </div>
- <h3
- id="restore-baseline-title"
- className="text-lg font-semibold text-foreground"
- >
+ <h2 className="text-lg font-semibold text-foreground">
  Restore Previous Baseline
- </h3>
+ </h2>
  </div>
+ <ModalBody>
  <p className="text-muted-foreground">
  Are you sure you want to restore{' '}
  <span className="font-medium text-foreground">
@@ -246,7 +223,8 @@ export function RestoreBaselineModal({
  {restoreBaselineError}
  </div>
  )}
- <div className="mt-6 flex justify-end gap-3">
+ </ModalBody>
+ <ModalFooter>
  <button
  onClick={onClose}
  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
@@ -257,7 +235,7 @@ export function RestoreBaselineModal({
  <button
  onClick={() => onRestore(restoreHistoryEntry.id)}
  disabled={restoringBaseline}
- className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-warning disabled:opacity-50"
+ className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning disabled:opacity-50"
  >
  {restoringBaseline ? (
  <span className="flex items-center gap-2">
@@ -287,9 +265,8 @@ export function RestoreBaselineModal({
  'Restore Baseline'
  )}
  </button>
- </div>
- </div>
- </div>
+ </ModalFooter>
+ </Modal>
  );
 }
 
@@ -313,20 +290,9 @@ export function MergeBaselineModal({
  if (!selectedMergeBranch) return null;
 
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) =>
- e.target === e.currentTarget && !isMergingBaseline && onClose()
- }
- >
- <div
- role="dialog"
- aria-modal="true"
- aria-labelledby="merge-baseline-title"
- className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg"
- onClick={(e) => e.stopPropagation()}
- >
- <div className="flex items-center gap-3 mb-4">
+ <Modal isOpen onClose={onClose} title="Merge Baseline from Branch" size="md" closeOnBackdrop={!isMergingBaseline}>
+ {/* Custom Header with icon */}
+ <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
  <svg
  className="h-6 w-6 text-primary"
@@ -339,13 +305,11 @@ export function MergeBaselineModal({
  <path d="M6 21V9a9 9 0 0 0 9 9" />
  </svg>
  </div>
- <h3
- id="merge-baseline-title"
- className="text-lg font-semibold text-foreground"
- >
+ <h2 className="text-lg font-semibold text-foreground">
  Merge Baseline from Branch
- </h3>
+ </h2>
  </div>
+ <ModalBody>
  <p className="text-muted-foreground">
  Merge the baseline from branch{' '}
  <span className="font-semibold text-primary">
@@ -377,7 +341,8 @@ export function MergeBaselineModal({
  {mergeBaselineError}
  </div>
  )}
- <div className="mt-6 flex justify-end gap-3">
+ </ModalBody>
+ <ModalFooter>
  <button
  onClick={onClose}
  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
@@ -388,7 +353,7 @@ export function MergeBaselineModal({
  <button
  onClick={() => onMerge(selectedMergeBranch)}
  disabled={isMergingBaseline}
- className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
+ className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
  >
  {isMergingBaseline ? (
  <span className="flex items-center gap-2">
@@ -418,9 +383,8 @@ export function MergeBaselineModal({
  'Merge Baseline'
  )}
  </button>
- </div>
- </div>
- </div>
+ </ModalFooter>
+ </Modal>
  );
 }
 
@@ -446,20 +410,9 @@ export function RejectChangesModal({
  runId,
 }: RejectChangesModalProps) {
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) =>
- e.target === e.currentTarget && !rejectingChanges && onClose()
- }
- >
- <div
- role="dialog"
- aria-modal="true"
- aria-labelledby="reject-changes-title"
- className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg"
- onClick={(e) => e.stopPropagation()}
- >
- <div className="flex items-center gap-3 mb-4">
+ <Modal isOpen onClose={onClose} title="Reject Visual Changes" size="md" closeOnBackdrop={!rejectingChanges}>
+ {/* Custom Header with icon */}
+ <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
  <svg
  className="h-6 w-6 text-destructive"
@@ -475,13 +428,11 @@ export function RejectChangesModal({
  />
  </svg>
  </div>
- <h3
- id="reject-changes-title"
- className="text-lg font-semibold text-foreground"
- >
+ <h2 className="text-lg font-semibold text-foreground">
  Reject Visual Changes
- </h3>
+ </h2>
  </div>
+ <ModalBody>
  <p className="text-muted-foreground">
  Mark this visual difference as a{' '}
  <span className="font-semibold text-destructive">
@@ -517,7 +468,8 @@ export function RejectChangesModal({
  {rejectChangesError}
  </div>
  )}
- <div className="mt-6 flex justify-end gap-3">
+ </ModalBody>
+ <ModalFooter>
  <button
  onClick={onClose}
  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
@@ -528,7 +480,7 @@ export function RejectChangesModal({
  <button
  onClick={() => onReject(runId || undefined)}
  disabled={rejectingChanges}
- className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-destructive disabled:opacity-50"
+ className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
  >
  {rejectingChanges ? (
  <span className="flex items-center gap-2">
@@ -558,8 +510,7 @@ export function RejectChangesModal({
  'Reject Changes'
  )}
  </button>
- </div>
- </div>
- </div>
+ </ModalFooter>
+ </Modal>
  );
 }

@@ -1,7 +1,9 @@
 // QuickScheduleModal - Extracted from TestDetailPage.tsx
 // Feature #48: Split TestDetailPage.tsx into modular components
+// Feature #633: Migrated to Modal/ModalHeader/ModalBody/ModalFooter
 
 import React, { useState } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 
 interface QuickScheduleModalProps {
  show: boolean;
@@ -46,19 +48,17 @@ export function QuickScheduleModal({
  };
 
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) => e.target === e.currentTarget && !isCreating && onClose()}
- >
- <div role="dialog" aria-modal="true" aria-labelledby="quick-schedule-title" className="w-full max-w-lg rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
- <div className="flex items-center gap-3 mb-4">
+ <Modal isOpen onClose={onClose} title="Schedule Test" size="lg" closeOnBackdrop={!isCreating}>
+ {/* Custom Header with icon */}
+ <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
  <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
  </svg>
  </div>
- <h3 id="quick-schedule-title" className="text-lg font-semibold text-foreground">Schedule Test</h3>
+ <h2 className="text-lg font-semibold text-foreground">Schedule Test</h2>
  </div>
+ <ModalBody>
  <p className="text-muted-foreground mb-4">
  Create a schedule to run "{testName}" automatically.
  </p>
@@ -69,7 +69,7 @@ export function QuickScheduleModal({
  </div>
  )}
 
- <form onSubmit={handleSubmit} className="space-y-4">
+ <form onSubmit={handleSubmit} id="quick-schedule-form" className="space-y-4">
  {/* Schedule Name */}
  <div>
  <label htmlFor="quick-schedule-name" className="mb-1 block text-sm font-medium text-foreground">
@@ -192,8 +192,10 @@ export function QuickScheduleModal({
  </select>
  </div>
 
+ </form>
+ </ModalBody>
  {/* Action Buttons */}
- <div className="flex justify-end gap-3 pt-2">
+ <ModalFooter>
  <button
  type="button"
  onClick={onClose}
@@ -204,14 +206,13 @@ export function QuickScheduleModal({
  </button>
  <button
  type="submit"
+ form="quick-schedule-form"
  disabled={isCreating || (type === 'one-time' && !runAt)}
- className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
+ className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
  >
  {isCreating ? 'Creating...' : 'Create Schedule'}
  </button>
- </div>
- </form>
- </div>
- </div>
+ </ModalFooter>
+ </Modal>
  );
 }

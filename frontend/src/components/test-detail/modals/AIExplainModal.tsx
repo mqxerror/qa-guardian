@@ -1,7 +1,9 @@
 // AIExplainModal - Extracted from TestDetailPage.tsx
 // Feature #48: Split TestDetailPage.tsx into modular components
+// Feature #633: Migrated to Modal/ModalHeader/ModalBody/ModalFooter
 
 import React from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 
 // Types for test explanation
 export interface TestExplanation {
@@ -32,13 +34,9 @@ export function AIExplainModal({
  if (!show) return null;
 
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) => e.target === e.currentTarget && !isLoading && onClose()}
- >
- <div role="dialog" aria-modal="true" aria-labelledby="explain-test-title" className="w-full max-w-4xl max-h-[85vh] rounded-lg bg-card shadow-lg flex flex-col" onClick={(e) => e.stopPropagation()}>
- {/* Header */}
- <div className="flex items-center justify-between p-6 border-b border-border">
+ <Modal isOpen onClose={onClose} title="AI Test Explanation" size="full" closeOnBackdrop={!isLoading}>
+ {/* Custom Header with icon */}
+ <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border">
  <div className="flex items-center gap-3">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
  <svg className="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -46,24 +44,24 @@ export function AIExplainModal({
  </svg>
  </div>
  <div>
- <h3 id="explain-test-title" className="text-lg font-semibold text-foreground">AI Test Explanation</h3>
+ <h2 className="text-lg font-semibold text-foreground">AI Test Explanation</h2>
  <p className="text-sm text-muted-foreground">{testName}</p>
  </div>
  </div>
  <button
  onClick={onClose}
  disabled={isLoading}
- className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+ className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+ aria-label="Close modal"
  >
- <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <line x1="18" y1="6" x2="6" y2="18"/>
- <line x1="6" y1="6" x2="18" y2="18"/>
+ <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
  </svg>
  </button>
  </div>
 
  {/* Body */}
- <div className="flex-1 overflow-y-auto p-6">
+ <ModalBody className="flex-1 overflow-y-auto">
  {isLoading ? (
  <div className="flex flex-col items-center justify-center py-12">
  <svg className="animate-spin h-10 w-10 text-accent mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -228,18 +226,17 @@ export function AIExplainModal({
  No explanation available.
  </div>
  )}
- </div>
+ </ModalBody>
 
  {/* Footer */}
- <div className="flex justify-end gap-3 p-6 border-t border-border">
+ <ModalFooter className="border-t border-border">
  <button
  onClick={onClose}
  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
  >
  Close
  </button>
- </div>
- </div>
- </div>
+ </ModalFooter>
+ </Modal>
  );
 }

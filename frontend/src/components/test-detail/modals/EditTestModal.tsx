@@ -1,7 +1,9 @@
 // EditTestModal.tsx
 // Feature #48: Extracted from TestDetailPage.tsx
 // Feature #127: Mobile responsive design audit and fixes
+// Feature #633: Migrated to Modal/ModalHeader/ModalBody/ModalFooter
 import { FormEvent } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../ui/Modal';
 
 interface EditTestModalProps {
   show: boolean;
@@ -43,15 +45,10 @@ export function EditTestModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="edit-test-title"
-        className="w-full max-w-md rounded-lg bg-card p-4 sm:p-6 shadow-lg max-h-[90vh] overflow-y-auto"
-      >
-        <h3 id="edit-test-title" className="text-lg font-semibold text-foreground">Edit Test</h3>
-        <form onSubmit={onSubmit} className="mt-4 space-y-4">
+    <Modal isOpen onClose={handleCancel} title="Edit Test" size="md">
+      <ModalHeader onClose={handleCancel}>Edit Test</ModalHeader>
+      <ModalBody>
+        <form onSubmit={onSubmit} id="edit-test-form" className="space-y-4">
           <div>
             <label htmlFor="edit-test-name" className="block text-sm font-medium text-foreground">Test Name</label>
             <input
@@ -81,25 +78,26 @@ export function EditTestModal({
               {editError}
             </div>
           )}
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-              disabled={isEditing}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isEditing || !editName.trim()}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {isEditing ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <button
+          type="button"
+          onClick={handleCancel}
+          className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          disabled={isEditing}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          form="edit-test-form"
+          disabled={isEditing || !editName.trim()}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        >
+          {isEditing ? 'Saving...' : 'Save Changes'}
+        </button>
+      </ModalFooter>
+    </Modal>
   );
 }

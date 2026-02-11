@@ -1,8 +1,9 @@
 // Feature #48: DeleteTestModal component extracted from TestDetailPage.tsx
 // Feature #119: Added focus trap for keyboard navigation
 // Feature #127: Mobile responsive design audit and fixes
+// Feature #633: Migrated to Modal/ModalHeader/ModalBody/ModalFooter
 
-import { useFocusTrap } from '../../../hooks/useFocusTrap';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../ui/Modal';
 
 interface DeleteTestModalProps {
   testName: string;
@@ -19,31 +20,11 @@ export function DeleteTestModal({
   onClose,
   onDelete,
 }: DeleteTestModalProps) {
-  // Feature #119: Focus trap for keyboard navigation
-  const dialogRef = useFocusTrap<HTMLDivElement>({
-    isOpen: true,
-    onClose,
-    autoFocus: true,
-    restoreFocus: true,
-  });
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="delete-test-title"
-        className="w-full max-w-md rounded-lg bg-card p-4 sm:p-6 shadow-lg max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 id="delete-test-title" className="text-lg font-semibold text-foreground">
-          Delete Test
-        </h3>
-        <p className="mt-2 text-muted-foreground">
+    <Modal isOpen onClose={onClose} title="Delete Test" size="md">
+      <ModalHeader onClose={onClose}>Delete Test</ModalHeader>
+      <ModalBody>
+        <p className="text-muted-foreground">
           Are you sure you want to delete "{testName}"? This action cannot be undone.
         </p>
         {deleteError && (
@@ -54,23 +35,23 @@ export function DeleteTestModal({
             {deleteError}
           </div>
         )}
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            disabled={isDeleting}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onDelete}
-            disabled={isDeleting}
-            className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-destructive disabled:opacity-50"
-          >
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </button>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <button
+          onClick={onClose}
+          className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          disabled={isDeleting}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onDelete}
+          disabled={isDeleting}
+          className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+        >
+          {isDeleting ? 'Deleting...' : 'Delete'}
+        </button>
+      </ModalFooter>
+    </Modal>
   );
 }
