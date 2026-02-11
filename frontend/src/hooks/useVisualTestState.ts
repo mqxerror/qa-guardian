@@ -21,7 +21,8 @@ import { VisualViewMode } from '../components/test-run-results/types';
 export interface UseVisualTestStateParams {
   runId: string | undefined;
   token: string | null;
-  setRetryTrigger: React.Dispatch<React.SetStateAction<number>>;
+  // Feature #676: Changed from retry to simpler retry function
+  retry: () => void;
 }
 
 // Return type for the hook
@@ -81,7 +82,7 @@ export interface UseVisualTestStateReturn {
 export function useVisualTestState({
   runId,
   token,
-  setRetryTrigger,
+  retry,
 }: UseVisualTestStateParams): UseVisualTestStateReturn {
   // Visual comparison states (Feature #1837)
   const [visualViewMode, setVisualViewMode] = useState<VisualViewMode>('side-by-side');
@@ -213,7 +214,7 @@ export function useVisualTestState({
         // Feature #19: Show success toast and refresh run data
         toast.success(`Baseline approved${viewportId ? ` for viewport: ${viewportId}` : ''}`);
         // Refetch run data to reflect the new baseline status
-        setRetryTrigger(prev => prev + 1);
+        retry();
       } else {
         const errorData = await response.json().catch(() => null);
         toast.error(errorData?.error || `Failed to approve baseline (${response.status})`);
@@ -224,7 +225,7 @@ export function useVisualTestState({
     } finally {
       setApprovalLoading(prev => ({ ...prev, [key]: false }));
     }
-  }, [token, runId, setRetryTrigger]);
+  }, [token, runId, retry]);
 
   // Reject (mark as regression) - supports per-viewport rejection (Feature #1837 & #1919)
   const handleRejectBaseline = useCallback(async (testId: string, resultIdx: number, viewportId?: string) => {
@@ -248,7 +249,7 @@ export function useVisualTestState({
 
       if (response.ok) {
         toast.warning('Marked as regression');
-        setRetryTrigger(prev => prev + 1);
+        retry();
       } else {
         const errorData = await response.json().catch(() => null);
         toast.error(errorData?.error || `Failed to reject baseline (${response.status})`);
@@ -259,7 +260,7 @@ export function useVisualTestState({
     } finally {
       setApprovalLoading(prev => ({ ...prev, [key]: false }));
     }
-  }, [token, runId, setRetryTrigger]);
+  }, [token, runId, retry]);
 
   // Seek visual video to marker timestamp (Feature #1880)
   const seekVisualVideoToMarker = useCallback((timestampMs: number) => {

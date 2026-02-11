@@ -67,7 +67,8 @@ interface UseTestRunHandlersParams {
   setA11yExpandedViolations: React.Dispatch<React.SetStateAction<Set<string>>>;
   setSelectedForComparison: React.Dispatch<React.SetStateAction<string[]>>;
   setApprovalLoading: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
-  setRetryTrigger: React.Dispatch<React.SetStateAction<number>>;
+  // Feature #676: Changed from retry to simpler retry function
+  retry: () => void;
   setVisualZoom: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   setVisualPan: React.Dispatch<React.SetStateAction<Record<string, { x: number; y: number }>>>;
   setIsPanning: React.Dispatch<React.SetStateAction<boolean>>;
@@ -108,7 +109,7 @@ export function useTestRunHandlers({
   setA11yExpandedViolations,
   setSelectedForComparison,
   setApprovalLoading,
-  setRetryTrigger,
+  retry,
   setVisualZoom,
   setVisualPan,
   setIsPanning,
@@ -241,7 +242,7 @@ export function useTestRunHandlers({
         // Feature #19: Show success toast and refresh run data
         toast.success(`Baseline approved${viewportId ? ` for viewport: ${viewportId}` : ''}`);
         // Refetch run data to reflect the new baseline status
-        setRetryTrigger(prev => prev + 1);
+        retry();
       } else {
         const errorData = await response.json().catch(() => null);
         toast.error(errorData?.error || `Failed to approve baseline (${response.status})`);
@@ -252,7 +253,7 @@ export function useTestRunHandlers({
     } finally {
       setApprovalLoading(prev => ({ ...prev, [key]: false }));
     }
-  }, [token, runId, setApprovalLoading, setRetryTrigger]);
+  }, [token, runId, setApprovalLoading, retry]);
 
   // Feature #1837 & #1919: Reject (mark as regression) - supports per-viewport rejection
   const handleRejectBaseline = useCallback(async (testId: string, resultIdx: number, viewportId?: string) => {
@@ -276,7 +277,7 @@ export function useTestRunHandlers({
 
       if (response.ok) {
         toast.warning('Marked as regression');
-        setRetryTrigger(prev => prev + 1);
+        retry();
       } else {
         const errorData = await response.json().catch(() => null);
         toast.error(errorData?.error || `Failed to reject baseline (${response.status})`);
@@ -287,7 +288,7 @@ export function useTestRunHandlers({
     } finally {
       setApprovalLoading(prev => ({ ...prev, [key]: false }));
     }
-  }, [token, runId, setApprovalLoading, setRetryTrigger]);
+  }, [token, runId, setApprovalLoading, retry]);
 
   // Feature #1935: AI analysis for performance test results
   const analyzePerformanceResults = useCallback(async (testName: string, lighthouse: LighthouseResult | null, loadTest?: K6LoadTestData | null) => {

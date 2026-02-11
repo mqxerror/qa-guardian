@@ -176,14 +176,14 @@ export default function TestRunResultPage() {
 
  // Feature #46: Use useTestRunData hook for core data fetching state
  // Note: resultSummary comes from useComputedResults (which uses this run data)
+ // Feature #676: Renamed setRetryTrigger to retry function
  const {
  run,
  testInfo,
  suiteInfo,
  loading,
  error,
- retryTrigger,
- setRetryTrigger,
+ retry,
  previousRuns,
  runHistory,
  selectedCompareRunId,
@@ -278,7 +278,7 @@ export default function TestRunResultPage() {
  handlePanStart, handlePanMove, handlePanEnd, handleWheelZoom,
  handleApproveBaseline, handleRejectBaseline,
  seekVisualVideoToMarker, handleVisualVideoTimeUpdate,
- } = useVisualTestState({ runId, token, setRetryTrigger });
+ } = useVisualTestState({ runId, token, retry });
 
  // Feature #1839: Logs tab enhanced state
  const [logsViewMode, setLogsViewMode] = useState<'unified' | 'console' | 'network'>('unified');
@@ -422,7 +422,7 @@ export default function TestRunResultPage() {
  if (status !== 'running' && status !== 'pending') {
  // Run has completed - refresh data via hook and exit live mode
  setLiveMode(false);
- setRetryTrigger(prev => prev + 1); // Trigger data refresh in useTestRunData hook
+ retry(); // Feature #676: Trigger data refresh in useTestRunData hook
  clearInterval(pollInterval);
  }
  }
@@ -960,7 +960,7 @@ export default function TestRunResultPage() {
  setA11yExpandedViolations,
  setSelectedForComparison,
  setApprovalLoading,
- setRetryTrigger,
+ retry,
  setVisualZoom,
  setVisualPan,
  setIsPanning,
@@ -1045,7 +1045,7 @@ export default function TestRunResultPage() {
  {/* Feature #1929: Retry button for recoverable errors */}
  {!isNotFound && !isPermission && (
  <button
- onClick={() => setRetryTrigger(prev => prev + 1)}
+ onClick={() => retry()}
  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
  >
  <RefreshCw className="w-4 h-4" />

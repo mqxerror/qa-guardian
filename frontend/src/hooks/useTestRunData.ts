@@ -4,9 +4,8 @@
  * Feature #69: Added React Query caching for faster loading on second visit
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
 // Feature #69: Import React Query hooks for caching
 import { useRun, useRunsBySuite } from './api/useRuns';
 import { useTest } from './api/useTests';
@@ -29,8 +28,7 @@ export interface UseTestRunDataReturn {
   error: string | null;
 
   // Retry mechanism (Feature #1929)
-  retryTrigger: number;
-  setRetryTrigger: React.Dispatch<React.SetStateAction<number>>;
+  retry: () => void;
 
   // Run history (Feature #1842)
   previousRuns: RunHistoryEntry[];
@@ -51,12 +49,13 @@ export interface UseTestRunDataReturn {
  * Hook to manage test run data fetching and core state
  * Extracts data fetching logic from TestRunResultPage for cleaner separation of concerns
  * Feature #69: Uses React Query for caching - data loads instantly on second visit
+ * Feature #676: Removed useState sync layer - use React Query data directly
  */
 export function useTestRunData(): UseTestRunDataReturn {
   const { runId } = useParams<{ runId: string }>();
-  const { token } = useAuthStore();
 
   // Feature #69: React Query hooks for caching
+  // Feature #676: Use data directly instead of syncing to useState
   const { data: runData, isLoading: runLoading, error: runError, refetch: refetchRun } = useRun(runId);
 
   // Derived IDs from run data for dependent queries
@@ -68,53 +67,20 @@ export function useTestRunData(): UseTestRunDataReturn {
   const { data: suiteData } = useSuite(suiteId);
   const { data: suiteRunsData } = useRunsBySuite(suiteId);
 
-  // Core state derived from React Query
-  const [run, setRun] = useState<TestRun | null>(null);
-  const [testInfo, setTestInfo] = useState<TestInfo | null>(null);
-  const [suiteInfo, setSuiteInfo] = useState<SuiteInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Feature #676: Use React Query data directly
+  const run = runData?.run ?? null;
+  const testInfo = testData?.test ?? null;
+  const suiteInfo = suiteData?.suite ?? null;
+  const loading = runLoading;
+  const error = runError ? (runError instanceof Error ? runError.message : 'Failed to load run data') : null;
 
-  // Feature #1929: Retry trigger for error recovery
-  const [retryTrigger, setRetryTrigger] = useState(0);
-
-  // Feature #1842: Run comparison state
-  const [previousRuns, setPreviousRuns] = useState<RunHistoryEntry[]>([]);
+  // Feature #1842: Run comparison state (these need useState since they're user-controlled)
   const [selectedCompareRunId, setSelectedCompareRunId] = useState<string | null>(null);
-  const [compareRun, setCompareRun] = useState<TestRun | null>(null);
-  const [loadingCompareRun, setLoadingCompareRun] = useState(false);
-  const [runHistory, setRunHistory] = useState<RunHistoryEntry[]>([]);
 
-  // Feature #69: Sync React Query data to local state
-  useEffect(() => {
-    if (runData?.run) {
-      setRun(runData.run);
-      setLoading(false);
-    }
-    if (runError) {
-      setError(runError instanceof Error ? runError.message : 'Failed to load run data');
-      setLoading(false);
-    }
-  }, [runData, runError]);
-
-  useEffect(() => {
-    if (testData?.test) {
-      setTestInfo(testData.test);
-    }
-  }, [testData]);
-
-  useEffect(() => {
-    if (suiteData?.suite) {
-      setSuiteInfo(suiteData.suite);
-    }
-  }, [suiteData]);
-
-  // Feature #69: Handle retry trigger by refetching
-  useEffect(() => {
-    if (retryTrigger > 0) {
-      refetchRun();
-    }
-  }, [retryTrigger, refetchRun]);
+  // Feature #69: Use React Query for comparison run (also cached)
+  // Feature #676: Use data directly
+  const { data: compareRunData, isLoading: loadingCompareRun } = useRun(selectedCompareRunId || undefined);
+  const compareRun = compareRunData?.run ?? null;
 
   // Get result summary - computed from run data
   const resultSummary = useMemo<ResultSummary>(() => {
@@ -127,11 +93,13 @@ export function useTestRunData(): UseTestRunDataReturn {
     };
   }, [run]);
 
-  // Feature #69: Derive previous runs from cached suite runs data
-  useEffect(() => {
-    if (!suiteRunsData?.runs || !run) return;
+  // Feature #676: Derive previous runs using useMemo instead of useEffect + useState
+  const { previousRuns, runHistory } = useMemo(() => {
+    if (!suiteRunsData?.runs || !run) {
+      return { previousRuns: [], runHistory: [] };
+    }
 
-    const runs = (suiteRunsData.runs || [])
+    const runs: RunHistoryEntry[] = (suiteRunsData.runs || [])
       .filter((r: { id: string }) => r.id !== runId)
       .slice(0, 10) // Limit to 10 runs
       .map((r: { id: string; status: string; created_at: string; duration_ms?: number; results?: TestResult[] }) => ({
@@ -143,8 +111,8 @@ export function useTestRunData(): UseTestRunDataReturn {
         failed: r.results?.filter((res: TestResult) => res.status === 'failed' || res.status === 'error').length || 0,
         total: r.results?.length || 0,
       }));
-    setPreviousRuns(runs);
-    setRunHistory([
+
+    const history: RunHistoryEntry[] = [
       {
         id: run.id,
         status: run.status,
@@ -155,21 +123,15 @@ export function useTestRunData(): UseTestRunDataReturn {
         total: resultSummary.total,
       },
       ...runs,
-    ]);
+    ];
+
+    return { previousRuns: runs, runHistory: history };
   }, [suiteRunsData, run, runId, resultSummary]);
 
-  // Feature #69: Use React Query for comparison run (also cached)
-  const { data: compareRunData, isLoading: compareRunLoading } = useRun(selectedCompareRunId || undefined);
-
-  // Sync comparison run data to local state
-  useEffect(() => {
-    if (compareRunData?.run) {
-      setCompareRun(compareRunData.run);
-    } else if (!selectedCompareRunId) {
-      setCompareRun(null);
-    }
-    setLoadingCompareRun(compareRunLoading);
-  }, [compareRunData, selectedCompareRunId, compareRunLoading]);
+  // Feature #676: Expose refetch directly for retry functionality
+  const retry = () => {
+    refetchRun();
+  };
 
   return {
     // Core state
@@ -179,9 +141,8 @@ export function useTestRunData(): UseTestRunDataReturn {
     loading,
     error,
 
-    // Retry mechanism
-    retryTrigger,
-    setRetryTrigger,
+    // Retry mechanism - Feature #676: simplified to just a retry function
+    retry,
 
     // Run history
     previousRuns,
