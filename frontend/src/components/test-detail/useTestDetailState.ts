@@ -5,21 +5,15 @@
 
 import { useState, useCallback, useReducer } from 'react';
 // Feature #566: Import canonical LiveProgress & ConsoleLogEntry from types.ts
-import { TestRunType, TestType, FlakinessTrend, LiveProgress, ConsoleLogEntry } from './types';
-export type { LiveProgress, ConsoleLogEntry };
+// Feature #643: Import TestSuite from types.ts to use consistent type definition
+import { TestRunType, TestType, FlakinessTrend, LiveProgress, ConsoleLogEntry, TestSuite } from './types';
+export type { LiveProgress, ConsoleLogEntry, TestSuite };
 import { TestExplanation } from './modals/AIExplainModal';
 import { K6CompareResults } from './K6CompareModal';
 
 // ============================================================================
 // Type Definitions (only for types not defined elsewhere)
 // ============================================================================
-
-export interface TestSuite {
-  id: string;
-  name: string;
-  project_id?: string;
-  default_browser?: string;
-}
 
 export interface Project {
   id: string;
@@ -551,27 +545,33 @@ export function useStepManagementState() {
 }
 
 // ============================================================================
-// Combined State Hook (for gradual migration)
+// Export sub-hook return types for handler hooks
+// ============================================================================
+
+export type CoreTestState = ReturnType<typeof useCoreTestState>;
+export type ModalState = ReturnType<typeof useModalState>;
+export type VisualTestingState = ReturnType<typeof useVisualTestingState>;
+export type UIState = ReturnType<typeof useUIState>;
+export type StepManagementState = ReturnType<typeof useStepManagementState>;
+
+// ============================================================================
+// Combined State Hook (Feature #646: Stable nested object structure)
 // ============================================================================
 
 /**
- * Combined hook that returns all state from the individual hooks.
- * Use this for gradual migration from the monolithic TestDetailPage.
+ * Feature #646: Refactored to return stable nested object structure.
+ * Instead of spread-combining 5 hooks into a flat object (which destroys identity),
+ * returns { core, modals, visual, ui, steps } nested structure.
+ * Each sub-object maintains stable identity across renders.
  */
 export function useTestDetailState() {
-  const coreState = useCoreTestState();
-  const modalState = useModalState();
-  const visualState = useVisualTestingState();
-  const uiState = useUIState();
-  const stepState = useStepManagementState();
+  const core = useCoreTestState();
+  const modals = useModalState();
+  const visual = useVisualTestingState();
+  const ui = useUIState();
+  const steps = useStepManagementState();
 
-  return {
-    ...coreState,
-    ...modalState,
-    ...visualState,
-    ...uiState,
-    ...stepState,
-  };
+  return { core, modals, visual, ui, steps };
 }
 
 export type TestDetailState = ReturnType<typeof useTestDetailState>;

@@ -61,6 +61,13 @@ export {
   useUIState,
   useStepManagementState,
   type TestDetailState,
+  // Feature #646: Export stable sub-object types
+  type CoreTestState,
+  type ModalState,
+  type VisualTestingState,
+  type UIState,
+  type StepManagementState,
+  // Data types
   type TestSuite,
   type Project,
   type BaselineData,

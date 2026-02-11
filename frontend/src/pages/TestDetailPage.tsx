@@ -114,10 +114,13 @@ function TestDetailPage() {
   const { invalidateAll: invalidateRuns } = useInvalidateRuns();
 
   // Feature #569: Combined state hook replaces ~78 useState + useModalState
+  // Feature #646: Returns { core, modals, visual, ui, steps } nested structure for stable identity
   // All state is managed by useTestDetailState() which calls useCoreTestState,
   // useModalState, useVisualTestingState, useUIState, useStepManagementState internally.
+  const { core, modals, visual, ui, steps } = useTestDetailState();
+
+  // Destructure from core state (test data, run state, live execution)
   const {
-    // Core test state
     test, setTest, suite, setSuite, project, setProject,
     isLoading, setIsLoading, error, setError,
     currentRun, setCurrentRun, runs, setRuns,
@@ -125,7 +128,10 @@ function TestDetailPage() {
     runError, setRunError,
     liveProgress, setLiveProgress, liveScreenshot, setLiveScreenshot,
     liveConsoleLogs, setLiveConsoleLogs,
-    // Modal state (visibility + associated form/loading/error)
+  } = core;
+
+  // Destructure from modal state (visibility + associated form/loading/error)
+  const {
     showDeleteModal, setShowDeleteModal, isDeleting, setIsDeleting,
     deleteError, setDeleteError,
     showEditModal, setShowEditModal, editName, setEditName,
@@ -160,7 +166,10 @@ function TestDetailPage() {
     showCompareModal, setShowCompareModal,
     compareResults, setCompareResults,
     isComparing, setIsComparing,
-    // Visual testing state
+  } = modals;
+
+  // Destructure from visual testing state
+  const {
     baselineData, setBaselineData, loadingBaseline, setLoadingBaseline,
     baselineHistory, setBaselineHistory, loadingBaselineHistory, setLoadingBaselineHistory,
     selectedHistoryVersion, setSelectedHistoryVersion,
@@ -180,7 +189,10 @@ function TestDetailPage() {
     lightboxZoom, setLightboxZoom,
     lightboxPan, setLightboxPan,
     isDragging, setIsDragging, dragStart, setDragStart,
-    // UI state
+  } = visual;
+
+  // Destructure from UI state
+  const {
     activeTab, setActiveTab,
     flakinessTrend, setFlakinessTrend,
     isLoadingFlakinessTrend, setIsLoadingFlakinessTrend,
@@ -200,7 +212,10 @@ function TestDetailPage() {
     a11ySeverityFilter, setA11ySeverityFilter,
     a11yCategoryFilter, setA11yCategoryFilter,
     a11ySearchQuery, setA11ySearchQuery,
-    // Step management state
+  } = ui;
+
+  // Destructure from step management state
+  const {
     draggedStepIndex, setDraggedStepIndex,
     dragOverIndex, setDragOverIndex,
     isSavingStepOrder, setIsSavingStepOrder,
@@ -219,7 +234,7 @@ function TestDetailPage() {
     valueAutocomplete, setValueAutocomplete,
     showSelectorAutocomplete, setShowSelectorAutocomplete,
     showValueAutocomplete, setShowValueAutocomplete,
-  } = useTestDetailState();
+  } = steps;
 
   // Feature #570: Page-level section navigation (deep-linked via URL)
   type PageSection = 'overview' | 'execution' | 'configuration' | 'history';
