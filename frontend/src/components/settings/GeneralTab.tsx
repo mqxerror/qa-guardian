@@ -2,6 +2,7 @@
 // Feature #451: Extracted from SettingsPage.tsx
 
 import { useState } from 'react';
+import { X, ImageIcon, Check } from 'lucide-react';
 import { useThemeStore, Theme } from '../../stores/themeStore';
 import { usePaletteStore, PALETTE_OPTIONS } from '../../stores/paletteStore';
 import { useTestDefaultsStore } from '../../stores/testDefaultsStore';
@@ -88,16 +89,12 @@ export function GeneralTab() {
                     className="absolute -top-2 -right-2 rounded-full bg-destructive p-1 text-white hover:bg-destructive/90"
                     aria-label="Remove logo"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
+                    <X className="h-3 w-3" />
                   </button>
                 </div>
               ) : (
                 <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
+                  <ImageIcon className="h-6 w-6 text-muted-foreground" />
                 </div>
               )}
               <div>
@@ -179,9 +176,7 @@ export function GeneralTab() {
                   </div>
                   {palette === p.id && (
                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                      <svg className="w-2.5 h-2.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
+                      <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />
                     </div>
                   )}
                 </button>

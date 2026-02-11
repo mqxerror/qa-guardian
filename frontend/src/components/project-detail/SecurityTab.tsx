@@ -13,6 +13,7 @@
  * - Scheduled scans
  * - Scan results display
  */
+import { ShieldCheck, Loader2, Shield } from 'lucide-react';
 import {
  SASTConfig,
  SASTScanResult,
@@ -230,9 +231,7 @@ function SastHeader({ sastConfig, isUpdatingSast, handleUpdateSastConfig }: {
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-4">
  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warning/10">
- <svg className="h-6 w-6 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
- </svg>
+ <ShieldCheck className="h-6 w-6 text-warning" />
  </div>
  <div>
  <h2 className="text-lg font-semibold text-foreground">Static Application Security Testing (SAST)</h2>
@@ -259,10 +258,7 @@ function SastHeader({ sastConfig, isUpdatingSast, handleUpdateSastConfig }: {
 function LoadingSpinner({ message }: { message: string }) {
  return (
  <div className="py-8 text-center">
- <svg className="mx-auto h-8 w-8 animate-spin text-muted-foreground" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
- </svg>
+ <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
  <p className="mt-2 text-muted-foreground">{message}</p>
  </div>
  );
@@ -271,9 +267,7 @@ function LoadingSpinner({ message }: { message: string }) {
 function SastEmptyState({ handleUpdateSastConfig }: { handleUpdateSastConfig: (updates: Partial<SASTConfig>) => Promise<void> }) {
  return (
  <div className="rounded-lg border border-dashed border-border p-8 text-center">
- <svg className="mx-auto h-12 w-12 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
- </svg>
+ <Shield className="mx-auto h-12 w-12 text-muted-foreground" />
  <h3 className="mt-4 text-lg font-semibold text-foreground">SAST Scanning Disabled</h3>
  <p className="mt-2 text-muted-foreground">Enable SAST scanning to detect security vulnerabilities in your source code using Semgrep.</p>
  <button onClick={() => handleUpdateSastConfig({ enabled: true })} className="mt-4 rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90">
