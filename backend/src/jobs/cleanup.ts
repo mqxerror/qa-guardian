@@ -6,6 +6,7 @@
  */
 
 import { isDatabaseConnected, query } from '../services/database.js';
+import { deleteExpiredQuickTestComparisons } from '../services/repositories/quick-test.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -114,6 +115,12 @@ async function runCleanup(): Promise<void> {
     if (isDatabaseConnected()) {
       const dbResult = await cleanupDatabaseRecords(cutoffDate);
       deletedRuns = dbResult.deletedRuns;
+
+      // Feature #670: Clean up expired quick test comparisons
+      const deletedComparisons = await deleteExpiredQuickTestComparisons();
+      if (deletedComparisons > 0) {
+        logger.info(`[Cleanup] Deleted ${deletedComparisons} expired quick test comparisons`);
+      }
     } else {
       logger.info('[Cleanup] Database not connected, skipping DB cleanup');
     }

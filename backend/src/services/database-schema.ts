@@ -1086,6 +1086,17 @@ export function getDatabaseSchemaSQL(): string {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
+
+    -- Quick Test Comparisons table (Feature #670: Persist compareRunMap to database)
+    -- Stores the mapping from compareId to runIdA/runIdB for comparative Quick Tests
+    CREATE TABLE IF NOT EXISTS quick_test_comparisons (
+      id UUID PRIMARY KEY,
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      run_id_a UUID NOT NULL REFERENCES quick_test_results(id) ON DELETE CASCADE,
+      run_id_b UUID NOT NULL REFERENCES quick_test_results(id) ON DELETE CASCADE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      expires_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() + INTERVAL '24 hours'
+    );
   `;
 }
 
@@ -1261,6 +1272,10 @@ export function getDatabaseIndexSQL(): string {
     CREATE INDEX IF NOT EXISTS idx_quick_test_results_created ON quick_test_results(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_quick_test_results_status ON quick_test_results(status);
     CREATE INDEX IF NOT EXISTS idx_quick_test_results_org_created ON quick_test_results(organization_id, created_at DESC);
+
+    -- Quick Test Comparisons indexes (Feature #670)
+    CREATE INDEX IF NOT EXISTS idx_quick_test_comparisons_org ON quick_test_comparisons(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_quick_test_comparisons_expires ON quick_test_comparisons(expires_at);
 
     -- Feature #98: Missing indexes for foreign keys and filter columns
     CREATE INDEX IF NOT EXISTS idx_organization_members_organization ON organization_members(organization_id);

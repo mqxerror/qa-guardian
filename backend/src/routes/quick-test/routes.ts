@@ -18,7 +18,8 @@ import { runQuickTest, getQuickTestResultAsync } from '../../services/quick-test
 import { logAuditEntry } from '../audit-logs.js';
 import { validateURLForSSRF } from '../../utils/index.js';
 // Feature #465: PostgreSQL persistence for history endpoint
-import { getQuickTestHistory } from '../../services/repositories/quick-test.js';
+// Feature #670: Database persistence for quick test comparisons
+import { getQuickTestHistory, createQuickTestComparison, getQuickTestComparison } from '../../services/repositories/quick-test.js';
 
 // Feature #466: Screenshot serving
 // Feature #478: Add signed URL validation for screenshot auth
@@ -51,8 +52,8 @@ interface QuickTestCompareParams {
   compareId: string;
 }
 
-// Feature #535: In-memory mapping of compareId -> { runIdA, runIdB }
-const compareRunMap = new Map<string, { runIdA: string; runIdB: string }>();
+// Feature #670: compareRunMap replaced with database persistence
+// The quick_test_comparisons table stores compareId -> { runIdA, runIdB } mappings
 
 /**
  * Feature #535: Refresh signed screenshot URLs in a quick test result
@@ -317,10 +318,9 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       const runIdA = uuidv4();
       const runIdB = uuidv4();
 
-      // Feature #535: Store compare mapping for later retrieval
-      compareRunMap.set(compareId, { runIdA, runIdB });
-      // Clean up mapping after 24 hours
-      setTimeout(() => compareRunMap.delete(compareId), 24 * 60 * 60 * 1000);
+      // Feature #670: Store compare mapping in database (replaces in-memory Map)
+      // TTL cleanup is handled by database expires_at column
+      await createQuickTestComparison(compareId, orgId, runIdA, runIdB);
 
       // Start both quick tests in parallel
       Promise.all([
@@ -423,9 +423,9 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       const { compareId } = request.params;
       const orgId = getOrganizationId(request);
 
-      // Feature #535: Look up the actual run UUIDs from the compare mapping
-      const mapping = compareRunMap.get(compareId);
-      if (!mapping) {
+      // Feature #670: Look up the actual run UUIDs from database
+      const comparisonMapping = await getQuickTestComparison(compareId);
+      if (!comparisonMapping) {
         return reply.status(404).send({
           error: 'Not Found',
           message: 'Comparison not found or has expired',
@@ -433,8 +433,8 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       }
 
       // Get both results using proper UUIDs
-      const resultA = await getQuickTestResultAsync(mapping.runIdA);
-      const resultB = await getQuickTestResultAsync(mapping.runIdB);
+      const resultA = await getQuickTestResultAsync(comparisonMapping.runIdA);
+      const resultB = await getQuickTestResultAsync(comparisonMapping.runIdB);
 
       if (!resultA && !resultB) {
         return reply.status(404).send({

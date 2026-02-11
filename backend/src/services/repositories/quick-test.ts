@@ -342,3 +342,125 @@ export async function deleteOldQuickTestResults(olderThanDays: number = 30): Pro
     return 0;
   }
 }
+
+// ============================================
+// Quick Test Comparisons (Feature #670)
+// ============================================
+
+export interface QuickTestComparison {
+  id: string;
+  organizationId: string;
+  runIdA: string;
+  runIdB: string;
+  createdAt: Date;
+  expiresAt: Date;
+}
+
+interface QuickTestComparisonRow {
+  id: string;
+  organization_id: string;
+  run_id_a: string;
+  run_id_b: string;
+  created_at: Date;
+  expires_at: Date;
+}
+
+function rowToQuickTestComparison(row: QuickTestComparisonRow): QuickTestComparison {
+  return {
+    id: row.id,
+    organizationId: row.organization_id,
+    runIdA: row.run_id_a,
+    runIdB: row.run_id_b,
+    createdAt: new Date(row.created_at),
+    expiresAt: new Date(row.expires_at),
+  };
+}
+
+/**
+ * Create a quick test comparison mapping
+ * Feature #670: Persist compareRunMap to database
+ */
+export async function createQuickTestComparison(
+  compareId: string,
+  organizationId: string,
+  runIdA: string,
+  runIdB: string
+): Promise<QuickTestComparison | null> {
+  if (!isDatabaseConnected()) {
+    logger.warn({ compareId }, '[QuickTestRepo] Database not connected, cannot persist comparison');
+    return null;
+  }
+
+  try {
+    const result = await query<QuickTestComparisonRow>(
+      `INSERT INTO quick_test_comparisons (id, organization_id, run_id_a, run_id_b, created_at, expires_at)
+       VALUES ($1, $2, $3, $4, NOW(), NOW() + INTERVAL '24 hours')
+       RETURNING id, organization_id, run_id_a, run_id_b, created_at, expires_at`,
+      [compareId, organizationId, runIdA, runIdB]
+    );
+
+    if (!result || result.rows.length === 0) {
+      return null;
+    }
+
+    logger.info({ compareId, runIdA, runIdB }, '[QuickTestRepo] Created quick test comparison');
+    return rowToQuickTestComparison(result.rows[0]);
+  } catch (error) {
+    logger.error({ error, compareId }, '[QuickTestRepo] Failed to create quick test comparison');
+    return null;
+  }
+}
+
+/**
+ * Get a quick test comparison by ID
+ * Feature #670: Persist compareRunMap to database
+ */
+export async function getQuickTestComparison(compareId: string): Promise<QuickTestComparison | null> {
+  if (!isDatabaseConnected()) {
+    return null;
+  }
+
+  try {
+    const result = await query<QuickTestComparisonRow>(
+      `SELECT id, organization_id, run_id_a, run_id_b, created_at, expires_at
+       FROM quick_test_comparisons
+       WHERE id = $1 AND expires_at > NOW()`,
+      [compareId]
+    );
+
+    if (!result || result.rows.length === 0) {
+      return null;
+    }
+
+    return rowToQuickTestComparison(result.rows[0]);
+  } catch (error) {
+    logger.error({ error, compareId }, '[QuickTestRepo] Failed to get quick test comparison');
+    return null;
+  }
+}
+
+/**
+ * Delete expired quick test comparisons
+ * Feature #670: TTL cleanup for comparisons (replaces setTimeout)
+ */
+export async function deleteExpiredQuickTestComparisons(): Promise<number> {
+  if (!isDatabaseConnected()) {
+    return 0;
+  }
+
+  try {
+    const result = await query(
+      `DELETE FROM quick_test_comparisons WHERE expires_at < NOW()`
+    );
+
+    const deletedCount = result?.rowCount ?? 0;
+    if (deletedCount > 0) {
+      logger.info({ deletedCount }, '[QuickTestRepo] Deleted expired quick test comparisons');
+    }
+
+    return deletedCount;
+  } catch (error) {
+    logger.error({ error }, '[QuickTestRepo] Failed to delete expired comparisons');
+    return 0;
+  }
+}
