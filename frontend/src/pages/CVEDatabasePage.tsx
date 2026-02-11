@@ -3,6 +3,7 @@
 // Scans dependencies against the National Vulnerability Database (NVD)
 
 import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
@@ -488,9 +489,7 @@ export function CVEDatabasePage() {
  <span className={`px-2 py-1 rounded text-xs font-bold ${getCVSSColor(vuln.cvss.score)}`}>
  CVSS {vuln.cvss.score}
  </span>
- <svg className={`w-5 h-5 text-muted-foreground transition-transform ${expandedVulns.has(vuln.id) ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
- </svg>
+ <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${expandedVulns.has(vuln.id) ? 'rotate-180' : ''}`} />
  </div>
  </button>
 

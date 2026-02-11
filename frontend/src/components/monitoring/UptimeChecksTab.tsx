@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { Plus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
  UptimeCheck,
@@ -153,9 +154,7 @@ export default function UptimeChecksTab({
  onClick={() => setShowCreateModal(true)}
  className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-all hover:scale-105"
  >
- <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
- </svg>
+ <Plus className="w-4 h-4" />
  Create Your First Monitor
  </button>
  </div>

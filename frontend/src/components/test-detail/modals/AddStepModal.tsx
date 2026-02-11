@@ -2,7 +2,9 @@
 // Feature #48: Extracted from TestDetailPage.tsx
 // Feature #127: Mobile responsive design audit and fixes
 // Feature #633: Migrated to Modal/ModalHeader/ModalBody/ModalFooter
+// Feature #662: Replaced inline SVGs with Lucide icons
 import { FormEvent, KeyboardEvent } from 'react';
+import { Info, ShieldCheck } from 'lucide-react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../ui/Modal';
 
 interface AddStepModalProps {
@@ -291,9 +293,7 @@ export function AddStepModal({
  </div>
  <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
  <div className="flex items-start gap-2">
- <svg className="h-5 w-5 text-primary mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <Info className="h-5 w-5 text-primary mt-0.5" />
  <div className="text-sm text-primary">
  <p className="font-medium">Visual Checkpoint</p>
  <p className="mt-1">Takes a screenshot and compares it against the baseline. The test will fail if visual differences exceed the threshold.</p>
@@ -359,9 +359,7 @@ export function AddStepModal({
  </div>
  <div className="rounded-md border border-accent/20 bg-accent/5 p-3">
  <div className="flex items-start gap-2">
- <svg className="h-5 w-5 text-accent mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
- </svg>
+ <ShieldCheck className="h-5 w-5 text-accent mt-0.5" />
  <div className="text-sm text-accent">
  <p className="font-medium">Accessibility Check</p>
  <p className="mt-1">Runs an accessibility scan on the current page using axe-core. The E2E test will fail if accessibility violations exceed the configured threshold.</p>

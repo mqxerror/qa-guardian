@@ -4,15 +4,20 @@
  * NavItem and NavItemWithBadge components for sidebar navigation links.
  * Includes PinIcon for the pin functionality.
  * Extracted from Sidebar.tsx for Feature #104.
+ * Feature #662: Replaced inline SVG with Lucide Bookmark icon
  */
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { Bookmark } from 'lucide-react';
 
-// Feature #1364: Pin icon for menu items
+// Feature #1364: Pin icon for menu items - using Lucide Bookmark
 export const PinIcon = ({ filled }: { filled?: boolean }) => (
-  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill={filled ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-  </svg>
+  <Bookmark
+    aria-hidden="true"
+    className="h-3.5 w-3.5"
+    fill={filled ? "currentColor" : "none"}
+    strokeWidth={2}
+  />
 );
 
 export interface NavItemProps {

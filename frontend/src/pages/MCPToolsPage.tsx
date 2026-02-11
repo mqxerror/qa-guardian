@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Search, Meh } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
@@ -183,9 +184,7 @@ export function MCPToolsPage() {
 
  <div className="flex flex-col md:flex-row gap-4 mb-6">
  <div className="relative flex-1">
- <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
- </svg>
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
  <input
  type="text"
  placeholder="Search tools by name or description..."
@@ -215,9 +214,7 @@ export function MCPToolsPage() {
  <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div></div>
  ) : filteredTools.length === 0 ? (
  <div className="text-center py-12 border border-dashed border-border rounded-lg">
- <svg className="mx-auto h-16 w-16 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <Meh className="mx-auto h-16 w-16 text-muted-foreground/50" strokeWidth={1.5} />
  <p className="mt-4 text-muted-foreground">No tools match your search</p>
  <button onClick={() => { setSearchQuery(''); setSelectedCategory('all'); setSelectedPermission('all'); }} className="mt-2 text-sm text-primary hover:underline">Clear all filters</button>
  </div>
