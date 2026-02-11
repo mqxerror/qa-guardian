@@ -1,10 +1,12 @@
 // TeamTab - Team member management
 // Feature #451: Extracted from SettingsPage.tsx
+// Feature #658: Migrated 3 hand-rolled modals to shared Modal component
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTimezoneStore } from '../../stores/timezoneStore';
 import { toast } from '../../stores/toastStore';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import {
   useMembers,
   useInvitations,
@@ -44,17 +46,7 @@ export function TeamTab() {
   const isRemoving = removeMemberMutation.isPending;
   const isUpdatingRole = updateRoleMutation.isPending;
 
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (showInviteModal) setShowInviteModal(false);
-        if (showRemoveModal) setShowRemoveModal(false);
-        if (showEditRoleModal) setShowEditRoleModal(false);
-      }
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [showInviteModal, showRemoveModal, showEditRoleModal]);
+  // Feature #658: ESC handling now provided by shared Modal component
 
   // Feature #80: Handler functions using React Query mutations
   const handleInvite = async (e: React.FormEvent) => {
@@ -247,122 +239,116 @@ export function TeamTab() {
         </div>
       )}
 
-      {/* Invite Modal */}
-      {showInviteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowInviteModal(false)}>
-          <div className="bg-card rounded-lg p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-foreground mb-4">Invite Team Member</h3>
-            <form onSubmit={handleInvite} className="space-y-4" noValidate>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Email</label>
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="colleague@company.com"
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Role</label>
-                <select
-                  value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value as 'admin' | 'developer' | 'viewer')}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                >
-                  <option value="viewer">Viewer - Can view tests and results</option>
-                  <option value="developer">Developer - Can create and run tests</option>
-                  <option value="admin">Admin - Can manage team and settings</option>
-                </select>
-              </div>
-              {inviteError && <p className="text-sm text-destructive">{inviteError}</p>}
-              {inviteSuccess && <p className="text-sm text-success">{inviteSuccess}</p>}
-              <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowInviteModal(false)}
-                  className="px-4 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isInviting}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-                >
-                  {isInviting ? 'Sending...' : 'Send Invitation'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Remove Member Modal */}
-      {showRemoveModal && memberToRemove && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowRemoveModal(false)}>
-          <div className="bg-card rounded-lg p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-foreground mb-4">Remove Team Member</h3>
-            <p className="text-muted-foreground mb-4">
-              Are you sure you want to remove <strong>{memberToRemove.name}</strong> from the team?
-              They will lose access to all organization resources.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowRemoveModal(false)}
-                className="px-4 py-2 text-muted-foreground hover:text-foreground"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRemoveMember}
-                disabled={isRemoving}
-                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 disabled:opacity-50"
-              >
-                {isRemoving ? 'Removing...' : 'Remove'}
-              </button>
+      {/* Feature #658: Invite Modal - migrated to shared Modal */}
+      <Modal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} title="Invite Team Member" size="md">
+        <ModalHeader onClose={() => setShowInviteModal(false)}>Invite Team Member</ModalHeader>
+        <form onSubmit={handleInvite} noValidate>
+          <ModalBody className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Email</label>
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="colleague@company.com"
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                required
+              />
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Role Modal */}
-      {showEditRoleModal && memberToEdit && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowEditRoleModal(false)}>
-          <div className="bg-card rounded-lg p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-foreground mb-4">Edit Member Role</h3>
-            <p className="text-muted-foreground mb-4">
-              Change role for <strong>{memberToEdit.name}</strong>
-            </p>
-            <select
-              value={newRole}
-              onChange={(e) => setNewRole(e.target.value as 'admin' | 'developer' | 'viewer')}
-              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground mb-4"
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Role</label>
+              <select
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value as 'admin' | 'developer' | 'viewer')}
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+              >
+                <option value="viewer">Viewer - Can view tests and results</option>
+                <option value="developer">Developer - Can create and run tests</option>
+                <option value="admin">Admin - Can manage team and settings</option>
+              </select>
+            </div>
+            {inviteError && <p className="text-sm text-destructive">{inviteError}</p>}
+            {inviteSuccess && <p className="text-sm text-success">{inviteSuccess}</p>}
+          </ModalBody>
+          <ModalFooter>
+            <button
+              type="button"
+              onClick={() => setShowInviteModal(false)}
+              className="px-4 py-2 text-muted-foreground hover:text-foreground"
             >
-              <option value="viewer">Viewer</option>
-              <option value="developer">Developer</option>
-              <option value="admin">Admin</option>
-            </select>
-            {editRoleError && <p className="text-sm text-destructive mb-4">{editRoleError}</p>}
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowEditRoleModal(false)}
-                className="px-4 py-2 text-muted-foreground hover:text-foreground"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdateRole}
-                disabled={isUpdatingRole}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-              >
-                {isUpdatingRole ? 'Updating...' : 'Update Role'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isInviting}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+            >
+              {isInviting ? 'Sending...' : 'Send Invitation'}
+            </button>
+          </ModalFooter>
+        </form>
+      </Modal>
+
+      {/* Feature #658: Remove Member Modal - migrated to shared Modal */}
+      <Modal isOpen={showRemoveModal && !!memberToRemove} onClose={() => setShowRemoveModal(false)} title="Remove Team Member" size="md">
+        <ModalHeader onClose={() => setShowRemoveModal(false)}>Remove Team Member</ModalHeader>
+        <ModalBody>
+          <p className="text-muted-foreground">
+            Are you sure you want to remove <strong>{memberToRemove?.name}</strong> from the team?
+            They will lose access to all organization resources.
+          </p>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={() => setShowRemoveModal(false)}
+            className="px-4 py-2 text-muted-foreground hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleRemoveMember}
+            disabled={isRemoving}
+            className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 disabled:opacity-50"
+          >
+            {isRemoving ? 'Removing...' : 'Remove'}
+          </button>
+        </ModalFooter>
+      </Modal>
+
+      {/* Feature #658: Edit Role Modal - migrated to shared Modal */}
+      <Modal isOpen={showEditRoleModal && !!memberToEdit} onClose={() => setShowEditRoleModal(false)} title="Edit Member Role" size="md">
+        <ModalHeader onClose={() => setShowEditRoleModal(false)}>Edit Member Role</ModalHeader>
+        <ModalBody className="space-y-4">
+          <p className="text-muted-foreground">
+            Change role for <strong>{memberToEdit?.name}</strong>
+          </p>
+          <select
+            value={newRole}
+            onChange={(e) => setNewRole(e.target.value as 'admin' | 'developer' | 'viewer')}
+            className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+          >
+            <option value="viewer">Viewer</option>
+            <option value="developer">Developer</option>
+            <option value="admin">Admin</option>
+          </select>
+          {editRoleError && <p className="text-sm text-destructive">{editRoleError}</p>}
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={() => setShowEditRoleModal(false)}
+            className="px-4 py-2 text-muted-foreground hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleUpdateRole}
+            disabled={isUpdatingRole}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isUpdatingRole ? 'Updating...' : 'Update Role'}
+          </button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 }

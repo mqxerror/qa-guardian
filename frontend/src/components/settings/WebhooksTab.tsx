@@ -1,10 +1,12 @@
 // WebhooksTab - Webhook CRUD
 // Feature #451: Extracted from SettingsPage.tsx
+// Feature #658: Migrated hand-rolled modal to shared Modal component
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTimezoneStore } from '../../stores/timezoneStore';
 import { toast } from '../../stores/toastStore';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import { type Webhook } from '../../hooks/api/useSettings';
 
 export function WebhooksTab() {
@@ -188,66 +190,64 @@ export function WebhooksTab() {
         )}
       </div>
 
-      {/* Create Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-card rounded-lg p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-foreground mb-4">Add Webhook</h3>
-            <form onSubmit={handleCreateWebhook} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Webhook URL</label>
-                <input
-                  type="url"
-                  value={newUrl}
-                  onChange={(e) => setNewUrl(e.target.value)}
-                  placeholder="https://your-server.com/webhook"
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                  required
-                />
+      {/* Feature #658: Create Modal - migrated to shared Modal */}
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Add Webhook" size="md">
+        <form onSubmit={handleCreateWebhook}>
+          <ModalHeader onClose={() => setShowCreateModal(false)}>Add Webhook</ModalHeader>
+          <ModalBody className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Webhook URL</label>
+              <input
+                type="url"
+                value={newUrl}
+                onChange={(e) => setNewUrl(e.target.value)}
+                placeholder="https://your-server.com/webhook"
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Events</label>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {availableEvents.map(event => (
+                  <label key={event} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={newEvents.includes(event)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNewEvents([...newEvents, event]);
+                        } else {
+                          setNewEvents(newEvents.filter(ev => ev !== event));
+                        }
+                      }}
+                      className="rounded border-border"
+                    />
+                    <span className="text-sm text-foreground">{event}</span>
+                  </label>
+                ))}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Events</label>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {availableEvents.map(event => (
-                    <label key={event} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={newEvents.includes(event)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setNewEvents([...newEvents, event]);
-                          } else {
-                            setNewEvents(newEvents.filter(ev => ev !== event));
-                          }
-                        }}
-                        className="rounded border-border"
-                      />
-                      <span className="text-sm text-foreground">{event}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              {createError && <p className="text-sm text-destructive">{createError}</p>}
-              <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isCreating || newEvents.length === 0}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-                >
-                  {isCreating ? 'Creating...' : 'Create Webhook'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </div>
+            {createError && <p className="text-sm text-destructive">{createError}</p>}
+          </ModalBody>
+          <ModalFooter>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(false)}
+              className="px-4 py-2 text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isCreating || newEvents.length === 0}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+            >
+              {isCreating ? 'Creating...' : 'Create Webhook'}
+            </button>
+          </ModalFooter>
+        </form>
+      </Modal>
     </div>
   );
 }

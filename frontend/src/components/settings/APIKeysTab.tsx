@@ -1,10 +1,12 @@
 // APIKeysTab - API key management
 // Feature #451: Extracted from SettingsPage.tsx
+// Feature #658: Migrated hand-rolled modal to shared Modal component
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTimezoneStore } from '../../stores/timezoneStore';
 import { toast } from '../../stores/toastStore';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import { type ApiKey } from '../../hooks/api/useSettings';
 
 export function APIKeysTab() {
@@ -165,101 +167,108 @@ export function APIKeysTab() {
         </table>
       </div>
 
-      {/* Create Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => {
+      {/* Feature #658: Create Modal - migrated to shared Modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => {
           if (!createdKey) setShowCreateModal(false);
-        }}>
-          <div className="bg-card rounded-lg p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
-            {createdKey ? (
-              <>
-                <h3 className="text-lg font-semibold text-foreground mb-4">API Key Created</h3>
-                <div className="bg-warning/5 border border-warning/20 rounded-md p-4 mb-4">
-                  <p className="text-sm text-warning mb-2">
-                    ⚠️ Make sure to copy your API key now. You won't be able to see it again!
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-background p-2 rounded text-xs font-mono break-all text-foreground">
-                      {createdKey.key}
-                    </code>
-                    <button
-                      onClick={() => copyToClipboard(createdKey.key!)}
-                      className="px-3 py-2 bg-primary text-primary-foreground rounded text-sm"
-                    >
-                      {keyCopied ? '✓ Copied' : 'Copy'}
-                    </button>
-                  </div>
+        }}
+        title={createdKey ? "API Key Created" : "Create API Key"}
+        size="md"
+        closeOnBackdrop={!createdKey}
+        closeOnEscape={!createdKey}
+      >
+        {createdKey ? (
+          <>
+            <ModalHeader showCloseButton={false}>API Key Created</ModalHeader>
+            <ModalBody>
+              <div className="bg-warning/5 border border-warning/20 rounded-md p-4">
+                <p className="text-sm text-warning mb-2">
+                  ⚠️ Make sure to copy your API key now. You won't be able to see it again!
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-background p-2 rounded text-xs font-mono break-all text-foreground">
+                    {createdKey.key}
+                  </code>
+                  <button
+                    onClick={() => copyToClipboard(createdKey.key!)}
+                    className="px-3 py-2 bg-primary text-primary-foreground rounded text-sm"
+                  >
+                    {keyCopied ? '✓ Copied' : 'Copy'}
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setCreatedKey(null);
-                    setShowCreateModal(false);
-                  }}
-                  className="w-full px-4 py-2 bg-muted text-foreground rounded-md hover:bg-muted/80"
-                >
-                  Done
-                </button>
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-semibold text-foreground mb-4">Create API Key</h3>
-                <form onSubmit={handleCreateKey} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">Name</label>
-                    <input
-                      type="text"
-                      value={newKeyName}
-                      onChange={(e) => setNewKeyName(e.target.value)}
-                      placeholder="My API Key"
-                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">Scopes</label>
-                    <div className="space-y-2">
-                      {['read', 'write', 'execute', 'admin'].map(scope => (
-                        <label key={scope} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={newKeyScopes.includes(scope)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setNewKeyScopes([...newKeyScopes, scope]);
-                              } else {
-                                setNewKeyScopes(newKeyScopes.filter(s => s !== scope));
-                              }
-                            }}
-                            className="rounded border-border"
-                          />
-                          <span className="text-sm text-foreground capitalize">{scope}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  {createError && <p className="text-sm text-destructive">{createError}</p>}
-                  <div className="flex justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowCreateModal(false)}
-                      className="px-4 py-2 text-muted-foreground hover:text-foreground"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isCreating}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-                    >
-                      {isCreating ? 'Creating...' : 'Create Key'}
-                    </button>
-                  </div>
-                </form>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <button
+                onClick={() => {
+                  setCreatedKey(null);
+                  setShowCreateModal(false);
+                }}
+                className="w-full px-4 py-2 bg-muted text-foreground rounded-md hover:bg-muted/80"
+              >
+                Done
+              </button>
+            </ModalFooter>
+          </>
+        ) : (
+          <form onSubmit={handleCreateKey}>
+            <ModalHeader onClose={() => setShowCreateModal(false)}>Create API Key</ModalHeader>
+            <ModalBody className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Name</label>
+                <input
+                  type="text"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  placeholder="My API Key"
+                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Scopes</label>
+                <div className="space-y-2">
+                  {['read', 'write', 'execute', 'admin'].map(scope => (
+                    <label key={scope} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={newKeyScopes.includes(scope)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setNewKeyScopes([...newKeyScopes, scope]);
+                          } else {
+                            setNewKeyScopes(newKeyScopes.filter(s => s !== scope));
+                          }
+                        }}
+                        className="rounded border-border"
+                      />
+                      <span className="text-sm text-foreground capitalize">{scope}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {createError && <p className="text-sm text-destructive">{createError}</p>}
+            </ModalBody>
+            <ModalFooter>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isCreating}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+              >
+                {isCreating ? 'Creating...' : 'Create Key'}
+              </button>
+            </ModalFooter>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }
