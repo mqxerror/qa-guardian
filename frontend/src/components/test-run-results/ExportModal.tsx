@@ -2,9 +2,12 @@
  * ExportModal - Export test results modal with PDF, HTML, JSON, and share link options
  * Feature #46: Extracted from TestRunResultPage.tsx for modularity
  * Feature #127: Mobile responsive design - p-4 backdrop, max-h-[90vh] overflow, responsive padding
+ * Feature #637: Migrated to use Modal component from ui/Modal
  */
 
 import React, { useState } from 'react';
+import { FileText, Code, ArrowRight, Share2, Loader2 } from 'lucide-react';
+import { Modal, ModalHeader, ModalBody } from '../ui/Modal';
 import { generatePdfReport, generateHtmlReport, type PdfReportParams, type HtmlReportParams } from './reportGenerators';
 import { ResultSummary, TestRun } from './types';
 
@@ -59,7 +62,7 @@ export default function ExportModal({
  screenshots: true,
  });
 
- if (!isOpen || !run) return null;
+ if (!run) return null;
 
  const handleClose = () => {
  setShareLink(null);
@@ -187,42 +190,16 @@ export default function ExportModal({
  };
 
  return (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
- {/* Backdrop */}
- <div
- className="absolute inset-0 bg-black/50 transition-opacity"
- onClick={handleClose}
- />
+ <Modal isOpen={isOpen} onClose={handleClose} title="Export Test Results" size="md">
+ <ModalHeader onClose={handleClose}>Export Test Results</ModalHeader>
 
- {/* Modal */}
- <div
- role="dialog"
- aria-modal="true"
- aria-labelledby="export-modal-title"
- className="relative bg-card border border-border rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-200"
- >
- <div className="flex items-center justify-between mb-6">
- <h2 id="export-modal-title" className="text-xl font-bold text-foreground">Export Test Results</h2>
- <button
- onClick={handleClose}
- aria-label="Close dialog"
- className="p-2 rounded-full hover:bg-muted transition-colors"
- >
- <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
- </button>
- </div>
-
- <div className="space-y-4">
+ <ModalBody className="space-y-4">
  {/* PDF Export */}
  <div className="p-4 border border-border rounded-lg">
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
  <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
- <svg className="h-5 w-5 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
- </svg>
+ <FileText className="h-5 w-5 text-destructive" />
  </div>
  <div>
  <h3 className="font-medium text-foreground">PDF Report</h3>
@@ -290,10 +267,7 @@ export default function ExportModal({
  >
  {generatingPdf ? (
  <span className="flex items-center justify-center gap-2">
- <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
- </svg>
+ <Loader2 className="w-5 h-5 animate-spin" />
  Generating PDF...
  </span>
  ) : 'Download PDF'}
@@ -305,9 +279,7 @@ export default function ExportModal({
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
  <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center">
- <svg className="h-5 w-5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
- </svg>
+ <Code className="h-5 w-5 text-warning" />
  </div>
  <div>
  <h3 className="font-medium text-foreground">HTML Report</h3>
@@ -320,10 +292,7 @@ export default function ExportModal({
  className="px-4 py-2 bg-warning text-primary-foreground rounded-md hover:bg-warning/90 disabled:opacity-50 transition-colors"
  >
  {generatingHtml ? (
- <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
- </svg>
+ <Loader2 className="w-5 h-5 animate-spin" />
  ) : 'Download'}
  </button>
  </div>
@@ -334,9 +303,7 @@ export default function ExportModal({
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
- <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
- </svg>
+ <ArrowRight className="h-5 w-5 text-primary" />
  </div>
  <div>
  <h3 className="font-medium text-foreground">JSON Data</h3>
@@ -356,9 +323,7 @@ export default function ExportModal({
  <div className="p-4 border border-border rounded-lg">
  <div className="flex items-center gap-3 mb-4">
  <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center">
- <svg className="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
- </svg>
+ <Share2 className="h-5 w-5 text-success" />
  </div>
  <div>
  <h3 className="font-medium text-foreground">Shareable Link</h3>
@@ -413,10 +378,7 @@ export default function ExportModal({
  >
  {generatingShare ? (
  <span className="flex items-center justify-center gap-2">
- <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
- </svg>
+ <Loader2 className="w-5 h-5 animate-spin" />
  Generating...
  </span>
  ) : 'Generate Share Link'}
@@ -424,8 +386,7 @@ export default function ExportModal({
  )}
  </div>
  </div>
- </div>
- </div>
- </div>
+ </ModalBody>
+ </Modal>
  );
 }

@@ -3,6 +3,7 @@
 // Feature #633: Migrated to Modal/ModalHeader/ModalBody/ModalFooter
 
 import React from 'react';
+import { Lightbulb, X, Loader2, List, CheckCircle, Search, Star } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 
 // Types for test explanation
@@ -39,9 +40,7 @@ export function AIExplainModal({
  <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border">
  <div className="flex items-center gap-3">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
- <svg className="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
- </svg>
+ <Lightbulb className="h-6 w-6 text-accent" />
  </div>
  <div>
  <h2 className="text-lg font-semibold text-foreground">AI Test Explanation</h2>
@@ -54,9 +53,7 @@ export function AIExplainModal({
  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
  aria-label="Close modal"
  >
- <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
+ <X className="w-5 h-5" />
  </button>
  </div>
 
@@ -64,10 +61,7 @@ export function AIExplainModal({
  <ModalBody className="flex-1 overflow-y-auto">
  {isLoading ? (
  <div className="flex flex-col items-center justify-center py-12">
- <svg className="animate-spin h-10 w-10 text-accent mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 className="animate-spin h-10 w-10 text-accent mb-4" />
  <p className="text-muted-foreground">Analyzing test code with AI...</p>
  </div>
  ) : explanation ? (
@@ -97,10 +91,7 @@ export function AIExplainModal({
  {explanation.steps.length > 0 && (
  <div>
  <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
- <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
- <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
- </svg>
+ <List size={18} />
  Step-by-Step Breakdown
  </h4>
  <div className="space-y-3">
@@ -132,10 +123,7 @@ export function AIExplainModal({
  {explanation.assertions.length > 0 && (
  <div>
  <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
- <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
- <polyline points="22 4 12 14.01 9 11.01"/>
- </svg>
+ <CheckCircle size={18} />
  Assertions ({explanation.assertions.length})
  </h4>
  <div className="space-y-2">
@@ -158,9 +146,7 @@ export function AIExplainModal({
  {explanation.selectors.length > 0 && (
  <div>
  <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
- <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
- </svg>
+ <Search size={18} />
  Selectors ({explanation.selectors.length})
  </h4>
  <div className="overflow-x-auto">
@@ -198,9 +184,7 @@ export function AIExplainModal({
  {explanation.improvements.length > 0 && (
  <div>
  <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
- <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
- </svg>
+ <Star size={18} />
  Suggested Improvements
  </h4>
  <div className="space-y-2">

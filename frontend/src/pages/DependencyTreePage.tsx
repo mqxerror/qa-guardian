@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { PageHeader } from '../components/ui';
+import { ChevronRight, AlertCircle, Package, Shield, AlertTriangle, Search, Loader2, CheckCircle } from 'lucide-react';
 
 // Types for dependency data
 interface Vulnerability {
@@ -289,15 +290,11 @@ export function DependencyTreePage() {
                 marginRight: '8px',
               }}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
+              <ChevronRight
+                size={16}
+                color="#6b7280"
                 style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}
-              >
-                <path d="M6 4l4 4-4 4" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              />
             </button>
           ) : (
             <div style={{ width: '32px' }} />
@@ -317,13 +314,9 @@ export function DependencyTreePage() {
             }}
           >
             {node.isVulnerable ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="white" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+              <AlertCircle size={16} color="white" />
             ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <Package size={16} color="white" />
             )}
           </div>
 
@@ -409,9 +402,7 @@ export function DependencyTreePage() {
           height: '100%',
           color: 'hsl(var(--muted-foreground))',
         }}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ marginBottom: '16px' }}>
-            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <Package size={48} style={{ marginBottom: '16px' }} />
           <p>Click a package to view details</p>
         </div>
       );
@@ -458,9 +449,7 @@ export function DependencyTreePage() {
               fontSize: '13px',
               color: 'hsl(var(--muted-foreground))',
             }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+              <Shield size={14} />
               {selectedNode.license}
             </div>
           )}
@@ -470,9 +459,7 @@ export function DependencyTreePage() {
         {selectedNode.vulnerabilities.length > 0 && (
           <div style={{ marginBottom: '24px' }}>
             <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+              <AlertTriangle size={16} />
               Vulnerabilities ({selectedNode.vulnerabilities.length})
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -554,9 +541,7 @@ export function DependencyTreePage() {
             borderRadius: '8px',
             border: '1px solid #bbf7d0',
           }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <CheckCircle size={24} color="#16a34a" />
             <span style={{ color: '#15803d', fontWeight: 500 }}>
               No known vulnerabilities
             </span>
@@ -670,15 +655,11 @@ export function DependencyTreePage() {
           <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
             {/* Search */}
             <div style={{ flex: 1, minWidth: '200px', maxWidth: '300px', position: 'relative' }}>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
+              <Search
+                size={16}
+                color="#9ca3af"
                 style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
-              >
-                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+              />
               <input
                 type="text"
                 placeholder="Search packages..."
@@ -739,9 +720,7 @@ export function DependencyTreePage() {
           {/* Loading state */}
           {loading && (
             <div style={{ textAlign: 'center', padding: '40px', color: 'hsl(var(--muted-foreground))' }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }}>
-                <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m0-12.14l2.83 2.83m8.48 8.48l-2.83 2.83" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+              <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto 12px' }} />
               <p>Loading dependencies...</p>
             </div>
           )}
@@ -756,9 +735,7 @@ export function DependencyTreePage() {
           {/* Empty state */}
           {!loading && !error && filteredTree.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px', color: 'hsl(var(--muted-foreground))' }}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ margin: '0 auto 12px' }}>
-                <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <Package size={48} style={{ margin: '0 auto 12px' }} />
               <p>No dependencies found</p>
               <p style={{ fontSize: '13px' }}>Select a project to view its dependency tree</p>
             </div>

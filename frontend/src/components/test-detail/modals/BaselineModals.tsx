@@ -1,6 +1,7 @@
 // Feature #48: Baseline modals extracted from TestDetailPage.tsx
 // Feature #633: Migrated to Modal/ModalHeader/ModalBody/ModalFooter
 
+import { Check, RotateCcw, GitMerge, AlertTriangle, Loader2 } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 
 interface ApproveBaselineModalProps {
@@ -39,19 +40,7 @@ export function ApproveBaselineModal({
  {/* Custom Header with icon */}
  <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
- <svg
- className="h-6 w-6 text-success"
- fill="none"
- viewBox="0 0 24 24"
- stroke="currentColor"
- >
- <path
- strokeLinecap="round"
- strokeLinejoin="round"
- strokeWidth={2}
- d="M5 13l4 4L19 7"
- />
- </svg>
+ <Check className="h-6 w-6 text-success" />
  </div>
  <h2 className="text-lg font-semibold text-foreground">
  Approve New Baseline
@@ -126,26 +115,7 @@ export function ApproveBaselineModal({
  >
  {approvingBaseline ? (
  <span className="flex items-center gap-2">
- <svg
- className="animate-spin h-4 w-4"
- xmlns="http://www.w3.org/2000/svg"
- fill="none"
- viewBox="0 0 24 24"
- >
- <circle
- className="opacity-25"
- cx="12"
- cy="12"
- r="10"
- stroke="currentColor"
- strokeWidth="4"
- ></circle>
- <path
- className="opacity-75"
- fill="currentColor"
- d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
- ></path>
- </svg>
+ <Loader2 className="animate-spin h-4 w-4" />
  Approving...
  </span>
  ) : (
@@ -181,19 +151,7 @@ export function RestoreBaselineModal({
  {/* Custom Header with icon */}
  <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10">
- <svg
- className="h-6 w-6 text-warning"
- fill="none"
- viewBox="0 0 24 24"
- stroke="currentColor"
- >
- <path
- strokeLinecap="round"
- strokeLinejoin="round"
- strokeWidth={2}
- d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5"
- />
- </svg>
+ <RotateCcw className="h-6 w-6 text-warning" />
  </div>
  <h2 className="text-lg font-semibold text-foreground">
  Restore Previous Baseline
@@ -239,26 +197,7 @@ export function RestoreBaselineModal({
  >
  {restoringBaseline ? (
  <span className="flex items-center gap-2">
- <svg
- className="animate-spin h-4 w-4"
- xmlns="http://www.w3.org/2000/svg"
- fill="none"
- viewBox="0 0 24 24"
- >
- <circle
- className="opacity-25"
- cx="12"
- cy="12"
- r="10"
- stroke="currentColor"
- strokeWidth="4"
- ></circle>
- <path
- className="opacity-75"
- fill="currentColor"
- d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
- ></path>
- </svg>
+ <Loader2 className="animate-spin h-4 w-4" />
  Restoring...
  </span>
  ) : (
@@ -294,16 +233,7 @@ export function MergeBaselineModal({
  {/* Custom Header with icon */}
  <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
- <svg
- className="h-6 w-6 text-primary"
- fill="none"
- viewBox="0 0 24 24"
- stroke="currentColor"
- >
- <circle cx="18" cy="18" r="3" />
- <circle cx="6" cy="6" r="3" />
- <path d="M6 21V9a9 9 0 0 0 9 9" />
- </svg>
+ <GitMerge className="h-6 w-6 text-primary" />
  </div>
  <h2 className="text-lg font-semibold text-foreground">
  Merge Baseline from Branch
@@ -357,26 +287,7 @@ export function MergeBaselineModal({
  >
  {isMergingBaseline ? (
  <span className="flex items-center gap-2">
- <svg
- className="animate-spin h-4 w-4"
- xmlns="http://www.w3.org/2000/svg"
- fill="none"
- viewBox="0 0 24 24"
- >
- <circle
- className="opacity-25"
- cx="12"
- cy="12"
- r="10"
- stroke="currentColor"
- strokeWidth="4"
- ></circle>
- <path
- className="opacity-75"
- fill="currentColor"
- d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
- ></path>
- </svg>
+ <Loader2 className="animate-spin h-4 w-4" />
  Merging...
  </span>
  ) : (
@@ -414,19 +325,7 @@ export function RejectChangesModal({
  {/* Custom Header with icon */}
  <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
- <svg
- className="h-6 w-6 text-destructive"
- fill="none"
- viewBox="0 0 24 24"
- stroke="currentColor"
- >
- <path
- strokeLinecap="round"
- strokeLinejoin="round"
- strokeWidth={2}
- d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
- />
- </svg>
+ <AlertTriangle className="h-6 w-6 text-destructive" />
  </div>
  <h2 className="text-lg font-semibold text-foreground">
  Reject Visual Changes
@@ -484,26 +383,7 @@ export function RejectChangesModal({
  >
  {rejectingChanges ? (
  <span className="flex items-center gap-2">
- <svg
- className="animate-spin h-4 w-4"
- xmlns="http://www.w3.org/2000/svg"
- fill="none"
- viewBox="0 0 24 24"
- >
- <circle
- className="opacity-25"
- cx="12"
- cy="12"
- r="10"
- stroke="currentColor"
- strokeWidth="4"
- ></circle>
- <path
- className="opacity-75"
- fill="currentColor"
- d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
- ></path>
- </svg>
+ <Loader2 className="animate-spin h-4 w-4" />
  Rejecting...
  </span>
  ) : (
