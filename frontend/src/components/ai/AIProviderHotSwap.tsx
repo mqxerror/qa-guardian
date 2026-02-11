@@ -2,6 +2,7 @@
 // Hot-swap provider section with provider cards and switch modal
 
 import { useState } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import type {
   ActiveProviderState,
   ProviderSwitchResult,
@@ -126,87 +127,88 @@ export function AIProviderHotSwap({
         )}
       </div>
 
-      {/* Provider Switch Modal */}
-      {showSwitchModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <span>⚡</span> Switch Provider
-            </h3>
-
-            <div className="mb-4 p-3 bg-primary/5 rounded-lg">
-              <div className="text-sm text-primary">
-                <strong>Current:</strong> {activeProvider?.current_provider === 'kie' ? 'Kie.ai' : 'Anthropic Direct'}
-              </div>
-              <div className="text-sm text-primary">
-                <strong>Target:</strong> {targetProvider === 'kie' ? 'Kie.ai' : 'Anthropic Direct'}
-              </div>
+      {/* Feature #660: Provider Switch Modal - migrated to shared Modal */}
+      <Modal
+        isOpen={showSwitchModal}
+        onClose={() => setShowSwitchModal(false)}
+        title="Switch Provider"
+        size="md"
+      >
+        <ModalHeader onClose={() => setShowSwitchModal(false)}>
+          ⚡ Switch Provider
+        </ModalHeader>
+        <ModalBody>
+          <div className="mb-4 p-3 bg-primary/5 rounded-lg">
+            <div className="text-sm text-primary">
+              <strong>Current:</strong> {activeProvider?.current_provider === 'kie' ? 'Kie.ai' : 'Anthropic Direct'}
             </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-1">Reason for switch</label>
-              <input
-                type="text"
-                value={switchReason}
-                onChange={(e) => setSwitchReason(e.target.value)}
-                placeholder="e.g., Cost optimization, performance testing..."
-                className="w-full border rounded-lg p-2 text-sm"
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={gracefulSwitch}
-                  onChange={(e) => setGracefulSwitch(e.target.checked)}
-                  className="rounded"
-                />
-                <div>
-                  <div className="text-sm font-medium">Graceful switch</div>
-                  <div className="text-xs text-muted-foreground">Wait for pending requests to complete (recommended)</div>
-                </div>
-              </label>
-            </div>
-
-            {switchResult && (
-              <div className={`mb-4 p-3 rounded-lg ${
-                switchResult.success ? 'bg-success/5 border border-success/20' : 'bg-destructive/5 border border-destructive/20'
-              }`}>
-                <div className="font-medium text-sm">
-                  {switchResult.success ? '✅ Switch successful!' : '❌ Switch failed'}
-                </div>
-                <div className="text-xs mt-1">{switchResult.message || switchResult.error}</div>
-                {switchResult.success && switchResult.switch_duration_ms && (
-                  <div className="text-xs text-foreground mt-1">
-                    Duration: {switchResult.switch_duration_ms}ms |
-                    Interruption: {switchResult.service_interruption_ms}ms |
-                    Requests drained: {switchResult.requests_drained}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowSwitchModal(false)}
-                disabled={isSwitching}
-                className="px-4 py-2 text-foreground hover:text-foreground"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSwitch}
-                disabled={isSwitching}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
-              >
-                {isSwitching && <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>}
-                {isSwitching ? 'Switching...' : 'Switch Provider'}
-              </button>
+            <div className="text-sm text-primary">
+              <strong>Target:</strong> {targetProvider === 'kie' ? 'Kie.ai' : 'Anthropic Direct'}
             </div>
           </div>
-        </div>
-      )}
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-foreground mb-1">Reason for switch</label>
+            <input
+              type="text"
+              value={switchReason}
+              onChange={(e) => setSwitchReason(e.target.value)}
+              placeholder="e.g., Cost optimization, performance testing..."
+              className="w-full border rounded-lg p-2 text-sm"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={gracefulSwitch}
+                onChange={(e) => setGracefulSwitch(e.target.checked)}
+                className="rounded"
+              />
+              <div>
+                <div className="text-sm font-medium">Graceful switch</div>
+                <div className="text-xs text-muted-foreground">Wait for pending requests to complete (recommended)</div>
+              </div>
+            </label>
+          </div>
+
+          {switchResult && (
+            <div className={`mb-4 p-3 rounded-lg ${
+              switchResult.success ? 'bg-success/5 border border-success/20' : 'bg-destructive/5 border border-destructive/20'
+            }`}>
+              <div className="font-medium text-sm">
+                {switchResult.success ? '✅ Switch successful!' : '❌ Switch failed'}
+              </div>
+              <div className="text-xs mt-1">{switchResult.message || switchResult.error}</div>
+              {switchResult.success && switchResult.switch_duration_ms && (
+                <div className="text-xs text-foreground mt-1">
+                  Duration: {switchResult.switch_duration_ms}ms |
+                  Interruption: {switchResult.service_interruption_ms}ms |
+                  Requests drained: {switchResult.requests_drained}
+                </div>
+              )}
+            </div>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={() => setShowSwitchModal(false)}
+            disabled={isSwitching}
+            className="px-4 py-2 text-foreground hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSwitch}
+            disabled={isSwitching}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+          >
+            {isSwitching && <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>}
+            {isSwitching ? 'Switching...' : 'Switch Provider'}
+          </button>
+        </ModalFooter>
+      </Modal>
     </>
   );
 }

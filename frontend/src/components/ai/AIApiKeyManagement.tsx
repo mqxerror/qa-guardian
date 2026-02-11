@@ -2,6 +2,7 @@
 // API Key management with encryption, rotation, and testing
 
 import { useState } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import type {
   APIKeyConfig,
   APIKeyAuditLog,
@@ -306,82 +307,83 @@ export function AIApiKeyManagement({
         </div>
       )}
 
-      {/* Add/Rotate Key Modal */}
-      {showKeyModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold mb-4">
-              {keyModalMode === 'add' ? '➕ Add API Key' : '🔄 Rotate API Key'}
-            </h3>
-
-            {keyModalMode === 'add' && (
-              <>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-foreground mb-1">Provider</label>
-                  <select
-                    value={newKeyProvider}
-                    onChange={(e) => setNewKeyProvider(e.target.value as AIProviderType)}
-                    className="w-full border rounded-lg p-2"
-                  >
-                    <option value="kie">Kie.ai</option>
-                    <option value="anthropic">Anthropic</option>
-                  </select>
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-foreground mb-1">Key Name</label>
-                  <input
-                    type="text"
-                    value={newKeyName}
-                    onChange={(e) => setNewKeyName(e.target.value)}
-                    placeholder="e.g., Production Key, Backup Key"
-                    className="w-full border rounded-lg p-2"
-                  />
-                </div>
-              </>
-            )}
-
-            {keyModalMode === 'rotate' && editingKey && (
-              <div className="mb-4 p-3 bg-warning/5 rounded-lg">
-                <div className="text-sm">
-                  <strong>Rotating:</strong> {editingKey.name} ({editingKey.provider})
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Current version: v{editingKey.version}
-                </div>
+      {/* Feature #660: Add/Rotate Key Modal - migrated to shared Modal */}
+      <Modal
+        isOpen={showKeyModal}
+        onClose={() => setShowKeyModal(false)}
+        title={keyModalMode === 'add' ? 'Add API Key' : 'Rotate API Key'}
+        size="md"
+      >
+        <ModalHeader onClose={() => setShowKeyModal(false)}>
+          {keyModalMode === 'add' ? '➕ Add API Key' : '🔄 Rotate API Key'}
+        </ModalHeader>
+        <ModalBody>
+          {keyModalMode === 'add' && (
+            <>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-foreground mb-1">Provider</label>
+                <select
+                  value={newKeyProvider}
+                  onChange={(e) => setNewKeyProvider(e.target.value as AIProviderType)}
+                  className="w-full border rounded-lg p-2"
+                >
+                  <option value="kie">Kie.ai</option>
+                  <option value="anthropic">Anthropic</option>
+                </select>
               </div>
-            )}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-foreground mb-1">Key Name</label>
+                <input
+                  type="text"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  placeholder="e.g., Production Key, Backup Key"
+                  className="w-full border rounded-lg p-2"
+                />
+              </div>
+            </>
+          )}
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-1">
-                {keyModalMode === 'add' ? 'API Key' : 'New API Key'}
-              </label>
-              <input
-                type="password"
-                value={newKeyValue}
-                onChange={(e) => setNewKeyValue(e.target.value)}
-                placeholder="sk-..."
-                className="w-full border rounded-lg p-2 font-mono"
-              />
+          {keyModalMode === 'rotate' && editingKey && (
+            <div className="mb-4 p-3 bg-warning/5 rounded-lg">
+              <div className="text-sm">
+                <strong>Rotating:</strong> {editingKey.name} ({editingKey.provider})
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Current version: v{editingKey.version}
+              </div>
             </div>
+          )}
 
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowKeyModal(false)}
-                className="px-4 py-2 text-foreground hover:text-foreground"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={keyModalMode === 'add' ? handleAddKey : handleRotateKey}
-                disabled={!newKeyValue || (keyModalMode === 'add' && !newKeyName)}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
-              >
-                {keyModalMode === 'add' ? 'Add Key' : 'Rotate Key'}
-              </button>
-            </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-foreground mb-1">
+              {keyModalMode === 'add' ? 'API Key' : 'New API Key'}
+            </label>
+            <input
+              type="password"
+              value={newKeyValue}
+              onChange={(e) => setNewKeyValue(e.target.value)}
+              placeholder="sk-..."
+              className="w-full border rounded-lg p-2 font-mono"
+            />
           </div>
-        </div>
-      )}
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={() => setShowKeyModal(false)}
+            className="px-4 py-2 text-foreground hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={keyModalMode === 'add' ? handleAddKey : handleRotateKey}
+            disabled={!newKeyValue || (keyModalMode === 'add' && !newKeyName)}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+          >
+            {keyModalMode === 'add' ? 'Add Key' : 'Rotate Key'}
+          </button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 // AI Budget tracking with spending visualization and alerts
 
 import { useState } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import type {
   AIBudgetConfig,
   AISpendingData,
@@ -329,34 +330,39 @@ export function AIBudgetDashboard({
         </div>
       )}
 
-      {/* Reset Budget Modal */}
-      {showBudgetResetModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold mb-4">🔄 Reset Monthly Budget</h3>
-            <p className="text-foreground mb-4">
-              This will reset the current month's spending counter to $0.00. This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowBudgetResetModal(false)}
-                className="px-4 py-2 text-foreground hover:text-foreground"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  onResetBudget();
-                  setShowBudgetResetModal(false);
-                }}
-                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90"
-              >
-                Reset Budget
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Feature #660: Reset Budget Modal - migrated to shared Modal */}
+      <Modal
+        isOpen={showBudgetResetModal}
+        onClose={() => setShowBudgetResetModal(false)}
+        title="Reset Monthly Budget"
+        size="md"
+      >
+        <ModalHeader onClose={() => setShowBudgetResetModal(false)}>
+          🔄 Reset Monthly Budget
+        </ModalHeader>
+        <ModalBody>
+          <p className="text-foreground">
+            This will reset the current month's spending counter to $0.00. This action cannot be undone.
+          </p>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={() => setShowBudgetResetModal(false)}
+            className="px-4 py-2 text-foreground hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              onResetBudget();
+              setShowBudgetResetModal(false);
+            }}
+            className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90"
+          >
+            Reset Budget
+          </button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 }
