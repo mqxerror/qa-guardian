@@ -165,7 +165,7 @@ function ScoreBadge({ score, size = 'large' }: { score: number; size?: 'small' |
   const sizeClass = size === 'large' ? 'w-24 h-24 text-3xl' : 'w-12 h-12 text-lg';
 
   return (
-    <div className={`${sizeClass} ${color} rounded-full flex items-center justify-center text-white font-bold shadow-lg`}>
+    <div className={`${sizeClass} ${color} rounded-full flex items-center justify-center text-primary-foreground font-bold shadow-lg`}>
       {score}
     </div>
   );
@@ -196,18 +196,18 @@ function StatusBadge({ status }: { status: 'passing' | 'warning' | 'failing' | '
 // Impact badge for severity
 function ImpactBadge({ impact }: { impact: string }) {
   const colors: Record<string, string> = {
-    critical: 'bg-destructive text-white',
-    high: 'bg-destructive text-white',
-    serious: 'bg-warning text-white',
-    medium: 'bg-warning text-white',
-    moderate: 'bg-warning text-white',
-    low: 'bg-primary text-white',
-    minor: 'bg-primary/80 text-white',
-    info: 'bg-muted-foreground text-white',
+    critical: 'bg-destructive text-primary-foreground',
+    high: 'bg-destructive text-primary-foreground',
+    serious: 'bg-warning text-primary-foreground',
+    medium: 'bg-warning text-primary-foreground',
+    moderate: 'bg-warning text-primary-foreground',
+    low: 'bg-primary text-primary-foreground',
+    minor: 'bg-primary/80 text-primary-foreground',
+    info: 'bg-muted-foreground text-primary-foreground',
   };
 
   return (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${colors[impact] || 'bg-muted-foreground text-white'}`}>
+    <span className={`px-2 py-1 rounded text-xs font-medium ${colors[impact] || 'bg-muted-foreground text-primary-foreground'}`}>
       {impact.charAt(0).toUpperCase() + impact.slice(1)}
     </span>
   );

@@ -1137,7 +1137,7 @@ export default function TestRunResultPage() {
  onClick={() => setCompareMode(!compareMode)}
  className={`inline-flex items-center gap-2 px-4 py-2 rounded-md transition-all ${
  compareMode
- ? 'bg-primary text-white'
+ ? 'bg-primary text-primary-foreground'
  : 'border border-border text-foreground hover:bg-muted'
  }`}
  title="Compare with previous runs"

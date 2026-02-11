@@ -391,7 +391,7 @@ Respond in this JSON format:
  }
 
  // Generate affected areas
- const affectedAreas = [];
+ const affectedAreas: Array<{ element: string; change_description: string; location: string }> = [];
  if (diffPercent > 0) {
  affectedAreas.push({ element: 'Primary Content Area', change_description: diffPercent > 5 ? 'Layout structure modified' : 'Minor visual adjustment', location: 'Center viewport' });
  }
@@ -513,7 +513,7 @@ Respond in this JSON format:
  <button
  onClick={() => setShowBatchApproveModal(true)}
  disabled={selectedChanges.size === 0}
- className="inline-flex items-center gap-2 rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed"
+ className="inline-flex items-center gap-2 rounded-md bg-success px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed"
  >
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -523,7 +523,7 @@ Respond in this JSON format:
  <button
  onClick={() => setShowBatchRejectModal(true)}
  disabled={selectedChanges.size === 0}
- className="inline-flex items-center gap-2 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive disabled:opacity-50 disabled:cursor-not-allowed"
+ className="inline-flex items-center gap-2 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-destructive disabled:opacity-50 disabled:cursor-not-allowed"
  >
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -963,7 +963,7 @@ Respond in this JSON format:
  <button
  onClick={handleBatchApprove}
  disabled={batchApproveMutation.isPending}
- className="rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50"
+ className="rounded-md bg-success px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-success disabled:opacity-50"
  >
  {batchApproveMutation.isPending ? (
  <span className="flex items-center gap-2">
@@ -1032,7 +1032,7 @@ Respond in this JSON format:
  <button
  onClick={handleBatchReject}
  disabled={batchRejectMutation.isPending}
- className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive disabled:opacity-50"
+ className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-destructive disabled:opacity-50"
  >
  {batchRejectMutation.isPending ? (
  <span className="flex items-center gap-2">

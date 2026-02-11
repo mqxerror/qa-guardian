@@ -73,9 +73,9 @@ interface Project {
 }
 
 const riskColors = {
-  safe: 'bg-success text-white',
+  safe: 'bg-success text-primary-foreground',
   caution: 'bg-warning text-black',
-  breaking: 'bg-destructive text-white',
+  breaking: 'bg-destructive text-primary-foreground',
 };
 
 const riskBorderColors = {
@@ -324,7 +324,7 @@ export function UpgradeRecommendationsPage() {
                   onClick={() => setRiskFilter('safe')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
                     riskFilter === 'safe'
-                      ? 'bg-success text-white border-success'
+                      ? 'bg-success text-primary-foreground border-success'
                       : 'border-success text-success hover:bg-success/10'
                   }`}
                 >
@@ -346,7 +346,7 @@ export function UpgradeRecommendationsPage() {
                   onClick={() => setRiskFilter('breaking')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
                     riskFilter === 'breaking'
-                      ? 'bg-destructive text-white border-destructive'
+                      ? 'bg-destructive text-primary-foreground border-destructive'
                       : 'border-destructive text-destructive hover:bg-destructive/10'
                   }`}
                 >

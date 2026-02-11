@@ -274,7 +274,7 @@ export function PublicStatusPage() {
  {subscribeResult.dev_verify_url && subscribeResult.verification_required && (
  <button
  onClick={handleVerify}
- className="mt-2 px-3 py-1 text-sm bg-success text-white rounded hover:bg-success"
+ className="mt-2 px-3 py-1 text-sm bg-success text-primary-foreground rounded hover:bg-success"
  >
  Verify Now (Dev Mode)
  </button>

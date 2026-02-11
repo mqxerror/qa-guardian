@@ -425,7 +425,7 @@ export default function SharedTestRunPage() {
  <button
  type="submit"
  disabled={authenticating || !password}
- className="w-full py-2.5 px-4 bg-primary hover:bg-primary disabled:bg-primary/80 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+ className="w-full py-2.5 px-4 bg-primary hover:bg-primary disabled:bg-primary/80 text-primary-foreground font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
  >
  {authenticating ? (
  <>
@@ -555,7 +555,7 @@ export default function SharedTestRunPage() {
  <div className="flex flex-col sm:flex-row gap-3 mt-8">
  <Link
  to="/login"
- className="flex-1 inline-flex items-center justify-center px-4 py-2.5 bg-primary hover:bg-primary text-white font-medium rounded-lg transition-colors"
+ className="flex-1 inline-flex items-center justify-center px-4 py-2.5 bg-primary hover:bg-primary text-primary-foreground font-medium rounded-lg transition-colors"
  >
  Sign In
  </Link>
@@ -587,7 +587,7 @@ export default function SharedTestRunPage() {
  <p className="text-foreground mb-6">{error}</p>
  <Link
  to="/"
- className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors"
+ className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary transition-colors"
  >
  Go to Home
  </Link>
@@ -700,7 +700,7 @@ export default function SharedTestRunPage() {
  >
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
- <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-sm ${
+ <span className={`w-6 h-6 rounded-full flex items-center justify-center text-primary-foreground text-sm ${
  result.status === 'passed' ? 'bg-success' : 'bg-destructive'
  }`}>
  {result.status === 'passed' ? '✓' : '✗'}
@@ -824,9 +824,9 @@ export default function SharedTestRunPage() {
  </div>
  {/* Type badge */}
  <div className={`absolute top-2 right-2 px-1.5 py-0.5 text-xs rounded font-medium ${
- screenshot.type === 'diff' ? 'bg-warning text-white' :
- screenshot.type === 'baseline' ? 'bg-primary text-white' :
- 'bg-card/60 text-white'
+ screenshot.type === 'diff' ? 'bg-warning text-primary-foreground' :
+ screenshot.type === 'baseline' ? 'bg-primary text-primary-foreground' :
+ 'bg-card/60 text-primary-foreground'
  }`}>
  {screenshot.type}
  </div>

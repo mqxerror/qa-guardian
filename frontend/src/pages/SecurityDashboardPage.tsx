@@ -196,10 +196,10 @@ export function SecurityDashboardPage() {
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'CRITICAL': return 'bg-destructive text-white';
-      case 'HIGH': return 'bg-warning text-white';
+      case 'CRITICAL': return 'bg-destructive text-primary-foreground';
+      case 'HIGH': return 'bg-warning text-primary-foreground';
       case 'MEDIUM': return 'bg-warning text-black';
-      case 'LOW': return 'bg-primary text-white';
+      case 'LOW': return 'bg-primary text-primary-foreground';
       default: return 'bg-muted text-muted-foreground';
     }
   };
@@ -281,7 +281,7 @@ export function SecurityDashboardPage() {
             >
               Secrets
               {secretsData && secretsData.summary.active > 0 && (
-                <span className="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-destructive text-white">
+                <span className="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-destructive text-primary-foreground">
                   {secretsData.summary.active}
                 </span>
               )}
@@ -387,21 +387,21 @@ export function SecurityDashboardPage() {
                     <button
                       onClick={() => scanForSecrets(true, false)}
                       disabled={isScanning}
-                      className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isScanning ? 'Scanning...' : 'Scan .env Files'}
                     </button>
                     <button
                       onClick={() => scanForSecrets(false, true)}
                       disabled={isScanning}
-                      className="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-white hover:bg-accent/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-primary-foreground hover:bg-accent/80 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isScanning ? 'Scanning...' : 'Scan CI Configs'}
                     </button>
                     <button
                       onClick={() => scanForSecrets(true, true)}
                       disabled={isScanning}
-                      className="px-4 py-2 text-sm font-medium rounded-lg bg-success text-white hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 text-sm font-medium rounded-lg bg-success text-primary-foreground hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isScanning ? 'Scanning...' : 'Scan All'}
                     </button>

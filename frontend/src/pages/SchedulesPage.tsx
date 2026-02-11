@@ -278,7 +278,7 @@ export function SchedulesPage() {
  <button
  onClick={loadAIRecommendations}
  disabled={isLoadingRecommendations}
- className="rounded-md bg-gradient-to-r from-accent to-primary px-4 py-2 font-medium text-white hover:from-accent/90 hover:to-primary flex items-center gap-2"
+ className="rounded-md bg-gradient-to-r from-accent to-primary px-4 py-2 font-medium text-primary-foreground hover:from-accent/90 hover:to-primary flex items-center gap-2"
  >
  {isLoadingRecommendations ? (
  <>

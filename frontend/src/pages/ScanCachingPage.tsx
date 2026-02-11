@@ -251,7 +251,7 @@ export function ScanCachingPage() {
           <button
             onClick={() => runScan(false)}
             disabled={isScanning}
-            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary disabled:opacity-50"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary disabled:opacity-50"
           >
             {isScanning ? 'Scanning...' : '\u{1F50D} Run Scan'}
           </button>

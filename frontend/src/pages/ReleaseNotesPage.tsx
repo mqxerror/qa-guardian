@@ -512,7 +512,7 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  ) : (
  <button
  onClick={publishReleaseNotes}
- className="px-4 py-2 rounded bg-success text-white font-medium hover:bg-success flex items-center gap-2"
+ className="px-4 py-2 rounded bg-success text-primary-foreground font-medium hover:bg-success flex items-center gap-2"
  >
  🚀 Publish Release Notes
  </button>

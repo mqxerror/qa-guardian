@@ -135,7 +135,7 @@ export function ResetPasswordPage() {
               >
                 <Link
                   to="/forgot-password"
-                  className="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary px-6 py-3 font-medium text-white transition-all hover:from-primary hover:to-primary/80"
+                  className="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary px-6 py-3 font-medium text-primary-foreground transition-all hover:from-primary hover:to-primary/80"
                 >
                   Request New Link
                 </Link>
@@ -193,7 +193,7 @@ export function ResetPasswordPage() {
               >
                 <Link
                   to="/login"
-                  className="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary px-6 py-3 font-medium text-white transition-all hover:from-primary hover:to-primary/80"
+                  className="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary px-6 py-3 font-medium text-primary-foreground transition-all hover:from-primary hover:to-primary/80"
                 >
                   Login with New Password
                 </Link>
@@ -345,7 +345,7 @@ export function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary px-4 py-3 font-medium text-white transition-all hover:from-primary hover:to-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary px-4 py-3 font-medium text-primary-foreground transition-all hover:from-primary hover:to-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isLoading ? (
