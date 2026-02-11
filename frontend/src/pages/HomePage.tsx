@@ -62,7 +62,7 @@ const stats = [
 export function HomePage() {
   return (
     <LazyMotionWrapper>
-    <div className="min-h-screen bg-background text-white overflow-hidden dark">
+    <div className="min-h-screen bg-background text-foreground overflow-hidden dark">
       {/* Hero Section */}
       <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
         {/* Background Effects */}
@@ -133,7 +133,7 @@ export function HomePage() {
             <Link to="/register">
               <HoverBorderGradient
                 containerClassName="rounded-full"
-                className="flex items-center gap-2 bg-background px-6 py-2 text-white"
+                className="flex items-center gap-2 bg-background px-6 py-2 text-foreground"
               >
                 <span>Get Started Free</span>
                 <ArrowRight className="h-4 w-4" />
@@ -141,7 +141,7 @@ export function HomePage() {
             </Link>
             <Link
               to="/login"
-              className="group flex items-center gap-2 rounded-full border border-border bg-background/50 px-6 py-2.5 text-muted-foreground transition-colors hover:border-border hover:text-white"
+              className="group flex items-center gap-2 rounded-full border border-border bg-background/50 px-6 py-2.5 text-muted-foreground transition-colors hover:border-border hover:text-foreground"
             >
               <span>Sign In</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -157,7 +157,7 @@ export function HomePage() {
           >
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-3xl font-bold text-white md:text-4xl">{stat.value}</div>
+                <div className="text-3xl font-bold text-foreground md:text-4xl">{stat.value}</div>
                 <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
               </div>
             ))}
@@ -205,7 +205,7 @@ export function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="mt-2 text-3xl font-bold text-white md:text-4xl"
+              className="mt-2 text-3xl font-bold text-foreground md:text-4xl"
             >
               Everything You Need to Ship Quality Software
             </m.h2>
@@ -243,7 +243,7 @@ export function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.1 }}
-                className="mt-2 text-3xl font-bold text-white md:text-4xl"
+                className="mt-2 text-3xl font-bold text-foreground md:text-4xl"
               >
                 Built for Modern Teams
               </m.h2>
@@ -320,7 +320,7 @@ export function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-3xl font-bold text-white md:text-4xl"
+            className="text-3xl font-bold text-foreground md:text-4xl"
           >
             Ready to Transform Your QA?
           </m.h2>
@@ -343,7 +343,7 @@ export function HomePage() {
             <Link to="/register">
               <HoverBorderGradient
                 containerClassName="rounded-full"
-                className="flex items-center gap-2 bg-background px-8 py-3 text-white"
+                className="flex items-center gap-2 bg-background px-8 py-3 text-foreground"
               >
                 <span>Start Free Trial</span>
                 <ArrowRight className="h-4 w-4" />
@@ -357,14 +357,14 @@ export function HomePage() {
       <footer className="border-t border-border bg-background py-12">
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-            <div className="text-xl font-bold text-white">QA Guardian</div>
+            <div className="text-xl font-bold text-foreground">QA Guardian</div>
             <div className="text-sm text-muted-foreground">
               © 2026 QA Guardian. All rights reserved.
             </div>
             <div className="flex gap-6">
-              <a href="#" className="text-muted-foreground hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="text-muted-foreground hover:text-white transition-colors">Terms</a>
-              <a href="#" className="text-muted-foreground hover:text-white transition-colors">Contact</a>
+              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
+              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Terms</a>
+              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
             </div>
           </div>
         </div>

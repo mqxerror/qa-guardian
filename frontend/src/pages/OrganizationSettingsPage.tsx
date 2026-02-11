@@ -463,7 +463,7 @@ function ArtifactRetentionSection() {
  <button
  onClick={handleRunCleanup}
  disabled={isRunningCleanup}
- className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning disabled:opacity-50"
+ className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-warning disabled:opacity-50"
  >
  {isRunningCleanup ? 'Running Cleanup...' : 'Run Cleanup Now'}
  </button>
@@ -1446,7 +1446,7 @@ function OrganizationSettingsPage() {
  {logoUrl ? (
  <div className="relative">
  <img src={logoUrl} alt="Organization logo" className="h-16 w-16 rounded-lg object-cover border border-border" />
- <button type="button" onClick={handleRemoveLogo} className="absolute -top-2 -right-2 rounded-full bg-destructive p-1 text-white hover:bg-destructive/90" aria-label="Remove logo">
+ <button type="button" onClick={handleRemoveLogo} className="absolute -top-2 -right-2 rounded-full bg-destructive p-1 text-primary-foreground hover:bg-destructive/90" aria-label="Remove logo">
  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
  </button>
  </div>
@@ -1586,7 +1586,7 @@ function OrganizationSettingsPage() {
  </div>
  <div className="flex justify-end gap-3 pt-4">
  <button type="button" onClick={() => setShowTransferModal(false)} className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted">Cancel</button>
- <button type="submit" disabled={isTransferring || !selectedNewOwner || !transferPassword} className="rounded-md bg-warning px-4 py-2 font-medium text-white hover:bg-warning disabled:opacity-50">{isTransferring ? 'Transferring...' : 'Transfer Ownership'}</button>
+ <button type="submit" disabled={isTransferring || !selectedNewOwner || !transferPassword} className="rounded-md bg-warning px-4 py-2 font-medium text-primary-foreground hover:bg-warning disabled:opacity-50">{isTransferring ? 'Transferring...' : 'Transfer Ownership'}</button>
  </div>
  </form>
  )}
@@ -1615,7 +1615,7 @@ function OrganizationSettingsPage() {
  </div>
  <div className="flex justify-end gap-3 pt-2">
  <button type="button" onClick={() => { setShowDeleteModal(false); setDeletePassword(''); setDeleteError(''); }} className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted">Cancel</button>
- <button type="submit" disabled={isDeleting || !deletePassword} className="rounded-md bg-destructive px-4 py-2 font-medium text-white hover:bg-destructive/90 disabled:opacity-50">{isDeleting ? 'Deleting...' : 'Delete Organization'}</button>
+ <button type="submit" disabled={isDeleting || !deletePassword} className="rounded-md bg-destructive px-4 py-2 font-medium text-primary-foreground hover:bg-destructive/90 disabled:opacity-50">{isDeleting ? 'Deleting...' : 'Delete Organization'}</button>
  </div>
  </form>
  </>
