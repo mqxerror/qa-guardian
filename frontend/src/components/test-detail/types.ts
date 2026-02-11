@@ -4,12 +4,13 @@
  */
 
 // Test Suite interface
+// Feature #643: Made created_at/updated_at optional since sometimes only id/name are available
 export interface TestSuite {
   id: string;
   name: string;
   description?: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   test_count?: number;
   browser?: string;
   default_browser?: 'chromium' | 'firefox' | 'webkit';
@@ -469,8 +470,8 @@ export type DiffThresholdMode = 'percentage' | 'pixel_count';
 // Anti-aliasing tolerance
 export type AntiAliasingTolerance = 'off' | 'low' | 'medium' | 'high';
 
-// Viewport preset
-export type ViewportPreset = 'mobile' | 'tablet' | 'laptop' | 'desktop' | 'custom';
+// Viewport preset - imported from test-modals/types.ts for canonical definition
+export type { ViewportPreset } from '../test-modals/types';
 
 // Feature #48: Flakiness Trend types
 export interface FlakinessTrend {

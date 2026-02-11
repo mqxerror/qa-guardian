@@ -6,7 +6,7 @@
 import { useCallback } from 'react';
 import { toast } from '../../stores/toastStore';
 import type { K6CompareResults } from './K6CompareModal';
-import type { FlakinessTrend } from './types';
+import type { FlakinessTrend, TestType, TestSuite } from './types';
 
 // Re-export for convenience (original type is from ./types)
 export type { FlakinessTrend };
@@ -14,8 +14,8 @@ export type { FlakinessTrend };
 export interface UseTestPageUtilitiesProps {
   testId: string | undefined;
   token: string | null;
-  test: any;
-  suite: any;
+  test: TestType | null;
+  suite: TestSuite | null;
   selectedRunsForCompare: string[];
   // State setters
   setIsDownloadingArtifacts: (value: boolean) => void;

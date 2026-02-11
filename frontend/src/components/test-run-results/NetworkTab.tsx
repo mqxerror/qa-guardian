@@ -15,6 +15,7 @@ import {
  NetworkSortBy,
 } from './types';
 import { formatBytes, formatDuration } from './utils';
+import { Download, Search, Globe, X } from 'lucide-react';
 
 // Network type filter configuration
 const NETWORK_TYPE_FILTERS = [
@@ -99,9 +100,7 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
  disabled={networkRequests.length === 0}
  >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
- </svg>
+ <Download className="w-4 h-4" />
  Export HAR
  </button>
  </div>
@@ -129,9 +128,7 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  {/* Search */}
  <div className="flex-1 min-w-[200px] max-w-md">
  <div className="relative">
- <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
- </svg>
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
  <input
  type="text"
  placeholder="Search URL..."
@@ -159,9 +156,7 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
 
  {networkRequests.length === 0 ? (
  <div className="p-12 text-center bg-muted/30 rounded-lg">
- <svg className="w-16 h-16 mx-auto text-muted-foreground mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
- </svg>
+ <Globe className="w-16 h-16 mx-auto text-muted-foreground mb-4" strokeWidth={1.5} />
  <p className="text-lg font-medium text-foreground mb-2">No network requests captured</p>
  <p className="text-muted-foreground">Network activity will appear here when tests are run.</p>
  </div>
@@ -310,9 +305,7 @@ const NetworkTab: React.FC<NetworkTabProps> = ({
  onClick={() => onSelectNetworkRequest(null)}
  className="p-1 hover:bg-muted rounded"
  >
- <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
+ <X className="w-4 h-4 text-muted-foreground" />
  </button>
  </div>
 

@@ -6,19 +6,20 @@
 
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { TestType } from './types';
 
 export interface UseTestCrudHandlersProps {
   testId: string | undefined;
   token: string | null;
   suite: { id: string } | null;
-  test: any;
+  test: TestType | null;
   // State setters
   setIsDeleting: (value: boolean) => void;
   setDeleteError: (value: string) => void;
   setIsEditing: (value: boolean) => void;
   setEditError: (value: string) => void;
   setShowEditModal: (value: boolean) => void;
-  setTest: (test: any) => void;
+  setTest: (test: TestType | null) => void;
   setIsDirty: (value: boolean) => void;
   setIsDuplicating: (value: boolean) => void;
   setDuplicateError: (value: string) => void;

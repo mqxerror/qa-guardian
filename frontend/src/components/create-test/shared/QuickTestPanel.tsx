@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
+import { PlayCircle, Eye, Zap, Accessibility, Users, Check, CheckCircle2, Loader2 } from 'lucide-react';
 import { URLInput } from './URLInput';
 import { GeneratedTestPreview } from '../types';
 
@@ -50,12 +51,7 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  id: 'e2e',
  label: 'E2E',
  description: 'End-to-end test',
- icon: (
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
- ),
+ icon: <PlayCircle className="w-4 h-4" />,
  colorClasses: {
  selected: 'border-primary bg-primary/5',
  checkbox: 'border-primary bg-primary',
@@ -66,12 +62,7 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  id: 'visual',
  label: 'Visual',
  description: 'Screenshot diff',
- icon: (
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
- </svg>
- ),
+ icon: <Eye className="w-4 h-4" />,
  colorClasses: {
  selected: 'border-accent bg-accent/5',
  checkbox: 'border-accent bg-accent/50',
@@ -82,11 +73,7 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  id: 'performance',
  label: 'Perf',
  description: 'Lighthouse',
- icon: (
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
- </svg>
- ),
+ icon: <Zap className="w-4 h-4" />,
  colorClasses: {
  selected: 'border-warning bg-warning/5',
  checkbox: 'border-warning bg-warning',
@@ -97,11 +84,7 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  id: 'accessibility',
  label: 'A11y',
  description: 'WCAG check',
- icon: (
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
- </svg>
- ),
+ icon: <Accessibility className="w-4 h-4" />,
  colorClasses: {
  selected: 'border-success bg-success/5',
  checkbox: 'border-success bg-success',
@@ -112,11 +95,7 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  id: 'load',
  label: 'Load',
  description: 'K6 test',
- icon: (
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
- </svg>
- ),
+ icon: <Users className="w-4 h-4" />,
  colorClasses: {
  selected: 'border-destructive bg-destructive/5',
  checkbox: 'border-destructive bg-destructive',
@@ -270,9 +249,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  `}
  >
  {isSelected && (
- <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
- </svg>
+ <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
  )}
  </div>
  {/* Icon */}
@@ -300,9 +277,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  if (isComplete && created > 0) {
  return (
  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-border">
- <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <CheckCircle2 className="w-5 h-5 text-success" />
  <span className="text-sm font-medium text-success">
  {created === generatedTests.length
  ? `All ${created} test${created !== 1 ? 's' : ''} created successfully!`
@@ -370,22 +345,12 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  >
  {isLoading ? (
  <>
- <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path
- className="opacity-75"
- fill="currentColor"
- d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
- />
- </svg>
+ <Loader2 className="w-4 h-4 animate-spin" />
  <span>Running Tests...</span>
  </>
  ) : (
  <>
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <PlayCircle className="w-4 h-4" />
  <span>
  Run {selectedCount} Test{selectedCount !== 1 ? 's' : ''}
  </span>

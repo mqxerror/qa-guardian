@@ -3,6 +3,7 @@
 // Advanced settings panel component extracted from VisualConfig.tsx
 
 import React, { useState } from 'react';
+import { ChevronDown, X, Plus } from 'lucide-react';
 import { FormField } from './FormField';
 import type { IgnoreRegion, AntiAliasingTolerance } from './types';
 import { ANTI_ALIASING_OPTIONS } from './constants';
@@ -78,14 +79,7 @@ export const AdvancedSettingsPanel: React.FC<AdvancedSettingsPanelProps> = ({
  <span className="text-sm font-medium text-foreground">
  Advanced Settings
  </span>
- <svg
- className={`w-5 h-5 text-muted-foreground transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
- fill="none"
- viewBox="0 0 24 24"
- stroke="currentColor"
- >
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
- </svg>
+ <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
  </button>
 
  {showAdvanced && (
@@ -215,9 +209,7 @@ export const AdvancedSettingsPanel: React.FC<AdvancedSettingsPanelProps> = ({
        className="text-destructive hover:text-destructive/80 p-1 rounded transition-colors"
        title="Remove region"
       >
-       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-       </svg>
+       <X className="w-4 h-4" />
       </button>
      </div>
     ))}
@@ -272,9 +264,7 @@ export const AdvancedSettingsPanel: React.FC<AdvancedSettingsPanelProps> = ({
    onClick={handleAddRegion}
    className="mt-2 flex items-center gap-1 text-sm text-accent hover:text-accent/80 transition-colors"
   >
-   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-   </svg>
+   <Plus className="w-4 h-4" />
    Add Region
   </button>
  </FormField>

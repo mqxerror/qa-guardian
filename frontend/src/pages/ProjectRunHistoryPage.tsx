@@ -4,6 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 
@@ -220,36 +221,24 @@ function ProjectRunHistoryPage() {
  return (
  <Layout>
  <div className="space-y-6">
- {/* Breadcrumb */}
- <nav className="flex items-center gap-2 text-sm text-muted-foreground">
- <Link to="/projects" className="hover:text-foreground">Projects</Link>
- <span>/</span>
- {project && (
- <>
- <Link to={`/projects/${project.id}`} className="hover:text-foreground">{project.name}</Link>
- <span>/</span>
- </>
- )}
- <span className="text-foreground">Run History</span>
- </nav>
-
- {/* Header */}
- <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
- <div>
- <h1 className="text-2xl font-bold text-foreground">Project Run History</h1>
- <p className="text-muted-foreground">
- {project?.name || 'Loading...'} - All test runs across {stats.suiteCount} suite{stats.suiteCount !== 1 ? 's' : ''}
- </p>
- </div>
- <div className="flex gap-2">
- <button
- onClick={() => navigate(`/projects/${projectId}`)}
- className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
- >
- Back to Project
- </button>
- </div>
- </div>
+ <PageHeader
+   title="Project Run History"
+   description={`${project?.name || 'Loading...'} - All test runs across ${stats.suiteCount} suite${stats.suiteCount !== 1 ? 's' : ''}`}
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'Projects', href: '/projects' },
+     ...(project ? [{ label: project.name, href: `/projects/${project.id}` }] : []),
+     { label: 'Run History' }
+   ]}
+   actions={
+     <button
+       onClick={() => navigate(`/projects/${projectId}`)}
+       className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+     >
+       Back to Project
+     </button>
+   }
+ />
 
  {/* Stats Cards */}
  <div className="grid grid-cols-2 md:grid-cols-6 gap-4">

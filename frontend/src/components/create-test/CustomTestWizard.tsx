@@ -15,6 +15,7 @@
  */
 
 import React, { useState, useCallback, memo } from 'react';
+import { Check, Lightbulb, Settings, Video, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { AIGenerateStep } from './AIGenerateStep';
 import { ManualSetupStep, type ManualSetupFormState } from './ManualSetupStep';
@@ -72,9 +73,7 @@ const StepIndicator = memo<{ currentStep: CustomWizardStep; totalSteps: number }
  `}
  >
  {step < currentStep ? (
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
- </svg>
+ <Check className="w-4 h-4" />
  ) : (
  step
  )}
@@ -142,16 +141,7 @@ const MethodCard = memo<MethodCardProps>(({ method, isSelected, onSelect }) => {
  'ai-generate': {
  title: 'AI Generate',
  description: 'Describe what you want to test and let AI create the test for you',
- icon: (
- <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path
- strokeLinecap="round"
- strokeLinejoin="round"
- strokeWidth={1.5}
- d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
- />
- </svg>
- ),
+ icon: <Lightbulb className="w-10 h-10" strokeWidth={1.5} />,
  benefits: ['Natural language input', 'AI-powered test generation', 'Automatic selector detection'],
  color: 'ai' as const,
  badge: 'Recommended',
@@ -159,22 +149,7 @@ const MethodCard = memo<MethodCardProps>(({ method, isSelected, onSelect }) => {
  'manual-setup': {
  title: 'Manual Setup',
  description: 'Configure every aspect of your test with full control over settings',
- icon: (
- <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path
- strokeLinecap="round"
- strokeLinejoin="round"
- strokeWidth={1.5}
- d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
- />
- <path
- strokeLinecap="round"
- strokeLinejoin="round"
- strokeWidth={1.5}
- d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
- />
- </svg>
- ),
+ icon: <Settings className="w-10 h-10" strokeWidth={1.5} />,
  benefits: ['Full control over settings', 'Step-by-step configuration', 'Advanced options'],
  color: 'manual' as const,
  badge: null,
@@ -182,16 +157,7 @@ const MethodCard = memo<MethodCardProps>(({ method, isSelected, onSelect }) => {
  'record': {
  title: 'Record Actions',
  description: 'Record your interactions in a live browser and convert them into test steps',
- icon: (
- <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path
- strokeLinecap="round"
- strokeLinejoin="round"
- strokeWidth={1.5}
- d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
- />
- </svg>
- ),
+ icon: <Video className="w-10 h-10" strokeWidth={1.5} />,
  benefits: ['Visual recording', 'Click-to-create steps', 'Live browser preview'],
  color: 'record' as const,
  badge: 'Interactive',
@@ -248,9 +214,7 @@ const MethodCard = memo<MethodCardProps>(({ method, isSelected, onSelect }) => {
  <ul className="space-y-1">
  {benefits.map((benefit, i) => (
  <li key={i} className="flex items-center gap-2 text-sm text-foreground">
- <svg className={`w-4 h-4 flex-shrink-0 ${isSelected ? colors.check : 'text-muted-foreground'} transition-colors`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
- </svg>
+ <Check className={`w-4 h-4 flex-shrink-0 ${isSelected ? colors.check : 'text-muted-foreground'} transition-colors`} />
  {benefit}
  </li>
  ))}
@@ -264,9 +228,7 @@ const MethodCard = memo<MethodCardProps>(({ method, isSelected, onSelect }) => {
  `}
  >
  {isSelected && (
- <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
- </svg>
+ <Check className="w-3 h-3 text-white" strokeWidth={3} />
  )}
  </div>
  </button>
@@ -486,9 +448,7 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors"
  aria-label="Close wizard"
  >
- <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
+ <X className="w-5 h-5" />
  </button>
  </div>
  </div>
@@ -568,9 +528,7 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  onClick={handleBack}
  className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 rounded-lg hover:bg-muted/80"
  >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
- </svg>
+ <ChevronLeft className="w-4 h-4" />
  {wizardStep === 1 ? 'Cancel' : 'Back'}
  </button>
 
@@ -585,9 +543,7 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  className="px-5 py-2 bg-primary hover:bg-primary/90 disabled:bg-muted text-primary-foreground text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
  >
  Continue
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
- </svg>
+ <ChevronRight className="w-4 h-4" />
  </button>
  </div>
  </div>

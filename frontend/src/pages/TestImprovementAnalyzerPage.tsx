@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 // import { devLog } from '../utils/logger'; // Unused
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 
 // Types for test improvement analysis
 interface TestImprovementAnalysis {
@@ -130,15 +131,16 @@ export function TestImprovementAnalyzerPage() {
  return (
  <Layout>
  <div className="space-y-6 p-6">
- {/* Header */}
- <div className="flex items-center justify-between">
- <div>
- <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
- <span>🔍</span> AI Test Improvement Analyzer
- </h1>
- <p className="text-muted-foreground mt-1">Analyze your tests for best practices, selectors, assertions, and flakiness risks</p>
- </div>
- </div>
+ {/* Feature #640: PageHeader component */}
+ <PageHeader
+   title="🔍 AI Test Improvement Analyzer"
+   description="Analyze your tests for best practices, selectors, assertions, and flakiness risks"
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'Tools', href: '/openapi-generator' },
+     { label: 'Test Analyzer' }
+   ]}
+ />
 
  {/* Input Section */}
  <div className="rounded-lg border bg-card p-6">

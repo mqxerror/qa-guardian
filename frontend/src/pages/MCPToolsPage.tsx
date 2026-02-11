@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
 
 // Feature #1232: MCP Tools Catalog interface
@@ -158,17 +159,21 @@ export function MCPToolsPage() {
  return (
  <Layout>
  <div className="p-8">
- <div className="flex items-center justify-between mb-6">
- <div>
- <h2 className="text-3xl font-bold text-foreground">MCP Tools Catalog</h2>
- <p className="mt-2 text-muted-foreground">
- Browse and search all available Model Context Protocol (MCP) tools for AI agent integration.
- </p>
- </div>
- <span className="px-3 py-1 text-sm rounded-full bg-primary/10 text-primary font-medium">
- {tools.length} tools available
- </span>
- </div>
+ {/* Feature #640: PageHeader component */}
+ <PageHeader
+   title="MCP Tools Catalog"
+   description="Browse and search all available Model Context Protocol (MCP) tools for AI agent integration"
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'MCP', href: '/mcp/chat' },
+     { label: 'Tools Catalog' }
+   ]}
+   actions={
+     <span className="px-3 py-1 text-sm rounded-full bg-primary/10 text-primary font-medium">
+       {tools.length} tools available
+     </span>
+   }
+ />
 
  {error && (
  <div className="mb-4 p-3 text-sm rounded bg-warning/10 text-warning">

@@ -8,7 +8,8 @@
  */
 
 import React from 'react';
-import { TestResult, K6ActiveTab, K6ActiveChart, LighthouseActiveTab, K6ExportFormat, LighthouseResult, LoadTestResult } from './types';
+import { TestResult, K6ActiveTab, K6ActiveChart, LighthouseActiveTab, K6ExportFormat, LighthouseResult } from './types';
+import type { K6LoadTestData } from './pdfExport';
 import { LighthouseResultCard, K6ResultCard } from './metrics';
 
 // Typed interfaces for opportunities, diagnostics, and passed audits after transformation
@@ -33,12 +34,13 @@ interface TransformedPassedAudit {
 }
 
 // K6 time series data point
+// Feature #644: Made p95_response_time optional to match K6LoadTestData.time_series
 interface K6TimeSeriesPoint {
   time: string;
   vus: number;
   rps: number;
   avg_response_time: number;
-  p95_response_time: number;
+  p95_response_time?: number;
 }
 
 // Response time histogram bucket
@@ -99,13 +101,13 @@ export interface MetricsTabProps {
   perfAIError: string | null;
   perfAIAnalysisOpen: string | null;
 
-  // Handler functions
-  analyzePerformanceResults: (testName: string, lighthouse: LighthouseResult | null, loadTest?: LoadTestResult | null) => void;
-  exportK6Results: (loadTestData: LoadTestResult, testName: string, format: K6ExportFormat) => void;
-  exportK6ResultsPDF: (loadTestData: LoadTestResult, testName: string) => void;
+  // Handler functions (using K6LoadTestData for compatibility with all load test result formats)
+  analyzePerformanceResults: (testName: string, lighthouse: LighthouseResult | null, loadTest?: K6LoadTestData | null) => void;
+  exportK6Results: (loadTestData: K6LoadTestData, testName: string, format: K6ExportFormat) => void;
+  exportK6ResultsPDF: (loadTestData: K6LoadTestData, testName: string) => void;
   exportLighthousePDF: (lighthouse: LighthouseResult, testName: string, url?: string) => void;
-  generateK6TimeSeries: (loadTestData: LoadTestResult) => K6TimeSeriesPoint[];
-  generateResponseTimeHistogram: (loadTestData: LoadTestResult) => ResponseTimeHistogramBucket[];
+  generateK6TimeSeries: (loadTestData: K6LoadTestData) => K6TimeSeriesPoint[];
+  generateResponseTimeHistogram: (loadTestData: K6LoadTestData) => ResponseTimeHistogramBucket[];
 
   // Comparison state
   showPreviousComparison: boolean;

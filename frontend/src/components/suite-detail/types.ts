@@ -166,13 +166,15 @@ export interface SortConfig {
 }
 
 // Viewport presets
-export interface ViewportPreset {
+// Note: ViewportPreset string union is defined in test-modals/types.ts
+// This interface is for the preset configuration objects
+export interface ViewportPresetConfig {
   width: number;
   height: number;
   label: string;
 }
 
-export const VIEWPORT_PRESETS: Record<string, ViewportPreset> = {
+export const VIEWPORT_PRESETS: Record<string, ViewportPresetConfig> = {
   desktop: { width: 1920, height: 1080, label: 'Desktop (1920x1080)' },
   'desktop-hd': { width: 2560, height: 1440, label: 'Desktop HD (2560x1440)' },
   laptop: { width: 1366, height: 768, label: 'Laptop (1366x768)' },

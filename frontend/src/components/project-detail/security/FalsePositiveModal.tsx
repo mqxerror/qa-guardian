@@ -1,10 +1,13 @@
 /**
  * FalsePositiveModal - Modal for marking SAST findings as false positives
  * Feature #102: Extracted from SecurityTab.tsx
+ * Feature #637: Migrated to use Modal component from ui/Modal
  */
+import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 import { SASTFinding } from '../types';
 
 export interface FalsePositiveModalProps {
+ isOpen: boolean;
  selectedFinding: SASTFinding;
  fpReason: string;
  isMarkingFP: boolean;
@@ -14,6 +17,7 @@ export interface FalsePositiveModalProps {
 }
 
 export function FalsePositiveModal({
+ isOpen,
  selectedFinding,
  fpReason,
  isMarkingFP,
@@ -22,12 +26,14 @@ export function FalsePositiveModal({
  handleMarkFalsePositive,
 }: FalsePositiveModalProps) {
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) => e.target === e.currentTarget && !isMarkingFP && setShowFalsePositiveModal(false)}
+ <Modal
+ isOpen={isOpen}
+ onClose={() => !isMarkingFP && setShowFalsePositiveModal(false)}
+ title="Mark as False Positive"
+ size="md"
+ closeOnBackdrop={!isMarkingFP}
  >
- <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
- <div className="flex items-center gap-3 mb-4">
+ <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10">
  <svg className="h-6 w-6 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -39,6 +45,7 @@ export function FalsePositiveModal({
  </div>
  </div>
 
+ <ModalBody>
  <div className="bg-muted/50 rounded-md p-3 mb-4">
  <p className="text-sm font-medium text-foreground">{selectedFinding.ruleName}</p>
  <p className="text-xs text-muted-foreground mt-1 font-mono">
@@ -46,7 +53,7 @@ export function FalsePositiveModal({
  </p>
  </div>
 
- <div className="mb-4">
+ <div>
  <label className="block text-sm font-medium text-foreground mb-2">
  Reason for marking as false positive
  </label>
@@ -58,8 +65,9 @@ export function FalsePositiveModal({
  className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground resize-none"
  />
  </div>
+ </ModalBody>
 
- <div className="flex justify-end gap-3">
+ <ModalFooter>
  <button
  onClick={() => setShowFalsePositiveModal(false)}
  disabled={isMarkingFP}
@@ -74,8 +82,7 @@ export function FalsePositiveModal({
  >
  {isMarkingFP ? 'Marking...' : 'Mark as False Positive'}
  </button>
- </div>
- </div>
- </div>
+ </ModalFooter>
+ </Modal>
  );
 }

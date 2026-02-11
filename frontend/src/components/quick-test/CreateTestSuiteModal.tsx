@@ -1,12 +1,12 @@
 /**
  * CreateTestSuiteModal - Create test suite from AI suggestions
  * Feature #514: Extracted from QuickTestPage.tsx
+ * Feature #637: Migrated to use Modal component from ui/Modal
  */
 
 import { useState, useEffect } from 'react';
 import {
   Loader2,
-  X,
   Wand2,
   Lightbulb,
   AlertCircle,
@@ -15,6 +15,7 @@ import {
   FolderPlus,
   Plus,
 } from 'lucide-react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import { useAuthStore } from '../../stores/authStore';
 import type { CreateTestSuiteModalProps, TestSuggestion } from './types';
 
@@ -240,33 +241,16 @@ export function CreateTestSuiteModal({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onClose}
-    >
-      <div
-        className="bg-card rounded-lg shadow-xl border border-border w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-card">
-          <div className="flex items-center gap-2">
-            <Wand2 className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">Create Test Suite from AI Suggestions</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded hover:bg-muted transition-colors"
-          >
-            <X className="w-5 h-5 text-muted-foreground" />
-          </button>
+    <Modal isOpen={isOpen} onClose={onClose} title="Create Test Suite from AI Suggestions" size="lg">
+      <ModalHeader onClose={onClose}>
+        <div className="flex items-center gap-2">
+          <Wand2 className="w-5 h-5 text-primary" />
+          <span>Create Test Suite from AI Suggestions</span>
         </div>
+      </ModalHeader>
 
-        {/* Content */}
-        <div className="p-4 space-y-4">
+      <ModalBody className="space-y-4">
           {/* Test Count */}
           <div className="flex items-center gap-2 text-sm bg-primary/10 text-primary px-3 py-2 rounded">
             <Lightbulb className="w-4 h-4" />
@@ -387,52 +371,50 @@ export function CreateTestSuiteModal({
               </span>
             </div>
           )}
-        </div>
+      </ModalBody>
 
-        {/* Footer */}
-        <div className="flex justify-between gap-3 p-4 border-t border-border sticky bottom-0 bg-card">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
-            disabled={isLoading}
-          >
-            Cancel
-          </button>
-          <div className="flex gap-2">
-            {success && (
-              <a
-                href={`/suites/${success.suiteId}`}
-                className="px-4 py-2 rounded bg-muted text-foreground hover:bg-muted/80 transition-colors flex items-center gap-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                View Suite
-              </a>
-            )}
-            <button
-              onClick={handleSubmit}
-              disabled={isLoading || success !== null}
-              className="px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+      <ModalFooter className="flex-row justify-between">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+          disabled={isLoading}
+        >
+          Cancel
+        </button>
+        <div className="flex gap-2">
+          {success && (
+            <a
+              href={`/suites/${success.suiteId}`}
+              className="px-4 py-2 rounded bg-muted text-foreground hover:bg-muted/80 transition-colors flex items-center gap-2"
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
-                </>
-              ) : success ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  Created!
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  Create {testSuggestions?.length || 0} Tests
-                </>
-              )}
-            </button>
-          </div>
+              <ExternalLink className="w-4 h-4" />
+              View Suite
+            </a>
+          )}
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading || success !== null}
+            className="px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Creating...
+              </>
+            ) : success ? (
+              <>
+                <CheckCircle2 className="w-4 h-4" />
+                Created!
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                Create {testSuggestions?.length || 0} Tests
+              </>
+            )}
+          </button>
         </div>
-      </div>
-    </div>
+      </ModalFooter>
+    </Modal>
   );
 }

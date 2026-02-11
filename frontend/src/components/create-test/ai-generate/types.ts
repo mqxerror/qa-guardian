@@ -1,8 +1,10 @@
 /**
  * Types for AI Generate sub-components
  * Feature #610: Extracted from AIGenerateStep.tsx for decomposition
+ * Feature #642: Import ViewportPreset from canonical source
  */
-import type { DetectedTestType, ViewportPreset } from '../hooks';
+import type { DetectedTestType } from '../hooks';
+import type { ViewportPreset } from '../types';
 
 /** AI Generation mode - text (natural language) or openapi */
 export type AIGenInputMode = 'text' | 'openapi';
@@ -47,6 +49,7 @@ export const TEST_TYPE_CONFIG: Record<Exclude<DetectedTestType, null>, { label: 
  */
 export const VIEWPORT_CONFIG: Record<ViewportPreset, { label: string; icon: string }> = {
   desktop: { label: 'Desktop', icon: '🖥️' },
+  laptop: { label: 'Laptop', icon: '💻' },
   tablet: { label: 'Tablet', icon: '📱' },
   mobile: { label: 'Mobile', icon: '📲' },
   custom: { label: 'Custom', icon: '⚙️' },
@@ -74,6 +77,7 @@ export const getConfidenceLevel = (confidence: number): { label: string; color: 
 /** Viewport preset dimensions */
 export const VIEWPORT_DIMENSIONS: Record<ViewportPreset, { width: number; height: number }> = {
   desktop: { width: 1920, height: 1080 },
+  laptop: { width: 1366, height: 768 },
   tablet: { width: 768, height: 1024 },
   mobile: { width: 375, height: 667 },
   custom: { width: 1280, height: 720 },

@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 
@@ -179,23 +180,27 @@ export function ScheduleDetailsPage() {
  return (
  <Layout>
  <div className="p-8">
- {/* Breadcrumb */}
- <nav className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
- <button onClick={() => navigate('/schedules')} className="hover:text-foreground">
- Schedules
- </button>
- <span>/</span>
- <span className="text-foreground">{schedule.name}</span>
- </nav>
+ <PageHeader
+   title={schedule.name}
+   description={schedule.description}
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'Schedules', href: '/schedules' },
+     { label: schedule.name }
+   ]}
+   actions={
+     <button
+       onClick={handleTriggerRun}
+       disabled={isTriggering}
+       className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+     >
+       {isTriggering ? 'Triggering...' : 'Trigger Run Now'}
+     </button>
+   }
+ />
 
- {/* Header */}
- <div className="flex items-start justify-between mb-6">
- <div>
- <h1 className="text-3xl font-bold text-foreground">{schedule.name}</h1>
- {schedule.description && (
- <p className="mt-2 text-muted-foreground">{schedule.description}</p>
- )}
- <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
+ {/* Schedule Status Tags */}
+ <div className="mt-2 mb-6 flex items-center gap-4 text-sm text-muted-foreground">
  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
  schedule.enabled ? 'bg-success/10 text-success' : 'bg-muted text-foreground'
  }`}>
@@ -205,16 +210,6 @@ export function ScheduleDetailsPage() {
  <span>Cron: {schedule.cron_expression}</span>
  )}
  <span>{schedule.run_count || 0} runs</span>
- </div>
- </div>
- {/* Feature #1538: AI-Scaled Run button removed - enterprise infrastructure feature not needed for SMB */}
- <button
- onClick={handleTriggerRun}
- disabled={isTriggering}
- className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
- >
- {isTriggering ? 'Triggering...' : 'Trigger Run Now'}
- </button>
  </div>
 
  {/* Feature #1538: Predictive Resource Scaling Panel removed - enterprise infrastructure feature not needed for SMB */}

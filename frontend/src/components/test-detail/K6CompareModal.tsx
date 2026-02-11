@@ -3,9 +3,11 @@
  * K6 Load Test comparison modal (Feature #564)
  * Feature #127: Mobile responsive design - p-4 backdrop, max-h-[90vh] overflow, responsive padding
  * Feature #571: Replace emoji with Lucide icons for cross-browser consistency
+ * Feature #637: Migrated to use Modal component from ui/Modal
  */
 
 import { BarChart3 } from 'lucide-react';
+import { Modal, ModalHeader, ModalBody } from '../ui/Modal';
 
 // K6 Compare Results type
 export interface K6CompareResults {
@@ -48,37 +50,18 @@ export function K6CompareModal({
  onClose,
  formatDateTime,
 }: K6CompareModalProps) {
- if (!show || !results) return null;
+ if (!results) return null;
 
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
- onClick={onClose}
- >
- <div
- role="dialog"
- aria-modal="true"
- aria-labelledby="k6-compare-modal-title"
- className="max-w-4xl w-full max-h-[90vh] overflow-auto rounded-lg bg-background border border-border shadow-lg"
- onClick={(e) => e.stopPropagation()}
- >
- <div className="sticky top-0 bg-background border-b border-border p-4 flex items-center justify-between">
+ <Modal isOpen={show} onClose={onClose} title="K6 Load Test Comparison" size="full">
+ <ModalHeader onClose={onClose}>
  <div className="flex items-center gap-2">
  <BarChart3 className="h-5 w-5" />
- <h3 id="k6-compare-modal-title" className="text-lg font-semibold text-foreground">K6 Load Test Comparison</h3>
+ <span>K6 Load Test Comparison</span>
  </div>
- <button
- onClick={onClose}
- aria-label="Close dialog"
- className="rounded-md p-1 hover:bg-muted"
- >
- <svg className="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
- </button>
- </div>
+ </ModalHeader>
 
- <div className="p-4 space-y-6">
+ <ModalBody className="space-y-6">
  {/* Run Info */}
  <div className="grid grid-cols-2 gap-4">
  <div className="p-3 rounded-lg border border-border bg-muted/30">
@@ -189,9 +172,8 @@ export function K6CompareModal({
  </div>
  </div>
  )}
- </div>
- </div>
- </div>
+ </ModalBody>
+ </Modal>
  );
 }
 

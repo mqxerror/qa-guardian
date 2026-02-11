@@ -8,8 +8,10 @@
 // Type for jsPDF since we're loading it dynamically
 type jsPDF = import('jspdf').jsPDF;
 
-// K6 Load Test Data Structure - compatible with LoadTestResult
-interface K6LoadTestData {
+// K6 Load Test Data Structure - compatible with LoadTestResult and StepLoadTestResult
+// Feature #643: Exported for use in MetricsTab props
+// Feature #644: Added time_series and response_time_distribution for utils.ts compatibility
+export interface K6LoadTestData {
   summary?: {
     success_rate?: string | number;
     total_requests?: number;
@@ -48,6 +50,20 @@ interface K6LoadTestData {
     ramp_up?: number;
   };
   checks?: Array<{ name: string; passes: number; fails: number; pass_rate?: number }>;
+  // Feature #644: Time series and histogram data for charts
+  time_series?: Array<{
+    time: string;
+    timestamp?: number;
+    vus: number;
+    rps: number;
+    avg_response_time: number;
+    p95_response_time?: number;
+  }>;
+  response_time_distribution?: Array<{
+    range: string;
+    count: number;
+    percentage: number;
+  }>;
 }
 
 // Lighthouse Data Structure for PDF export

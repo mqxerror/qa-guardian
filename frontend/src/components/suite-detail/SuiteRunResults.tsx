@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { FlaskConical, CheckCircle2, XCircle, Clock, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { FlaskConical, CheckCircle2, XCircle, Clock, Loader2, ChevronDown, ChevronUp, ImageIcon, Eye, ZoomIn, ChevronRight, Pencil } from 'lucide-react';
 import type { EditSelectorModalState } from './modals';
 import { ScoreCard } from '../ui/score-card';
 import { WaveProgressCard, type WaveProgressStatus, type StepStatus } from '../ui/wave-progress-card';
@@ -250,10 +250,7 @@ export function SuiteRunResults({
  {suiteRun.status === 'running' && (
  <div className="mt-2 flex items-center justify-between">
  <div className="flex items-center gap-2 text-sm text-muted-foreground">
- <svg aria-hidden="true" className="animate-spin h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 className="animate-spin h-4 w-4 text-primary" />
  Running test {completedCount + 1}...
  </div>
  <button
@@ -376,9 +373,7 @@ export function SuiteRunResults({
  {!liveScreenshot && !perTestStatus && (
  <div className="mt-4 rounded-lg border border-dashed border-border bg-muted p-4">
  <div className="flex items-center gap-2 text-sm text-muted-foreground">
- <svg className="h-5 w-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
- </svg>
+ <ImageIcon className="h-5 w-5 animate-pulse" />
  <span>Screenshots will appear here as tests run...</span>
  </div>
  </div>
@@ -389,9 +384,7 @@ export function SuiteRunResults({
  {/* Cancelled indicator */}
  {suiteRun.status === 'cancelled' && (
  <div className="mb-4 flex items-center gap-2 text-sm">
- <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-warning" viewBox="0 0 20 20" fill="currentColor">
- <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
- </svg>
+ <XCircle className="h-5 w-5 text-warning" />
  <span className="text-warning font-medium">Test run cancelled</span>
  </div>
  )}
@@ -429,16 +422,12 @@ export function SuiteRunResults({
    <div className="flex items-center gap-2 text-sm">
      {suiteRun.status === 'passed' ? (
        <>
-         <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-success" viewBox="0 0 20 20" fill="currentColor">
-           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-         </svg>
+         <CheckCircle2 className="h-5 w-5 text-success" />
          <span className="text-success font-medium">All tests passed!</span>
        </>
      ) : (
        <>
-         <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-destructive" viewBox="0 0 20 20" fill="currentColor">
-           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-         </svg>
+         <XCircle className="h-5 w-5 text-destructive" />
          <span className="text-destructive font-medium">
            {suiteRun.results?.filter(r => r.status === 'failed').length || 0} test(s) failed
          </span>
@@ -482,10 +471,7 @@ function LiveScreenshotPanel({
  <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
  <div className="flex items-center justify-between mb-3">
  <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
- <svg className="h-4 w-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
- </svg>
+ <Eye className="h-4 w-4 animate-pulse" />
  Live Screenshot
  </h3>
  <span className="text-xs text-primary">
@@ -517,9 +503,7 @@ function LiveScreenshotPanel({
  className="w-full max-h-[300px] object-contain bg-muted"
  />
  <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
- <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
- </svg>
+ <ZoomIn className="h-3 w-3" />
  Click to expand
  </div>
  </div>
@@ -594,10 +578,7 @@ function TestResultItem({
  {/* Visual test indicator */}
  {result.test_type === 'visual_regression' && (
  <span className="inline-flex items-center gap-1 text-xs text-accent">
- <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
- </svg>
+ <Eye className="h-3 w-3" />
  Visual
  </span>
  )}
@@ -636,9 +617,7 @@ function TestResultItem({
  onClick={() => onNavigate(`/runs/${suiteRunId}`)}
  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded border border-primary/20"
  >
- <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
- </svg>
+ <ChevronRight className="h-3 w-3" />
  Run Details
  </button>
  )}
@@ -667,10 +646,7 @@ function TestResultItem({
  }}
  className="px-3 py-1 text-xs font-medium rounded bg-accent text-accent-foreground hover:bg-accent/90 transition-colors flex items-center gap-1"
  >
- <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <path d="M12 20h9"/>
- <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
- </svg>
+ <Pencil className="h-3 w-3" />
  View Healing Options
  </button>
  </div>
@@ -772,9 +748,7 @@ function StepResultItem({
  className="px-1.5 py-0.5 text-xs font-medium rounded bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
  title="Edit selector"
  >
- <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
- </svg>
+ <Pencil className="h-2.5 w-2.5" />
  </button>
  </div>
  )}
@@ -875,10 +849,7 @@ function HealedSelectorDetails({
  }}
  className="px-2 py-1 text-xs font-medium rounded bg-accent text-accent-foreground hover:bg-accent/90 transition-colors flex items-center gap-1"
  >
- <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
- <path d="m15 5 4 4"/>
- </svg>
+ <Pencil className="h-3 w-3" />
  Edit
  </button>
  </div>

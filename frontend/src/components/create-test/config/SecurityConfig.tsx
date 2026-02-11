@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useCallback, memo } from 'react';
+import { ChevronDown, X } from 'lucide-react';
 
 /**
  * Security scan types matching backend SecurityScanType
@@ -164,14 +165,7 @@ const CollapsibleSection = memo<CollapsibleSectionProps>(function CollapsibleSec
         className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/50 hover:bg-muted/80 transition-colors"
       >
         <span className="text-sm font-medium text-foreground">{title}</span>
-        <svg
-          className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       {isOpen && <div className="p-4 border-t border-border">{children}</div>}
     </div>
@@ -458,9 +452,7 @@ export const SecurityConfig: React.FC<SecurityConfigProps> = ({
                         onClick={() => removeExcludePath(path)}
                         className="text-muted-foreground hover:text-destructive"
                       >
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <X className="w-3 h-3" />
                       </button>
                     </span>
                   ))}
@@ -505,9 +497,7 @@ export const SecurityConfig: React.FC<SecurityConfigProps> = ({
                         onClick={() => removeIgnorePattern(pattern)}
                         className="text-muted-foreground hover:text-destructive"
                       >
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <X className="w-3 h-3" />
                       </button>
                     </span>
                   ))}

@@ -1,8 +1,10 @@
 /**
  * EditModal - Manual test configuration editor
  * Feature #610: Extracted from AIGenerateStep.tsx
+ * Feature #637: Migrated to use Modal component from ui/Modal
  */
 import React, { useState } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../ui/Modal';
 import {
   TEST_TYPE_CONFIG,
   VIEWPORT_CONFIG,
@@ -46,8 +48,6 @@ export const EditModal: React.FC<EditModalProps> = ({
   const [editUrl, setEditUrl] = useState(url || '');
   const [editViewport, setEditViewport] = useState(viewport);
 
-  if (!isOpen) return null;
-
   const handleSave = () => {
     onSave({
       testType: editTestType,
@@ -58,12 +58,15 @@ export const EditModal: React.FC<EditModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50">
-      <div className="bg-card rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
-        <h3 className="text-lg font-semibold text-foreground mb-4">
-          Edit Test Configuration
-        </h3>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit Test Configuration"
+      size="md"
+    >
+      <ModalHeader onClose={onClose}>Edit Test Configuration</ModalHeader>
 
+      <ModalBody>
         {/* Test Type */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-foreground mb-2">
@@ -96,7 +99,7 @@ export const EditModal: React.FC<EditModalProps> = ({
         </div>
 
         {/* Viewport */}
-        <div className="mb-6">
+        <div>
           <label className="block text-sm font-medium text-foreground mb-2">
             Viewport
           </label>
@@ -135,25 +138,24 @@ export const EditModal: React.FC<EditModalProps> = ({
             </div>
           )}
         </div>
+      </ModalBody>
 
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 border border-border text-foreground rounded-lg hover:bg-muted"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!editTestType || !editUrl}
-            className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-muted text-primary-foreground rounded-lg disabled:cursor-not-allowed"
-          >
-            Save Changes
-          </button>
-        </div>
-      </div>
-    </div>
+      <ModalFooter>
+        <button
+          onClick={onClose}
+          className="flex-1 px-4 py-2 border border-border text-foreground rounded-lg hover:bg-muted"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={!editTestType || !editUrl}
+          className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-muted text-primary-foreground rounded-lg disabled:cursor-not-allowed"
+        >
+          Save Changes
+        </button>
+      </ModalFooter>
+    </Modal>
   );
 };
 

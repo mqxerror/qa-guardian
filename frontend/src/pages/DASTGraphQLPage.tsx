@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://qa.pixelcraftedmedia.com';
@@ -273,16 +274,15 @@ export function DASTGraphQLPage() {
  </div>
  </div>
 
- {/* Header */}
- <div className="flex items-center justify-between mb-6">
- <div className="flex items-center gap-3">
- <button onClick={() => navigate('/security')} className="text-muted-foreground hover:text-foreground">&#8592;</button>
- <div>
- <h1 className="text-2xl font-bold text-foreground">GraphQL Security Scanner</h1>
- <p className="text-muted-foreground">Scan GraphQL endpoints with introspection-based discovery</p>
- </div>
- </div>
- </div>
+ <PageHeader
+   title="GraphQL Security Scanner"
+   description="Scan GraphQL endpoints with introspection-based discovery"
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'Security', href: '/security' },
+     { label: 'GraphQL Scanner' }
+   ]}
+ />
 
  {/* Configuration */}
  <div className="rounded-lg border border-border bg-card p-6 mb-6">

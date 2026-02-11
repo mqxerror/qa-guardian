@@ -5,7 +5,7 @@
 import { DASTConfig, DASTScanResult, OpenAPISpec } from '../types';
 
 // DAST Schedule type
-interface DastSchedule {
+export interface DastSchedule {
   id: string;
   name?: string;
   cron?: string;

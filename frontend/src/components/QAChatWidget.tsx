@@ -3,6 +3,7 @@
 // Feature #104: Refactored to import message renderers from qa-chat/ folder
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { X, MessageSquare, Monitor, Trash2, Send } from 'lucide-react';
 
 // Import types and components from extracted folder
 import {
@@ -555,13 +556,9 @@ function QAChatWidget() {
         aria-label={isOpen ? 'Close QA Chat' : 'Open QA Chat'}
       >
         {isOpen ? (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="h-6 w-6 text-white" />
         ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-          </svg>
+          <MessageSquare className="h-6 w-6 text-white" />
         )}
       </button>
 
@@ -572,9 +569,7 @@ function QAChatWidget() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-primary text-primary-foreground">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+                <Monitor className="h-5 w-5" />
               </div>
               <div>
                 <h3 className="font-semibold text-sm">QA Assistant</h3>
@@ -587,9 +582,7 @@ function QAChatWidget() {
                 className="p-1.5 rounded-md hover:bg-white/10 transition-colors"
                 title="Clear conversation"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
+                <Trash2 className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -689,9 +682,7 @@ function QAChatWidget() {
                 disabled={!input.trim() || isTyping}
                 className="rounded-lg bg-primary px-3 py-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
+                <Send className="h-5 w-5" />
               </button>
             </div>
             <p className="text-[10px] text-muted-foreground mt-1.5 text-center">

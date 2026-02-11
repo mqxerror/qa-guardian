@@ -31,6 +31,7 @@ import {
  SASTScanResults,
  DastConfigPanel,
  FalsePositiveModal,
+ type DastSchedule,
 } from './security';
 
 export interface SecurityTabProps {
@@ -78,7 +79,7 @@ export interface SecurityTabProps {
  openApiSpec: OpenAPISpec | null;
  isUploadingSpec: boolean;
  specUploadError: string | null;
- dastSchedules: any[];
+ dastSchedules: DastSchedule[];
  // SAST handlers
  handleUpdateSastConfig: (updates: Partial<SASTConfig>) => Promise<void>;
  handleTriggerScan: () => Promise<void>;
@@ -115,7 +116,7 @@ export interface SecurityTabProps {
  handleUploadOpenApiSpec: (content: string) => Promise<void>;
  handleDeleteOpenApiSpec: () => Promise<void>;
  setDastScans: (scans: DASTScanResult[]) => void;
- setDastSchedules: (schedules: any[]) => void;
+ setDastSchedules: (schedules: DastSchedule[]) => void;
 }
 
 export function SecurityTab(props: SecurityTabProps) {
@@ -210,8 +211,9 @@ export function SecurityTab(props: SecurityTabProps) {
  />
 
  {/* False Positive Modal */}
- {showFalsePositiveModal && selectedFinding && (
+ {selectedFinding && (
  <FalsePositiveModal
+ isOpen={showFalsePositiveModal}
  selectedFinding={selectedFinding} fpReason={fpReason} isMarkingFP={isMarkingFP}
  setFpReason={setFpReason} setShowFalsePositiveModal={setShowFalsePositiveModal} handleMarkFalsePositive={handleMarkFalsePositive}
  />

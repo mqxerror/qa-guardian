@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { MoreVertical } from 'lucide-react';
 import { TestTypeBadge, TestStatusBadge, AIConfidenceBadge, ReviewStatusBadge } from './TestTypeBadge';
 import { formatRelativeTime, formatDuration, truncateText } from './utils';
 import type { TestType } from './types';
@@ -109,9 +110,7 @@ const TestListItem: React.FC<TestListItemProps> = React.memo(({
  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
  aria-label="Test actions"
  >
- <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
- </svg>
+ <MoreVertical className="w-5 h-5" />
  </button>
 
  {showDropdown && (

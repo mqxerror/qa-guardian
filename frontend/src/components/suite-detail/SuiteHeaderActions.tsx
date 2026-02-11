@@ -6,7 +6,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileJson, FileText, Download } from 'lucide-react';
+import { FileJson, FileText, Download, ChevronDown, Clock } from 'lucide-react';
 
 interface SuiteHeaderActionsProps {
   suiteId: string;
@@ -74,9 +74,7 @@ export function SuiteHeaderActions({
           >
             <Download className="w-4 h-4" />
             Export Results
-            <svg className={`w-4 h-4 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            <ChevronDown className={`w-4 h-4 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
           </button>
           {showExportMenu && (
             <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
@@ -103,9 +101,7 @@ export function SuiteHeaderActions({
         to={`/suites/${suiteId}/runs`}
         className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted inline-flex items-center gap-1"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <Clock className="w-4 h-4" />
         View History
       </Link>
       {canCreateTest && (

@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
@@ -167,20 +168,23 @@ export function ApiKeysPage() {
   return (
     <Layout>
       <div className="p-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">API Keys</h1>
-            <p className="mt-2 text-muted-foreground">
-              Manage API keys for programmatic access to your organization
-            </p>
-          </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Create API Key
-          </button>
-        </div>
+        <PageHeader
+          title="API Keys"
+          description="Manage API keys for programmatic access to your organization"
+          breadcrumbs={[
+            { label: 'Home', href: '/' },
+            { label: 'Settings', href: '/settings' },
+            { label: 'API Keys' }
+          ]}
+          actions={
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Create API Key
+            </button>
+          }
+        />
 
         {/* API Keys List */}
         <div className="mt-8">

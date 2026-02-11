@@ -1,7 +1,9 @@
 /**
  * CustomRulesManager - Custom Semgrep rules UI
  * Feature #102: Extracted from SecurityTab.tsx
+ * Feature #637: Migrated modal to use Modal component from ui/Modal
  */
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../ui/Modal';
 import { CustomRule } from '../types';
 
 export interface CustomRulesManagerProps {
@@ -112,26 +114,25 @@ export function CustomRulesManager(props: CustomRulesManagerProps) {
  )}
 
  {/* Add Custom Rule Modal */}
- {showAddCustomRuleModal && (
- <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
- <div className="bg-card rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-border shadow-lg">
- <div className="flex items-center justify-between mb-4">
- <h3 className="text-lg font-semibold text-foreground">Add Custom Semgrep Rule</h3>
- <button
- onClick={() => {
+ <Modal
+ isOpen={showAddCustomRuleModal}
+ onClose={() => {
  setShowAddCustomRuleModal(false);
  setNewCustomRuleName('');
  setNewCustomRuleYaml('');
  setCustomRuleError(null);
  }}
- className="text-muted-foreground hover:text-foreground"
+ title="Add Custom Semgrep Rule"
+ size="full"
  >
- <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
- </button>
- </div>
+ <ModalHeader onClose={() => {
+ setShowAddCustomRuleModal(false);
+ setNewCustomRuleName('');
+ setNewCustomRuleYaml('');
+ setCustomRuleError(null);
+ }}>Add Custom Semgrep Rule</ModalHeader>
 
+ <ModalBody>
  {customRuleError && (
  <div className="mb-4 p-3 rounded-md bg-destructive/5 text-destructive text-sm">
  {customRuleError}
@@ -181,8 +182,9 @@ export function CustomRulesManager(props: CustomRulesManagerProps) {
  </p>
  </div>
  </div>
+ </ModalBody>
 
- <div className="flex justify-end gap-3 mt-6">
+ <ModalFooter>
  <button
  onClick={() => {
  setShowAddCustomRuleModal(false);
@@ -201,10 +203,8 @@ export function CustomRulesManager(props: CustomRulesManagerProps) {
  >
  {isAddingCustomRule ? 'Adding...' : 'Add Rule'}
  </button>
- </div>
- </div>
- </div>
- )}
+ </ModalFooter>
+ </Modal>
  </div>
  );
 }

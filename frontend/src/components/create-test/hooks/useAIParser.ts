@@ -17,16 +17,16 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { UnifiedAIService, type ParsedTestIntent } from '../../../services/UnifiedAIService';
 // Feature #116: Use shared validation patterns
 import { URL_EXTRACT_REGEX, DOMAIN_EXTRACT_REGEX } from '../../../constants/validation';
+// Feature #642: Import canonical ViewportPreset from test-modals/types
+import type { ViewportPreset } from '../../test-modals/types';
 
 /**
  * Detected test type
  */
 export type DetectedTestType = 'e2e' | 'visual' | 'accessibility' | 'performance' | 'load' | null;
 
-/**
- * Viewport preset
- */
-export type ViewportPreset = 'desktop' | 'tablet' | 'mobile' | 'custom';
+// Re-export ViewportPreset for existing imports
+export type { ViewportPreset };
 
 /**
  * Parsed result from AI parser
@@ -61,6 +61,7 @@ export interface AIParserState {
  */
 const VIEWPORT_PRESETS: Record<ViewportPreset, { width: number; height: number }> = {
   desktop: { width: 1920, height: 1080 },
+  laptop: { width: 1366, height: 768 },
   tablet: { width: 768, height: 1024 },
   mobile: { width: 375, height: 667 },
   custom: { width: 1280, height: 720 },
@@ -81,7 +82,8 @@ const TEST_TYPE_KEYWORDS: Record<Exclude<DetectedTestType, null>, string[]> = {
  * Viewport keywords
  */
 const VIEWPORT_KEYWORDS: Record<ViewportPreset, string[]> = {
-  desktop: ['desktop', 'laptop', 'pc', 'computer', 'large screen', '1920', '1080'],
+  desktop: ['desktop', 'pc', 'computer', 'large screen', '1920', '1080'],
+  laptop: ['laptop', 'notebook', '1366', '768'],
   tablet: ['tablet', 'ipad', '768', '1024', 'medium screen'],
   mobile: ['mobile', 'phone', 'iphone', 'android', 'smartphone', '375', '667', 'small screen', 'responsive'],
   custom: [],

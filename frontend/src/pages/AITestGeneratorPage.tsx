@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { CodeDiffView } from '../components/diff';
 import { ConfidenceBreakdown, MonacoTestEditor } from '../components/ai';
 
@@ -478,30 +479,25 @@ export function AITestGeneratorPage() {
  return (
  <Layout>
  <div className="max-w-6xl mx-auto p-6 space-y-6">
- {/* Header */}
- <div className="flex items-center justify-between">
- <div>
- <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
- <span className="text-2xl">🤖</span>
- AI Test Generator
- </h1>
- <p className="text-muted-foreground mt-1">
- Generate Playwright tests from natural language descriptions using Claude AI
- </p>
- </div>
- {/* History Button */}
- <button
- onClick={() => setShowHistory(!showHistory)}
- className={`px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
- showHistory
- ? 'bg-primary text-primary-foreground border-primary'
- : 'bg-card border-border hover:bg-muted text-foreground'
- }`}
- >
- <span>📜</span>
- History
- </button>
- </div>
+ {/* Feature #640: PageHeader component */}
+ <PageHeader
+   title="AI Test Generator"
+   description="Generate Playwright tests from natural language descriptions using Claude AI"
+   breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'AI Features', href: '/ai-insights' }, { label: 'Test Generator' }]}
+   actions={
+     <button
+       onClick={() => setShowHistory(!showHistory)}
+       className={`px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
+         showHistory
+           ? 'bg-primary text-primary-foreground border-primary'
+           : 'bg-card border-border hover:bg-muted text-foreground'
+       }`}
+     >
+       <span>📜</span>
+       History
+     </button>
+   }
+ />
 
  {/* History Panel - Feature #1499 */}
  {showHistory && (

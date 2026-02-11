@@ -9,6 +9,7 @@
 import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { ChevronDown, Loader2, Eye, PlayCircle, FileEdit, Copy, LayoutTemplate, Trash2 } from 'lucide-react';
 import { TestType } from './types';
 import { formatRelativeTime } from './utils';
 // Feature #126: Reusable empty state components
@@ -443,10 +444,7 @@ const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && resu
  <div className="text-sm text-muted-foreground" title={test.last_run_at ? new Date(test.last_run_at).toLocaleString() : undefined}>
  {isThisTestRunning ? (
  <span className="inline-flex items-center gap-1.5 text-primary">
- <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 className="h-3 w-3 animate-spin" />
  Now
  </span>
  ) : test.last_run_at ? (
@@ -511,9 +509,7 @@ const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && resu
  className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
  >
  Actions
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
- </svg>
+ <ChevronDown className="h-4 w-4" />
  </button>
  {openActionsDropdown === test.id && (
  <div
@@ -528,10 +524,7 @@ const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && resu
  }}
  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
  >
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
- </svg>
+ <Eye className="h-4 w-4" />
  View Details
  </button>
  <button
@@ -544,18 +537,12 @@ const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && resu
  >
  {runningTestId === test.id ? (
  <>
- <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 className="h-4 w-4 animate-spin" />
  Running...
  </>
  ) : (
  <>
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <PlayCircle className="h-4 w-4" />
  Run Test
  </>
  )}
@@ -572,9 +559,7 @@ const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && resu
  }}
  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
  >
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
- </svg>
+ <FileEdit className="h-4 w-4" />
  Edit
  </button>
  <button
@@ -584,9 +569,7 @@ const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && resu
  }}
  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
  >
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
- </svg>
+ <Copy className="h-4 w-4" />
  Duplicate
  </button>
  <button
@@ -597,9 +580,7 @@ const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && resu
  }}
  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
  >
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
- </svg>
+ <LayoutTemplate className="h-4 w-4" />
  Insert Template
  </button>
  <div className="border-t border-border my-1" />
@@ -610,9 +591,7 @@ const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && resu
  }}
  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-destructive/5"
  >
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
- </svg>
+ <Trash2 className="h-4 w-4" />
  Delete
  </button>
  </div>
@@ -704,10 +683,7 @@ const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && resu
  <div className="text-sm text-muted-foreground">
  {isThisTestRunning ? (
  <span className="inline-flex items-center gap-1.5 text-primary">
- <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 className="h-3 w-3 animate-spin" />
  Now
  </span>
  ) : test.last_run_at ? (

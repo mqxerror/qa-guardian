@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { Link } from 'react-router-dom';
 
 // Webhook event types and their descriptions
@@ -158,20 +159,16 @@ export function WebhookIntegrationGuidesPage() {
  return (
  <Layout>
  <div className="p-8 max-w-6xl mx-auto">
- {/* Header */}
- <div className="mb-8">
- <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
- <Link to="/settings?tab=webhooks" className="hover:text-foreground">
- Webhooks
- </Link>
- <span>/</span>
- <span>Integration Guides</span>
- </div>
- <h1 className="text-3xl font-bold text-foreground">Webhook Integration Guides</h1>
- <p className="mt-2 text-muted-foreground">
- Connect QA Guardian webhooks with popular automation platforms like n8n, Zapier, and Make (Integromat).
- </p>
- </div>
+ <PageHeader
+   title="Webhook Integration Guides"
+   description="Connect QA Guardian webhooks with popular automation platforms like n8n, Zapier, and Make (Integromat)."
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'Settings', href: '/settings' },
+     { label: 'Webhooks', href: '/settings?tab=webhooks' },
+     { label: 'Integration Guides' }
+   ]}
+ />
 
  {/* Quick Links */}
  <div className="mb-8 p-4 rounded-lg border border-border bg-card">

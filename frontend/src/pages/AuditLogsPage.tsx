@@ -1,6 +1,7 @@
 // AuditLogsPage extracted from App.tsx for code quality compliance (Feature #1357)
 import { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 
@@ -118,12 +119,15 @@ export function AuditLogsPage() {
  return (
  <Layout>
  <div className="p-8">
- <div className="mb-6">
- <h1 className="text-3xl font-bold text-foreground">Audit Logs</h1>
- <p className="mt-2 text-muted-foreground">
- View a record of all actions performed in your organization
- </p>
- </div>
+ <PageHeader
+   title="Audit Logs"
+   description="View a record of all actions performed in your organization"
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'Settings', href: '/settings' },
+     { label: 'Audit Logs' }
+   ]}
+ />
 
  {/* Filters */}
  <div className="mb-6 flex flex-wrap gap-4">

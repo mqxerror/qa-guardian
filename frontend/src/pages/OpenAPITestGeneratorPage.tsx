@@ -12,6 +12,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 
 interface GeneratedTest {
@@ -269,14 +270,16 @@ export function OpenAPITestGeneratorPage() {
  return (
  <Layout>
  <div className="p-8 max-w-7xl mx-auto">
- {/* Header */}
- <div className="mb-8">
- <h1 className="text-3xl font-bold text-foreground">OpenAPI Test Generator</h1>
- <p className="mt-2 text-muted-foreground">
- Generate Playwright API tests from your OpenAPI/Swagger specification.
- Supports OpenAPI 3.0, 3.1, and Swagger 2.0 in JSON or YAML format.
- </p>
- </div>
+ {/* Feature #640: PageHeader component */}
+ <PageHeader
+   title="OpenAPI Test Generator"
+   description="Generate Playwright API tests from your OpenAPI/Swagger specification. Supports OpenAPI 3.0, 3.1, and Swagger 2.0 in JSON or YAML format."
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'Tools', href: '/test-improvement' },
+     { label: 'OpenAPI Generator' }
+   ]}
+ />
 
  {/* Input Section */}
  {!generationResult && (

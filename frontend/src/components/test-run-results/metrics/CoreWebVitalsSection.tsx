@@ -1,11 +1,21 @@
 /**
  * CoreWebVitalsSection - Core Web Vitals display with mobile/desktop comparison
  * Feature #103: Extracted from MetricsTab.tsx
+ * Feature #644: Added proper types for lighthouse prop
  */
 import React from 'react';
+import type { LighthouseData } from './LighthouseTabs';
+
+// Metric card input type
+interface MetricCardInput {
+ label: string;
+ value: number;
+ format: (v: number) => string;
+ threshold: { good: number; poor: number };
+}
 
 interface CoreWebVitalsSectionProps {
- lighthouse: any;
+ lighthouse: LighthouseData;
 }
 
 export const CoreWebVitalsSection: React.FC<CoreWebVitalsSectionProps> = ({ lighthouse }) => {
@@ -68,8 +78,8 @@ export const CoreWebVitalsSection: React.FC<CoreWebVitalsSectionProps> = ({ ligh
  {/* LCP Comparison */}
  <MetricComparisonRow
  metricName="Largest Contentful Paint"
- mobileValue={lighthouse.mobileResults.metrics.largest_contentful_paint}
- desktopValue={lighthouse.desktopResults.metrics.largest_contentful_paint}
+ mobileValue={lighthouse.mobileResults!.metrics.largest_contentful_paint}
+ desktopValue={lighthouse.desktopResults!.metrics.largest_contentful_paint}
  mobileLabel="📱 LCP"
  desktopLabel="🖥️ LCP"
  format={(v: number) => `${(v / 1000).toFixed(2)}s`}
@@ -80,8 +90,8 @@ export const CoreWebVitalsSection: React.FC<CoreWebVitalsSectionProps> = ({ ligh
  {/* FCP Comparison */}
  <MetricComparisonRow
  metricName="First Contentful Paint"
- mobileValue={lighthouse.mobileResults.metrics.first_contentful_paint}
- desktopValue={lighthouse.desktopResults.metrics.first_contentful_paint}
+ mobileValue={lighthouse.mobileResults!.metrics.first_contentful_paint}
+ desktopValue={lighthouse.desktopResults!.metrics.first_contentful_paint}
  mobileLabel="📱 FCP"
  desktopLabel="🖥️ FCP"
  format={(v: number) => `${(v / 1000).toFixed(2)}s`}
@@ -92,8 +102,8 @@ export const CoreWebVitalsSection: React.FC<CoreWebVitalsSectionProps> = ({ ligh
  {/* CLS Comparison */}
  <MetricComparisonRow
  metricName="Cumulative Layout Shift"
- mobileValue={lighthouse.mobileResults.metrics.cumulative_layout_shift}
- desktopValue={lighthouse.desktopResults.metrics.cumulative_layout_shift}
+ mobileValue={lighthouse.mobileResults!.metrics.cumulative_layout_shift}
+ desktopValue={lighthouse.desktopResults!.metrics.cumulative_layout_shift}
  mobileLabel="📱 CLS"
  desktopLabel="🖥️ CLS"
  format={(v: number) => v.toFixed(3)}
@@ -104,8 +114,8 @@ export const CoreWebVitalsSection: React.FC<CoreWebVitalsSectionProps> = ({ ligh
  {/* TBT Comparison */}
  <MetricComparisonRow
  metricName="Total Blocking Time"
- mobileValue={lighthouse.mobileResults.metrics.total_blocking_time}
- desktopValue={lighthouse.desktopResults.metrics.total_blocking_time}
+ mobileValue={lighthouse.mobileResults!.metrics.total_blocking_time}
+ desktopValue={lighthouse.desktopResults!.metrics.total_blocking_time}
  mobileLabel="📱 TBT"
  desktopLabel="🖥️ TBT"
  format={(v: number) => `${Math.round(v)}ms`}
@@ -116,8 +126,8 @@ export const CoreWebVitalsSection: React.FC<CoreWebVitalsSectionProps> = ({ ligh
  {/* Speed Index Comparison */}
  <MetricComparisonRow
  metricName="Speed Index"
- mobileValue={lighthouse.mobileResults.metrics.speed_index}
- desktopValue={lighthouse.desktopResults.metrics.speed_index}
+ mobileValue={lighthouse.mobileResults!.metrics.speed_index}
+ desktopValue={lighthouse.desktopResults!.metrics.speed_index}
  mobileLabel="📱 SI"
  desktopLabel="🖥️ SI"
  format={(v: number) => `${(v / 1000).toFixed(2)}s`}
@@ -142,7 +152,7 @@ interface MetricComparisonRowProps {
  desktopLabel: string;
  format: (v: number) => string;
  threshold: { good: number; poor: number };
- renderMetricCard: (metric: any, prefix: string) => React.ReactNode;
+ renderMetricCard: (metric: MetricCardInput, prefix: string) => React.ReactNode;
 }
 
 const MetricComparisonRow: React.FC<MetricComparisonRowProps> = ({
@@ -169,7 +179,7 @@ const MetricComparisonRow: React.FC<MetricComparisonRowProps> = ({
 );
 
 // Single device metrics display
-const SingleDeviceMetrics: React.FC<{ lighthouse: any }> = ({ lighthouse }) => (
+const SingleDeviceMetrics: React.FC<{ lighthouse: LighthouseData }> = ({ lighthouse }) => (
  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
  {[
  { label: 'LCP', fullName: 'Largest Contentful Paint', value: lighthouse.metrics?.lcp, format: (v: number) => `${(v / 1000).toFixed(2)}s`, threshold: { good: 2500, poor: 4000, max: 8000 }, description: 'Measures loading performance' },

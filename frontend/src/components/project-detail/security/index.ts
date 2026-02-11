@@ -8,5 +8,5 @@ export { CustomRulesManager, type CustomRulesManagerProps } from './CustomRulesM
 export { SecretPatternsManager, type SecretPatternsManagerProps } from './SecretPatternsManager';
 export { PreCommitHookSection, type PreCommitHookSectionProps } from './PreCommitHookSection';
 export { SASTScanResults, type SASTScanResultsProps } from './SASTScanResults';
-export { DastConfigPanel, type DastConfigPanelProps } from './DastConfigPanel';
+export { DastConfigPanel, type DastConfigPanelProps, type DastSchedule } from './DastConfigPanel';
 export { FalsePositiveModal, type FalsePositiveModalProps } from './FalsePositiveModal';

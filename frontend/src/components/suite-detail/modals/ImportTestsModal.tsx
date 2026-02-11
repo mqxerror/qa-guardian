@@ -6,6 +6,7 @@
  */
 
 import React, { useRef } from 'react';
+import { Upload } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 
 interface ImportTestsModalProps {
@@ -41,9 +42,7 @@ export function ImportTestsModal({
             htmlFor="import-file"
             className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-colors hover:border-primary/50 hover:bg-muted/30 ${isImporting ? 'pointer-events-none opacity-50' : ''}`}
           >
-            <svg className="h-10 w-10 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
+            <Upload className="h-10 w-10 text-muted-foreground" strokeWidth={1.5} />
             <span className="mt-2 text-sm font-medium text-foreground">
               {isImporting ? 'Importing...' : 'Click to upload or drag and drop'}
             </span>

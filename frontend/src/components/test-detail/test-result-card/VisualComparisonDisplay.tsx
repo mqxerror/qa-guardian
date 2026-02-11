@@ -18,7 +18,7 @@ interface VisualComparisonDisplayProps {
  diffOverlayOpacity: number;
  setDiffOverlayOpacity: (opacity: number) => void;
  imageZoomLevel: string;
- setImageZoomLevel: (level: any) => void;
+ setImageZoomLevel: (level: string) => void;
  baselineContainerRef: React.RefObject<HTMLDivElement>;
  currentContainerRef: React.RefObject<HTMLDivElement>;
  diffContainerRef: React.RefObject<HTMLDivElement>;

@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 
 interface ApprovalInfo {
   status: 'pending' | 'approved' | 'rejected';
@@ -174,18 +175,12 @@ export function AITestReviewPage() {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <span className="text-2xl">📋</span>
-              AI Test Review Queue
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Review and approve AI-generated tests before adding to test suites
-            </p>
-          </div>
-        </div>
+        {/* Feature #640: PageHeader component */}
+        <PageHeader
+          title="AI Test Review Queue"
+          description="Review and approve AI-generated tests before adding to test suites"
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'AI Features', href: '/ai-insights' }, { label: 'Test Review' }]}
+        />
 
         {/* Stats Cards */}
         {stats && (

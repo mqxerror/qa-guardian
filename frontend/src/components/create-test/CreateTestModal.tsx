@@ -3,6 +3,7 @@
  * Feature #1800: CreateTestModal with two-section layout
  * Feature #1802: URLInput component integration
  * Feature #1807: CustomTestWizard integration
+ * Feature #637: Migrated to use Modal component from ui/Modal
  *
  * Layout:
  * - Quick Test section: Enter URL and select test types to generate multiple tests
@@ -10,6 +11,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import {
  QuickTestSelection,
  DEFAULT_QUICK_SELECTION,
@@ -32,6 +34,12 @@ import {
  Accessibility,
  Zap,
  BarChart3,
+ Check,
+ CheckCircle2,
+ Loader2,
+ PlayCircle,
+ Settings,
+ Plus,
  type LucideIcon,
 } from 'lucide-react';
 
@@ -89,9 +97,7 @@ const TestTypeGrid: React.FC<TestTypeGridProps> = ({ testSelection, toggleTestTy
               }`}
             >
               {testSelection[key] && (
-                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
+                <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
               )}
             </div>
             <Icon className="w-4 h-4" />
@@ -134,18 +140,14 @@ const GeneratedTestsSummary: React.FC<GeneratedTestsSummaryProps> = ({
       <div className="flex items-center gap-2">
         {runStatus === 'started' ? (
           <>
-            <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <CheckCircle2 className="w-5 h-5 text-success" />
             <span className="text-sm font-medium text-success">
               Tests running! Closing...
             </span>
           </>
         ) : (
           <>
-            <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <CheckCircle2 className="w-5 h-5 text-success" />
             <span className="text-sm font-medium text-success">
               {createdCount} test{createdCount !== 1 ? 's' : ''} created!
             </span>
@@ -161,25 +163,17 @@ const GeneratedTestsSummary: React.FC<GeneratedTestsSummaryProps> = ({
       >
         {isRunningTests ? (
           <>
-            <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
             <span>Starting...</span>
           </>
         ) : runStatus === 'started' ? (
           <>
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <Check className="w-3.5 h-3.5" />
             <span>Running</span>
           </>
         ) : (
           <>
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <PlayCircle className="w-3.5 h-3.5" />
             <span>Run Now</span>
           </>
         )}
@@ -549,63 +543,38 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  [onClose, handleGenerateTests]
  );
 
- // Don't render if not open
- if (!isOpen) {
- return null;
- }
-
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- role="dialog"
- aria-modal="true"
- aria-labelledby="create-test-modal-title"
- onKeyDown={handleKeyDown}
+ <Modal
+ isOpen={isOpen}
+ onClose={onClose}
+ title="Create Test"
+ size="full"
+ className="max-w-2xl"
  >
- {/* Backdrop click to close */}
- <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
-
- {/* Modal content - fixed width max-w-2xl */}
  <div
  ref={modalRef}
- className="relative z-10 w-full max-w-2xl bg-card rounded-xl shadow-2xl overflow-hidden"
- role="document"
+ onKeyDown={handleKeyDown}
+ tabIndex={-1}
  >
  {/* Header */}
- <div className="px-6 py-4 border-b border-border">
- <div className="flex items-center justify-between">
- <h2
- id="create-test-modal-title"
- className="text-xl font-semibold text-foreground"
- >
+ <ModalHeader onClose={onClose}>
+ <div>
  Create Test
- </h2>
- <button
- onClick={onClose}
- className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors"
- aria-label="Close modal"
- >
- <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
- </button>
- </div>
  {suite && (
- <p className="mt-1 text-sm text-muted-foreground">
+ <p className="mt-1 text-sm text-muted-foreground font-normal">
  Adding to: <span className="font-medium">{suite.name}</span>
  </p>
  )}
  </div>
+ </ModalHeader>
 
  {/* Body - Two sections */}
- <div className="p-6 space-y-6">
+ <ModalBody className="space-y-6">
  {/* Section 1: Quick Test */}
  <section aria-labelledby="quick-test-heading">
  <div className="flex items-center gap-2 mb-4">
  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
- <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
- </svg>
+ <Zap className="w-4 h-4 text-primary" />
  </div>
  <h3 id="quick-test-heading" className="text-lg font-medium text-foreground">
  Quick Test
@@ -729,21 +698,12 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  >
  {isGenerating ? (
  <>
- <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path
- className="opacity-75"
- fill="currentColor"
- d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
- />
- </svg>
+ <Loader2 className="w-4 h-4 animate-spin" />
  <span>Generating Tests...</span>
  </>
  ) : (
  <>
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
- </svg>
+ <Zap className="w-4 h-4" />
  <span>
  {/* Feature #2008: Show bundle name if active */}
  {activeBundle
@@ -770,10 +730,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  <section aria-labelledby="custom-test-heading">
  <div className="flex items-center gap-2 mb-4">
  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-accent/10">
- <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
- </svg>
+ <Settings className="w-4 h-4 text-accent" />
  </div>
  <h3 id="custom-test-heading" className="text-lg font-medium text-foreground">
  Custom Test
@@ -789,16 +746,14 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  className="w-full px-4 py-2.5 border-2 border-dashed border-border text-foreground hover:border-accent/40 hover:text-accent font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
  type="button"
  >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
- </svg>
+ <Plus className="w-4 h-4" />
  <span>Open Test Wizard</span>
  </button>
  </section>
- </div>
+ </ModalBody>
 
  {/* Footer */}
- <div className="px-6 py-4 bg-muted border-t border-border flex items-center justify-between">
+ <ModalFooter className="bg-muted flex-row justify-between">
  <p className="text-xs text-muted-foreground">
  <kbd className="px-1.5 py-0.5 bg-secondary rounded text-xs">Cmd+Enter</kbd>{' '}
  to generate tests
@@ -810,7 +765,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  >
  Cancel
  </button>
- </div>
+ </ModalFooter>
  </div>
 
  {/* Custom Test Wizard Modal - Feature #1807: CustomTestWizard with MethodSelection */}
@@ -829,7 +784,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  projectBaseUrl={project?.baseUrl}
  />
  )}
- </div>
+ </Modal>
  );
 };
 

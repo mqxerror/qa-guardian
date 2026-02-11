@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import type { TestRunType } from '../components/test-detail/types';
 
 // Types for K6 Load Test Dashboard
 export type K6ActiveChart = 'vus' | 'rps' | 'response_times';
@@ -57,8 +58,8 @@ export interface UseMetricsStateReturn {
   // Previous comparison toggle state
   showPreviousComparison: boolean;
   setShowPreviousComparison: React.Dispatch<React.SetStateAction<boolean>>;
-  previousRunData: any;
-  setPreviousRunData: React.Dispatch<React.SetStateAction<any>>;
+  previousRunData: TestRunType | null;
+  setPreviousRunData: React.Dispatch<React.SetStateAction<TestRunType | null>>;
 
   // Performance AI analysis states
   perfAIAnalysisOpen: string | null;
@@ -108,7 +109,7 @@ export function useMetricsState(): UseMetricsStateReturn {
 
   // Previous comparison toggle state
   const [showPreviousComparison, setShowPreviousComparison] = useState(false);
-  const [previousRunData, setPreviousRunData] = useState<any>(null);
+  const [previousRunData, setPreviousRunData] = useState<TestRunType | null>(null);
 
   // Feature #1935: Performance AI analysis state
   const [perfAIAnalysisOpen, setPerfAIAnalysisOpen] = useState<string | null>(null);

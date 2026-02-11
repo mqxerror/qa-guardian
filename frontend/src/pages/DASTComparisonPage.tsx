@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
@@ -322,18 +323,15 @@ export function DASTComparisonPage() {
  return (
  <Layout>
  <div className="p-6 max-w-6xl mx-auto">
- {/* Header */}
- <div className="flex items-center justify-between mb-6">
- <div className="flex items-center gap-3">
- <button onClick={() => navigate('/security')} className="text-muted-foreground hover:text-foreground">
- &larr;
- </button>
- <div>
- <h1 className="text-2xl font-bold text-foreground">DAST Security Scanner</h1>
- <p className="text-muted-foreground">Run dynamic security scans and compare findings</p>
- </div>
- </div>
- </div>
+ <PageHeader
+   title="DAST Security Scanner"
+   description="Run dynamic security scans and compare findings"
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'Security', href: '/security' },
+     { label: 'DAST Scanner' }
+   ]}
+ />
 
  {/* Run New Scan Section */}
  <div className="rounded-lg border border-border bg-card p-6 mb-6">

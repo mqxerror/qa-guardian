@@ -17,8 +17,8 @@ interface AccessibilityResultsDisplayProps {
  onSetSeverityFilter: (filter: string) => void;
  onSetCategoryFilter: (filter: string) => void;
  onSetSearchQuery: (query: string) => void;
- onExportPDF?: (a11yData: any, testName: string, runDate: string) => void;
- onExportCSV?: (a11yData: any, testName: string, runDate: string) => void;
+ onExportPDF?: (a11yData: AccessibilityResults, testName: string, runDate: string) => void;
+ onExportCSV?: (a11yData: AccessibilityResults, testName: string, runDate: string) => void;
  testName: string;
  formatDateTime: (date: string | Date) => string;
 }

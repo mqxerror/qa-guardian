@@ -10,6 +10,7 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useTimezoneStore } from '../stores/timezoneStore';
 import { useRunsPaginated, useRunsInfinite, useProjects, type TestRun } from '../hooks/api';
 import { InfiniteScrollContainer } from '../components/ui/InfiniteScrollContainer';
@@ -195,24 +196,15 @@ function RunHistoryPage() {
  return (
  <Layout>
  <div className="p-8">
- {/* Breadcrumb */}
- <nav className="mb-6 flex items-center gap-2 text-sm">
- <Link to="/dashboard" className="text-muted-foreground hover:text-foreground">
- Dashboard
- </Link>
- <span className="text-muted-foreground">/</span>
- <span className="font-medium text-foreground">Run History</span>
- </nav>
-
- {/* Header */}
- <div className="flex items-center justify-between mb-6">
- <div>
- <h1 className="text-3xl font-bold text-foreground">Run History</h1>
- <p className="text-muted-foreground mt-1">
- {loading ? 'Loading...' : `All test runs across ${projects.length} projects`}
- </p>
- </div>
- </div>
+ <PageHeader
+   title="Run History"
+   description={loading ? 'Loading...' : `All test runs across ${projects.length} projects`}
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'Dashboard', href: '/dashboard' },
+     { label: 'Run History' }
+   ]}
+ />
 
  {/* Stats Cards */}
  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">

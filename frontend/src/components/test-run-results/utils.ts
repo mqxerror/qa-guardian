@@ -7,6 +7,7 @@
 import { SimpleErrorPattern, ErrorAnalysis } from './types';
 import { logger } from '../../utils/logger';
 import { getStatusColor, getSeverityColor } from '../../constants/colors';
+import type { K6LoadTestData } from './pdfExport';
 
 // Format duration in human-readable form
 export const formatDuration = (ms?: number): string => {
@@ -160,12 +161,13 @@ export const getHealthScoreBarClass = (score: number): string => {
 };
 
 // K6 Time Series data point type
+// Feature #644: Made p95_response_time optional to match K6LoadTestData.time_series
 export interface K6TimeSeriesPoint {
  time: string;
  vus: number;
  rps: number;
  avg_response_time: number;
- p95_response_time: number;
+ p95_response_time?: number;
 }
 
 // Response time histogram bucket type
@@ -176,7 +178,7 @@ export interface ResponseTimeHistogramBucket {
 }
 
 // Feature #1836: Generate mock time series data if not available
-export const generateK6TimeSeries = (loadTestData: any): K6TimeSeriesPoint[] => {
+export const generateK6TimeSeries = (loadTestData: K6LoadTestData): K6TimeSeriesPoint[] => {
  // If actual time series data exists, use it
  if (loadTestData?.time_series && loadTestData.time_series.length > 0) {
  return loadTestData.time_series;
@@ -185,7 +187,7 @@ export const generateK6TimeSeries = (loadTestData: any): K6TimeSeriesPoint[] => 
  // Generate simulated data based on duration and summary
  const duration = loadTestData?.duration?.actual || loadTestData?.duration?.configured || 60;
  const maxVUs = loadTestData?.virtual_users?.max_concurrent || loadTestData?.virtual_users?.configured || 10;
- const avgRPS = parseFloat(loadTestData?.summary?.requests_per_second) || 100;
+ const avgRPS = parseFloat(String(loadTestData?.summary?.requests_per_second ?? '100')) || 100;
  const avgResponseTime = loadTestData?.response_times?.avg || 200;
  const p95ResponseTime = loadTestData?.response_times?.p95 || 500;
 
@@ -220,7 +222,7 @@ export const generateK6TimeSeries = (loadTestData: any): K6TimeSeriesPoint[] => 
 };
 
 // Feature #1836: Generate response time distribution histogram
-export const generateResponseTimeHistogram = (loadTestData: any): ResponseTimeHistogramBucket[] => {
+export const generateResponseTimeHistogram = (loadTestData: K6LoadTestData): ResponseTimeHistogramBucket[] => {
  // If actual histogram data exists, use it
  if (loadTestData?.response_time_distribution && loadTestData.response_time_distribution.length > 0) {
  return loadTestData.response_time_distribution;

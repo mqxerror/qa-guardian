@@ -6,6 +6,39 @@
 import { useCallback } from 'react';
 import { toast } from '../stores/toastStore';
 import { ScreenshotItem } from '../components/test-run-results';
+import type { LighthouseResult, StepLoadTestResult } from '../components/test-detail/types';
+import type { K6LoadTestData } from '../components/test-run-results/pdfExport';
+
+// Performance analysis context type
+// Feature #643: Updated loadTest fields to use optional types compatible with K6LoadTestData
+interface PerformanceContext {
+  testName: string;
+  lighthouse?: {
+    performance: number;
+    accessibility: number;
+    bestPractices: number | undefined;
+    seo: number;
+    metrics?: LighthouseResult['metrics'];
+    lcp?: number;
+    fcp?: number;
+    cls?: number;
+    tbt?: number;
+    url?: string;
+    device?: string;
+    opportunities?: LighthouseResult['opportunities'];
+    diagnostics?: LighthouseResult['diagnostics'];
+  };
+  loadTest?: {
+    virtualUsers?: number | { configured?: number; peak?: number; max_concurrent?: number };
+    duration?: number | { configured?: number; actual?: number; ramp_up?: number };
+    requestsPerSecond?: number | string;
+    avgResponseTime?: number;
+    p95ResponseTime?: number;
+    errorRate?: number;
+    summary?: K6LoadTestData['summary'];
+    responseTimes?: K6LoadTestData['response_times'];
+  };
+}
 
 // Types for handler dependencies
 interface UseTestRunHandlersParams {
@@ -257,7 +290,7 @@ export function useTestRunHandlers({
   }, [token, runId, setApprovalLoading, setRetryTrigger]);
 
   // Feature #1935: AI analysis for performance test results
-  const analyzePerformanceResults = useCallback(async (testName: string, lighthouse: any, loadTest?: any) => {
+  const analyzePerformanceResults = useCallback(async (testName: string, lighthouse: LighthouseResult | null, loadTest?: K6LoadTestData | null) => {
     if (!token) return;
 
     setPerfAILoading(true);
@@ -265,7 +298,7 @@ export function useTestRunHandlers({
     setPerfAIAnalysisOpen(testName);
 
     // Build performance context
-    const performanceContext: any = { testName };
+    const performanceContext: PerformanceContext = { testName };
 
     if (lighthouse) {
       performanceContext.lighthouse = {
@@ -286,13 +319,14 @@ export function useTestRunHandlers({
     }
 
     if (loadTest) {
+      // Handle both K6LoadTestData and StepLoadTestResult shapes
       performanceContext.loadTest = {
         virtualUsers: loadTest.virtual_users,
         duration: loadTest.duration,
-        requestsPerSecond: loadTest.requests_per_second,
-        avgResponseTime: loadTest.avg_response_time,
-        p95ResponseTime: loadTest.p95_response_time,
-        errorRate: loadTest.error_rate,
+        requestsPerSecond: loadTest.summary?.requests_per_second,
+        avgResponseTime: loadTest.response_times?.avg,
+        p95ResponseTime: loadTest.response_times?.p95,
+        errorRate: undefined, // K6LoadTestData doesn't have error_rate at top level
         summary: loadTest.summary,
         responseTimes: loadTest.response_times,
       };
@@ -351,12 +385,18 @@ Format your response with clear sections using **bold headers**.`;
   }, [token, setPerfAILoading, setPerfAIError, setPerfAIAnalysisOpen, setPerfAIResult]);
 
   // Feature #1836: Export K6 results
-  const exportK6Results = useCallback((loadTestData: any, testName: string, format: 'json' | 'csv') => {
+  const exportK6Results = useCallback((loadTestData: K6LoadTestData, testName: string, format: 'json' | 'csv') => {
     if (!loadTestData) return;
 
     let content: string;
     let mimeType: string;
     let extension: string;
+
+    // Type-safe access to data that may vary between LoadTestResult and StepLoadTestResult
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = loadTestData as Record<string, any>;
+    const summary = data.summary || {};
+    const responseTimes = data.response_times || {};
 
     if (format === 'json') {
       content = JSON.stringify(loadTestData, null, 2);
@@ -369,51 +409,50 @@ Format your response with clear sections using **bold headers**.`;
       // Summary section
       rows.push('# K6 Load Test Summary');
       rows.push('Metric,Value');
-      rows.push(`Total Requests,${loadTestData.summary?.total_requests || 0}`);
-      rows.push(`Failed Requests,${loadTestData.summary?.failed_requests || 0}`);
-      rows.push(`Success Rate,${loadTestData.summary?.success_rate || '0%'}`);
-      rows.push(`Requests/sec,${loadTestData.summary?.requests_per_second || 0}`);
-      rows.push(`Data Transferred,${loadTestData.summary?.data_transferred_formatted || '0 B'}`);
+      rows.push(`Total Requests,${summary.total_requests || summary.http_reqs || 0}`);
+      rows.push(`Failed Requests,${summary.failed_requests || 0}`);
+      rows.push(`Success Rate,${summary.success_rate || '0%'}`);
+      rows.push(`Requests/sec,${summary.requests_per_second || data.requests_per_second || 0}`);
+      rows.push(`Data Transferred,${summary.data_transferred_formatted || '0 B'}`);
       rows.push('');
 
       // Response times
       rows.push('# Response Times (ms)');
       rows.push('Percentile,Value');
-      const rt = loadTestData.response_times || {};
-      rows.push(`Min,${rt.min || 0}`);
-      rows.push(`Avg,${rt.avg || 0}`);
-      rows.push(`Median,${rt.median || 0}`);
-      rows.push(`p90,${rt.p90 || 0}`);
-      rows.push(`p95,${rt.p95 || 0}`);
-      rows.push(`p99,${rt.p99 || 0}`);
-      rows.push(`Max,${rt.max || 0}`);
+      rows.push(`Min,${responseTimes.min || 0}`);
+      rows.push(`Avg,${responseTimes.avg || data.avg_response_time || 0}`);
+      rows.push(`Median,${responseTimes.median || 0}`);
+      rows.push(`p90,${responseTimes.p90 || 0}`);
+      rows.push(`p95,${responseTimes.p95 || data.p95_response_time || 0}`);
+      rows.push(`p99,${responseTimes.p99 || 0}`);
+      rows.push(`Max,${responseTimes.max || 0}`);
       rows.push('');
 
       // HTTP codes
-      if (loadTestData.http_codes) {
+      if (data.http_codes) {
         rows.push('# HTTP Status Codes');
         rows.push('Code,Count');
-        for (const [code, count] of Object.entries(loadTestData.http_codes)) {
+        for (const [code, count] of Object.entries(data.http_codes)) {
           rows.push(`${code},${count}`);
         }
         rows.push('');
       }
 
-      // Thresholds
-      if (loadTestData.thresholds) {
+      // Thresholds (only available on LoadTestResult)
+      if (data.thresholds) {
         rows.push('# Thresholds');
         rows.push('Name,Passed');
-        for (const [name, passed] of Object.entries(loadTestData.thresholds)) {
+        for (const [name, passed] of Object.entries(data.thresholds)) {
           rows.push(`${name},${passed ? 'PASS' : 'FAIL'}`);
         }
         rows.push('');
       }
 
-      // Time series data
-      if (loadTestData.time_series && loadTestData.time_series.length > 0) {
+      // Time series data (only available on LoadTestResult)
+      if (data.time_series && data.time_series.length > 0) {
         rows.push('# Time Series Data');
         rows.push('Timestamp,VUs,RPS,Avg Response Time');
-        for (const point of loadTestData.time_series) {
+        for (const point of data.time_series) {
           rows.push(`${point.timestamp || point.time},${point.vus || 0},${point.rps || 0},${point.avg_response_time || 0}`);
         }
       }

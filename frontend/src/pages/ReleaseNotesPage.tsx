@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 
 // Types for release notes generation
 interface Release {
@@ -352,13 +353,16 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  return (
  <Layout>
  <div className="p-6 space-y-6">
- {/* Header */}
- <div className="flex items-center justify-between">
- <div>
- <h1 className="text-2xl font-bold text-foreground">AI Release Notes Generator</h1>
- <p className="text-sm text-muted-foreground">Create release notes automatically from test changes between releases</p>
- </div>
- </div>
+ {/* Feature #640: PageHeader component */}
+ <PageHeader
+   title="AI Release Notes Generator"
+   description="Create release notes automatically from test changes between releases"
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'Tools', href: '/test-documentation' },
+     { label: 'Release Notes' }
+   ]}
+ />
 
  {/* Step 1: Release Comparison */}
  <div className="rounded-lg border border-border bg-card p-6">

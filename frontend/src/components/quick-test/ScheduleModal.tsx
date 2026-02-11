@@ -1,17 +1,18 @@
 /**
  * ScheduleModal - Schedule recurring Quick Test
  * Feature #514: Extracted from QuickTestPage.tsx
+ * Feature #637: Migrated to use Modal component from ui/Modal
  */
 
 import {
   Loader2,
-  X,
   CalendarClock,
   AlertCircle,
   CheckCircle2,
   Bell,
   BellOff,
 } from 'lucide-react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 
 interface ScheduleModalProps {
   isOpen: boolean;
@@ -44,8 +45,6 @@ export function ScheduleModal({
   onSubmit,
   onClose,
 }: ScheduleModalProps) {
-  if (!isOpen) return null;
-
   const frequencies = [
     { value: '1h' as const, label: 'Every Hour' },
     { value: '6h' as const, label: 'Every 6 Hours' },
@@ -55,30 +54,15 @@ export function ScheduleModal({
   ];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onClose}
-    >
-      <div
-        className="bg-card rounded-lg shadow-xl border border-border w-full max-w-md mx-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <CalendarClock className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">Schedule Recurring Test</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded hover:bg-muted transition-colors"
-          >
-            <X className="w-5 h-5 text-muted-foreground" />
-          </button>
+    <Modal isOpen={isOpen} onClose={onClose} title="Schedule Recurring Test" size="md">
+      <ModalHeader onClose={onClose}>
+        <div className="flex items-center gap-2">
+          <CalendarClock className="w-5 h-5 text-primary" />
+          <span>Schedule Recurring Test</span>
         </div>
+      </ModalHeader>
 
-        {/* Content */}
-        <div className="p-4 space-y-4">
+      <ModalBody className="space-y-4">
           {/* URL Display */}
           <div>
             <label className="text-sm font-medium text-muted-foreground">URL to Monitor</label>
@@ -167,40 +151,38 @@ export function ScheduleModal({
               Schedule created successfully!
             </div>
           )}
-        </div>
+      </ModalBody>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-3 p-4 border-t border-border">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onSubmit}
-            disabled={isSubmitting || success}
-            className="px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Creating...
-              </>
-            ) : success ? (
-              <>
-                <CheckCircle2 className="w-4 h-4" />
-                Created!
-              </>
-            ) : (
-              <>
-                <CalendarClock className="w-4 h-4" />
-                Create Schedule
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
+      <ModalFooter>
+        <button
+          onClick={onClose}
+          className="px-4 py-2 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onSubmit}
+          disabled={isSubmitting || success}
+          className="px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Creating...
+            </>
+          ) : success ? (
+            <>
+              <CheckCircle2 className="w-4 h-4" />
+              Created!
+            </>
+          ) : (
+            <>
+              <CalendarClock className="w-4 h-4" />
+              Create Schedule
+            </>
+          )}
+        </button>
+      </ModalFooter>
+    </Modal>
   );
 }

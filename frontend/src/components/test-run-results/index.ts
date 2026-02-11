@@ -31,6 +31,7 @@ export type { ComputedStep, SelectedScreenshot, TimelineTabProps } from './Timel
 
 // PDF Export utilities
 export { exportK6ResultsPDF, exportLighthousePDF } from './pdfExport';
+export type { K6LoadTestData } from './pdfExport';
 
 // Report generation utilities (Feature #46: Extracted from TestRunResultPage)
 export {

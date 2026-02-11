@@ -4,6 +4,7 @@
  * Feature #610: Extracted from AIGenerateStep.tsx
  */
 import React, { useState, useRef } from 'react';
+import { Upload, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../../stores/authStore';
 import {
   METHOD_COLORS,
@@ -277,9 +278,7 @@ export const OpenAPIMode: React.FC<OpenAPIModeProps> = ({
                 className="w-full rounded-lg border-2 border-dashed border-border bg-muted/30 px-4 py-8 text-center hover:bg-muted/50 transition-colors"
               >
                 <div className="text-muted-foreground">
-                  <svg className="mx-auto h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
+                  <Upload className="mx-auto h-10 w-10 mb-2" strokeWidth={1.5} />
                   <p className="font-medium">Click to upload</p>
                   <p className="text-sm">JSON or YAML file</p>
                 </div>
@@ -340,9 +339,7 @@ export const OpenAPIMode: React.FC<OpenAPIModeProps> = ({
       {error && (
         <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
           <p className="text-sm text-destructive flex items-center gap-2">
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
             {error}
           </p>
         </div>

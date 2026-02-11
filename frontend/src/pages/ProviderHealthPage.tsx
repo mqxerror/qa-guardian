@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 
 // Feature #317: API base URL from environment
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -220,43 +221,40 @@ export function ProviderHealthPage() {
   return (
     <Layout>
     <div className="p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <button
-          onClick={() => navigate('/ai-insights')}
-          className="text-primary hover:text-primary/70 mb-4 flex items-center gap-1"
-        >
-          ← Back to AI Insights
-        </button>
-        <h1 className="text-3xl font-bold text-foreground">🏥 Provider Health Monitoring</h1>
-        <p className="text-muted-foreground mt-2">
-          Monitor AI provider availability, latency, and error rates in real-time
-        </p>
-      </div>
-
-      {/* Overall Status Banner */}
-      <div className={`rounded-xl p-6 mb-8 border border-border ${getStatusDisplay(overallStatus).bg}`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className={`w-4 h-4 rounded-full ${getStatusDisplay(overallStatus).color} animate-pulse`}></div>
-            <div>
-              <div className={`text-xl font-bold ${getStatusDisplay(overallStatus).text}`}>
-                {overallStatus === 'operational' ? 'All Systems Operational' :
-                 overallStatus === 'warning' ? 'Partial Degradation' :
-                 overallStatus === 'degraded' ? 'Service Degraded' :
-                 overallStatus === 'critical' ? 'Major Outage' : 'Loading...'}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Last updated: {new Date().toLocaleTimeString()}
-              </div>
-            </div>
-          </div>
+      {/* Feature #640: PageHeader component */}
+      <PageHeader
+        title="🏥 Provider Health Monitoring"
+        description="Monitor AI provider availability, latency, and error rates in real-time"
+        breadcrumbs={[
+          { label: 'Home', href: '/' },
+          { label: 'AI Insights', href: '/ai-insights' },
+          { label: 'Provider Health' }
+        ]}
+        actions={
           <button
             onClick={fetchData}
             className="px-4 py-2 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
           >
             🔄 Refresh
           </button>
+        }
+      />
+
+      {/* Overall Status Banner */}
+      <div className={`rounded-xl p-6 mb-8 border border-border ${getStatusDisplay(overallStatus).bg}`}>
+        <div className="flex items-center gap-4">
+          <div className={`w-4 h-4 rounded-full ${getStatusDisplay(overallStatus).color} animate-pulse`}></div>
+          <div>
+            <div className={`text-xl font-bold ${getStatusDisplay(overallStatus).text}`}>
+              {overallStatus === 'operational' ? 'All Systems Operational' :
+               overallStatus === 'warning' ? 'Partial Degradation' :
+               overallStatus === 'degraded' ? 'Service Degraded' :
+               overallStatus === 'critical' ? 'Major Outage' : 'Loading...'}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Last updated: {new Date().toLocaleTimeString()}
+            </div>
+          </div>
         </div>
       </div>
 

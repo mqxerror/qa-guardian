@@ -6,6 +6,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useAIStatus, useExecuteWorkspaceTask, type TaskStatus, type AgentTask } from '../hooks/api/useAIWorkspace';
 
 // Types are imported from useAIWorkspace hook
@@ -161,44 +162,45 @@ export function AIAgentWorkspacePage() {
  return (
  <Layout>
  <div className="flex flex-col h-[calc(100vh-4rem)]">
- {/* Header */}
+ {/* Feature #640: PageHeader component */}
  <div className="border-b border-border bg-card px-6 py-4">
- <div className="flex items-center justify-between">
- <div>
- <h1 className="text-2xl font-bold text-foreground">{'\u{1F916}'} AI Agent Workspace</h1>
- <p className="text-muted-foreground">Execute MCP tools with real AI - Kanban-style task management</p>
- </div>
- <div className="flex items-center gap-4">
- {/* AI Status Indicator */}
- <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted">
- <div className={`w-2.5 h-2.5 rounded-full ${
- aiStatus?.ready ? 'bg-success animate-pulse' : 'bg-destructive'
- }`} />
- <span className="text-sm font-medium">
- {aiStatus?.ready ? (
- <span className="text-success">
- {aiStatus.providers.primary.available ? aiStatus.providers.primary.name : aiStatus.providers.fallback.name} Ready
- </span>
- ) : (
- <span className="text-destructive">AI Offline</span>
- )}
- </span>
- {aiStatus?.providers.primary.model && (
- <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary">
- {aiStatus.providers.primary.model.split('-').slice(0, 2).join('-')}
- </span>
- )}
- </div>
- {tasks.some(t => t.status === 'completed' || t.status === 'failed') && (
- <button
- onClick={clearFinishedTasks}
- className="px-3 py-1.5 text-sm rounded-md border border-border hover:bg-muted"
- >
- Clear Finished
- </button>
- )}
- </div>
- </div>
+ <PageHeader
+   title="AI Agent Workspace"
+   description="Execute MCP tools with real AI - Kanban-style task management"
+   breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'AI Features', href: '/ai-insights' }, { label: 'Agent Workspace' }]}
+   actions={
+     <div className="flex items-center gap-4">
+       {/* AI Status Indicator */}
+       <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted">
+         <div className={`w-2.5 h-2.5 rounded-full ${
+           aiStatus?.ready ? 'bg-success animate-pulse' : 'bg-destructive'
+         }`} />
+         <span className="text-sm font-medium">
+           {aiStatus?.ready ? (
+             <span className="text-success">
+               {aiStatus.providers.primary.available ? aiStatus.providers.primary.name : aiStatus.providers.fallback.name} Ready
+             </span>
+           ) : (
+             <span className="text-destructive">AI Offline</span>
+           )}
+         </span>
+         {aiStatus?.providers.primary.model && (
+           <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary">
+             {aiStatus.providers.primary.model.split('-').slice(0, 2).join('-')}
+           </span>
+         )}
+       </div>
+       {tasks.some(t => t.status === 'completed' || t.status === 'failed') && (
+         <button
+           onClick={clearFinishedTasks}
+           className="px-3 py-1.5 text-sm rounded-md border border-border hover:bg-muted"
+         >
+           Clear Finished
+         </button>
+       )}
+     </div>
+   }
+ />
  </div>
 
  <div className="flex-1 overflow-hidden flex">

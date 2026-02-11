@@ -36,6 +36,13 @@ interface AuthState {
   refreshAccessToken: () => Promise<boolean>;
 }
 
+// Feature #643: Persisted state type for Zustand persist middleware
+interface PersistedAuthState {
+  token?: string | null;
+  refreshToken?: string | null;
+  user?: User | null;
+}
+
 // Feature #213: Helper to parse JWT and extract expiry
 function parseJwtExpiry(token: string): number | null {
   try {
@@ -355,7 +362,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
       }),
       // Feature #2098: Migrate function to clear stale state with non-UUID organization_id
-      migrate: (persistedState: any, _version: number) => {
+      migrate: (persistedState: PersistedAuthState, _version: number) => {
         // Helper to validate UUID format
         const isValidUUID = (str: string | undefined): boolean => {
           if (!str) return false;
@@ -379,7 +386,7 @@ export const useAuthStore = create<AuthState>()(
 
         return persistedState;
       },
-      merge: (persistedState: any, currentState: AuthState) => ({
+      merge: (persistedState: PersistedAuthState, currentState: AuthState) => ({
         ...currentState,
         ...persistedState,
         user: persistedState?.user || null,

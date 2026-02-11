@@ -11,6 +11,7 @@ import {
   DASTScanResult,
   OpenAPISpec,
 } from './types';
+import type { DastSchedule } from './security/DastConfigPanel';
 
 export interface UseDastHandlersProps {
   projectId: string | undefined;
@@ -28,7 +29,7 @@ export interface DastState {
   openApiSpec: OpenAPISpec | null;
   isUploadingSpec: boolean;
   specUploadError: string | null;
-  dastSchedules: any[];
+  dastSchedules: DastSchedule[];
 }
 
 export interface DastHandlers {
@@ -39,7 +40,7 @@ export interface DastHandlers {
   setSelectedDastScan: (scan: DASTScanResult | null) => void;
   setDastTargetUrl: (url: string) => void;
   setOpenApiSpec: (spec: OpenAPISpec | null) => void;
-  setDastSchedules: (schedules: any[]) => void;
+  setDastSchedules: (schedules: DastSchedule[]) => void;
   // Handlers
   handleUpdateDastConfig: (updates: Partial<DASTConfig>) => Promise<void>;
   handleTriggerDastScan: () => Promise<void>;
@@ -71,7 +72,7 @@ export function useDastHandlers({
   const [openApiSpec, setOpenApiSpec] = useState<OpenAPISpec | null>(null);
   // Feature #624: isUploadingSpec now comes from uploadOpenApiSpecMutation.isPending
   const [specUploadError, setSpecUploadError] = useState<string | null>(null);
-  const [dastSchedules, setDastSchedules] = useState<any[]>([]);
+  const [dastSchedules, setDastSchedules] = useState<DastSchedule[]>([]);
 
   // Feature #624: useMutation for DAST config update
   const updateDastConfigMutation = useMutation({

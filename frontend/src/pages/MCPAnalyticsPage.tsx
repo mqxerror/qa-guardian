@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 
 // Types for MCP Analytics
 interface MCPUsageStats {
@@ -188,23 +189,27 @@ export function MCPAnalyticsPage() {
  return (
  <Layout>
  <div className="p-8">
- <div className="flex items-center justify-between mb-6">
- <div>
- <h2 className="text-3xl font-bold text-foreground">MCP Analytics</h2>
- <p className="mt-2 text-muted-foreground">
- Monitor MCP tool usage, performance metrics, and error rates.
- </p>
- </div>
- <select
- value={selectedPeriod}
- onChange={(e) => setSelectedPeriod(e.target.value as 'day' | 'week' | 'month')}
- className="px-4 py-2 border border-input rounded-md bg-background text-foreground"
- >
- <option value="day">Last 24 Hours</option>
- <option value="week">Last 7 Days</option>
- <option value="month">Last 30 Days</option>
- </select>
- </div>
+ {/* Feature #640: PageHeader component */}
+ <PageHeader
+   title="MCP Analytics"
+   description="Monitor MCP tool usage, performance metrics, and error rates"
+   breadcrumbs={[
+     { label: 'Home', href: '/' },
+     { label: 'MCP', href: '/mcp/chat' },
+     { label: 'Analytics' }
+   ]}
+   actions={
+     <select
+       value={selectedPeriod}
+       onChange={(e) => setSelectedPeriod(e.target.value as 'day' | 'week' | 'month')}
+       className="px-4 py-2 border border-input rounded-md bg-background text-foreground"
+     >
+       <option value="day">Last 24 Hours</option>
+       <option value="week">Last 7 Days</option>
+       <option value="month">Last 30 Days</option>
+     </select>
+   }
+ />
 
  {isLoading ? (
  <div className="flex justify-center py-12">

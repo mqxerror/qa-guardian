@@ -73,9 +73,18 @@ export function DeviceScoreCard({ device, results }: DeviceScoreCardProps) {
  );
 }
 
+// Historical lighthouse result entry
+interface LighthouseHistoryEntry {
+ timestamp?: string | number;
+ performance?: number;
+ accessibility?: number;
+ bestPractices?: number;
+ seo?: number;
+}
+
 interface LighthouseResultsDisplayProps {
  lighthouse: LighthouseResults;
- lighthouseHistory: any[];
+ lighthouseHistory: LighthouseHistoryEntry[];
  testName: string;
 }
 

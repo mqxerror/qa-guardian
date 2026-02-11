@@ -31,6 +31,22 @@ import {
   VisualMarker,
 } from '../components/test-run-results';
 
+// Feature #643: Type for viewport result in visual regression tests
+interface ViewportResult {
+  viewportLabel?: string;
+  viewportId?: string;
+  width?: number;
+  height?: number;
+  screenshotBase64?: string;
+  screenshot_base64?: string;
+  baselineScreenshotBase64?: string;
+  baseline_screenshot_base64?: string;
+  diffImageBase64?: string;
+  diff_image_base64?: string;
+  diffPercentage?: number;
+  diff_percentage?: number;
+}
+
 /**
  * Return type for useComputedResults hook
  */
@@ -405,12 +421,13 @@ export function useComputedResults(
 
       // Collect per-viewport screenshots for visual tests
       if (result.viewport_results && Array.isArray(result.viewport_results)) {
-        result.viewport_results.forEach((vr: any, vpIdx: number) => {
+        result.viewport_results.forEach((vr: ViewportResult, vpIdx: number) => {
           const vpLabel = vr.viewportLabel || vr.viewportId || `Viewport ${vpIdx + 1}`;
           const vpDims = vr.width && vr.height ? { width: vr.width, height: vr.height } : undefined;
 
           if (vr.screenshotBase64 || vr.screenshot_base64) {
             const imgData = vr.screenshotBase64 || vr.screenshot_base64;
+            if (!imgData) return; // Guard for TypeScript narrowing
             items.push({
               id: `screenshot-${idCounter++}`,
               url: imgData.startsWith('data:') ? imgData : `data:image/png;base64,${imgData}`,
@@ -425,6 +442,7 @@ export function useComputedResults(
           }
           if (vr.baselineScreenshotBase64 || vr.baseline_screenshot_base64) {
             const imgData = vr.baselineScreenshotBase64 || vr.baseline_screenshot_base64;
+            if (!imgData) return; // Guard for TypeScript narrowing
             items.push({
               id: `screenshot-${idCounter++}`,
               url: imgData.startsWith('data:') ? imgData : `data:image/png;base64,${imgData}`,
@@ -439,6 +457,7 @@ export function useComputedResults(
           }
           if (vr.diffImageBase64 || vr.diff_image_base64) {
             const imgData = vr.diffImageBase64 || vr.diff_image_base64;
+            if (!imgData) return; // Guard for TypeScript narrowing
             const diffPct = vr.diffPercentage ?? vr.diff_percentage;
             items.push({
               id: `screenshot-${idCounter++}`,

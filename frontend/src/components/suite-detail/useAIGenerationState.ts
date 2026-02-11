@@ -199,8 +199,8 @@ export interface UseAIGenerationStateReturn {
   // Human review state
   requireHumanReview: boolean;
   setRequireHumanReview: (require: boolean) => void;
-  pendingReviewTests: any[];
-  setPendingReviewTests: (tests: any[]) => void;
+  pendingReviewTests: GeneratedTestPreview[];
+  setPendingReviewTests: (tests: GeneratedTestPreview[]) => void;
 
   // Screenshot analysis state
   screenshotFile: File | null;
@@ -301,7 +301,7 @@ export function useAIGenerationState(): UseAIGenerationStateReturn {
 
   // Human review state
   const [requireHumanReview, setRequireHumanReview] = useState(false);
-  const [pendingReviewTests, setPendingReviewTests] = useState<any[]>([]);
+  const [pendingReviewTests, setPendingReviewTests] = useState<GeneratedTestPreview[]>([]);
 
   // Screenshot analysis state
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);

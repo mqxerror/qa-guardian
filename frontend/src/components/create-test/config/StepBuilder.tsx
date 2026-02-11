@@ -10,6 +10,7 @@
 // Feature #513: Removed unused useRef - drag handles use event handlers directly
 // Feature #622: Added React.memo to StepRow for performance optimization
 import React, { useState, useCallback, memo } from 'react';
+import { GripVertical, Trash2, Plus } from 'lucide-react';
 
 /**
  * Available step action types
@@ -189,9 +190,7 @@ const StepRow = memo<StepRowProps>(function StepRow({
  >
  {/* Drag Handle */}
  <div className="cursor-grab text-muted-foreground hover:text-foreground px-1">
- <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
- <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm8-12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>
- </svg>
+ <GripVertical className="w-4 h-4" />
  </div>
 
  {/* Step Number */}
@@ -246,9 +245,7 @@ const StepRow = memo<StepRowProps>(function StepRow({
  className="p-1.5 text-destructive hover:bg-destructive/10 rounded transition-colors"
  title="Delete step"
  >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
- </svg>
+ <Trash2 className="w-4 h-4" />
  </button>
  </div>
  );
@@ -366,9 +363,7 @@ export const StepBuilder: React.FC<StepBuilderProps> = ({
  disabled={steps.length >= maxSteps}
  className="w-full py-2 border-2 border-dashed border-border rounded-lg text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
  >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
- </svg>
+ <Plus className="w-4 h-4" />
  Add Step
  {steps.length >= maxSteps && ` (max ${maxSteps} reached)`}
  </button>
