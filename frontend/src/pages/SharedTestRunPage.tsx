@@ -10,6 +10,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
+import { Lock, Loader2, Clock, Calendar, Mail, ExternalLink, LogIn, Image, X, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 
 // Types from the main test run page
 interface StepResult {
@@ -393,9 +394,7 @@ export default function SharedTestRunPage() {
  <div className="bg-card rounded-xl shadow-lg border border-border p-8 max-w-md w-full mx-4">
  <div className="text-center mb-6">
  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
- <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
- </svg>
+ <Lock className="w-8 h-8 text-primary" />
  </div>
  <h2 className="text-xl font-bold text-foreground">Password Protected</h2>
  <p className="text-foreground mt-2">This shared result requires a password to view.</p>
@@ -431,10 +430,7 @@ export default function SharedTestRunPage() {
  >
  {authenticating ? (
  <>
- <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
- </svg>
+ <Loader2 className="w-4 h-4 animate-spin" />
  Verifying...
  </>
  ) : (
@@ -471,9 +467,7 @@ export default function SharedTestRunPage() {
  <div className="bg-card rounded-xl shadow-lg border border-border p-8 max-w-lg w-full text-center">
  {/* Expired Icon */}
  <div className="w-20 h-20 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-6">
- <svg className="w-10 h-10 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <Clock className="w-10 h-10 text-warning" />
  </div>
 
  {/* Title */}
@@ -489,9 +483,7 @@ export default function SharedTestRunPage() {
  {/* Expiration Details Card */}
  <div className="bg-muted rounded-lg p-4 mb-6">
  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-2">
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
- </svg>
+ <Calendar className="w-4 h-4" />
  <span>Expiration Date</span>
  </div>
  <div className="text-lg font-semibold text-foreground">
@@ -511,9 +503,7 @@ export default function SharedTestRunPage() {
  {/* Option 1: Contact Owner */}
  <div className="flex items-start gap-3 text-left p-3 bg-primary/5 border border-primary/20 rounded-lg">
  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
- <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
- </svg>
+ <Mail className="w-4 h-4 text-primary" />
  </div>
  <div className="flex-1">
  <div className="font-medium text-foreground text-sm">Contact the Link Owner</div>
@@ -529,9 +519,7 @@ export default function SharedTestRunPage() {
  className="inline-flex items-center gap-1 text-primary hover:text-primary text-sm mt-2 font-medium"
  >
  <span>Send Email Request</span>
- <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
- </svg>
+ <ExternalLink className="w-3 h-3" />
  </a>
  )}
  </div>
@@ -540,9 +528,7 @@ export default function SharedTestRunPage() {
  {/* Option 2: Sign In */}
  <div className="flex items-start gap-3 text-left p-3 bg-muted rounded-lg">
  <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
- <svg className="w-4 h-4 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
- </svg>
+ <LogIn className="w-4 h-4 text-foreground" />
  </div>
  <div className="flex-1">
  <div className="font-medium text-foreground text-sm">Sign In to QA Guardian</div>
@@ -778,9 +764,7 @@ export default function SharedTestRunPage() {
  <div className="bg-card rounded-xl shadow-sm border border-border p-6 mt-8">
  <div className="flex items-center justify-between mb-6">
  <div className="flex items-center gap-3">
- <svg className="w-6 h-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
- </svg>
+ <Image className="w-6 h-6 text-muted-foreground" />
  <h3 className="text-lg font-semibold text-foreground">Screenshots Gallery</h3>
  <span className="px-2 py-0.5 bg-muted text-foreground text-sm rounded">
  {galleryScreenshots.length} screenshots
@@ -855,9 +839,7 @@ export default function SharedTestRunPage() {
  className="absolute top-4 right-4 text-white/80 hover:text-white p-2 z-10"
  aria-label="Close"
  >
- <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
+ <X className="w-8 h-8" />
  </button>
 
  {/* Navigation - Previous */}
@@ -870,9 +852,7 @@ export default function SharedTestRunPage() {
  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 bg-black/30 rounded-full hover:bg-black/50 transition-colors"
  aria-label="Previous screenshot"
  >
- <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
- </svg>
+ <ChevronLeft className="w-8 h-8" />
  </button>
  )}
 
@@ -886,9 +866,7 @@ export default function SharedTestRunPage() {
  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 bg-black/30 rounded-full hover:bg-black/50 transition-colors"
  aria-label="Next screenshot"
  >
- <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
- </svg>
+ <ChevronRight className="w-8 h-8" />
  </button>
  )}
 
@@ -941,9 +919,7 @@ export default function SharedTestRunPage() {
  {/* Feature #2003: Read-only notice */}
  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mt-6">
  <div className="flex items-center gap-3">
- <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <Info className="w-5 h-5 text-primary" />
  <p className="text-sm text-primary">
  This is a read-only view. Sign in to access full test management features.
  </p>

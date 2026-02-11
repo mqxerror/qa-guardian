@@ -1,6 +1,7 @@
 /**
  * ProjectModals - All modal components for ProjectDetailPage
  * Feature #49: Extracted to reduce ProjectDetailPage line count
+ * Feature #637: Migrated to use Modal component from ui/Modal
  *
  * Contains:
  * - Add Environment Variable Modal
@@ -11,6 +12,8 @@
  * - Edit Selector Modal
  */
 import React from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
+import { Key, ShoppingCart, ShieldCheck, Pencil, X, Eye, CheckCircle, Loader2 } from 'lucide-react';
 import {
  OrgMember,
  // SlackChannel, // Unused
@@ -130,20 +133,29 @@ export function ProjectModals({
  handleUpdateSelector, handleAcceptHealed, handleHealWithVision,
  } = settingsHandlers;
 
+ const handleCloseEnvModal = () => {
+ setShowAddEnvModal(false);
+ setNewEnvKey('');
+ setNewEnvValue('');
+ setNewEnvIsSecret(false);
+ setAddEnvError('');
+ };
+
  return (
  <>
  {/* Add Environment Variable Modal */}
- {showAddEnvModal && (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) => e.target === e.currentTarget && setShowAddEnvModal(false)}
+ <Modal
+ isOpen={showAddEnvModal}
+ onClose={handleCloseEnvModal}
+ title="Add Environment Variable"
+ size="md"
  >
- <div role="dialog" aria-modal="true" aria-labelledby="add-env-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
- <h3 id="add-env-title" className="text-lg font-semibold text-foreground">Add Environment Variable</h3>
- <p className="mt-1 text-sm text-muted-foreground">
+ <ModalHeader onClose={handleCloseEnvModal}>Add Environment Variable</ModalHeader>
+ <ModalBody>
+ <p className="text-sm text-muted-foreground mb-4">
  Add a variable that can be used in your tests.
  </p>
- <form onSubmit={handleAddEnvVar} className="mt-4 space-y-4">
+ <form id="add-env-form" onSubmit={handleAddEnvVar} className="space-y-4">
  {addEnvError && (
  <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
  {addEnvError}
@@ -193,42 +205,37 @@ export function ProjectModals({
  Mark as secret (value will be masked)
  </label>
  </div>
- <div className="flex justify-end gap-3 pt-2">
+ </form>
+ </ModalBody>
+ <ModalFooter>
  <button
  type="button"
- onClick={() => {
- setShowAddEnvModal(false);
- setNewEnvKey('');
- setNewEnvValue('');
- setNewEnvIsSecret(false);
- setAddEnvError('');
- }}
+ onClick={handleCloseEnvModal}
  className="rounded-md px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
  >
  Cancel
  </button>
  <button
  type="submit"
+ form="add-env-form"
  disabled={isAddingEnv}
  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
  >
  {isAddingEnv ? 'Adding...' : 'Add Variable'}
  </button>
- </div>
- </form>
- </div>
- </div>
- )}
+ </ModalFooter>
+ </Modal>
 
  {/* Delete Project Modal */}
- {showDeleteModal && (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) => e.target === e.currentTarget && setShowDeleteModal(false)}
+ <Modal
+ isOpen={showDeleteModal}
+ onClose={() => setShowDeleteModal(false)}
+ title="Delete Project"
+ size="md"
  >
- <div role="dialog" aria-modal="true" aria-labelledby="delete-project-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
- <h3 id="delete-project-title" className="text-lg font-semibold text-foreground">Delete Project</h3>
- <p className="mt-2 text-muted-foreground">
+ <ModalHeader onClose={() => setShowDeleteModal(false)}>Delete Project</ModalHeader>
+ <ModalBody>
+ <p className="text-muted-foreground">
  Are you sure you want to delete "{project?.name}"? This action cannot be undone and will delete all test suites and tests within this project.
  </p>
  {deleteError && (
@@ -236,7 +243,8 @@ export function ProjectModals({
  {deleteError}
  </div>
  )}
- <div className="mt-6 flex justify-end gap-3">
+ </ModalBody>
+ <ModalFooter>
  <button
  onClick={() => setShowDeleteModal(false)}
  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
@@ -251,29 +259,28 @@ export function ProjectModals({
  >
  {isDeleting ? 'Deleting...' : 'Delete Project'}
  </button>
- </div>
- </div>
- </div>
- )}
+ </ModalFooter>
+ </Modal>
 
  {/* Create Alert Modal */}
- {showCreateAlertModal && (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) => e.target === e.currentTarget && setShowCreateAlertModal(false)}
+ <Modal
+ isOpen={showCreateAlertModal}
+ onClose={() => setShowCreateAlertModal(false)}
+ title={`Create ${newAlertType === 'email' ? 'Email' : newAlertType === 'slack' ? 'Slack' : 'Webhook'} Alert`}
+ size="md"
  >
- <div role="dialog" aria-modal="true" aria-labelledby="create-alert-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
- <h3 id="create-alert-title" className="text-lg font-semibold text-foreground">
+ <ModalHeader onClose={() => setShowCreateAlertModal(false)}>
  Create {newAlertType === 'email' ? 'Email' : newAlertType === 'slack' ? 'Slack' : 'Webhook'} Alert
- </h3>
- <p className="mt-1 text-sm text-muted-foreground">
+ </ModalHeader>
+ <ModalBody>
+ <p className="text-sm text-muted-foreground mb-4">
  {newAlertType === 'email'
  ? 'Get notified by email when tests fail in this project.'
  : newAlertType === 'slack'
  ? 'Post test failure alerts to your Slack channel.'
  : 'Send test failure data to your webhook endpoint.'}
  </p>
- <form onSubmit={handleCreateAlert} className="mt-4 space-y-4">
+ <form id="create-alert-form" onSubmit={handleCreateAlert} className="space-y-4">
  {createAlertError && (
  <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
  {createAlertError}
@@ -404,7 +411,9 @@ export function ProjectModals({
  <p className="text-xs text-muted-foreground -mt-2">
  If enabled, alerts won't be sent when tests initially fail but pass after retrying.
  </p>
- <div className="flex justify-end gap-3 pt-2">
+ </form>
+ </ModalBody>
+ <ModalFooter>
  <button
  type="button"
  onClick={() => setShowCreateAlertModal(false)}
@@ -414,29 +423,28 @@ export function ProjectModals({
  </button>
  <button
  type="submit"
+ form="create-alert-form"
  disabled={isCreatingAlert}
  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
  >
  {isCreatingAlert ? 'Creating...' : 'Create Alert'}
  </button>
- </div>
- </form>
- </div>
- </div>
- )}
+ </ModalFooter>
+ </Modal>
 
  {/* Add Member Modal */}
- {showAddMemberModal && (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) => e.target === e.currentTarget && setShowAddMemberModal(false)}
+ <Modal
+ isOpen={showAddMemberModal}
+ onClose={() => setShowAddMemberModal(false)}
+ title="Add Member to Project"
+ size="md"
  >
- <div role="dialog" aria-modal="true" aria-labelledby="add-member-title" className="w-full max-w-md rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
- <h3 id="add-member-title" className="text-lg font-semibold text-foreground">Add Member to Project</h3>
- <p className="mt-1 text-sm text-muted-foreground">
+ <ModalHeader onClose={() => setShowAddMemberModal(false)}>Add Member to Project</ModalHeader>
+ <ModalBody>
+ <p className="text-sm text-muted-foreground mb-4">
  Grant a team member access to this project.
  </p>
- <form onSubmit={handleAddMember} className="mt-4 space-y-4">
+ <form id="add-member-form" onSubmit={handleAddMember} className="space-y-4">
  {addMemberError && (
  <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
  {addMemberError}
@@ -480,7 +488,9 @@ export function ProjectModals({
  <option value="viewer">Viewer - Read-only access</option>
  </select>
  </div>
- <div className="flex justify-end gap-3 pt-2">
+ </form>
+ </ModalBody>
+ <ModalFooter>
  <button
  type="button"
  onClick={() => setShowAddMemberModal(false)}
@@ -490,28 +500,26 @@ export function ProjectModals({
  </button>
  <button
  type="submit"
+ form="add-member-form"
  disabled={isAddingMember || !selectedUserId}
  className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
  >
  {isAddingMember ? 'Adding...' : 'Add Member'}
  </button>
- </div>
- </form>
- </div>
- </div>
- )}
+ </ModalFooter>
+ </Modal>
 
  {/* Create Suite Modal - Feature #491: Added Quick Start templates */}
- {showCreateSuiteModal && (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) => e.target === e.currentTarget && setShowCreateSuiteModal(false)}
+ <Modal
+ isOpen={showCreateSuiteModal}
+ onClose={() => setShowCreateSuiteModal(false)}
+ title="Create Test Suite"
+ size="lg"
  >
- <div role="dialog" aria-modal="true" aria-labelledby="create-suite-title" className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
- <h3 id="create-suite-title" className="text-lg font-semibold text-foreground">Create Test Suite</h3>
-
+ <ModalHeader onClose={() => setShowCreateSuiteModal(false)}>Create Test Suite</ModalHeader>
+ <ModalBody>
  {/* Feature #491: Quick Start Templates */}
- <div className="mt-4">
+ <div className="mb-4">
  <p className="text-sm font-medium text-muted-foreground mb-3">Quick Start Templates</p>
  <div className="grid grid-cols-3 gap-3">
  {/* Login Flow Template */}
@@ -528,9 +536,7 @@ export function ProjectModals({
  className="flex flex-col items-center gap-2 p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 hover:border-primary/50 transition-colors group"
  >
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
- <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
- <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
- </svg>
+ <Key className="h-5 w-5 text-primary" />
  </div>
  <span className="text-xs font-medium text-foreground text-center">Login Flow</span>
  <span className="text-[10px] text-muted-foreground">Desktop • 30s timeout</span>
@@ -550,9 +556,7 @@ export function ProjectModals({
  className="flex flex-col items-center gap-2 p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 hover:border-primary/50 transition-colors group"
  >
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10 group-hover:bg-success/20 transition-colors">
- <svg className="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
- <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
- </svg>
+ <ShoppingCart className="h-5 w-5 text-success" />
  </div>
  <span className="text-xs font-medium text-foreground text-center">E-commerce</span>
  <span className="text-[10px] text-muted-foreground">Desktop • 60s timeout</span>
@@ -572,9 +576,7 @@ export function ProjectModals({
  className="flex flex-col items-center gap-2 p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 hover:border-primary/50 transition-colors group"
  >
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10 group-hover:bg-accent/20 transition-colors">
- <svg className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
- <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
- </svg>
+ <ShieldCheck className="h-5 w-5 text-accent" />
  </div>
  <span className="text-xs font-medium text-foreground text-center">API Health</span>
  <span className="text-[10px] text-muted-foreground">Fast • 3 retries</span>
@@ -592,7 +594,7 @@ export function ProjectModals({
  </div>
  </div>
 
- <form onSubmit={handleCreateSuite} className="space-y-4">
+ <form id="create-suite-form" onSubmit={handleCreateSuite} className="space-y-4">
  {createSuiteError && (
  <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
  {createSuiteError}
@@ -740,7 +742,9 @@ export function ProjectModals({
  <p className="mt-1 text-xs text-muted-foreground">Retries on failure (0-5)</p>
  </div>
  </div>
- <div className="flex justify-end gap-3 pt-2">
+ </form>
+ </ModalBody>
+ <ModalFooter>
  <button
  type="button"
  onClick={() => setShowCreateSuiteModal(false)}
@@ -750,38 +754,32 @@ export function ProjectModals({
  </button>
  <button
  type="submit"
+ form="create-suite-form"
  disabled={isCreatingSuite}
  className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
  >
  {isCreatingSuite && (
- <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 aria-hidden="true" className="animate-spin h-4 w-4" />
  )}
  {isCreatingSuite ? 'Creating...' : 'Create Suite'}
  </button>
- </div>
- </form>
- </div>
- </div>
- )}
+ </ModalFooter>
+ </Modal>
 
  {/* Feature #1065: Edit Selector Modal for ProjectDetailPage */}
- {editSelectorModal.isOpen && (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
- onClick={(e) => e.target === e.currentTarget && !isSubmittingSelector && setEditSelectorModal({
+ <Modal
+ isOpen={editSelectorModal.isOpen}
+ onClose={() => !isSubmittingSelector && setEditSelectorModal({
  isOpen: false, runId: '', testId: '', stepId: '', currentSelector: '', originalSelector: '', wasHealed: false,
  })}
+ title={editSelectorModal.wasHealed ? 'Edit Healed Selector' : 'Edit Selector'}
+ size="lg"
+ closeOnBackdrop={!isSubmittingSelector}
  >
- <div role="dialog" aria-modal="true" className="w-full max-w-lg rounded-lg bg-card p-6 shadow-lg max-h-[90vh] overflow-y-auto">
- <div className="flex items-center justify-between mb-4">
+ <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border">
  <div className="flex items-center gap-2">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
- <svg className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
- </svg>
+ <Pencil className="h-5 w-5 text-accent" />
  </div>
  <div>
  <h3 className="text-lg font-semibold text-foreground">
@@ -799,12 +797,11 @@ export function ProjectModals({
  className="text-muted-foreground hover:text-foreground"
  disabled={isSubmittingSelector}
  >
- <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
+ <X className="h-5 w-5" />
  </button>
  </div>
 
+ <ModalBody>
  {/* Feature #1347: Vision Healing Button */}
  <div className="mb-4">
  <button
@@ -814,18 +811,12 @@ export function ProjectModals({
  >
  {isHealingWithVision ? (
  <>
- <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 className="animate-spin h-4 w-4" />
  Analyzing with Vision AI...
  </>
  ) : (
  <>
- <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
- <circle cx="12" cy="12" r="3"/>
- </svg>
+ <Eye className="w-4 h-4" />
  Heal with Vision AI
  </>
  )}
@@ -894,10 +885,7 @@ export function ProjectModals({
  {/* Auto-heal recommendation */}
  {visionHealingResult.auto_heal_recommended && (
  <div className="mt-2 p-2 bg-success/10 rounded text-xs text-success flex items-center gap-1">
- <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
- <polyline points="22 4 12 14.01 9 11.01"/>
- </svg>
+ <CheckCircle className="w-3.5 h-3.5" />
  Auto-heal recommended - High confidence best practice selector
  </div>
  )}
@@ -954,7 +942,7 @@ export function ProjectModals({
  </div>
 
  {/* Apply to Test Definition Checkbox */}
- <div className="mb-6">
+ <div>
  <label className="flex items-center gap-2 cursor-pointer">
  <input
  type="checkbox"
@@ -968,9 +956,9 @@ export function ProjectModals({
  If checked, the new selector will be saved to the test so future runs use it
  </p>
  </div>
+ </ModalBody>
 
- {/* Action Buttons */}
- <div className="flex justify-end gap-3">
+ <ModalFooter>
  <button
  onClick={() => {
  setEditSelectorModal({
@@ -1000,20 +988,15 @@ export function ProjectModals({
  >
  {isSubmittingSelector ? (
  <span className="flex items-center gap-2">
- <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 className="animate-spin h-4 w-4" />
  Saving...
  </span>
  ) : (
  'Save Changes'
  )}
  </button>
- </div>
- </div>
- </div>
- )}
+ </ModalFooter>
+ </Modal>
  </>
  );
 }

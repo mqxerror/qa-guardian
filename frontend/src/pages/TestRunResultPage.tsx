@@ -25,7 +25,7 @@ import {
  useReducedMotion,
 } from '../components/ui';
 // Feature #571: Added Lucide icons to replace emoji in tab navigation
-import { Download, RefreshCw, Share2, FlaskConical, ListOrdered, Camera, BarChart3, Globe, Eye, Accessibility, ScrollText } from 'lucide-react';
+import { Download, RefreshCw, Share2, FlaskConical, ListOrdered, Camera, BarChart3, Globe, Eye, Accessibility, ScrollText, Loader2, Frown, Lock, Server, WifiOff, AlertTriangle, ArrowLeft, Info } from 'lucide-react';
 import { useMetricsState } from '../hooks/useMetricsState';
 import { useNetworkAnalysisState } from '../hooks/useNetworkAnalysisState';
 import { useAccessibilityState, AccessibilityData } from '../hooks/useAccessibilityState';
@@ -994,10 +994,7 @@ export default function TestRunResultPage() {
  return (
  <div className="flex items-center justify-center min-h-[400px]">
  <div className="text-center">
- <svg className="animate-spin h-8 w-8 mx-auto text-primary mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 className="animate-spin h-8 w-8 mx-auto text-primary mb-4" />
  <p className="text-muted-foreground">Loading run details...</p>
  </div>
  </div>
@@ -1017,25 +1014,15 @@ export default function TestRunResultPage() {
  {/* Error Icon */}
  <div className="mb-4">
  {isNotFound ? (
- <svg className="w-16 h-16 mx-auto text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <Frown className="w-16 h-16 mx-auto text-destructive" strokeWidth={1.5} />
  ) : isPermission ? (
- <svg className="w-16 h-16 mx-auto text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
- </svg>
+ <Lock className="w-16 h-16 mx-auto text-destructive" strokeWidth={1.5} />
  ) : isServer ? (
- <svg className="w-16 h-16 mx-auto text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
- </svg>
+ <Server className="w-16 h-16 mx-auto text-destructive" strokeWidth={1.5} />
  ) : isNetwork ? (
- <svg className="w-16 h-16 mx-auto text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
- </svg>
+ <WifiOff className="w-16 h-16 mx-auto text-destructive" strokeWidth={1.5} />
  ) : (
- <svg className="w-16 h-16 mx-auto text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
- </svg>
+ <AlertTriangle className="w-16 h-16 mx-auto text-destructive" strokeWidth={1.5} />
  )}
  </div>
 
@@ -1061,9 +1048,7 @@ export default function TestRunResultPage() {
  onClick={() => setRetryTrigger(prev => prev + 1)}
  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
  >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
- </svg>
+ <RefreshCw className="w-4 h-4" />
  Try Again
  </button>
  )}
@@ -1071,9 +1056,7 @@ export default function TestRunResultPage() {
  onClick={() => navigate(-1)}
  className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-md text-foreground hover:bg-muted transition-colors"
  >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
- </svg>
+ <ArrowLeft className="w-4 h-4" />
  Go Back
  </button>
  </div>
@@ -1142,9 +1125,7 @@ export default function TestRunResultPage() {
  }`}
  title="Compare with previous runs"
  >
- <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
- </svg>
+ <BarChart3 className="h-5 w-5" />
  Compare
  </button>
  )}
@@ -1154,18 +1135,14 @@ export default function TestRunResultPage() {
  className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-md text-foreground hover:bg-muted transition-all"
  title="Export test results"
  >
- <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
- </svg>
+ <Download className="h-5 w-5" />
  Export
  </button>
  {/* Feature #1962: AI button removed - AI analysis now only on Visual Review page */}
  {/* Feature #1951: Show tip for simple known errors (no AI cost) */}
  {run.status !== 'passed' && errorAnalysis.isSimple && (
  <div className="flex items-center gap-2 px-4 py-2 bg-warning/5 border border-warning/20 rounded-md text-sm">
- <svg className="h-5 w-5 text-warning flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <Info className="h-5 w-5 text-warning flex-shrink-0" />
  <span className="text-warning">
  <strong>Tip:</strong> {errorAnalysis.tip}
  </span>

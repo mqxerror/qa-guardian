@@ -7,6 +7,7 @@ import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
+import { Loader2, FileText, CheckCircle, Download, Check, AlertTriangle } from 'lucide-react';
 
 // Types
 interface SbomSummary {
@@ -286,17 +287,12 @@ export function SbomPage() {
               >
                 {generateMutation.isPending ? (
                   <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
+                    <Loader2 className="animate-spin h-4 w-4" />
                     Generating...
                   </>
                 ) : (
                   <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                    <FileText className="w-4 h-4" />
                     Generate SBOM
                   </>
                 )}
@@ -316,18 +312,14 @@ export function SbomPage() {
           <div className="bg-card rounded-lg border border-border p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-success flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <CheckCircle className="w-5 h-5" />
                 SBOM Generated Successfully
               </h3>
               <button
                 onClick={() => handleDownload(generatedSbom.sbom_id, generatedSbom.download.filename)}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
+                <Download className="w-4 h-4" />
                 Download
               </button>
             </div>
@@ -367,13 +359,9 @@ export function SbomPage() {
                   : 'bg-warning/10 text-warning'
               }`}>
                 {generatedSbom.compliance?.executive_order_14028 ? (
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
+                  <Check className="w-3 h-3" />
                 ) : (
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
+                  <AlertTriangle className="w-3 h-3" />
                 )}
                 EO 14028
               </span>
@@ -383,13 +371,9 @@ export function SbomPage() {
                   : 'bg-warning/10 text-warning'
               }`}>
                 {generatedSbom.compliance?.ntia_minimum_elements ? (
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
+                  <Check className="w-3 h-3" />
                 ) : (
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
+                  <AlertTriangle className="w-3 h-3" />
                 )}
                 NTIA Minimum
               </span>
@@ -441,9 +425,7 @@ export function SbomPage() {
               </div>
             ) : !sbomList || sbomList.sboms.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <svg className="mx-auto h-12 w-12 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+                <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
                 <p>No SBOMs generated yet for this project.</p>
                 <p className="text-sm">Generate your first SBOM using the form above.</p>
               </div>
@@ -481,14 +463,9 @@ export function SbomPage() {
                             className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 transition-colors"
                           >
                             {downloadingId === sbom.id ? (
-                              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                              </svg>
+                              <Loader2 className="animate-spin h-3 w-3" />
                             ) : (
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                              </svg>
+                              <Download className="w-3 h-3" />
                             )}
                             Download
                           </button>
