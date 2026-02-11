@@ -4,9 +4,11 @@
  * Feature #31: Save as Template support
  * Feature #37: Optional step support for cookie consent handling
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #634: Migrated to Modal/ModalBody/ModalFooter
  */
 
 import React from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 import { RecordingStep } from '../useSuiteState';
 
 interface ReviewRecordedTestModalProps {
@@ -71,34 +73,20 @@ export function ReviewRecordedTestModal({
  };
 
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
- onMouseDown={(e) => {
- if (e.target === e.currentTarget) {
- onClose();
- }
- }}
- >
- <div
- role="dialog"
- aria-modal="true"
- aria-labelledby="review-recorded-test-modal-title"
- className="w-full max-w-2xl rounded-xl border border-border bg-card p-4 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
- onClick={(e) => e.stopPropagation()}
- >
- {/* Header */}
- <div className="flex items-center gap-3 mb-4">
+ <Modal isOpen onClose={onClose} title="Review Recorded Test" size="xl">
+ {/* Custom Header with icon */}
+ <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
  <span className="text-xl">✅</span>
  </div>
  <div>
- <h3 id="review-recorded-test-modal-title" className="text-lg font-semibold text-foreground">Review Recorded Test</h3>
+ <h3 className="text-lg font-semibold text-foreground">Review Recorded Test</h3>
  <p className="text-sm text-muted-foreground">
  Review the recorded steps, give your test a name, and save it to the suite.
  </p>
  </div>
  </div>
-
+ <ModalBody>
  {/* Recording Summary Stats */}
  <div className="grid grid-cols-3 gap-3 mb-5">
  <div className="rounded-lg border border-border bg-muted/30 p-3 text-center">
@@ -302,8 +290,9 @@ export function ReviewRecordedTestModal({
  </button>
  </div>
  </div>
-
- <div className="flex justify-end gap-2 pt-4 border-t border-border">
+ </div>
+ </ModalBody>
+ <ModalFooter>
  <button
  onClick={handleDiscard}
  className="rounded-lg border border-border px-4 py-2 font-medium text-foreground hover:bg-muted transition-colors"
@@ -317,10 +306,8 @@ export function ReviewRecordedTestModal({
  >
  {isSavingRecordedTest ? 'Saving...' : '💾 Save Test'}
  </button>
- </div>
- </div>
- </div>
- </div>
+ </ModalFooter>
+ </Modal>
  );
 }
 

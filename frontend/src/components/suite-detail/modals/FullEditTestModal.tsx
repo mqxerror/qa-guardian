@@ -1,13 +1,15 @@
 /**
  * FullEditTestModal Component
  * Feature #595: Full-featured Edit Test modal
+ * Feature #634: Migrated to Modal/ModalBody/ModalFooter
  *
  * A comprehensive test editing modal that allows modifying all test configuration
  * fields, shows a diff preview of changes, and saves via PATCH /api/v1/tests/:id
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { X, Save, AlertCircle, Eye, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Save, AlertCircle, Eye, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 import type { TestType as Test, TestStep } from '../types';
 import { E2EConfig, type E2EConfigState, type BrowserType } from '../../create-test/config/E2EConfig';
 import { VisualConfig, type VisualConfigState } from '../../create-test/config/VisualConfig';
@@ -295,37 +297,19 @@ export const FullEditTestModal: React.FC<FullEditTestModalProps> = ({
   const testType = test.type || test.test_type;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="edit-test-title"
-        className="w-full max-w-2xl bg-card rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <div>
-            <h2 id="edit-test-title" className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <Edit2 className="w-5 h-5 text-primary" />
-              Edit Test
-            </h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {TEST_TYPE_LABELS[testType || ''] || testType}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            disabled={isSaving}
-            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <Modal isOpen onClose={onClose} title="Edit Test" size="xl" closeOnBackdrop={!isSaving}>
+      {/* Custom Header with icon */}
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
+        <Edit2 className="w-5 h-5 text-primary" />
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Edit Test</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {TEST_TYPE_LABELS[testType || ''] || testType}
+          </p>
         </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Basic Fields */}
+      </div>
+      <ModalBody className="space-y-6">
+        {/* Basic Fields */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-foreground">Basic Information</h3>
 
@@ -642,7 +626,7 @@ export const FullEditTestModal: React.FC<FullEditTestModalProps> = ({
                       <span className="font-medium text-foreground">{change.label}:</span>
                       <div className="ml-4 flex flex-col gap-1">
                         <span className="text-destructive line-through">- {change.oldValue || '(empty)'}</span>
-                        <span className="text-green-600 dark:text-green-400">+ {change.newValue || '(empty)'}</span>
+                        <span className="text-success">+ {change.newValue || '(empty)'}</span>
                       </div>
                     </div>
                   ))}
@@ -658,10 +642,9 @@ export const FullEditTestModal: React.FC<FullEditTestModalProps> = ({
               <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/30">
+      </ModalBody>
+      <ModalFooter className="bg-muted/30">
+        <div className="flex items-center justify-between w-full">
           <div className="text-sm text-muted-foreground">
             {hasChanges ? (
               <span className="text-primary font-medium">{changes.length} unsaved change{changes.length !== 1 ? 's' : ''}</span>
@@ -698,8 +681,8 @@ export const FullEditTestModal: React.FC<FullEditTestModalProps> = ({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+      </ModalFooter>
+    </Modal>
   );
 };
 

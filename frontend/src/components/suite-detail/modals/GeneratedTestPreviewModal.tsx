@@ -5,9 +5,11 @@
  * Feature #1153: Confidence Score Display
  * Feature #1163: Diff View and Regeneration
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #634: Migrated to Modal/ModalBody/ModalFooter
  */
 
 import React, { useState } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 import { GeneratedTestPreview } from '../useModalState';
 import { calculateTestConfidence, extractUrlFromText } from '../utils';
 import { CodeDiffView } from '../../diff';
@@ -153,40 +155,16 @@ export function GeneratedTestPreviewModal({
  };
 
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
- onMouseDown={(e) => {
- if (e.target === e.currentTarget) {
- onClose();
- }
- }}
- >
- <div
- role="dialog"
- aria-modal="true"
- className="w-full max-w-4xl rounded-lg bg-card p-4 sm:p-6 shadow-lg max-h-[90vh] overflow-y-auto"
- onClick={(e) => e.stopPropagation()}
- >
- {/* Header */}
- <div className="flex items-center justify-between mb-4">
- <div className="flex items-center gap-3">
+ <Modal isOpen onClose={onClose} title="Generated Playwright Test" size="full" closeOnBackdrop={!isRegenerating}>
+ {/* Custom Header with icon */}
+ <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <span className="text-2xl">✨</span>
  <div>
  <h3 className="text-lg font-semibold text-foreground">Generated Playwright Test</h3>
  <p className="text-sm text-muted-foreground">Review the generated code before saving</p>
  </div>
  </div>
- <button
- type="button"
- onClick={onClose}
- className="p-1 rounded-md hover:bg-muted text-muted-foreground"
- >
- <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
- <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
- </svg>
- </button>
- </div>
-
+ <ModalBody>
  {/* Status Badges */}
  <div className="flex flex-wrap gap-2 mb-4">
  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-sm rounded-full font-medium ${
@@ -458,9 +436,8 @@ export function GeneratedTestPreviewModal({
  </p>
  )}
  </div>
-
- {/* Actions */}
- <div className="flex justify-end gap-3 pt-2 border-t border-border">
+ </ModalBody>
+ <ModalFooter>
  <button
  type="button"
  onClick={handleCancel}
@@ -476,9 +453,8 @@ export function GeneratedTestPreviewModal({
  <span>✨</span>
  Use This Test
  </button>
- </div>
- </div>
- </div>
+ </ModalFooter>
+ </Modal>
  );
 }
 

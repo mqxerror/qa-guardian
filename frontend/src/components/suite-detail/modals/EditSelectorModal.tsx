@@ -3,9 +3,11 @@
  * Feature #50: Extract modals from TestSuitePage.tsx
  * Feature #1065: Edit selector modal for TestSuitePage
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #634: Migrated to Modal/ModalBody/ModalFooter
  */
 
 import React from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 
 export interface EditSelectorModalState {
  isOpen: boolean;
@@ -46,43 +48,25 @@ export function EditSelectorModal({
 }: EditSelectorModalProps) {
  if (!modalState.isOpen) return null;
 
+ const title = modalState.wasHealed ? 'Edit Healed Selector' : 'Edit Selector';
+
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
- onMouseDown={(e) => {
- if (e.target === e.currentTarget && !isSubmitting) {
- onClose();
- }
- }}
- >
- <div role="dialog" aria-modal="true" className="w-full max-w-lg rounded-lg bg-card p-4 sm:p-6 shadow-lg max-h-[90vh] overflow-y-auto">
- <div className="flex items-center justify-between mb-4">
- <div className="flex items-center gap-2">
+ <Modal isOpen onClose={onClose} title={title} size="lg" closeOnBackdrop={!isSubmitting}>
+ {/* Custom Header with icon */}
+ <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
  <svg className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
  </svg>
  </div>
  <div>
- <h3 className="text-lg font-semibold text-foreground">
- {modalState.wasHealed ? 'Edit Healed Selector' : 'Edit Selector'}
- </h3>
+ <h3 className="text-lg font-semibold text-foreground">{title}</h3>
  <p className="text-xs text-muted-foreground">
  {modalState.wasHealed ? 'Modify or accept the AI-healed selector' : 'Manually update the selector'}
  </p>
  </div>
  </div>
- <button
- onClick={onClose}
- className="text-muted-foreground hover:text-foreground"
- disabled={isSubmitting}
- >
- <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
- </button>
- </div>
-
+ <ModalBody>
  {/* Original Selector */}
  <div className="mb-4 p-3 bg-muted/50 rounded-md">
  <div className="text-xs font-medium text-muted-foreground mb-1">Original Selector</div>
@@ -133,7 +117,7 @@ export function EditSelectorModal({
  </div>
 
  {/* Apply to Test Definition Checkbox */}
- <div className="mb-6">
+ <div>
  <label className="flex items-center gap-2 cursor-pointer">
  <input
  type="checkbox"
@@ -147,9 +131,8 @@ export function EditSelectorModal({
  If checked, the new selector will be saved to the test so future runs use it
  </p>
  </div>
-
- {/* Action Buttons */}
- <div className="flex justify-end gap-3">
+ </ModalBody>
+ <ModalFooter>
  <button
  onClick={onClose}
  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
@@ -183,9 +166,8 @@ export function EditSelectorModal({
  'Save Changes'
  )}
  </button>
- </div>
- </div>
- </div>
+ </ModalFooter>
+ </Modal>
  );
 }
 

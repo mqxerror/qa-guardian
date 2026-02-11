@@ -2,9 +2,11 @@
  * ImportTestsModal Component
  * Feature #50: Extract modals from TestSuitePage.tsx
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #634: Migrated to Modal/ModalBody/ModalFooter
  */
 
 import React, { useRef } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 
 interface ImportTestsModalProps {
   importError: string;
@@ -22,23 +24,9 @@ export function ImportTestsModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="import-tests-title"
-        className="w-full max-w-md rounded-lg border border-border bg-card p-4 sm:p-6 shadow-lg max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 id="import-tests-title" className="text-lg font-semibold text-foreground">Import Tests</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
+    <Modal isOpen onClose={onClose} title="Import Tests" size="md" closeOnBackdrop={!isImporting}>
+      <ModalBody>
+        <p className="text-sm text-muted-foreground">
           Upload a JSON file with test definitions or Playwright test files.
         </p>
 
@@ -79,17 +67,16 @@ export function ImportTestsModal({
             <strong>JSON Format:</strong> Array of objects with "name" and optional "description", "steps" fields.
           </p>
         </div>
-
-        <div className="mt-4 flex justify-end">
-          <button
-            onClick={onClose}
-            className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <button
+          onClick={onClose}
+          className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+        >
+          Cancel
+        </button>
+      </ModalFooter>
+    </Modal>
   );
 }
 
