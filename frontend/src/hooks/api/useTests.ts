@@ -11,13 +11,30 @@ import { suiteKeys } from './useSuites';
 import { fetchWithAuth } from './fetchWithAuth'; // Feature #655: Shared auth fetch
 
 // Types
+/**
+ * Canonical TestStep interface
+ * Feature #657: Consolidated from 5 duplicate definitions across the codebase
+ *
+ * Core field (required): action
+ * Everything else is optional to support different contexts
+ */
 export interface TestStep {
-  id: string;
-  order: number;
+  id?: string;
+  order?: number;
   action: string;
   selector?: string;
+  target?: string;  // Alternative to selector (used in test-list)
   value?: string;
   description?: string;
+  optional?: boolean;
+  timeout?: number;
+  // Accessibility fields (from TestStepsTab)
+  checkpointName?: string;
+  checkpointThreshold?: number;
+  a11y_wcag_level?: string;
+  a11y_fail_on_any?: boolean;
+  a11y_fail_on_critical?: boolean;
+  a11y_threshold?: number;
 }
 
 export interface Test {

@@ -5,6 +5,9 @@
 
 // Feature #656: Import canonical TestSuite from shared location
 export { type TestSuite } from '../../hooks/api/useSuites';
+// Feature #657: Import canonical TestStep from shared location
+import { type TestStep } from '../../hooks/api/useTests';
+export { type TestStep };
 
 // Test type - the individual test within a suite
 export interface TestType {
@@ -89,14 +92,6 @@ export interface IgnoreRegion {
   width: number;
   height: number;
   name?: string;
-}
-
-export interface TestStep {
-  id: string;
-  action: string;
-  selector?: string;
-  value?: string;
-  description?: string;
 }
 
 // AI Copilot suggestion

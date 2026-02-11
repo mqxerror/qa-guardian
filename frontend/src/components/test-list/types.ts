@@ -11,11 +11,9 @@ export type ReviewStatus = 'pending_review' | 'approved' | 'rejected' | null;
 
 export type HealingStatus = 'pending' | 'applied' | 'rejected' | null;
 
-export interface TestStep {
-  action: string;
-  target: string;
-  value?: string;
-}
+// Feature #657: Import canonical TestStep from shared location
+import { type TestStep } from '../../hooks/api/useTests';
+export { type TestStep };
 
 export interface Test {
   id: string;

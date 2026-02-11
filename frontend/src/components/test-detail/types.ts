@@ -89,16 +89,9 @@ export interface Viewport {
   height: number;
 }
 
-// Test step
-export interface TestStep {
-  id?: string;
-  action: string;
-  selector?: string;
-  value?: string;
-  description?: string;
-  optional?: boolean;
-  timeout?: number;
-}
+// Feature #657: Import canonical TestStep from shared location
+import { type TestStep } from '../../hooks/api/useTests';
+export { type TestStep };
 
 // Test run type
 export interface TestRunType {

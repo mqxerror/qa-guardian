@@ -2,19 +2,8 @@
 import React from 'react';
 import { GripVertical, Eye, ShieldCheck } from 'lucide-react';
 import { TestType } from './types';
-
-interface TestStep {
- id: string;
- action: string;
- selector?: string;
- value?: string;
- checkpointName?: string;
- checkpointThreshold?: number;
- a11y_wcag_level?: string;
- a11y_fail_on_any?: boolean;
- a11y_fail_on_critical?: boolean;
- a11y_threshold?: number;
-}
+// Feature #657: Import canonical TestStep from shared location
+import { type TestStep } from '../../hooks/api/useTests';
 
 interface TestStepsTabProps {
  test: TestType | null;
