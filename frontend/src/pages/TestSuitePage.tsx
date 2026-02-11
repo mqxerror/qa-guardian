@@ -4,7 +4,7 @@
 // Feature #337: Dark-first design system redesign
 // Feature #525: Added suite health metrics with unified ScoreCard component
 // Feature #546: Replaced HTTP polling with WebSocket live streaming via useSuiteRunSocket
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { SkeletonTestSuitePage } from '../components/ui/Skeleton';
@@ -12,7 +12,8 @@ import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { getErrorMessage } from '../utils/errorHandling';
 import { UnifiedAIService } from '../services/UnifiedAIService';
-import { CreateTestModal } from '../components/create-test';
+// Feature #673: Lazy-load CreateTestModal for better initial page load
+const CreateTestModal = lazy(() => import('../components/create-test').then(m => ({ default: m.CreateTestModal })));
 import { ScoreCard } from '../components/ui/score-card';
 // Feature #580: Icons for AI health monitoring panel
 import { Sparkles, AlertTriangle, AlertCircle, Info, ChevronDown, ChevronUp, Loader2, TrendingUp, TrendingDown, Minus, Clock, ChevronRight } from 'lucide-react';
@@ -1592,34 +1593,39 @@ function TestSuitePage() {
         })()}
 
         {/* Feature #1800: New two-section Create Test Modal */}
-        <CreateTestModal
-          isOpen={showNewCreateTestModal}
-          onClose={() => setShowNewCreateTestModal(false)}
-          onTestCreated={async (test) => {
-            // Feature #59: Use React Query invalidation to refresh tests
-            invalidateBySuite(suiteId || '');
-            // Feature #1985: Handle Create & Run flow
-            if (test.runId) {
-              // Navigate to run details page after Create & Run
-              toast.success(`Test "${test.name}" created and running!`);
-              navigate(`/runs/${test.runId}`);
-            } else {
-              toast.success(`Test "${test.name}" created successfully!`);
-            }
-          }}
-          suiteId={suiteId || ''}
-          project={project ? {
-            id: project.id,
-            name: project.name,
-            baseUrl: project.base_url,
-          } : undefined}
-          suite={suite ? {
-            id: suite.id,
-            name: suite.name,
-            projectId: suite.project_id,
-          } : undefined}
-          token={token || undefined}
-        />
+        {/* Feature #673: Lazy-loaded for better initial page performance */}
+        {showNewCreateTestModal && (
+          <Suspense fallback={<div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+            <CreateTestModal
+              isOpen={showNewCreateTestModal}
+              onClose={() => setShowNewCreateTestModal(false)}
+              onTestCreated={async (test) => {
+                // Feature #59: Use React Query invalidation to refresh tests
+                invalidateBySuite(suiteId || '');
+                // Feature #1985: Handle Create & Run flow
+                if (test.runId) {
+                  // Navigate to run details page after Create & Run
+                  toast.success(`Test "${test.name}" created and running!`);
+                  navigate(`/runs/${test.runId}`);
+                } else {
+                  toast.success(`Test "${test.name}" created successfully!`);
+                }
+              }}
+              suiteId={suiteId || ''}
+              project={project ? {
+                id: project.id,
+                name: project.name,
+                baseUrl: project.base_url,
+              } : undefined}
+              suite={suite ? {
+                id: suite.id,
+                name: suite.name,
+                projectId: suite.project_id,
+              } : undefined}
+              token={token || undefined}
+            />
+          </Suspense>
+        )}
 
 
         {/* Legacy Create Test Modal removed - Feature #1816 */}
