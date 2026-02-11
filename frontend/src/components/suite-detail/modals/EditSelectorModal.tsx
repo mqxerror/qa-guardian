@@ -161,7 +161,7 @@ export function EditSelectorModal({
  <button
  onClick={onAcceptHealed}
  disabled={isSubmitting}
- className="rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50"
+ className="rounded-md bg-success px-4 py-2 text-sm font-medium text-success-foreground hover:bg-success disabled:opacity-50"
  >
  {isSubmitting ? 'Accepting...' : '✓ Accept Healed'}
  </button>

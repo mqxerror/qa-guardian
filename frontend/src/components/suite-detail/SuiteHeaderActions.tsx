@@ -51,7 +51,7 @@ export function SuiteHeaderActions({
         <button
           onClick={onRunSuite}
           disabled={isRunningSuite}
-          className="rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-md bg-success px-4 py-2 text-sm font-medium text-success-foreground hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isRunningSuite ? 'Running...' : 'Run Suite'}
         </button>
@@ -84,14 +84,14 @@ export function SuiteHeaderActions({
                 onClick={() => { onExportRunJSON(); setShowExportMenu(false); }}
                 className="w-full px-4 py-2.5 text-sm text-left hover:bg-muted flex items-center gap-2 transition-colors"
               >
-                <FileJson className="w-4 h-4 text-blue-500" />
+                <FileJson className="w-4 h-4 text-info" />
                 Export as JSON
               </button>
               <button
                 onClick={() => { onExportRunPDF(); setShowExportMenu(false); }}
                 className="w-full px-4 py-2.5 text-sm text-left hover:bg-muted flex items-center gap-2 transition-colors"
               >
-                <FileText className="w-4 h-4 text-red-500" />
+                <FileText className="w-4 h-4 text-destructive" />
                 Export as PDF
               </button>
             </div>
@@ -118,7 +118,7 @@ export function SuiteHeaderActions({
           </button>
           <button
             onClick={onShowRecordModal}
-            className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning/90"
+            className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90"
           >
             🎬 Record New Test
           </button>
@@ -134,7 +134,7 @@ export function SuiteHeaderActions({
       {canDeleteSuite && (
         <button
           onClick={onShowDeleteSuiteModal}
-          className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive"
+          className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive"
         >
           Delete Suite
         </button>

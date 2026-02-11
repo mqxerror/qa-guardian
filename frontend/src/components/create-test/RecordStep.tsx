@@ -13,6 +13,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Video, Circle, Square, Monitor, Smartphone, Tablet, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { useAuthStore } from '../../stores/authStore';
 import { DeviceSelect } from './shared/DeviceSelect';
 import { DeviceConfig } from '../test-modals/types';
 
@@ -51,8 +52,6 @@ export interface RecordStepProps {
   onChange?: (config: RecordConfig | null, isValid: boolean) => void;
   /** Project base URL for smart defaults */
   projectBaseUrl?: string;
-  /** Auth token */
-  token: string;
 }
 
 /**
@@ -94,8 +93,10 @@ export const RecordStep: React.FC<RecordStepProps> = ({
   onContinue: _onContinue,
   onChange,
   projectBaseUrl,
-  token,
 }) => {
+  // Get token from auth store instead of props
+  const { token } = useAuthStore();
+
   // Form state
   const [targetUrl, setTargetUrl] = useState(projectBaseUrl || '');
   const [testName, setTestName] = useState('');
@@ -357,7 +358,7 @@ export const RecordStep: React.FC<RecordStepProps> = ({
       {/* Header */}
       <div>
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <Video className="w-5 h-5 text-rose-500" />
+          <Video className="w-5 h-5 text-method-record" />
           Record Your Test
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
@@ -458,7 +459,7 @@ export const RecordStep: React.FC<RecordStepProps> = ({
           <button
             onClick={handleStartRecording}
             disabled={!targetUrl.trim() || isStarting}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600 disabled:from-muted disabled:to-muted text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-method-record hover:bg-method-record/90 disabled:bg-muted text-method-record-foreground font-medium rounded-lg transition-all shadow-md hover:shadow-lg disabled:cursor-not-allowed"
           >
             {isStarting ? (
               <>
@@ -639,7 +640,7 @@ export const RecordStep: React.FC<RecordStepProps> = ({
               {/* Stop button */}
               <button
                 onClick={handleStopRecording}
-                className="mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-destructive to-destructive hover:from-destructive/90 hover:to-destructive/90 text-white font-medium rounded-lg transition-all shadow-md"
+                className="mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-destructive to-destructive hover:from-destructive/90 hover:to-destructive/90 text-destructive-foreground font-medium rounded-lg transition-all shadow-md"
               >
                 <Square className="w-4 h-4 fill-current" />
                 Stop Recording

@@ -433,7 +433,7 @@ export function GeneratedTestPreviewModal({
  type="button"
  disabled={isRegenerating || regenerationFeedback.trim().length < 5}
  onClick={handleRegenerate}
- className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-warning text-white hover:bg-warning/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+ className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-warning text-warning-foreground hover:bg-warning/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
  >
  {isRegenerating ? (
  <>
@@ -471,7 +471,7 @@ export function GeneratedTestPreviewModal({
  <button
  type="button"
  onClick={handleUseTest}
- className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent/90"
+ className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-accent text-accent-foreground hover:bg-accent/90"
  >
  <span>✨</span>
  Use This Test

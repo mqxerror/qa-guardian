@@ -13,6 +13,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import { useAuthStore } from '../../stores/authStore';
 import { type TestTypeOption } from './shared';
 import { type DeviceConfig } from '../test-modals/types';
 // Feature #596: Schedule picker for Create & Schedule flow
@@ -171,8 +172,6 @@ export interface ReviewStepProps {
  config: WizardConfig;
  /** Suite ID for API call */
  suiteId: string;
- /** Auth token for API call */
- token: string;
  /** Called to go back and edit */
  onEdit: () => void;
  /** Called when test is successfully created */
@@ -182,16 +181,16 @@ export interface ReviewStepProps {
 }
 
 /**
- * Test type display configuration — safe color mappings (no dynamic Tailwind)
+ * Test type display configuration — Feature #614: Use semantic tokens
  */
 const TEST_TYPE_CONFIG: Record<TestTypeOption, { label: string; icon: string; iconBg: string; badgeCls: string }> = {
- e2e: { label: 'E2E Test', icon: '🔄', iconBg: 'bg-blue-100 dark:bg-blue-900/40', badgeCls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
- visual: { label: 'Visual Regression', icon: '📸', iconBg: 'bg-purple-100 dark:bg-purple-900/40', badgeCls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' },
- performance: { label: 'Performance', icon: '⚡', iconBg: 'bg-orange-100 dark:bg-orange-900/40', badgeCls: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' },
- load: { label: 'Load Test', icon: '📊', iconBg: 'bg-red-100 dark:bg-red-900/40', badgeCls: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
- accessibility: { label: 'Accessibility', icon: '♿', iconBg: 'bg-green-100 dark:bg-green-900/40', badgeCls: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
+ e2e: { label: 'E2E Test', icon: '🔄', iconBg: 'bg-method-manual/10', badgeCls: 'bg-method-manual/10 text-method-manual' },
+ visual: { label: 'Visual Regression', icon: '📸', iconBg: 'bg-method-ai/10', badgeCls: 'bg-method-ai/10 text-method-ai' },
+ performance: { label: 'Performance', icon: '⚡', iconBg: 'bg-warning/10', badgeCls: 'bg-warning/10 text-warning' },
+ load: { label: 'Load Test', icon: '📊', iconBg: 'bg-destructive/10', badgeCls: 'bg-destructive/10 text-destructive' },
+ accessibility: { label: 'Accessibility', icon: '♿', iconBg: 'bg-success/10', badgeCls: 'bg-success/10 text-success' },
  // Feature #591: Security test type
- security: { label: 'Security', icon: '🛡️', iconBg: 'bg-violet-100 dark:bg-violet-900/40', badgeCls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' },
+ security: { label: 'Security', icon: '🛡️', iconBg: 'bg-primary/10', badgeCls: 'bg-primary/10 text-primary' },
 };
 
 /**
@@ -236,11 +235,13 @@ type SubmissionPhase = 'creating' | 'running' | null;
 export const ReviewStep: React.FC<ReviewStepProps> = ({
  config,
  suiteId,
- token,
  onEdit,
  onSuccess,
  onError,
 }) => {
+ // Get token from auth store instead of props
+ const { token } = useAuthStore();
+
  const [isSubmitting, setIsSubmitting] = useState(false);
  const [submissionPhase, setSubmissionPhase] = useState<SubmissionPhase>(null);
  const [error, setError] = useState<string | null>(null);
@@ -978,7 +979,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  type="button"
  onClick={handleCreateAndRun}
  disabled={isSubmitting || !testType}
- className="flex-1 py-2.5 bg-success hover:bg-success/90 disabled:bg-muted/50 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
+ className="flex-1 py-2.5 bg-success hover:bg-success/90 disabled:bg-muted/50 text-success-foreground text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
  >
  {submissionPhase && !showSchedulePicker ? (
  <>

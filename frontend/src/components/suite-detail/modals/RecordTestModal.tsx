@@ -347,7 +347,7 @@ export function RecordTestModal({
               </button>
               <button
                 onClick={onStartRecording}
-                className="rounded-lg bg-gradient-to-r from-warning to-destructive px-5 py-2 font-medium text-white hover:from-warning/90 hover:to-destructive transition-all shadow-md hover:shadow-lg"
+                className="rounded-lg bg-gradient-to-r from-warning to-destructive px-5 py-2 font-medium text-destructive-foreground hover:from-warning/90 hover:to-destructive transition-all shadow-md hover:shadow-lg"
               >
                 ⏺ Start Recording
               </button>
@@ -373,7 +373,7 @@ export function RecordTestModal({
                 </div>
                 <button
                   onClick={() => onShowDebugOverlayChange(!showDebugOverlay)}
-                  className={`p-1 rounded text-xs shrink-0 transition-colors ${showDebugOverlay ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+                  className={`p-1 rounded text-xs shrink-0 transition-colors ${showDebugOverlay ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
                   title={showDebugOverlay ? 'Hide coordinate debug overlay' : 'Show coordinate debug overlay'}
                 >🎯</button>
                 <div className="text-[10px] text-muted-foreground shrink-0">Click | Type | Enter=Navigate</div>
@@ -435,13 +435,13 @@ export function RecordTestModal({
                           <div className="flex gap-2 justify-center">
                             <button
                               onClick={onRetryConnection}
-                              className="px-3 py-1.5 text-xs rounded-md bg-primary hover:bg-primary text-white transition-colors"
+                              className="px-3 py-1.5 text-xs rounded-md bg-primary hover:bg-primary text-primary-foreground transition-colors"
                             >
                               🔄 Retry
                             </button>
                             <button
                               onClick={onStopAndSave}
-                              className="px-3 py-1.5 text-xs rounded-md bg-warning hover:bg-warning/90 text-white transition-colors"
+                              className="px-3 py-1.5 text-xs rounded-md bg-warning hover:bg-warning/90 text-warning-foreground transition-colors"
                             >
                               💾 Stop & Save
                             </button>
@@ -600,7 +600,7 @@ export function RecordTestModal({
                 </button>
                 <button
                   onClick={onStopRecording}
-                  className="rounded-lg bg-gradient-to-r from-destructive to-destructive px-4 py-1.5 text-xs font-semibold text-white hover:from-destructive hover:to-destructive transition-all shadow-md hover:shadow-lg flex items-center gap-1.5"
+                  className="rounded-lg bg-gradient-to-r from-destructive to-destructive px-4 py-1.5 text-xs font-semibold text-destructive-foreground hover:from-destructive hover:to-destructive transition-all shadow-md hover:shadow-lg flex items-center gap-1.5"
                 >
                   <span className="inline-block h-2.5 w-2.5 rounded-sm bg-card"></span>
                   Stop Recording

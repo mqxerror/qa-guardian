@@ -48,7 +48,7 @@ export function DeleteTestModal({
           <button
             onClick={onConfirm}
             disabled={isDeleting}
-            className="rounded-md bg-destructive px-4 py-2 font-medium text-white hover:bg-destructive disabled:opacity-50"
+            className="rounded-md bg-destructive px-4 py-2 font-medium text-destructive-foreground hover:bg-destructive disabled:opacity-50"
           >
             {isDeleting ? 'Deleting...' : 'Delete Test'}
           </button>

@@ -296,7 +296,7 @@ export function ReviewRecordedTestModal({
  <button
  onClick={onSaveAsTemplate}
  disabled={isSavingTemplate || !templateName.trim() || recordedSteps.length === 0}
- className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50 transition-colors whitespace-nowrap"
+ className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground hover:bg-accent/90 disabled:opacity-50 transition-colors whitespace-nowrap"
  >
  {isSavingTemplate ? 'Saving...' : '📋 Save Template'}
  </button>
@@ -313,7 +313,7 @@ export function ReviewRecordedTestModal({
  <button
  onClick={onSaveRecordedTest}
  disabled={isSavingRecordedTest || recordedSteps.length === 0 || !recordedTestName.trim()}
- className="rounded-lg bg-gradient-to-r from-primary to-primary px-5 py-2 font-semibold text-white hover:from-primary hover:to-primary transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none"
+ className="rounded-lg bg-gradient-to-r from-primary to-primary px-5 py-2 font-semibold text-primary-foreground hover:from-primary hover:to-primary transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none"
  >
  {isSavingRecordedTest ? 'Saving...' : '💾 Save Test'}
  </button>

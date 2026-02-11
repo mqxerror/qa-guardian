@@ -14,7 +14,8 @@
  * - State tracking for wizardStep and configMethod
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, memo } from 'react';
+import { useAuthStore } from '../../stores/authStore';
 import { AIGenerateStep } from './AIGenerateStep';
 import { ManualSetupStep, type ManualSetupFormState } from './ManualSetupStep';
 import { RecordStep, type RecordConfig } from './RecordStep';
@@ -26,9 +27,10 @@ import { ReviewStep, type WizardConfig, type AIGeneratedConfig, type ManualSetup
 export type ConfigMethod = 'ai-generate' | 'manual-setup' | 'record' | null;
 
 /**
- * Wizard step
+ * Custom wizard step (numeric for 3-step wizard)
+ * Note: create-test/types.ts has a string-based WizardStep for different flow
  */
-export type WizardStep = 1 | 2 | 3;
+export type CustomWizardStep = 1 | 2 | 3;
 
 /**
  * Props for CustomTestWizard
@@ -40,8 +42,6 @@ export interface CustomTestWizardProps {
  onTestCreated?: (test: { id: string; name: string; runId?: string }) => void;
  /** Suite ID for test creation */
  suiteId: string;
- /** Auth token */
- token: string;
  /** Project base URL for smart defaults */
  projectBaseUrl?: string;
  /** Initial method selection (optional) */
@@ -51,7 +51,7 @@ export interface CustomTestWizardProps {
 /**
  * Step indicator component — animated connecting line with transition-all
  */
-const StepIndicator: React.FC<{ currentStep: WizardStep; totalSteps: number }> = ({
+const StepIndicator = memo<{ currentStep: CustomWizardStep; totalSteps: number }>(({
  currentStep,
  totalSteps,
 }) => {
@@ -66,7 +66,7 @@ const StepIndicator: React.FC<{ currentStep: WizardStep; totalSteps: number }> =
  step === currentStep
  ? 'bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2 ring-offset-card'
  : step < currentStep
- ? 'bg-success text-white'
+ ? 'bg-success text-success-foreground'
  : 'bg-muted text-muted-foreground'
  }
  `}
@@ -92,35 +92,38 @@ const StepIndicator: React.FC<{ currentStep: WizardStep; totalSteps: number }> =
  ))}
  </div>
  );
-};
+});
+StepIndicator.displayName = 'StepIndicator';
 
 /**
- * Safe color mapping for method cards — avoids dynamic Tailwind classes
+ * Feature #613: Semantic color mapping for method cards
+ * Uses CSS variables defined in index.css and tailwind.config.js
+ * Replaces hardcoded purple/blue/rose with method-ai/method-manual/method-record
  */
 const methodColorMap = {
- purple: {
-  selected: 'border-purple-500 bg-purple-50 dark:bg-purple-950/30 shadow-lg',
-  badge: 'text-purple-600 bg-purple-100 dark:bg-purple-900/40 dark:text-purple-300',
-  iconBg: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300',
-  title: 'text-purple-700 dark:text-purple-300',
-  check: 'text-purple-500 dark:text-purple-400',
-  indicator: 'border-purple-500 bg-purple-500',
+ ai: {
+  selected: 'border-method-ai bg-method-ai-muted shadow-lg',
+  badge: 'text-method-ai bg-method-ai/10',
+  iconBg: 'bg-method-ai/10 text-method-ai',
+  title: 'text-method-ai',
+  check: 'text-method-ai',
+  indicator: 'border-method-ai bg-method-ai',
  },
- blue: {
-  selected: 'border-blue-500 bg-blue-50 dark:bg-blue-950/30 shadow-lg',
-  badge: 'text-blue-600 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300',
-  iconBg: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300',
-  title: 'text-blue-700 dark:text-blue-300',
-  check: 'text-blue-500 dark:text-blue-400',
-  indicator: 'border-blue-500 bg-blue-500',
+ manual: {
+  selected: 'border-method-manual bg-method-manual-muted shadow-lg',
+  badge: 'text-method-manual bg-method-manual/10',
+  iconBg: 'bg-method-manual/10 text-method-manual',
+  title: 'text-method-manual',
+  check: 'text-method-manual',
+  indicator: 'border-method-manual bg-method-manual',
  },
- rose: {
-  selected: 'border-rose-500 bg-rose-50 dark:bg-rose-950/30 shadow-lg',
-  badge: 'text-rose-600 bg-rose-100 dark:bg-rose-900/40 dark:text-rose-300',
-  iconBg: 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300',
-  title: 'text-rose-700 dark:text-rose-300',
-  check: 'text-rose-500 dark:text-rose-400',
-  indicator: 'border-rose-500 bg-rose-500',
+ record: {
+  selected: 'border-method-record bg-method-record-muted shadow-lg',
+  badge: 'text-method-record bg-method-record/10',
+  iconBg: 'bg-method-record/10 text-method-record',
+  title: 'text-method-record',
+  check: 'text-method-record',
+  indicator: 'border-method-record bg-method-record',
  },
 };
 
@@ -133,7 +136,8 @@ interface MethodCardProps {
  onSelect: () => void;
 }
 
-const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect }) => {
+const MethodCard = memo<MethodCardProps>(({ method, isSelected, onSelect }) => {
+ // Feature #613: Updated color keys to use semantic tokens (ai/manual/record)
  const config = {
  'ai-generate': {
  title: 'AI Generate',
@@ -149,7 +153,7 @@ const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect })
  </svg>
  ),
  benefits: ['Natural language input', 'AI-powered test generation', 'Automatic selector detection'],
- color: 'purple' as const,
+ color: 'ai' as const,
  badge: 'Recommended',
  },
  'manual-setup': {
@@ -172,7 +176,7 @@ const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect })
  </svg>
  ),
  benefits: ['Full control over settings', 'Step-by-step configuration', 'Advanced options'],
- color: 'blue' as const,
+ color: 'manual' as const,
  badge: null,
  },
  'record': {
@@ -189,7 +193,7 @@ const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect })
  </svg>
  ),
  benefits: ['Visual recording', 'Click-to-create steps', 'Live browser preview'],
- color: 'rose' as const,
+ color: 'record' as const,
  badge: 'Interactive',
  },
  };
@@ -267,7 +271,8 @@ const MethodCard: React.FC<MethodCardProps> = ({ method, isSelected, onSelect })
  </div>
  </button>
  );
-};
+});
+MethodCard.displayName = 'MethodCard';
 
 /**
  * Step 1: Method Selection
@@ -313,12 +318,14 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  onClose,
  onTestCreated,
  suiteId,
- token,
  projectBaseUrl,
  initialMethod = null,
 }) => {
+ // Get token from auth store instead of props
+ const { token } = useAuthStore();
+
  // Wizard state
- const [wizardStep, setWizardStep] = useState<WizardStep>(1);
+ const [wizardStep, setWizardStep] = useState<CustomWizardStep>(1);
  const [configMethod, setConfigMethod] = useState<ConfigMethod>(initialMethod);
  const [wizardConfig, setWizardConfig] = useState<WizardConfig | null>(null);
  const [manualFormState, setManualFormState] = useState<ManualSetupFormState | null>(null);
@@ -327,7 +334,7 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  // Navigation handlers
  const handleBack = useCallback(() => {
  if (wizardStep > 1) {
- setWizardStep((prev) => (prev - 1) as WizardStep);
+ setWizardStep((prev) => (prev - 1) as CustomWizardStep);
  } else {
  onClose();
  }
@@ -402,7 +409,7 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  setWizardConfig(manualConfig);
  }
  if (wizardStep < 3) {
- setWizardStep((prev) => (prev + 1) as WizardStep);
+ setWizardStep((prev) => (prev + 1) as CustomWizardStep);
  }
  }, [wizardStep, configMethod, manualFormState]);
 
@@ -537,7 +544,6 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  }}
  onChange={handleRecordFormChange}
  projectBaseUrl={projectBaseUrl}
- token={token}
  />
  )}
 
@@ -545,7 +551,6 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  <ReviewStep
  config={wizardConfig}
  suiteId={suiteId}
- token={token}
  onEdit={() => setWizardStep(2)}
  onSuccess={(test) => {
  onTestCreated?.(test);

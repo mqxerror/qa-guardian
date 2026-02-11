@@ -93,7 +93,7 @@ export const CustomViewportPanel: React.FC<CustomViewportPanelProps> = ({
  <button
  type="button"
  onClick={handleAddViewport}
- className="w-full py-2 px-4 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
+ className="w-full py-2 px-4 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
  >
  Add Viewport
  </button>

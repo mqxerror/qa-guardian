@@ -99,7 +99,7 @@ export function InsertTemplateModal({
  <div className="flex gap-2">
  <button
  onClick={() => onInsertTemplate(testId, tpl)}
- className="rounded-md bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent/90 transition-colors"
+ className="rounded-md bg-accent px-3 py-1 text-xs font-medium text-accent-foreground hover:bg-accent/90 transition-colors"
  >
  Insert Steps
  </button>

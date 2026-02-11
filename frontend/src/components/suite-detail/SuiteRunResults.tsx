@@ -259,7 +259,7 @@ export function SuiteRunResults({
  <button
  onClick={onCancelSuiteRun}
  disabled={isCancellingSuite}
- className="rounded-md bg-destructive px-3 py-1 text-sm font-medium text-white hover:bg-destructive disabled:opacity-50"
+ className="rounded-md bg-destructive px-3 py-1 text-sm font-medium text-destructive-foreground hover:bg-destructive disabled:opacity-50"
  >
  {isCancellingSuite ? 'Cancelling...' : 'Cancel'}
  </button>
@@ -665,7 +665,7 @@ function TestResultItem({
  onNavigate(`/tests/${result.test_id}`);
  }
  }}
- className="px-3 py-1 text-xs font-medium rounded bg-accent text-white hover:bg-accent/90 transition-colors flex items-center gap-1"
+ className="px-3 py-1 text-xs font-medium rounded bg-accent text-accent-foreground hover:bg-accent/90 transition-colors flex items-center gap-1"
  >
  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
  <path d="M12 20h9"/>
@@ -873,7 +873,7 @@ function HealedSelectorDetails({
  wasHealed: true,
  });
  }}
- className="px-2 py-1 text-xs font-medium rounded bg-accent text-white hover:bg-accent/90 transition-colors flex items-center gap-1"
+ className="px-2 py-1 text-xs font-medium rounded bg-accent text-accent-foreground hover:bg-accent/90 transition-colors flex items-center gap-1"
  >
  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
