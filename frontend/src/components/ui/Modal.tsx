@@ -11,6 +11,7 @@
  */
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { X } from 'lucide-react';
 
 type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
@@ -206,9 +207,7 @@ export function ModalHeader({
           className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           aria-label="Close modal"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+<X className="w-5 h-5" />
         </button>
       )}
     </div>
