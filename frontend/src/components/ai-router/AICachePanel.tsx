@@ -2,6 +2,7 @@
 // Extracted from AIRouterPage.tsx to reduce file size and improve maintainability
 
 import { useState } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import {
   AIFeatureType,
   AICacheConfig,
@@ -588,34 +589,39 @@ export function AICachePanel({
         </div>
       </div>
 
-      {/* Cache Clear Confirmation Modal */}
-      {showCacheClearModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold mb-4">{'\uD83D\uDDD1\uFE0F'} Clear AI Cache</h3>
-            <p className="text-foreground mb-4">
-              Are you sure you want to clear all cached AI responses? This will remove {cacheStats.active_entries.toLocaleString()} cached entries ({cacheStats.cache_size_mb.toFixed(1)} MB).
-            </p>
-            <div className="bg-warning/5 border border-warning/20 rounded p-3 mb-4 text-sm text-warning">
-              {'\u26A0\uFE0F'} This action cannot be undone. Future requests will need to be re-processed, increasing costs and latency temporarily.
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowCacheClearModal(false)}
-                className="px-4 py-2 bg-muted text-foreground rounded hover:bg-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={clearCache}
-                className="px-4 py-2 bg-destructive text-destructive-foreground rounded hover:bg-destructive/90"
-              >
-                Clear Cache
-              </button>
-            </div>
+      {/* Feature #659: Cache Clear Confirmation Modal - migrated to shared Modal */}
+      <Modal
+        isOpen={showCacheClearModal}
+        onClose={() => setShowCacheClearModal(false)}
+        title="Clear AI Cache"
+        size="md"
+      >
+        <ModalHeader onClose={() => setShowCacheClearModal(false)}>
+          {'\uD83D\uDDD1\uFE0F'} Clear AI Cache
+        </ModalHeader>
+        <ModalBody>
+          <p className="text-foreground mb-4">
+            Are you sure you want to clear all cached AI responses? This will remove {cacheStats.active_entries.toLocaleString()} cached entries ({cacheStats.cache_size_mb.toFixed(1)} MB).
+          </p>
+          <div className="bg-warning/5 border border-warning/20 rounded p-3 text-sm text-warning">
+            {'\u26A0\uFE0F'} This action cannot be undone. Future requests will need to be re-processed, increasing costs and latency temporarily.
           </div>
-        </div>
-      )}
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={() => setShowCacheClearModal(false)}
+            className="px-4 py-2 bg-muted text-foreground rounded hover:bg-secondary"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={clearCache}
+            className="px-4 py-2 bg-destructive text-destructive-foreground rounded hover:bg-destructive/90"
+          >
+            Clear Cache
+          </button>
+        </ModalFooter>
+      </Modal>
     </>
   );
 }

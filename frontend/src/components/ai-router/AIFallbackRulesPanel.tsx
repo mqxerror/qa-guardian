@@ -2,6 +2,7 @@
 // Fallback rules configuration with testing and event history
 
 import { useState } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import type {
   FallbackTrigger,
   FallbackRule,
@@ -388,16 +389,19 @@ export function AIFallbackRulesPanel({
         </div>
       </div>
 
-      {/* Fallback Rule Configuration Modal */}
-      {showFallbackRuleModal && editingFallbackRule && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl p-6 m-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">⚙️ Configure Fallback Rule</h3>
-              <button onClick={() => setShowFallbackRuleModal(false)} className="text-muted-foreground hover:text-foreground">✕</button>
-            </div>
-
-            <div className="space-y-4">
+      {/* Feature #659: Fallback Rule Configuration Modal - migrated to shared Modal */}
+      <Modal
+        isOpen={showFallbackRuleModal && editingFallbackRule !== null}
+        onClose={() => setShowFallbackRuleModal(false)}
+        title="Configure Fallback Rule"
+        size="lg"
+      >
+        {editingFallbackRule && (
+          <>
+            <ModalHeader onClose={() => setShowFallbackRuleModal(false)}>
+              ⚙️ Configure Fallback Rule
+            </ModalHeader>
+            <ModalBody className="space-y-4">
               {/* Rule Name */}
               <div>
                 <label className="block text-sm font-medium mb-1">Rule Name</label>
@@ -624,9 +628,9 @@ export function AIFallbackRulesPanel({
                   <span className="text-sm">🔔 Send notification on fallback</span>
                 </label>
               </div>
-
-              {/* Actions */}
-              <div className="flex justify-between items-center pt-4 border-t">
+            </ModalBody>
+            <ModalFooter className="border-t pt-4">
+              <div className="flex w-full justify-between items-center">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -655,10 +659,10 @@ export function AIFallbackRulesPanel({
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </ModalFooter>
+          </>
+        )}
+      </Modal>
     </>
   );
 }

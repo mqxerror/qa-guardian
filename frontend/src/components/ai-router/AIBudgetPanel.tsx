@@ -2,6 +2,7 @@
 // Monthly AI budget limits with spending tracking and alerts
 
 import { useState } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import type {
   AIBudgetConfig,
   AISpendingData,
@@ -711,35 +712,40 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
         </div>
       </div>
 
-      {/* Budget Reset Modal */}
-      {showBudgetResetModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold mb-4">Reset Monthly Budget</h3>
-            <p className="text-foreground mb-4">
-              This will reset your current month's spending to $0.00 and clear all spending history.
-              This action is typically triggered automatically on billing cycle day {budgetConfig.billing_cycle_day}.
-            </p>
-            <div className="bg-warning/5 border border-warning/20 rounded p-3 mb-4 text-sm text-warning">
-              Current spend of <strong>{formatCurrency(spendingData.current_month_spend_cents)}</strong> will be cleared.
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowBudgetResetModal(false)}
-                className="px-4 py-2 bg-muted text-foreground rounded hover:bg-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={resetBudget}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
-              >
-                Reset Budget
-              </button>
-            </div>
+      {/* Feature #659: Budget Reset Modal - migrated to shared Modal */}
+      <Modal
+        isOpen={showBudgetResetModal}
+        onClose={() => setShowBudgetResetModal(false)}
+        title="Reset Monthly Budget"
+        size="md"
+      >
+        <ModalHeader onClose={() => setShowBudgetResetModal(false)}>
+          Reset Monthly Budget
+        </ModalHeader>
+        <ModalBody>
+          <p className="text-foreground mb-4">
+            This will reset your current month's spending to $0.00 and clear all spending history.
+            This action is typically triggered automatically on billing cycle day {budgetConfig.billing_cycle_day}.
+          </p>
+          <div className="bg-warning/5 border border-warning/20 rounded p-3 text-sm text-warning">
+            Current spend of <strong>{formatCurrency(spendingData.current_month_spend_cents)}</strong> will be cleared.
           </div>
-        </div>
-      )}
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={() => setShowBudgetResetModal(false)}
+            className="px-4 py-2 bg-muted text-foreground rounded hover:bg-secondary"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={resetBudget}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+          >
+            Reset Budget
+          </button>
+        </ModalFooter>
+      </Modal>
     </>
   );
 }

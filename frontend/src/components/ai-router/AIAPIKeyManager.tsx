@@ -2,6 +2,7 @@
 // Manages API keys for AI providers with zero-downtime rotation support
 
 import { useState } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import type { APIKeyConfig, APIKeyAuditLog, KeyTestResult } from './types';
 
 interface AIAPIKeyManagerProps {
@@ -591,102 +592,113 @@ export function AIAPIKeyManager({
         </div>
       </div>
 
-      {/* API Key Modal */}
-      {showKeyModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold mb-4">
-              {keyModalMode === 'add' ? '➕ Add New API Key' : '🔄 Rotate API Key'}
-            </h3>
-
-            {keyModalMode === 'add' && (
-              <>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-foreground mb-1">Key Name</label>
-                  <input
-                    type="text"
-                    value={newKeyName}
-                    onChange={(e) => setNewKeyName(e.target.value)}
-                    placeholder="e.g., Production API Key"
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-input text-foreground"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-foreground mb-1">Provider</label>
-                  <select
-                    value={newKeyProvider}
-                    onChange={(e) => setNewKeyProvider(e.target.value as 'kie' | 'anthropic')}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-input text-foreground"
-                  >
-                    <option value="kie">🤖 Kie.ai</option>
-                    <option value="anthropic">🔵 Anthropic</option>
-                  </select>
-                </div>
-              </>
-            )}
-
-            {keyModalMode === 'rotate' && editingKey && (
-              <div className="mb-4 p-3 bg-warning/5 border border-warning/20 rounded-lg">
-                <div className="flex items-center gap-2 text-warning">
-                  <span className="text-lg">⚠️</span>
-                  <span className="font-medium">Rotating: {editingKey.name}</span>
-                </div>
-                <p className="text-sm text-warning mt-1">
-                  The current key will be replaced. Make sure to update any services using this key.
-                </p>
-              </div>
-            )}
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-1">
-                {keyModalMode === 'add' ? 'API Key' : 'New API Key'}
-              </label>
-              <div className="relative">
+      {/* Feature #659: API Key Modal - migrated to shared Modal */}
+      <Modal
+        isOpen={showKeyModal}
+        onClose={() => {
+          setShowKeyModal(false);
+          setNewKeyValue('');
+          setNewKeyName('');
+          setEditingKey(null);
+        }}
+        title={keyModalMode === 'add' ? 'Add New API Key' : 'Rotate API Key'}
+        size="md"
+      >
+        <ModalHeader onClose={() => {
+          setShowKeyModal(false);
+          setNewKeyValue('');
+          setNewKeyName('');
+          setEditingKey(null);
+        }}>
+          {keyModalMode === 'add' ? '➕ Add New API Key' : '🔄 Rotate API Key'}
+        </ModalHeader>
+        <ModalBody>
+          {keyModalMode === 'add' && (
+            <>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-foreground mb-1">Key Name</label>
                 <input
-                  type="password"
-                  value={newKeyValue}
-                  onChange={(e) => setNewKeyValue(e.target.value)}
-                  placeholder={
-                    keyModalMode === 'rotate' && editingKey
-                      ? `Enter new ${editingKey.provider === 'kie' ? 'kie_' : 'sk-ant-'}... key`
-                      : newKeyProvider === 'kie'
-                      ? 'kie_xxxxxxxxxxxxx'
-                      : 'sk-ant-xxxxxxxxxxxxx'
-                  }
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-mono text-sm bg-input text-foreground"
+                  type="text"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  placeholder="e.g., Production API Key"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-input text-foreground"
                 />
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {keyModalMode === 'add'
-                  ? `${newKeyProvider === 'kie' ? 'Kie.ai' : 'Anthropic'} keys should start with "${newKeyProvider === 'kie' ? 'kie_' : 'sk-ant-'}"`
-                  : editingKey && `${editingKey.provider === 'kie' ? 'Kie.ai' : 'Anthropic'} keys should start with "${editingKey.provider === 'kie' ? 'kie_' : 'sk-ant-'}"`
-                }
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-foreground mb-1">Provider</label>
+                <select
+                  value={newKeyProvider}
+                  onChange={(e) => setNewKeyProvider(e.target.value as 'kie' | 'anthropic')}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-input text-foreground"
+                >
+                  <option value="kie">🤖 Kie.ai</option>
+                  <option value="anthropic">🔵 Anthropic</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          {keyModalMode === 'rotate' && editingKey && (
+            <div className="mb-4 p-3 bg-warning/5 border border-warning/20 rounded-lg">
+              <div className="flex items-center gap-2 text-warning">
+                <span className="text-lg">⚠️</span>
+                <span className="font-medium">Rotating: {editingKey.name}</span>
+              </div>
+              <p className="text-sm text-warning mt-1">
+                The current key will be replaced. Make sure to update any services using this key.
               </p>
             </div>
+          )}
 
-            <div className="flex items-center gap-3 justify-end">
-              <button
-                onClick={() => {
-                  setShowKeyModal(false);
-                  setNewKeyValue('');
-                  setNewKeyName('');
-                  setEditingKey(null);
-                }}
-                className="px-4 py-2 text-foreground hover:text-foreground"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={keyModalMode === 'add' ? addNewApiKey : rotateApiKey}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-              >
-                {keyModalMode === 'add' ? 'Add Key' : 'Rotate Key'}
-              </button>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-foreground mb-1">
+              {keyModalMode === 'add' ? 'API Key' : 'New API Key'}
+            </label>
+            <div className="relative">
+              <input
+                type="password"
+                value={newKeyValue}
+                onChange={(e) => setNewKeyValue(e.target.value)}
+                placeholder={
+                  keyModalMode === 'rotate' && editingKey
+                    ? `Enter new ${editingKey.provider === 'kie' ? 'kie_' : 'sk-ant-'}... key`
+                    : newKeyProvider === 'kie'
+                    ? 'kie_xxxxxxxxxxxxx'
+                    : 'sk-ant-xxxxxxxxxxxxx'
+                }
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-mono text-sm bg-input text-foreground"
+              />
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {keyModalMode === 'add'
+                ? `${newKeyProvider === 'kie' ? 'Kie.ai' : 'Anthropic'} keys should start with "${newKeyProvider === 'kie' ? 'kie_' : 'sk-ant-'}"`
+                : editingKey && `${editingKey.provider === 'kie' ? 'Kie.ai' : 'Anthropic'} keys should start with "${editingKey.provider === 'kie' ? 'kie_' : 'sk-ant-'}"`
+              }
+            </p>
           </div>
-        </div>
-      )}
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={() => {
+              setShowKeyModal(false);
+              setNewKeyValue('');
+              setNewKeyName('');
+              setEditingKey(null);
+            }}
+            className="px-4 py-2 text-foreground hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={keyModalMode === 'add' ? addNewApiKey : rotateApiKey}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+          >
+            {keyModalMode === 'add' ? 'Add Key' : 'Rotate Key'}
+          </button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 }
