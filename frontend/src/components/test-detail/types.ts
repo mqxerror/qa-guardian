@@ -3,23 +3,8 @@
  * Extracted from TestDetailPage.tsx for modularity (Feature #48)
  */
 
-// Test Suite interface
-// Feature #643: Made created_at/updated_at optional since sometimes only id/name are available
-export interface TestSuite {
-  id: string;
-  name: string;
-  description?: string;
-  created_at?: string;
-  updated_at?: string;
-  test_count?: number;
-  browser?: string;
-  default_browser?: 'chromium' | 'firefox' | 'webkit';
-  viewport_width?: number;
-  viewport_height?: number;
-  timeout?: number;
-  retry_count?: number;
-  project_id?: string;
-}
+// Feature #656: Import canonical TestSuite from shared location
+export { type TestSuite } from '../../hooks/api/useSuites';
 
 // Test type (the main test entity)
 export interface TestType {

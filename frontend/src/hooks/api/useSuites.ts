@@ -10,22 +10,31 @@ import { dashboardKeys } from './useDashboard';
 import { fetchWithAuth } from './fetchWithAuth'; // Feature #655: Shared auth fetch
 
 // Types
+/**
+ * Canonical TestSuite interface
+ * Feature #656: Consolidated from 5 duplicate definitions across the codebase
+ *
+ * Core fields (required): id, name
+ * Everything else is optional to support different API responses and use cases
+ */
 export interface TestSuite {
   id: string;
-  project_id: string;
-  organization_id: string;
   name: string;
+  project_id?: string;
+  organization_id?: string;
   description?: string;
-  type: 'e2e' | 'visual' | 'accessibility' | 'performance' | 'load';
-  browser: string;
-  browsers: string[];
+  type?: 'e2e' | 'visual' | 'accessibility' | 'performance' | 'load';
+  browser?: string;
+  browsers?: string[];
+  default_browser?: 'chromium' | 'firefox' | 'webkit';
   base_url?: string;
-  viewport_width: number;
-  viewport_height: number;
-  timeout: number;
-  retry_count: number;
-  created_at: string;
-  updated_at: string;
+  viewport_width?: number;
+  viewport_height?: number;
+  timeout?: number;
+  retry_count?: number;
+  test_count?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface PaginatedSuitesResponse {

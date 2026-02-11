@@ -3,21 +3,8 @@
  * Extracted from TestSuitePage.tsx for modularity (Feature #50)
  */
 
-// Test Suite interface
-export interface TestSuite {
-  id: string;
-  name: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-  test_count?: number;
-  browser?: string;
-  viewport_width?: number;
-  viewport_height?: number;
-  timeout?: number;
-  retry_count?: number;
-  project_id?: string;
-}
+// Feature #656: Import canonical TestSuite from shared location
+export { type TestSuite } from '../../hooks/api/useSuites';
 
 // Test type - the individual test within a suite
 export interface TestType {

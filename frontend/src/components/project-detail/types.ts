@@ -21,20 +21,8 @@ export interface ViewportProfile {
   height: number;
 }
 
-// TestSuite interface
-export interface TestSuite {
-  id: string;
-  name: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-  test_count?: number;
-  browser?: string;
-  viewport_width?: number;
-  viewport_height?: number;
-  timeout?: number;
-  retry_count?: number;
-}
+// Feature #656: Import canonical TestSuite from shared location
+export { type TestSuite } from '../../hooks/api/useSuites';
 
 // Project members
 export interface ProjectMember {

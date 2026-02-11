@@ -87,9 +87,11 @@ const SuiteCard: React.FC<SuiteCardProps> = React.memo(({
  )}
  </div>
 
+ {suite.created_at && (
  <div className="mt-2 text-xs text-muted-foreground">
  Created {formatDate(suite.created_at)}
  </div>
+ )}
  </Link>
  );
 });

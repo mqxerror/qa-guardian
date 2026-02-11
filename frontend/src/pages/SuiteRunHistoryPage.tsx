@@ -8,6 +8,8 @@ import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
+// Feature #656: Import canonical TestSuite from shared location
+import { type TestSuite } from '../hooks/api/useSuites';
 
 interface TestRun {
  id: string;
@@ -23,13 +25,6 @@ interface TestRun {
  results_count: number;
  passed_count: number;
  failed_count: number;
-}
-
-interface TestSuite {
- id: string;
- project_id: string;
- name: string;
- description?: string;
 }
 
 interface Project {
