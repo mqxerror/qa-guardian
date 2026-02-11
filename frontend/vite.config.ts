@@ -50,7 +50,8 @@ export default defineConfig({
           }
 
           // PDF/Export - 600KB+, only used for export functionality
-          if (id.includes('jspdf') || id.includes('jszip') || id.includes('html2canvas')) {
+          // Feature #647: Added canvg and fflate (jspdf transitive deps)
+          if (id.includes('jspdf') || id.includes('jszip') || id.includes('html2canvas') || id.includes('canvg') || id.includes('fflate')) {
             return 'pdf-export';
           }
 
