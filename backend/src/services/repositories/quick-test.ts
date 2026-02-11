@@ -464,3 +464,344 @@ export async function deleteExpiredQuickTestComparisons(): Promise<number> {
     return 0;
   }
 }
+
+// ============================================
+// Quick Test Schedules (Feature #671)
+// ============================================
+
+export interface QuickTestSchedule {
+  id: string;
+  organizationId: string;
+  userId: string;
+  url: string;
+  name: string;
+  cronExpression: string;
+  timezone: string;
+  enabled: boolean;
+  notifyOnScoreDrop: boolean;
+  scoreThreshold: number;
+  createdAt: Date;
+  updatedAt: Date;
+  nextRunAt: Date | null;
+  lastRunId: string | null;
+  lastRunAt: Date | null;
+  runCount: number;
+}
+
+interface QuickTestScheduleRow {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  url: string;
+  name: string;
+  cron_expression: string;
+  timezone: string;
+  enabled: boolean;
+  notify_on_score_drop: boolean;
+  score_threshold: number;
+  created_at: Date;
+  updated_at: Date;
+  next_run_at: Date | null;
+  last_run_id: string | null;
+  last_run_at: Date | null;
+  run_count: number;
+}
+
+const QUICK_TEST_SCHEDULE_COLUMNS = `
+  id, organization_id, user_id, url, name, cron_expression, timezone,
+  enabled, notify_on_score_drop, score_threshold, created_at, updated_at,
+  next_run_at, last_run_id, last_run_at, run_count
+`;
+
+function rowToQuickTestSchedule(row: QuickTestScheduleRow): QuickTestSchedule {
+  return {
+    id: row.id,
+    organizationId: row.organization_id,
+    userId: row.user_id,
+    url: row.url,
+    name: row.name,
+    cronExpression: row.cron_expression,
+    timezone: row.timezone,
+    enabled: row.enabled,
+    notifyOnScoreDrop: row.notify_on_score_drop,
+    scoreThreshold: row.score_threshold,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+    nextRunAt: row.next_run_at ? new Date(row.next_run_at) : null,
+    lastRunId: row.last_run_id,
+    lastRunAt: row.last_run_at ? new Date(row.last_run_at) : null,
+    runCount: row.run_count,
+  };
+}
+
+/**
+ * Create a quick test schedule
+ * Feature #671: Persist quick test schedules
+ */
+export async function createQuickTestSchedule(params: {
+  organizationId: string;
+  userId: string;
+  url: string;
+  name: string;
+  cronExpression: string;
+  timezone?: string;
+  notifyOnScoreDrop?: boolean;
+  scoreThreshold?: number;
+}): Promise<QuickTestSchedule | null> {
+  if (!isDatabaseConnected()) {
+    logger.warn('[QuickTestRepo] Database not connected, cannot create schedule');
+    return null;
+  }
+
+  const {
+    organizationId,
+    userId,
+    url,
+    name,
+    cronExpression,
+    timezone = 'UTC',
+    notifyOnScoreDrop = false,
+    scoreThreshold = 80,
+  } = params;
+
+  try {
+    // Calculate next run time (simplified - in production would use a cron parser)
+    const nextRunAt = calculateNextRunFromCron(cronExpression);
+
+    const result = await query<QuickTestScheduleRow>(
+      `INSERT INTO quick_test_schedules (
+        organization_id, user_id, url, name, cron_expression, timezone,
+        notify_on_score_drop, score_threshold, next_run_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING ${QUICK_TEST_SCHEDULE_COLUMNS}`,
+      [organizationId, userId, url, name, cronExpression, timezone, notifyOnScoreDrop, scoreThreshold, nextRunAt]
+    );
+
+    if (!result || result.rows.length === 0) {
+      return null;
+    }
+
+    logger.info({ scheduleId: result.rows[0].id, url, cronExpression }, '[QuickTestRepo] Created quick test schedule');
+    return rowToQuickTestSchedule(result.rows[0]);
+  } catch (error) {
+    logger.error({ error, url }, '[QuickTestRepo] Failed to create quick test schedule');
+    return null;
+  }
+}
+
+/**
+ * Get a quick test schedule by ID
+ * Feature #671: Persist quick test schedules
+ */
+export async function getQuickTestScheduleById(id: string): Promise<QuickTestSchedule | null> {
+  if (!isDatabaseConnected()) {
+    return null;
+  }
+
+  try {
+    const result = await query<QuickTestScheduleRow>(
+      `SELECT ${QUICK_TEST_SCHEDULE_COLUMNS} FROM quick_test_schedules WHERE id = $1`,
+      [id]
+    );
+
+    if (!result || result.rows.length === 0) {
+      return null;
+    }
+
+    return rowToQuickTestSchedule(result.rows[0]);
+  } catch (error) {
+    logger.error({ error, id }, '[QuickTestRepo] Failed to get quick test schedule by id');
+    return null;
+  }
+}
+
+/**
+ * List quick test schedules for an organization
+ * Feature #671: Persist quick test schedules
+ */
+export async function listQuickTestSchedules(
+  organizationId: string,
+  options?: { enabled?: boolean; limit?: number; offset?: number }
+): Promise<{ schedules: QuickTestSchedule[]; total: number }> {
+  if (!isDatabaseConnected()) {
+    return { schedules: [], total: 0 };
+  }
+
+  const { enabled, limit = 50, offset = 0 } = options || {};
+
+  try {
+    let whereClause = 'organization_id = $1';
+    const params: unknown[] = [organizationId];
+    let paramIndex = 2;
+
+    if (enabled !== undefined) {
+      whereClause += ` AND enabled = $${paramIndex}`;
+      params.push(enabled);
+      paramIndex++;
+    }
+
+    // Get total count
+    const countResult = await query<{ count: string }>(
+      `SELECT COUNT(*) as count FROM quick_test_schedules WHERE ${whereClause}`,
+      params
+    );
+    const total = parseInt(countResult?.rows[0]?.count || '0', 10);
+
+    // Get schedules
+    const result = await query<QuickTestScheduleRow>(
+      `SELECT ${QUICK_TEST_SCHEDULE_COLUMNS} FROM quick_test_schedules
+       WHERE ${whereClause}
+       ORDER BY created_at DESC
+       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      [...params, limit, offset]
+    );
+
+    return {
+      schedules: result?.rows.map(rowToQuickTestSchedule) || [],
+      total,
+    };
+  } catch (error) {
+    logger.error({ error, organizationId }, '[QuickTestRepo] Failed to list quick test schedules');
+    return { schedules: [], total: 0 };
+  }
+}
+
+/**
+ * Update a quick test schedule
+ * Feature #671: Persist quick test schedules
+ */
+export async function updateQuickTestSchedule(
+  id: string,
+  updates: Partial<{
+    name: string;
+    cronExpression: string;
+    timezone: string;
+    enabled: boolean;
+    notifyOnScoreDrop: boolean;
+    scoreThreshold: number;
+  }>
+): Promise<QuickTestSchedule | null> {
+  if (!isDatabaseConnected()) {
+    return null;
+  }
+
+  try {
+    const setClauses: string[] = ['updated_at = NOW()'];
+    const params: unknown[] = [];
+    let paramIndex = 1;
+
+    if (updates.name !== undefined) {
+      setClauses.push(`name = $${paramIndex}`);
+      params.push(updates.name);
+      paramIndex++;
+    }
+    if (updates.cronExpression !== undefined) {
+      setClauses.push(`cron_expression = $${paramIndex}`);
+      params.push(updates.cronExpression);
+      paramIndex++;
+      // Recalculate next run
+      setClauses.push(`next_run_at = $${paramIndex}`);
+      params.push(calculateNextRunFromCron(updates.cronExpression));
+      paramIndex++;
+    }
+    if (updates.timezone !== undefined) {
+      setClauses.push(`timezone = $${paramIndex}`);
+      params.push(updates.timezone);
+      paramIndex++;
+    }
+    if (updates.enabled !== undefined) {
+      setClauses.push(`enabled = $${paramIndex}`);
+      params.push(updates.enabled);
+      paramIndex++;
+    }
+    if (updates.notifyOnScoreDrop !== undefined) {
+      setClauses.push(`notify_on_score_drop = $${paramIndex}`);
+      params.push(updates.notifyOnScoreDrop);
+      paramIndex++;
+    }
+    if (updates.scoreThreshold !== undefined) {
+      setClauses.push(`score_threshold = $${paramIndex}`);
+      params.push(updates.scoreThreshold);
+      paramIndex++;
+    }
+
+    params.push(id);
+
+    const result = await query<QuickTestScheduleRow>(
+      `UPDATE quick_test_schedules SET ${setClauses.join(', ')} WHERE id = $${paramIndex}
+       RETURNING ${QUICK_TEST_SCHEDULE_COLUMNS}`,
+      params
+    );
+
+    if (!result || result.rows.length === 0) {
+      return null;
+    }
+
+    logger.info({ scheduleId: id }, '[QuickTestRepo] Updated quick test schedule');
+    return rowToQuickTestSchedule(result.rows[0]);
+  } catch (error) {
+    logger.error({ error, id }, '[QuickTestRepo] Failed to update quick test schedule');
+    return null;
+  }
+}
+
+/**
+ * Delete a quick test schedule
+ * Feature #671: Persist quick test schedules
+ */
+export async function deleteQuickTestSchedule(id: string): Promise<boolean> {
+  if (!isDatabaseConnected()) {
+    return false;
+  }
+
+  try {
+    const result = await query(
+      `DELETE FROM quick_test_schedules WHERE id = $1`,
+      [id]
+    );
+
+    const deleted = (result?.rowCount ?? 0) > 0;
+    if (deleted) {
+      logger.info({ scheduleId: id }, '[QuickTestRepo] Deleted quick test schedule');
+    }
+    return deleted;
+  } catch (error) {
+    logger.error({ error, id }, '[QuickTestRepo] Failed to delete quick test schedule');
+    return false;
+  }
+}
+
+/**
+ * Calculate next run time from cron expression
+ * Simplified implementation - in production would use a proper cron parser like cron-parser
+ */
+function calculateNextRunFromCron(cronExpression: string): Date {
+  const now = new Date();
+
+  // Simple mapping for common patterns
+  if (cronExpression === '0 * * * *') {
+    // Hourly - next hour
+    const next = new Date(now);
+    next.setMinutes(0, 0, 0);
+    next.setHours(next.getHours() + 1);
+    return next;
+  }
+  if (cronExpression === '0 0 * * *') {
+    // Daily at midnight
+    const next = new Date(now);
+    next.setHours(0, 0, 0, 0);
+    next.setDate(next.getDate() + 1);
+    return next;
+  }
+  if (cronExpression === '0 9 * * 1') {
+    // Weekly on Monday at 9 AM
+    const next = new Date(now);
+    next.setHours(9, 0, 0, 0);
+    const daysUntilMonday = (8 - next.getDay()) % 7 || 7;
+    next.setDate(next.getDate() + daysUntilMonday);
+    return next;
+  }
+
+  // Default: 1 hour from now
+  return new Date(now.getTime() + 60 * 60 * 1000);
+}

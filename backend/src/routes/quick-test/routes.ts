@@ -19,7 +19,17 @@ import { logAuditEntry } from '../audit-logs.js';
 import { validateURLForSSRF } from '../../utils/index.js';
 // Feature #465: PostgreSQL persistence for history endpoint
 // Feature #670: Database persistence for quick test comparisons
-import { getQuickTestHistory, createQuickTestComparison, getQuickTestComparison } from '../../services/repositories/quick-test.js';
+// Feature #671: Database persistence for quick test schedules
+import {
+  getQuickTestHistory,
+  createQuickTestComparison,
+  getQuickTestComparison,
+  createQuickTestSchedule,
+  listQuickTestSchedules,
+  getQuickTestScheduleById,
+  updateQuickTestSchedule,
+  deleteQuickTestSchedule,
+} from '../../services/repositories/quick-test.js';
 
 // Feature #466: Screenshot serving
 // Feature #478: Add signed URL validation for screenshot auth
@@ -572,14 +582,26 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
         });
       }
 
-      // Calculate next run time from cron (simplified)
-      const now = new Date();
-      const next_run_at = new Date(now.getTime() + 60 * 60 * 1000); // Default: 1 hour from now
+      // Feature #671: Persist schedule to database
+      const schedule = await createQuickTestSchedule({
+        organizationId: orgId,
+        userId: user.id,
+        url,
+        name,
+        cronExpression: cron_expression,
+        notifyOnScoreDrop: notify_on_score_drop,
+        scoreThreshold: score_threshold,
+      });
 
-      const scheduleId = uuidv4();
+      if (!schedule) {
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to create schedule',
+        });
+      }
 
-      // Log the schedule creation (actual persistence would go to a quick_test_schedules table)
-      logAuditEntry(request, 'create', 'quick_test_schedule', scheduleId, `Quick test schedule created for ${url}`, {
+      // Log the schedule creation
+      logAuditEntry(request, 'create', 'quick_test_schedule', schedule.id, `Quick test schedule created for ${url}`, {
         url,
         cron_expression,
         notify_on_score_drop,
@@ -587,19 +609,251 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
         user_id: user.id,
       });
 
-      // For now, return success (full implementation would persist to database and integrate with scheduler)
       return reply.status(201).send({
-        id: scheduleId,
-        organization_id: orgId,
-        url,
-        name,
-        cron_expression,
-        notify_on_score_drop,
-        score_threshold,
-        enabled: true,
-        created_at: new Date().toISOString(),
-        next_run_at: next_run_at.toISOString(),
+        id: schedule.id,
+        organization_id: schedule.organizationId,
+        url: schedule.url,
+        name: schedule.name,
+        cron_expression: schedule.cronExpression,
+        notify_on_score_drop: schedule.notifyOnScoreDrop,
+        score_threshold: schedule.scoreThreshold,
+        enabled: schedule.enabled,
+        created_at: schedule.createdAt.toISOString(),
+        next_run_at: schedule.nextRunAt?.toISOString() ?? null,
       });
+    }
+  );
+
+  /**
+   * GET /api/v1/quick-test/schedules
+   * Feature #671: List quick test schedules
+   */
+  app.get<{ Querystring: { enabled?: string; limit?: string; offset?: string } }>(
+    '/api/v1/quick-test/schedules',
+    {
+      preHandler: [authenticate],
+      schema: {
+        tags: ['Quick Test'],
+        summary: 'List quick test schedules',
+        description: 'Returns paginated list of quick test schedules for the organization',
+        querystring: {
+          type: 'object',
+          properties: {
+            enabled: { type: 'string', enum: ['true', 'false'] },
+            limit: { type: 'string', default: '50' },
+            offset: { type: 'string', default: '0' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              schedules: { type: 'array' },
+              total: { type: 'number' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const orgId = getOrganizationId(request);
+      const { enabled, limit = '50', offset = '0' } = request.query;
+
+      const result = await listQuickTestSchedules(orgId, {
+        enabled: enabled ? enabled === 'true' : undefined,
+        limit: parseInt(limit, 10),
+        offset: parseInt(offset, 10),
+      });
+
+      return reply.send({
+        schedules: result.schedules.map(s => ({
+          id: s.id,
+          url: s.url,
+          name: s.name,
+          cron_expression: s.cronExpression,
+          enabled: s.enabled,
+          notify_on_score_drop: s.notifyOnScoreDrop,
+          score_threshold: s.scoreThreshold,
+          created_at: s.createdAt.toISOString(),
+          next_run_at: s.nextRunAt?.toISOString() ?? null,
+          last_run_at: s.lastRunAt?.toISOString() ?? null,
+          run_count: s.runCount,
+        })),
+        total: result.total,
+      });
+    }
+  );
+
+  /**
+   * GET /api/v1/quick-test/schedules/:scheduleId
+   * Feature #671: Get a specific quick test schedule
+   */
+  app.get<{ Params: { scheduleId: string } }>(
+    '/api/v1/quick-test/schedules/:scheduleId',
+    {
+      preHandler: [authenticate],
+      schema: {
+        tags: ['Quick Test'],
+        summary: 'Get quick test schedule details',
+        params: {
+          type: 'object',
+          required: ['scheduleId'],
+          properties: {
+            scheduleId: { type: 'string', format: 'uuid' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { scheduleId } = request.params;
+      const orgId = getOrganizationId(request);
+
+      const schedule = await getQuickTestScheduleById(scheduleId);
+      if (!schedule || schedule.organizationId !== orgId) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Schedule not found',
+        });
+      }
+
+      return reply.send({
+        id: schedule.id,
+        url: schedule.url,
+        name: schedule.name,
+        cron_expression: schedule.cronExpression,
+        enabled: schedule.enabled,
+        notify_on_score_drop: schedule.notifyOnScoreDrop,
+        score_threshold: schedule.scoreThreshold,
+        created_at: schedule.createdAt.toISOString(),
+        next_run_at: schedule.nextRunAt?.toISOString() ?? null,
+        last_run_at: schedule.lastRunAt?.toISOString() ?? null,
+        run_count: schedule.runCount,
+      });
+    }
+  );
+
+  /**
+   * PATCH /api/v1/quick-test/schedules/:scheduleId
+   * Feature #671: Update a quick test schedule
+   */
+  app.patch<{
+    Params: { scheduleId: string };
+    Body: { name?: string; cron_expression?: string; enabled?: boolean; notify_on_score_drop?: boolean; score_threshold?: number };
+  }>(
+    '/api/v1/quick-test/schedules/:scheduleId',
+    {
+      preHandler: [authenticate],
+      schema: {
+        tags: ['Quick Test'],
+        summary: 'Update quick test schedule',
+        params: {
+          type: 'object',
+          required: ['scheduleId'],
+          properties: {
+            scheduleId: { type: 'string', format: 'uuid' },
+          },
+        },
+        body: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            cron_expression: { type: 'string' },
+            enabled: { type: 'boolean' },
+            notify_on_score_drop: { type: 'boolean' },
+            score_threshold: { type: 'number' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { scheduleId } = request.params;
+      const orgId = getOrganizationId(request);
+      const { name, cron_expression, enabled, notify_on_score_drop, score_threshold } = request.body;
+
+      // Verify ownership
+      const existing = await getQuickTestScheduleById(scheduleId);
+      if (!existing || existing.organizationId !== orgId) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Schedule not found',
+        });
+      }
+
+      const updated = await updateQuickTestSchedule(scheduleId, {
+        name,
+        cronExpression: cron_expression,
+        enabled,
+        notifyOnScoreDrop: notify_on_score_drop,
+        scoreThreshold: score_threshold,
+      });
+
+      if (!updated) {
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to update schedule',
+        });
+      }
+
+      logAuditEntry(request, 'update', 'quick_test_schedule', scheduleId, 'Quick test schedule updated', {});
+
+      return reply.send({
+        id: updated.id,
+        url: updated.url,
+        name: updated.name,
+        cron_expression: updated.cronExpression,
+        enabled: updated.enabled,
+        notify_on_score_drop: updated.notifyOnScoreDrop,
+        score_threshold: updated.scoreThreshold,
+        created_at: updated.createdAt.toISOString(),
+        next_run_at: updated.nextRunAt?.toISOString() ?? null,
+      });
+    }
+  );
+
+  /**
+   * DELETE /api/v1/quick-test/schedules/:scheduleId
+   * Feature #671: Delete a quick test schedule
+   */
+  app.delete<{ Params: { scheduleId: string } }>(
+    '/api/v1/quick-test/schedules/:scheduleId',
+    {
+      preHandler: [authenticate],
+      schema: {
+        tags: ['Quick Test'],
+        summary: 'Delete quick test schedule',
+        params: {
+          type: 'object',
+          required: ['scheduleId'],
+          properties: {
+            scheduleId: { type: 'string', format: 'uuid' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { scheduleId } = request.params;
+      const orgId = getOrganizationId(request);
+
+      // Verify ownership
+      const existing = await getQuickTestScheduleById(scheduleId);
+      if (!existing || existing.organizationId !== orgId) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Schedule not found',
+        });
+      }
+
+      const deleted = await deleteQuickTestSchedule(scheduleId);
+      if (!deleted) {
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to delete schedule',
+        });
+      }
+
+      logAuditEntry(request, 'delete', 'quick_test_schedule', scheduleId, 'Quick test schedule deleted', {});
+
+      return reply.status(204).send();
     }
   );
 

@@ -1097,6 +1097,27 @@ export function getDatabaseSchemaSQL(): string {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       expires_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() + INTERVAL '24 hours'
     );
+
+    -- Quick Test Schedules table (Feature #671: Persist quick test schedules)
+    -- Stores recurring quick test schedules for URLs
+    CREATE TABLE IF NOT EXISTS quick_test_schedules (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      url TEXT NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      cron_expression VARCHAR(100) NOT NULL,
+      timezone VARCHAR(100) NOT NULL DEFAULT 'UTC',
+      enabled BOOLEAN NOT NULL DEFAULT true,
+      notify_on_score_drop BOOLEAN NOT NULL DEFAULT false,
+      score_threshold INTEGER DEFAULT 80,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      next_run_at TIMESTAMP WITH TIME ZONE,
+      last_run_id UUID REFERENCES quick_test_results(id) ON DELETE SET NULL,
+      last_run_at TIMESTAMP WITH TIME ZONE,
+      run_count INTEGER NOT NULL DEFAULT 0
+    );
   `;
 }
 
@@ -1276,6 +1297,12 @@ export function getDatabaseIndexSQL(): string {
     -- Quick Test Comparisons indexes (Feature #670)
     CREATE INDEX IF NOT EXISTS idx_quick_test_comparisons_org ON quick_test_comparisons(organization_id);
     CREATE INDEX IF NOT EXISTS idx_quick_test_comparisons_expires ON quick_test_comparisons(expires_at);
+
+    -- Quick Test Schedules indexes (Feature #671)
+    CREATE INDEX IF NOT EXISTS idx_quick_test_schedules_org ON quick_test_schedules(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_quick_test_schedules_user ON quick_test_schedules(user_id);
+    CREATE INDEX IF NOT EXISTS idx_quick_test_schedules_enabled ON quick_test_schedules(enabled);
+    CREATE INDEX IF NOT EXISTS idx_quick_test_schedules_next_run ON quick_test_schedules(next_run_at) WHERE enabled = true;
 
     -- Feature #98: Missing indexes for foreign keys and filter columns
     CREATE INDEX IF NOT EXISTS idx_organization_members_organization ON organization_members(organization_id);
