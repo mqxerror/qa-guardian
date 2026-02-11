@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 
 // CVE vulnerability interface with NVD details
 interface CVEVulnerability {
@@ -368,33 +369,22 @@ export function CVEDatabasePage() {
 
  return (
  <Layout>
- <div className="p-6 max-w-6xl mx-auto">
- {/* Header */}
- <div className="flex items-center justify-between mb-6">
- <div className="flex items-center gap-3">
- <button onClick={() => navigate('/security')} className="text-muted-foreground hover:text-foreground">
- ←
- </button>
- <div>
- <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
- 🛡️ CVE Database Scanner
- <span className="text-sm font-normal px-2 py-0.5 bg-primary/10 text-primary rounded">
- NVD Integration
- </span>
- </h1>
- <p className="text-muted-foreground">
- Scan dependencies against the National Vulnerability Database (NVD)
- </p>
- </div>
- </div>
- <button
- onClick={runScan}
- disabled={isScanning}
- className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 font-medium"
- >
- {isScanning ? 'Scanning...' : '🔍 Run CVE Scan'}
- </button>
- </div>
+ <div className="p-6 lg:p-8 space-y-6 max-w-6xl mx-auto">
+ {/* Feature #639: PageHeader component */}
+ <PageHeader
+   title="CVE Database Scanner"
+   description="Scan dependencies against the National Vulnerability Database (NVD)"
+   breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'CVE Database' }]}
+   actions={
+     <button
+       onClick={runScan}
+       disabled={isScanning}
+       className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 font-medium"
+     >
+       {isScanning ? 'Scanning...' : '🔍 Run CVE Scan'}
+     </button>
+   }
+ />
 
  {/* Progress */}
  {isScanning && scanResult?.progress && (

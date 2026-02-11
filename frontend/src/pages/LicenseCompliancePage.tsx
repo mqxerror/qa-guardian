@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 
 // License types and their characteristics
 interface LicenseInfo {
@@ -419,23 +420,21 @@ export function LicenseCompliancePage() {
 
  return (
  <Layout>
- <div className="p-6 max-w-6xl mx-auto">
- {/* Header */}
- <div className="flex items-center justify-between mb-6">
- <div className="flex items-center gap-3">
- <button onClick={() => navigate('/security')} className="text-muted-foreground hover:text-foreground">&#8592;</button>
- <div>
- <h1 className="text-2xl font-bold text-foreground">&#x1F4DC; License Compliance</h1>
- <p className="text-muted-foreground">Detect dependencies with non-compliant licenses</p>
- </div>
- </div>
- <button
- onClick={() => setShowPolicyConfig(!showPolicyConfig)}
- className={`px-4 py-2 rounded-md flex items-center gap-2 ${showPolicyConfig ? 'bg-primary text-primary-foreground' : 'border border-border hover:bg-muted'}`}
- >
- &#x2699;&#xFE0F; Configure Policy
- </button>
- </div>
+ <div className="p-6 lg:p-8 space-y-6 max-w-6xl mx-auto">
+ {/* Feature #639: PageHeader component */}
+ <PageHeader
+   title="License Compliance"
+   description="Detect dependencies with non-compliant licenses"
+   breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'License Compliance' }]}
+   actions={
+     <button
+       onClick={() => setShowPolicyConfig(!showPolicyConfig)}
+       className={`px-4 py-2 rounded-md flex items-center gap-2 ${showPolicyConfig ? 'bg-primary text-primary-foreground' : 'border border-border hover:bg-muted'}`}
+     >
+       &#x2699;&#xFE0F; Configure Policy
+     </button>
+   }
+ />
 
  {/* Policy Configuration Panel */}
  {showPolicyConfig && (

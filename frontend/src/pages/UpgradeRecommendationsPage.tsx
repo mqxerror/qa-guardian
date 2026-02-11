@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import {
   ArrowUp,
-  ArrowLeft,
   AlertTriangle,
   AlertCircle,
   CheckCircle,
@@ -195,34 +195,24 @@ export function UpgradeRecommendationsPage() {
 
   return (
     <Layout>
-      <div className="p-6 max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/security')}
-              className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                <ArrowUp className="h-6 w-6 text-primary" />
-                Upgrade Recommendations
-              </h1>
-              <p className="text-muted-foreground">Dependency upgrades with breaking change risk analysis</p>
-            </div>
-          </div>
-          {data && (
-            <button
-              onClick={exportReport}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
-            >
-              <Download className="h-4 w-4" />
-              Export Report
-            </button>
-          )}
-        </div>
+      <div className="p-6 lg:p-8 space-y-6 max-w-6xl mx-auto">
+        {/* Feature #639: PageHeader component */}
+        <PageHeader
+          title="Upgrade Recommendations"
+          description="Dependency upgrades with breaking change risk analysis"
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Upgrade Recommendations' }]}
+          actions={
+            data && (
+              <button
+                onClick={exportReport}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                Export Report
+              </button>
+            )
+          }
+        />
 
         {/* Project Selection */}
         <div className="rounded-lg border border-border bg-card p-6 mb-6">

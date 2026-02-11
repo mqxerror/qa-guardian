@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { PageHeader } from '../components/ui';
 
 // Types for dependency data
 interface Vulnerability {
@@ -567,30 +568,13 @@ export function DependencyTreePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* Feature #639: PageHeader component */}
       <div className="bg-card border-b border-border px-6 py-5">
-        <div className="flex items-center gap-4 mb-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center justify-center w-9 h-9 border border-border rounded-lg bg-card hover:bg-muted cursor-pointer"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M15 19l-7-7 7-7" stroke="currentColor" className="text-muted-foreground" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <div>
-            <h1 className="m-0 text-2xl font-bold text-foreground flex items-center gap-2.5">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                <path d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" stroke="#6366f1" strokeWidth="2" />
-                <path d="M7 10v4M17 10v4M10 7h4M10 17h4" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              Dependency Tree
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Interactive visualization of project dependencies with vulnerability highlighting
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          title="Dependency Tree"
+          description="Interactive visualization of project dependencies with vulnerability highlighting"
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Dependency Tree' }]}
+        />
 
         {/* Controls */}
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>

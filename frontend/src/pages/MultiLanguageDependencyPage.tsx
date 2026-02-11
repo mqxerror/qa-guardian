@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
-import { ArrowLeft, RefreshCw, Settings, Check, X, AlertTriangle, Clock } from 'lucide-react';
+import { RefreshCw, Settings, Check, X, AlertTriangle, Clock } from 'lucide-react';
 
 // Type definitions for multi-language dependency scanning
 interface LanguageScanConfig {
@@ -222,39 +223,32 @@ export function MultiLanguageDependencyPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/security')}
-              className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Multi-Language Dependencies</h1>
-              <p className="text-muted-foreground">Scan and analyze dependencies across npm, pip, maven, go modules, and cargo</p>
+      <div className="p-6 lg:p-8 space-y-6">
+        {/* Feature #639: PageHeader component */}
+        <PageHeader
+          title="Multi-Language Dependencies"
+          description="Scan and analyze dependencies across npm, pip, maven, go modules, and cargo"
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Multi-Language Dependencies' }]}
+          actions={
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfigModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+              >
+                <Settings className="h-4 w-4" />
+                Configure
+              </button>
+              <button
+                onClick={handleScan}
+                disabled={isScanning}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                <RefreshCw className={`h-4 w-4 ${isScanning ? 'animate-spin' : ''}`} />
+                {isScanning ? 'Scanning...' : 'Scan All Languages'}
+              </button>
             </div>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowConfigModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
-            >
-              <Settings className="h-4 w-4" />
-              Configure
-            </button>
-            <button
-              onClick={handleScan}
-              disabled={isScanning}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
-            >
-              <RefreshCw className={`h-4 w-4 ${isScanning ? 'animate-spin' : ''}`} />
-              {isScanning ? 'Scanning...' : 'Scan All Languages'}
-            </button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Language Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

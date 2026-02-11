@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
 
@@ -213,25 +214,13 @@ export function SbomPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground">SBOM Generation</h2>
-            <p className="text-muted-foreground mt-1">
-              Generate Software Bill of Materials in CycloneDX or SPDX format
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/security')}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-muted hover:bg-muted/80 rounded-lg transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Security
-          </button>
-        </div>
+      <div className="p-6 lg:p-8 space-y-6">
+        {/* Feature #639: PageHeader component */}
+        <PageHeader
+          title="SBOM Generation"
+          description="Generate Software Bill of Materials in CycloneDX or SPDX format"
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'SBOM' }]}
+        />
 
         {/* Generation Form */}
         <div className="bg-card rounded-lg border border-border p-6">

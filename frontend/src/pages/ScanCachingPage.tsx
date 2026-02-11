@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 
 // Feature #317: API base URL from environment
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -235,35 +236,31 @@ export function ScanCachingPage() {
 
   return (
     <Layout>
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <button
-            onClick={() => navigate('/security')}
-            className="text-primary hover:text-primary/70 mb-2 flex items-center gap-1"
-          >
-            &#8592; Back to Security
-          </button>
-          <h1 className="text-2xl font-bold">{'\u{1F5C4}\uFE0F'} Dependency Scan Caching</h1>
-          <p className="text-muted-foreground">Cache scan results for faster subsequent scans</p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => runScan(false)}
-            disabled={isScanning}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
-          >
-            {isScanning ? 'Scanning...' : '\u{1F50D} Run Scan'}
-          </button>
-          <button
-            onClick={() => runScan(true)}
-            disabled={isScanning}
-            className="px-4 py-2 bg-muted text-foreground rounded hover:bg-muted/80 disabled:opacity-50"
-          >
-            {'\u{1F504}'} Force Refresh
-          </button>
-        </div>
-      </div>
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* Feature #639: PageHeader component */}
+      <PageHeader
+        title="Dependency Scan Caching"
+        description="Cache scan results for faster subsequent scans"
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Scan Caching' }]}
+        actions={
+          <div className="flex gap-2">
+            <button
+              onClick={() => runScan(false)}
+              disabled={isScanning}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
+            >
+              {isScanning ? 'Scanning...' : '\u{1F50D} Run Scan'}
+            </button>
+            <button
+              onClick={() => runScan(true)}
+              disabled={isScanning}
+              className="px-4 py-2 bg-muted text-foreground rounded hover:bg-muted/80 disabled:opacity-50"
+            >
+              {'\u{1F504}'} Force Refresh
+            </button>
+          </div>
+        }
+      />
 
       {/* Last Scan Result */}
       {lastScan && (

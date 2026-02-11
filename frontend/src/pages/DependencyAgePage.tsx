@@ -4,9 +4,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
-import { ArrowLeft, Clock, RefreshCw, Settings, AlertTriangle, Check, X } from 'lucide-react';
+import { Clock, RefreshCw, Settings, AlertTriangle, Check, X } from 'lucide-react';
 
 // Feature #772: Dependency Age Tracking interfaces
 interface DependencyAgeConfig {
@@ -199,39 +200,32 @@ export function DependencyAgePage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/security')} className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                <Clock className="h-6 w-6 text-primary" />
-                Dependency Age Tracking
-              </h1>
-              <p className="text-muted-foreground">Track how old dependencies are and flag outdated ones</p>
+      <div className="p-6 lg:p-8 space-y-6">
+        {/* Feature #639: PageHeader component */}
+        <PageHeader
+          title="Dependency Age Tracking"
+          description="Track how old dependencies are and flag outdated ones"
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Dependency Age' }]}
+          actions={
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowConfigModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+              >
+                <Settings className="h-4 w-4" />
+                Configure Thresholds
+              </button>
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              </button>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowConfigModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
-            >
-              <Settings className="h-4 w-4" />
-              Configure Thresholds
-            </button>
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Refreshing...' : 'Refresh'}
-            </button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

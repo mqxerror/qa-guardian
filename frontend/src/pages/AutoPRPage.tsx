@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 
 // Feature #771: Auto-PR for Dependency Updates interfaces
 interface AutoPRConfig {
@@ -252,32 +253,24 @@ export function AutoPRPage() {
 
   return (
     <Layout>
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="bg-card border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button onClick={() => navigate('/security')} className="text-muted-foreground hover:text-foreground">
-              &#8592; Back to Security
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Auto-PR for Dependency Updates</h1>
-              <p className="text-muted-foreground">Automatically create PRs to update vulnerable dependencies</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleScanAndCreate}
-              disabled={!config.enabled || isScanning}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
-            >
-              {isScanning ? 'Scanning...' : 'Scan & Create PRs'}
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen p-6 lg:p-8 space-y-6">
+      {/* Feature #639: PageHeader component */}
+      <PageHeader
+        title="Auto-PR for Dependency Updates"
+        description="Automatically create PRs to update vulnerable dependencies"
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Auto-PR' }]}
+        actions={
+          <button
+            onClick={handleScanAndCreate}
+            disabled={!config.enabled || isScanning}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isScanning ? 'Scanning...' : 'Scan & Create PRs'}
+          </button>
+        }
+      />
 
-      <main className="p-6 space-y-6">
+      <div className="space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-6 gap-4">
           <div className="bg-card rounded-lg p-4 border border-border">
@@ -549,7 +542,7 @@ export function AutoPRPage() {
             )}
           </div>
         </div>
-      </main>
+      </div>
     </div>
     </Layout>
   );

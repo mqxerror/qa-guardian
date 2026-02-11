@@ -4,9 +4,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
-import { ArrowLeft, Shield, Plus, Play, Check, X, ChevronDown, ChevronRight } from 'lucide-react'; // AlertTriangle unused
+import { Shield, Plus, Play, Check, X, ChevronDown, ChevronRight } from 'lucide-react'; // AlertTriangle unused
 
 // Feature #770: Dependency Policy Enforcement interfaces
 interface DependencyPolicy {
@@ -346,38 +347,31 @@ export function DependencyPolicyPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/security')} className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                <Shield className="h-6 w-6 text-primary" />
-                Dependency Policy Enforcement
-              </h1>
-              <p className="text-muted-foreground">Block builds with dependencies exceeding severity thresholds</p>
+      <div className="p-6 lg:p-8 space-y-6">
+        {/* Feature #639: PageHeader component */}
+        <PageHeader
+          title="Dependency Policy Enforcement"
+          description="Block builds with dependencies exceeding severity thresholds"
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Dependency Policy' }]}
+          actions={
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowSimulateBuildModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+              >
+                <Play className="h-4 w-4" />
+                Simulate Build
+              </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Create Policy
+              </button>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowSimulateBuildModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
-            >
-              <Play className="h-4 w-4" />
-              Simulate Build
-            </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Create Policy
-            </button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

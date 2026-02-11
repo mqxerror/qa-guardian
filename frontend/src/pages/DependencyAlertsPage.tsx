@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
 
@@ -242,24 +243,22 @@ export function DependencyAlertsPage() {
 
  return (
  <Layout>
- <div className="space-y-6">
- {/* Header */}
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-3">
- <button onClick={() => navigate('/security')} className="text-muted-foreground hover:text-foreground">{'\u2190'}</button>
- <div>
- <h1 className="text-2xl font-bold text-foreground">Dependency Alerts</h1>
- <p className="text-muted-foreground">Get notified when new CVEs affect your dependencies</p>
- </div>
- </div>
- <button
- onClick={() => setShowSimulateModal(true)}
- disabled={!config.enabled}
- className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
- >
- <span>{'\u26A0'}</span> Simulate CVE
- </button>
- </div>
+ <div className="p-6 lg:p-8 space-y-6">
+ {/* Feature #639: PageHeader component */}
+ <PageHeader
+   title="Dependency Alerts"
+   description="Get notified when new CVEs affect your dependencies"
+   breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Dependency Alerts' }]}
+   actions={
+     <button
+       onClick={() => setShowSimulateModal(true)}
+       disabled={!config.enabled}
+       className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+     >
+       <span>{'\u26A0'}</span> Simulate CVE
+     </button>
+   }
+ />
 
  {/* Configuration Section */}
  <div className="rounded-lg border border-border bg-card p-6">

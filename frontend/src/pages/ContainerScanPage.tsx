@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import {
   Shield,
@@ -15,7 +16,6 @@ import {
   Layers,
   Download,
   RefreshCw,
-  ArrowLeft,
   CheckCircle,
   // XCircle, // Unused
 } from 'lucide-react';
@@ -160,34 +160,24 @@ export function ContainerScanPage() {
 
   return (
     <Layout>
-      <div className="p-6 max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/security')}
-              className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                <Shield className="h-6 w-6 text-primary" />
-                Container Image Scanning
-              </h1>
-              <p className="text-muted-foreground">Scan Docker images for OS-level vulnerabilities using Trivy</p>
-            </div>
-          </div>
-          {scanResult && (
-            <button
-              onClick={exportReport}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
-            >
-              <Download className="h-4 w-4" />
-              Export Report
-            </button>
-          )}
-        </div>
+      <div className="p-6 lg:p-8 space-y-6 max-w-6xl mx-auto">
+        {/* Feature #639: PageHeader component */}
+        <PageHeader
+          title="Container Image Scanning"
+          description="Scan Docker images for OS-level vulnerabilities using Trivy"
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Container Scan' }]}
+          actions={
+            scanResult && (
+              <button
+                onClick={exportReport}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                Export Report
+              </button>
+            )
+          }
+        />
 
         {/* Scan Form */}
         <div className="rounded-lg border border-border bg-card p-6 mb-6">
